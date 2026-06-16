@@ -41,7 +41,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
           server-dir: /home/advertis/domains/laravel.tunispromo.tn/public_html/
-          git-exclude: true
           exclude: |
             .git/**
             .github/**
