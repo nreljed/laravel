@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,4 +20,21 @@ Route::get('/deploy/cache-clear', function () {
     Artisan::call('migrate', ['--force' => true]);
     
     return 'Cache cleared and migrations run successfully';
+});
+
+Route::post('/deploy/update-env', function () {
+    $token = request('token');
+    if ($token !== env('DEPLOY_TOKEN')) {
+        abort(403);
+    }
+    
+    $envContent = request('content');
+    $envPath = base_path('.env');
+    
+    if (File::isWritable($envPath)) {
+        File::put($envPath, $envContent);
+        return 'Environment file updated successfully';
+    }
+    
+    return 'Unable to write .env file';
 });

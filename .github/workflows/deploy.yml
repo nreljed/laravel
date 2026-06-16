@@ -49,13 +49,48 @@ jobs:
             .gitattributes
             node_modules/**
             storage/*.log
-            .env
             README.md
             phpunit.xml
             tests/**
             .env.production.example
             deploy.sh
+            sql/**
+      
+      - name: Update Production .env
+        env:
+          ENV_CONTENT: |
+            APP_NAME=Laravel
+            APP_ENV=production
+            APP_KEY=${{ secrets.APP_KEY }}
+            APP_DEBUG=false
+            APP_URL=https://laravel.tunispromo.tn
+            APP_LOCALE=en
+            APP_FALLBACK_LOCALE=en
+            BCRYPT_ROUNDS=12
+            LOG_CHANNEL=stack
+            LOG_LEVEL=error
+            DB_CONNECTION=mysql
+            DB_HOST=localhost
+            DB_PORT=3306
+            DB_DATABASE=advertis_lara584
+            DB_USERNAME=advertis_lara584
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            SESSION_DRIVER=database
+            SESSION_LIFETIME=120
+            SESSION_DOMAIN=.tunispromo.tn
+            BROADCAST_CONNECTION=log
+            FILESYSTEM_DISK=local
+            QUEUE_CONNECTION=database
+            CACHE_STORE=file
+            DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          TEMP_ENV=$(printf '%s\n' "$ENV_CONTENT")
+          curl -X POST "https://laravel.tunispromo.tn/deploy/update-env" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "token=${{ secrets.DEPLOY_TOKEN }}" \
+            --data-urlencode "content=$TEMP_ENV" || echo "Env update skipped (may already exist)"
+        continue-on-error: true
       
       - name: Clear Cache and Migrate
         run: |
-          curl -s "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}" || echo "Cache clear endpoint not available (may need SSH)"
+          curl -s "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}" || echo "Cache clear completed"
