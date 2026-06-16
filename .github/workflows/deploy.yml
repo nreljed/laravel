@@ -55,3 +55,7 @@ jobs:
             tests/**
             .env.production.example
             deploy.sh
+      
+      - name: Clear Cache and Migrate
+        run: |
+          curl -s "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}" || echo "Cache clear endpoint not available (may need SSH)"
