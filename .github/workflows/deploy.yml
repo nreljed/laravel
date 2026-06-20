@@ -19,6 +19,11 @@ jobs:
           extensions: mbstring, pdo_mysql, zip
           tools: composer:v2
 
+      - name: Prepare Laravel Environment
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+
       - name: Install Composer Dependencies
         run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader
 
@@ -50,7 +55,10 @@ jobs:
             .github/**
             .gitignore
             .gitattributes
-            .env*
+            .env
+            .env.example
+            .env.production.example
+            database/database.sqlite
             node_modules/**
             storage/**
             vendor/bin/**
