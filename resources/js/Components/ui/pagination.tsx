@@ -68,7 +68,7 @@ function PaginationLink({
 function PaginationPrevious({
   className,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) {
+}: Omit<React.ComponentProps<typeof PaginationLink>, "size">) {
   return (
     <PaginationLink
       aria-label="Go to previous page"
@@ -85,7 +85,7 @@ function PaginationPrevious({
 function PaginationNext({
   className,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) {
+}: Omit<React.ComponentProps<typeof PaginationLink>, "size">) {
   return (
     <PaginationLink
       aria-label="Go to next page"
