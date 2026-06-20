@@ -42,33 +42,44 @@ jobs:
       - name: Build Assets
         run: npm run build
 
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-
       - name: Deploy via FTP
-        env:
-          LFTP_USER: ${{ secrets.FTP_USERNAME }}
-          LFTP_PASS: ${{ secrets.FTP_PASSWORD }}
-          LFTP_HOST: ${{ secrets.FTP_SERVER }}
-          LFTP_PORT: ${{ secrets.FTP_PORT }}
-        run: |
-          lftp << EOF
-          open -u "$LFTP_USER","$LFTP_PASS" -p "$LFTP_PORT" "$LFTP_HOST"
-          set ftp:ssl-allow no
-          set net:timeout 30
-          mirror --reverse --verbose --no-perms --delete \
-            -X .git/ -X .github/ -X .gitignore -X .gitattributes \
-            -X .env -X .env.example -X .env.production.example \
-            -X database/database.sqlite \
-            -X node_modules/ -X storage/ \
-            -X vendor/bin/ -X vendor/**/tests/ -X vendor/**/test/ -X vendor/**/docs/ \
-            -X bootstrap/cache/ -X public/hot -X public/build/hot \
-            -X README.md -X phpunit.xml -X tests/ -X docs/ -X scripts/ -X sql/ \
-            -X deploy.sh -X composer-setup.php -X composer.phar \
-            -X *.md \
-            . /home/advertis/domains/laravel.tunispromo.tn/public_html
-          bye
-          EOF
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          security: loose
+          local-dir: ./
+          server-dir: /home/advertis/domains/laravel.tunispromo.tn/public_html/
+          exclude: |
+            .git/**
+            .github/**
+            .gitignore
+            .gitattributes
+            .env
+            .env.example
+            .env.production.example
+            database/database.sqlite
+            node_modules/**
+            storage/**
+            vendor/bin/**
+            vendor/**/tests/**
+            vendor/**/test/**
+            vendor/**/docs/**
+            bootstrap/cache/*
+            public/hot
+            public/build/hot
+            README.md
+            phpunit.xml
+            tests/**
+            docs/**
+            scripts/**
+            sql/**
+            deploy.sh
+            composer-setup.php
+            composer.phar
+            *.md
 
       - name: Update Production .env
         env:
