@@ -42,43 +42,52 @@ jobs:
       - name: Build Assets
         run: npm run build
 
+      - name: Create lftp ignore file
+        run: |
+          cat > .lftp_ignore << 'EOF'
+          .git/**
+          .github/**
+          .gitignore
+          .gitattributes
+          .env
+          .env.example
+          .env.production.example
+          database/database.sqlite
+          node_modules/**
+          storage/**
+          vendor/bin/**
+          vendor/**/tests/**
+          vendor/**/test/**
+          vendor/**/docs/**
+          bootstrap/cache/*
+          public/hot
+          public/build/hot
+          README.md
+          phpunit.xml
+          tests/**
+          docs/**
+          scripts/**
+          sql/**
+          deploy.sh
+          composer-setup.php
+          composer.phar
+          *.md
+          EOF
+
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: pressidium/lftp-mirror-action@v1
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          protocol: ftp
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
-          server-dir: /home/advertis/domains/laravel.tunispromo.tn/public_html/
-          exclude: |
-            .git/**
-            .github/**
-            .gitignore
-            .gitattributes
-            .env
-            .env.example
-            .env.production.example
-            database/database.sqlite
-            node_modules/**
-            storage/**
-            vendor/bin/**
-            vendor/**/tests/**
-            vendor/**/test/**
-            vendor/**/docs/**
-            bootstrap/cache/*
-            public/hot
-            public/build/hot
-            README.md
-            phpunit.xml
-            tests/**
-            docs/**
-            scripts/**
-            sql/**
-            deploy.sh
-            composer-setup.php
-            composer.phar
-            *.md
+          host: ${{ secrets.FTP_SERVER }}
+          port: ${{ secrets.FTP_PORT }}
+          user: ${{ secrets.FTP_USERNAME }}
+          pass: ${{ secrets.FTP_PASSWORD }}
+          settings: 'set ftp:ssl-allow no; set net:timeout 30'
+          localDir: '.'
+          remoteDir: '/home/advertis/domains/laravel.tunispromo.tn/public_html'
+          reverse: true
+          ignoreFile: '.lftp_ignore'
+          onlyNewer: false
+          options: '--verbose --no-perms'
 
       - name: Update Production .env
         env:
