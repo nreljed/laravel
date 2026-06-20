@@ -1,6 +1,6 @@
-import { NumberInput } from "@/components/ui/number-input";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NumberInput } from "@/Components/ui/number-input";
+import { Switch } from "@/Components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Timer, CalendarDays } from "lucide-react";
 
 interface BookingSectionProps {

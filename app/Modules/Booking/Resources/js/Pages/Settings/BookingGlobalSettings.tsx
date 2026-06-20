@@ -1,8 +1,8 @@
-﻿import * as React from "react";
+import * as React from "react";
 import { router, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { SettingsNav } from "@/components/settings/SettingsNav";
+import { SettingsNav } from "@/Components/settings/SettingsNav";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,7 +10,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/Components/ui/breadcrumb";
 import { BOOKING_STATUS } from "../../lib/booking-status";
 import { BookingGlobalSettingsSection } from "../../components/settings/BookingGlobalSettingsSection";
 import { Calendar } from "lucide-react";

@@ -1,8 +1,8 @@
 import { useMemo, useState, useCallback } from "react";
 import { usePage } from "@inertiajs/react";
-import { Switch } from "@/components/ui/switch";
-import { NumberInput } from "@/components/ui/number-input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/Components/ui/switch";
+import { NumberInput } from "@/Components/ui/number-input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { CalendarDays, Users, PawPrint, DollarSign } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 import type { DateRange } from "react-day-picker";

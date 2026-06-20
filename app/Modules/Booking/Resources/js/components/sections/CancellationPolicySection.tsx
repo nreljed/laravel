@@ -1,17 +1,17 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/Components/ui/input";
+import { Textarea } from "@/Components/ui/textarea";
+import { Switch } from "@/Components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Label } from "@/components/ui/label";
+} from "@/Components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
+import { Label } from "@/Components/ui/label";
 import { XCircle, Info, Clock } from "lucide-react";
 
 interface PolicyDef {

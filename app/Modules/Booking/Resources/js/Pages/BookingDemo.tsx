@@ -2,17 +2,17 @@ import React, { useState, useCallback, useRef } from "react";
 import { usePage } from "@inertiajs/react";
 import { toast } from "sonner";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/Components/ui/button";
+import { Badge } from "@/Components/ui/badge";
+import { Separator } from "@/Components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/Components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +22,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/Components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,7 +31,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/Components/ui/breadcrumb";
 import BookingWidget from "../components/BookingWidget";
 import BookingForm from "../components/BookingForm";
 import type { LogEntry, DateSelection } from "../components/BookingWidget";

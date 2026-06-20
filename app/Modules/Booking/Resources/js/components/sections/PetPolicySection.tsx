@@ -1,9 +1,9 @@
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/Components/ui/input";
+import { Textarea } from "@/Components/ui/textarea";
+import { Switch } from "@/Components/ui/switch";
+import { Checkbox } from "@/Components/ui/checkbox";
+import { Card, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { PawPrint, AlertCircle } from "lucide-react";
 
 const petOptions = [

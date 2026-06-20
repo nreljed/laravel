@@ -1,8 +1,8 @@
-import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/ui/number-input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Repeater } from "@/components/ui/repeater";
+import { Input } from "@/Components/ui/input";
+import { NumberInput } from "@/Components/ui/number-input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
+import { Repeater } from "@/Components/ui/repeater";
 import { useRepeaterConfig } from "@/hooks/use-repeater-config";
 import { Users, Info, DollarSign, Sun, Timer } from "lucide-react";
 import PricePreview from "./PricePreview";

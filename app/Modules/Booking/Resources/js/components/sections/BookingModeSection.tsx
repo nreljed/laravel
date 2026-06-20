@@ -1,12 +1,12 @@
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/Components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+} from "@/Components/ui/select";
+import { Card, CardContent } from "@/Components/ui/card";
 import { Radio } from "lucide-react";
 
 interface BookingSectionProps {

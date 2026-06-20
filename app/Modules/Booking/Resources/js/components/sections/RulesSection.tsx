@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Repeater } from "@/components/ui/repeater";
+import { Button } from "@/Components/ui/button";
+import { Repeater } from "@/Components/ui/repeater";
 import { useRepeaterConfig } from "@/hooks/use-repeater-config";
 import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { toast } from "sonner";
 
 const PRESET_RULES = [

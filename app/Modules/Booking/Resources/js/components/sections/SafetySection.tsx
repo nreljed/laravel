@@ -1,6 +1,6 @@
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/Components/ui/textarea";
+import { Checkbox } from "@/Components/ui/checkbox";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Shield, AlertCircle } from "lucide-react";
 
 const SAFETY_FEATURES = [

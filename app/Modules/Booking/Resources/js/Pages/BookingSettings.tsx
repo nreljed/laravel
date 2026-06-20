@@ -2,8 +2,8 @@ import React, { useCallback } from "react";
 import { useForm } from "@inertiajs/react";
 import { toast } from "sonner";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
+import { Button } from "@/Components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,7 +11,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/Components/ui/breadcrumb";
 import { DollarSign, Layers, Calendar, Map, Settings, BookOpen } from "lucide-react";
 import PricingSection from "../components/sections/PricingSection";
 import RulesTabSection from "../components/sections/RulesTabSection";

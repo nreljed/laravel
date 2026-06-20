@@ -1,4 +1,4 @@
-import { Repeater } from "@/components/ui/repeater";
+import { Repeater } from "@/Components/ui/repeater";
 import { useRepeaterConfig } from "@/hooks/use-repeater-config";
 import { Building2 } from "lucide-react";
 

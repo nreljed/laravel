@@ -1,7 +1,7 @@
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { NumberInput } from "@/components/ui/number-input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/Components/ui/input";
+import { Textarea } from "@/Components/ui/textarea";
+import { NumberInput } from "@/Components/ui/number-input";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { MapPin, Lightbulb } from "lucide-react";
 
 interface BookingSectionProps {

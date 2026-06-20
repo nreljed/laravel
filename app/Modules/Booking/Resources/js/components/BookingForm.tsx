@@ -3,21 +3,21 @@ import { format, parseISO } from "date-fns";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Textarea } from "@/Components/ui/textarea";
+import { Switch } from "@/Components/ui/switch";
+import { Label } from "@/Components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+} from "@/Components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover";
+import { Calendar } from "@/Components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,7 +27,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/Components/ui/form";
 import type { DateRange } from "react-day-picker";
 
 interface FormattingSettings {

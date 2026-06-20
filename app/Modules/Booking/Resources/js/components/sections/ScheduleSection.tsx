@@ -1,7 +1,7 @@
 import { usePage } from "@inertiajs/react";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/Components/ui/input";
+import { Checkbox } from "@/Components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Clock, CalendarDays } from "lucide-react";
 
 const WEEKDAYS = [

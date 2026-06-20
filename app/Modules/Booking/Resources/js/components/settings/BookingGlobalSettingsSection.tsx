@@ -1,21 +1,21 @@
 import * as React from "react";
 import { usePage } from "@inertiajs/react";
-import { Section, SectionField } from "@/components/ui/section";
-import { Input } from "@/components/ui/input";
+import { Section, SectionField } from "@/Components/ui/section";
+import { Input } from "@/Components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
-import { ErrorMessage } from "@/components/ui/error-message";
-import { Separator } from "@/components/ui/separator";
+} from "@/Components/ui/select";
+import { Switch } from "@/Components/ui/switch";
+import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
+import { Label } from "@/Components/ui/label";
+import { Spinner } from "@/Components/ui/spinner";
+import { ErrorMessage } from "@/Components/ui/error-message";
+import { Separator } from "@/Components/ui/separator";
 import { BOOKING_STATUS } from "../../lib/booking-status";
 import {
   Clock,

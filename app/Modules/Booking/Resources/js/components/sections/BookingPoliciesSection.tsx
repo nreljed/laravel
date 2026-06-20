@@ -1,14 +1,14 @@
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { NumberInput } from "@/components/ui/number-input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/Components/ui/textarea";
+import { Switch } from "@/Components/ui/switch";
+import { NumberInput } from "@/Components/ui/number-input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/Components/ui/select";
 import { Users } from "lucide-react";
 
 interface BookingSectionProps {
