@@ -77,11 +77,11 @@ jobs:
       - name: Deploy via FTP
         uses: pressidium/lftp-mirror-action@v1
         with:
-          host: ${{ secrets.FTP_SERVER }}
+          host: ftp://${{ secrets.FTP_SERVER }}
           port: ${{ secrets.FTP_PORT }}
           user: ${{ secrets.FTP_USERNAME }}
           pass: ${{ secrets.FTP_PASSWORD }}
-          settings: 'set ftp:ssl-allow no; set net:timeout 30'
+          forceSSL: false
           localDir: '.'
           remoteDir: '/home/advertis/domains/laravel.tunispromo.tn/public_html'
           reverse: true
