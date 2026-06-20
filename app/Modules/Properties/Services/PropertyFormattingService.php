@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Modules\Properties\Services;
+
+use App\Modules\Properties\Models\Property;
+use App\Services\FormattingService;
+use App\Services\SettingsService;
+use Illuminate\Support\Collection;
+
+class PropertyFormattingService
+{
+    public function formatPrice(Property $property, array $overrides = []): string
+    {
+        $options = array_merge($property->getFormattingOptions(), $overrides);
+
+        return FormattingService::formatPrice($property->price, $options);
+    }
+
+    public function formatSurface(Property $property, array $overrides = []): string
+    {
+        $options = array_merge($property->getFormattingOptions(), $overrides);
+
+        return FormattingService::formatSurface($property->surface, $options);
+    }
+
+    public function formatNumber(float|int|string $value, array $overrides = []): string
+    {
+        $options = array_merge(SettingsService::getFormattingOptions(), $overrides);
+
+        return FormattingService::formatNumber(
+            $value,
+            $options['thousands_sep'] ?? ',',
+            $options['decimal_sep'] ?? '.',
+        );
+    }
+
+    public function formatProperty(Property $property, array $overrides = []): array
+    {
+        $data = $property->toArray();
+        $options = array_merge($property->getFormattingOptions(), $overrides);
+
+        $data['price_formatted'] = $property->price
+            ? FormattingService::formatPrice($property->price, $options)
+            : '';
+
+        $data['surface_formatted'] = $property->surface
+            ? FormattingService::formatSurface($property->surface, $options)
+            : '';
+
+        return $data;
+    }
+
+    public function formatCollection(Collection $properties, array $overrides = []): array
+    {
+        return $properties->map(fn (Property $property) => $this->formatProperty($property, $overrides))->all();
+    }
+
+    public function formatRepeaterRows(array $rows, array $overrides = []): array
+    {
+        return FormattingService::formatRepeaterData($rows, 'properties', $overrides);
+    }
+}

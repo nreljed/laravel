@@ -4,6 +4,9 @@
 .env.backup
 .env.production
 .env.testing
+composer.phar
+composer-setup.php
+test_inertia.php
 .phpactor.json
 .phpunit.result.cache
 /.codex

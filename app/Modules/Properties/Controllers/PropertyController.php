@@ -1,0 +1,320 @@
+<?php
+
+namespace App\Modules\Properties\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Modules\Booking\Services\BookingPropertyIntegrationService;
+use App\Modules\Properties\Models\Property;
+use App\Modules\Properties\Models\PropertyImage;
+use App\Modules\Properties\Requests\StorePropertyRequest;
+use App\Modules\Properties\Requests\UpdatePropertyRequest;
+use App\Modules\Properties\Services\ImageUploadService;
+use App\Modules\Properties\Services\PropertyFormattingService;
+use App\Modules\Properties\Services\PropertyService;
+use App\Services\SettingsService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class PropertyController extends Controller
+{
+    public function __construct(
+        protected PropertyService $propertyService,
+        protected PropertyFormattingService $formatter,
+        protected ImageUploadService $imageService,
+    ) {}
+
+    public function index(Request $request): Response
+    {
+        $filters = $request->only([
+            'search', 'status', 'type_ids', 'category_ids',
+            'feature_ids', 'featured', 'price_min', 'price_max', 'sort', 'direction', 'per_page',
+        ]);
+
+        $properties = $this->propertyService->search($filters);
+
+        $properties->getCollection()->transform(
+            fn(Property $property) => $this->formatter->formatProperty($property)
+        );
+
+        return Inertia::render('Properties/Index', [
+            'properties' => $properties->items(),
+            'filters' => $filters,
+            'filterOptions' => $this->propertyService->getFilterOptions(),
+            'stats' => [
+                'total' => Property::count(),
+                'published' => Property::where('status', 'published')->count(),
+                'draft' => Property::where('status', 'draft')->count(),
+                'totalValue' => Property::where('status', 'published')->sum('price'),
+            ],
+        ]);
+    }
+
+    public function create(): Response
+    {
+        $settings = SettingsService::getAllGrouped();
+        $propertiesSettings = $settings['properties'] ?? [];
+        $filterOptions = $this->propertyService->getFilterOptions();
+
+        return Inertia::render('Properties/Form', [
+            'property' => null,
+            'property_types' => $filterOptions['types'] ?? [],
+            'property_status' => $filterOptions['types'] ?? [],
+            'property_cities' => $filterOptions['categories'] ?? [],
+            'property_features' => $filterOptions['features'] ?? [],
+            'settings' => $propertiesSettings,
+            'nonce' => csrf_token(),
+            'booking_active' => BookingPropertyIntegrationService::isModuleActive(),
+            'default_status' => $propertiesSettings['default_status'] ?? 'draft',
+        ]);
+    }
+
+    public function store(StorePropertyRequest $request): RedirectResponse
+    {
+        $data = $this->transformFormData($request);
+        $data['user_id'] = $request->user()->id;
+
+        $property = $this->propertyService->create(
+            $data,
+            $request->input('taxonomies.property_type') ? [$request->input('taxonomies.property_type')] : [],
+            $request->input('taxonomies.property_city') ? [$request->input('taxonomies.property_city')] : [],
+            $request->input('taxonomies.property_features', []),
+        );
+
+        if ($request->input('booking')) {
+            BookingPropertyIntegrationService::savePropertyBookingData(
+                $property->id,
+                $request->input('booking'),
+            );
+        }
+
+        return redirect()->route('dashboard.properties.index')
+            ->with('status', 'Property created successfully.');
+    }
+
+    public function edit(Property $property): Response
+    {
+        $property->load(['types', 'categories', 'features', 'images', 'featuredImage']);
+        $settings = SettingsService::getAllGrouped();
+        $propertiesSettings = $settings['properties'] ?? [];
+        $filterOptions = $this->propertyService->getFilterOptions();
+
+        $meta = $property->metadata ?? [];
+        if (empty($meta['latitude']) && $property->latitude) { $meta['latitude'] = $property->latitude; }
+        if (empty($meta['longitude']) && $property->longitude) { $meta['longitude'] = $property->longitude; }
+        $meta['gallery'] = $property->images->map(fn($img) => [
+            'id' => $img->id,
+            'attachment_id' => $img->id,
+            'url' => $img->url,
+            'url_raw' => $img->url,
+            'name' => $img->alt_text ?: $img->filename,
+            'featured' => $img->is_featured,
+        ])->toArray();
+
+        $bookingData = null;
+        if (BookingPropertyIntegrationService::isModuleActive()) {
+            $bookingData = BookingPropertyIntegrationService::getPropertyBookingData($property->id);
+        }
+
+        $selectedStatus = !empty($meta['property_status_id']) ? (int) $meta['property_status_id'] : null;
+
+        return Inertia::render('Properties/Form', [
+            'property' => $this->formatter->formatProperty($property),
+            'property_types' => $filterOptions['types'] ?? [],
+            'property_status' => $filterOptions['types'] ?? [],
+            'property_cities' => $filterOptions['categories'] ?? [],
+            'property_features' => $filterOptions['features'] ?? [],
+            'meta' => $meta,
+            'selected_type' => $property->types->first()?->id,
+            'selected_city' => $property->categories->first()?->id,
+            'selected_status' => $selectedStatus,
+            'selected_features' => $property->features->pluck('id')->toArray(),
+            'settings' => $propertiesSettings,
+            'nonce' => csrf_token(),
+            'booking' => $bookingData,
+            'booking_active' => BookingPropertyIntegrationService::isModuleActive(),
+            'default_status' => $propertiesSettings['default_status'] ?? 'draft',
+        ]);
+    }
+
+    public function update(UpdatePropertyRequest $request, Property $property): RedirectResponse
+    {
+        $data = $this->transformFormData($request);
+
+        $this->propertyService->update(
+            $property,
+            $data,
+            $request->input('taxonomies.property_type') ? [$request->input('taxonomies.property_type')] : [],
+            $request->input('taxonomies.property_city') ? [$request->input('taxonomies.property_city')] : [],
+            $request->input('taxonomies.property_features', []),
+        );
+
+        if ($request->input('booking')) {
+            BookingPropertyIntegrationService::savePropertyBookingData(
+                $property->id,
+                $request->input('booking'),
+            );
+        }
+
+        return redirect()->route('dashboard.properties.index')
+            ->with('status', 'Property updated successfully.');
+    }
+
+    protected function transformFormData(Request $request): array
+    {
+        $meta = $request->input('meta', []);
+        $taxonomies = $request->input('taxonomies', []);
+
+        $metadata = [
+            'listing_id' => $meta['listing_id'] ?? '',
+            'bedrooms' => (int) ($meta['bedrooms'] ?? 0),
+            'bathrooms' => (int) ($meta['bathrooms'] ?? 0),
+            'garages' => (int) ($meta['garages'] ?? 0),
+            'rooms' => $meta['rooms'] ?? 0,
+            'year' => $meta['year'] ?? '',
+            'floor_level' => $meta['floor_level'] ?? 0,
+            'rental_period' => $meta['rental_period'] ?? 'month',
+            'enable_address' => !empty($meta['enable_address']),
+            'google_map' => $meta['google_map'] ?? '',
+            'enable_details' => !empty($meta['enable_details']),
+            'enable_floors' => !empty($meta['enable_floors']),
+            'additional_details_json' => $meta['additional_details'] ?? [],
+            'floor_plans_json' => $meta['floor_plans'] ?? [],
+            'latitude' => ($meta['latitude'] ?? '') !== '' ? $meta['latitude'] : null,
+            'longitude' => ($meta['longitude'] ?? '') !== '' ? $meta['longitude'] : null,
+        ];
+
+        if (!empty($taxonomies['property_status'])) {
+            $metadata['property_status_id'] = (int) $taxonomies['property_status'];
+        }
+
+        return [
+            'name' => $request->input('title'),
+            'status' => $request->input('status', 'draft'),
+            'description' => $meta['description'] ?? null,
+            'price' => ($meta['price'] ?? '') !== '' ? $meta['price'] : null,
+            'surface' => ($meta['surface'] ?? '') !== '' ? $meta['surface'] : null,
+            'surface_unit' => 'm²',
+            'address' => $meta['address'] ?? null,
+            'city' => $meta['locality'] ?? null,
+            'zip' => $meta['zip'] ?? null,
+            'latitude' => ($meta['latitude'] ?? '') !== '' ? $meta['latitude'] : null,
+            'longitude' => ($meta['longitude'] ?? '') !== '' ? $meta['longitude'] : null,
+            'video_url' => $meta['video'] ?? null,
+            'metadata' => $metadata,
+        ];
+    }
+
+    public function destroy(Property $property): RedirectResponse
+    {
+        $this->propertyService->deleteWithImages($property);
+
+        return redirect()->route('dashboard.properties.index')
+            ->with('status', 'Property deleted successfully.');
+    }
+
+    public function uploadImage(UploadImageRequest $request, Property $property): RedirectResponse
+    {
+        $this->imageService->upload(
+            $request->file('file'),
+            $property,
+            $request->boolean('is_featured'),
+            $request->input('alt_text'),
+        );
+
+        return back()->with('status', 'Image uploaded successfully.');
+    }
+
+    public function deleteImage(Property $property, PropertyImage $image): RedirectResponse
+    {
+        abort_if($image->property_id !== $property->id, 404);
+
+        $this->imageService->delete($image);
+
+        return back()->with('status', 'Image deleted successfully.');
+    }
+
+    public function reorderImages(Request $request, Property $property): RedirectResponse
+    {
+        $request->validate(['ordered_ids' => 'required|array', 'ordered_ids.*' => 'integer|exists:property_images,id']);
+
+        $this->imageService->reorder($property, $request->input('ordered_ids'));
+
+        return back()->with('status', 'Images reordered successfully.');
+    }
+
+    public function setFeaturedImage(Property $property, PropertyImage $image): RedirectResponse
+    {
+        abort_if($image->property_id !== $property->id, 404);
+
+        $this->imageService->setFeatured($image);
+
+        return back()->with('status', 'Featured image updated.');
+    }
+
+    public function updateStatus(Request $request, Property $property): RedirectResponse
+    {
+        $this->authorize('update', $property);
+
+        $validated = $request->validate([
+            'status' => 'required|string|in:draft,published,archived',
+        ]);
+
+        $oldStatus = $property->status;
+        $property->update(['status' => $validated['status']]);
+
+        app(PropertyUserCountManager::class)->updateCount($property->user_id);
+
+        $messages = [
+            'published' => 'Property published successfully.',
+            'draft' => 'Property moved to draft.',
+            'archived' => 'Property archived.',
+        ];
+
+        return redirect()->back()->with('status', $messages[$validated['status']] ?? 'Status updated.');
+    }
+
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $this->authorize('viewAny', Property::class);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:properties,id',
+            'action' => 'required|string|in:delete,draft,publish',
+        ]);
+
+        $ids = $validated['ids'];
+        $action = $validated['action'];
+        $user = $request->user();
+        $processed = 0;
+
+        $properties = Property::whereIn('id', $ids)->get();
+
+        foreach ($properties as $property) {
+            if ($user->cannot('update', $property)) {
+                continue;
+            }
+
+            match ($action) {
+                'delete' => $this->propertyService->deleteWithImages($property),
+                'draft' => $property->update(['status' => 'draft']),
+                'publish' => $property->update(['status' => 'published']),
+            };
+
+            $processed++;
+        }
+
+        $actionLabels = [
+            'delete' => 'deleted',
+            'draft' => 'saved as draft',
+            'publish' => 'published',
+        ];
+
+        return redirect()->back()->with(
+            'status',
+            "{$processed} property(s) {$actionLabels[$action]} successfully.",
+        );
+    }
+}

@@ -1,0 +1,103 @@
+<?php
+
+use App\Modules\Booking\Controllers\BookingAjaxController;
+use App\Modules\Booking\Controllers\BookingAvailabilityController;
+use App\Modules\Booking\Controllers\BookingController;
+use App\Modules\Booking\Controllers\BookingDemoController;
+use App\Modules\Booking\Controllers\BookingGlobalSettingsController;
+use App\Modules\Booking\Controllers\BookingGuestController;
+use App\Modules\Booking\Controllers\BookingIcalController;
+use App\Modules\Booking\Controllers\BookingSettingsController;
+use App\Modules\Booking\Controllers\BookingSystemController;
+use Illuminate\Support\Facades\Route;
+
+// ─── CRUD ───────────────────────────────────────────────
+Route::get('/', [BookingController::class, 'index'])->name('index');
+Route::get('/create', [BookingController::class, 'create'])->name('create');
+Route::post('/', [BookingController::class, 'store'])->name('store');
+Route::post('/calculate-price', [BookingController::class, 'calculatePrice'])->name('calculate-price');
+Route::post('/bulk', [BookingController::class, 'bulkTransition'])->name('bulk');
+Route::get('/export/csv', [BookingController::class, 'exportCsv'])->name('export.csv');
+
+// ─── Calendar ───────────────────────────────────────────
+Route::get('/calendar/data', [BookingController::class, 'calendar'])->name('calendar');
+
+// ─── iCal Feeds ─────────────────────────────────────────
+Route::post('/ical/import', [BookingIcalController::class, 'import'])->name('ical.import');
+Route::get('/ical/feeds', [BookingIcalController::class, 'feeds'])->name('ical.feeds');
+Route::post('/ical/feeds/{feedId}/sync', [BookingIcalController::class, 'sync'])->name('ical.sync');
+Route::delete('/ical/feeds/{feedId}', [BookingIcalController::class, 'destroy'])->name('ical.destroy');
+
+// ─── Availability ───────────────────────────────────────
+Route::get('/availability', [BookingController::class, 'availability'])->name('availability');
+Route::get('/availability/{property}', [BookingAvailabilityController::class, 'check'])->name('availability.check');
+Route::post('/availability/block', [BookingAvailabilityController::class, 'block'])->name('availability.block');
+Route::post('/availability/unblock/{id}', [BookingAvailabilityController::class, 'unblock'])->name('availability.unblock');
+Route::get('/availability/cache-version/{property}', [BookingAvailabilityController::class, 'cacheVersion'])->name('availability.cache-version');
+Route::post('/availability/check-api', [BookingAvailabilityController::class, 'checkAvailabilityApi'])->name('availability.check-api');
+Route::post('/availability/clear-opcache', [BookingAvailabilityController::class, 'clearOpcache'])->name('availability.clear-opcache');
+
+// ─── Block Dates (manual) ───────────────────────────────
+Route::post('/block-dates', [BookingController::class, 'blockDates'])->name('block-dates');
+
+// ─── Archive ────────────────────────────────────────────
+Route::post('/archive/{booking}', [BookingController::class, 'toggleArchive'])->name('archive');
+
+// ─── Property-level Booking Settings ────────────────────
+Route::get('/settings/{property}', [BookingSettingsController::class, 'edit'])->name('settings.edit');
+Route::put('/settings/{property}', [BookingSettingsController::class, 'update'])->name('settings.update');
+
+// ─── Global Booking Settings ───────────────────────────
+Route::get('/global-settings', [BookingGlobalSettingsController::class, 'edit'])->name('global-settings.edit');
+Route::put('/global-settings', [BookingGlobalSettingsController::class, 'update'])->name('global-settings.update');
+
+// ─── Demo ───────────────────────────────────────────────
+Route::get('/demo', [BookingDemoController::class, 'demo'])->name('demo');
+Route::post('/demo/seed', [BookingDemoController::class, 'seed'])->name('demo.seed');
+Route::post('/demo/cleanup', [BookingDemoController::class, 'cleanupAll'])->name('demo.cleanup');
+Route::get('/demo/{booking}', [BookingDemoController::class, 'demoResult'])->name('demo.result');
+Route::get('/demo/{booking}/magic-link', [BookingDemoController::class, 'generateMagicLink'])->name('demo.magic-link');
+Route::get('/demo/{booking}/token-status', [BookingDemoController::class, 'tokenStatus'])->name('demo.token-status');
+Route::get('/demo/{booking}/email-status', [BookingDemoController::class, 'emailStatus'])->name('demo.email-status');
+Route::get('/demo/{booking}/pipeline-trace', [BookingDemoController::class, 'pipelineTrace'])->name('demo.pipeline-trace');
+Route::get('/demo/{booking}/verify', [BookingDemoController::class, 'verifyIntegration'])->name('demo.verify');
+Route::get('/demo/diagnose', [BookingDemoController::class, 'diagnose'])->name('demo.diagnose');
+
+// ─── Guest Portal ───────────────────────────────────────
+Route::prefix('/guest')->name('guest.')->group(function () {
+    Route::get('/view/{booking}', [BookingGuestController::class, 'view'])->name('view');
+    Route::get('/show/{token}', [BookingGuestController::class, 'show'])->name('show');
+    Route::post('/send-magic-link', [BookingGuestController::class, 'sendMagicLink'])->name('send-magic-link');
+    Route::post('/inline-login', [BookingGuestController::class, 'inlineLogin'])->name('inline-login');
+    Route::post('/register', [BookingGuestController::class, 'registerFromBooking'])->name('register');
+    Route::post('/request-cancellation/{booking}', [BookingGuestController::class, 'requestCancellation'])->name('request-cancellation');
+    Route::post('/request-modification/{booking}', [BookingGuestController::class, 'requestModification'])->name('request-modification');
+    Route::post('/confirm-cancellation/{booking}', [BookingGuestController::class, 'confirmCancellation'])->name('confirm-cancellation');
+    Route::post('/logged-in-modify/{booking}', [BookingGuestController::class, 'loggedInModify'])->name('logged-in-modify');
+    Route::post('/logged-in-cancel/{booking}', [BookingGuestController::class, 'loggedInCancel'])->name('logged-in-cancel');
+    Route::post('/toggle-mode', [BookingGuestController::class, 'toggleMode'])->name('toggle-mode');
+});
+
+// ─── System ─────────────────────────────────────────────
+Route::post('/system/transitions', [BookingSystemController::class, 'runTransitions'])->name('system.transitions');
+Route::get('/system/status', [BookingSystemController::class, 'status'])->name('system.status');
+
+// ─── AJAX ───────────────────────────────────────────────
+Route::post('/ajax/damage-photo/upload', [BookingAjaxController::class, 'uploadDamagePhoto'])->name('ajax.damage-photo.upload');
+Route::post('/ajax/damage-photo/delete', [BookingAjaxController::class, 'deleteDamagePhoto'])->name('ajax.damage-photo.delete');
+
+// ─── Booking Actions ────────────────────────────────────
+Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+Route::post('/{booking}/deposit/collect', [BookingController::class, 'markDepositCollected'])->name('deposit.collect');
+Route::post('/{booking}/deposit/refund', [BookingController::class, 'markDepositRefunded'])->name('deposit.refund');
+Route::post('/{booking}/deposit/claim', [BookingController::class, 'markDepositClaimed'])->name('deposit.claim');
+Route::post('/{booking}/mark-paid', [BookingController::class, 'markPaid'])->name('mark-paid');
+Route::post('/{booking}/policy-override', [BookingController::class, 'policyOverride'])->name('policy-override');
+Route::post('/{booking}/request-review', [BookingController::class, 'requestReview'])->name('request-review');
+
+// ─── Parameterized CRUD (must be last) ──────────────────
+Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
+Route::get('/{booking}/edit', [BookingController::class, 'edit'])->name('edit');
+Route::put('/{booking}', [BookingController::class, 'update'])->name('update');
+Route::delete('/{booking}', [BookingController::class, 'destroy'])->name('destroy');
+Route::post('/{booking}/transition', [BookingController::class, 'transition'])->name('transition');

@@ -1,0 +1,132 @@
+import '../css/app.css';
+import 'leaflet/dist/leaflet.css';
+import './bootstrap';
+
+import { createInertiaApp } from '@inertiajs/react';
+import { createRoot } from 'react-dom/client';
+import { ThemeProvider } from 'next-themes';
+import { TooltipProvider } from '@/Components/ui/tooltip';
+import { Toaster } from '@/Components/ui/sonner';
+
+import '@/Components/ui/sidebar';
+
+
+
+const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+type ImportFn = () => Promise<{ default: React.ComponentType<unknown> }>;
+type PageMap = Record<string, ImportFn | { default: React.ComponentType<unknown> }>;
+
+const pages = import.meta.glob('./Pages/**/*.tsx') as Record<string, ImportFn>;
+
+const propertyPages = import.meta.glob(
+    '../../app/Modules/Properties/Resources/js/Pages/**/*.tsx',
+) as Record<string, ImportFn>;
+
+const bookingPages = import.meta.glob(
+    '../../app/Modules/Booking/Resources/js/Pages/**/*.tsx',
+) as Record<string, ImportFn>;
+
+const ecommercePages = import.meta.glob(
+    '@modules-ecommerce/Pages/**/*.tsx',
+) as Record<string, ImportFn>;
+
+const postsPages = import.meta.glob(
+    '@modules-posts/Pages/**/*.tsx',
+) as Record<string, ImportFn>;
+
+const pageMap: PageMap = {};
+
+Object.keys(pages).forEach((path) => {
+    const match = path.match(/\.\/Pages\/(.+)\.tsx$/);
+    const componentPath = match?.[1];
+    if (componentPath) {
+        pageMap[componentPath] = pages[path]!;
+    }
+});
+
+function extractComponentPath(fullPath: string, moduleName: string): string | null {
+    const normalized = fullPath.replace(/\\/g, '/');
+
+    const fsMarker = `app/Modules/${moduleName}/Resources/js/Pages/`;
+    const fsIdx = normalized.indexOf(fsMarker);
+    if (fsIdx !== -1) {
+        const relative = normalized.slice(fsIdx + fsMarker.length);
+        return relative.replace(/\.tsx$/, '');
+    }
+
+    const aliasPrefixMap: Record<string, string> = {
+        Properties: '@modules-properties',
+        Booking: '@modules-booking',
+        ECommerce: '@modules-ecommerce',
+        Posts: '@modules-posts',
+    };
+    const alias = aliasPrefixMap[moduleName];
+    if (alias) {
+        const aliasMarker = `${alias}/Pages/`;
+        const aliasIdx = normalized.indexOf(aliasMarker);
+        if (aliasIdx !== -1) {
+            const relative = normalized.slice(aliasIdx + aliasMarker.length);
+            return relative.replace(/\.tsx$/, '');
+        }
+    }
+
+    return null;
+}
+
+Object.keys(propertyPages).forEach((path) => {
+    const componentPath = extractComponentPath(path, 'Properties');
+    if (componentPath) {
+        pageMap[`Properties/${componentPath}`] = propertyPages[path]!;
+    }
+});
+
+Object.keys(bookingPages).forEach((path) => {
+    const componentPath = extractComponentPath(path, 'Booking');
+    if (componentPath) {
+        pageMap[`Bookings/${componentPath}`] = bookingPages[path]!;
+    }
+});
+
+Object.keys(ecommercePages).forEach((path) => {
+    const componentPath = extractComponentPath(path, 'ECommerce');
+    if (componentPath) {
+        pageMap[`ECommerce/${componentPath}`] = ecommercePages[path]!;
+    }
+});
+
+Object.keys(postsPages).forEach((path) => {
+    const componentPath = extractComponentPath(path, 'Posts');
+    if (componentPath) {
+        pageMap[`Posts/${componentPath}`] = postsPages[path]!;
+    }
+});
+
+createInertiaApp({
+    title: (title) => `${title} - ${appName}`,
+    resolve: (name) => {
+        const importPage = pageMap[name];
+        if (!importPage) {
+            throw new Error(`Page not found: ${name}`);
+        }
+        const result = typeof importPage === 'function' ? importPage() : importPage;
+        return Promise.resolve(result).then(
+            (module) => module.default || module,
+        );
+    },
+    setup({ el, App, props }) {
+        const root = createRoot(el);
+
+        root.render(
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                <TooltipProvider>
+                    <App {...props} />
+                    <Toaster position="top-right" />
+                </TooltipProvider>
+            </ThemeProvider>,
+        );
+    },
+    progress: {
+        color: '#4B5563',
+    },
+});

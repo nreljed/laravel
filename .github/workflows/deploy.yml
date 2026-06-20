@@ -5,36 +5,40 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, pdo_mysql, zip
-          
+          tools: composer:v2
+
       - name: Install Composer Dependencies
-        run: composer install --prefer-dist --no-interaction --no-dev
-        
+        run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          
+
       - name: Install NPM Dependencies
         run: npm ci --ignore-scripts
-        
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Build Assets
         run: npm run build
-        
+
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -46,15 +50,27 @@ jobs:
             .github/**
             .gitignore
             .gitattributes
+            .env*
             node_modules/**
-            storage/*.log
+            storage/**
+            vendor/bin/**
+            vendor/**/tests/**
+            vendor/**/test/**
+            vendor/**/docs/**
+            bootstrap/cache/*
+            public/hot
+            public/build/hot
             README.md
             phpunit.xml
             tests/**
-            .env.production.example
-            deploy.sh
+            docs/**
+            scripts/**
             sql/**
-      
+            deploy.sh
+            composer-setup.php
+            composer.phar
+            *.md
+
       - name: Update Production .env
         env:
           ENV_CONTENT: |
@@ -87,9 +103,8 @@ jobs:
           curl -X POST "https://laravel.tunispromo.tn/deploy/update-env" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "token=${{ secrets.DEPLOY_TOKEN }}" \
-            --data-urlencode "content=$TEMP_ENV" || echo "Env update skipped (may already exist)"
-        continue-on-error: true
-      
+            --data-urlencode "content=$TEMP_ENV"
+
       - name: Clear Cache and Migrate
         run: |
-          curl -s "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}" || echo "Cache clear completed"
+          curl -s "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"

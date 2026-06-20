@@ -1,0 +1,364 @@
+import { useState, useMemo, useCallback } from "react";
+import { Head, router, usePage } from "@inertiajs/react";
+import { toast } from "sonner";
+import {
+  Bell, BellOff, CheckCheck, Check, Trash2, X, Loader2,
+  Calendar, Home, ShoppingCart, User, FileText,
+} from "lucide-react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Button } from "@/Components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/Components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/Components/ui/accordion";
+import { cn } from "@/lib/utils";
+import { NotificationItem } from "@/Components/notifications/NotificationItem";
+
+interface Notification {
+  id: string;
+  type: string;
+  data: Record<string, string>;
+  read_at: string | null;
+  created_at: string;
+}
+
+interface NotificationsPageProps {
+  notifications: {
+    data: Notification[];
+    total: number;
+    current_page: number;
+    last_page: number;
+  };
+  unreadCount: number;
+  filter: string;
+  typeFilter: string;
+}
+
+function getDateGroup(dateStr: string): string {
+  const date = new Date(dateStr.replace(" ", "T"));
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  const startOfLastWeek = new Date(startOfWeek);
+  startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+
+  if (date >= today) return "Today";
+  if (date >= yesterday) return "Yesterday";
+  if (date >= startOfWeek) return "This Week";
+  if (date >= startOfLastWeek) return "Last Week";
+  return "Older";
+}
+
+function inferTypeGroup(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes("booking") || t.includes("stay") || t.includes("checkin") || t.includes("checkout")) return "booking";
+  if (t.includes("property") || t.includes("home")) return "property";
+  if (t.includes("account") || t.includes("user") || t.includes("password") || t.includes("email") || t.includes("register") || t.includes("profile")) return "account";
+  if (t.includes("post") || t.includes("page") || t.includes("content") || t.includes("comment")) return "content";
+  if (t.includes("order") || t.includes("cart") || t.includes("product") || t.includes("stock") || t.includes("ecommerce")) return "orders";
+  if (t.includes("payment")) return "orders";
+  return "other";
+}
+
+const TYPE_FILTERS = [
+  { value: "all", label: "All", icon: Bell },
+  { value: "booking", label: "Booking", icon: Calendar },
+  { value: "property", label: "Property", icon: Home },
+  { value: "account", label: "Account", icon: User },
+  { value: "content", label: "Content", icon: FileText },
+  { value: "orders", label: "Orders", icon: ShoppingCart },
+];
+
+export default function NotificationsPage({
+  notifications: notifsData,
+  unreadCount,
+  filter: initialFilter,
+  typeFilter: initialTypeFilter,
+}: NotificationsPageProps) {
+  const [readFilter, setReadFilter] = useState(initialFilter);
+  const [typeFilter, setTypeFilter] = useState(initialTypeFilter || "all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+
+  const allNotifications = notifsData.data;
+  const { current_page, last_page } = notifsData;
+
+  const filtered = useMemo(() => {
+    let result = allNotifications;
+    if (readFilter === "unread") {
+      result = result.filter((n) => !n.read_at);
+    } else if (readFilter === "read") {
+      result = result.filter((n) => n.read_at);
+    }
+    if (typeFilter !== "all") {
+      result = result.filter((n) => inferTypeGroup(n.type) === typeFilter);
+    }
+    return result;
+  }, [allNotifications, readFilter, typeFilter]);
+
+  const grouped = useMemo(() => {
+    const groups: Record<string, typeof filtered> = {};
+    for (const n of filtered) {
+      const dateGroup = getDateGroup(n.created_at);
+      if (!groups[dateGroup]) groups[dateGroup] = [];
+      groups[dateGroup]!.push(n);
+    }
+    return groups;
+  }, [filtered]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const allVisibleSelected = filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id));
+
+  const selectAllVisible = () => setSelectedIds(new Set(filtered.map((n) => n.id)));
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const changeFilter = (value: string) => {
+    setReadFilter(value);
+    setSelectedIds(new Set());
+    router.visit(route("dashboard.notifications", { filter: value, type_filter: typeFilter }), {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
+  const changeTypeFilter = (value: string) => {
+    setTypeFilter(value);
+    setSelectedIds(new Set());
+    router.visit(route("dashboard.notifications", { filter: readFilter, type_filter: value }), {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
+  const markAsRead = (id: string) => {
+    router.put(
+      route("dashboard.notifications.mark-read"),
+      { id },
+      {
+        preserveScroll: true,
+        onSuccess: () => toast.success("Marked as read"),
+      },
+    );
+  };
+
+  const markAllAsRead = () => {
+    router.post(route("dashboard.notifications.mark-all-read"), {}, {
+      preserveScroll: true,
+      onSuccess: () => toast.success("All notifications marked as read"),
+    });
+  };
+
+  const deleteNotification = (id: string) => {
+    router.delete(route("dashboard.notifications.destroy", { id }), {
+      preserveScroll: true,
+      onSuccess: () => toast.success("Notification deleted"),
+    });
+  };
+
+  const batchMarkRead = () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    clearSelection();
+    router.post(route("dashboard.notifications.mark-bulk"), { ids }, {
+      preserveScroll: true,
+      onSuccess: () => toast.success("Selected notifications marked as read"),
+    });
+  };
+
+  const batchDelete = () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    clearSelection();
+    router.post(route("dashboard.notifications.delete-bulk"), { ids }, {
+      preserveScroll: true,
+      onSuccess: () => toast.success("Selected notifications deleted"),
+    });
+  };
+
+  const loadMore = () => {
+    if (current_page >= last_page) return;
+    setLoading(true);
+    router.get(
+      route("dashboard.notifications", { filter: readFilter, type_filter: typeFilter, page: current_page + 1 }),
+      {},
+      {
+        preserveScroll: true,
+        preserveState: true,
+        onFinish: () => setLoading(false),
+      },
+    );
+  };
+
+  const defaultOpenGroups = new Set(["Today", "Yesterday"]);
+  const READ_FILTERS = [
+    { value: "all", label: "All" },
+    { value: "unread", label: "Unread" },
+    { value: "read", label: "Read" },
+  ];
+
+  const hasMore = current_page < last_page;
+
+  return (
+    <AuthenticatedLayout header="Notifications">
+      <Head title="Notifications" />
+
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Bell className="size-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">Notifications</h2>
+            {unreadCount > 0 && (
+              <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
+                {unreadCount} unread
+              </span>
+            )}
+          </div>
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllAsRead}>
+              <CheckCheck className="mr-2 size-4" />
+              Mark all as read
+            </Button>
+          )}
+        </div>
+
+        <Tabs value={readFilter} onValueChange={changeFilter}>
+          <TabsList>
+            {READ_FILTERS.map((rf) => (
+              <TabsTrigger key={rf.value} value={rf.value}>
+                {rf.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        <Tabs value={typeFilter} onValueChange={changeTypeFilter}>
+          <TabsList className="flex-wrap">
+            {TYPE_FILTERS.map((tf) => {
+              const Icon = tf.icon;
+              return (
+                <TabsTrigger key={tf.value} value={tf.value} className="gap-1.5">
+                  <Icon className="size-3.5" />
+                  {tf.label}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-accent/50 border">
+            <span className="text-sm font-medium">{selectedIds.size} selected</span>
+            <div className="flex-1" />
+            <Button variant="ghost" size="sm" onClick={batchMarkRead}>
+              <Check className="mr-1 size-3" />
+              Mark read
+            </Button>
+            <Button variant="ghost" size="sm" onClick={batchDelete} className="text-destructive hover:text-destructive">
+              <Trash2 className="mr-1 size-3" />
+              Delete
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <X className="mr-1 size-3" />
+              Deselect
+            </Button>
+          </div>
+        )}
+
+        {filtered.length > 0 && (
+          <div className="flex items-center gap-2 px-1 py-1">
+            <button
+              onClick={allVisibleSelected ? clearSelection : selectAllVisible}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <div
+                className={cn(
+                  "size-4 rounded border flex items-center justify-center",
+                  allVisibleSelected ? "border-primary bg-primary" : "border-muted-foreground/40",
+                )}
+              >
+                {allVisibleSelected && <Check className="size-3 text-primary-foreground" />}
+              </div>
+              {allVisibleSelected ? "Deselect all" : `Select all ${filtered.length}`}
+            </button>
+          </div>
+        )}
+
+        {loading && filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <BellOff className="size-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              {readFilter === "unread" ? "No unread notifications" : "No notifications yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {Object.entries(grouped).map(([dateGroup, items]) => (
+              <div key={dateGroup} className="rounded-lg border bg-card">
+                <Accordion type="single" collapsible defaultValue={defaultOpenGroups.has(dateGroup) ? dateGroup : undefined}>
+                  <AccordionItem value={dateGroup} className="border-0">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-sm font-medium">{dateGroup}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {items.length} {items.length === 1 ? "notification" : "notifications"}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <div className="border-t divide-y">
+                        {items.map((notification) => (
+                          <NotificationItem
+                            key={notification.id}
+                            notification={notification}
+                            onMarkRead={markAsRead}
+                            onDelete={deleteNotification}
+                            selected={selectedIds.has(notification.id)}
+                            onSelect={toggleSelect}
+                          />
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            ))}
+
+            {hasMore && (
+              <div className="flex justify-center pt-2 pb-4">
+                <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 size-3 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Load more"
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </AuthenticatedLayout>
+  );
+}
