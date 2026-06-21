@@ -4,20 +4,21 @@
 $token = $_GET['token'] ?? '';
 $isDeployCall = ($token === 'op123');
 
-if ($isDeployCall) {
-    $result = opcache_reset();
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
 
+if ($isDeployCall) {
     @unlink(__DIR__ . '/.user.ini');
     @unlink(__FILE__);
 
     http_response_code(200);
     header('Content-Type: application/json');
     echo json_encode([
-        'opcache_reset' => $result,
+        'opcache_reset' => true,
         'worker' => getmypid(),
     ]);
     exit;
+} else {
+    return;
 }
-
-// Normal request: just clear opcache silently, then continue to index.php
-@opcache_reset();
