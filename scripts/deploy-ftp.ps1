@@ -10,12 +10,13 @@ param(
 $ErrorActionPreference = "Stop"
 $LocalRoot = (Get-Item $LocalRoot).FullName
 $RemoteRoot = $RemoteRoot.TrimEnd('/')
+$parallel = 5
 
 function Test-Excluded($relativePath) {
     $relativePath = $relativePath.Replace("\", "/")
     foreach ($pattern in $Exclude) {
         $p = $pattern.Trim()
-        if ($p -like "*\**") {
+        if ($p.Contains("*")) {
             $regex = "^" + [regex]::Escape($p.TrimEnd('/')).Replace("\*\*", ".*").Replace("\*", "[^/]*") + "(/.*)?$"
             if ($relativePath -match $regex) { return $true }
         } else {
@@ -25,29 +26,38 @@ function Test-Excluded($relativePath) {
     return $false
 }
 
+Write-Output "Scanning files..."
 $files = Get-ChildItem -Path $LocalRoot -Recurse -File | Where-Object { -not (Test-Excluded $_.FullName.Replace($LocalRoot, "").TrimStart("\")) }
 $total = $files.Count
-$count = 0
+Write-Output "Uploading $total files to $Server ($parallel parallel)..."
 $failures = 0
+$failedFiles = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
 
-foreach ($file in $files) {
-    $count++
-    $rel = $file.FullName.Replace($LocalRoot, "").TrimStart("\").Replace("\", "/")
-    $remotePath = "$RemoteRoot/$rel"
-    $remoteUri = "ftp://$Server/$remotePath"
-    $pct = [math]::Round($count / $total * 100, 0)
-    Write-Progress -Activity "Deploying to FTP" -Status "$pct% ($count/$total)" -PercentComplete $pct -CurrentOperation $rel
+$files | ForEach-Object -Parallel {
+    $f = $_
+    $srv = $using:Server
+    $usr = $using:Username
+    $pwd = $using:Password
+    $root = $using:RemoteRoot
+    $local = $using:LocalRoot
+    $total = $using:total
+    $bag = $using:failedFiles
 
-    $result = curl.exe --noproxy "*" --user "$Username`:$Password" --ftp-create-dirs -T $file.FullName --silent --show-error "$remoteUri" 2>&1
+    $rel = $f.FullName.Replace($local, "").TrimStart("\").Replace("\", "/")
+    $remoteUri = "ftp://$srv/$root/$rel"
+    $result = curl.exe --noproxy "*" --user "${usr}:${pwd}" --ftp-create-dirs -T $f.FullName --silent --show-error $remoteUri 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "FAILED: $rel - $result"
-        $failures++
+        $bag.Add($rel)
+        Write-Output "FAIL: $rel"
     } else {
-        Write-Output "[$count/$total] $rel"
+        Write-Output "OK: $rel"
     }
-}
+} -ThrottleLimit $parallel
 
+$failures = $failedFiles.Count
 if ($failures -gt 0) {
+    Write-Output "=== Failed files ($failures of $total) ==="
+    $failedFiles | ForEach-Object { Write-Output "  $_" }
     throw "$failures of $total files failed to upload"
 }
 Write-Output "Deploy complete! $total files uploaded successfully."
