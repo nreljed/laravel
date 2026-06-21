@@ -15,13 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: mbstring, pdo_mysql, zip
-          tools: composer:v2
-
       - name: Prepare Laravel Environment
         run: |
           cp .env.example .env
@@ -29,12 +22,6 @@ jobs:
 
       - name: Install Composer Dependencies
         run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
 
       - name: Install NPM Dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
