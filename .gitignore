@@ -34,4 +34,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 deploy.php
+composer.phar
 /dist

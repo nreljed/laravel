@@ -43,7 +43,11 @@ jobs:
           New-Item -ItemType File -Path database/database.sqlite -Force
 
       - name: Install Composer Dependencies
-        run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader
+        run: |
+          $php = "C:\php\php.exe"
+          # Download composer.phar (system composer.bat may not work in runner's pwsh context)
+          Invoke-WebRequest -Uri "https://getcomposer.org/composer.phar" -OutFile composer.phar
+          & $php composer.phar install --prefer-dist --no-interaction --no-dev --optimize-autoloader
 
       - name: Install NPM Dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
