@@ -13,22 +13,22 @@ jobs:
 
       - name: Generate Build .env (SQLite for build process)
         run: |
-          $php = "C:\php\php.exe"
-          @'
+          $dbPath = "$((Get-Location).Path.Replace('\', '/'))/database/database.sqlite"
+          @"
           APP_NAME=Laravel
           APP_ENV=local
           APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
           APP_DEBUG=true
           APP_URL=http://localhost
           DB_CONNECTION=sqlite
-          DB_DATABASE=";$(Get-Location)\database\database.sqlite"
+          DB_DATABASE=$dbPath
           SESSION_DRIVER=file
           FILESYSTEM_DISK=local
           QUEUE_CONNECTION=sync
           CACHE_STORE=file
           DEPLOY_TOKEN=build
           GITHUB_TOKEN=build
-          '@ | Set-Content -Path .env -Encoding UTF8
+          "@ | Set-Content -Path .env -Encoding UTF8
           New-Item -ItemType File -Path database/database.sqlite -Force
 
       - name: Install Composer Dependencies
