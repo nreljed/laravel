@@ -107,4 +107,125 @@ class DeployController extends Controller
             }
         }
     }
+
+    public function check(Request $request)
+    {
+        $this->verifyToken($request);
+        set_time_limit(300);
+
+        $output = [];
+        $githubToken = '';
+        $envPath = base_path('.env');
+
+        if (file_exists($envPath)) {
+            foreach (file($envPath) as $line) {
+                if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {
+                    $githubToken = trim(substr(trim($line), strlen('GITHUB_TOKEN=')));
+                    $githubToken = trim($githubToken, '"\'');
+                }
+            }
+        }
+
+        $versionFile = base_path('.deployed-version');
+        $lockFile = base_path('.deploy-lock');
+        $repo = 'nreljed/laravel';
+
+        if (file_exists($lockFile) && (time() - filemtime($lockFile)) < 600) {
+            return response()->json(['status' => 'locked']);
+        }
+        file_put_contents($lockFile, getmypid());
+
+        try {
+            $releases = $this->githubApi("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
+            if (!$releases || !isset($releases[0]['tag_name'])) {
+                return response()->json(['status' => 'no-release']);
+            }
+
+            $latestTag = $releases[0]['tag_name'];
+            $currentTag = file_exists($versionFile) ? trim(file_get_contents($versionFile)) : '';
+
+            if ($latestTag === $currentTag) {
+                return response()->json(['status' => 'current', 'tag' => $latestTag]);
+            }
+
+            $assetUrl = '';
+            foreach ($releases[0]['assets'] ?? [] as $asset) {
+                if ($asset['name'] === 'deploy.zip') {
+                    $assetUrl = $asset['url'];
+                    break;
+                }
+            }
+
+            if (!$assetUrl) {
+                return response()->json(['error' => 'No deploy.zip in release']);
+            }
+
+            $output[] = "New release: $latestTag";
+
+            $zipData = $this->githubDownload($assetUrl, $githubToken);
+            if (!$zipData || strlen($zipData) < 100) {
+                return response()->json(['error' => 'Download failed']);
+            }
+
+            $zipFile = storage_path('app/deploy-' . uniqid() . '.zip');
+            file_put_contents($zipFile, $zipData);
+            $output[] = 'Downloaded ' . round(strlen($zipData) / 1048576, 1) . ' MB';
+
+            $backupEnv = file_exists($envPath) ? file_get_contents($envPath) : '';
+
+            $zip = new \ZipArchive;
+            if ($zip->open($zipFile) !== true) {
+                return response()->json(['error' => 'Failed to open ZIP']);
+            }
+            $zip->extractTo(base_path());
+            $zip->close();
+            @unlink($zipFile);
+
+            if ($backupEnv) {
+                file_put_contents($envPath, $backupEnv);
+                $output[] = 'Restored .env';
+            }
+
+            file_put_contents($versionFile, $latestTag);
+            $output[] = "New version: $latestTag";
+
+            $commands = [
+                'migrate' => [['--force' => true]],
+                'config:cache' => [[]],
+                'route:cache' => [[]],
+                'view:cache' => [[]],
+                'storage:link' => [['--force' => true]],
+            ];
+
+            foreach ($commands as $cmd => [$params]) {
+                try {
+                    Artisan::call($cmd, $params);
+                    $output[] = "$cmd: " . strtok(trim(Artisan::output()), "\n");
+                } catch (\Exception $e) {
+                    $output[] = "$cmd: ERROR " . $e->getMessage();
+                }
+            }
+
+            return response()->json(['status' => 'deployed', 'tag' => $latestTag, 'output' => $output]);
+        } finally {
+            @unlink($lockFile);
+        }
+    }
+
+    private function githubApi($url, $token): array|null
+    {
+        $headers = ['User-Agent: CostBreaker360', 'Accept: application/vnd.github.v3+json'];
+        if ($token) $headers[] = "Authorization: Bearer $token";
+        $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => implode("\r\n", $headers), 'timeout' => 30]]);
+        $response = @file_get_contents($url, false, $ctx);
+        return $response ? json_decode($response, true) : null;
+    }
+
+    private function githubDownload($url, $token): string|false
+    {
+        $headers = ['User-Agent: CostBreaker360', 'Accept: application/octet-stream'];
+        if ($token) $headers[] = "Authorization: Bearer $token";
+        $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => implode("\r\n", $headers), 'timeout' => 300]]);
+        return @file_get_contents($url, false, $ctx);
+    }
 }

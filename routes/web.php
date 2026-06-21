@@ -106,10 +106,10 @@ require __DIR__.'/auth.php';
 
 // ═══════════════════════════════════════════════════
 // DEPLOY Endpoints — token-protected, no CSRF
-// Used by GitHub Actions after FTP sync
 // ═══════════════════════════════════════════════════
 Route::post('/deploy/update-env', [App\Http\Controllers\DeployController::class, 'updateEnv']);
 Route::get('/deploy/cache-clear', [App\Http\Controllers\DeployController::class, 'cacheClear']);
+Route::get('/deploy/check', [App\Http\Controllers\DeployController::class, 'check']);
 
 // Module routes (Properties, Bookings) are loaded by their respective
 // Module classes via HasRoutes trait — no duplication needed here.
