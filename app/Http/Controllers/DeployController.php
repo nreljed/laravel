@@ -72,7 +72,24 @@ class DeployController extends Controller
         Artisan::call('view:cache');
         $output['view:cache'] = Artisan::output();
 
+        // Clean up deploy-only auto-prepend files now that the app works
+        $this->cleanupDeployFiles();
+
         return response()->json(['success' => true, 'output' => $output]);
+    }
+
+    private function cleanupDeployFiles(): void
+    {
+        $files = [
+            public_path('.user.ini'),
+            public_path('opcache-reset.php'),
+        ];
+
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        }
     }
 
     private function wipeCache(): void

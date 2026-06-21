@@ -11,9 +11,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare Laravel Environment
+      - name: Generate Production .env
         run: |
-          Copy-Item .env.example .env
+          @'
+          APP_NAME=Laravel
+          APP_ENV=production
+          APP_KEY=${{ secrets.APP_KEY }}
+          APP_DEBUG=false
+          APP_URL=https://laravel.tunispromo.tn
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          BCRYPT_ROUNDS=12
+          LOG_CHANNEL=stack
+          LOG_LEVEL=error
+          DB_CONNECTION=mysql
+          DB_HOST=localhost
+          DB_PORT=3306
+          DB_DATABASE=advertis_lara584
+          DB_USERNAME=advertis_lara584
+          DB_PASSWORD=9)24p375S!
+          SESSION_DRIVER=file
+          SESSION_LIFETIME=120
+          SESSION_DOMAIN=.tunispromo.tn
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
+          '@ | Set-Content -Path .env -Encoding UTF8
           New-Item -ItemType File -Path database/database.sqlite -Force
 
       - name: Install Composer Dependencies
@@ -31,21 +56,19 @@ jobs:
       - name: Verify FTP Credentials
         run: |
           Write-Output "Testing FTP connection to ${{ secrets.FTP_SERVER }}..."
-          Write-Output "Proxy env: HTTP_PROXY=$env:HTTP_PROXY HTTPS_PROXY=$env:HTTPS_PROXY NO_PROXY=$env:NO_PROXY"
           $result = curl.exe --noproxy "*" --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" --list-only --silent --show-error ftp://${{ secrets.FTP_SERVER }}/ 2>&1
           if ($LASTEXITCODE -ne 0) {
             Write-Error "FTP connection FAILED: $result"
             exit 1
           }
-          Write-Output "FTP connection OK. Found files:"
-          $result
+          Write-Output "FTP connection OK."
 
       - name: Deploy via FTP (PowerShell 7 + curl)
         shell: pwsh
         run: |
           $exclude = @(
             ".git/**", ".github/**", ".gitignore", ".gitattributes",
-            ".env", ".env.example", ".env.production.example",
+            ".env.example", ".env.production.example",
             "database/database.sqlite",
             "node_modules/**",
             "vendor/bin/**", "vendor/**/tests/**", "vendor/**/test/**", "vendor/**/docs/**",
@@ -58,17 +81,17 @@ jobs:
           )
           & ".\scripts\deploy-ftp.ps1" -Server "${{ secrets.FTP_SERVER }}" -Username "${{ secrets.FTP_USERNAME }}" -Password "${{ secrets.FTP_PASSWORD }}" -RemoteRoot "." -LocalRoot "." -Exclude $exclude
 
-      - name: Reset PHP Opcache (stale Laravel 11, multi-wave)
+      - name: Reset PHP Opcache (via .user.ini prepend + multi-wave)
         shell: pwsh
         run: |
           $url = "https://laravel.tunispromo.tn/opcache-reset.php?token=op123"
+          Write-Output "Resetting opcache across all PHP workers..."
           1..3 | ForEach-Object {
             $wave = $_
-            Write-Output "=== Opcache reset wave $wave ==="
             $results = 1..10 | ForEach-Object -Parallel {
               $id = $_
               try {
-                $r = curl.exe --noproxy "*" -s -m 15 $using:url 2>&1
+                $r = curl.exe --noproxy "*" -s -m 30 $using:url 2>&1
                 "Wave $using:wave Worker $id : $r"
               } catch {
                 "Wave $using:wave Worker $id : ERROR - $_"
@@ -76,54 +99,6 @@ jobs:
             } -ThrottleLimit 10
             $results
             if ($wave -lt 3) { Start-Sleep -Seconds 3 }
-          }
-          Write-Output "=== Opcache reset complete ==="
-
-      - name: Update Production .env
-        shell: pwsh
-        env:
-          ENV_CONTENT: |
-            APP_NAME=Laravel
-            APP_ENV=production
-            APP_KEY=${{ secrets.APP_KEY }}
-            APP_DEBUG=false
-            APP_URL=https://laravel.tunispromo.tn
-            APP_LOCALE=en
-            APP_FALLBACK_LOCALE=en
-            BCRYPT_ROUNDS=12
-            LOG_CHANNEL=stack
-            LOG_LEVEL=error
-            DB_CONNECTION=mysql
-            DB_HOST=localhost
-            DB_PORT=3306
-            DB_DATABASE=advertis_lara584
-            DB_USERNAME=advertis_lara584
-            DB_PASSWORD=9)24p375S!
-            SESSION_DRIVER=file
-            SESSION_LIFETIME=120
-            SESSION_DOMAIN=.tunispromo.tn
-            BROADCAST_CONNECTION=log
-            FILESYSTEM_DISK=local
-            QUEUE_CONNECTION=sync
-            CACHE_STORE=file
-            DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
-        run: |
-          $body = @{
-            token = "${{ secrets.DEPLOY_TOKEN }}"
-            content = $env:ENV_CONTENT
-          }
-          $maxRetries = 10
-          for ($i = 1; $i -le $maxRetries; $i++) {
-            try {
-              $r = Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/update-env" -Method Post -Body $body
-              Write-Output "update-env succeeded: $($r | ConvertTo-Json)"
-              exit 0
-            } catch {
-              if ($i -eq $maxRetries) { throw }
-              Write-Output "Attempt $i/$maxRetries failed: $_"
-              Write-Output "Retrying in 5 seconds..."
-              Start-Sleep -Seconds 5
-            }
           }
 
       - name: Clear Cache and Migrate
