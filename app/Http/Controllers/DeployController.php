@@ -48,9 +48,9 @@ class DeployController extends Controller
         // Wipe all cached files first to break the chicken-and-egg cycle
         $this->wipeCache();
 
-        // Now that cache is gone, run fresh migrations
-        Artisan::call('migrate', ['--force' => true]);
-        $output['migrate'] = Artisan::output();
+        // Now that cache is gone, run fresh migrations (wipe old Laravel 11 tables)
+        Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
+        $output['migrate:fresh'] = Artisan::output();
 
         Artisan::call('cache:clear');
         $output['cache:clear'] = Artisan::output();

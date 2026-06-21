@@ -1,5 +1,9 @@
 <?php
 
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

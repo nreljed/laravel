@@ -48,7 +48,6 @@ jobs:
             ".env", ".env.example", ".env.production.example",
             "database/database.sqlite",
             "node_modules/**",
-            "storage/**",
             "vendor/bin/**", "vendor/**/tests/**", "vendor/**/test/**", "vendor/**/docs/**",
             "bootstrap/cache/*",
             "public/hot", "public/build/hot",
@@ -77,7 +76,7 @@ jobs:
             DB_PORT=3306
             DB_DATABASE=advertis_lara584
             DB_USERNAME=advertis_lara584
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_PASSWORD=9)24p375S!
             SESSION_DRIVER=database
             SESSION_LIFETIME=120
             SESSION_DOMAIN=.tunispromo.tn
