@@ -190,6 +190,7 @@ class DeployController extends Controller
             $output[] = "New version: $latestTag";
 
             $commands = [
+                'package:discover' => [[]],
                 'migrate' => [['--force' => true]],
                 'config:cache' => [[]],
                 'route:cache' => [[]],
