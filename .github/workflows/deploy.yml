@@ -63,6 +63,10 @@ jobs:
           $src = Get-Location
           $zip = "$src\deploy.zip"
           Remove-Item -Force $zip -ErrorAction SilentlyContinue
+          # Move runtime cache out so it doesn't overwrite the server's cached routes/config
+          if (Test-Path "$src\bootstrap\cache") {
+            Move-Item "$src\bootstrap\cache" "$src\bootstrap\cache.bak"
+          }
           $items = @(
             "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
             "app", "bootstrap", "config", "database", "public", "resources", "routes",
@@ -72,6 +76,11 @@ jobs:
           Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal
           $size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Output "deploy.zip created: $size MB"
+          # Restore cache directory
+          if (Test-Path "$src\bootstrap\cache.bak") {
+            Remove-Item "$src\bootstrap\cache" -Recurse -Force -ErrorAction SilentlyContinue
+            Move-Item "$src\bootstrap\cache.bak" "$src\bootstrap\cache"
+          }
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
