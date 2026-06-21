@@ -8,17 +8,13 @@ jobs:
   build-and-deploy:
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
-    defaults:
-      run:
-        shell: bash
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Prepare Laravel Environment
         run: |
-          cp .env.example .env
-          touch database/database.sqlite
+          Copy-Item .env.example .env
+          New-Item -ItemType File -Path database/database.sqlite -Force
 
       - name: Install Composer Dependencies
         run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader
@@ -98,12 +94,12 @@ jobs:
             CACHE_STORE=file
             DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
         run: |
-          TEMP_ENV=$(printf '%s\n' "$ENV_CONTENT")
-          curl -X POST "https://laravel.tunispromo.tn/deploy/update-env" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            --data-urlencode "token=${{ secrets.DEPLOY_TOKEN }}" \
-            --data-urlencode "content=$TEMP_ENV"
+          $body = @{
+            token = "${{ secrets.DEPLOY_TOKEN }}"
+            content = $env:ENV_CONTENT
+          }
+          Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/update-env" -Method Post -Body $body
 
       - name: Clear Cache and Migrate
         run: |
-          curl -s "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
