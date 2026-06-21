@@ -12,6 +12,11 @@ $LocalRoot = (Get-Item $LocalRoot).FullName
 $RemoteRoot = $RemoteRoot.TrimEnd('/')
 $parallel = 5
 
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Output "ERROR: PowerShell 7+ required for -Parallel switch. Install pwsh or upgrade."
+    exit 1
+}
+
 function Test-Excluded($relativePath) {
     $relativePath = $relativePath.Replace("\", "/")
     foreach ($pattern in $Exclude) {

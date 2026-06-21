@@ -40,7 +40,8 @@ jobs:
           Write-Output "FTP connection OK. Found files:"
           $result
 
-      - name: Deploy via FTP (PowerShell + curl)
+      - name: Deploy via FTP (PowerShell 7 + curl)
+        shell: pwsh
         run: |
           $exclude = @(
             ".git/**", ".github/**", ".gitignore", ".gitattributes",
