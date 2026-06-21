@@ -34,12 +34,16 @@ On the server, a cron job runs `deploy.php` every minute. It:
 | Secret | Value |
 |--------|-------|
 | `DEPLOY_TOKEN` | Any secure string — matches `config('app.deploy_token')` |
-| `GITHUB_TOKEN` | GitHub Personal Access Token (classic, **repo** scope) |
+| `GH_TOKEN` | GitHub fine-grained PAT with **Contents: Read** |
 
 How to create the PAT:
-- Go to `Settings > Developer settings > Personal access tokens > Tokens (classic)`
-- Generate new token with `repo` scope (full control of private repositories)
-- Copy it and add as `GITHUB_TOKEN` secret in your repo settings
+- Go to `https://github.com/settings/tokens?type=beta`
+- **"Generate new token"** (fine-grained)
+- **Repository access**: "Only select repositories" → choose your repo
+- **Permissions**: Repository permissions → **Contents: Read**
+- Copy the token and add as `GH_TOKEN` secret in repo settings
+
+> Note: `GITHUB_TOKEN` is reserved by GitHub — use `GH_TOKEN` as the secret name.
 
 ### 2. First Deploy (Manual)
 

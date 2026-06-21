@@ -38,7 +38,7 @@ jobs:
           QUEUE_CONNECTION=sync
           CACHE_STORE=file
           DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           '@ | Set-Content -Path .env -Encoding UTF8
           New-Item -ItemType File -Path database/database.sqlite -Force
 

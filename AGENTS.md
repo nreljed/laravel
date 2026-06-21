@@ -120,7 +120,7 @@ On the server, a cron job runs `deploy.php` every 1-5 minutes, which:
 | Secret | Purpose |
 |--------|---------|
 | `DEPLOY_TOKEN` | Matches `config('app.deploy_token')` — used by cache-clear fallback |
-| `GITHUB_TOKEN` | GitHub PAT with `repo` scope — used by deploy.php to download releases |
+| `GH_TOKEN` | GitHub fine-grained PAT with **Contents: Read** — used by deploy.php to download releases |
 
 ### Deploy Endpoints (manual fallback)
 
