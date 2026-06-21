@@ -11,7 +11,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate Production .env
+      - name: Generate Build .env (SQLite for build process)
+        run: |
+          $php = "C:\php\php.exe"
+          @'
+          APP_NAME=Laravel
+          APP_ENV=local
+          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_DEBUG=true
+          APP_URL=http://localhost
+          DB_CONNECTION=sqlite
+          DB_DATABASE=";$(Get-Location)\database\database.sqlite"
+          SESSION_DRIVER=file
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          DEPLOY_TOKEN=build
+          GITHUB_TOKEN=build
+          '@ | Set-Content -Path .env -Encoding UTF8
+          New-Item -ItemType File -Path database/database.sqlite -Force
+
+      - name: Install Composer Dependencies
+        run: |
+          $php = "C:\php\php.exe"
+          Invoke-WebRequest -Uri "https://getcomposer.org/composer.phar" -OutFile composer.phar
+          & $php composer.phar install --prefer-dist --no-interaction --no-dev --optimize-autoloader --no-scripts
+          & $php artisan package:discover --ansi
+
+      - name: Overwrite .env with Production Settings
         run: |
           @'
           APP_NAME=Laravel
@@ -40,14 +67,6 @@ jobs:
           DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
           GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           '@ | Set-Content -Path .env -Encoding UTF8
-          New-Item -ItemType File -Path database/database.sqlite -Force
-
-      - name: Install Composer Dependencies
-        run: |
-          $php = "C:\php\php.exe"
-          # Download composer.phar (system composer.bat may not work in runner's pwsh context)
-          Invoke-WebRequest -Uri "https://getcomposer.org/composer.phar" -OutFile composer.phar
-          & $php composer.phar install --prefer-dist --no-interaction --no-dev --optimize-autoloader
 
       - name: Install NPM Dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
