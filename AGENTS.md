@@ -156,3 +156,7 @@ For full details, see `DEPLOY.md`.
 
 - Case-insensitive filesystem: `forceConsistentCasingInFileNames: false` in tsconfig.json
 - `Components/` and `components/` are the same directory — use `@/Components/...` consistently
+
+## Test Deploy
+
+- `2026-06-21`: End-to-end deploy test — verify pipeline builds, zips, creates Release, and auto-deploys.
