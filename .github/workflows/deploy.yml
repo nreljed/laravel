@@ -53,16 +53,6 @@ jobs:
       - name: Build Assets
         run: npm run build
 
-      - name: Verify FTP Credentials
-        run: |
-          Write-Output "Testing FTP connection to ${{ secrets.FTP_SERVER }}..."
-          $result = curl.exe --noproxy "*" --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" --list-only --silent --show-error ftp://${{ secrets.FTP_SERVER }}/ 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "FTP connection FAILED: $result"
-            exit 1
-          }
-          Write-Output "FTP connection OK."
-
       - name: Deploy via FTP (PowerShell 7 + curl)
         shell: pwsh
         run: |
