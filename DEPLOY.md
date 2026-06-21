@@ -6,11 +6,13 @@
 ┌──────────────────────────────────────────────────────────────┐
 │  git push origin main                                        │
 │       ↓                                                      │
-│  build-deploy.yml (self-hosted GitHub runner)                │
-│       • composer install --no-dev                            │
-│       • npm ci + npm run build                               │
-│       • generate .env from secrets                           │
-│       • copy scripts/deploy-cron.php → deploy.php            │
+│  deploy.yml (self-hosted GitHub runner, Windows)             │
+│       • generate build .env (SQLite) + empty sqlite file     │
+│       • download composer.phar + install --no-dev --no-scripts│
+│       • php artisan package:discover                         │
+│       • overwrite .env with production MySQL config          │
+│       • npm install --ignore-scripts                         │
+│       • npm run typecheck + npm run build                    │
 │       • package deploy.zip (excludes bootstrap/cache)        │
 │       • create GitHub Release with deploy.zip attached       │
 └──────────────────────────┬───────────────────────────────────┘
@@ -38,11 +40,11 @@
 | Secret | Purpose |
 |--------|---------|
 | `DEPLOY_TOKEN` | Protects deploy endpoints — must match `config('app.deploy_token')` |
-| `GH_TOKEN` | GitHub fine-grained PAT with **Contents: Read** — used by server to fetch releases |
+| `GH_TOKEN` | GitHub fine-grained PAT with **Contents: Read and Write** — used by server to fetch releases AND by build workflow to create releases |
 
 Create the PAT at `https://github.com/settings/tokens?type=beta`:
 - **Repository access**: "Only select repositories" → your repo
-- **Permissions**: Repository permissions → **Contents: Read**
+- **Permissions**: Repository permissions → **Contents: Read and Write**
 - Copy token → add as `GH_TOKEN` secret
 
 > `GITHUB_TOKEN` is reserved by GitHub — always use `GH_TOKEN` as the secret name.
@@ -98,6 +100,7 @@ That's it. Every future push auto-deploys within ~5-10 minutes.
            ▼
 ┌─────────────────────────────┐
 │  Run artisan commands:      │
+│  • package:discover (first!)│
 │  • migrate                  │
 │  • config:cache             │
 │  • route:cache              │
@@ -150,12 +153,21 @@ All under `/deploy/` and protected by `?token=...`:
 - Run `/deploy/cache-clear?token=...` to regenerate cached config, routes, views
 - (Fixed in deploy.yml — exluded from zip since commit 82c6aa2)
 
-## Files Not Included in deploy.zip
+## Files Handled During Deploy
 
-| Path | Reason |
-|------|--------|
-| `.env` | Restored from backup during deploy |
-| `bootstrap/cache/` | Moved aside before zipping — preserves server's runtime cache |
-| `.deploy-*` | Runtime files (lock, log, version) |
-| `node_modules/` | Dev only, not needed |
-| `storage/` | Logs, sessions, cache — server-specific
+| Path | How It's Handled |
+|------|-----------------|
+| `.env` | Included in zip (build env), but server's .env is backed up before extraction and restored after |
+| `bootstrap/cache/` | Excluded from zip — moved aside before zipping, preserving server's runtime cache |
+| `.deploy-*` | Runtime files (lock, version) — never included in zip |
+| `node_modules/` | Dev only, never included |
+| `vendor/` | Included — built with `composer install --no-dev --no-scripts`, dev packages removed |
+
+## Troubleshooting
+
+**Site returns 500 after deploy:**
+- Check `storage/logs/laravel.log` on server
+- Most common cause: old `bootstrap/cache/packages.php` references a dev-only package (like `laravel/breeze`). The fix is already in the deploy pipeline (`package:discover` runs first), but you can manually:
+  1. Delete `bootstrap/cache/packages.php` via cPanel
+  2. Or hit `/deploy/cache-clear?token=...` for a full reset
+- Another cause: `.env` backup/restore failed and `APP_KEY` is missing

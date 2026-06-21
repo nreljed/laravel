@@ -94,44 +94,53 @@ npm run typecheck          # tsc --noEmit
 
 Deploys automatically on every push to `main`:
 
-**Workflow 1 — `deploy.yml`** (self-hosted runner, runs on push):
-1. `composer install --no-dev` + `npm ci` + `npm run typecheck` + `npm run build`
-2. Generates `.env` from secrets, copies `scripts/deploy-cron.php` → `deploy.php`
-3. Packages `deploy.zip` (excludes `bootstrap/cache/`)
-4. Creates GitHub Release with `deploy.zip` attached
+**Workflow 1 — `deploy.yml`** (self-hosted runner, Windows, runs on push):
+1. Generates build `.env` (SQLite) + empty `database/database.sqlite`
+2. Downloads `composer.phar`, runs `composer install --no-dev --no-scripts`
+3. Runs `artisan package:discover` to seed package manifest
+4. Overwrites `.env` with production MySQL config (from secrets)
+5. `npm install --ignore-scripts` + `npm run typecheck` + `npm run build`
+6. Packages `deploy.zip` (excludes `bootstrap/cache/`, keeps `.env`)
+7. Creates GitHub Release with `deploy.zip` attached
 
 **Workflow 2 — `cron-deploy.yml`** (GitHub-hosted runner, every 5 min):
-5. Calls `GET https://site.com/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}`
+8. Calls `GET https://site.com/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}`
 
 **On the server — `DeployController::check()`**:
-6. Verifies token, checks `.deploy-lock`
-7. Fetches latest release from GitHub API via `GITHUB_TOKEN` in `.env`
-8. Downloads `deploy.zip`, extracts over project root
-9. Restores `.env` from backup
-10. Runs `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
+9. Verifies token, checks `.deploy-lock`
+10. Fetches latest release from GitHub API via `GITHUB_TOKEN` in `.env`
+11. Downloads `deploy.zip`, extracts over project root (preserves all folder structure)
+12. Restores `.env` from backup (never overwritten)
+13. Runs `package:discover`, `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
 
 ### Prerequisites
 
 | Requirement | Value |
 |------------|-------|
-| PHP | 8.3+ (8.4 recommended) |
+| PHP | 8.3+ (8.4 recommended, uses `C:\php\php.exe` on runner) |
 | MySQL | 8.0+ |
 | SSH | Not required |
-| Composer | Not required (vendor/ in ZIP) |
+| Composer | Not required (vendor/ in ZIP, downloaded fresh each build) |
 | Cron | Not required — GitHub-hosted runner handles scheduling |
-| GitHub PAT | Fine-grained with **Contents: Read** |
+| GitHub PAT | Fine-grained with **Contents: Read and Write** |
 
 ### GitHub Secrets
 
 | Secret | Purpose |
 |--------|---------|
 | `DEPLOY_TOKEN` | Must match `config('app.deploy_token')` in server `.env` — protects all `/deploy/` endpoints |
-| `GH_TOKEN` | Fine-grained PAT with **Contents: Read** — used by server to download releases |
+| `GH_TOKEN` | Fine-grained PAT with **Contents: Read and Write** — creates releases + downloads them |
 
-### Deploy Endpoints (manual fallback)
+### Deploy Endpoints
 
-- `GET /deploy/check?token=...` — Main deploy entry point (called by cron-deploy.yml)
+- `GET /deploy/check?token=...` — Main deploy entry point (called by cron-deploy.yml every 5 min)
 - `GET /deploy/cache-clear?token=...` — Emergency reset: migrate:fresh + cache clear
+
+### Known Pitfalls
+
+- **Missing dev dependencies**: Dev-only packages (like `laravel/breeze`) are not in `vendor/` (built with `--no-dev`). The server's old `bootstrap/cache/packages.php` may reference them. Fixed by running `package:discover` as the first artisan command after extraction.
+- **`.env` wipe**: If `.env` is missing `APP_KEY`, the site returns 500. The build generates a fresh `.env` from `.env.example` locally; the server restores its own `.env` from backup.
+- **bootstrap/cache/ exclusion**: Excluded from zip to preserve the server's runtime config. If cache is stale, hit `/deploy/cache-clear`.
 
 ### After Schema/Seeder Changes
 
@@ -143,13 +152,6 @@ php artisan modules:sync-permissions
 
 Then run typecheck + build + phpunit and deliver the results. Do not wait for user approval to deploy — automate the full pipeline.
 
-### Initial Server Setup (first deploy)
-
-1. **Secrets**: Add `DEPLOY_TOKEN` and `GH_TOKEN` to GitHub repo secrets
-2. **Push**: `git push origin main` → workflow creates a Release with `deploy.zip`
-3. **Upload**: Download `deploy.zip` from the Release → upload to cPanel → extract at `public_html/`
-4. **Verify**: Future pushes auto-deploy within ~10 min (build time + 5 min cron interval)
-
 For full details, see `DEPLOY.md`.
 
 ## Windows Notes
@@ -159,4 +161,4 @@ For full details, see `DEPLOY.md`.
 
 ## Test Deploy
 
-- `2026-06-21`: End-to-end deploy test — verify pipeline builds, zips, creates Release, and auto-deploys.
+- `2026-06-21`: End-to-end deploy test passed — pipeline builds, zips, creates Release, and auto-deploys successfully. Fixed `package:discover` ordering to prevent BreezeServiceProvider errors.
