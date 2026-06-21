@@ -108,6 +108,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GH_TOKEN }}
           tag_name: "deploy-${{ github.run_number }}-${{ github.run_attempt }}"
           name: "Deploy #${{ github.run_number }}"
           body: "Production deploy from ${{ github.sha }}"
