@@ -31,7 +31,8 @@ jobs:
       - name: Verify FTP Credentials
         run: |
           Write-Output "Testing FTP connection to ${{ secrets.FTP_SERVER }}..."
-          $result = curl.exe --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" --list-only --silent --show-error ftp://${{ secrets.FTP_SERVER }}/ 2>&1
+          Write-Output "Proxy env: HTTP_PROXY=$env:HTTP_PROXY HTTPS_PROXY=$env:HTTPS_PROXY NO_PROXY=$env:NO_PROXY"
+          $result = curl.exe --noproxy "*" --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" --list-only --silent --show-error ftp://${{ secrets.FTP_SERVER }}/ 2>&1
           if ($LASTEXITCODE -ne 0) {
             Write-Error "FTP connection FAILED: $result"
             exit 1

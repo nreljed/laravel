@@ -38,7 +38,7 @@ foreach ($file in $files) {
     $pct = [math]::Round($count / $total * 100, 0)
     Write-Progress -Activity "Deploying to FTP" -Status "$pct% ($count/$total)" -PercentComplete $pct -CurrentOperation $rel
 
-    $result = curl.exe --user "$Username`:$Password" --ftp-create-dirs -T $file.FullName --silent --show-error "$remoteUri" 2>&1
+    $result = curl.exe --noproxy "*" --user "$Username`:$Password" --ftp-create-dirs -T $file.FullName --silent --show-error "$remoteUri" 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "FAILED: $rel - $result"
         $failures++
