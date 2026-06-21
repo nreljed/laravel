@@ -10,7 +10,6 @@ param(
 $ErrorActionPreference = "Stop"
 $LocalRoot = (Get-Item $LocalRoot).FullName
 $RemoteRoot = $RemoteRoot.TrimEnd('/')
-$parallel = 5
 
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Output "ERROR: PowerShell 7+ required for -Parallel switch. Install pwsh or upgrade."
@@ -31,12 +30,28 @@ function Test-Excluded($relativePath) {
     return $false
 }
 
+function Upload-FileWithRetry {
+    param($LocalPath, $RemoteUri, $User, $Pass, $MaxRetries = 3)
+    for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+        $result = curl.exe --noproxy "*" --user "${User}:${Pass}" --ftp-create-dirs -T $LocalPath --silent --show-error --connect-timeout 15 --max-time 60 $RemoteUri 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            return $true
+        }
+        if ($attempt -lt $MaxRetries) {
+            $delay = $attempt * 2
+            Start-Sleep -Seconds $delay
+        }
+    }
+    return $false
+}
+
 Write-Output "Scanning files..."
 $files = Get-ChildItem -Path $LocalRoot -Recurse -File | Where-Object { -not (Test-Excluded $_.FullName.Replace($LocalRoot, "").TrimStart("\")) }
 $total = $files.Count
-Write-Output "Uploading $total files to $Server ($parallel parallel)..."
-$failures = 0
+$parallel = 3
+Write-Output "Uploading $total files to $Server ($parallel parallel, 3 retries per file)..."
 $failedFiles = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
+$okFiles = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
 
 $files | ForEach-Object -Parallel {
     $f = $_
@@ -45,24 +60,27 @@ $files | ForEach-Object -Parallel {
     $pwd = $using:Password
     $root = $using:RemoteRoot
     $local = $using:LocalRoot
-    $total = $using:total
-    $bag = $using:failedFiles
+    $failedBag = $using:failedFiles
+    $okBag = $using:okFiles
 
     $rel = $f.FullName.Replace($local, "").TrimStart("\").Replace("\", "/")
     $remoteUri = if ($root -eq "" -or $root -eq ".") { "ftp://$srv/$rel" } else { "ftp://$srv/$root/$rel" }
-    $result = curl.exe --noproxy "*" --user "${usr}:${pwd}" --ftp-create-dirs -T $f.FullName --silent --show-error $remoteUri 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $bag.Add($rel)
-        Write-Output "FAIL: $rel"
-    } else {
+
+    $success = Upload-FileWithRetry -LocalPath $f.FullName -RemoteUri $remoteUri -User $usr -Pass $pwd
+    if ($success) {
+        $okBag.Add($rel)
         Write-Output "OK: $rel"
+    } else {
+        $failedBag.Add($rel)
+        Write-Output "FAIL: $rel"
     }
 } -ThrottleLimit $parallel
 
 $failures = $failedFiles.Count
+$uploaded = $okFiles.Count
 if ($failures -gt 0) {
     Write-Output "=== Failed files ($failures of $total) ==="
     $failedFiles | ForEach-Object { Write-Output "  $_" }
-    throw "$failures of $total files failed to upload"
+    throw "$failures of $total files failed to upload (even after 3 retries)"
 }
 Write-Output "Deploy complete! $total files uploaded successfully."
