@@ -90,19 +90,25 @@ npm run typecheck          # tsc --noEmit
 
 ## Deployment
 
-### CI/CD Pipeline (GitHub Actions → Release + Cron)
+### CI/CD Pipeline (GitHub Actions → Release + Web Endpoint)
 
-Deploys automatically on every push to `main` via `.github/workflows/deploy.yml`:
+Deploys automatically on every push to `main`:
 
-1. **Build**: `composer install --no-dev` + `npm ci` + `npm run typecheck` + `npm run build`
-2. **Package**: Generates `.env` from secrets, copies `scripts/deploy-cron.php` to `deploy.php`, creates `deploy.zip` with vendor + built assets
-3. **Release**: Creates a GitHub Release with `deploy.zip` attached
+**Workflow 1 — `deploy.yml`** (self-hosted runner, runs on push):
+1. `composer install --no-dev` + `npm ci` + `npm run typecheck` + `npm run build`
+2. Generates `.env` from secrets, copies `scripts/deploy-cron.php` → `deploy.php`
+3. Packages `deploy.zip` (excludes `bootstrap/cache/`)
+4. Creates GitHub Release with `deploy.zip` attached
 
-On the server, a cron job runs `deploy.php` every 1-5 minutes, which:
-4. **Detects** new release via GitHub API
-5. **Downloads** and extracts `deploy.zip` over the project root
-6. **Restores** `.env` from backup (preserves settings between deploys)
-7. **Post-deploy**: Runs `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
+**Workflow 2 — `cron-deploy.yml`** (GitHub-hosted runner, every 5 min):
+5. Calls `GET https://site.com/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}`
+
+**On the server — `DeployController::check()`**:
+6. Verifies token, checks `.deploy-lock`
+7. Fetches latest release from GitHub API via `GITHUB_TOKEN` in `.env`
+8. Downloads `deploy.zip`, extracts over project root
+9. Restores `.env` from backup
+10. Runs `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
 
 ### Prerequisites
 
@@ -112,19 +118,20 @@ On the server, a cron job runs `deploy.php` every 1-5 minutes, which:
 | MySQL | 8.0+ |
 | SSH | Not required |
 | Composer | Not required (vendor/ in ZIP) |
-| Cron | Required (cPanel Cron Jobs) |
-| GitHub PAT | `GITHUB_TOKEN` secret with `repo` scope |
+| Cron | Not required — GitHub-hosted runner handles scheduling |
+| GitHub PAT | Fine-grained with **Contents: Read** |
 
 ### GitHub Secrets
 
 | Secret | Purpose |
 |--------|---------|
-| `DEPLOY_TOKEN` | Matches `config('app.deploy_token')` — used by cache-clear fallback |
-| `GH_TOKEN` | GitHub fine-grained PAT with **Contents: Read** — used by deploy.php to download releases |
+| `DEPLOY_TOKEN` | Must match `config('app.deploy_token')` in server `.env` — protects all `/deploy/` endpoints |
+| `GH_TOKEN` | Fine-grained PAT with **Contents: Read** — used by server to download releases |
 
 ### Deploy Endpoints (manual fallback)
 
-- `GET /deploy/cache-clear?token=...` — Runs migrate, config:cache, route:cache, view:cache (standalone safety net, not part of automated deploy)
+- `GET /deploy/check?token=...` — Main deploy entry point (called by cron-deploy.yml)
+- `GET /deploy/cache-clear?token=...` — Emergency reset: migrate:fresh + cache clear
 
 ### After Schema/Seeder Changes
 
@@ -138,11 +145,10 @@ Then run typecheck + build + phpunit and deliver the results. Do not wait for us
 
 ### Initial Server Setup (first deploy)
 
-1. **Secrets**: Add `DEPLOY_TOKEN` and `GITHUB_TOKEN` to GitHub repo secrets
-2. **Push**: `git push origin main` — workflow creates a Release with `deploy.zip`
+1. **Secrets**: Add `DEPLOY_TOKEN` and `GH_TOKEN` to GitHub repo secrets
+2. **Push**: `git push origin main` → workflow creates a Release with `deploy.zip`
 3. **Upload**: Download `deploy.zip` from the Release → upload to cPanel → extract at `public_html/`
-4. **Cron**: Set up cron job: `*/5 * * * * /usr/bin/php /home/.../public_html/deploy.php`
-5. **Verify**: Future pushes will auto-deploy within 5 minutes
+4. **Verify**: Future pushes auto-deploy within ~10 min (build time + 5 min cron interval)
 
 For full details, see `DEPLOY.md`.
 
