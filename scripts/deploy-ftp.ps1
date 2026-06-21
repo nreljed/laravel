@@ -49,7 +49,7 @@ $files | ForEach-Object -Parallel {
     $bag = $using:failedFiles
 
     $rel = $f.FullName.Replace($local, "").TrimStart("\").Replace("\", "/")
-    $remoteUri = "ftp://$srv/$root/$rel"
+    $remoteUri = if ($root -eq "" -or $root -eq ".") { "ftp://$srv/$rel" } else { "ftp://$srv/$root/$rel" }
     $result = curl.exe --noproxy "*" --user "${usr}:${pwd}" --ftp-create-dirs -T $f.FullName --silent --show-error $remoteUri 2>&1
     if ($LASTEXITCODE -ne 0) {
         $bag.Add($rel)

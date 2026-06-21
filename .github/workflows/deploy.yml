@@ -56,7 +56,7 @@ jobs:
             "deploy.sh", "composer-setup.php", "composer.phar",
             "*.md"
           )
-          & ".\scripts\deploy-ftp.ps1" -Server "${{ secrets.FTP_SERVER }}" -Username "${{ secrets.FTP_USERNAME }}" -Password "${{ secrets.FTP_PASSWORD }}" -RemoteRoot "/home/advertis/domains/laravel.tunispromo.tn/public_html/" -LocalRoot "." -Exclude $exclude
+          & ".\scripts\deploy-ftp.ps1" -Server "${{ secrets.FTP_SERVER }}" -Username "${{ secrets.FTP_USERNAME }}" -Password "${{ secrets.FTP_PASSWORD }}" -RemoteRoot "." -LocalRoot "." -Exclude $exclude
 
       - name: Update Production .env
         env:
