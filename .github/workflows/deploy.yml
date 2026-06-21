@@ -28,43 +28,23 @@ jobs:
       - name: Build Assets
         run: npm run build
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          local-dir: ./
-          server-dir: /home/advertis/domains/laravel.tunispromo.tn/public_html/
-          exclude: |
-            .git/**
-            .github/**
-            .gitignore
-            .gitattributes
-            .env
-            .env.example
-            .env.production.example
-            database/database.sqlite
-            node_modules/**
-            storage/**
-            vendor/bin/**
-            vendor/**/tests/**
-            vendor/**/test/**
-            vendor/**/docs/**
-            bootstrap/cache/*
-            public/hot
-            public/build/hot
-            README.md
-            phpunit.xml
-            tests/**
-            docs/**
-            scripts/**
-            sql/**
-            deploy.sh
-            composer-setup.php
-            composer.phar
-            *.md
+      - name: Deploy via FTP (PowerShell + curl)
+        run: |
+          $exclude = @(
+            ".git/**", ".github/**", ".gitignore", ".gitattributes",
+            ".env", ".env.example", ".env.production.example",
+            "database/database.sqlite",
+            "node_modules/**",
+            "storage/**",
+            "vendor/bin/**", "vendor/**/tests/**", "vendor/**/test/**", "vendor/**/docs/**",
+            "bootstrap/cache/*",
+            "public/hot", "public/build/hot",
+            "README.md", "phpunit.xml",
+            "tests/**", "docs/**", "scripts/**", "sql/**",
+            "deploy.sh", "composer-setup.php", "composer.phar",
+            "*.md"
+          )
+          & ".\scripts\deploy-ftp.ps1" -Server "${{ secrets.FTP_SERVER }}" -Username "${{ secrets.FTP_USERNAME }}" -Password "${{ secrets.FTP_PASSWORD }}" -RemoteRoot "/home/advertis/domains/laravel.tunispromo.tn/public_html/" -LocalRoot "." -Exclude $exclude
 
       - name: Update Production .env
         env:
