@@ -40,7 +40,6 @@ log_msg('Checking for updates...');
 
 $releases = github_api("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
 if (!$releases || !isset($releases[0]['tag_name'])) {
-    log_msg('No releases found or API failed');
     @unlink($lockFile);
     exit(0);
 }
@@ -100,7 +99,6 @@ if ($zip->open($zipFile) !== true) {
 $zip->extractTo($projectDir);
 $zip->close();
 @unlink($zipFile);
-log_msg('Extracted to project root');
 
 if ($backupEnv) {
     file_put_contents($envPath, $backupEnv);
@@ -110,14 +108,15 @@ if ($backupEnv) {
 file_put_contents($versionFile, $latestTag);
 log_msg("New version: $latestTag");
 
+$phpBin = PHP_BINARY;
 chdir($projectDir);
 
 $commands = [
-    ['php artisan migrate', ['php', 'artisan', 'migrate', '--force']],
-    ['php artisan config:cache', ['php', 'artisan', 'config:cache']],
-    ['php artisan route:cache', ['php', 'artisan', 'route:cache']],
-    ['php artisan view:cache', ['php', 'artisan', 'view:cache']],
-    ['php artisan storage:link', ['php', 'artisan', 'storage:link', '--force']],
+    ['php artisan migrate', [$phpBin, 'artisan', 'migrate', '--force']],
+    ['php artisan config:cache', [$phpBin, 'artisan', 'config:cache']],
+    ['php artisan route:cache', [$phpBin, 'artisan', 'route:cache']],
+    ['php artisan view:cache', [$phpBin, 'artisan', 'view:cache']],
+    ['php artisan storage:link', [$phpBin, 'artisan', 'storage:link', '--force']],
 ];
 
 foreach ($commands as [$label, $cmd]) {

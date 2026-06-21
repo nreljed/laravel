@@ -90,29 +90,41 @@ npm run typecheck          # tsc --noEmit
 
 ## Deployment
 
-### CI/CD Pipeline (GitHub Actions → FTP)
+### CI/CD Pipeline (GitHub Actions → Release + Cron)
 
 Deploys automatically on every push to `main` via `.github/workflows/deploy.yml`:
 
-1. **Build**: `composer install --no-dev` + `npm ci` + `npm run build` (in CI)
-2. **FTP Sync**: Uploads built assets + app files (NOT `vendor/` tests/docs/node_modules/storage)
-3. **Post-deploy**: HTTP calls to `/deploy/update-env` and `/deploy/cache-clear` (token-protected)
+1. **Build**: `composer install --no-dev` + `npm ci` + `npm run typecheck` + `npm run build`
+2. **Package**: Generates `.env` from secrets, copies `scripts/deploy-cron.php` to `deploy.php`, creates `deploy.zip` with vendor + built assets
+3. **Release**: Creates a GitHub Release with `deploy.zip` attached
 
-### Server Requirements
+On the server, a cron job runs `deploy.php` every 1-5 minutes, which:
+4. **Detects** new release via GitHub API
+5. **Downloads** and extracts `deploy.zip` over the project root
+6. **Restores** `.env` from backup (preserves settings between deploys)
+7. **Post-deploy**: Runs `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
+
+### Prerequisites
 
 | Requirement | Value |
 |------------|-------|
 | PHP | 8.3+ (8.4 recommended) |
 | MySQL | 8.0+ |
-| Composer | Not required (vendor/ uploaded with FTP) |
 | SSH | Not required |
+| Composer | Not required (vendor/ in ZIP) |
+| Cron | Required (cPanel Cron Jobs) |
+| GitHub PAT | `GITHUB_TOKEN` secret with `repo` scope |
 
-### Deploy Endpoints (on production server)
+### GitHub Secrets
 
-- `POST /deploy/update-env` — Writes `.env` from CI secrets (backs up old .env first)
-- `GET /deploy/cache-clear` — Runs migrate, config:cache, route:cache, view:cache
+| Secret | Purpose |
+|--------|---------|
+| `DEPLOY_TOKEN` | Matches `config('app.deploy_token')` — used by cache-clear fallback |
+| `GITHUB_TOKEN` | GitHub PAT with `repo` scope — used by deploy.php to download releases |
 
-Both require `?token={DEPLOY_TOKEN}` matching `config('app.deploy_token')`.
+### Deploy Endpoints (manual fallback)
+
+- `GET /deploy/cache-clear?token=...` — Runs migrate, config:cache, route:cache, view:cache (standalone safety net, not part of automated deploy)
 
 ### After Schema/Seeder Changes
 
@@ -126,10 +138,13 @@ Then run typecheck + build + phpunit and deliver the results. Do not wait for us
 
 ### Initial Server Setup (first deploy)
 
-1. **PHP version**: Ensure host runs PHP 8.3+. Laravel 13 requires it.
-2. **Storage permissions**: `storage/` and `bootstrap/cache/` must be writable by the web server.
-3. **Upload everything**: The first FTP sync is the heaviest — after that only changed files transfer.
-4. **Verify deploy**: After the workflow completes, hit `https://laravel.tunispromo.tn/deploy/cache-clear?token=...` manually if the workflow step fails due to old route cache.
+1. **Secrets**: Add `DEPLOY_TOKEN` and `GITHUB_TOKEN` to GitHub repo secrets
+2. **Push**: `git push origin main` — workflow creates a Release with `deploy.zip`
+3. **Upload**: Download `deploy.zip` from the Release → upload to cPanel → extract at `public_html/`
+4. **Cron**: Set up cron job: `*/5 * * * * /usr/bin/php /home/.../public_html/deploy.php`
+5. **Verify**: Future pushes will auto-deploy within 5 minutes
+
+For full details, see `DEPLOY.md`.
 
 ## Windows Notes
 
