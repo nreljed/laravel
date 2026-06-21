@@ -58,7 +58,29 @@ jobs:
           )
           & ".\scripts\deploy-ftp.ps1" -Server "${{ secrets.FTP_SERVER }}" -Username "${{ secrets.FTP_USERNAME }}" -Password "${{ secrets.FTP_PASSWORD }}" -RemoteRoot "." -LocalRoot "." -Exclude $exclude
 
+      - name: Reset PHP Opcache (stale Laravel 11, multi-wave)
+        shell: pwsh
+        run: |
+          $url = "https://laravel.tunispromo.tn/opcache-reset.php?token=op123"
+          1..3 | ForEach-Object {
+            $wave = $_
+            Write-Output "=== Opcache reset wave $wave ==="
+            $results = 1..10 | ForEach-Object -Parallel {
+              $id = $_
+              try {
+                $r = curl.exe --noproxy "*" -s -m 15 $using:url 2>&1
+                "Wave $using:wave Worker $id : $r"
+              } catch {
+                "Wave $using:wave Worker $id : ERROR - $_"
+              }
+            } -ThrottleLimit 10
+            $results
+            if ($wave -lt 3) { Start-Sleep -Seconds 3 }
+          }
+          Write-Output "=== Opcache reset complete ==="
+
       - name: Update Production .env
+        shell: pwsh
         env:
           ENV_CONTENT: |
             APP_NAME=Laravel
@@ -90,8 +112,33 @@ jobs:
             token = "${{ secrets.DEPLOY_TOKEN }}"
             content = $env:ENV_CONTENT
           }
-          Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/update-env" -Method Post -Body $body
+          $maxRetries = 10
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            try {
+              $r = Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/update-env" -Method Post -Body $body
+              Write-Output "update-env succeeded: $($r | ConvertTo-Json)"
+              exit 0
+            } catch {
+              if ($i -eq $maxRetries) { throw }
+              Write-Output "Attempt $i/$maxRetries failed: $_"
+              Write-Output "Retrying in 5 seconds..."
+              Start-Sleep -Seconds 5
+            }
+          }
 
       - name: Clear Cache and Migrate
+        shell: pwsh
         run: |
-          Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          $maxRetries = 10
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            try {
+              $r = Invoke-RestMethod -Uri "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}" -TimeoutSec 120
+              Write-Output "cache-clear succeeded: $($r | ConvertTo-Json)"
+              exit 0
+            } catch {
+              if ($i -eq $maxRetries) { throw }
+              Write-Output "Attempt $i/$maxRetries failed: $_"
+              Write-Output "Retrying in 10 seconds..."
+              Start-Sleep -Seconds 10
+            }
+          }
