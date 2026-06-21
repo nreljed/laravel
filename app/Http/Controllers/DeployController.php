@@ -52,6 +52,13 @@ class DeployController extends Controller
         Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
         $output['migrate:fresh'] = Artisan::output();
 
+        // Switch back to database sessions now that tables exist
+        $envPath = base_path('.env');
+        $env = file_get_contents($envPath);
+        $env = preg_replace('/^SESSION_DRIVER=file$/m', 'SESSION_DRIVER=database', $env);
+        $env = preg_replace('/^QUEUE_CONNECTION=sync$/m', 'QUEUE_CONNECTION=database', $env);
+        file_put_contents($envPath, $env);
+
         Artisan::call('cache:clear');
         $output['cache:clear'] = Artisan::output();
 

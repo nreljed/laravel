@@ -99,12 +99,12 @@ jobs:
             DB_DATABASE=advertis_lara584
             DB_USERNAME=advertis_lara584
             DB_PASSWORD=9)24p375S!
-            SESSION_DRIVER=database
+            SESSION_DRIVER=file
             SESSION_LIFETIME=120
             SESSION_DOMAIN=.tunispromo.tn
             BROADCAST_CONNECTION=log
             FILESYSTEM_DISK=local
-            QUEUE_CONNECTION=database
+            QUEUE_CONNECTION=sync
             CACHE_STORE=file
             DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
         run: |
