@@ -16,7 +16,7 @@ jobs:
           @'
           APP_NAME=Laravel
           APP_ENV=production
-          APP_KEY=${{ secrets.APP_KEY }}
+          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
           APP_DEBUG=false
           APP_URL=https://laravel.tunispromo.tn
           APP_LOCALE=en
