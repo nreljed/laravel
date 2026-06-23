@@ -94,17 +94,15 @@ npm run typecheck          # tsc --noEmit
 
 Deploys automatically on every push to `main`:
 
-**Workflow 1 — `deploy.yml`** (self-hosted runner, Windows, runs on push):
-1. Generates build `.env` (SQLite) + empty `database/database.sqlite`
-2. Downloads `composer.phar`, runs `composer install --no-dev --no-scripts`
-3. Runs `artisan package:discover` to seed package manifest
-4. Overwrites `.env` with production MySQL config (from secrets)
-5. `npm install --ignore-scripts` + `npm run typecheck` + `npm run build`
-6. Packages `deploy.zip` (excludes `bootstrap/cache/`, keeps `.env`)
-7. Creates GitHub Release with `deploy.zip` attached
+**Workflow 1 — `deploy.yml`** (GitHub-hosted runner, `windows-latest`, runs on push):
+1. Git-cliff parses commits → bumps semver → generates CHANGELOG
+2. Cached `composer install --no-dev --no-scripts`
+3. Cached `npm install` + `php artisan test` + `php artisan pint --test` + typecheck + build
+4. Packages `deploy.zip` (excludes `bootstrap/cache/`, keeps `.env`)
+5. Creates GitHub Release with semver tag `vX.Y.Z` + changelog body
+6. Curls server's `/deploy/check` endpoint to trigger deploy immediately
 
-**Workflow 2 — `cron-deploy.yml`** (GitHub-hosted runner, every 5 min):
-8. Calls `GET https://site.com/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}`
+**On the server — `DeployController::check()`**:
 
 **On the server — `DeployController::check()`**:
 9. Verifies token, checks `.deploy-lock`

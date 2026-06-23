@@ -6,7 +6,7 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │  git push origin main  (use Conventional Commits)               │
 │       ↓                                                          │
-│  deploy.yml (self-hosted GitHub runner, Windows)                 │
+│  deploy.yml (GitHub-hosted runner, windows-latest)               │
 │       • git-cliff: parse commits → bump semver → generate CHANGES│
 │       • generate build .env (SQLite) + empty sqlite file         │
 │       • [cached] composer install --no-dev --no-scripts          │
