@@ -24,15 +24,37 @@ commit_preprocessors = [
   { pattern = "(\\(\\w+\\))?\\s*", replace = "" },
 ]
 
-[git.commit_parsers]
-feat = { group = "Features", default_scope = "" }
-fix = { group = "Bug Fixes", default_scope = "" }
-docs = { group = "Documentation", default_scope = "" }
-refactor = { group = "Refactoring", default_scope = "" }
-perf = { group = "Performance", default_scope = "" }
-style = { group = "Styling", default_scope = "" }
-test = { group = "Testing", default_scope = "" }
-chore = { group = "Chores", default_scope = "" }
+[[git.commit_parsers]]
+message = "^feat"
+group = "Features"
+
+[[git.commit_parsers]]
+message = "^fix"
+group = "Bug Fixes"
+
+[[git.commit_parsers]]
+message = "^docs"
+group = "Documentation"
+
+[[git.commit_parsers]]
+message = "^refactor"
+group = "Refactoring"
+
+[[git.commit_parsers]]
+message = "^perf"
+group = "Performance"
+
+[[git.commit_parsers]]
+message = "^style"
+group = "Styling"
+
+[[git.commit_parsers]]
+message = "^test"
+group = "Testing"
+
+[[git.commit_parsers]]
+message = "^chore"
+group = "Chores"
 
 [bump]
 features = true
