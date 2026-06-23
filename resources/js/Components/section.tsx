@@ -2,7 +2,7 @@ import * as React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/Components/ui/field"
-import { SettingsAccordion } from "@/Components/ui/settings-accordion"
+import { SettingsAccordion } from "@/Components/settings-accordion"
 import { cn } from "@/lib/utils"
 
 function Section({

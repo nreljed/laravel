@@ -23,9 +23,10 @@ interface AdminSettingsProps {
   settings?: Record<string, Record<string, string>>;
   availableModules?: { id: number; name: string; slug: string; enabled: boolean; version: string }[];
   modules?: { enabled: string[] };
+  roles?: { id: number; name: string; slug: string }[];
 }
 
-export default function AdminSettings({ settings = {}, availableModules = [], modules }: AdminSettingsProps) {
+export default function AdminSettings({ settings = {}, availableModules = [], modules, roles = [] }: AdminSettingsProps) {
   const flash = usePage().props.flash as Record<string, string> | undefined;
   const enabledModules = modules?.enabled ?? [];
 
@@ -156,7 +157,7 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
           </TabsContent>
 
           <TabsContent value="registration" className="mt-6">
-            <RegistrationSection settings={flatSettings} asAccordion />
+            <RegistrationSection settings={flatSettings} roles={roles} asAccordion />
           </TabsContent>
 
           <TabsContent value="notifications" className="mt-6">

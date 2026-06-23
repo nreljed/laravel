@@ -2,6 +2,8 @@
 
 namespace App\Modules\Booking;
 
+use App\Modules\Booking\Enums\BookingStatus;
+use App\Models\User;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingCacheService;
 use App\Modules\Booking\Services\BookingEmailService;
@@ -10,6 +12,8 @@ use App\Modules\Booking\Services\BookingPipelineTrace;
 use App\Modules\Booking\Services\BookingRefundMailService;
 use App\Modules\Contracts\ModuleInterface;
 use App\Modules\Traits\HasRoutes;
+use App\Notifications\AppNotification;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
@@ -120,6 +124,8 @@ class BookingModule implements ModuleInterface
             ['path' => '/dashboard/bookings/{booking}/edit', 'component' => 'Bookings/Form', 'name' => 'dashboard.bookings.edit'],
             ['path' => '/dashboard/bookings/{booking}', 'component' => 'Bookings/Show', 'name' => 'dashboard.bookings.show'],
             ['path' => '/dashboard/bookings/calendar', 'component' => 'Bookings/Calendar', 'name' => 'dashboard.bookings.calendar'],
+            ['path' => '/dashboard/bookings/demo', 'component' => 'Bookings/BookingDemo', 'name' => 'dashboard.bookings.demo'],
+            ['path' => '/dashboard/bookings/demo/result/{booking}', 'component' => 'Bookings/BookingDemoResult', 'name' => 'dashboard.bookings.demo.result'],
         ];
     }
 
@@ -305,6 +311,45 @@ class BookingModule implements ModuleInterface
         ];
     }
 
+    /**
+     * Notify admin users based on their notification preferences.
+     */
+    private static function notifyAdmins(string $type, int $bookingId, array $extraData = []): void
+    {
+        try {
+            $booking = Booking::find($bookingId);
+            if (!$booking) {
+                return;
+            }
+
+            $admins = User::whereHas('roles', fn($q) => $q->where('slug', 'admin'))->get();
+            if ($admins->isEmpty()) {
+                return;
+            }
+
+            $service = app(NotificationService::class);
+            $property = $booking->property_id
+                ? \App\Modules\Properties\Models\Property::find($booking->property_id)
+                : null;
+
+            $data = array_merge([
+                'bookingId' => $booking->id,
+                'guestName' => $booking->guest_name,
+                'guestEmail' => $booking->guest_email,
+                'propertyTitle' => $property?->name ?? 'Property',
+                'checkIn' => $booking->start_date?->toDateString(),
+                'checkOut' => $booking->end_date?->toDateString(),
+            ], $extraData);
+
+            foreach ($admins as $admin) {
+                $notification = new AppNotification($type, $data);
+                $service->notifyViaPreferences($admin, $type, $notification);
+            }
+        } catch (\Throwable $e) {
+            Log::error("BookingModule::notifyAdmins failed for type: {$type} | booking: {$bookingId} | Error: {$e->getMessage()}");
+        }
+    }
+
     public static function onBookingCreated(int $bookingId): void
     {
         try {
@@ -322,9 +367,21 @@ class BookingModule implements ModuleInterface
 
             BookingPipelineTrace::add($bookingId, 'created.token_generated', 'Magic link token generated');
 
-            BookingEmailService::sendConfirmation($bookingId, $magicLink);
+            // If booking is already confirmed at creation, send confirmation directly.
+            // Otherwise send the "booking received" acknowledgment;
+            // the status transition handler will send the confirmation when confirmed.
+            if ($booking->status === BookingStatus::Confirmed->value) {
+                BookingEmailService::sendConfirmation($bookingId, $magicLink);
+                BookingPipelineTrace::add($bookingId, 'created.confirmation_sent', 'Guest confirmation email sent (already confirmed)');
+            } else {
+                BookingEmailService::sendBookingReceived($bookingId, $magicLink);
+                BookingPipelineTrace::add($bookingId, 'created.received_sent', 'Guest booking received email sent');
+            }
 
-            BookingPipelineTrace::add($bookingId, 'created.confirmation_sent', 'Guest confirmation email sent');
+            self::notifyAdmins('booking.created', $bookingId, [
+                'bookingUrl' => $magicLink ?: url('/dashboard/bookings/' . $bookingId),
+            ]);
+            BookingPipelineTrace::add($bookingId, 'created.admins_notified', 'Admin notification sent');
         } catch (\Throwable $e) {
             BookingPipelineTrace::add($bookingId, 'created.error', $e->getMessage());
             Log::error("BookingModule::onBookingCreated failed: {$e->getMessage()}", [
@@ -347,6 +404,7 @@ class BookingModule implements ModuleInterface
             if ($newStatus === 'cancelled') {
                 BookingEmailService::sendCancellation($bookingId);
                 BookingPipelineTrace::add($bookingId, 'transition.cancellation_sent', 'Cancellation email sent to guest');
+                self::notifyAdmins('booking.cancelled', $bookingId);
             }
 
             if ($newStatus === 'checked_out') {
@@ -358,6 +416,18 @@ class BookingModule implements ModuleInterface
             }
 
             BookingEmailService::handleStatusTransition($bookingId, $oldStatus, $newStatus);
+
+            if ($newStatus === BookingStatus::Confirmed->value && $oldStatus !== BookingStatus::Confirmed->value) {
+                self::notifyAdmins('booking.confirmed', $bookingId, [
+                    'bookingUrl' => url('/dashboard/bookings/' . $bookingId),
+                ]);
+            } elseif ($newStatus !== 'cancelled') {
+                self::notifyAdmins('booking.modified', $bookingId, [
+                    'oldStatus' => $oldStatus,
+                    'newStatus' => $newStatus,
+                    'bookingUrl' => url('/dashboard/bookings/' . $bookingId),
+                ]);
+            }
         } catch (\Throwable $e) {
             BookingPipelineTrace::add($bookingId, 'transition.error', $e->getMessage());
             Log::error("BookingModule::onBookingStatusTransition failed: {$e->getMessage()}", [

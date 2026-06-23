@@ -6,7 +6,7 @@
   <a href="{{ $resetUrl ?? '#' }}" class="button">Reset Password</a>
 </p>
 <p class="mt-4">If you didn't request a password reset, you can safely ignore this email.</p>
-<p>This link expires in 24 hours.</p>
+<p>This link expires in {{ $expireMinutes ?? 60 }} minutes.</p>
 <p style="margin-top: 24px; color: #71717a; font-size: 14px;">
   Can't click the button? Copy this URL into your browser:<br>
   <span style="font-size: 13px; word-break: break-all;">{{ $resetUrl ?? '#' }}</span>

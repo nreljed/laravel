@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\NotificationTestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SettingsController;
@@ -33,9 +34,9 @@ Route::get('/services', [PublicController::class, 'services'])->name('services')
 Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
 
 // ═══════════════════════════════════════════════════
-// DASHBOARD (Backend) Pages — requires auth + verified
+// DASHBOARD (Backend) Pages — requires auth
 // ═══════════════════════════════════════════════════
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
 
@@ -47,6 +48,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dashboard/notifications/mark-bulk', [DashboardController::class, 'markBulk'])->name('dashboard.notifications.mark-bulk');
     Route::post('/dashboard/notifications/delete-bulk', [DashboardController::class, 'deleteBulk'])->name('dashboard.notifications.delete-bulk');
 
+    // Developer tools (admin-only)
+    Route::middleware('admin')->group(function () {
+        Route::get('/dashboard/developer/test-page', function () {
+            return Inertia::render('TestPage');
+        })->name('dashboard.developer.test-page');
+
+        Route::get('/dashboard/notifications/test', [NotificationTestController::class, 'index'])->name('dashboard.notifications.test');
+        Route::post('/dashboard/notifications/test', [NotificationTestController::class, 'sendTest'])->name('dashboard.notifications.test-send');
+        Route::post('/dashboard/notifications/test/send-to-all', [NotificationTestController::class, 'sendToAll'])->name('dashboard.notifications.test-send-all');
+        Route::delete('/dashboard/notifications/test/clear', [NotificationTestController::class, 'clearAll'])->name('dashboard.notifications.test-clear');
+    });
+
     // Host/Guest mode switch
     Route::post('/dashboard/user/mode', [DashboardController::class, 'switchMode'])->name('dashboard.switch-mode');
 
@@ -56,6 +69,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/email', [AccountController::class, 'updateEmail'])->name('account.update-email');
         Route::post('/password', [AccountController::class, 'updatePassword'])->name('account.update-password');
         Route::post('/delete', [AccountController::class, 'destroy'])->name('account.destroy');
+        Route::post('/verify-delete-password', [AccountController::class, 'verifyDeletePassword'])->name('account.verify-delete-password');
         Route::post('/notification-preferences', [AccountController::class, 'updateNotificationPreferences'])->name('account.notification-preferences');
     });
 
@@ -70,9 +84,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // ═══════════════════════════════════════════════════
-// DASHBOARD ADMIN Pages — requires auth + verified + admin
+// DASHBOARD ADMIN Pages — requires auth + admin
 // ═══════════════════════════════════════════════════
-Route::middleware(['auth', 'verified', 'admin'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
@@ -96,6 +110,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('dashboard/admin')->nam
         Route::post('/email/test', [App\Http\Controllers\EmailSettingsController::class, 'sendTest'])->name('email.test');
         Route::post('/email/template-test', [App\Http\Controllers\EmailSettingsController::class, 'sendTemplateTest'])->name('email.template-test');
         Route::get('/email/template-preview/{template}', [App\Http\Controllers\EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
+        Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
+        Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
     });
 });
 

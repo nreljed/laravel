@@ -6,7 +6,6 @@ use App\Http\Controllers\EmailSettingsController;
 use App\Modules\ModuleRegistry;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -39,6 +38,10 @@ class HandleInertiaRequests extends Middleware
 
                 if ($request->session()->has('error')) {
                     $flash['error'] = $request->session()->get('error');
+                }
+
+                if ($request->session()->has('mail_debug')) {
+                    $flash['mail_debug'] = $request->session()->get('mail_debug');
                 }
 
                 return $flash;
@@ -81,7 +84,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'app_url' => fn () => self::safeSetting('app_url', config('app.url')),
             'notificationUnreadCount' => fn () => $request->user()
-                ? $this->getCachedUnreadCount($request->user()->id)
+                ? $request->user()->unreadNotifications()->count()
                 : 0,
             'debug' => fn () => config('app.debug', false),
             'moduleDebugData' => fn () => $this->getModuleDebugData(),
@@ -246,17 +249,6 @@ class HandleInertiaRequests extends Middleware
         } catch (\Throwable) {
             return $default;
         }
-    }
-
-    private function getCachedUnreadCount(int $userId): int
-    {
-        return Cache::remember('notification_unread_' . $userId, 60, function () use ($userId) {
-            $user = \App\Models\User::find($userId);
-            if (!$user) {
-                return 0;
-            }
-            return $user->unreadNotifications()->count();
-        });
     }
 
     private function buildAuthUser($user): array

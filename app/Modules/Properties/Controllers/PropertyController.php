@@ -28,8 +28,8 @@ class PropertyController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->only([
-            'search', 'status', 'type_ids', 'category_ids',
-            'feature_ids', 'featured', 'price_min', 'price_max', 'sort', 'direction', 'per_page',
+            'search', 'status', 'type_ids', 'category_ids', 'feature_ids', 'status_ids',
+            'featured', 'price_min', 'price_max', 'sort', 'direction', 'per_page',
         ]);
 
         $properties = $this->propertyService->search($filters);
@@ -60,12 +60,16 @@ class PropertyController extends Controller
         return Inertia::render('Properties/Form', [
             'property' => null,
             'property_types' => $filterOptions['types'] ?? [],
-            'property_status' => $filterOptions['types'] ?? [],
+            'property_statuses' => $filterOptions['statuses'] ?? [],
             'property_cities' => $filterOptions['categories'] ?? [],
             'property_features' => $filterOptions['features'] ?? [],
             'settings' => $propertiesSettings,
             'nonce' => csrf_token(),
             'booking_active' => BookingPropertyIntegrationService::isModuleActive(),
+            'booking' => [
+                'enabled' => false,
+                'settings' => BookingPropertyIntegrationService::getFieldDefaults(),
+            ],
             'default_status' => $propertiesSettings['default_status'] ?? 'draft',
         ]);
     }
@@ -80,6 +84,7 @@ class PropertyController extends Controller
             $request->input('taxonomies.property_type') ? [$request->input('taxonomies.property_type')] : [],
             $request->input('taxonomies.property_city') ? [$request->input('taxonomies.property_city')] : [],
             $request->input('taxonomies.property_features', []),
+            $request->input('taxonomies.property_status') ? [$request->input('taxonomies.property_status')] : [],
         );
 
         if ($request->input('booking')) {
@@ -95,7 +100,7 @@ class PropertyController extends Controller
 
     public function edit(Property $property): Response
     {
-        $property->load(['types', 'categories', 'features', 'images', 'featuredImage']);
+        $property->load(['types', 'categories', 'features', 'statuses', 'images', 'featuredImage']);
         $settings = SettingsService::getAllGrouped();
         $propertiesSettings = $settings['properties'] ?? [];
         $filterOptions = $this->propertyService->getFilterOptions();
@@ -117,18 +122,16 @@ class PropertyController extends Controller
             $bookingData = BookingPropertyIntegrationService::getPropertyBookingData($property->id);
         }
 
-        $selectedStatus = !empty($meta['property_status_id']) ? (int) $meta['property_status_id'] : null;
-
         return Inertia::render('Properties/Form', [
             'property' => $this->formatter->formatProperty($property),
             'property_types' => $filterOptions['types'] ?? [],
-            'property_status' => $filterOptions['types'] ?? [],
+            'property_statuses' => $filterOptions['statuses'] ?? [],
             'property_cities' => $filterOptions['categories'] ?? [],
             'property_features' => $filterOptions['features'] ?? [],
             'meta' => $meta,
             'selected_type' => $property->types->first()?->id,
             'selected_city' => $property->categories->first()?->id,
-            'selected_status' => $selectedStatus,
+            'selected_status' => $property->statuses->first()?->id,
             'selected_features' => $property->features->pluck('id')->toArray(),
             'settings' => $propertiesSettings,
             'nonce' => csrf_token(),
@@ -148,6 +151,7 @@ class PropertyController extends Controller
             $request->input('taxonomies.property_type') ? [$request->input('taxonomies.property_type')] : [],
             $request->input('taxonomies.property_city') ? [$request->input('taxonomies.property_city')] : [],
             $request->input('taxonomies.property_features', []),
+            $request->input('taxonomies.property_status') ? [$request->input('taxonomies.property_status')] : [],
         );
 
         if ($request->input('booking')) {
@@ -164,7 +168,6 @@ class PropertyController extends Controller
     protected function transformFormData(Request $request): array
     {
         $meta = $request->input('meta', []);
-        $taxonomies = $request->input('taxonomies', []);
 
         $metadata = [
             'listing_id' => $meta['listing_id'] ?? '',
@@ -184,10 +187,6 @@ class PropertyController extends Controller
             'latitude' => ($meta['latitude'] ?? '') !== '' ? $meta['latitude'] : null,
             'longitude' => ($meta['longitude'] ?? '') !== '' ? $meta['longitude'] : null,
         ];
-
-        if (!empty($taxonomies['property_status'])) {
-            $metadata['property_status_id'] = (int) $taxonomies['property_status'];
-        }
 
         return [
             'name' => $request->input('title'),

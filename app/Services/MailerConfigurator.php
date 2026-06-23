@@ -20,8 +20,15 @@ class MailerConfigurator
     public function configure(): void
     {
         $settings = $this->settingsService->getOptions();
+        $mailer = $settings['mailer'];
 
-        if ($settings['mailer'] === 'smtp') {
+        // No SMTP configured via admin UI → fall back to log
+        if ($mailer === 'smtp' && empty($settings['smtp_host'])) {
+            Config::set('mail.default', 'log');
+            return;
+        }
+
+        if ($mailer === 'smtp') {
             $config = [
                 'transport' => 'smtp',
                 'host' => $settings['smtp_host'],
@@ -30,17 +37,25 @@ class MailerConfigurator
                 'username' => $settings['smtp_username'],
                 'password' => $settings['smtp_password'],
                 'timeout' => null,
+                'local_domain' => !empty($settings['smtp_ehlo_domain']) ? $settings['smtp_ehlo_domain'] : parse_url((string) config('app.url', 'http://localhost'), PHP_URL_HOST),
                 'auth_mode' => $settings['smtp_auth'] ? 'login' : null,
             ];
 
             if (isset($settings['auto_tls'])) {
+                $config['auto_tls'] = (bool) $settings['auto_tls'];
+            }
+
+            if (!empty($settings['smtp_allow_self_signed'])) {
                 $config['stream'] = [
                     'ssl' => ['allow_self_signed' => true, 'verify_peer' => false],
                 ];
+                $config['verify_peer'] = false;
             }
 
             Config::set('mail.default', 'smtp');
             Config::set('mail.mailers.smtp', $config);
+        } elseif (in_array($mailer, ['sendmail', 'log', 'mail', 'ses', 'postmark', 'resend', 'array'], true)) {
+            Config::set('mail.default', $mailer);
         }
 
         if ($settings['from_email']) {

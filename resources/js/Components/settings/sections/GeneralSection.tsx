@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Section, SectionField } from "@/Components/ui/section"
+import { Section, SectionField } from "@/Components/section"
 import { Input } from "@/Components/ui/input"
+import { LogoUploader } from "@/Components/settings/LogoUploader"
 import { Globe } from "lucide-react"
 
 interface GeneralSectionProps {
@@ -71,16 +72,14 @@ function GeneralSection({ data, onChange, errors, loading, onSubmit, asAccordion
       </SectionField>
 
       <SectionField
-        label="Logo URL"
+        label="Logo"
         htmlFor="app_logo"
         error={errors?.app_logo as string}
-        description="URL to your app logo image (displayed in sidebar and auth pages)"
+        description="Upload your app logo (displayed in sidebar, auth pages, and emails)"
       >
-        <Input
-          id="app_logo"
-          value={data?.app_logo || ""}
-          onChange={(e) => onChange("app_logo", e.target.value)}
-          placeholder="https://example.com/logo.png"
+        <LogoUploader
+          currentLogo={data?.app_logo}
+          onLogoChange={(url) => onChange("app_logo", url)}
           disabled={loading}
         />
       </SectionField>

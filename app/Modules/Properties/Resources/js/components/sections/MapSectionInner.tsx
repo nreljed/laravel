@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useMap } from "react-leaflet"
-import { Section } from "@/Components/ui/section"
+import { Section } from "@/Components/section"
 import { Alert, AlertDescription } from "@/Components/ui/alert"
 import { Button } from "@/Components/ui/button"
 import {

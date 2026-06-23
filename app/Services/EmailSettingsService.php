@@ -11,21 +11,23 @@ class EmailSettingsService
 
     /**
      * Default email settings.
-     * Falls back to .env values when no stored settings exist.
+     * All empty — must be configured via the admin UI.
      */
     public static function defaults(): array
     {
         return [
             'mailer' => 'smtp',
-            'smtp_host' => env('MAIL_HOST', ''),
-            'smtp_port' => (int) env('MAIL_PORT', 587),
-            'smtp_encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'smtp_host' => '',
+            'smtp_port' => 587,
+            'smtp_encryption' => 'tls',
             'smtp_auth' => true,
             'auto_tls' => true,
-            'smtp_username' => env('MAIL_USERNAME', ''),
-            'smtp_password' => env('MAIL_PASSWORD', ''),
-            'from_email' => env('MAIL_FROM_ADDRESS', ''),
-            'from_name' => env('MAIL_FROM_NAME', ''),
+            'smtp_allow_self_signed' => false,
+            'smtp_ehlo_domain' => '',
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'from_email' => '',
+            'from_name' => '',
             'reply_to_email' => '',
             'return_path' => '',
             'use_from_as_return_path' => false,
@@ -125,6 +127,12 @@ class EmailSettingsService
         if (isset($data['auto_tls'])) {
             $sanitized['auto_tls'] = filter_var($data['auto_tls'], FILTER_VALIDATE_BOOLEAN);
         }
+        if (isset($data['smtp_allow_self_signed'])) {
+            $sanitized['smtp_allow_self_signed'] = filter_var($data['smtp_allow_self_signed'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($data['smtp_ehlo_domain'])) {
+            $sanitized['smtp_ehlo_domain'] = trim($data['smtp_ehlo_domain']);
+        }
         if (isset($data['smtp_username'])) {
             $sanitized['smtp_username'] = trim($data['smtp_username']);
         }
@@ -161,6 +169,15 @@ class EmailSettingsService
      */
     protected function isEncrypted(string $value): bool
     {
-        return str_starts_with($value, 'eyJ') || (strlen($value) > 50 && !str_contains($value, '@'));
+        if (!str_starts_with($value, 'eyJ')) {
+            return false;
+        }
+
+        try {
+            Crypt::decryptString($value);
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

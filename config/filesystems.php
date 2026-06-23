@@ -56,6 +56,15 @@ return [
             'report' => false,
         ],
 
+        'logos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/logos'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/logos',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

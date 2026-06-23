@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from "react"
-import { Section } from "@/Components/ui/section"
+import { Section } from "@/Components/section"
 import { router, usePage } from "@inertiajs/react"
 import { toast } from "sonner"
-import { Eye, Send, FileText } from "lucide-react"
+import { Eye, Send, FileText, Bug, CheckCircle2, XCircle } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 import { Input } from "@/Components/ui/input"
 import { Label } from "@/Components/ui/label"
@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/Components/ui/card"
+import { cn } from "@/lib/utils"
 
 interface EmailTemplate {
   label: string
@@ -27,8 +28,23 @@ interface EmailTemplate {
   sample_data: Record<string, unknown>
 }
 
+interface MailDebug {
+  success: boolean
+  mailer: string
+  host: string
+  port: string
+  encryption: string
+  username: string
+  from_email: string
+  from_name: string
+  to: string
+  subject: string
+  template: string
+  error: string | null
+}
+
 export function TemplateSimulationSection({ asAccordion = false }: { asAccordion?: boolean }) {
-  const flash = usePage().props.flash as Record<string, string> | undefined
+  const flash = usePage().props.flash as Record<string, string | MailDebug> | undefined
   const emailTemplates = (usePage().props as unknown as Record<string, unknown>).emailTemplates as Record<string, EmailTemplate> | undefined
 
   const [selectedTemplate, setSelectedTemplate] = useState("")
@@ -36,6 +52,7 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
   const [previewLoading, setPreviewLoading] = useState(false)
   const [testEmail, setTestEmail] = useState("")
   const [sending, setSending] = useState(false)
+  const [debugLog, setDebugLog] = useState<MailDebug[]>([])
 
   useEffect(() => {
     if (emailTemplates && !selectedTemplate) {
@@ -44,7 +61,14 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     }
   }, [emailTemplates, selectedTemplate])
 
-  if (flash?.status) toast.success(flash.status)
+  useEffect(() => {
+    const debug = flash?.mail_debug as MailDebug | undefined
+    if (debug) {
+      setDebugLog((prev) => [debug, ...prev].slice(0, 20))
+    }
+  }, [flash?.mail_debug])
+
+  if (flash?.status && typeof flash.status === "string") toast.success(flash.status)
 
   const handlePreview = useCallback(() => {
     if (!selectedTemplate) return
@@ -78,17 +102,26 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
       {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => {
-          toast.success(`Test "${selectedTemplate}" email sent to ${testEmail}`)
-          setSending(false)
-        },
-        onError: () => {
-          toast.error("Failed to send test email")
-          setSending(false)
-        },
+        onSuccess: () => setSending(false),
+        onError: () => setSending(false),
       },
     )
   }, [selectedTemplate, testEmail, sending])
+
+  const handleSendSimpleTest = useCallback(() => {
+    if (sending || !testEmail) return
+    setSending(true)
+    router.post(
+      route("dashboard.admin.settings.email.test"),
+      { to: testEmail },
+      {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => setSending(false),
+        onError: () => setSending(false),
+      },
+    )
+  }, [testEmail, sending])
 
   const groupedTemplates: Record<string, Array<{ value: string; label: string }>> = {}
 
@@ -143,7 +176,7 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
           <CardHeader>
             <CardTitle className="text-sm font-medium">Send Test Email</CardTitle>
             <CardDescription className="text-xs">
-              Send a sample of this template to an email address.
+              Send a sample of this template to an email address to verify delivery.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -159,12 +192,19 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
                 />
               </div>
               <Button
-                variant="secondary"
                 onClick={handleSendTest}
                 disabled={sending || !testEmail || !selectedTemplate}
               >
                 <Send className="mr-2 h-4 w-4" />
-                {sending ? "Sending..." : "Send Test"}
+                {sending ? "Sending..." : "Send Template"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSendSimpleTest}
+                disabled={sending || !testEmail}
+              >
+                <Bug className="mr-2 h-4 w-4" />
+                Simple SMTP Test
               </Button>
             </div>
           </CardContent>
@@ -180,6 +220,69 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
                 className="rounded-md border bg-white p-4 dark:bg-gray-900 [&_img]:max-w-full"
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
               />
+            </CardContent>
+          </Card>
+        )}
+
+        {debugLog.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-medium">Delivery Log</CardTitle>
+                <CardDescription className="text-xs">
+                  Last {debugLog.length} send attempts — newest first
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDebugLog([])}
+              >
+                Clear
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {debugLog.map((entry, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "rounded-md border p-3 text-xs font-mono",
+                      entry.success
+                        ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30"
+                        : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {entry.success ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-3.5 w-3.5 text-red-600" />
+                      )}
+                      <span className={cn("font-semibold", entry.success ? "text-green-700" : "text-red-700")}>
+                        {entry.success ? "Delivered" : "Failed"}
+                      </span>
+                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">{entry.template}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="text-foreground">{entry.to}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-muted-foreground">
+                      <span>Subject:</span><span className="text-foreground">{entry.subject}</span>
+                      <span>Mailer:</span><span className="text-foreground">{entry.mailer}</span>
+                      <span>SMTP Host:</span><span className="text-foreground">{entry.host}:{entry.port}</span>
+                      <span>Encryption:</span><span className="text-foreground">{entry.encryption}</span>
+                      <span>Username:</span><span className="text-foreground">{entry.username}</span>
+                      <span>From:</span><span className="text-foreground">{entry.from_name} &lt;{entry.from_email}&gt;</span>
+                    </div>
+                    {entry.error && (
+                      <div className="mt-1.5 rounded bg-red-100 p-1.5 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                        Error: {entry.error}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}

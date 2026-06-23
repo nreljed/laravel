@@ -1,4 +1,4 @@
-import { Section, SectionField } from "@/Components/ui/section"
+import { Section, SectionField } from "@/Components/section"
 import { Input } from "@/Components/ui/input"
 import { Switch } from "@/Components/ui/switch"
 import {
@@ -38,6 +38,7 @@ interface EmailSettings {
   use_from_as_return_path: boolean
   force_from_email: boolean
   force_from_name: boolean
+  smtp_allow_self_signed: boolean
   has_encrypted_password?: boolean
 }
 
@@ -61,6 +62,7 @@ export function EmailSection({ asAccordion = false }: { asAccordion?: boolean })
     use_from_as_return_path: false,
     force_from_email: true,
     force_from_name: true,
+    smtp_allow_self_signed: false,
     has_encrypted_password: false,
   })
   const [testEmail, setTestEmail] = useState("")
@@ -204,6 +206,14 @@ export function EmailSection({ asAccordion = false }: { asAccordion?: boolean })
             <Tooltip>
               <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
               <TooltipContent>Automatically upgrade to TLS if the server supports it.</TooltipContent>
+            </Tooltip>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch checked={settings.smtp_allow_self_signed} onCheckedChange={(v) => handleChange("smtp_allow_self_signed", v)} />
+              <span className="text-sm">Allow Self-Signed</span>
+            </label>
+            <Tooltip>
+              <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+              <TooltipContent>Skip CA verification when the SMTP server uses a self-signed or internal certificate.</TooltipContent>
             </Tooltip>
           </div>
         </div>

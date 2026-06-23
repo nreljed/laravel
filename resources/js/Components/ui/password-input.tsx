@@ -120,7 +120,7 @@ interface PasswordInputProps {
 export function PasswordInput({
   variant = "login",
   layout = "vertical",
-  newPasswordLabel = "Password",
+  newPasswordLabel = "New Password",
   confirmLabel = "Confirm Password",
   minLength = 8,
   showStrengthBar = true,

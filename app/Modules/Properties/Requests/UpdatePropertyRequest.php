@@ -44,7 +44,7 @@ class UpdatePropertyRequest extends FormRequest
             'meta.rental_period' => 'nullable|string',
             'taxonomies' => 'nullable|array',
             'taxonomies.property_type' => 'nullable|exists:property_types,id',
-            'taxonomies.property_status' => 'nullable|exists:property_types,id',
+            'taxonomies.property_status' => 'nullable|exists:property_statuses,id',
             'taxonomies.property_city' => 'nullable|exists:property_categories,id',
             'taxonomies.property_features' => 'nullable|array',
             'taxonomies.property_features.*' => Rule::exists('property_features', 'id'),

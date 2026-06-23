@@ -1,7 +1,7 @@
 import * as React from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section } from "@/Components/ui/section";
+import { Section } from "@/Components/section";
 import { Repeater } from "@/Components/ui/repeater";
 import { Building2, Phone } from "lucide-react";
 

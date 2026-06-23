@@ -7,7 +7,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/Co
 import { CommandSearch } from '@/Components/command-search';
 import NotificationBell from '@/Components/NotificationBell';
 
-export default function AuthenticatedLayout({ header, children }: PropsWithChildren<{ header?: ReactNode }>) {
+export default function AuthenticatedLayout({ header, children, maxWidth }: PropsWithChildren<{ header?: ReactNode; maxWidth?: string }>) {
     return (
         <SidebarProvider>
             <Head title="Dashboard" />
@@ -31,7 +31,7 @@ export default function AuthenticatedLayout({ header, children }: PropsWithChild
                     </div>
                 </header>
                 <div className="flex-1 min-w-0 p-4">
-                    <div className="mx-auto w-full max-w-7xl">
+                    <div className={`mx-auto w-full ${maxWidth ?? 'max-w-7xl'}`}>
                         {children}
                     </div>
                 </div>

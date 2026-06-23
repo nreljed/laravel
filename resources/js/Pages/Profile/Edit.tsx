@@ -86,7 +86,7 @@ export default function ProfileEdit() {
       last_name: (u.last_name as string) || (auth.last_name as string),
       description: (u.description as string) || (u.bio as string) || (auth.description as string) || (auth.bio as string),
       url: (u.url as string) || (auth.url as string) || "",
-      avatar: (u.avatar as string) || (auth.avatar as string),
+      avatar: (auth.avatar as string) || (u.avatar as string),
     };
   }, [serverUser, authUser]);
 
@@ -214,7 +214,6 @@ export default function ProfileEdit() {
 
         setAvatarPreview(result.avatar!.url);
         router.reload({ only: ["auth"], replace: true });
-        toast.success("Avatar uploaded successfully!");
       } catch (err) {
         const msg = (err as Error).message || "Upload failed. Please try again.";
         setAvatarError(msg);
@@ -265,9 +264,9 @@ export default function ProfileEdit() {
 
   if (isLoading) {
     return (
-      <AuthenticatedLayout header="Profile">
+      <AuthenticatedLayout header="Profile" maxWidth="max-w-4xl">
         <Head title="Profile" />
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="space-y-6">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -290,10 +289,10 @@ export default function ProfileEdit() {
   }
 
   return (
-    <AuthenticatedLayout header="Profile">
+    <AuthenticatedLayout header="Profile" maxWidth="max-w-4xl">
       <Head title="Profile" />
 
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="space-y-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>

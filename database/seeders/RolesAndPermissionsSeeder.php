@@ -15,6 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Manage Settings', 'slug' => 'manage-settings', 'description' => 'Change application settings'],
             ['name' => 'Manage Roles', 'slug' => 'manage-roles', 'description' => 'Assign and manage roles'],
             ['name' => 'View System Health', 'slug' => 'view-system-health', 'description' => 'View system diagnostics'],
+            ['name' => 'Manage Options', 'slug' => 'manage_options', 'description' => 'Module-level settings and system operations (admin only)'],
             ['name' => 'View Dashboard', 'slug' => 'view-dashboard', 'description' => 'Access the main dashboard'],
             ['name' => 'View Profile', 'slug' => 'view-profile', 'description' => 'View own profile'],
             ['name' => 'Edit Profile', 'slug' => 'edit-profile', 'description' => 'Edit own name, email, password'],

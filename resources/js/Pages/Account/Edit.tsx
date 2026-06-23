@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { Head, router, usePage } from "@inertiajs/react";
 import { AlertTriangle, Send } from "lucide-react";
+import { toast } from "sonner";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
-import { EmailAccordionSection } from "@/Components/account/sections/EmailAccordionSection";
+import { EmailSection } from "@/Components/account/sections/EmailSection";
 import { PasswordSection } from "@/Components/account/sections/PasswordSection";
 import { NotificationPrefsSection } from "@/Components/account/sections/NotificationPrefsSection";
 import { DangerZoneSection } from "@/Components/account/sections/DangerZoneSection";
@@ -34,16 +36,23 @@ export default function AccountEdit() {
     status?: string;
     notificationTypes: Record<string, Record<string, NotificationTypeConfig>>;
     preferences: Record<string, { in_app?: boolean; email?: boolean }>;
+    flash?: { status?: string; error?: string };
   };
-  const { user: initialUser, mustVerifyEmail, status, notificationTypes, preferences } = props;
+  const { user: initialUser, mustVerifyEmail, status, notificationTypes, preferences, flash } = props;
 
   const emailUnverified = mustVerifyEmail && !initialUser.email_verified_at;
 
+  useEffect(() => {
+    if (flash?.status === "verification-link-sent") {
+      toast.success("Verification link sent! Please check your email.");
+    }
+  }, [flash?.status]);
+
   return (
-    <AuthenticatedLayout header="Account">
+    <AuthenticatedLayout header="Account" maxWidth="max-w-4xl">
       <Head title="Account" />
 
-      <div className="max-w-2xl space-y-6">
+      <div className="space-y-6">
         {emailUnverified && (
           <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
             <CardContent className="flex items-center gap-4 p-4">
@@ -59,6 +68,8 @@ export default function AccountEdit() {
                 variant="outline"
                 onClick={() => router.post(route("verification.send"), {}, {
                   preserveScroll: true,
+                  onSuccess: () => toast.success("Verification link sent! Please check your email."),
+                  onError: () => toast.error("Failed to send verification link. Please try again."),
                 })}
               >
                 <Send className="mr-1 h-4 w-4" />
@@ -68,7 +79,7 @@ export default function AccountEdit() {
           </Card>
         )}
 
-        <EmailAccordionSection user={initialUser as unknown as Record<string, unknown>} initialStatus={status} />
+        <EmailSection user={initialUser as unknown as Record<string, unknown>} initialStatus={status} />
 
         <PasswordSection asAccordion />
 

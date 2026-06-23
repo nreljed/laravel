@@ -2,11 +2,12 @@ import { useState, useMemo, useCallback } from "react";
 import { Head, router, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
 import {
-  Bell, BellOff, CheckCheck, Check, Trash2, X, Loader2,
+  Bell, BellOff, CheckCheck, Check, Trash2, X, Loader2, Search,
   Calendar, Home, ShoppingCart, User, FileText,
 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import {
   Accordion,
@@ -16,6 +17,7 @@ import {
 } from "@/Components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { NotificationItem } from "@/Components/notifications/NotificationItem";
+import { NotificationDetailDialog } from "@/Components/notifications/NotificationDetailDialog";
 
 interface Notification {
   id: string;
@@ -83,8 +85,10 @@ export default function NotificationsPage({
 }: NotificationsPageProps) {
   const [readFilter, setReadFilter] = useState(initialFilter);
   const [typeFilter, setTypeFilter] = useState(initialTypeFilter || "all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [detailNotification, setDetailNotification] = useState<Notification | null>(null);
 
   const allNotifications = notifsData.data;
   const { current_page, last_page } = notifsData;
@@ -99,8 +103,17 @@ export default function NotificationsPage({
     if (typeFilter !== "all") {
       result = result.filter((n) => inferTypeGroup(n.type) === typeFilter);
     }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((n) =>
+        (n.data.title || "").toLowerCase().includes(q) ||
+        (n.data.message || "").toLowerCase().includes(q) ||
+        (n.data.body || "").toLowerCase().includes(q) ||
+        n.type.toLowerCase().includes(q)
+      );
+    }
     return result;
-  }, [allNotifications, readFilter, typeFilter]);
+  }, [allNotifications, readFilter, typeFilter, searchQuery]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, typeof filtered> = {};
@@ -190,6 +203,11 @@ export default function NotificationsPage({
     });
   };
 
+  const showDetail = useCallback((id: string) => {
+    const n = allNotifications.find((n) => n.id === id);
+    if (n) setDetailNotification(n);
+  }, [allNotifications]);
+
   const loadMore = () => {
     if (current_page >= last_page) return;
     setLoading(true);
@@ -259,6 +277,16 @@ export default function NotificationsPage({
             })}
           </TabsList>
         </Tabs>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search notifications..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
 
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-accent/50 border">
@@ -331,6 +359,7 @@ export default function NotificationsPage({
                             notification={notification}
                             onMarkRead={markAsRead}
                             onDelete={deleteNotification}
+                            onShowDetail={showDetail}
                             selected={selectedIds.has(notification.id)}
                             onSelect={toggleSelect}
                           />
@@ -359,6 +388,14 @@ export default function NotificationsPage({
           </div>
         )}
       </div>
+
+      <NotificationDetailDialog
+        notification={detailNotification}
+        open={detailNotification !== null}
+        onOpenChange={(open) => { if (!open) setDetailNotification(null); }}
+        onMarkRead={markAsRead}
+        onDelete={deleteNotification}
+      />
     </AuthenticatedLayout>
   );
 }

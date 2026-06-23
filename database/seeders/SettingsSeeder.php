@@ -19,8 +19,8 @@ class SettingsSeeder extends Seeder
 
             // Registration
             ['key' => 'enable_registration', 'value' => '1', 'group' => 'registration'],
-            ['key' => 'default_role', 'value' => 'user', 'group' => 'registration'],
-            ['key' => 'require_email_verification', 'value' => '1', 'group' => 'registration'],
+            ['key' => 'default_role', 'value' => 'crm_user', 'group' => 'registration'],
+            ['key' => 'require_email_verification', 'value' => '0', 'group' => 'registration'],
 
             // Notifications
             ['key' => 'default_notification_channel', 'value' => 'database', 'group' => 'notifications'],

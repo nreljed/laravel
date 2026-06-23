@@ -1,6 +1,6 @@
 import * as React from "react"
 import { usePage, router } from "@inertiajs/react"
-import { Section, SectionField } from "@/Components/ui/section"
+import { Section, SectionField } from "@/Components/section"
 import {
   Select,
   SelectContent,

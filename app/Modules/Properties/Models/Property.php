@@ -85,6 +85,11 @@ class Property extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function statuses(): BelongsToMany
+    {
+        return $this->belongsToMany(PropertyStatus::class, 'property_property_status');
+    }
+
     public function types(): BelongsToMany
     {
         return $this->belongsToMany(PropertyType::class, 'property_property_type');

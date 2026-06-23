@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section, SectionField } from "@/Components/ui/section";
+import { Section, SectionField } from "@/Components/section";
 import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";

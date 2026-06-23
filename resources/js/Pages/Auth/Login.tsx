@@ -7,7 +7,7 @@ import { Label } from "@/Components/ui/label";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Field, FieldError } from "@/Components/ui/field";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { CheckCircle } from "lucide-react";
 import { Spinner } from "@/Components/ui/spinner";
 import { loginSchema } from "@/lib/schemas";

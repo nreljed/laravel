@@ -22,13 +22,13 @@ interface UseNotificationsResult {
 export function useNotifications(): UseNotificationsResult {
   const { props } = usePage();
   const latestNotifications = (props.latestNotifications as Notification[]) ?? [];
-  const notificationUnreadCount = (props.notification_unread_count as number) ?? 0;
+  const notificationUnreadCount = (props.notificationUnreadCount as number) ?? 0;
 
   const [unreadCount, setUnreadCount] = useState(notificationUnreadCount);
   const [notifications, setNotifications] = useState<Notification[]>(latestNotifications);
   const [loading, setLoading] = useState(false);
   const lastCountRef = useRef(notificationUnreadCount);
-  const soundEnabledRef = useRef(true);
+  const soundEnabledRef = useRef(localStorage.getItem('notification_sound_enabled') !== 'false');
 
   useEffect(() => {
     setUnreadCount(notificationUnreadCount);
@@ -42,7 +42,7 @@ export function useNotifications(): UseNotificationsResult {
   const fetch = useCallback(() => {
     setLoading(true);
     router.reload({
-      only: ["latestNotifications", "notification_unread_count"],
+      only: ["latestNotifications", "notificationUnreadCount"],
       onFinish: () => setLoading(false),
     });
   }, []);
@@ -89,8 +89,8 @@ export function useNotifications(): UseNotificationsResult {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      router.reload({ only: ["latestNotifications", "notification_unread_count"] });
-    }, 20000);
+      router.reload({ only: ["latestNotifications", "notificationUnreadCount"] });
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 

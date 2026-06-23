@@ -1,0 +1,82 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Role;
+use App\Models\User;
+use App\Services\SettingsService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SettingsRegistrationGateTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    }
+
+    public function test_registration_works_when_enabled(): void
+    {
+        $response = $this->post('/register', [
+            'username' => 'newuser',
+            'email' => 'new@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('users', ['email' => 'new@example.com']);
+    }
+
+    public function test_registration_is_blocked_when_disabled(): void
+    {
+        if (!$this->canSetSetting()) {
+            $this->markTestSkipped('Settings table not available.');
+        }
+
+        SettingsService::set('enable_registration', '0');
+        SettingsService::clearCache();
+
+        $response = $this->post('/register', [
+            'username' => 'blockeduser',
+            'email' => 'blocked@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseMissing('users', ['email' => 'blocked@example.com']);
+    }
+
+    public function test_registration_page_redirects_when_disabled(): void
+    {
+        if (!$this->canSetSetting()) {
+            $this->markTestSkipped('Settings table not available.');
+        }
+
+        SettingsService::set('enable_registration', '0');
+        SettingsService::clearCache();
+
+        $response = $this->get('/register');
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_registration_page_loads_when_enabled(): void
+    {
+        $response = $this->get('/register');
+        $response->assertStatus(200);
+    }
+
+    protected function canSetSetting(): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\Schema::hasTable('settings');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+}

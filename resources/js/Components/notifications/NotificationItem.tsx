@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   KeyRound,
   Mail,
+  Maximize2,
 } from "lucide-react";
 
 interface LegacyNotification {
@@ -64,7 +65,7 @@ function getTypeIcon(type: string) {
   return match ? match[1] : null;
 }
 
-type Severity = "info" | "warning" | "urgent" | "critical";
+export type Severity = "info" | "warning" | "urgent" | "critical";
 
 const severityConfig: Record<Severity, { dot: string; icon: React.ReactNode }> = {
   info: { dot: "bg-primary", icon: null },
@@ -90,6 +91,7 @@ interface NotificationItemProps {
   notification: LegacyNotification;
   onMarkRead: (id: string) => void;
   onDelete?: (id: string) => void;
+  onShowDetail?: (id: string) => void;
   selected?: boolean;
   onSelect?: (id: string) => void;
 }
@@ -98,6 +100,7 @@ export const NotificationItem = React.memo(function NotificationItem({
   notification: n,
   onMarkRead,
   onDelete,
+  onShowDetail,
   selected,
   onSelect,
 }: NotificationItemProps) {
@@ -192,7 +195,21 @@ export const NotificationItem = React.memo(function NotificationItem({
           {new Date(createdAt).toLocaleString()}
         </p>
       </div>
-      <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity max-sm:hidden">
+      <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity max-sm:opacity-100 max-sm:flex">
+        {onShowDetail && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              onShowDetail(id);
+            }}
+            title="View details"
+          >
+            <Maximize2 className="size-3" />
+          </Button>
+        )}
         {isUnread && (
           <Button
             variant="ghost"

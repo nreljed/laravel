@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section } from "@/Components/ui/section";
+import { Section } from "@/Components/section";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
 import { Puzzle } from "lucide-react";

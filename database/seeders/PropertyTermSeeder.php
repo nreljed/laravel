@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Modules\Properties\Models\PropertyCategory;
 use App\Modules\Properties\Models\PropertyFeature;
+use App\Modules\Properties\Models\PropertyStatus;
 use App\Modules\Properties\Models\PropertyType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -104,6 +105,21 @@ class PropertyTermSeeder extends Seeder
                     ]
                 );
             }
+        }
+
+        $statuses = [
+            ['name' => 'For Sale', 'slug' => 'for-sale', 'description' => 'Property is listed for sale', 'sort_order' => 1],
+            ['name' => 'For Rent', 'slug' => 'for-rent', 'description' => 'Property is listed for rent', 'sort_order' => 2],
+            ['name' => 'Sold', 'slug' => 'sold', 'description' => 'Property has been sold', 'sort_order' => 3],
+            ['name' => 'Rented', 'slug' => 'rented', 'description' => 'Property has been rented', 'sort_order' => 4],
+            ['name' => 'Under Contract', 'slug' => 'under-contract', 'description' => 'Property is under contract', 'sort_order' => 5],
+        ];
+
+        foreach ($statuses as $status) {
+            PropertyStatus::firstOrCreate(
+                ['slug' => $status['slug']],
+                array_merge($status, ['is_active' => true])
+            );
         }
     }
 }

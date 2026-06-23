@@ -2,7 +2,7 @@ import { Link, useForm, usePage } from "@inertiajs/react";
 import { FormEventHandler } from "react";
 import { Button } from "@/Components/ui/button";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { CheckCircle } from "lucide-react";
 import { Spinner } from "@/Components/ui/spinner";
 import {

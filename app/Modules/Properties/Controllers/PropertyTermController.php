@@ -5,6 +5,7 @@ namespace App\Modules\Properties\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Properties\Models\PropertyCategory;
 use App\Modules\Properties\Models\PropertyFeature;
+use App\Modules\Properties\Models\PropertyStatus;
 use App\Modules\Properties\Models\PropertyType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -150,5 +151,50 @@ class PropertyTermController extends Controller
 
         return redirect()->route('dashboard.properties.terms.features.index')
             ->with('status', 'Feature deleted.');
+    }
+
+    public function indexStatuses(): Response
+    {
+        return Inertia::render('Properties/Statuses', [
+            'statuses' => PropertyStatus::orderBy('sort_order')->get(),
+        ]);
+    }
+
+    public function storeStatus(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        PropertyStatus::create($validated);
+
+        return redirect()->route('dashboard.properties.terms.statuses.index')
+            ->with('status', 'Property status created.');
+    }
+
+    public function updateStatus(Request $request, PropertyStatus $status): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $status->update($validated);
+
+        return redirect()->route('dashboard.properties.terms.statuses.index')
+            ->with('status', 'Property status updated.');
+    }
+
+    public function destroyStatus(PropertyStatus $status): RedirectResponse
+    {
+        $status->delete();
+
+        return redirect()->route('dashboard.properties.terms.statuses.index')
+            ->with('status', 'Property status deleted.');
     }
 }

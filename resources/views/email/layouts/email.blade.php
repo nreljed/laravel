@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light">
-  <meta name="supported-color-schemes" content="light">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>{{ $subject ?? $siteName ?? '' }}</title>
   <style>
     body { margin:0; padding:0; background-color:#f4f4f5; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; line-height:1.6; color:#18181b; }
@@ -19,7 +19,7 @@
     h1 { font-size:22px; font-weight:700; margin:0 0 16px; color:#18181b; }
     h2 { font-size:18px; font-weight:600; margin:0 0 12px; color:#18181b; }
     p { margin:0 0 16px; font-size:15px; color:#3f3f46; }
-    .button { display:inline-block; padding:12px 28px; font-size:15px; font-weight:600; color:#ffffff; background-color:#18181b; border-radius:6px; text-decoration:none; }
+    .button { display:inline-block; padding:12px 28px; font-size:15px; font-weight:600; color:#ffffff !important; background-color:#18181b; border-radius:6px; text-decoration:none; }
     .details-table { width:100%; margin:16px 0; }
     .details-table td { padding:8px 12px; font-size:14px; border-bottom:1px solid #f4f4f5; }
     .details-table td:first-child { color:#71717a; width:120px; }
@@ -27,6 +27,20 @@
     .text-center { text-align:center; }
     .mt-4 { margin-top:24px; }
     .mb-4 { margin-bottom:24px; }
+
+    @media (prefers-color-scheme: dark) {
+      body { background-color:#18181b; }
+      .email-wrapper { background-color:#18181b; }
+      .email-container { background-color:#27272a; box-shadow:none; }
+      .email-header { border-bottom-color:#3f3f46; }
+      .email-footer { border-top-color:#3f3f46; color:#a1a1aa; }
+      .email-footer a { color:#a1a1aa; }
+      h1, h2 { color:#fafafa; }
+      p { color:#d4d4d8; }
+      .details-table td { border-bottom-color:#3f3f46; }
+      .details-table td:first-child { color:#a1a1aa; }
+      .details-table td:last-child { color:#fafafa; }
+    }
   </style>
 </head>
 <body>
@@ -37,7 +51,7 @@
           @if($logoUrl)
           <tr>
             <td class="email-header">
-              <img src="{{ $logoUrl }}" alt="{{ $siteName }}">
+              <img src="{{ $logoUrl }}" alt="{{ $siteName }}" style="max-height:48px; width:auto;">
             </td>
           </tr>
           @else

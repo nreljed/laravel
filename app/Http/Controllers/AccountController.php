@@ -9,6 +9,7 @@ use App\Services\AuditService;
 use App\Services\NotificationTypeRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
+use App\Services\SettingsService;
 use Inertia\Inertia;
 
 class AccountController extends Controller
@@ -43,7 +44,8 @@ class AccountController extends Controller
                 'avatar' => $user->avatar_url,
                 'user_login' => $user->email,
             ],
-            'mustVerifyEmail' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail
+                && SettingsService::get('require_email_verification', '0') === '1',
             'notificationTypes' => $notificationTypes,
             'preferences' => $preferences,
         ]);
@@ -92,18 +94,28 @@ class AccountController extends Controller
     {
         $request->validate([
             'confirmation' => ['required', 'string', 'in:delete my account'],
+            'current_password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
 
-        $this->accountService->deleteAccount($user);
-
         auth()->logout();
+
+        $this->accountService->deleteAccount($user);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function verifyDeletePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+        ]);
+
+        return response()->json(['verified' => true]);
     }
 
     public function updateNotificationPreferences(Request $request)

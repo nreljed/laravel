@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section, SectionField } from "@/Components/ui/section";
-import { Input } from "@/Components/ui/input";
+import { Section, SectionField } from "@/Components/section";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Bell } from "lucide-react";
 
 interface NotificationSectionProps {
@@ -44,11 +44,19 @@ export function NotificationSection({ settings, asAccordion }: NotificationSecti
       asAccordion={asAccordion}
     >
       <SectionField label="Default Notification Channel" htmlFor="default_notification_channel">
-        <Input
-          id="default_notification_channel"
+        <Select
           value={data.default_notification_channel}
-          onChange={(e) => setData((p) => ({ ...p, default_notification_channel: e.target.value }))}
-        />
+          onValueChange={(v) => setData((p) => ({ ...p, default_notification_channel: v }))}
+        >
+          <SelectTrigger id="default_notification_channel">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="in_app">In-app only</SelectItem>
+            <SelectItem value="email">Email only</SelectItem>
+            <SelectItem value="in_app,email">Both (in-app + email)</SelectItem>
+          </SelectContent>
+        </Select>
       </SectionField>
       <SectionField label="Enable Email Notifications" htmlFor="email_notifications_enabled">
         <div className="flex items-center gap-2">

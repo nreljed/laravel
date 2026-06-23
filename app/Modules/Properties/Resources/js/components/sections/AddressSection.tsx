@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import { Section, SectionField } from "@/Components/ui/section"
+import { Section, SectionField } from "@/Components/section"
 import { Input } from "@/Components/ui/input"
 import { Combobox, ComboboxTrigger, ComboboxValue, ComboboxContent, ComboboxInput, ComboboxEmpty, ComboboxGroup, ComboboxItem, ComboboxLabel, ComboboxList, ComboboxSeparator } from "@/Components/ui/combobox"
 import { Switch } from "@/Components/ui/switch"

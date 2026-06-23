@@ -58,7 +58,7 @@ class UserController extends Controller
             'username' => $request->username,
             'name' => $request->name,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'password' => $request->password,
         ]);
 
         if ($request->role_id) {
@@ -95,7 +95,7 @@ class UserController extends Controller
         ]);
 
         if ($request->filled('password')) {
-            $user->update(['password' => bcrypt($request->password)]);
+            $user->update(['password' => $request->password]);
         }
 
         if ($request->has('role_id')) {
@@ -106,8 +106,13 @@ class UserController extends Controller
             ->with('flash', ['success' => 'User updated successfully.']);
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse
     {
+        if ($user->id === $request->user()->id) {
+            return redirect()->route('dashboard.admin.users.index')
+                ->with('flash', ['error' => 'You cannot delete your own account.']);
+        }
+
         $user->delete();
 
         return redirect()->route('dashboard.admin.users.index')

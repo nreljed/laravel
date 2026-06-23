@@ -3,8 +3,10 @@ import { FormEventHandler } from "react";
 import { Button } from "@/Components/ui/button";
 import { PasswordInput } from "@/Components/ui/password-input";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { Spinner } from "@/Components/ui/spinner";
+import { confirmPasswordSchema } from "@/lib/schemas";
+import { zodErrorsToMap } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -15,7 +17,7 @@ import {
 import GuestLayout from "@/Layouts/GuestLayout";
 
 export default function ConfirmPassword({ errors: pageErrors }: { errors?: Record<string, string> }) {
-  const { data, setData, post, processing, errors: formErrors, reset } = useForm({
+  const { data, setData, post, processing, errors: formErrors, reset, setError } = useForm({
     password: "",
   });
 
@@ -23,6 +25,16 @@ export default function ConfirmPassword({ errors: pageErrors }: { errors?: Recor
 
   const submit: FormEventHandler = (e) => {
     e.preventDefault();
+
+    const result = confirmPasswordSchema.safeParse(data);
+    if (!result.success) {
+      const mapped = zodErrorsToMap(result.error?.issues);
+      for (const [key, msg] of Object.entries(mapped)) {
+        setError(key as keyof typeof data, msg);
+      }
+      return;
+    }
+
     post(route("password.confirm"), {
       onFinish: () => reset("password"),
     });

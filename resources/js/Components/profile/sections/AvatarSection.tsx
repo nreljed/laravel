@@ -1,4 +1,4 @@
-import { Section } from "@/Components/ui/section";
+import { Section } from "@/Components/section";
 import { AvatarUploader } from "@/Components/ui/avatar-uploader";
 import { Camera } from "lucide-react";
 

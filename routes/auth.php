@@ -16,9 +16,10 @@ Route::middleware('guest')->group(function () {
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store'])
-        ->middleware('throttle:3,60');
+        ->middleware('throttle:5,60');
 
     Route::get('register/check-availability', [RegisteredUserController::class, 'checkAvailability'])
+        ->middleware('throttle:10,1')
         ->name('register.availability');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
@@ -53,6 +54,10 @@ Route::middleware('auth')->group(function () {
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
+
+    Route::get('email/verified', function () {
+        return \Inertia\Inertia::render('Auth/EmailVerified');
+    })->name('verification.verified');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');

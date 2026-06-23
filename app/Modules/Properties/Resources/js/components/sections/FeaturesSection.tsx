@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { Section } from "@/Components/ui/section"
+import { Section } from "@/Components/section"
 import { Checkbox } from "@/Components/ui/checkbox"
 import { Label } from "@/Components/ui/label"
 import { CheckSquare } from "lucide-react"

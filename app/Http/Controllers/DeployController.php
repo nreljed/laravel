@@ -13,7 +13,7 @@ class DeployController extends Controller
         $token = $request->input('token', $request->query('token'));
         $expected = config('app.deploy_token');
 
-        if (!$expected || $token !== $expected) {
+        if (!$expected || !hash_equals((string) $expected, (string) $token)) {
             abort(403, 'Invalid or missing deploy token.');
         }
     }

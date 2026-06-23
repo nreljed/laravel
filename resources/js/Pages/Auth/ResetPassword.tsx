@@ -3,7 +3,7 @@ import { useForm, router } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { PasswordInput } from "@/Components/ui/password-input";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { Spinner } from "@/Components/ui/spinner";
 import { resetPasswordSchema } from "@/lib/schemas";
 import { zodErrorsToMap } from "@/lib/utils";
@@ -108,15 +108,6 @@ export default function ResetPassword({ token, email, status, errors: pageErrors
                 <AlertDescription className="text-green-700 dark:text-green-300">
                   {status}
                 </AlertDescription>
-              </Alert>
-            )}
-
-            {(errors.password || errors.password_confirmation) && (
-              <Alert variant="destructive">
-                <ErrorMessage
-                  error={errors.password || errors.password_confirmation}
-                  variant="alert"
-                />
               </Alert>
             )}
 

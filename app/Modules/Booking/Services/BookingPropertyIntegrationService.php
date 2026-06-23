@@ -11,7 +11,7 @@ class BookingPropertyIntegrationService
 {
     public static function isModuleActive(): bool
     {
-        return app(ModuleRegistry::class)->isEnabled('booking');
+        return app(ModuleRegistry::class)->isEnabled('bookings');
     }
 
     private static function getGlobalOptions(): array

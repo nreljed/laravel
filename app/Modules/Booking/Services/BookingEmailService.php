@@ -80,6 +80,30 @@ class BookingEmailService
         Booking::where('id', $bookingId)->update(['email_confirmation_sent_at' => now()]);
     }
 
+    public static function sendBookingReceived(int $bookingId, ?string $magicLink = null): void
+    {
+        $data = self::getBookingData($bookingId, $magicLink);
+        if (!$data['guestEmail']) {
+            Log::debug('[BookingEmailService] Booking received skipped - no guest email', ['booking_id' => $bookingId]);
+            return;
+        }
+
+        $mailService = self::getMailService();
+        $sent = $mailService->send(
+            $data['guestEmail'],
+            sprintf('[%s] Booking Received #%d — %s', $data['siteName'], $bookingId, $data['propertyTitle']),
+            'booking-guest-received',
+            $data
+        );
+
+        Log::debug('[BookingEmailService] Booking received email processed', [
+            'booking_id' => $bookingId,
+            'to' => $data['guestEmail'],
+            'success' => $sent,
+            'template' => 'booking-guest-received',
+        ]);
+    }
+
     public static function sendPreArrival(int $bookingId): void
     {
         $settings = SettingsService::getGroup('booking');

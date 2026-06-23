@@ -5,23 +5,25 @@ namespace App\Modules\Properties\Services;
 use App\Modules\Properties\Models\Property;
 use App\Modules\Properties\Models\PropertyCategory;
 use App\Modules\Properties\Models\PropertyFeature;
+use App\Modules\Properties\Models\PropertyStatus;
 use App\Modules\Properties\Models\PropertyType;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PropertyService
 {
-    public function create(array $data, array $typeIds = [], array $categoryIds = [], array $featureIds = []): Property
+    public function create(array $data, array $typeIds = [], array $categoryIds = [], array $featureIds = [], array $statusIds = []): Property
     {
         $property = Property::create($data);
 
         if ($typeIds) $property->types()->sync($typeIds);
         if ($categoryIds) $property->categories()->sync($categoryIds);
         if ($featureIds) $property->features()->sync($featureIds);
+        if ($statusIds) $property->statuses()->sync($statusIds);
 
-        return $property->load(['types', 'categories', 'features']);
+        return $property->load(['types', 'categories', 'features', 'statuses']);
     }
 
-    public function update(Property $property, array $data, array $typeIds = [], array $categoryIds = [], array $featureIds = []): Property
+    public function update(Property $property, array $data, array $typeIds = [], array $categoryIds = [], array $featureIds = [], array $statusIds = []): Property
     {
         $property->update($data);
 
@@ -34,8 +36,11 @@ class PropertyService
         if (array_key_exists('features', $data) || !empty($featureIds)) {
             $property->features()->sync($featureIds);
         }
+        if (!empty($statusIds)) {
+            $property->statuses()->sync($statusIds);
+        }
 
-        return $property->load(['types', 'categories', 'features', 'images', 'featuredImage']);
+        return $property->load(['types', 'categories', 'features', 'statuses', 'images', 'featuredImage']);
     }
 
     public function deleteWithImages(Property $property): void
@@ -44,12 +49,13 @@ class PropertyService
         $property->types()->detach();
         $property->categories()->detach();
         $property->features()->detach();
+        $property->statuses()->detach();
         $property->delete();
     }
 
     public function search(array $filters = []): LengthAwarePaginator
     {
-        $query = Property::with(['types', 'categories', 'features', 'featuredImage', 'user']);
+        $query = Property::with(['types', 'categories', 'features', 'statuses', 'featuredImage', 'user']);
 
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
@@ -73,6 +79,10 @@ class PropertyService
 
         if (!empty($filters['feature_ids'])) {
             $query->whereHas('features', fn($q) => $q->whereIn('property_features.id', (array) $filters['feature_ids']));
+        }
+
+        if (!empty($filters['status_ids'])) {
+            $query->whereHas('statuses', fn($q) => $q->whereIn('property_statuses.id', (array) $filters['status_ids']));
         }
 
         if (!empty($filters['featured'])) {
@@ -102,6 +112,7 @@ class PropertyService
             'types' => PropertyType::where('is_active', true)->orderBy('sort_order')->get(),
             'categories' => PropertyCategory::where('is_active', true)->with('children')->orderBy('sort_order')->get(),
             'features' => PropertyFeature::where('is_active', true)->orderBy('group')->orderBy('sort_order')->get(),
+            'statuses' => PropertyStatus::where('is_active', true)->orderBy('sort_order')->get(),
         ];
     }
 }

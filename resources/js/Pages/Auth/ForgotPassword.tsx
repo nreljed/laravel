@@ -5,7 +5,7 @@ import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Field, FieldError } from "@/Components/ui/field";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { Spinner } from "@/Components/ui/spinner";
 import { forgotPasswordSchema } from "@/lib/schemas";
 import { zodErrorsToMap } from "@/lib/utils";
@@ -107,12 +107,6 @@ export default function ForgotPassword({ status, errors: pageErrors }: { status?
                 <AlertDescription className="text-green-700 dark:text-green-300">
                   {status}
                 </AlertDescription>
-              </Alert>
-            )}
-
-            {errors.email && (
-              <Alert variant="destructive">
-                <ErrorMessage error={errors.email} variant="alert" />
               </Alert>
             )}
 

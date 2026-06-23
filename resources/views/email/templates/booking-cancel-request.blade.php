@@ -9,6 +9,6 @@
 </table>
 <p>To confirm your cancellation, click the button below:</p>
 <p class="text-center mt-4">
-  <a href="{{ $cancelUrl ?? '#' }}" class="button button-danger">Confirm Cancellation</a>
+  <a href="{{ $cancelUrl ?? '#' }}" class="button">Confirm Cancellation</a>
 </p>
 <p>This link expires in {{ $expiryMinutes ?? 30 }} minutes. If you did not request cancellation, you can ignore this email.</p>

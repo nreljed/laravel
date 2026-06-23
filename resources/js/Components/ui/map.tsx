@@ -69,7 +69,7 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet"
-import { useDarkMode } from "@/Components/ui/use-dark-mode"
+import { useDarkMode } from "@/Components/use-dark-mode"
 
 function createLazyComponent(factory) {
   const LazyComponent = lazy(factory)

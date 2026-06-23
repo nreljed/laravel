@@ -6,7 +6,7 @@ import { PasswordInput } from "@/Components/ui/password-input";
 import { Label } from "@/Components/ui/label";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Field, FieldDescription, FieldError } from "@/Components/ui/field";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { Spinner } from "@/Components/ui/spinner";
 import { registrationSchema } from "@/lib/schemas";
 import { zodErrorsToMap } from "@/lib/utils";

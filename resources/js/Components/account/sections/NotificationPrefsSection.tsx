@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { LucideIcon } from "lucide-react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
 import { Button } from "@/Components/ui/button";
-import { Switch } from "@/Components/ui/switch";
+import { Checkbox } from "@/Components/ui/checkbox";
 import { Separator } from "@/Components/ui/separator";
 import { Badge } from "@/Components/ui/badge";
-import { SettingsAccordionItem } from "@/Components/ui/settings-accordion";
-import { Bell, BellOff, Mail, Smartphone } from "lucide-react";
+import { SettingsAccordionItem } from "@/Components/settings-accordion";
+import { Bell, BellOff, Mail, Smartphone, Volume2, VolumeX } from "lucide-react";
 
 interface NotificationTypeConfig {
   label: string;
@@ -23,6 +24,11 @@ interface NotificationPrefsSectionProps {
   notificationTypes: Record<string, Record<string, NotificationTypeConfig>>;
   preferences: Record<string, { in_app?: boolean; email?: boolean }>;
 }
+
+const CHANNEL_ICONS: Record<string, LucideIcon> = {
+  in_app: Smartphone,
+  email: Mail,
+};
 
 export function NotificationPrefsSection({
   notificationTypes,
@@ -82,7 +88,7 @@ export function NotificationPrefsSection({
         flat.push({ type, channel, enabled: enabled ?? false });
       }
     }
-    router.post(route("account.notification-preferences"), { preferences: flat }, {
+    router.post(route("dashboard.account.notification-preferences"), { preferences: flat }, {
       preserveScroll: true,
       onSuccess: () => {
         toast.success("Notification preferences updated.");
@@ -94,6 +100,12 @@ export function NotificationPrefsSection({
       },
     });
   };
+
+  const [notificationSound, setNotificationSound] = useState(() => localStorage.getItem('notification_sound_enabled') !== 'false');
+
+  useEffect(() => {
+    localStorage.setItem('notification_sound_enabled', String(notificationSound));
+  }, [notificationSound]);
 
   return (
     <SettingsAccordionItem
@@ -119,45 +131,73 @@ export function NotificationPrefsSection({
 
         <Separator />
 
+        <label className="flex items-center justify-between rounded-lg border p-3 cursor-pointer">
+          <div className="flex items-center gap-3">
+            {notificationSound ? (
+              <Volume2 className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <VolumeX className="h-4 w-4 text-muted-foreground" />
+            )}
+            <div>
+              <p className="text-sm font-medium">Notification Sound</p>
+              <p className="text-xs text-muted-foreground">Play a sound when new notifications arrive</p>
+            </div>
+          </div>
+          <Checkbox
+            checked={notificationSound}
+            onCheckedChange={(checked) => setNotificationSound(!!checked)}
+          />
+        </label>
+
+        <Separator />
+
         {Object.entries(notificationTypes).map(([group, types]) => (
-          <div key={group}>
-            <h4 className="mb-3 text-sm font-medium text-muted-foreground">{group}</h4>
-            <div className="space-y-3">
+          <div key={group} className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">{group}</h4>
+            <div className="space-y-2">
               {Object.entries(types).map(([typeKey, typeConfig]) => {
                 const current = prefs[typeKey] || { in_app: true, email: false };
                 return (
-                  <div key={typeKey} className="rounded-lg border p-3">
-                    <div className="mb-2">
-                      <p className="text-sm font-medium">{typeConfig.label}</p>
+                  <div
+                    key={typeKey}
+                    className="flex items-start justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex-1 min-w-0 mr-4 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium leading-none text-foreground">
+                          {typeConfig.label}
+                        </p>
+                        {!current.in_app && !current.email && (
+                          <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                            <BellOff className="mr-0.5 h-3 w-3" />
+                            Muted
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">{typeConfig.description}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {typeConfig.default_channels?.includes("in_app") && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Switch
-                            checked={current.in_app}
-                            onCheckedChange={(checked) => toggleChannel(typeKey, "in_app", checked)}
-                          />
-                          <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs">In-app</span>
-                        </label>
-                      )}
-                      {(typeConfig.default_channels?.includes("email") || typeConfig.email_template) && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Switch
-                            checked={current.email}
-                            onCheckedChange={(checked) => toggleChannel(typeKey, "email", checked)}
-                          />
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs">Email</span>
-                        </label>
-                      )}
-                      {!current.in_app && !current.email && (
-                        <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                          <BellOff className="mr-0.5 h-3 w-3" />
-                          Muted
-                        </Badge>
-                      )}
+                    <div className="flex items-center gap-4 shrink-0">
+                      {(["in_app", "email"] as const).map((channel) => {
+                        const Icon = CHANNEL_ICONS[channel];
+                        return (
+                          <div key={channel} className="flex items-center gap-1.5">
+                            <Checkbox
+                              id={`${typeKey}-${channel}`}
+                              checked={current[channel]}
+                              onCheckedChange={(checked) => {
+                                toggleChannel(typeKey, channel, checked === true);
+                              }}
+                            />
+                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                            <label
+                              htmlFor={`${typeKey}-${channel}`}
+                              className="text-xs cursor-pointer text-muted-foreground"
+                            >
+                              {channel === "in_app" ? "In-App" : "Email"}
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );

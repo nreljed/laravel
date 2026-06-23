@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Section, SectionField } from "@/Components/ui/section"
+import { Section, SectionField } from "@/Components/section"
 import { Input } from "@/Components/ui/input"
 import { Switch } from "@/Components/ui/switch"
 import { Separator } from "@/Components/ui/separator"

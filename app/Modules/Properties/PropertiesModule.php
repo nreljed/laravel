@@ -66,6 +66,7 @@ class PropertiesModule implements ModuleInterface
                 ['title' => 'Types', 'url' => route('dashboard.properties.terms.types.index', [], false)],
                 ['title' => 'Categories', 'url' => route('dashboard.properties.terms.categories.index', [], false)],
                 ['title' => 'Features', 'url' => route('dashboard.properties.terms.features.index', [], false)],
+                ['title' => 'Statuses', 'url' => route('dashboard.properties.terms.statuses.index', [], false)],
             ],
         ];
     }
@@ -113,6 +114,7 @@ class PropertiesModule implements ModuleInterface
             ['path' => '/dashboard/properties/terms/types', 'component' => 'Properties/Types', 'name' => 'dashboard.properties.terms.types.index'],
             ['path' => '/dashboard/properties/terms/categories', 'component' => 'Properties/Categories', 'name' => 'dashboard.properties.terms.categories.index'],
             ['path' => '/dashboard/properties/terms/features', 'component' => 'Properties/Features', 'name' => 'dashboard.properties.terms.features.index'],
+            ['path' => '/dashboard/properties/terms/statuses', 'component' => 'Properties/Statuses', 'name' => 'dashboard.properties.terms.statuses.index'],
         ];
     }
 

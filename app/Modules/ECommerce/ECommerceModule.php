@@ -176,17 +176,17 @@ class ECommerceModule implements ModuleInterface
         return [
             'order-confirmation' => [
                 'label' => 'Order Confirmation',
-                'sample_data' => ['customerName' => 'John Doe', 'orderNumber' => 'ORD-ABC123', 'total' => '$99.00', 'items' => '3'],
+                'sample_data' => ['customerName' => 'John Doe', 'orderNumber' => 'ORD-ABC123', 'orderTotal' => '$99.00', 'orderStatus' => 'Processing', 'orderUrl' => 'https://example.com/orders/ORD-ABC123'],
                 'group' => 'E-Commerce',
             ],
             'order-shipped' => [
                 'label' => 'Order Shipped',
-                'sample_data' => ['customerName' => 'John Doe', 'orderNumber' => 'ORD-ABC123', 'trackingNumber' => 'TRACK123'],
+                'sample_data' => ['customerName' => 'John Doe', 'orderNumber' => 'ORD-ABC123', 'trackingNumber' => 'TRACK123', 'orderUrl' => 'https://example.com/orders/ORD-ABC123'],
                 'group' => 'E-Commerce',
             ],
             'low-stock-alert' => [
                 'label' => 'Low Stock Alert',
-                'sample_data' => ['productName' => 'T-Shirt', 'stockQuantity' => '3', 'threshold' => '5'],
+                'sample_data' => ['productName' => 'T-Shirt', 'productSku' => 'TSH-001', 'stockQuantity' => '3', 'productUrl' => 'https://example.com/products/tshirt-001'],
                 'group' => 'E-Commerce',
             ],
         ];

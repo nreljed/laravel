@@ -35,7 +35,20 @@ class DashboardController extends Controller
         }
 
         if ($typeFilter !== 'all') {
-            $query->where('type', 'like', "%{$typeFilter}%");
+            $query->where(function ($q) use ($typeFilter) {
+                $typePatterns = [
+                    'booking' => ['booking.%', '%booking%'],
+                    'property' => ['property.%', '%property%'],
+                    'account' => ['%user%', '%password%', '%email%', '%account%'],
+                    'content' => ['post.%', '%content%'],
+                    'orders' => ['order.%', '%stock%', '%ecommerce%'],
+                ];
+
+                $patterns = $typePatterns[$typeFilter] ?? ["{$typeFilter}%"];
+                foreach ($patterns as $pattern) {
+                    $q->orWhere('type', 'like', $pattern);
+                }
+            });
         }
 
         $notifications = $query->latest()->paginate(20);

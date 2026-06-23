@@ -33,12 +33,14 @@ class EmailSettingsController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'mailer' => 'nullable|string|in:smtp',
+            'mailer' => 'nullable|string|in:smtp,sendmail,mail,log',
             'smtp_host' => 'nullable|string|max:255',
             'smtp_port' => 'nullable|integer|min:1|max:65535',
             'smtp_encryption' => 'nullable|string|in:tls,ssl,none',
             'smtp_auth' => 'nullable|boolean',
             'auto_tls' => 'nullable|boolean',
+            'smtp_allow_self_signed' => 'nullable|boolean',
+            'smtp_ehlo_domain' => 'nullable|string|max:255',
             'smtp_username' => 'nullable|string|max:255',
             'smtp_password' => 'nullable|string|max:255',
             'from_email' => 'nullable|email|max:255',
@@ -65,21 +67,59 @@ class EmailSettingsController extends Controller
             $to = $request->user()->email;
         }
 
-        $result = $this->mailService->send(
-            $to,
-            '[' . config('app.name') . '] Test Email',
-            'test',
-            [
-                'recipientName' => $request->user()->name,
-                'recipientEmail' => $to,
-            ]
-        );
+        $settings = $this->settingsService->forFrontend();
+        $subject = '[' . config('app.name') . '] Test Email';
 
-        if ($result) {
-            return redirect()->back()->with('status', 'Test email sent successfully to ' . $to);
+        try {
+            $result = $this->mailService->sendNow(
+                $to,
+                $subject,
+                'test',
+                [
+                    'recipientName' => $request->user()->name,
+                    'recipientEmail' => $to,
+                ]
+            );
+
+            $debug = [
+                'success' => $result,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host', 'N/A'),
+                'port' => config('mail.mailers.smtp.port', 'N/A'),
+                'encryption' => config('mail.mailers.smtp.encryption', 'N/A'),
+                'username' => config('mail.mailers.smtp.username', 'N/A'),
+                'from_email' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'to' => $to,
+                'subject' => $subject,
+                'template' => 'test',
+                'error' => null,
+            ];
+
+            if ($result) {
+                return redirect()->back()->with('mail_debug', $debug)->with('status', 'Test email sent successfully to ' . $to);
+            }
+
+            $debug['error'] = 'Mail::html() returned false without exception';
+            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send test email.']);
+        } catch (\Throwable $e) {
+            $debug = [
+                'success' => false,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host', 'N/A'),
+                'port' => config('mail.mailers.smtp.port', 'N/A'),
+                'encryption' => config('mail.mailers.smtp.encryption', 'N/A'),
+                'username' => config('mail.mailers.smtp.username', 'N/A'),
+                'from_email' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'to' => $to,
+                'subject' => $subject,
+                'template' => 'test',
+                'error' => $e->getMessage(),
+            ];
+
+            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send test email: ' . $e->getMessage()]);
         }
-
-        return redirect()->back()->withErrors(['error' => 'Failed to send test email. Please check your SMTP settings and try again.']);
     }
 
     /**
@@ -102,18 +142,53 @@ class EmailSettingsController extends Controller
         $sampleData = $this->getSampleDataForTemplate($template);
         $subject = '[' . config('app.name') . '] Preview: ' . ($sampleData['subject'] ?? $template);
 
-        $result = $this->mailService->send(
-            $to,
-            $subject,
-            $template,
-            $sampleData
-        );
+        try {
+            $result = $this->mailService->sendNow(
+                $to,
+                $subject,
+                $template,
+                $sampleData
+            );
 
-        if ($result) {
-            return redirect()->back()->with('status', '"' . $template . '" template sent successfully to ' . $to);
+            $debug = [
+                'success' => $result,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host', 'N/A'),
+                'port' => config('mail.mailers.smtp.port', 'N/A'),
+                'encryption' => config('mail.mailers.smtp.encryption', 'N/A'),
+                'username' => config('mail.mailers.smtp.username', 'N/A'),
+                'from_email' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'to' => $to,
+                'subject' => $subject,
+                'template' => $template,
+                'error' => null,
+            ];
+
+            if ($result) {
+                return redirect()->back()->with('mail_debug', $debug)->with('status', '"' . $template . '" template sent successfully to ' . $to);
+            }
+
+            $debug['error'] = 'Mail::html() returned false without exception';
+            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send template email.']);
+        } catch (\Throwable $e) {
+            $debug = [
+                'success' => false,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host', 'N/A'),
+                'port' => config('mail.mailers.smtp.port', 'N/A'),
+                'encryption' => config('mail.mailers.smtp.encryption', 'N/A'),
+                'username' => config('mail.mailers.smtp.username', 'N/A'),
+                'from_email' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'to' => $to,
+                'subject' => $subject,
+                'template' => $template,
+                'error' => $e->getMessage(),
+            ];
+
+            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send template email: ' . $e->getMessage()]);
         }
-
-        return redirect()->back()->withErrors(['error' => 'Failed to send template email.']);
     }
 
     /**
@@ -202,7 +277,9 @@ class EmailSettingsController extends Controller
                 'group' => 'Account',
                 'sample_data' => [
                     'userName' => $user?->name ?? 'User',
+                    'userLogin' => $user?->name ?? 'johndoe',
                     'userEmail' => $user?->email ?? 'user@example.com',
+                    'profileUrl' => route('dashboard.admin.users.index'),
                     'siteName' => config('app.name'),
                 ],
             ],
@@ -222,6 +299,15 @@ class EmailSettingsController extends Controller
                     'userName' => $user?->name ?? 'User',
                     'resetUrl' => route('password.request'),
                     'expiry' => '24 hours',
+                    'siteName' => config('app.name'),
+                ],
+            ],
+            'verify-email' => [
+                'label' => 'Email Verification',
+                'group' => 'Account',
+                'sample_data' => [
+                    'userName' => $user?->name ?? 'User',
+                    'verificationUrl' => url('/verify-email/sample'),
                     'siteName' => config('app.name'),
                 ],
             ],
@@ -247,9 +333,9 @@ class EmailSettingsController extends Controller
                 'label' => 'Property Inquiry',
                 'group' => 'Properties',
                 'sample_data' => [
-                    'senderName' => $user?->name ?? 'Guest',
-                    'senderEmail' => $user?->email ?? 'guest@example.com',
-                    'senderMessage' => 'I am interested in this property. Please contact me with more details.',
+                    'inquiryName' => $user?->name ?? 'Guest',
+                    'inquiryEmail' => $user?->email ?? 'guest@example.com',
+                    'inquiryMessage' => 'I am interested in this property. Please contact me with more details.',
                     'propertyTitle' => 'Sample Property',
                     'propertyUrl' => route('dashboard'),
                     'siteName' => config('app.name'),

@@ -2,15 +2,32 @@ import '../css/app.css';
 import 'leaflet/dist/leaflet.css';
 import './bootstrap';
 
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/Components/ui/tooltip';
 import { Toaster } from '@/Components/ui/sonner';
+import { toast } from 'sonner';
 
 import '@/Components/ui/sidebar';
 
+import { useEffect } from 'react';
 
+
+
+function InertiaFlashListener() {
+    useEffect(() => {
+        const showFlash = () => {
+            const page = (router as any).page;
+            const flash: Record<string, unknown> = page?.props?.flash ?? {};
+            if (flash.status) toast.success(String(flash.status));
+            if (flash.error) toast.error(String(flash.error));
+        };
+        showFlash();
+        router.on('navigate', showFlash);
+    }, []);
+    return null;
+}
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -121,6 +138,7 @@ createInertiaApp({
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                 <TooltipProvider>
                     <App {...props} />
+                    <InertiaFlashListener />
                     <Toaster position="top-right" />
                 </TooltipProvider>
             </ThemeProvider>,

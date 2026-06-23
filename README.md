@@ -1,58 +1,104 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Cost Breaker 360
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A SaaS application for cost management built with Laravel + Inertia.js + React 19.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Backend**: Laravel 13 (PHP 8.4)
+- **Frontend**: React 19.2 + Inertia.js 3.4
+- **Build Tool**: Vite 8, TypeScript 6
+- **Styling**: Tailwind CSS v4 + tailwindcss-animate
+- **UI**: shadcn/ui (new-york, neutral base) + Radix UI + Lucide icons
+- **Forms**: Inertia `useForm` (server-side validation)
+- **Auth**: Laravel Breeze (session-based), Sanctum
+- **Database**: SQLite (local), MySQL (production)
+- **Notifications**: Laravel Notifications (database-only, no broadcast)
+- **Icons**: Lucide React
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+ (8.4 recommended)
+- Composer 2.x
+- Node.js 22+
+- MySQL 8.0+ (production) or SQLite (local)
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
+# Install PHP dependencies
+composer install
 
-php artisan boost:install
+# Install frontend dependencies
+npm install
+
+# Environment
+cp .env.example .env
+php artisan key:generate
+
+# Database
+php artisan migrate
+php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan modules:sync-permissions
+
+# Storage
+php artisan storage:link
+
+# Start dev servers
+npm run dev
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Development Commands
 
-## Contributing
+```bash
+npm run dev        # Vite dev server with HMR
+npm run build      # tsc + vite build (production)
+php artisan migrate          # Run migrations
+php artisan test             # PHPUnit
+npm run typecheck            # tsc --noEmit
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Architecture
 
-## Code of Conduct
+```
+app/Http/Controllers/     # Laravel controllers
+app/Http/Middleware/       # HandleInertiaRequests shares auth + notifications
+app/Models/               # Eloquent models (User, Role, Permission, Setting)
+app/Services/             # Business logic (SettingsService, NotificationService)
+app/Modules/              # Feature modules (Booking, Properties)
+resources/js/
+  Components/             # React components (shadcn/ui + custom)
+  Pages/                  # Inertia page components
+  Layouts/                # Authenticated, Admin, Guest, Public layouts
+routes/web.php            # All route definitions
+database/migrations/      # Laravel migrations
+database/seeders/         # Seeders (roles, permissions, settings)
+docs/                     # Feature documentation
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Key Features
 
-## Security Vulnerabilities
+- **Role-based access control**: Admin and CRM user roles with granular permissions
+- **Notification system**: Zero-infrastructure polling (10s intervals), database-only delivery
+- **Settings management**: DB-driven app configuration (name, logo, URL, registration, email)
+- **Module system**: Pluggable feature modules (booking, properties, e-commerce)
+- **Email**: SMTP configuration via admin panel with template simulation
+- **Deployment**: CI/CD via GitHub Actions with auto-deploy endpoint
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Roles
+
+- **admin** — Full access, created via backend scripts only (not assignable through registration)
+- **crm_user** — Default role for registered users, configurable via Settings > Registration
+
+## Routes
+
+| Prefix | Middleware | Purpose |
+|--------|-----------|---------|
+| `/` | guest | Welcome, About, Services, Contact |
+| `/dashboard` | auth+verified | Dashboard, Notifications, Account |
+| `/admin` | auth+verified+admin | Users, Settings, System Health |
+| `/deploy` | token | Deploy endpoints |
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Proprietary — All rights reserved.

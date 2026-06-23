@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section } from "@/Components/ui/section";
+import { Section } from "@/Components/section";
 import { Shield } from "lucide-react";
 import { CurrentPasswordInput } from "@/Components/ui/current-password-input";
 import { PasswordInput } from "@/Components/ui/password-input";
@@ -25,7 +25,7 @@ export function PasswordSection({ asAccordion }: PasswordSectionProps) {
     setErrors({});
     setSuccess("");
 
-    router.post(route("account.update-password"), {
+    router.post(route("dashboard.account.update-password"), {
       current_password: currentPassword,
       password: newPassword,
       password_confirmation: confirmPassword,
@@ -41,8 +41,11 @@ export function PasswordSection({ asAccordion }: PasswordSectionProps) {
       },
       onError: (errs) => {
         const e = errs as Record<string, string>;
+        const mapped: Record<string, string[]> = {};
+        if (e.password) mapped.new_password = [e.password];
+        if (e.current_password) mapped.current_password = [e.current_password];
+        setErrors(mapped);
         const msg = e.password || e.current_password || "Failed to update password";
-        setErrors({ new_password: [msg], current_password: [msg] });
         toast.error(msg);
         setLoading(false);
       },

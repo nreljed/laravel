@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { Section, SectionField } from "@/Components/ui/section";
+import { Section, SectionField } from "@/Components/section";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { UrlInput } from "@/Components/ui/url-input";

@@ -1,4 +1,4 @@
-import { Section } from "@/Components/ui/section";
+import { Section } from "@/Components/section";
 import { Badge } from "@/Components/ui/badge";
 import { Info } from "lucide-react";
 

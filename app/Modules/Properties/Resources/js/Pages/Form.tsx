@@ -69,7 +69,7 @@ export default function PropertiesForm() {
     }
     property_types?: Array<{ id: number; name: string }>
     property_cities?: Array<{ id: number; name: string }>
-    property_status?: StatusTerm[]
+    property_statuses?: StatusTerm[]
     property_features?: Array<{ id: number; name: string }>
     selected_type?: number
     selected_city?: number
@@ -96,7 +96,7 @@ export default function PropertiesForm() {
 
   const propertyTypes = props.property_types || []
   const propertyCities = props.property_cities || []
-  const propertyStatuses = useMemo(() => props.property_status || [], [props.property_status])
+  const propertyStatuses = useMemo(() => props.property_statuses || [], [props.property_statuses])
   const propertyFeatures = props.property_features || []
   const selectedType = props.selected_type
   const selectedCity = props.selected_city

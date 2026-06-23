@@ -1,5 +1,5 @@
 import React from "react"
-import { Building2, LayoutDashboard, BarChart3, Bell, Users, Settings, Activity, IdCard, User, Calendar, FileText, ShoppingCart, Shield } from "lucide-react"
+import { Building2, LayoutDashboard, BarChart3, Bell, Users, Settings, Activity, IdCard, User, Calendar, FileText, ShoppingCart, Shield, Beaker, FlaskConical, CalendarCheck } from "lucide-react"
 import { ModuleDebugPanel } from "@/Components/ModuleDebugPanel"
 import { router, usePage } from "@inertiajs/react"
 import { NavMain, type NavItem } from "@/Components/nav-main"
@@ -41,6 +41,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     { title: "Roles", url: route("dashboard.admin.roles.index"), icon: Shield },
     { title: "Settings", url: route("dashboard.admin.settings"), icon: Settings },
     { title: "System Health", url: route("dashboard.admin.system-health"), icon: Activity },
+  ]
+
+  const devNavItems: NavItem[] = [
+    { title: "Test Components", url: route("dashboard.developer.test-page"), icon: Beaker },
+    { title: "Booking Demo", url: route("dashboard.bookings.demo"), icon: CalendarCheck },
+    { title: "Notification Test", url: route("dashboard.notifications.test"), icon: FlaskConical },
   ]
 
   return (
@@ -105,6 +111,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <NavMain items={adminNavItems} />
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Development</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <NavMain items={devNavItems} />
             </SidebarGroupContent>
           </SidebarGroup>
         )}

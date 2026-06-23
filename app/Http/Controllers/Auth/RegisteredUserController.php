@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\SettingsService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,13 +19,21 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
-    public function create(): Response
+    public function create(): Response|\Illuminate\Http\RedirectResponse
     {
+        if (!static::isRegistrationEnabled()) {
+            return redirect()->route('login');
+        }
+
         return Inertia::render('Auth/Register');
     }
 
     public function store(Request $request): RedirectResponse
     {
+        if (!static::isRegistrationEnabled()) {
+            return redirect()->route('login');
+        }
+
         $request->validate([
             'username' => [
                 'required',
@@ -45,7 +54,8 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $userRole = Role::where('slug', 'crm_user')->first();
+        $defaultRoleSlug = SettingsService::get('default_role', 'crm_user');
+        $userRole = Role::where('slug', $defaultRoleSlug)->where('slug', '!=', 'admin')->first();
         if ($userRole) {
             $user->roles()->attach($userRole->id);
         }
@@ -53,6 +63,10 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
+
+        if (SettingsService::get('require_email_verification', '0') === '1') {
+            $user->sendEmailVerificationNotification();
+        }
 
         return redirect(route('dashboard', absolute: false));
     }
@@ -69,5 +83,14 @@ class RegisteredUserController extends Controller
         $exists = User::where($field, $value)->exists();
 
         return response()->json(['available' => !$exists]);
+    }
+
+    public static function isRegistrationEnabled(): bool
+    {
+        try {
+            return (bool) SettingsService::get('enable_registration', true);
+        } catch (\Throwable) {
+            return true;
+        }
     }
 }

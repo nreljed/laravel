@@ -1,6 +1,6 @@
 import * as React from "react";
 import { usePage } from "@inertiajs/react";
-import { Section, SectionField } from "@/Components/ui/section";
+import { Section, SectionField } from "@/Components/section";
 import { Input } from "@/Components/ui/input";
 import {
   Select,
@@ -14,7 +14,7 @@ import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import { Spinner } from "@/Components/ui/spinner";
-import { ErrorMessage } from "@/Components/ui/error-message";
+import { ErrorMessage } from "@/Components/error-message";
 import { Separator } from "@/Components/ui/separator";
 import { BOOKING_STATUS } from "../../lib/booking-status";
 import {

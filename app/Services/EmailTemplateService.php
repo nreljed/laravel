@@ -9,9 +9,11 @@ class EmailTemplateService
     protected function injectGlobalData(array $data): array
     {
         $logoUrl = SettingsService::get('app_logo', '');
+        $dbName = SettingsService::get('app_name', '');
+        $dbUrl = SettingsService::get('app_url', '');
 
-        $data['siteName'] = config('app.name');
-        $data['siteUrl'] = url('/');
+        $data['siteName'] = $dbName ?: config('app.name');
+        $data['siteUrl'] = $dbUrl ?: url('/');
         $data['logoUrl'] = $logoUrl;
         $data['year'] = date('Y');
 

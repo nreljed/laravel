@@ -2,21 +2,22 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Auth\MustVerifyEmail;
 use App\Traits\UserDataTrait;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable(['name', 'email', 'password', 'username', 'display_name', 'first_name', 'last_name', 'nickname', 'bio', 'description', 'avatar', 'social_links', 'phone', 'url'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, UserDataTrait;
+    use HasFactory, Notifiable, MustVerifyEmail, UserDataTrait;
 
     protected $appends = ['avatar_url'];
 
@@ -50,6 +51,15 @@ class User extends Authenticatable
     public function hasPermissionTo(string $slug): bool
     {
         return $this->hasPermission($slug);
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        if (Setting::get('require_email_verification', '0') === '1') {
+            return ! is_null($this->email_verified_at);
+        }
+
+        return true;
     }
 
     public function isAdmin(): bool

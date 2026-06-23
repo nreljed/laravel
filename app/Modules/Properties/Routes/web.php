@@ -31,4 +31,9 @@ Route::prefix('/terms')->name('terms.')->group(function () {
     Route::post('/features', [PropertyTermController::class, 'storeFeature'])->name('features.store');
     Route::put('/features/{feature}', [PropertyTermController::class, 'updateFeature'])->name('features.update');
     Route::delete('/features/{feature}', [PropertyTermController::class, 'destroyFeature'])->name('features.destroy');
+
+    Route::get('/statuses', [PropertyTermController::class, 'indexStatuses'])->name('statuses.index');
+    Route::post('/statuses', [PropertyTermController::class, 'storeStatus'])->name('statuses.store');
+    Route::put('/statuses/{status}', [PropertyTermController::class, 'updateStatus'])->name('statuses.update');
+    Route::delete('/statuses/{status}', [PropertyTermController::class, 'destroyStatus'])->name('statuses.destroy');
 });

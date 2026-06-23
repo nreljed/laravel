@@ -30,6 +30,6 @@ class PasswordController extends Controller
 
         AuditService::log(AuditAction::PasswordChange, $user->id);
 
-        return back();
+        return back()->with('status', 'Password updated successfully.');
     }
 }

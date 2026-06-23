@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react"
-import { Section, SectionField } from "@/Components/ui/section"
+import { Section, SectionField } from "@/Components/section"
 import { GalleryUploader } from "@/Components/ui/gallery-uploader"
 import type { GalleryImageItem, UploadResultData } from "@/Components/ui/gallery-uploader"
 import { Image } from "lucide-react"
