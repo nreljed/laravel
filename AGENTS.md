@@ -99,7 +99,7 @@ Deploys automatically on every push to `main`:
 2. Setup PHP 8.4 (extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip) + Node 22
 3. git-cliff: parse commits → bump semver → generate CHANGELOG.md + release-notes.md
 4. Generate build .env (SQLite)
-5. [cached] `composer install --prefer-dist --no-scripts` (WITH dev deps for testing)
+5. `composer install --prefer-dist --no-scripts` (always runs; cache speeds up restore but dev deps must be present for tests)
 6. `php artisan package:discover + migrate --force`
 7. [cached] `npm install` → `npm run typecheck` → `npm run build` (generates manifest.json)
 8. `php artisan test` + `vendor/bin/pint` (auto-fix)
@@ -131,6 +131,9 @@ Deploys automatically on every push to `main`:
 |--------|---------|
 | `DEPLOY_TOKEN` | Must match `config('app.deploy_token')` in server `.env` — protects all `/deploy/` endpoints |
 | `GH_TOKEN` | Fine-grained PAT with **Contents: Read and Write** — creates releases + downloads them |
+| `DB_DATABASE` | Production MySQL database name |
+| `DB_USERNAME` | Production MySQL username |
+| `DB_PASSWORD` | Production MySQL password |
 
 ### Deploy Endpoints
 

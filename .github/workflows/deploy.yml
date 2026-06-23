@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -70,13 +70,12 @@ jobs:
 
       - name: Cache Composer dependencies
         id: composer-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install Composer Dependencies (with dev)
-        if: steps.composer-cache.outputs.cache-hit != 'true'
         run: composer install --prefer-dist --no-interaction --no-scripts
 
       - name: Package Discover
@@ -87,7 +86,7 @@ jobs:
 
       - name: Cache npm dependencies
         id: npm-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: npm-${{ hashFiles('package-lock.json') }}
@@ -127,9 +126,9 @@ jobs:
           DB_CONNECTION=mysql
           DB_HOST=localhost
           DB_PORT=3306
-          DB_DATABASE=advertis_lara584
-          DB_USERNAME=advertis_lara584
-          DB_PASSWORD=9)24p375S!
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           SESSION_DRIVER=file
           SESSION_LIFETIME=120
           SESSION_DOMAIN=.tunispromo.tn
@@ -170,7 +169,7 @@ jobs:
           }
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GH_TOKEN }}
           tag_name: "v${{ steps.version.outputs.version }}"

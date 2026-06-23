@@ -1,5 +1,5 @@
 import React from "react"
-import { Building2, LayoutDashboard, BarChart3, Bell, Users, Settings, Activity, IdCard, User, Calendar, FileText, ShoppingCart, Shield, Beaker, FlaskConical, CalendarCheck } from "lucide-react"
+import { Building2, Globe, LayoutDashboard, BarChart3, Bell, Users, Settings, Activity, IdCard, User, Calendar, FileText, ShoppingCart, Shield, Beaker, FlaskConical, CalendarCheck } from "lucide-react"
 import { ModuleDebugPanel } from "@/Components/ModuleDebugPanel"
 import { router, usePage } from "@inertiajs/react"
 import { NavMain, type NavItem } from "@/Components/nav-main"
@@ -60,6 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <NavMain
               items={[
+                { title: "Website", url: route("home"), icon: Globe },
                 { title: "Dashboard", url: route("dashboard"), icon: LayoutDashboard },
                 { title: "Stats", url: route("dashboard.stats"), icon: BarChart3 },
                 { title: "Profile", url: route("dashboard.profile.edit"), icon: IdCard },

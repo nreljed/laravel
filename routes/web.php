@@ -13,7 +13,6 @@ use App\Http\Controllers\NotificationTestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SettingsController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -21,15 +20,11 @@ use Inertia\Inertia;
 // FRONTEND (Public) Pages — no auth required
 // ═══════════════════════════════════════════════════
 Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('dashboard');
-    }
-
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
     ]);
-});
+})->name('home');
 
 Route::get('/about', [PublicController::class, 'about'])->name('about');
 Route::get('/services', [PublicController::class, 'services'])->name('services');
