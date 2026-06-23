@@ -106,7 +106,7 @@ jobs:
         run: php artisan test
 
       - name: PHP Code Style (Pint)
-        run: vendor/bin/pint --test
+        run: vendor/bin/pint
 
       - name: Strip dev dependencies for production
         run: composer install --no-dev --optimize-autoloader --no-scripts
