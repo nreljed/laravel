@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Controllers\EmailSettingsController;
 use App\Modules\ModuleRegistry;
+use App\Services\EmailSettingsService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -22,7 +23,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'flash' => function () use ($request) {
-                if (!$request->hasSession()) {
+                if (! $request->hasSession()) {
                     return [];
                 }
 
@@ -93,7 +94,7 @@ class HandleInertiaRequests extends Middleware
 
     protected function getModuleNavItems(): array
     {
-        if (!app()->resolved(ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return [];
         }
 
@@ -102,7 +103,7 @@ class HandleInertiaRequests extends Middleware
 
     protected function getModuleSharedData(): array
     {
-        if (!app()->resolved(ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return [];
         }
 
@@ -111,7 +112,7 @@ class HandleInertiaRequests extends Middleware
 
     protected function getModulesData(): array
     {
-        if (!app()->resolved(ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return ['enabled' => [], 'list' => []];
         }
 
@@ -125,7 +126,7 @@ class HandleInertiaRequests extends Middleware
 
     protected function getRepeaterConfigs(): array
     {
-        if (!app()->resolved(ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return [];
         }
 
@@ -134,7 +135,7 @@ class HandleInertiaRequests extends Middleware
 
     protected function getProfileFieldConfigs(): array
     {
-        if (!app()->resolved(ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return [];
         }
 
@@ -144,7 +145,7 @@ class HandleInertiaRequests extends Middleware
     protected function getEmailSettings(): array
     {
         try {
-            return app(\App\Services\EmailSettingsService::class)->forFrontend();
+            return app(EmailSettingsService::class)->forFrontend();
         } catch (\Exception $e) {
             return [];
         }
@@ -174,7 +175,7 @@ class HandleInertiaRequests extends Middleware
                 foreach ($module->permissions() as $perm) {
                     $caps[$perm['slug']] = $user->hasPermission($perm['slug']);
                 }
-                $caps['hasModule_' . $slug] = $this->isModuleEnabled($slug);
+                $caps['hasModule_'.$slug] = $this->isModuleEnabled($slug);
             }
         }
 
@@ -183,19 +184,20 @@ class HandleInertiaRequests extends Middleware
 
     private function isModuleEnabled(string $slug): bool
     {
-        if (!app()->resolved(\App\Modules\ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return false;
         }
-        return app(\App\Modules\ModuleRegistry::class)->isEnabled($slug);
+
+        return app(ModuleRegistry::class)->isEnabled($slug);
     }
 
     protected function getModuleDebugData(): array
     {
-        if (!app()->resolved(\App\Modules\ModuleRegistry::class)) {
+        if (! app()->resolved(ModuleRegistry::class)) {
             return [];
         }
 
-        $registry = app(\App\Modules\ModuleRegistry::class);
+        $registry = app(ModuleRegistry::class);
         $data = [];
 
         foreach ($registry->all() as $slug => $module) {
@@ -207,7 +209,7 @@ class HandleInertiaRequests extends Middleware
 
             $navUrls = [];
 
-            if (!empty($nav)) {
+            if (! empty($nav)) {
                 $navUrls['parent'] = [
                     'title' => $nav['title'] ?? '',
                     'url' => $nav['url'] ?? null,
@@ -304,22 +306,22 @@ class HandleInertiaRequests extends Middleware
 
         $options['username'] = $username;
 
-        if (!empty($firstName)) {
+        if (! empty($firstName)) {
             $options['firstname'] = $firstName;
         }
-        if (!empty($lastName)) {
+        if (! empty($lastName)) {
             $options['lastname'] = $lastName;
         }
-        if (!empty($firstName) && !empty($lastName)) {
-            $options['firstlast'] = $firstName . ' ' . $lastName;
-            $options['lastfirst'] = $lastName . ' ' . $firstName;
+        if (! empty($firstName) && ! empty($lastName)) {
+            $options['firstlast'] = $firstName.' '.$lastName;
+            $options['lastfirst'] = $lastName.' '.$firstName;
         }
-        if (!empty($nickname)) {
+        if (! empty($nickname)) {
             $options['nickname'] = $nickname;
         }
 
         $displayName = $user->display_name ?: $user->name;
-        if (!in_array($displayName, $options)) {
+        if (! in_array($displayName, $options)) {
             $options['display'] = $displayName;
         }
 

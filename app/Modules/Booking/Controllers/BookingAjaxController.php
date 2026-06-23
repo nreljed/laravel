@@ -4,24 +4,25 @@ namespace App\Modules\Booking\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Booking\Models\Booking;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class BookingAjaxController extends Controller
 {
-    public function uploadDamagePhoto(Request $request): \Illuminate\Http\JsonResponse
+    public function uploadDamagePhoto(Request $request): JsonResponse
     {
         $bookingId = (int) $request->input('post_id', 0);
-        if (!$bookingId) {
+        if (! $bookingId) {
             return response()->json(['error' => 'Invalid request'], 400);
         }
 
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
-        if (!auth()->user()->can('update', $booking)) {
+        if (! auth()->user()->can('update', $booking)) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
@@ -30,13 +31,13 @@ class BookingAjaxController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->store('booking_damage/' . $bookingId, 'public');
+        $path = $file->store('booking_damage/'.$bookingId, 'public');
 
         $url = Storage::disk('public')->url($path);
 
         $metadata = $booking->metadata ?? [];
         $gallery = $metadata['damage_photos'] ?? [];
-        if (!is_array($gallery)) {
+        if (! is_array($gallery)) {
             $gallery = [];
         }
         $gallery[] = [
@@ -55,27 +56,27 @@ class BookingAjaxController extends Controller
         ]);
     }
 
-    public function deleteDamagePhoto(Request $request): \Illuminate\Http\JsonResponse
+    public function deleteDamagePhoto(Request $request): JsonResponse
     {
         $bookingId = (int) $request->input('post_id', 0);
         $photoIndex = $request->input('photo_index');
 
-        if (!$bookingId || $photoIndex === null) {
+        if (! $bookingId || $photoIndex === null) {
             return response()->json(['error' => 'Invalid request'], 400);
         }
 
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
-        if (!auth()->user()->can('update', $booking)) {
+        if (! auth()->user()->can('update', $booking)) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
         $metadata = $booking->metadata ?? [];
         $gallery = $metadata['damage_photos'] ?? [];
-        if (!is_array($gallery) || !isset($gallery[$photoIndex])) {
+        if (! is_array($gallery) || ! isset($gallery[$photoIndex])) {
             return response()->json(['error' => 'Photo not found'], 404);
         }
 

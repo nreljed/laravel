@@ -35,7 +35,7 @@ class PropertyController extends Controller
         $properties = $this->propertyService->search($filters);
 
         $properties->getCollection()->transform(
-            fn(Property $property) => $this->formatter->formatProperty($property)
+            fn (Property $property) => $this->formatter->formatProperty($property)
         );
 
         return Inertia::render('Properties/Index', [
@@ -106,9 +106,13 @@ class PropertyController extends Controller
         $filterOptions = $this->propertyService->getFilterOptions();
 
         $meta = $property->metadata ?? [];
-        if (empty($meta['latitude']) && $property->latitude) { $meta['latitude'] = $property->latitude; }
-        if (empty($meta['longitude']) && $property->longitude) { $meta['longitude'] = $property->longitude; }
-        $meta['gallery'] = $property->images->map(fn($img) => [
+        if (empty($meta['latitude']) && $property->latitude) {
+            $meta['latitude'] = $property->latitude;
+        }
+        if (empty($meta['longitude']) && $property->longitude) {
+            $meta['longitude'] = $property->longitude;
+        }
+        $meta['gallery'] = $property->images->map(fn ($img) => [
             'id' => $img->id,
             'attachment_id' => $img->id,
             'url' => $img->url,
@@ -178,10 +182,10 @@ class PropertyController extends Controller
             'year' => $meta['year'] ?? '',
             'floor_level' => $meta['floor_level'] ?? 0,
             'rental_period' => $meta['rental_period'] ?? 'month',
-            'enable_address' => !empty($meta['enable_address']),
+            'enable_address' => ! empty($meta['enable_address']),
             'google_map' => $meta['google_map'] ?? '',
-            'enable_details' => !empty($meta['enable_details']),
-            'enable_floors' => !empty($meta['enable_floors']),
+            'enable_details' => ! empty($meta['enable_details']),
+            'enable_floors' => ! empty($meta['enable_floors']),
             'additional_details_json' => $meta['additional_details'] ?? [],
             'floor_plans_json' => $meta['floor_plans'] ?? [],
             'latitude' => ($meta['latitude'] ?? '') !== '' ? $meta['latitude'] : null,

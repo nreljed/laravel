@@ -2,10 +2,10 @@
 
 namespace App\Modules\ECommerce\Services;
 
-use App\Modules\ECommerce\Models\Product;
-use App\Modules\ECommerce\Models\ProductCategory;
+use App\Models\User;
 use App\Modules\ECommerce\Models\Order;
 use App\Modules\ECommerce\Models\OrderItem;
+use App\Modules\ECommerce\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 class ECommerceService
@@ -20,7 +20,7 @@ class ECommerceService
             'completed_orders' => Order::where('status', 'completed')->count(),
             'low_stock_count' => Product::lowStock()->count(),
             'total_revenue' => Order::whereIn('status', ['completed', 'processing'])->sum('total'),
-            'total_customers' => \App\Models\User::whereHas('orders')->count(),
+            'total_customers' => User::whereHas('orders')->count(),
         ];
     }
 
@@ -56,6 +56,7 @@ class ECommerceService
                 'revenue' => (float) $revenue,
             ];
         }
+
         return $data;
     }
 

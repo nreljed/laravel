@@ -14,7 +14,7 @@ trait BootsModules
 {
     protected function bootModules(): void
     {
-        if (!Schema::hasTable('modules')) {
+        if (! Schema::hasTable('modules')) {
             return;
         }
 
@@ -37,7 +37,7 @@ trait BootsModules
         $existing = Permission::pluck('slug')->toArray();
         foreach ($registry->all() as $module) {
             foreach ($module->permissions() as $perm) {
-                if (!in_array($perm['slug'], $existing)) {
+                if (! in_array($perm['slug'], $existing)) {
                     Permission::create([
                         'name' => $perm['name'],
                         'slug' => $perm['slug'],
@@ -50,7 +50,7 @@ trait BootsModules
         }
 
         // Ensure manage_options permission exists
-        if (!in_array('manage_options', $existing)) {
+        if (! in_array('manage_options', $existing)) {
             Permission::create([
                 'name' => 'Manage Options',
                 'slug' => 'manage_options',

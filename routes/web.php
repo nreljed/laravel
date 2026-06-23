@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeployController;
+use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationTestController;
 use App\Http\Controllers\ProfileController;
@@ -106,10 +108,10 @@ Route::middleware(['auth', 'admin'])->prefix('dashboard/admin')->name('dashboard
     Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
 
     Route::prefix('/settings')->name('settings.')->group(function () {
-        Route::put('/email', [App\Http\Controllers\EmailSettingsController::class, 'update'])->name('email.update');
-        Route::post('/email/test', [App\Http\Controllers\EmailSettingsController::class, 'sendTest'])->name('email.test');
-        Route::post('/email/template-test', [App\Http\Controllers\EmailSettingsController::class, 'sendTemplateTest'])->name('email.template-test');
-        Route::get('/email/template-preview/{template}', [App\Http\Controllers\EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
+        Route::put('/email', [EmailSettingsController::class, 'update'])->name('email.update');
+        Route::post('/email/test', [EmailSettingsController::class, 'sendTest'])->name('email.test');
+        Route::post('/email/template-test', [EmailSettingsController::class, 'sendTemplateTest'])->name('email.template-test');
+        Route::get('/email/template-preview/{template}', [EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
         Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
         Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
     });
@@ -123,9 +125,9 @@ require __DIR__.'/auth.php';
 // ═══════════════════════════════════════════════════
 // DEPLOY Endpoints — token-protected, no CSRF
 // ═══════════════════════════════════════════════════
-Route::post('/deploy/update-env', [App\Http\Controllers\DeployController::class, 'updateEnv']);
-Route::get('/deploy/cache-clear', [App\Http\Controllers\DeployController::class, 'cacheClear']);
-Route::get('/deploy/check', [App\Http\Controllers\DeployController::class, 'check']);
+Route::post('/deploy/update-env', [DeployController::class, 'updateEnv']);
+Route::get('/deploy/cache-clear', [DeployController::class, 'cacheClear']);
+Route::get('/deploy/check', [DeployController::class, 'check']);
 
 // Module routes (Properties, Bookings) are loaded by their respective
 // Module classes via HasRoutes trait — no duplication needed here.

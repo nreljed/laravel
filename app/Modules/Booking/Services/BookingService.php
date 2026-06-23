@@ -3,6 +3,7 @@
 namespace App\Modules\Booking\Services;
 
 use App\Modules\Booking\Models\Booking;
+use App\Services\FormattingService;
 use App\Services\SettingsService;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -12,32 +13,32 @@ class BookingService
     {
         $query = Booking::with(['property', 'user']);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->status($filters['status']);
         }
 
-        if (!empty($filters['property_id'])) {
+        if (! empty($filters['property_id'])) {
             $query->property((int) $filters['property_id']);
         }
 
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', (int) $filters['user_id']);
         }
 
-        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+        if (! empty($filters['date_from']) && ! empty($filters['date_to'])) {
             $query->dateRange($filters['date_from'], $filters['date_to']);
-        } elseif (!empty($filters['date_from'])) {
+        } elseif (! empty($filters['date_from'])) {
             $query->where('start_date', '>=', $filters['date_from']);
-        } elseif (!empty($filters['date_to'])) {
+        } elseif (! empty($filters['date_to'])) {
             $query->where('end_date', '<=', $filters['date_to']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('guest_name', 'like', "%{$search}%")
-                  ->orWhere('guest_email', 'like', "%{$search}%")
-                  ->orWhere('id', $search);
+                    ->orWhere('guest_email', 'like', "%{$search}%")
+                    ->orWhere('id', $search);
             });
         }
 
@@ -58,7 +59,7 @@ class BookingService
                     SettingsService::getFormattingOptions(),
                     ['currency' => $booking->currency ?? 'USD'],
                 );
-                $data['total_amount_formatted'] = \App\Services\FormattingService::formatPrice($booking->total_amount, $options);
+                $data['total_amount_formatted'] = FormattingService::formatPrice($booking->total_amount, $options);
             }
 
             return $data;
@@ -90,6 +91,7 @@ class BookingService
     public function update(Booking $booking, array $data): Booking
     {
         $booking->update($data);
+
         return $booking->fresh();
     }
 }

@@ -13,17 +13,17 @@ trait BookingDebugTrait
 
     private static function debugLog(string $message): void
     {
-        if (!self::isDebug()) {
+        if (! self::isDebug()) {
             return;
         }
 
         BookingDebugCollector::add($message);
-        Log::debug('[CRM Booking] ' . $message);
+        Log::debug('[CRM Booking] '.$message);
     }
 
     private static function debugTiming(string $label, float $start): void
     {
-        if (!self::isDebug()) {
+        if (! self::isDebug()) {
             return;
         }
 
@@ -37,11 +37,11 @@ trait BookingDebugTrait
 
     private static function debugTrace(string $message): void
     {
-        if (!self::isDebug()) {
+        if (! self::isDebug()) {
             return;
         }
 
         BookingDebugCollector::add($message);
-        Log::debug('[CRM Booking] ' . $message);
+        Log::debug('[CRM Booking] '.$message);
     }
 }

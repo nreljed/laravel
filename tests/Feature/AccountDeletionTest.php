@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class AccountDeletionTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
     }
 
     protected function createUser(): User
@@ -23,6 +24,7 @@ class AccountDeletionTest extends TestCase
         $user = User::factory()->create();
         $role = Role::where('slug', 'crm_user')->first();
         $user->roles()->attach($role);
+
         return $user;
     }
 

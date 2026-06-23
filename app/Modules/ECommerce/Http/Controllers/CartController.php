@@ -2,10 +2,10 @@
 
 namespace App\Modules\ECommerce\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Modules\ECommerce\Models\Cart;
 use App\Modules\ECommerce\Models\CartItem;
 use App\Modules\ECommerce\Models\Product;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -28,7 +28,7 @@ class CartController extends Controller
 
         $product = Product::findOrFail($validated['product_id']);
 
-        if (!$product->isInStock()) {
+        if (! $product->isInStock()) {
             return response()->json(['error' => 'Product is out of stock.'], 422);
         }
 
@@ -89,6 +89,7 @@ class CartController extends Controller
         }
 
         $sessionId = $request->session()->getId();
+
         return Cart::firstOrCreate(['session_id' => $sessionId]);
     }
 }

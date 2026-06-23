@@ -9,7 +9,7 @@ if (function_exists('opcache_reset')) {
 }
 
 if ($isDeployCall) {
-    @unlink(__DIR__ . '/.user.ini');
+    @unlink(__DIR__.'/.user.ini');
     @unlink(__FILE__);
 
     http_response_code(200);

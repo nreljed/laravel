@@ -13,7 +13,7 @@ class ModuleController extends Controller
 {
     public function toggle(Request $request, Module $module)
     {
-        $module->update(['enabled' => !$module->enabled]);
+        $module->update(['enabled' => ! $module->enabled]);
 
         SettingsService::clearCache();
         FormattingService::clearModuleConfigCache();
@@ -21,13 +21,13 @@ class ModuleController extends Controller
 
         return redirect()->back()->with(
             'status',
-            "Module '{$module->name}' " . ($module->enabled ? 'enabled' : 'disabled') . ".",
+            "Module '{$module->name}' ".($module->enabled ? 'enabled' : 'disabled').'.',
         );
     }
 
     public function reorder(Request $request)
     {
-        if (!Schema::hasTable('modules')) {
+        if (! Schema::hasTable('modules')) {
             return redirect()->back()->with('status', 'Modules table not available.');
         }
 

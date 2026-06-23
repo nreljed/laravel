@@ -2,17 +2,17 @@
 
 namespace Tests\Feature\Modules\Booking;
 
+use App\Models\User;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingGuestTokenService;
 use App\Modules\Properties\Models\Property;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\BootsModules;
 use Tests\TestCase;
 
 class BookingGuestPortalTest extends TestCase
 {
-    use RefreshDatabase, BootsModules;
+    use BootsModules, RefreshDatabase;
 
     protected User $host;
 

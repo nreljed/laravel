@@ -7,6 +7,7 @@ use App\Modules\ECommerce\Models\Order;
 use App\Modules\ECommerce\Models\Product;
 use App\Modules\ECommerce\Services\ECommerceService;
 use App\Modules\Traits\HasRoutes;
+use Illuminate\Support\Facades\Schema;
 
 class ECommerceModule implements ModuleInterface
 {
@@ -39,8 +40,8 @@ class ECommerceModule implements ModuleInterface
 
     public function routes(): void
     {
-        $this->loadRoutes(__DIR__ . '/Http/Routes/web.php', '/dashboard/ecommerce', 'dashboard.ecommerce.', 'ecommerce.view');
-        $this->loadAdminRoutes(__DIR__ . '/Http/Routes/admin.php', '/admin/ecommerce', 'admin.ecommerce.', 'ecommerce.view');
+        $this->loadRoutes(__DIR__.'/Http/Routes/web.php', '/dashboard/ecommerce', 'dashboard.ecommerce.', 'ecommerce.view');
+        $this->loadAdminRoutes(__DIR__.'/Http/Routes/admin.php', '/admin/ecommerce', 'admin.ecommerce.', 'ecommerce.view');
     }
 
     public function boot(): void
@@ -66,7 +67,7 @@ class ECommerceModule implements ModuleInterface
                 ['title' => 'All Products', 'url' => route('dashboard.ecommerce.products.index', [], false)],
                 ['title' => 'Add Product', 'url' => route('dashboard.ecommerce.products.create', [], false)],
                 ['title' => 'Orders', 'url' => route('dashboard.ecommerce.orders.index', [], false)],
-                ['title' => 'Categories', 'url' => route('dashboard.ecommerce.products.index', [], false) . '?tab=categories'],
+                ['title' => 'Categories', 'url' => route('dashboard.ecommerce.products.index', [], false).'?tab=categories'],
             ],
         ];
     }
@@ -81,12 +82,13 @@ class ECommerceModule implements ModuleInterface
 
     public function getDashboardData(): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('products')) {
+        if (! Schema::hasTable('products')) {
             return [];
         }
 
         try {
             $service = app(ECommerceService::class);
+
             return [
                 'label' => 'E-Commerce',
                 'icon' => 'ShoppingCart',
@@ -124,7 +126,7 @@ class ECommerceModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [__DIR__ . '/database/migrations'];
+        return [__DIR__.'/database/migrations'];
     }
 
     public function permissions(): array

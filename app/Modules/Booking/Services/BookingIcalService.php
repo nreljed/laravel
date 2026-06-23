@@ -2,7 +2,6 @@
 
 namespace App\Modules\Booking\Services;
 
-use App\Modules\Booking\Models\Booking;
 use App\Modules\Properties\Models\Property;
 use Carbon\Carbon;
 use Illuminate\Http\Client\HttpClientException;
@@ -12,7 +11,9 @@ use Illuminate\Support\Str;
 class BookingIcalService
 {
     public const MAX_FEEDS_PER_PROPERTY = 10;
+
     public const MAX_EVENTS_PER_FEED = 500;
+
     public const MAX_FEED_SIZE = 1048576;
 
     public function parseIcal(string $data): array
@@ -67,14 +68,16 @@ class BookingIcalService
 
     private function extractProperty(string $block, string $name): ?string
     {
-        if (preg_match('/^' . $name . '(?:;[^:\n]*)?:(.*)$/m', $block, $m)) {
+        if (preg_match('/^'.$name.'(?:;[^:\n]*)?:(.*)$/m', $block, $m)) {
             $value = preg_replace(
                 ['/\\\\;/', '/\\\\,/', '/\\\\[nN]/', '/\\\\\\\\/'],
                 [';', ',', "\n", '\\'],
                 $m[1]
             );
+
             return $value;
         }
+
         return null;
     }
 
@@ -101,7 +104,7 @@ class BookingIcalService
                 ->withHeaders(['Accept' => 'text/calendar, application/octet-stream'])
                 ->get($url);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -120,11 +123,12 @@ class BookingIcalService
     public function getFeeds(int $propertyId): array
     {
         $property = Property::find($propertyId);
-        if (!$property) {
+        if (! $property) {
             return [];
         }
 
         $metadata = $property->metadata ?? [];
+
         return $metadata['booking_ical_feeds'] ?? [];
     }
 
@@ -135,6 +139,7 @@ class BookingIcalService
                 return $feed;
             }
         }
+
         return null;
     }
 
@@ -150,11 +155,12 @@ class BookingIcalService
     private function getBlockedDates(int $propertyId): array
     {
         $property = Property::find($propertyId);
-        if (!$property) {
+        if (! $property) {
             return [];
         }
 
         $metadata = $property->metadata ?? [];
+
         return $metadata['booking_blocked_dates'] ?? [];
     }
 
@@ -169,13 +175,14 @@ class BookingIcalService
 
     private function generateFeedId(): string
     {
-        return 'feed_' . bin2hex(random_bytes(8));
+        return 'feed_'.bin2hex(random_bytes(8));
     }
 
     private function generateFeedName(string $url): string
     {
         $parts = parse_url($url);
         $host = $parts['host'] ?? 'iCal Feed';
+
         return ucfirst(str_replace(['www.', '.com', '.net', '.org'], '', $host));
     }
 
@@ -186,7 +193,7 @@ class BookingIcalService
         if (count($feeds) >= self::MAX_FEEDS_PER_PROPERTY) {
             return [
                 'success' => false,
-                'error' => 'Maximum ' . self::MAX_FEEDS_PER_PROPERTY . ' feeds per property.',
+                'error' => 'Maximum '.self::MAX_FEEDS_PER_PROPERTY.' feeds per property.',
             ];
         }
 
@@ -224,7 +231,7 @@ class BookingIcalService
                 'end' => $event['end'],
                 'reason' => $event['summary'],
                 'created_at' => now()->toDateTimeString(),
-                'source' => 'ical:' . $feedId,
+                'source' => 'ical:'.$feedId,
                 'source_uid' => $event['uid'],
                 'source_type' => 'ical',
             ];
@@ -271,12 +278,12 @@ class BookingIcalService
 
         $feed = $feeds[$feedIndex];
 
-        $sourcePrefix = 'ical:' . $feedId;
+        $sourcePrefix = 'ical:'.$feedId;
         $existingBlocks = $this->getBlockedDates($propertyId);
         $existingBlocks = array_values(
             array_filter(
                 $existingBlocks,
-                fn($b) => str_starts_with($b['source'] ?? '', $sourcePrefix) !== 0
+                fn ($b) => str_starts_with($b['source'] ?? '', $sourcePrefix) !== 0
             )
         );
 
@@ -287,6 +294,7 @@ class BookingIcalService
             $feeds[$feedIndex]['last_sync_status'] = 'error';
             $feeds[$feedIndex]['last_error'] = 'Failed to download feed.';
             $this->saveFeeds($propertyId, $feeds);
+
             return ['success' => false, 'error' => 'Failed to download iCal feed.'];
         }
 
@@ -302,7 +310,7 @@ class BookingIcalService
                 'end' => $event['end'],
                 'reason' => $event['summary'],
                 'created_at' => now()->toDateTimeString(),
-                'source' => 'ical:' . $feedId,
+                'source' => 'ical:'.$feedId,
                 'source_uid' => $event['uid'],
                 'source_type' => 'ical',
             ];
@@ -334,25 +342,27 @@ class BookingIcalService
                 function ($f) use ($feedId, &$found) {
                     if (($f['id'] ?? '') === $feedId) {
                         $found = true;
+
                         return false;
                     }
+
                     return true;
                 }
             )
         );
 
-        if (!$found) {
+        if (! $found) {
             return false;
         }
 
         $this->saveFeeds($propertyId, $feeds);
 
-        $sourcePrefix = 'ical:' . $feedId;
+        $sourcePrefix = 'ical:'.$feedId;
         $existingBlocks = $this->getBlockedDates($propertyId);
         $existingBlocks = array_values(
             array_filter(
                 $existingBlocks,
-                fn($b) => str_starts_with($b['source'] ?? '', $sourcePrefix) !== 0
+                fn ($b) => str_starts_with($b['source'] ?? '', $sourcePrefix) !== 0
             )
         );
         $this->saveBlockedDates($propertyId, $existingBlocks);

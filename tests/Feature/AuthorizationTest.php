@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +17,8 @@ class AuthorizationTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        \App\Models\Setting::set('require_email_verification', '1');
+        $this->seed(RolesAndPermissionsSeeder::class);
+        Setting::set('require_email_verification', '1');
     }
 
     protected function createUserWithRole(string $roleSlug): User
@@ -24,6 +26,7 @@ class AuthorizationTest extends TestCase
         $user = User::factory()->create();
         $role = Role::where('slug', $roleSlug)->first();
         $user->roles()->attach($role);
+
         return $user;
     }
 

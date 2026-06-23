@@ -12,7 +12,7 @@ class ImageUploadService
 {
     public function upload(UploadedFile $file, Property $property, bool $featured = false, ?string $altText = null): PropertyImage
     {
-        $path = $file->store('properties/' . $property->id, 'public');
+        $path = $file->store('properties/'.$property->id, 'public');
 
         $thumbnailPath = $this->generateThumbnail($file, $property);
 
@@ -67,7 +67,7 @@ class ImageUploadService
             $img = Image::decodePath($file->getRealPath());
             $img->scaleDown(400, 300);
 
-            $thumbPath = 'properties/' . $property->id . '/thumb_' . $file->hashName();
+            $thumbPath = 'properties/'.$property->id.'/thumb_'.$file->hashName();
             Storage::disk('public')->put($thumbPath, (string) $img->encode());
 
             return $thumbPath;

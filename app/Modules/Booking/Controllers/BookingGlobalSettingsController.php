@@ -4,9 +4,10 @@ namespace App\Modules\Booking\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\ModuleRegistry;
+use App\Modules\Properties\Models\Property;
 use App\Services\SettingsService;
-use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class BookingGlobalSettingsController extends Controller
 {
@@ -43,30 +44,32 @@ class BookingGlobalSettingsController extends Controller
 
     public function getOption(string $key, mixed $default = null): mixed
     {
-        return SettingsService::get('booking_' . $key, $default);
+        return SettingsService::get('booking_'.$key, $default);
     }
 
     public function updateFromRequest(array $data): array
     {
         $sanitized = $this->sanitizeBookingSettings($data);
         SettingsService::setMany($sanitized);
+
         return $this->getOptions();
     }
 
     public function getCurrency(?int $propertyId = null): string
     {
         if ($propertyId) {
-            $property = \App\Modules\Properties\Models\Property::find($propertyId);
-            if ($property && !empty($property->metadata['currency'])) {
+            $property = Property::find($propertyId);
+            if ($property && ! empty($property->metadata['currency'])) {
                 return strtoupper($property->metadata['currency']);
             }
         }
         if ($this->moduleRegistry->isEnabled('properties')) {
             $currency = SettingsService::get('property_default_currency');
-            if (!empty($currency)) {
+            if (! empty($currency)) {
                 return $currency;
             }
         }
+
         return 'USD';
     }
 
@@ -111,16 +114,17 @@ class BookingGlobalSettingsController extends Controller
                 }
             }
         }
+
         return $sanitized;
     }
 
     public function edit(): mixed
     {
-        if (!$this->isModuleEnabled()) {
+        if (! $this->isModuleEnabled()) {
             return redirect('/dashboard/settings');
         }
 
-        if (!auth()->user()->can('manage_options')) {
+        if (! auth()->user()->can('manage_options')) {
             return redirect('/dashboard');
         }
 
@@ -141,7 +145,7 @@ class BookingGlobalSettingsController extends Controller
 
     public function update(Request $request): mixed
     {
-        if (!auth()->user()->can('manage_options')) {
+        if (! auth()->user()->can('manage_options')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

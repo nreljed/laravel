@@ -48,7 +48,7 @@ trait EditorContentSanitizer
             return '';
         }
 
-        $allowed = '<' . implode('><', $this->getAllowedTags()) . '>';
+        $allowed = '<'.implode('><', $this->getAllowedTags()).'>';
         $content = strip_tags($content, $allowed);
         $content = $this->stripAttributes($content);
 
@@ -67,7 +67,7 @@ trait EditorContentSanitizer
             return '';
         }
 
-        $allowed = '<' . implode('><', $this->getAllowedTags()) . '>';
+        $allowed = '<'.implode('><', $this->getAllowedTags()).'>';
         $content = strip_tags($content, $allowed);
         $content = $this->stripAttributes($content);
 

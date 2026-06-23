@@ -13,6 +13,8 @@ use App\Modules\Booking\Services\BookingPipelineTrace;
 use App\Modules\Booking\Services\BookingPriceCalculator;
 use App\Modules\Properties\Models\Property;
 use App\Services\AuditService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -41,9 +43,9 @@ class BookingDemoController extends Controller
             $settings = $this->getPropertyBookingData($property);
 
             $thumbnailUrl = $property->featuredImage?->url;
-            if (!$thumbnailUrl) {
+            if (! $thumbnailUrl) {
                 $images = $property->images ?? [];
-                if (!empty($images)) {
+                if (! empty($images)) {
                     $first = is_array($images) ? $images[0] : $images->first();
                     $thumbnailUrl = $first['url'] ?? $first->url ?? null;
                 }
@@ -55,11 +57,11 @@ class BookingDemoController extends Controller
             if ($bookable) {
                 $this->cacheService->bustPropertyCache($property->id);
                 $availability = [];
-                $today = new \DateTime();
+                $today = new \DateTime;
                 for ($i = 0; $i < 4; $i++) {
                     $month = $today->format('Y-m');
                     $dates = $this->availabilityService->getMonthData($property->id, (int) $today->format('Y'), (int) $today->format('m'));
-                    if (!empty($dates['days'])) {
+                    if (! empty($dates['days'])) {
                         foreach ($dates['days'] as $dateStr => $info) {
                             $availability[$dateStr] = $info;
                         }
@@ -113,9 +115,9 @@ class BookingDemoController extends Controller
         );
     }
 
-    public function cleanupAll(): \Illuminate\Http\JsonResponse
+    public function cleanupAll(): JsonResponse
     {
-        if (!auth()->user()->can('manage_options')) {
+        if (! auth()->user()->can('manage_options')) {
             return response()->json(['error' => 'Admin access required'], 403);
         }
 
@@ -148,7 +150,7 @@ class BookingDemoController extends Controller
             ->where('metadata->booking_enabled', '1')
             ->first();
 
-        if (!$property) {
+        if (! $property) {
             return redirect()->route('bookings.demo')->withErrors(['seed' => 'No bookable property found. Enable booking on a property first.']);
         }
 
@@ -179,8 +181,8 @@ class BookingDemoController extends Controller
             'cleaning_fee' => $price['cleaning_fee'],
             'service_fee' => $price['service_fee'],
             'total_amount' => $price['total_amount'],
-            'check_in' => $checkIn . ' 15:00:00',
-            'check_out' => $checkOut . ' 11:00:00',
+            'check_in' => $checkIn.' 15:00:00',
+            'check_out' => $checkOut.' 11:00:00',
             'guest_count' => 2,
             'metadata' => [
                 'cancellation_policy' => 'flexible',
@@ -198,21 +200,21 @@ class BookingDemoController extends Controller
             'source' => 'demo_seed',
         ]);
 
-        return redirect()->to('/dashboard/manage-bookings/calendar?month=' . now()->addDay()->format('Y-m'))->with(
+        return redirect()->to('/dashboard/manage-bookings/calendar?month='.now()->addDay()->format('Y-m'))->with(
             'status',
             "Seeded booking #{$booking->id}: {$checkIn} \u{2192} {$checkOut} at {$property->name}"
         );
     }
 
-    public function diagnose(Request $request): \Illuminate\Http\JsonResponse
+    public function diagnose(Request $request): JsonResponse
     {
-        if (!auth()->user()->can('manage_options')) {
+        if (! auth()->user()->can('manage_options')) {
             return response()->json(['error' => 'Admin only'], 403);
         }
 
         $month = $request->input('month', now()->format('Y-m'));
-        $startDate = \Carbon\Carbon::parse($month)->startOfMonth()->toDateString();
-        $endDate = \Carbon\Carbon::parse($month)->endOfMonth()->toDateString();
+        $startDate = Carbon::parse($month)->startOfMonth()->toDateString();
+        $endDate = Carbon::parse($month)->endOfMonth()->toDateString();
         $bookingId = (int) $request->input('id', 0);
 
         $booking = $bookingId ? Booking::find($bookingId) : null;
@@ -257,15 +259,15 @@ class BookingDemoController extends Controller
         ], JSON_PRETTY_PRINT);
     }
 
-    public function generateMagicLink(int $id): \Illuminate\Http\JsonResponse
+    public function generateMagicLink(int $id): JsonResponse
     {
         $booking = Booking::find($id);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
         $guestEmail = $booking->guest_email;
-        if (!$guestEmail) {
+        if (! $guestEmail) {
             return response()->json(['error' => 'No guest email on booking'], 400);
         }
 
@@ -284,10 +286,10 @@ class BookingDemoController extends Controller
         ]);
     }
 
-    public function tokenStatus(int $id): \Illuminate\Http\JsonResponse
+    public function tokenStatus(int $id): JsonResponse
     {
         $booking = Booking::find($id);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
@@ -302,10 +304,10 @@ class BookingDemoController extends Controller
         ]);
     }
 
-    public function emailStatus(int $id): \Illuminate\Http\JsonResponse
+    public function emailStatus(int $id): JsonResponse
     {
         $booking = Booking::find($id);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
@@ -325,7 +327,7 @@ class BookingDemoController extends Controller
             $emails[] = [
                 'key' => $key,
                 'label' => $label,
-                'sent' => !empty($sentValue),
+                'sent' => ! empty($sentValue),
                 'sent_at' => $sentValue ?: null,
             ];
         }
@@ -340,10 +342,10 @@ class BookingDemoController extends Controller
         ]);
     }
 
-    public function pipelineTrace(int $id): \Illuminate\Http\JsonResponse
+    public function pipelineTrace(int $id): JsonResponse
     {
         $booking = Booking::find($id);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
@@ -356,10 +358,10 @@ class BookingDemoController extends Controller
         ]);
     }
 
-    public function verifyIntegration(int $id): \Illuminate\Http\JsonResponse
+    public function verifyIntegration(int $id): JsonResponse
     {
         $booking = Booking::with('property')->find($id);
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
@@ -377,31 +379,31 @@ class BookingDemoController extends Controller
                 'key' => 'booking_cpt',
                 'label' => 'Booking record created correctly',
                 'passed' => true,
-                'detail' => 'Model: Booking, ID: ' . $booking->id,
+                'detail' => 'Model: Booking, ID: '.$booking->id,
             ],
             [
                 'key' => 'property_ref',
                 'label' => 'Booking references a valid property',
                 'passed' => $property && $property->exists,
-                'detail' => $property ? $property->name . ' (ID: ' . $booking->property_id . ')' : 'No property found (ID: ' . $booking->property_id . ')',
+                'detail' => $property ? $property->name.' (ID: '.$booking->property_id.')' : 'No property found (ID: '.$booking->property_id.')',
             ],
             [
                 'key' => 'guest_email',
                 'label' => 'Guest email is stored and valid',
-                'passed' => !empty($guestEmail) && filter_var($guestEmail, FILTER_VALIDATE_EMAIL) !== false,
+                'passed' => ! empty($guestEmail) && filter_var($guestEmail, FILTER_VALIDATE_EMAIL) !== false,
                 'detail' => $guestEmail ?: 'Missing',
             ],
             [
                 'key' => 'date_range',
                 'label' => 'Check-in / Check-out dates are valid',
-                'passed' => !empty($checkIn) && !empty($checkOut) && strtotime($checkOut) > strtotime($checkIn),
-                'detail' => $checkIn . ' → ' . $checkOut,
+                'passed' => ! empty($checkIn) && ! empty($checkOut) && strtotime($checkOut) > strtotime($checkIn),
+                'detail' => $checkIn.' → '.$checkOut,
             ],
             [
                 'key' => 'price_breakdown',
                 'label' => 'Price breakdown stored (JSON meta)',
-                'passed' => !empty($breakdown),
-                'detail' => $breakdown ? 'Total: ' . number_format((float) $totalPrice, 2) : 'Missing',
+                'passed' => ! empty($breakdown),
+                'detail' => $breakdown ? 'Total: '.number_format((float) $totalPrice, 2) : 'Missing',
             ],
             [
                 'key' => 'price_total_matches',
@@ -413,12 +415,12 @@ class BookingDemoController extends Controller
                 'key' => 'host_assigned',
                 'label' => 'Booking has host assigned',
                 'passed' => $booking->user_id > 0,
-                'detail' => $booking->user_id > 0 ? 'User ID: ' . $booking->user_id : 'No host assigned',
+                'detail' => $booking->user_id > 0 ? 'User ID: '.$booking->user_id : 'No host assigned',
             ],
             [
                 'key' => 'guest_name',
                 'label' => 'Guest name stored',
-                'passed' => !empty($booking->guest_name),
+                'passed' => ! empty($booking->guest_name),
                 'detail' => $booking->guest_name ?: 'Missing',
             ],
             [
@@ -430,16 +432,16 @@ class BookingDemoController extends Controller
             [
                 'key' => 'cancellation_policy',
                 'label' => 'Cancellation policy assigned',
-                'passed' => !empty($metadata['cancellation_policy']),
+                'passed' => ! empty($metadata['cancellation_policy']),
                 'detail' => $metadata['cancellation_policy'] ?? 'Missing',
             ],
         ];
 
-        if (!empty($breakdown)) {
+        if (! empty($breakdown)) {
             $decoded = is_string($breakdown) ? json_decode($breakdown, true) : $breakdown;
             if (isset($decoded['total_amount']) && (float) $totalPrice > 0) {
                 $checks[5]['passed'] = abs((float) $decoded['total_amount'] - (float) $totalPrice) < 0.01;
-                $checks[5]['detail'] = 'Meta: ' . number_format((float) $totalPrice, 2) . ' | Breakdown: ' . number_format((float) $decoded['total_amount'], 2);
+                $checks[5]['detail'] = 'Meta: '.number_format((float) $totalPrice, 2).' | Breakdown: '.number_format((float) $decoded['total_amount'], 2);
             } else {
                 $checks[5]['detail'] = 'Breakdown missing total or meta total is 0';
             }
@@ -459,7 +461,7 @@ class BookingDemoController extends Controller
         return response()->json([
             'success' => true,
             'booking_id' => $id,
-            'summary' => $passed . ' / ' . $total . ' checks passed',
+            'summary' => $passed.' / '.$total.' checks passed',
             'all_passed' => $allPassed,
             'checks' => $checks,
         ]);
@@ -468,14 +470,14 @@ class BookingDemoController extends Controller
     public function demoResult(int $id): mixed
     {
         $booking = Booking::with('property')->find($id);
-        if (!$booking) {
+        if (! $booking) {
             return redirect()->route('bookings.demo')->withErrors(['not_found' => 'Booking not found']);
         }
 
         $user = auth()->user();
         $isAdmin = $user->can('manage_options');
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $hostId = $booking->user_id;
             $guestEmail = $booking->guest_email;
             if ($hostId !== $user->id && $guestEmail !== $user->email) {
@@ -489,9 +491,9 @@ class BookingDemoController extends Controller
         $propertyData = null;
         if ($property) {
             $thumbnailUrl = $property->featuredImage?->url;
-            if (!$thumbnailUrl) {
+            if (! $thumbnailUrl) {
                 $images = $property->images ?? [];
-                if (!empty($images)) {
+                if (! empty($images)) {
                     $first = is_array($images) ? $images[0] : $images->first();
                     $thumbnailUrl = $first['url'] ?? $first->url ?? null;
                 }
@@ -530,7 +532,7 @@ class BookingDemoController extends Controller
             $emailStatus[] = [
                 'key' => $key,
                 'label' => $label,
-                'sent' => !empty($sentValue),
+                'sent' => ! empty($sentValue),
                 'sent_at' => $sentValue ?: null,
             ];
         }
@@ -540,7 +542,7 @@ class BookingDemoController extends Controller
             [
                 'booking' => [
                     'id' => $booking->id,
-                    'title' => $booking->guest_name ? 'Booking: ' . $booking->guest_name : 'Booking #' . $booking->id,
+                    'title' => $booking->guest_name ? 'Booking: '.$booking->guest_name : 'Booking #'.$booking->id,
                     'status' => $booking->status,
                     'status_label' => BookingStatus::tryFrom($booking->status)?->label() ?? $booking->status,
                     'status_badge_class' => $this->getStatusBadgeClass($booking->status),
@@ -554,7 +556,7 @@ class BookingDemoController extends Controller
                     'nights' => $booking->nights(),
                     'guests' => $booking->guest_count,
                     'has_pets' => ($booking->pets ?? 0) > 0,
-                    'has_unit' => !empty($metadata['unit_id']),
+                    'has_unit' => ! empty($metadata['unit_id']),
                     'unit_name' => $metadata['unit_name'] ?? '',
                     'price_breakdown' => isset($metadata['price_breakdown']) ? json_decode($metadata['price_breakdown'], true) : null,
                     'special_requests' => $metadata['special_requests'] ?? '',
@@ -566,8 +568,8 @@ class BookingDemoController extends Controller
                     'allowed_transitions' => $this->getAllowedTransitions($booking->status),
                 ],
                 'property' => $propertyData,
-                'admin_url' => '/dashboard/manage-bookings/' . $booking->id,
-                'page' => ['title' => 'Demo Result - Booking #' . $booking->id],
+                'admin_url' => '/dashboard/manage-bookings/'.$booking->id,
+                'page' => ['title' => 'Demo Result - Booking #'.$booking->id],
             ]
         );
     }
@@ -575,6 +577,7 @@ class BookingDemoController extends Controller
     protected function getStatusBadgeClass(string $status): string
     {
         $enum = BookingStatus::tryFrom($status);
+
         return match ($enum) {
             BookingStatus::Pending => 'bg-yellow-100 text-yellow-800',
             BookingStatus::Confirmed => 'bg-blue-100 text-blue-800',
@@ -590,7 +593,7 @@ class BookingDemoController extends Controller
     protected function getAllowedTransitions(string $status): array
     {
         $enum = BookingStatus::tryFrom($status);
-        if (!$enum) {
+        if (! $enum) {
             return [];
         }
         $result = [];
@@ -602,6 +605,7 @@ class BookingDemoController extends Controller
                 ];
             }
         }
+
         return $result;
     }
 
@@ -612,6 +616,7 @@ class BookingDemoController extends Controller
         foreach (['nightly_rate', 'cleaning_fee', 'service_fee', 'min_nights', 'max_nights', 'cancellation_policy', 'check_in_time', 'check_out_time', 'currency'] as $key) {
             $settings[$key] = $metadata[$key] ?? null;
         }
+
         return $settings;
     }
 }

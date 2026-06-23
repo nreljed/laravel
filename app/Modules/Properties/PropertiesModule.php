@@ -2,10 +2,10 @@
 
 namespace App\Modules\Properties;
 
-use App\Models\Module;
 use App\Modules\Contracts\ModuleInterface;
 use App\Modules\Properties\Models\Property;
 use App\Modules\Traits\HasRoutes;
+use Illuminate\Support\Facades\Schema;
 
 class PropertiesModule implements ModuleInterface
 {
@@ -38,7 +38,7 @@ class PropertiesModule implements ModuleInterface
 
     public function routes(): void
     {
-        $this->loadRoutes(__DIR__ . '/Routes/web.php', '/dashboard/properties', 'dashboard.properties.', 'properties.view');
+        $this->loadRoutes(__DIR__.'/Routes/web.php', '/dashboard/properties', 'dashboard.properties.', 'properties.view');
     }
 
     public function boot(): void
@@ -81,7 +81,7 @@ class PropertiesModule implements ModuleInterface
 
     public function getDashboardData(): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('properties')) {
+        if (! Schema::hasTable('properties')) {
             return [];
         }
 

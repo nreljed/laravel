@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Permission;
 use App\Models\Role;
 use App\Modules\ModuleRegistry;
 use Illuminate\Database\Migrations\Migration;
@@ -25,10 +26,10 @@ return new class extends Migration
                         $moduleSlugs[] = $perm['slug'];
                     }
                 }
-                $modulePerms = \App\Models\Permission::whereIn('slug', $moduleSlugs)->pluck('id');
+                $modulePerms = Permission::whereIn('slug', $moduleSlugs)->pluck('id');
                 $existingIds = $crmUser->permissions()->pluck('permissions.id')->toArray();
                 $newIds = $modulePerms->diff($existingIds)->values()->toArray();
-                if (!empty($newIds)) {
+                if (! empty($newIds)) {
                     $crmUser->permissions()->attach($newIds);
                 }
             }

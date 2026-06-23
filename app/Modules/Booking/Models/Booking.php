@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Properties\Models\Property;
 use Carbon\Carbon;
+use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -52,7 +53,7 @@ class Booking extends Model
 
     protected static function newFactory(): Factory
     {
-        return \Database\Factories\BookingFactory::new();
+        return BookingFactory::new();
     }
 
     public function property(): BelongsTo
@@ -84,11 +85,11 @@ class Booking extends Model
     {
         return $query->where(function ($q) use ($start, $end) {
             $q->whereBetween('start_date', [$start, $end])
-              ->orWhereBetween('end_date', [$start, $end])
-              ->orWhere(function ($q2) use ($start, $end) {
-                  $q2->where('start_date', '<=', $start)
-                     ->where('end_date', '>=', $end);
-              });
+                ->orWhereBetween('end_date', [$start, $end])
+                ->orWhere(function ($q2) use ($start, $end) {
+                    $q2->where('start_date', '<=', $start)
+                        ->where('end_date', '>=', $end);
+                });
         });
     }
 

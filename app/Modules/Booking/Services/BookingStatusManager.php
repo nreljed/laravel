@@ -22,6 +22,7 @@ class BookingStatusManager
     public function canTransition(string $currentStatus, string $newStatus): bool
     {
         $allowed = self::$transitions[$currentStatus] ?? [];
+
         return in_array($newStatus, $allowed, true);
     }
 
@@ -29,13 +30,13 @@ class BookingStatusManager
     {
         $oldStatus = $booking->status;
 
-        if (!$oldStatus->canTransitionTo($newStatus)) {
+        if (! $oldStatus->canTransitionTo($newStatus)) {
             throw new \InvalidArgumentException(
                 "Cannot transition from {$oldStatus->value} to {$newStatus->value}."
             );
         }
 
-        DB::transaction(function () use ($booking, $newStatus, $oldStatus, $reason, $cancelledBy) {
+        DB::transaction(function () use ($booking, $newStatus, $reason, $cancelledBy) {
             $updates = ['status' => $newStatus->value];
             $meta = $booking->metadata ?? [];
 
@@ -43,11 +44,11 @@ class BookingStatusManager
                 $updates['cancellation_reason'] = $reason;
             }
 
-            if ($newStatus === BookingStatus::Confirmed && !$booking->confirmed_at) {
+            if ($newStatus === BookingStatus::Confirmed && ! $booking->confirmed_at) {
                 $updates['confirmed_at'] = now();
             }
 
-            if ($newStatus === BookingStatus::Cancelled && !$booking->cancelled_at) {
+            if ($newStatus === BookingStatus::Cancelled && ! $booking->cancelled_at) {
                 $updates['cancelled_at'] = now();
 
                 $refund = $this->calculateRefundForBooking($booking, $cancelledBy);
@@ -57,11 +58,11 @@ class BookingStatusManager
                 $meta['refund_reason'] = $refund['reason'];
             }
 
-            if ($newStatus === BookingStatus::CheckedIn && !$booking->checked_in_at) {
+            if ($newStatus === BookingStatus::CheckedIn && ! $booking->checked_in_at) {
                 $updates['checked_in_at'] = now();
             }
 
-            if ($newStatus === BookingStatus::CheckedOut && !$booking->checked_out_at) {
+            if ($newStatus === BookingStatus::CheckedOut && ! $booking->checked_out_at) {
                 $updates['checked_out_at'] = now();
                 $meta['claim_window_expires_at'] = now()->addDays(30)->toISOString();
             }
@@ -183,6 +184,7 @@ class BookingStatusManager
                     $reason = 'No mid-trip refund under this policy';
                     break;
             }
+
             return [
                 'refund_percent' => $refundPercent,
                 'refund_amount' => round($totalPrice * $refundPercent / 100, 2),
@@ -350,9 +352,10 @@ class BookingStatusManager
             ->filter(function (Booking $booking) use ($now) {
                 $meta = $booking->metadata ?? [];
                 $claimExpiry = $meta['claim_window_expires_at'] ?? null;
-                if (!$claimExpiry) {
+                if (! $claimExpiry) {
                     return false;
                 }
+
                 return $claimExpiry <= $now->toISOString() && empty($meta['deposit_released_at']);
             });
 

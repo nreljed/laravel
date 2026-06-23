@@ -2,8 +2,8 @@
 
 namespace App\Modules\Booking;
 
-use App\Modules\Booking\Enums\BookingStatus;
 use App\Models\User;
+use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingCacheService;
 use App\Modules\Booking\Services\BookingEmailService;
@@ -11,11 +11,13 @@ use App\Modules\Booking\Services\BookingGuestTokenService;
 use App\Modules\Booking\Services\BookingPipelineTrace;
 use App\Modules\Booking\Services\BookingRefundMailService;
 use App\Modules\Contracts\ModuleInterface;
+use App\Modules\Properties\Models\Property;
 use App\Modules\Traits\HasRoutes;
 use App\Notifications\AppNotification;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class BookingModule implements ModuleInterface
 {
@@ -48,9 +50,9 @@ class BookingModule implements ModuleInterface
 
     public function routes(): void
     {
-        $this->loadRoutes(__DIR__ . '/Routes/web.php', '/dashboard/bookings', 'dashboard.bookings.', 'bookings.view');
-        $this->loadRoutes(__DIR__ . '/Routes/my-bookings.php', '/dashboard', 'dashboard.', 'bookings.view');
-        $this->loadPublicRoutes(__DIR__ . '/Routes/guest.php', '');
+        $this->loadRoutes(__DIR__.'/Routes/web.php', '/dashboard/bookings', 'dashboard.bookings.', 'bookings.view');
+        $this->loadRoutes(__DIR__.'/Routes/my-bookings.php', '/dashboard', 'dashboard.', 'bookings.view');
+        $this->loadPublicRoutes(__DIR__.'/Routes/guest.php', '');
     }
 
     public function boot(): void
@@ -93,7 +95,7 @@ class BookingModule implements ModuleInterface
 
     public function getDashboardData(): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('bookings')) {
+        if (! Schema::hasTable('bookings')) {
             return [];
         }
 
@@ -131,7 +133,7 @@ class BookingModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [__DIR__ . '/database/migrations'];
+        return [__DIR__.'/database/migrations'];
     }
 
     public function permissions(): array
@@ -318,18 +320,18 @@ class BookingModule implements ModuleInterface
     {
         try {
             $booking = Booking::find($bookingId);
-            if (!$booking) {
+            if (! $booking) {
                 return;
             }
 
-            $admins = User::whereHas('roles', fn($q) => $q->where('slug', 'admin'))->get();
+            $admins = User::whereHas('roles', fn ($q) => $q->where('slug', 'admin'))->get();
             if ($admins->isEmpty()) {
                 return;
             }
 
             $service = app(NotificationService::class);
             $property = $booking->property_id
-                ? \App\Modules\Properties\Models\Property::find($booking->property_id)
+                ? Property::find($booking->property_id)
                 : null;
 
             $data = array_merge([
@@ -354,7 +356,7 @@ class BookingModule implements ModuleInterface
     {
         try {
             $booking = Booking::find($bookingId);
-            if (!$booking || !$booking->guest_email) {
+            if (! $booking || ! $booking->guest_email) {
                 return;
             }
 
@@ -379,7 +381,7 @@ class BookingModule implements ModuleInterface
             }
 
             self::notifyAdmins('booking.created', $bookingId, [
-                'bookingUrl' => $magicLink ?: url('/dashboard/bookings/' . $bookingId),
+                'bookingUrl' => $magicLink ?: url('/dashboard/bookings/'.$bookingId),
             ]);
             BookingPipelineTrace::add($bookingId, 'created.admins_notified', 'Admin notification sent');
         } catch (\Throwable $e) {
@@ -395,7 +397,7 @@ class BookingModule implements ModuleInterface
     {
         try {
             $booking = Booking::find($bookingId);
-            if (!$booking) {
+            if (! $booking) {
                 return;
             }
 
@@ -419,13 +421,13 @@ class BookingModule implements ModuleInterface
 
             if ($newStatus === BookingStatus::Confirmed->value && $oldStatus !== BookingStatus::Confirmed->value) {
                 self::notifyAdmins('booking.confirmed', $bookingId, [
-                    'bookingUrl' => url('/dashboard/bookings/' . $bookingId),
+                    'bookingUrl' => url('/dashboard/bookings/'.$bookingId),
                 ]);
             } elseif ($newStatus !== 'cancelled') {
                 self::notifyAdmins('booking.modified', $bookingId, [
                     'oldStatus' => $oldStatus,
                     'newStatus' => $newStatus,
-                    'bookingUrl' => url('/dashboard/bookings/' . $bookingId),
+                    'bookingUrl' => url('/dashboard/bookings/'.$bookingId),
                 ]);
             }
         } catch (\Throwable $e) {
@@ -443,7 +445,7 @@ class BookingModule implements ModuleInterface
     {
         try {
             $booking = Booking::withTrashed()->find($bookingId);
-            if (!$booking) {
+            if (! $booking) {
                 return;
             }
 
@@ -469,7 +471,7 @@ class BookingModule implements ModuleInterface
     {
         try {
             $booking = Booking::find($bookingId);
-            if (!$booking) {
+            if (! $booking) {
                 return;
             }
 

@@ -30,7 +30,7 @@ class SettingsService
 
     public static function getGroup(string $group): array
     {
-        return Cache::remember(self::CACHE_KEY . "_{$group}", 3600, function () use ($group) {
+        return Cache::remember(self::CACHE_KEY."_{$group}", 3600, function () use ($group) {
             return Setting::where('group', $group)
                 ->pluck('value', 'key')
                 ->toArray();
@@ -39,7 +39,7 @@ class SettingsService
 
     public static function getAllGrouped(): array
     {
-        return Cache::remember(self::CACHE_KEY . '_grouped', 3600, function () {
+        return Cache::remember(self::CACHE_KEY.'_grouped', 3600, function () {
             return Setting::all()
                 ->groupBy('group')
                 ->map(fn ($items) => $items->pluck('value', 'key')->toArray())
@@ -52,16 +52,16 @@ class SettingsService
         $settings = self::getGroup('formatting');
 
         return [
-            'default_currency'      => $settings['default_currency'] ?? 'USD',
-            'currency_position'     => $settings['currency_position'] ?? 'before',
-            'price_empty_text'      => $settings['price_empty_text'] ?? '',
-            'surface_unit'          => $settings['surface_unit'] ?? 'sq_ft',
-            'thousands_separator'   => $settings['thousands_separator'] ?? ',',
-            'decimal_separator'     => $settings['decimal_separator'] ?? '.',
-            'date_format'           => $settings['date_format'] ?? 'Y-m-d',
-            'time_format'           => $settings['time_format'] ?? 'H:i',
-            'start_of_week'         => $settings['start_of_week'] ?? '0',
-            'timezone'              => $settings['timezone'] ?? 'UTC',
+            'default_currency' => $settings['default_currency'] ?? 'USD',
+            'currency_position' => $settings['currency_position'] ?? 'before',
+            'price_empty_text' => $settings['price_empty_text'] ?? '',
+            'surface_unit' => $settings['surface_unit'] ?? 'sq_ft',
+            'thousands_separator' => $settings['thousands_separator'] ?? ',',
+            'decimal_separator' => $settings['decimal_separator'] ?? '.',
+            'date_format' => $settings['date_format'] ?? 'Y-m-d',
+            'time_format' => $settings['time_format'] ?? 'H:i',
+            'start_of_week' => $settings['start_of_week'] ?? '0',
+            'timezone' => $settings['timezone'] ?? 'UTC',
         ];
     }
 
@@ -70,12 +70,12 @@ class SettingsService
         $defaults = self::getFormattingDefaults();
 
         return [
-            'currency'      => $defaults['default_currency'],
-            'position'      => $defaults['currency_position'],
+            'currency' => $defaults['default_currency'],
+            'position' => $defaults['currency_position'],
             'thousands_sep' => $defaults['thousands_separator'],
-            'decimal_sep'   => $defaults['decimal_separator'],
-            'empty_text'    => $defaults['price_empty_text'],
-            'unit'          => $defaults['surface_unit'],
+            'decimal_sep' => $defaults['decimal_separator'],
+            'empty_text' => $defaults['price_empty_text'],
+            'unit' => $defaults['surface_unit'],
         ];
     }
 
@@ -92,9 +92,9 @@ class SettingsService
     public static function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);
-        Cache::forget(self::CACHE_KEY . '_grouped');
+        Cache::forget(self::CACHE_KEY.'_grouped');
         foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties'] as $group) {
-            Cache::forget(self::CACHE_KEY . "_{$group}");
+            Cache::forget(self::CACHE_KEY."_{$group}");
         }
     }
 }

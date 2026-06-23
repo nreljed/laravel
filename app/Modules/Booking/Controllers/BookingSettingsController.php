@@ -72,7 +72,7 @@ class BookingSettingsController extends Controller
     public function edit(int $propertyId): mixed
     {
         $property = Property::find($propertyId);
-        if (!$property || $property->user_id !== auth()->id()) {
+        if (! $property || $property->user_id !== auth()->id()) {
             return redirect()->route('properties.index')->withErrors(['auth' => 'Unauthorized']);
         }
 
@@ -86,6 +86,7 @@ class BookingSettingsController extends Controller
 
             if ($isEmpty) {
                 $settings[$key] = $defaults[$key] ?? '';
+
                 continue;
             }
 
@@ -124,14 +125,14 @@ class BookingSettingsController extends Controller
             'length_of_stay_rates' => $lengthOfStayRates,
             'length_of_stay_tiers' => $lengthOfStayTiers,
             'unit_config' => $unitConfig,
-            'page' => ['title' => 'Booking Settings - ' . $property->name],
+            'page' => ['title' => 'Booking Settings - '.$property->name],
         ]);
     }
 
     public function update(int $propertyId, Request $request): mixed
     {
         $property = Property::find($propertyId);
-        if (!$property || $property->user_id !== auth()->id()) {
+        if (! $property || $property->user_id !== auth()->id()) {
             return back()->withErrors(['auth' => 'Unauthorized']);
         }
 
@@ -147,7 +148,7 @@ class BookingSettingsController extends Controller
             if (in_array($key, $this->booleanKeys)) {
                 $metadata[$key] = ($value === true || $value === 'true' || $value === 1 || $value === '1') ? '1' : '0';
             } elseif (in_array($key, $this->arrayKeys)) {
-                if (is_array($value) && !empty($value)) {
+                if (is_array($value) && ! empty($value)) {
                     $metadata[$key] = json_encode($value);
                 } else {
                     unset($metadata[$key]);
@@ -159,7 +160,7 @@ class BookingSettingsController extends Controller
                     unset($metadata[$key]);
                 }
             } else {
-                if (!empty($value)) {
+                if (! empty($value)) {
                     $metadata[$key] = strip_tags($value);
                 } else {
                     unset($metadata[$key]);

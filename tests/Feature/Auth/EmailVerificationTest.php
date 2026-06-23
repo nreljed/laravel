@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,7 +17,7 @@ class EmailVerificationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        \App\Models\Setting::set('require_email_verification', '1');
+        Setting::set('require_email_verification', '1');
     }
 
     public function test_email_verification_screen_can_be_rendered(): void

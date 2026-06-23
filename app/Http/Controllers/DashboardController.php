@@ -114,7 +114,7 @@ class DashboardController extends Controller
     {
         $mode = $request->input('mode', 'host');
 
-        if (!in_array($mode, ['host', 'guest'])) {
+        if (! in_array($mode, ['host', 'guest'])) {
             return redirect()->back();
         }
 

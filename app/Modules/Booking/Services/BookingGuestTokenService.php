@@ -53,7 +53,7 @@ class BookingGuestTokenService
             ->where('token_hash', $tokenHash)
             ->first();
 
-        if (!$row) {
+        if (! $row) {
             return false;
         }
 
@@ -89,7 +89,7 @@ class BookingGuestTokenService
             ->where('token_hash', $tokenHash)
             ->first();
 
-        if (!$row || Carbon::parse($row->expires_at)->isPast()) {
+        if (! $row || Carbon::parse($row->expires_at)->isPast()) {
             return null;
         }
 
@@ -101,7 +101,7 @@ class BookingGuestTokenService
      */
     public static function getMagicLink(int $bookingId, string $rawToken): string
     {
-        return url('/dashboard/booking/view?token=' . $rawToken);
+        return url('/dashboard/booking/view?token='.$rawToken);
     }
 
     /**

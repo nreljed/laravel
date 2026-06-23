@@ -8,7 +8,7 @@ class BookingDebugCollector
 
     public static function add(string $message): void
     {
-        if (!config('app.debug')) {
+        if (! config('app.debug')) {
             return;
         }
 
@@ -17,7 +17,7 @@ class BookingDebugCollector
 
     public static function addTiming(string $label, float $start): void
     {
-        if (!config('app.debug')) {
+        if (! config('app.debug')) {
             return;
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Seed fresh test users for development/testing.
  *
@@ -10,14 +11,15 @@
  *   - nstudio.webdesign@gmail.com (admin role, password: azerty123/*)
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Hash;
 
 echo "=== Seeding Test Users ===\n\n";
@@ -30,8 +32,9 @@ $users = [
 
 foreach ($users as $data) {
     $role = Role::where('slug', $data['role'])->first();
-    if (!$role) {
+    if (! $role) {
         echo "  SKIP: Role '{$data['role']}' not found. Run seeder first.\n";
+
         continue;
     }
 
@@ -54,4 +57,4 @@ foreach ($users as $data) {
     }
 }
 
-echo "\nDone! Total users: " . User::count() . "\n";
+echo "\nDone! Total users: ".User::count()."\n";

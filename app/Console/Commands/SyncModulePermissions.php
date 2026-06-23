@@ -16,7 +16,7 @@ class SyncModulePermissions extends Command
 
     public function handle(ModuleRegistry $registry): int
     {
-        if (!Schema::hasTable('permissions')) {
+        if (! Schema::hasTable('permissions')) {
             $this->error('Permissions table does not exist. Run migrations first.');
 
             return Command::FAILURE;
@@ -27,7 +27,7 @@ class SyncModulePermissions extends Command
 
         foreach ($registry->all() as $module) {
             foreach ($module->permissions() as $perm) {
-                if (!in_array($perm['slug'], $existing)) {
+                if (! in_array($perm['slug'], $existing)) {
                     Permission::create([
                         'name' => $perm['name'],
                         'slug' => $perm['slug'],
@@ -55,9 +55,9 @@ class SyncModulePermissions extends Command
             $existingIds = $crmUser->permissions()->pluck('permissions.id')->toArray();
             $newIds = $modulePerms->diff($existingIds)->values()->toArray();
 
-            if (!empty($newIds)) {
+            if (! empty($newIds)) {
                 $crmUser->permissions()->attach($newIds);
-                $this->line('  Assigned ' . count($newIds) . ' module permission(s) to crm_user role.');
+                $this->line('  Assigned '.count($newIds).' module permission(s) to crm_user role.');
             } else {
                 $this->line('  No new module permissions to assign to crm_user role.');
             }

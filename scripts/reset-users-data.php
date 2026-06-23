@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Reset all non-admin user data for fresh testing.
  *
@@ -11,15 +12,16 @@
  * - Clears session table
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\User;
 use App\Modules\ECommerce\Models\Order;
 use App\Modules\ECommerce\Models\Product;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -33,14 +35,14 @@ $adminIds = DB::table('role_user')
     ->pluck('user_id')
     ->toArray();
 
-echo "Preserving " . count($adminIds) . " admin user(s)...\n";
+echo 'Preserving '.count($adminIds)." admin user(s)...\n";
 
 // 2. Delete all non-admin users
 $nonAdminQuery = User::whereNotIn('id', $adminIds);
 $count = $nonAdminQuery->count();
 echo "Deleting {$count} non-admin user(s)...\n";
 
-// CASCADE handles: properties, bookings, posts, audit_logs, 
+// CASCADE handles: properties, bookings, posts, audit_logs,
 // notification_preferences, role_user, permission_user, carts
 $nonAdminQuery->delete();
 
@@ -62,4 +64,4 @@ if (Schema::hasTable('sessions')) {
     echo "Cleared sessions table.\n";
 }
 
-echo "\nDone! Users remaining: " . User::count() . "\n";
+echo "\nDone! Users remaining: ".User::count()."\n";

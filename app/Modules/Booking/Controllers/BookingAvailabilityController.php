@@ -7,9 +7,9 @@ use App\Modules\Booking\Services\BookingAvailabilityService;
 use App\Modules\Booking\Services\BookingCacheService;
 use App\Modules\Booking\Services\BookingPriceCalculator;
 use App\Modules\Properties\Models\Property;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Inertia\Inertia;
 
 class BookingAvailabilityController extends Controller
 {
@@ -19,15 +19,15 @@ class BookingAvailabilityController extends Controller
         protected BookingPriceCalculator $priceCalculator,
     ) {}
 
-    public function check(int $propertyId, Request $request): \Illuminate\Http\JsonResponse
+    public function check(int $propertyId, Request $request): JsonResponse
     {
         $property = Property::find($propertyId);
-        if (!$property) {
+        if (! $property) {
             return response()->json(['error' => 'Property not found'], 404);
         }
 
         $month = $request->input('month', now()->format('Y-m'));
-        if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+        if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
             $month = now()->format('Y-m');
         }
 
@@ -47,14 +47,14 @@ class BookingAvailabilityController extends Controller
         ]);
     }
 
-    public function block(Request $request): \Illuminate\Http\JsonResponse
+    public function block(Request $request): JsonResponse
     {
         $propertyId = (int) $request->input('property_id');
         $start = $request->input('start');
         $end = $request->input('end');
         $reason = $request->input('reason', '');
 
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
             return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD.'], 400);
         }
 
@@ -63,13 +63,13 @@ class BookingAvailabilityController extends Controller
         }
 
         $property = Property::find($propertyId);
-        if (!$property || $property->user_id !== auth()->id()) {
+        if (! $property || $property->user_id !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         $metadata = $property->metadata ?? [];
         $blockedDates = $metadata['blocked_dates'] ?? [];
-        if (!is_array($blockedDates)) {
+        if (! is_array($blockedDates)) {
             $blockedDates = [];
         }
 
@@ -88,22 +88,22 @@ class BookingAvailabilityController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function unblock(int $id, Request $request): \Illuminate\Http\JsonResponse
+    public function unblock(int $id, Request $request): JsonResponse
     {
         $propertyId = (int) $request->input('property_id');
 
         $property = Property::find($propertyId);
-        if (!$property || $property->user_id !== auth()->id()) {
+        if (! $property || $property->user_id !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         $metadata = $property->metadata ?? [];
         $blockedDates = $metadata['blocked_dates'] ?? [];
-        if (!is_array($blockedDates)) {
+        if (! is_array($blockedDates)) {
             return response()->json(['error' => 'No blocked dates found'], 404);
         }
 
-        if (!array_key_exists($id, $blockedDates)) {
+        if (! array_key_exists($id, $blockedDates)) {
             return response()->json(['error' => 'Blocked date entry not found'], 404);
         }
 
@@ -117,14 +117,14 @@ class BookingAvailabilityController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function clearOpcache(): \Illuminate\Http\JsonResponse
+    public function clearOpcache(): JsonResponse
     {
         $cleared = 0;
         $files = [
             __FILE__,
-            __DIR__ . '/../Services/BookingAvailabilityService.php',
-            __DIR__ . '/../Services/BookingPriceCalculator.php',
-            __DIR__ . '/../Services/BookingCacheService.php',
+            __DIR__.'/../Services/BookingAvailabilityService.php',
+            __DIR__.'/../Services/BookingPriceCalculator.php',
+            __DIR__.'/../Services/BookingCacheService.php',
         ];
 
         if (function_exists('opcache_reset')) {
@@ -146,16 +146,17 @@ class BookingAvailabilityController extends Controller
         ]);
     }
 
-    public function cacheVersion(int $propertyId): \Illuminate\Http\JsonResponse
+    public function cacheVersion(int $propertyId): JsonResponse
     {
-        $cacheVersion = Cache::get('booking_cache_v_' . $propertyId, 1);
+        $cacheVersion = Cache::get('booking_cache_v_'.$propertyId, 1);
+
         return response()->json([
             'property_id' => $propertyId,
             'version' => (int) $cacheVersion,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
-    public function checkAvailabilityApi(Request $request): \Illuminate\Http\JsonResponse
+    public function checkAvailabilityApi(Request $request): JsonResponse
     {
         $requestStart = microtime(true);
 
@@ -169,11 +170,12 @@ class BookingAvailabilityController extends Controller
         $availabilityCacheVersion = $this->cacheService->getCacheVersion($propertyId);
         $cacheKey = null;
         if ($checkIn && $checkOut) {
-            $cacheKey = 'check_avail_' . $propertyId . '_' . $checkIn . '_' . $checkOut . '_g' . $guests . '_p' . ($hasPets ? '1' : '0') . '_u' . ($unitId ?? 'none');
+            $cacheKey = 'check_avail_'.$propertyId.'_'.$checkIn.'_'.$checkOut.'_g'.$guests.'_p'.($hasPets ? '1' : '0').'_u'.($unitId ?? 'none');
             $cached = Cache::get($cacheKey);
             if ($cached !== null && isset($cached['_version']) && $cached['_version'] === $availabilityCacheVersion) {
                 $cached['_server_time_ms'] = round((microtime(true) - $requestStart) * 1000);
                 $cached['_cached'] = true;
+
                 return response()->json($cached);
             }
         }
@@ -196,7 +198,7 @@ class BookingAvailabilityController extends Controller
                 ? now()->parse($checkIn)->subDays($prepDays)->toDateString()
                 : $checkIn;
 
-            $hasUnits = !empty($metadata['units'] ?? []);
+            $hasUnits = ! empty($metadata['units'] ?? []);
             if ($hasUnits) {
                 $units = $metadata['units'] ?? [];
                 $timings['units_check'] = round((microtime(true) - $t1) * 1000, 1);
@@ -204,16 +206,16 @@ class BookingAvailabilityController extends Controller
                     $unitIds = array_column($units, 'id');
                     $available = in_array((string) $unitId, $unitIds, true);
                 } else {
-                    $available = !empty($units);
+                    $available = ! empty($units);
                 }
-                if (!$available) {
+                if (! $available) {
                     $errorReason = __('No available units for the selected dates');
                 }
             } else {
                 $t1 = microtime(true);
                 $available = $this->availabilityService->isAvailable($propertyId, $checkIn, $checkOut);
                 $timings['is_available'] = round((microtime(true) - $t1) * 1000, 1);
-                if (!$available) {
+                if (! $available) {
                     $errorReason = __('The selected dates are not available');
                 }
             }

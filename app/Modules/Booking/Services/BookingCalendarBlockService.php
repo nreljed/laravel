@@ -9,7 +9,7 @@ class BookingCalendarBlockService
     public static function blockDatesForBooking(int $bookingId): bool
     {
         $booking = Booking::find($bookingId);
-        if (!$booking || !$booking->start_date || !$booking->end_date) {
+        if (! $booking || ! $booking->start_date || ! $booking->end_date) {
             return false;
         }
 
@@ -32,7 +32,7 @@ class BookingCalendarBlockService
     public static function unblockDatesForBooking(int $bookingId): bool
     {
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return false;
         }
 
@@ -50,12 +50,13 @@ class BookingCalendarBlockService
     public static function getBlockedDates(int $bookingId): array
     {
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return [];
         }
 
         $meta = $booking->metadata ?? [];
         $raw = $meta['calendar_blocked_dates'] ?? [];
+
         return is_array($raw) ? $raw : [];
     }
 

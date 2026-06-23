@@ -4,25 +4,24 @@ namespace Tests\Feature;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Modules\Properties\Models\Property;
-use App\Policies\PropertyPolicy;
-use App\Policies\BookingPolicy;
 use App\Modules\Booking\Models\Booking;
-use Database\Factories\PropertyFactory;
-use Database\Factories\BookingFactory;
+use App\Modules\Properties\Models\Property;
+use App\Policies\BookingPolicy;
+use App\Policies\PropertyPolicy;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\BootsModules;
+use Tests\TestCase;
 
 class PolicyEnforcementTest extends TestCase
 {
-    use RefreshDatabase, BootsModules;
+    use BootsModules, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
         $this->bootModules();
     }
 
@@ -31,6 +30,7 @@ class PolicyEnforcementTest extends TestCase
         $user = User::factory()->create();
         $role = Role::where('slug', $roleSlug)->first();
         $user->roles()->attach($role);
+
         return $user;
     }
 

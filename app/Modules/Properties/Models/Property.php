@@ -5,6 +5,7 @@ namespace App\Modules\Properties\Models;
 use App\Models\User;
 use App\Modules\Booking\Models\Booking;
 use App\Services\SettingsService;
+use Database\Factories\PropertyFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +31,7 @@ class Property extends Model
 
     protected static function newFactory(): Factory
     {
-        return \Database\Factories\PropertyFactory::new();
+        return PropertyFactory::new();
     }
 
     protected function casts(): array
@@ -50,8 +51,8 @@ class Property extends Model
     protected static function booted(): void
     {
         static::creating(function (Property $property) {
-            if (!$property->slug) {
-                $property->slug = Str::slug($property->name) . '-' . Str::random(6);
+            if (! $property->slug) {
+                $property->slug = Str::slug($property->name).'-'.Str::random(6);
             }
         });
     }

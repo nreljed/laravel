@@ -22,9 +22,9 @@ class EmailTemplateService
 
     public function render(string $template, array $data = []): string
     {
-        $viewName = 'email.templates.' . $template;
+        $viewName = 'email.templates.'.$template;
 
-        if (!View::exists($viewName)) {
+        if (! View::exists($viewName)) {
             $viewName = 'email.templates.default';
         }
 
@@ -38,8 +38,8 @@ class EmailTemplateService
         $layoutView = 'email.layouts.email';
         $data = $this->injectGlobalData($data);
 
-        $templateView = 'email.templates.' . $template;
-        if (!View::exists($templateView)) {
+        $templateView = 'email.templates.'.$template;
+        if (! View::exists($templateView)) {
             $templateView = 'email.templates.default';
         }
 
@@ -50,6 +50,6 @@ class EmailTemplateService
 
     public function exists(string $template): bool
     {
-        return View::exists('email.templates.' . $template);
+        return View::exists('email.templates.'.$template);
     }
 }

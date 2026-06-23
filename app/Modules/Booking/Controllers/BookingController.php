@@ -122,7 +122,7 @@ class BookingController extends Controller
             'property_id' => 'sometimes|exists:properties,id',
             'start_date' => 'sometimes|date',
             'end_date' => 'sometimes|date|after:start_date',
-            'status' => 'nullable|string|in:' . implode(',', BookingStatus::values()),
+            'status' => 'nullable|string|in:'.implode(',', BookingStatus::values()),
             'guest_name' => 'nullable|string|max:255',
             'guest_email' => 'nullable|email|max:255',
             'guest_phone' => 'nullable|string|max:50',
@@ -164,13 +164,13 @@ class BookingController extends Controller
         $this->authorize('transition', $booking);
 
         $validated = $request->validate([
-            'status' => 'required|string|in:' . implode(',', BookingStatus::values()),
+            'status' => 'required|string|in:'.implode(',', BookingStatus::values()),
             'reason' => 'nullable|string|max:1000',
         ]);
 
         $newStatus = BookingStatus::tryFrom($validated['status']);
 
-        if (!$newStatus) {
+        if (! $newStatus) {
             return redirect()->back()->withErrors(['status' => 'Invalid status.']);
         }
 
@@ -274,7 +274,7 @@ class BookingController extends Controller
 
             $refundMeta = $booking->metadata['refund_percent'] ?? null;
 
-            return redirect()->back()->with('status', 'Booking cancelled.' . ($refundMeta !== null ? " Refund: {$refundMeta}% of total." : ''));
+            return redirect()->back()->with('status', 'Booking cancelled.'.($refundMeta !== null ? " Refund: {$refundMeta}% of total." : ''));
         } catch (\InvalidArgumentException $e) {
             return redirect()->back()->withErrors(['status' => $e->getMessage()]);
         }
@@ -404,21 +404,24 @@ class BookingController extends Controller
 
         if ($action === 'delete') {
             Booking::whereIn('id', $ids)->delete();
+
             return redirect()->back()->with('status', 'Bookings deleted.');
         }
 
         if ($action === 'archive') {
             Booking::whereIn('id', $ids)->update(['archived_at' => now()]);
+
             return redirect()->back()->with('status', 'Bookings archived.');
         }
 
         if ($action === 'unarchive') {
             Booking::whereIn('id', $ids)->update(['archived_at' => null]);
+
             return redirect()->back()->with('status', 'Bookings unarchived.');
         }
 
         $newStatus = BookingStatus::tryFrom($action);
-        if (!$newStatus) {
+        if (! $newStatus) {
             return redirect()->back()->withErrors(['status' => 'Invalid status.']);
         }
 
@@ -444,7 +447,7 @@ class BookingController extends Controller
             'reason' => 'nullable|string|max:500',
         ]);
 
-        if (!$validated['property_id']) {
+        if (! $validated['property_id']) {
             return response()->json(['success' => false, 'error' => 'Property is required.'], 400);
         }
 
@@ -464,11 +467,11 @@ class BookingController extends Controller
 
         $bookings = Booking::with(['property', 'user'])->orderBy('created_at', 'desc')->get();
 
-        $filename = 'bookings-export-' . now()->format('Y-m-d-His') . '.csv';
+        $filename = 'bookings-export-'.now()->format('Y-m-d-His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $callback = function () use ($bookings) {

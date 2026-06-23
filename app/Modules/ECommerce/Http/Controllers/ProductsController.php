@@ -2,9 +2,9 @@
 
 namespace App\Modules\ECommerce\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Modules\ECommerce\Models\Product;
 use App\Modules\ECommerce\Models\ProductCategory;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,8 +17,8 @@ class ProductsController extends Controller
         $query = Product::with('categories');
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%')
-                ->orWhere('sku', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%')
+                ->orWhere('sku', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('status')) {
@@ -26,7 +26,7 @@ class ProductsController extends Controller
         }
 
         if ($request->filled('category_id')) {
-            $query->whereHas('categories', fn($q) => $q->where('product_categories.id', $request->category_id));
+            $query->whereHas('categories', fn ($q) => $q->where('product_categories.id', $request->category_id));
         }
 
         $products = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
@@ -79,7 +79,7 @@ class ProductsController extends Controller
 
         $product = Product::create($validated);
 
-        if (!empty($validated['categories'])) {
+        if (! empty($validated['categories'])) {
             $product->categories()->sync($validated['categories']);
         }
 
@@ -101,13 +101,13 @@ class ProductsController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
+            'slug' => 'nullable|string|max:255|unique:products,slug,'.$product->id,
             'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
             'price' => 'required|numeric|min:0',
             'compare_price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'sku' => 'nullable|string|max:100|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|max:100|unique:products,sku,'.$product->id,
             'barcode' => 'nullable|string|max:100',
             'stock_quantity' => 'nullable|integer|min:0',
             'low_stock_threshold' => 'nullable|integer|min:0',

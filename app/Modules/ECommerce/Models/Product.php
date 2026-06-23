@@ -2,7 +2,6 @@
 
 namespace App\Modules\ECommerce\Models;
 
-use App\Modules\ECommerce\Models\ProductCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -48,10 +47,10 @@ class Product extends Model
     {
         parent::boot();
         static::creating(function (Product $product) {
-            if (!$product->slug) {
+            if (! $product->slug) {
                 $product->slug = Str::slug($product->name);
             }
-            if (!$product->created_by && auth()->check()) {
+            if (! $product->created_by && auth()->check()) {
                 $product->created_by = auth()->id();
             }
         });
@@ -99,6 +98,6 @@ class Product extends Model
 
     public function isInStock(): bool
     {
-        return !$this->track_stock || $this->stock_quantity > 0 || $this->allow_backorders;
+        return ! $this->track_stock || $this->stock_quantity > 0 || $this->allow_backorders;
     }
 }

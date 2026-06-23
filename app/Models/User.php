@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Auth\MustVerifyEmail;
 use App\Traits\UserDataTrait;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -17,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, MustVerifyEmail, UserDataTrait;
+    use HasFactory, MustVerifyEmail, Notifiable, UserDataTrait;
 
     protected $appends = ['avatar_url'];
 
@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function hasRole(string|array $roles): bool
     {
         $roles = is_array($roles) ? $roles : func_get_args();
+
         return $this->roles()->whereIn('slug', $roles)->exists();
     }
 

@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -56,7 +57,7 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
 
     Route::get('email/verified', function () {
-        return \Inertia\Inertia::render('Auth/EmailVerified');
+        return Inertia::render('Auth/EmailVerified');
     })->name('verification.verified');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])

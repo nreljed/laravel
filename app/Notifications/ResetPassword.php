@@ -16,7 +16,7 @@ class ResetPassword extends BaseResetPassword
         $siteName = SettingsService::get('app_name', config('app.name'));
         $siteUrl = SettingsService::get('app_url', url('/'));
 
-        $expireMinutes = config('auth.passwords.' . config('auth.defaults.passwords') . '.expire', 60);
+        $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
 
         $body = view('email.templates.password-reset', [
             'userName' => $notifiable->name ?? 'there',

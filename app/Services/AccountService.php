@@ -3,12 +3,11 @@
 namespace App\Services;
 
 use App\Enums\AuditAction;
-use App\Models\User;
 use App\Models\NotificationPreference;
+use App\Models\User;
 use App\Modules\ModuleRegistry;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class AccountService
 {
@@ -54,7 +53,7 @@ class AccountService
 
     public function updatePassword(User $user, string $currentPassword, string $newPassword): array
     {
-        if (!Hash::check($currentPassword, $user->password)) {
+        if (! Hash::check($currentPassword, $user->password)) {
             return ['success' => false, 'message' => 'The current password you entered is incorrect.'];
         }
 
@@ -100,14 +99,14 @@ class AccountService
         try {
             ModuleRegistry::cleanupUserData($user->id);
         } catch (\Throwable $e) {
-            Log::warning('Module data cleanup failed for user ' . $user->id . ': ' . $e->getMessage());
+            Log::warning('Module data cleanup failed for user '.$user->id.': '.$e->getMessage());
         }
 
         if (method_exists($user, 'tokens')) {
             try {
                 $user->tokens()->delete();
             } catch (\Throwable $e) {
-                Log::warning('Token cleanup failed for user ' . $user->id . ': ' . $e->getMessage());
+                Log::warning('Token cleanup failed for user '.$user->id.': '.$e->getMessage());
             }
         }
 
@@ -121,7 +120,7 @@ class AccountService
         try {
             $this->mailService->sendNow(
                 $user->email,
-                '[' . config('app.name') . '] Your password has been changed',
+                '['.config('app.name').'] Your password has been changed',
                 'password-changed',
                 [
                     'userName' => $user->display_name ?: $user->name,
@@ -130,7 +129,7 @@ class AccountService
                 ]
             );
         } catch (\Throwable $e) {
-            Log::error('Failed to send password change confirmation to: ' . $user->email . ' | Error: ' . $e->getMessage());
+            Log::error('Failed to send password change confirmation to: '.$user->email.' | Error: '.$e->getMessage());
         }
     }
 
@@ -139,7 +138,7 @@ class AccountService
         try {
             $this->mailService->sendNow(
                 $oldEmail,
-                '[' . config('app.name') . '] Email address updated',
+                '['.config('app.name').'] Email address updated',
                 'email-changed',
                 [
                     'userName' => $userName,
@@ -149,7 +148,7 @@ class AccountService
                 ]
             );
         } catch (\Throwable $e) {
-            Log::error('Failed to send email change notification to: ' . $oldEmail . ' | Error: ' . $e->getMessage());
+            Log::error('Failed to send email change notification to: '.$oldEmail.' | Error: '.$e->getMessage());
         }
     }
 
@@ -158,7 +157,7 @@ class AccountService
         try {
             $this->mailService->sendNow(
                 $email,
-                '[' . config('app.name') . '] Your account has been deleted',
+                '['.config('app.name').'] Your account has been deleted',
                 'account-deleted',
                 [
                     'userName' => $displayName,
@@ -167,7 +166,7 @@ class AccountService
                 ]
             );
         } catch (\Throwable $e) {
-            Log::error('Failed to send deletion confirmation email to: ' . $email . ' | Error: ' . $e->getMessage());
+            Log::error('Failed to send deletion confirmation email to: '.$email.' | Error: '.$e->getMessage());
         }
     }
 }

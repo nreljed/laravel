@@ -67,7 +67,7 @@ class PostController extends Controller
             'tags.*' => 'string|max:255',
         ]);
 
-        if (($validated['status'] ?? '') === 'published' && !$post->published_at) {
+        if (($validated['status'] ?? '') === 'published' && ! $post->published_at) {
             $validated['published_at'] = now();
         }
 

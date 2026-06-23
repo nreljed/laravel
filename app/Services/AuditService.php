@@ -15,7 +15,7 @@ class AuditService
             'user_id' => $userId,
             'ip' => Request::ip() ?? 'unknown',
             'user_agent' => Request::userAgent() ?? '',
-            'context' => !empty($context) ? $context : null,
+            'context' => ! empty($context) ? $context : null,
         ]);
     }
 

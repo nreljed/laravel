@@ -16,10 +16,10 @@ class AvatarController extends Controller
         $user = $request->user();
         $file = $request->file('avatar');
 
-        $filename = 'avatar-' . $user->id . '-' . time() . '.webp';
+        $filename = 'avatar-'.$user->id.'-'.time().'.webp';
         $avatarDir = Storage::disk('avatars')->path('');
 
-        if (!is_dir($avatarDir)) {
+        if (! is_dir($avatarDir)) {
             mkdir($avatarDir, 0755, true);
         }
 
@@ -38,7 +38,7 @@ class AvatarController extends Controller
 
         $avatarUrl = $user->avatar_url;
         $cacheBust = $avatarUrl ? filemtime(Storage::disk('avatars')->path($filename)) : time();
-        $urlWithBuster = $avatarUrl ? $avatarUrl . '?v=' . $cacheBust : null;
+        $urlWithBuster = $avatarUrl ? $avatarUrl.'?v='.$cacheBust : null;
 
         return response()->json([
             'success' => true,

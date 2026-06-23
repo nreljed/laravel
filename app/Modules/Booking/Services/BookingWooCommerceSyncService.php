@@ -19,17 +19,17 @@ class BookingWooCommerceSyncService
      */
     public static function onOrderPaid(int $orderId): void
     {
-        if (!self::isWooCommerceAvailable()) {
+        if (! self::isWooCommerceAvailable()) {
             return;
         }
 
         $bookingId = self::getBookingIdFromWcOrder($orderId);
-        if (!$bookingId) {
+        if (! $bookingId) {
             return;
         }
 
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return;
         }
 
@@ -53,17 +53,17 @@ class BookingWooCommerceSyncService
      */
     public static function onOrderRefunded(int $orderId): void
     {
-        if (!self::isWooCommerceAvailable()) {
+        if (! self::isWooCommerceAvailable()) {
             return;
         }
 
         $bookingId = self::getBookingIdFromWcOrder($orderId);
-        if (!$bookingId) {
+        if (! $bookingId) {
             return;
         }
 
         $booking = Booking::find($bookingId);
-        if (!$booking || $booking->status === BookingStatus::Cancelled) {
+        if (! $booking || $booking->status === BookingStatus::Cancelled) {
             return;
         }
 
@@ -91,17 +91,17 @@ class BookingWooCommerceSyncService
      */
     public static function onOrderCancelled(int $orderId): void
     {
-        if (!self::isWooCommerceAvailable()) {
+        if (! self::isWooCommerceAvailable()) {
             return;
         }
 
         $bookingId = self::getBookingIdFromWcOrder($orderId);
-        if (!$bookingId) {
+        if (! $bookingId) {
             return;
         }
 
         $booking = Booking::find($bookingId);
-        if (!$booking || $booking->status !== BookingStatus::Pending) {
+        if (! $booking || $booking->status !== BookingStatus::Pending) {
             return;
         }
 
@@ -132,12 +132,12 @@ class BookingWooCommerceSyncService
     protected static function processWcRefundForBooking(int $bookingId): void
     {
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return;
         }
 
         $meta = $booking->metadata ?? [];
-        $alreadyProcessed = !empty($meta['wc_refund_processed']);
+        $alreadyProcessed = ! empty($meta['wc_refund_processed']);
         if ($alreadyProcessed) {
             return;
         }
@@ -152,7 +152,7 @@ class BookingWooCommerceSyncService
             return;
         }
 
-        $gateway = new BookingPaymentGateway();
+        $gateway = new BookingPaymentGateway;
         $wcGateway = $gateway->getGatewayForBooking($bookingId);
 
         if ($wcGateway instanceof WooCommercePaymentGateway) {
@@ -160,7 +160,7 @@ class BookingWooCommerceSyncService
             Booking::where('id', $bookingId)->update(['metadata' => $meta]);
 
             $result = $wcGateway->processRefund($bookingId, $refundAmount);
-            if (!empty($result['success'])) {
+            if (! empty($result['success'])) {
                 Log::info('[BookingWooCommerceSyncService] Auto-processed WC refund', [
                     'booking_id' => $bookingId,
                     'amount' => $refundAmount,
@@ -179,11 +179,12 @@ class BookingWooCommerceSyncService
      */
     protected static function getBookingIdFromWcOrder(int $orderId): ?int
     {
-        if (!self::isWooCommerceAvailable()) {
+        if (! self::isWooCommerceAvailable()) {
             return null;
         }
 
-        $bookingId = (int) SettingsService::get('wc_order_booking_map_' . $orderId, 0);
+        $bookingId = (int) SettingsService::get('wc_order_booking_map_'.$orderId, 0);
+
         return $bookingId ?: null;
     }
 
@@ -192,18 +193,18 @@ class BookingWooCommerceSyncService
      */
     public static function syncBookingDatesToOrder(int $bookingId): void
     {
-        if (!self::isWooCommerceAvailable()) {
+        if (! self::isWooCommerceAvailable()) {
             return;
         }
 
         $booking = Booking::find($bookingId);
-        if (!$booking) {
+        if (! $booking) {
             return;
         }
 
         $meta = $booking->metadata ?? [];
         $orderId = $meta['woocommerce_order_id'] ?? null;
-        if (!$orderId) {
+        if (! $orderId) {
             return;
         }
 

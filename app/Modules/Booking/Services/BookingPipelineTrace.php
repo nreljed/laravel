@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\Log;
 class BookingPipelineTrace
 {
     private const CACHE_PREFIX = 'booking_trace_';
+
     private const CACHE_TTL = 3600;
 
     public static function add(int $bookingId, string $stage, string $message, array $context = []): void
     {
-        if (!config('app.debug')) {
+        if (! config('app.debug')) {
             return;
         }
 
@@ -25,7 +26,7 @@ class BookingPipelineTrace
             'context' => $context,
         ];
 
-        Cache::put(self::CACHE_PREFIX . $bookingId, $trace, now()->addSeconds(self::CACHE_TTL));
+        Cache::put(self::CACHE_PREFIX.$bookingId, $trace, now()->addSeconds(self::CACHE_TTL));
 
         Log::debug(sprintf(
             '[CRM Booking Trace] #%d | %s | %s',
@@ -42,12 +43,13 @@ class BookingPipelineTrace
 
     public static function clear(int $bookingId): void
     {
-        Cache::forget(self::CACHE_PREFIX . $bookingId);
+        Cache::forget(self::CACHE_PREFIX.$bookingId);
     }
 
     private static function load(int $bookingId): array
     {
-        $trace = Cache::get(self::CACHE_PREFIX . $bookingId);
+        $trace = Cache::get(self::CACHE_PREFIX.$bookingId);
+
         return is_array($trace) ? $trace : [];
     }
 }

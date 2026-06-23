@@ -3,6 +3,7 @@
 namespace App\Modules\Booking\Services;
 
 use App\Modules\Booking\Models\Booking;
+use Carbon\Carbon;
 
 class BookingAvailabilityService
 {
@@ -22,8 +23,8 @@ class BookingAvailabilityService
         $dates = [];
 
         foreach ($bookings as $booking) {
-            $current = \Carbon\Carbon::parse($booking->start_date);
-            $end = \Carbon\Carbon::parse($booking->end_date);
+            $current = Carbon::parse($booking->start_date);
+            $end = Carbon::parse($booking->end_date);
 
             while ($current->lt($end)) {
                 $dates[] = [
@@ -40,7 +41,7 @@ class BookingAvailabilityService
 
     public function getMonthData(int $propertyId, int $year, int $month): array
     {
-        $start = \Carbon\Carbon::create($year, $month, 1);
+        $start = Carbon::create($year, $month, 1);
         $end = (clone $start)->addMonth();
 
         $bookings = Booking::with(['property:id,name'])

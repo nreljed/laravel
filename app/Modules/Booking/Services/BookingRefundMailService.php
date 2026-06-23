@@ -14,12 +14,12 @@ class BookingRefundMailService
     }
 
     /**
-     * @param array{refund_percent: int, refund_amount: float, policy_applied: string, reason: string} $refund
+     * @param  array{refund_percent: int, refund_amount: float, policy_applied: string, reason: string}  $refund
      */
     public static function sendRefundNotification(int $bookingId, array $refund): void
     {
         $booking = Booking::find($bookingId);
-        if (!$booking || !$booking->guest_email) {
+        if (! $booking || ! $booking->guest_email) {
             return;
         }
 

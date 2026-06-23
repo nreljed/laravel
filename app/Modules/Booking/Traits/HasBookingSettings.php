@@ -52,7 +52,7 @@ trait HasBookingSettings
     ];
 
     /**
-     * @param array<string, mixed> $options
+     * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
     protected static function getBookingSettingsFromOptions(array $options): array
@@ -124,7 +124,7 @@ trait HasBookingSettings
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     protected static function sanitizeBookingSettings(array $data): array

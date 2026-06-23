@@ -5,6 +5,7 @@ namespace App\Modules\Booking\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Booking\Services\BookingStatusManager;
 use App\Services\SettingsService;
+use Illuminate\Http\JsonResponse;
 
 class BookingSystemController extends Controller
 {
@@ -12,9 +13,9 @@ class BookingSystemController extends Controller
         protected BookingStatusManager $statusManager,
     ) {}
 
-    public function runTransitions(): \Illuminate\Http\JsonResponse
+    public function runTransitions(): JsonResponse
     {
-        if (!auth()->user()->can('manage_options')) {
+        if (! auth()->user()->can('manage_options')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -39,9 +40,9 @@ class BookingSystemController extends Controller
         ]);
     }
 
-    public function status(): \Illuminate\Http\JsonResponse
+    public function status(): JsonResponse
     {
-        if (!auth()->user()->can('manage_options')) {
+        if (! auth()->user()->can('manage_options')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -51,8 +52,8 @@ class BookingSystemController extends Controller
             'cron_scheduled' => true,
             'cron_next_run' => null,
             'cron_last_run' => SettingsService::get('booking_cron_last_run', 'never'),
-            'enable_auto_checkout' => !empty($settings['enable_auto_checkout']),
-            'enable_no_show_auto_cancel' => !empty($settings['enable_no_show_auto_cancel']),
+            'enable_auto_checkout' => ! empty($settings['enable_auto_checkout']),
+            'enable_no_show_auto_cancel' => ! empty($settings['enable_no_show_auto_cancel']),
         ]);
     }
 }

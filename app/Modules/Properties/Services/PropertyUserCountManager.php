@@ -2,7 +2,6 @@
 
 namespace App\Modules\Properties\Services;
 
-use App\Models\User;
 use App\Modules\Properties\Models\Property;
 use Illuminate\Support\Facades\Cache;
 

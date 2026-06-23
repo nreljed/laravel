@@ -87,7 +87,7 @@ class PropertyTermController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'parent_id' => 'nullable|exists:property_categories,id|not_in:' . $category->id,
+            'parent_id' => 'nullable|exists:property_categories,id|not_in:'.$category->id,
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
         ]);

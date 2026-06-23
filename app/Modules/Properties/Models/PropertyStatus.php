@@ -25,7 +25,7 @@ class PropertyStatus extends Model
     protected static function booted(): void
     {
         static::creating(function (self $status) {
-            if (!$status->slug) {
+            if (! $status->slug) {
                 $status->slug = Str::slug($status->name);
             }
         });

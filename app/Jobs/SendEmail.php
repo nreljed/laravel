@@ -30,7 +30,7 @@ class SendEmail implements ShouldQueue
                     ->subject($this->subject);
             });
         } catch (\Throwable $e) {
-            Log::error('[SendEmail] Failed to send email to: ' . $this->to . ' | Subject: ' . $this->subject . ' | Error: ' . $e->getMessage());
+            Log::error('[SendEmail] Failed to send email to: '.$this->to.' | Subject: '.$this->subject.' | Error: '.$e->getMessage());
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
@@ -42,11 +43,11 @@ class EmailSettingsService
      */
     public function getOptions(): array
     {
-        $settings = \App\Models\Setting::where('key', 'email_settings')->first();
+        $settings = Setting::where('key', 'email_settings')->first();
         $stored = $settings ? (array) json_decode($settings->value, true) : [];
         $merged = array_merge(self::defaults(), $stored);
 
-        if (!empty($merged['smtp_password']) && $this->isEncrypted($merged['smtp_password'])) {
+        if (! empty($merged['smtp_password']) && $this->isEncrypted($merged['smtp_password'])) {
             try {
                 $merged['smtp_password'] = Crypt::decryptString($merged['smtp_password']);
             } catch (\Throwable) {
@@ -63,6 +64,7 @@ class EmailSettingsService
     public function getOption(string $key, mixed $default = null): mixed
     {
         $options = $this->getOptions();
+
         return $options[$key] ?? $default;
     }
 
@@ -75,11 +77,11 @@ class EmailSettingsService
         $sanitized = $this->sanitize($data, $current);
         $merged = array_merge($current, $sanitized);
 
-        if (!empty($merged['smtp_password']) && !$this->isEncrypted($merged['smtp_password'])) {
+        if (! empty($merged['smtp_password']) && ! $this->isEncrypted($merged['smtp_password'])) {
             $merged['smtp_password'] = Crypt::encryptString($merged['smtp_password']);
         }
 
-        \App\Models\Setting::updateOrCreate(
+        Setting::updateOrCreate(
             ['key' => 'email_settings'],
             ['value' => json_encode($merged)]
         );
@@ -97,6 +99,7 @@ class EmailSettingsService
         $options = $this->getOptions();
         $options['smtp_password'] = $options['smtp_password'] ? '********' : '';
         $options['has_encrypted_password'] = true;
+
         return $options;
     }
 
@@ -169,12 +172,13 @@ class EmailSettingsService
      */
     protected function isEncrypted(string $value): bool
     {
-        if (!str_starts_with($value, 'eyJ')) {
+        if (! str_starts_with($value, 'eyJ')) {
             return false;
         }
 
         try {
             Crypt::decryptString($value);
+
             return true;
         } catch (\Throwable) {
             return false;

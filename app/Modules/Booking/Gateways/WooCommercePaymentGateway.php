@@ -2,15 +2,17 @@
 
 namespace App\Modules\Booking\Gateways;
 
-use App\Modules\Booking\Contracts\BookingPaymentGatewayInterface;
 use App\Models\Booking;
+use App\Modules\Booking\Contracts\BookingPaymentGatewayInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class WooCommercePaymentGateway implements BookingPaymentGatewayInterface
 {
     protected ?string $apiUrl;
+
     protected ?string $consumerKey;
+
     protected ?string $consumerSecret;
 
     public function __construct()
@@ -32,7 +34,7 @@ class WooCommercePaymentGateway implements BookingPaymentGatewayInterface
             return ['status' => 'paid', 'message' => 'No payment required'];
         }
 
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             $booking->booking_payment_status = 'failed';
             $booking->save();
 
@@ -73,7 +75,7 @@ class WooCommercePaymentGateway implements BookingPaymentGatewayInterface
     {
         $orderId = $this->getOrderId($bookingId);
 
-        if (!$orderId) {
+        if (! $orderId) {
             return ['success' => false, 'message' => 'No WooCommerce order found for this booking'];
         }
 
@@ -112,7 +114,7 @@ class WooCommercePaymentGateway implements BookingPaymentGatewayInterface
 
     protected function isAvailable(): bool
     {
-        return !empty($this->apiUrl) && !empty($this->consumerKey) && !empty($this->consumerSecret);
+        return ! empty($this->apiUrl) && ! empty($this->consumerKey) && ! empty($this->consumerSecret);
     }
 
     protected function createWooCommerceOrder(Booking $booking, float $total): array
@@ -122,14 +124,14 @@ class WooCommercePaymentGateway implements BookingPaymentGatewayInterface
         if ($existingOrderId) {
             $existingStatus = $this->getWooCommerceOrderStatus($existingOrderId);
 
-            if ($existingStatus && !in_array($existingStatus, ['cancelled', 'failed', 'refunded'], true)) {
+            if ($existingStatus && ! in_array($existingStatus, ['cancelled', 'failed', 'refunded'], true)) {
                 return ['status' => 'exists', 'message' => 'Order already exists', 'order_id' => (int) $existingOrderId];
             }
         }
 
         $productId = $this->getBookingProductId();
 
-        if (!$productId) {
+        if (! $productId) {
             $booking->booking_payment_status = 'failed';
             $booking->save();
 
@@ -248,7 +250,7 @@ class WooCommercePaymentGateway implements BookingPaymentGatewayInterface
                     'per_page' => 1,
                 ]);
 
-            if ($response->successful() && !empty($response->json())) {
+            if ($response->successful() && ! empty($response->json())) {
                 return (int) $response->json()[0]['id'];
             }
         } catch (\Exception $e) {

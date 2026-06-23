@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Models\Module;
 use App\Modules\Contracts\ModuleInterface;
 use Illuminate\Support\Collection;
 
@@ -13,8 +14,8 @@ class ModuleRegistry
 
     public function __construct()
     {
-        $this->modules = new Collection();
-        $this->booted = new Collection();
+        $this->modules = new Collection;
+        $this->booted = new Collection;
     }
 
     public static function cleanupUserData(int $userId): void
@@ -43,14 +44,14 @@ class ModuleRegistry
 
     public function allEnabled(): Collection
     {
-        $enabledSlugs = \App\Models\Module::enabled()->pluck('slug')->toArray();
+        $enabledSlugs = Module::enabled()->pluck('slug')->toArray();
 
         return $this->modules->filter(fn (ModuleInterface $module) => in_array($module->slug(), $enabledSlugs));
     }
 
     public function isEnabled(string $slug): bool
     {
-        $module = \App\Models\Module::where('slug', $slug)->first();
+        $module = Module::where('slug', $slug)->first();
 
         return $module && $module->enabled;
     }
@@ -80,7 +81,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $nav = $module->getNavItems();
-            if (!empty($nav)) {
+            if (! empty($nav)) {
                 $items[] = $nav;
             }
         }
@@ -94,7 +95,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $moduleData = $module->getDashboardData();
-            if (!empty($moduleData)) {
+            if (! empty($moduleData)) {
                 $data = array_merge($data, [$module->slug() => $moduleData]);
             }
         }
@@ -108,7 +109,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $config = $module->getMetaFormattingConfig();
-            if (!empty($config)) {
+            if (! empty($config)) {
                 $configs[$module->slug()] = $config;
             }
         }
@@ -122,7 +123,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $shared = $module->getSharedData();
-            if (!empty($shared)) {
+            if (! empty($shared)) {
                 $data = array_merge($data, $shared);
             }
         }
@@ -160,7 +161,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $config = $module->getRepeaterConfig();
-            if (!empty($config)) {
+            if (! empty($config)) {
                 $configs[$module->slug()] = $config;
             }
         }
@@ -174,7 +175,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $config = $module->getGalleryConfig();
-            if (!empty($config)) {
+            if (! empty($config)) {
                 $configs[$module->slug()] = $config;
             }
         }
@@ -188,7 +189,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $config = $module->getProfileFieldsConfig();
-            if (!empty($config)) {
+            if (! empty($config)) {
                 $configs[$module->slug()] = $config;
             }
         }
@@ -220,7 +221,7 @@ class ModuleRegistry
 
         foreach ($this->booted as $module) {
             $moduleTemplates = $module->getEmailTemplates();
-            if (!empty($moduleTemplates)) {
+            if (! empty($moduleTemplates)) {
                 $templates = array_merge($templates, $moduleTemplates);
             }
         }
@@ -238,7 +239,7 @@ class ModuleRegistry
             $enabledSlugs[] = $slug;
 
             $nav = $module->getNavItems();
-            if (!empty($nav)) {
+            if (! empty($nav)) {
                 $navItems[] = $nav;
             }
 
@@ -287,7 +288,7 @@ class ModuleRegistry
 
     protected function resolveDependencyOrder(Collection $modules): Collection
     {
-        $sorted = new Collection();
+        $sorted = new Collection;
         $resolved = [];
 
         foreach ($modules as $module) {
@@ -312,7 +313,7 @@ class ModuleRegistry
         foreach ($module->dependencies() as $dependency) {
             $depModule = $this->modules->get($dependency);
 
-            if ($depModule && !in_array($dependency, $resolved)) {
+            if ($depModule && ! in_array($dependency, $resolved)) {
                 $this->resolveDependencies($depModule, $available, $sorted, $resolved);
             }
         }

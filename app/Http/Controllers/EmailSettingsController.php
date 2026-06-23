@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Modules\ModuleRegistry;
 use App\Services\EmailSettingsService;
 use App\Services\EmailTemplateService;
 use App\Services\MailService;
-use App\Modules\ModuleRegistry;
 use Illuminate\Http\Request;
 
 class EmailSettingsController extends Controller
 {
     protected EmailSettingsService $settingsService;
+
     protected MailService $mailService;
+
     protected EmailTemplateService $templateService;
+
     protected ModuleRegistry $moduleRegistry;
 
     public function __construct(
@@ -63,12 +66,12 @@ class EmailSettingsController extends Controller
     public function sendTest(Request $request)
     {
         $to = $request->input('to', '');
-        if (!$to) {
+        if (! $to) {
             $to = $request->user()->email;
         }
 
         $settings = $this->settingsService->forFrontend();
-        $subject = '[' . config('app.name') . '] Test Email';
+        $subject = '['.config('app.name').'] Test Email';
 
         try {
             $result = $this->mailService->sendNow(
@@ -97,10 +100,11 @@ class EmailSettingsController extends Controller
             ];
 
             if ($result) {
-                return redirect()->back()->with('mail_debug', $debug)->with('status', 'Test email sent successfully to ' . $to);
+                return redirect()->back()->with('mail_debug', $debug)->with('status', 'Test email sent successfully to '.$to);
             }
 
             $debug['error'] = 'Mail::html() returned false without exception';
+
             return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send test email.']);
         } catch (\Throwable $e) {
             $debug = [
@@ -118,7 +122,7 @@ class EmailSettingsController extends Controller
                 'error' => $e->getMessage(),
             ];
 
-            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send test email: ' . $e->getMessage()]);
+            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send test email: '.$e->getMessage()]);
         }
     }
 
@@ -135,12 +139,12 @@ class EmailSettingsController extends Controller
         $to = $validated['to'] ?: $request->user()->email;
         $template = $validated['template'];
 
-        if (!$this->templateService->exists($template)) {
-            return redirect()->back()->withErrors(['error' => 'Template not found: ' . $template]);
+        if (! $this->templateService->exists($template)) {
+            return redirect()->back()->withErrors(['error' => 'Template not found: '.$template]);
         }
 
         $sampleData = $this->getSampleDataForTemplate($template);
-        $subject = '[' . config('app.name') . '] Preview: ' . ($sampleData['subject'] ?? $template);
+        $subject = '['.config('app.name').'] Preview: '.($sampleData['subject'] ?? $template);
 
         try {
             $result = $this->mailService->sendNow(
@@ -166,10 +170,11 @@ class EmailSettingsController extends Controller
             ];
 
             if ($result) {
-                return redirect()->back()->with('mail_debug', $debug)->with('status', '"' . $template . '" template sent successfully to ' . $to);
+                return redirect()->back()->with('mail_debug', $debug)->with('status', '"'.$template.'" template sent successfully to '.$to);
             }
 
             $debug['error'] = 'Mail::html() returned false without exception';
+
             return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send template email.']);
         } catch (\Throwable $e) {
             $debug = [
@@ -187,7 +192,7 @@ class EmailSettingsController extends Controller
                 'error' => $e->getMessage(),
             ];
 
-            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send template email: ' . $e->getMessage()]);
+            return redirect()->back()->with('mail_debug', $debug)->withErrors(['error' => 'Failed to send template email: '.$e->getMessage()]);
         }
     }
 
@@ -196,8 +201,8 @@ class EmailSettingsController extends Controller
      */
     public function previewTemplate(Request $request, string $template)
     {
-        if (!$this->templateService->exists($template)) {
-            return redirect()->back()->withErrors(['error' => 'Template not found: ' . $template]);
+        if (! $this->templateService->exists($template)) {
+            return redirect()->back()->withErrors(['error' => 'Template not found: '.$template]);
         }
 
         $sampleData = $this->getSampleDataForTemplate($template);
@@ -231,7 +236,7 @@ class EmailSettingsController extends Controller
 
         foreach ($this->moduleRegistry->getBooted() as $module) {
             $moduleTemplates = $module->getEmailTemplates();
-            if (!empty($moduleTemplates)) {
+            if (! empty($moduleTemplates)) {
                 $templates = array_merge($templates, $moduleTemplates);
             }
         }

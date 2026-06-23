@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Modules\ModuleRegistry;
 use App\Models\User;
+use App\Modules\ModuleRegistry;
 use Illuminate\Support\Facades\Cache;
 
 class DashboardService

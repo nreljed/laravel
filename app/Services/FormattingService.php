@@ -31,12 +31,12 @@ class FormattingService
     ];
 
     protected static array $surfaceUnits = [
-        'sq_ft'    => 'ft²',
-        'sq_m'     => 'm²',
-        'sq_yd'    => 'yd²',
+        'sq_ft' => 'ft²',
+        'sq_m' => 'm²',
+        'sq_yd' => 'yd²',
         'sq_meter' => '㎡',
-        'sq_feet'  => 'sq ft',
-        'acres'    => 'ac',
+        'sq_feet' => 'sq ft',
+        'acres' => 'ac',
         'hectares' => 'ha',
     ];
 
@@ -46,20 +46,21 @@ class FormattingService
 
         if ($price === 0.0) {
             $emptyText = $options['empty_text'] ?? '';
+
             return $emptyText !== '' ? $emptyText : '';
         }
 
-        $currency     = $options['currency'] ?? 'USD';
-        $position     = $options['position'] ?? 'before';
+        $currency = $options['currency'] ?? 'USD';
+        $position = $options['position'] ?? 'before';
         $thousandsSep = $options['thousands_sep'] ?? ',';
-        $decimalSep   = $options['decimal_sep'] ?? '.';
+        $decimalSep = $options['decimal_sep'] ?? '.';
 
         $symbol = self::$currencySymbols[$currency] ?? $currency;
         $formatted = self::formatNumber($price, $thousandsSep, $decimalSep);
 
         return $position === 'before'
-            ? $symbol . $formatted
-            : $formatted . ' ' . $symbol;
+            ? $symbol.$formatted
+            : $formatted.' '.$symbol;
     }
 
     public static function formatSurface(float|int|string $value, array $options = []): string
@@ -70,22 +71,22 @@ class FormattingService
             return '';
         }
 
-        $unit         = $options['unit'] ?? 'sq_ft';
+        $unit = $options['unit'] ?? 'sq_ft';
         $thousandsSep = $options['thousands_sep'] ?? ',';
-        $decimalSep   = $options['decimal_sep'] ?? '.';
+        $decimalSep = $options['decimal_sep'] ?? '.';
 
         $unitLabel = self::$surfaceUnits[$unit] ?? 'ft²';
         $formatted = self::formatNumber($surface, $thousandsSep, $decimalSep);
 
-        return $formatted . ' ' . $unitLabel;
+        return $formatted.' '.$unitLabel;
     }
 
     public static function formatNumber(float|int|string $number, string $thousandsSep = ',', string $decimalSep = '.'): string
     {
-        $number    = floatval($number);
+        $number = floatval($number);
         $formatted = number_format($number, 2, $decimalSep, $thousandsSep);
 
-        $decimalPart = $decimalSep . '00';
+        $decimalPart = $decimalSep.'00';
         if (str_contains($formatted, $decimalPart)) {
             $formatted = str_replace($decimalPart, '', $formatted);
         }
@@ -108,11 +109,12 @@ class FormattingService
         $options = [];
         foreach (self::$currencySymbols as $code => $symbol) {
             $options[] = [
-                'value'  => $code,
-                'label'  => self::getCurrencyLabel($code, $symbol),
+                'value' => $code,
+                'label' => self::getCurrencyLabel($code, $symbol),
                 'symbol' => $symbol,
             ];
         }
+
         return $options;
     }
 
@@ -125,6 +127,7 @@ class FormattingService
                 'label' => self::getUnitLabel($code),
             ];
         }
+
         return $options;
     }
 
@@ -222,12 +225,12 @@ class FormattingService
     protected static function getUnitLabel(string $code): string
     {
         $labels = [
-            'sq_ft'    => 'Square Feet (ft²)',
-            'sq_m'     => 'Square Meters (m²)',
-            'sq_yd'    => 'Square Yards (yd²)',
+            'sq_ft' => 'Square Feet (ft²)',
+            'sq_m' => 'Square Meters (m²)',
+            'sq_yd' => 'Square Yards (yd²)',
             'sq_meter' => 'Square Meters (㎡)',
-            'sq_feet'  => 'Square Feet (sq ft)',
-            'acres'    => 'Acres',
+            'sq_feet' => 'Square Feet (sq ft)',
+            'acres' => 'Acres',
             'hectares' => 'Hectares',
         ];
 
@@ -237,7 +240,7 @@ class FormattingService
     public static function getModuleMetaConfigs(): array
     {
         return Cache::remember('formatting.module_configs', 3600, function () {
-            if (!app()->resolved(ModuleRegistry::class)) {
+            if (! app()->resolved(ModuleRegistry::class)) {
                 return [];
             }
 
@@ -262,13 +265,13 @@ class FormattingService
         return array_map(function ($row) use ($priceFields, $surfaceFields, $options) {
             foreach ($priceFields as $field) {
                 if (isset($row[$field]) && $row[$field] !== '' && $row[$field] !== null) {
-                    $row[$field . '_formatted'] = self::formatPrice($row[$field], $options);
+                    $row[$field.'_formatted'] = self::formatPrice($row[$field], $options);
                 }
             }
 
             foreach ($surfaceFields as $field) {
                 if (isset($row[$field]) && $row[$field] !== '' && $row[$field] !== null) {
-                    $row[$field . '_formatted'] = self::formatSurface($row[$field], $options);
+                    $row[$field.'_formatted'] = self::formatSurface($row[$field], $options);
                 }
             }
 

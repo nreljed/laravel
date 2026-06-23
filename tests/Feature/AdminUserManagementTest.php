@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class AdminUserManagementTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
     }
 
     protected function admin(): User
@@ -23,6 +24,7 @@ class AdminUserManagementTest extends TestCase
         $user = User::factory()->create();
         $role = Role::where('slug', 'admin')->first();
         $user->roles()->attach($role);
+
         return $user;
     }
 

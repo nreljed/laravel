@@ -19,8 +19,8 @@ class PropertyAttachmentCleanup
         foreach ($images as $image) {
             $filepath = $image->path;
 
-            if (!$disk->exists($filepath)) {
-                if (!$dry_run) {
+            if (! $disk->exists($filepath)) {
+                if (! $dry_run) {
                     try {
                         $image->delete();
                         $deleted++;

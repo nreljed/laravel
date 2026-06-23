@@ -36,7 +36,7 @@ class ContentSecurityPolicy
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net",
             "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self'" . ($isDev ? " ws://* wss://*" : ""),
+            "connect-src 'self'".($isDev ? ' ws://* wss://*' : ''),
             "worker-src 'self' blob:",
             "frame-src 'none'",
             "object-src 'none'",

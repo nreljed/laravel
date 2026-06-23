@@ -18,7 +18,7 @@ trait HasRoutes
         }
 
         if ($permission) {
-            $attributes['middleware'][] = 'permission:' . $permission;
+            $attributes['middleware'][] = 'permission:'.$permission;
         }
 
         Route::group($attributes, function () use ($routesPath) {
@@ -38,7 +38,7 @@ trait HasRoutes
         }
 
         if ($permission) {
-            $attributes['middleware'][] = 'permission:' . $permission;
+            $attributes['middleware'][] = 'permission:'.$permission;
         }
 
         Route::group($attributes, function () use ($routesPath) {
@@ -58,7 +58,7 @@ trait HasRoutes
         } else {
             $computed = trim(str_replace('/', '.', $prefix), '.');
             if ($computed !== '') {
-                $attributes['as'] = $computed . '.';
+                $attributes['as'] = $computed.'.';
             }
         }
 

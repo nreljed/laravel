@@ -21,8 +21,8 @@ class SystemHealthService
             'locale' => config('app.locale'),
 
             'dbConnection' => config('database.default'),
-            'dbDriver' => config('database.connections.' . config('database.default') . '.driver'),
-            'dbName' => config('database.connections.' . config('database.default') . '.database', 'N/A'),
+            'dbDriver' => config('database.connections.'.config('database.default').'.driver'),
+            'dbName' => config('database.connections.'.config('database.default').'.database', 'N/A'),
             'dbSize' => $this->getDbSize(),
 
             'cacheDriver' => config('cache.default'),
@@ -48,8 +48,8 @@ class SystemHealthService
     protected function getDbSize(): string
     {
         try {
-            $dbDriver = config('database.connections.' . config('database.default') . '.driver');
-            $dbName = config('database.connections.' . config('database.default') . '.database', 'N/A');
+            $dbDriver = config('database.connections.'.config('database.default').'.driver');
+            $dbName = config('database.connections.'.config('database.default').'.database', 'N/A');
 
             if ($dbDriver === 'sqlite') {
                 $size = DB::select('SELECT ROUND(SUM(page_count * page_size) / 1024.0, 2) AS size_kb FROM pragma_page_count(), pragma_page_size()')[0]->size_kb ?? 0;
@@ -57,7 +57,7 @@ class SystemHealthService
                 $size = DB::select('SELECT ROUND(SUM(data_length + index_length) / 1024, 2) AS size_kb FROM information_schema.tables WHERE table_schema = ?', [$dbName])[0]->size_kb ?? 0;
             }
 
-            return round($size / 1024, 2) . ' MB';
+            return round($size / 1024, 2).' MB';
         } catch (\Exception) {
             return 'N/A';
         }
@@ -72,11 +72,15 @@ class SystemHealthService
                     $size = 0;
                     $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($cachePath));
                     foreach ($iterator as $file) {
-                        if ($file->isFile()) $size += $file->getSize();
+                        if ($file->isFile()) {
+                            $size += $file->getSize();
+                        }
                     }
-                    return $size > 0 ? round($size / 1024 / 1024, 2) . ' MB' : 'N/A';
+
+                    return $size > 0 ? round($size / 1024 / 1024, 2).' MB' : 'N/A';
                 }
             }
+
             return 'N/A';
         } catch (\Exception) {
             return 'N/A';
@@ -90,6 +94,7 @@ class SystemHealthService
         foreach ($requiredExts as $ext) {
             $extStatus[$ext] = extension_loaded($ext);
         }
+
         return $extStatus;
     }
 }

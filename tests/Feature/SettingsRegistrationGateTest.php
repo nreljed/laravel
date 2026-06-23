@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
-use App\Models\User;
 use App\Services\SettingsService;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class SettingsRegistrationGateTest extends TestCase
@@ -16,7 +16,7 @@ class SettingsRegistrationGateTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
     }
 
     public function test_registration_works_when_enabled(): void
@@ -34,7 +34,7 @@ class SettingsRegistrationGateTest extends TestCase
 
     public function test_registration_is_blocked_when_disabled(): void
     {
-        if (!$this->canSetSetting()) {
+        if (! $this->canSetSetting()) {
             $this->markTestSkipped('Settings table not available.');
         }
 
@@ -54,7 +54,7 @@ class SettingsRegistrationGateTest extends TestCase
 
     public function test_registration_page_redirects_when_disabled(): void
     {
-        if (!$this->canSetSetting()) {
+        if (! $this->canSetSetting()) {
             $this->markTestSkipped('Settings table not available.');
         }
 
@@ -74,7 +74,7 @@ class SettingsRegistrationGateTest extends TestCase
     protected function canSetSetting(): bool
     {
         try {
-            return \Illuminate\Support\Facades\Schema::hasTable('settings');
+            return Schema::hasTable('settings');
         } catch (\Throwable) {
             return false;
         }

@@ -25,7 +25,7 @@ class PropertyType extends Model
     protected static function booted(): void
     {
         static::creating(function (self $type) {
-            if (!$type->slug) {
+            if (! $type->slug) {
                 $type->slug = Str::slug($type->name);
             }
         });

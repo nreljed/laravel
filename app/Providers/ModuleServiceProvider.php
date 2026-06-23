@@ -13,7 +13,7 @@ class ModuleServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ModuleRegistry::class, function () {
-            return new ModuleRegistry();
+            return new ModuleRegistry;
         });
 
         $this->app->singleton(ModuleLoader::class, function ($app) {
@@ -26,7 +26,7 @@ class ModuleServiceProvider extends ServiceProvider
         $loader = $this->app[ModuleLoader::class];
         $loader->load();
 
-        if (!Schema::hasTable('modules')) {
+        if (! Schema::hasTable('modules')) {
             return;
         }
 

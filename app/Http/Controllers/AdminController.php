@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\SystemHealthService;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class AdminController extends Controller
 {

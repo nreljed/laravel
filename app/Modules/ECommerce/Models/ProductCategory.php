@@ -21,7 +21,7 @@ class ProductCategory extends Model
     {
         parent::boot();
         static::creating(function (ProductCategory $category) {
-            if (!$category->slug) {
+            if (! $category->slug) {
                 $category->slug = Str::slug($category->name);
             }
         });

@@ -8,16 +8,16 @@ trait UserDataTrait
 {
     public function getAvatarUrlAttribute(): ?string
     {
-        if (!$this->avatar) {
+        if (! $this->avatar) {
             return null;
         }
 
         $url = Storage::disk('avatars')->url($this->avatar);
 
-        if (!app()->runningInConsole() && request()->server->has('HTTP_HOST')) {
+        if (! app()->runningInConsole() && request()->server->has('HTTP_HOST')) {
             $request = request();
             $currentOrigin = str($request->getSchemeAndHttpHost());
-            $configuredOrigin = str(parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST));
+            $configuredOrigin = str(parse_url($url, PHP_URL_SCHEME).'://'.parse_url($url, PHP_URL_HOST));
 
             if ($currentOrigin->value() !== $configuredOrigin->value()) {
                 $url = str_replace($configuredOrigin->value(), $currentOrigin->value(), $url);

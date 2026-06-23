@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Permission;
 use App\Models\Role;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,7 +14,7 @@ class PermissionSyncTest extends TestCase
 
     public function test_admin_role_has_manage_options_permission(): void
     {
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         $adminRole = Role::where('slug', 'admin')->first();
         $this->assertNotNull($adminRole);
@@ -26,7 +27,7 @@ class PermissionSyncTest extends TestCase
 
     public function test_crm_user_role_does_not_have_admin_permissions(): void
     {
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         $crmRole = Role::where('slug', 'crm_user')->first();
         $this->assertNotNull($crmRole);
@@ -43,7 +44,7 @@ class PermissionSyncTest extends TestCase
 
     public function test_manage_options_permission_exists_in_database(): void
     {
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         $perm = Permission::where('slug', 'manage_options')->first();
         $this->assertNotNull($perm);
@@ -52,7 +53,7 @@ class PermissionSyncTest extends TestCase
 
     public function test_manage_options_only_assigned_to_admin(): void
     {
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         $adminRole = Role::where('slug', 'admin')->first();
         $crmRole = Role::where('slug', 'crm_user')->first();

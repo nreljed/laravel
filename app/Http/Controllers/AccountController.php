@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\NotificationPreference;
-use App\Modules\ModuleRegistry;
 use App\Services\AccountService;
-use App\Services\AuditService;
 use App\Services\NotificationTypeRegistry;
+use App\Services\SettingsService;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
-use App\Services\SettingsService;
 use Inertia\Inertia;
 
 class AccountController extends Controller
@@ -32,7 +31,7 @@ class AccountController extends Controller
         $preferences = NotificationPreference::where('user_id', $user->id)
             ->get()
             ->groupBy('type')
-            ->map(fn($items) => $items->pluck('enabled', 'channel')->toArray());
+            ->map(fn ($items) => $items->pluck('enabled', 'channel')->toArray());
 
         return Inertia::render('Account/Edit', [
             'user' => [
@@ -44,7 +43,7 @@ class AccountController extends Controller
                 'avatar' => $user->avatar_url,
                 'user_login' => $user->email,
             ],
-            'mustVerifyEmail' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail
                 && SettingsService::get('require_email_verification', '0') === '1',
             'notificationTypes' => $notificationTypes,
             'preferences' => $preferences,
@@ -54,7 +53,7 @@ class AccountController extends Controller
     public function updateEmail(Request $request)
     {
         $validated = $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$request->user()->id],
             'current_password' => ['required', 'current_password'],
         ]);
 
@@ -63,7 +62,7 @@ class AccountController extends Controller
             $validated['email'],
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->withErrors(['email' => $result['message']]);
         }
 
@@ -83,7 +82,7 @@ class AccountController extends Controller
             $validated['password'],
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->withErrors(['password' => $result['message']]);
         }
 

@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class BookingCrudTest extends TestCase
 {
-    use RefreshDatabase, BootsModules;
+    use BootsModules, RefreshDatabase;
 
     protected User $admin;
 

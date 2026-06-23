@@ -3,8 +3,8 @@
 namespace App\Providers;
 
 use App\Models\User;
-use App\Modules\Properties\Models\Property;
 use App\Modules\Booking\Models\Booking;
+use App\Modules\Properties\Models\Property;
 use App\Notifications\ResetPassword as CustomResetPassword;
 use App\Notifications\VerifyEmail as CustomVerifyEmail;
 use App\Policies\BookingPolicy;
@@ -13,6 +13,7 @@ use App\Services\MailerConfigurator;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -42,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureMailer(): void
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings')) {
             return;
         }
 
@@ -58,11 +59,13 @@ class AppServiceProvider extends ServiceProvider
     {
         VerifyEmail::toMailUsing(function ($notifiable, $verificationUrl) {
             $notification = new CustomVerifyEmail($verificationUrl);
+
             return $notification->toMail($notifiable);
         });
 
         ResetPassword::toMailUsing(function ($notifiable, $token) {
             $notification = new CustomResetPassword($token);
+
             return $notification->toMail($notifiable);
         });
     }

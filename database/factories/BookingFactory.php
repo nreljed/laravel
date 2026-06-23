@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Properties\Models\Property;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class BookingFactory extends Factory

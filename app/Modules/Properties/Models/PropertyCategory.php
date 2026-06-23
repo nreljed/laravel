@@ -27,7 +27,7 @@ class PropertyCategory extends Model
     protected static function booted(): void
     {
         static::creating(function (self $category) {
-            if (!$category->slug) {
+            if (! $category->slug) {
                 $category->slug = Str::slug($category->name);
             }
         });

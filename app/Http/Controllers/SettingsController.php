@@ -15,9 +15,9 @@ class SettingsController extends Controller
 {
     public function edit()
     {
-        if (!Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings')) {
             return Inertia::render('Admin/Settings', [
-                'settings' => new \stdClass(),
+                'settings' => new \stdClass,
                 'availableModules' => [],
             ]);
         }
@@ -35,7 +35,7 @@ class SettingsController extends Controller
 
     public function update(Request $request)
     {
-        if (!Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings')) {
             return redirect()->back()->with('status', 'Settings table not yet migrated.');
         }
 
@@ -50,7 +50,7 @@ class SettingsController extends Controller
                 'nullable',
                 'string',
                 'max:50',
-                Rule::exists('roles', 'slug')->where(fn($q) => $q->where('slug', '!=', 'admin')),
+                Rule::exists('roles', 'slug')->where(fn ($q) => $q->where('slug', '!=', 'admin')),
             ],
             'require_email_verification' => 'nullable|in:0,1',
             'default_notification_channel' => 'nullable|string|max:50',
@@ -89,7 +89,7 @@ class SettingsController extends Controller
             'map_debug_show' => 'nullable|in:0,1',
         ]);
 
-        $validated = array_map(fn($value) => is_bool($value) ? ($value ? '1' : '0') : $value, $validated);
+        $validated = array_map(fn ($value) => is_bool($value) ? ($value ? '1' : '0') : $value, $validated);
 
         SettingsService::setMany($validated);
         SettingsService::clearCache();
@@ -111,10 +111,10 @@ class SettingsController extends Controller
         ]);
 
         $ext = $file->getClientOriginalExtension();
-        $filename = 'logo-' . time() . '.' . $ext;
+        $filename = 'logo-'.time().'.'.$ext;
         $logoDir = Storage::disk('logos')->path('');
 
-        if (!is_dir($logoDir)) {
+        if (! is_dir($logoDir)) {
             mkdir($logoDir, 0755, true);
         }
 
@@ -138,7 +138,7 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Logo uploaded successfully!',
-            'url' => Storage::disk('logos')->url($filename) . '?v=' . time(),
+            'url' => Storage::disk('logos')->url($filename).'?v='.time(),
         ]);
     }
 

@@ -25,7 +25,7 @@ class PropertyFeature extends Model
     protected static function booted(): void
     {
         static::creating(function (self $feature) {
-            if (!$feature->slug) {
+            if (! $feature->slug) {
                 $feature->slug = Str::slug($feature->name);
             }
         });

@@ -27,7 +27,7 @@ class BookingEmailService
         }
 
         $tz = new \DateTimeZone(config('app.timezone'));
-        $offset = $tz->getOffset(new \DateTime());
+        $offset = $tz->getOffset(new \DateTime);
         $sign = $offset >= 0 ? '+' : '-';
         $hours = sprintf('%02d', (int) (abs($offset) / 3600));
         $mins = sprintf('%02d', (int) ((abs($offset) % 3600) / 60));
@@ -37,7 +37,7 @@ class BookingEmailService
         return [
             'bookingId' => $bookingId,
             'siteTimezone' => $tz->getName(),
-            'siteTimezoneLabel' => $tz->getName() . " (UTC{$sign}{$hours}:{$mins})",
+            'siteTimezoneLabel' => $tz->getName()." (UTC{$sign}{$hours}:{$mins})",
             'guestName' => $booking->guest_name,
             'guestEmail' => $booking->guest_email,
             'propertyTitle' => $property?->name ?? 'Property',
@@ -48,7 +48,7 @@ class BookingEmailService
             'guests' => $booking->guest_count,
             'total' => $booking->total_amount,
             'specialRequests' => $booking->notes,
-            'bookingUrl' => $magicLink ?: url('/dashboard/booking/view/' . $bookingId),
+            'bookingUrl' => $magicLink ?: url('/dashboard/booking/view/'.$bookingId),
             'siteName' => config('app.name'),
             'adminEmail' => config('mail.from.address'),
         ];
@@ -57,8 +57,9 @@ class BookingEmailService
     public static function sendConfirmation(int $bookingId, ?string $magicLink = null): void
     {
         $data = self::getBookingData($bookingId, $magicLink);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             Log::debug('[BookingEmailService] Confirmation skipped - no guest email', ['booking_id' => $bookingId]);
+
             return;
         }
 
@@ -83,8 +84,9 @@ class BookingEmailService
     public static function sendBookingReceived(int $bookingId, ?string $magicLink = null): void
     {
         $data = self::getBookingData($bookingId, $magicLink);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             Log::debug('[BookingEmailService] Booking received skipped - no guest email', ['booking_id' => $bookingId]);
+
             return;
         }
 
@@ -112,7 +114,7 @@ class BookingEmailService
         }
 
         $data = self::getBookingData($bookingId);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             return;
         }
 
@@ -130,7 +132,7 @@ class BookingEmailService
     public static function sendCheckinInstructions(int $bookingId): void
     {
         $data = self::getBookingData($bookingId);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             return;
         }
 
@@ -153,7 +155,7 @@ class BookingEmailService
         }
 
         $data = self::getBookingData($bookingId);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             return;
         }
 
@@ -176,7 +178,7 @@ class BookingEmailService
         }
 
         $data = self::getBookingData($bookingId);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             return;
         }
 
@@ -194,8 +196,9 @@ class BookingEmailService
     public static function sendCancellation(int $bookingId): void
     {
         $data = self::getBookingData($bookingId);
-        if (!$data['guestEmail']) {
+        if (! $data['guestEmail']) {
             Log::debug('[BookingEmailService] Cancellation skipped - no guest email', ['booking_id' => $bookingId]);
+
             return;
         }
 
@@ -240,7 +243,7 @@ class BookingEmailService
 
         $settings = SettingsService::getGroup('booking');
 
-        if (!empty($settings['email_enable_pre_arrival'])) {
+        if (! empty($settings['email_enable_pre_arrival'])) {
             $preArrivalDays = (int) ($settings['email_pre_arrival_days'] ?? 3);
             $targetDate = now()->addDays($preArrivalDays)->toDateString();
 
@@ -269,7 +272,7 @@ class BookingEmailService
             $sent['checkin_instructions']++;
         }
 
-        if (!empty($settings['email_enable_checkout_reminder'])) {
+        if (! empty($settings['email_enable_checkout_reminder'])) {
             $tomorrow = now()->addDay()->toDateString();
 
             $candidates = Booking::where('status', BookingStatus::CheckedIn->value)
@@ -284,7 +287,7 @@ class BookingEmailService
             }
         }
 
-        if (!empty($settings['email_enable_post_stay'])) {
+        if (! empty($settings['email_enable_post_stay'])) {
             $postStayDays = (int) ($settings['email_post_stay_delay_days'] ?? 1);
             $targetDate = now()->subDays($postStayDays)->toDateString();
 

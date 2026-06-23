@@ -12,7 +12,7 @@ class PropertyFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->company() . ' ' . fake()->streetName(),
+            'name' => fake()->company().' '.fake()->streetName(),
             'slug' => fake()->unique()->slug(2),
             'description' => fake()->paragraph(),
             'price' => fake()->randomFloat(2, 50000, 5000000),

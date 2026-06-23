@@ -2,9 +2,8 @@
 
 namespace App\Modules\ECommerce\Http\Controllers;
 
-use App\Models\User;
-use App\Modules\ECommerce\Models\Order;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -16,8 +15,8 @@ class CustomersController extends Controller
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('email', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('email', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -25,7 +24,7 @@ class CustomersController extends Controller
             ->withSum('orders as total_spent', 'total')
             ->orderBy('created_at', 'desc')
             ->paginate(20)
-            ->through(fn($user) => [
+            ->through(fn ($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,

@@ -153,8 +153,8 @@ class ProfileController extends Controller
             $options['lastname'] = $user->last_name;
         }
         if ($user->first_name && $user->last_name) {
-            $options['firstlast'] = $user->first_name . ' ' . $user->last_name;
-            $options['lastfirst'] = $user->last_name . ' ' . $user->first_name;
+            $options['firstlast'] = $user->first_name.' '.$user->last_name;
+            $options['lastfirst'] = $user->last_name.' '.$user->first_name;
         }
 
         return $options;

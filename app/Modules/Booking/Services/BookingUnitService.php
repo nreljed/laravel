@@ -17,10 +17,11 @@ class BookingUnitService
      */
     public function getUnitConfig(int $propertyId): array
     {
-        if (!isset(self::$unitConfigCache[$propertyId])) {
+        if (! isset(self::$unitConfigCache[$propertyId])) {
             $property = Property::find($propertyId);
             self::$unitConfigCache[$propertyId] = $property ? ($property->metadata['unit_config'] ?? []) : [];
         }
+
         return self::$unitConfigCache[$propertyId];
     }
 
@@ -31,7 +32,7 @@ class BookingUnitService
 
     public function hasUnits(int $propertyId): bool
     {
-        return !empty($this->getUnitConfig($propertyId));
+        return ! empty($this->getUnitConfig($propertyId));
     }
 
     /**
@@ -41,25 +42,28 @@ class BookingUnitService
     {
         $units = $this->getUnitConfig($propertyId);
         foreach ($units as $i => $unit) {
-            $id = $unit['id'] ?? 'unit_' . $i;
+            $id = $unit['id'] ?? 'unit_'.$i;
             if ($id === $unitId) {
                 $unit['index'] = $i;
                 $unit['id'] = $id;
+
                 return $unit;
             }
         }
+
         return null;
     }
 
     /**
-     * @param array<string, mixed> $unit
+     * @param  array<string, mixed>  $unit
      */
     public function getUnitEffectiveRate(int $propertyId, array $unit): float
     {
-        if (!empty($unit['nightly_rate'])) {
+        if (! empty($unit['nightly_rate'])) {
             return (float) $unit['nightly_rate'];
         }
         $property = Property::find($propertyId);
+
         return (float) ($property->metadata['nightly_rate'] ?? $property->price ?? 0);
     }
 
@@ -93,7 +97,7 @@ class BookingUnitService
     public function isUnitAvailable(int $propertyId, string $unitId, string $checkIn, string $checkOut): bool
     {
         $unit = $this->getUnitById($propertyId, $unitId);
-        if (!$unit) {
+        if (! $unit) {
             return false;
         }
 
@@ -103,7 +107,7 @@ class BookingUnitService
 
         $bookedByType = $this->getBookedUnitCount($propertyId, $unitType, $checkIn, $checkOut);
 
-        $typeKey = $unitType . ':' . $unitName;
+        $typeKey = $unitType.':'.$unitName;
         $bookedCount = ($bookedByType[$typeKey] ?? 0);
 
         return $bookedCount < $quantity;
@@ -120,11 +124,11 @@ class BookingUnitService
         $bookedByType = $this->getBookedUnitCount($propertyId, null, $checkIn, $checkOut);
 
         foreach ($units as $i => $unit) {
-            $unitId = $unit['id'] ?? 'unit_' . $i;
+            $unitId = $unit['id'] ?? 'unit_'.$i;
             $quantity = (int) ($unit['quantity'] ?? 1);
             $unitType = $unit['type'] ?? 'room';
             $unitName = $unit['name'] ?? '';
-            $typeKey = $unitType . ':' . $unitName;
+            $typeKey = $unitType.':'.$unitName;
             $bookedCount = $bookedByType[$typeKey] ?? 0;
 
             if ($bookedCount < $quantity) {

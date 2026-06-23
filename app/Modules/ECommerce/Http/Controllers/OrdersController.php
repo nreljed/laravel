@@ -2,9 +2,8 @@
 
 namespace App\Modules\ECommerce\Http\Controllers;
 
-use App\Modules\ECommerce\Models\Order;
-use App\Modules\ECommerce\Models\Product;
 use App\Http\Controllers\Controller;
+use App\Modules\ECommerce\Models\Order;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -16,9 +15,9 @@ class OrdersController extends Controller
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('order_number', 'like', '%' . $request->search . '%')
-                    ->orWhere('customer_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('customer_email', 'like', '%' . $request->search . '%');
+                $q->where('order_number', 'like', '%'.$request->search.'%')
+                    ->orWhere('customer_name', 'like', '%'.$request->search.'%')
+                    ->orWhere('customer_email', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -55,7 +54,7 @@ class OrdersController extends Controller
             'notes' => $validated['notes'] ?? $order->notes,
         ]);
 
-        if ($validated['status'] === 'completed' && !$order->paid_at) {
+        if ($validated['status'] === 'completed' && ! $order->paid_at) {
             $order->update(['paid_at' => now(), 'payment_status' => 'paid']);
         }
 

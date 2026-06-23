@@ -27,7 +27,8 @@ class MailService
 
             return true;
         } catch (\Throwable $e) {
-            Log::error('[MailService] Failed to queue email to: ' . $to . ' | Subject: ' . $subject . ' | Error: ' . $e->getMessage());
+            Log::error('[MailService] Failed to queue email to: '.$to.' | Subject: '.$subject.' | Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -55,9 +56,11 @@ class MailService
             Mail::raw($message, function ($msg) use ($to, $subject) {
                 $msg->to($to)->subject($subject);
             });
+
             return true;
         } catch (\Throwable $e) {
-            Log::error('[MailService] Failed to send raw email to: ' . $to . ' | Error: ' . $e->getMessage());
+            Log::error('[MailService] Failed to send raw email to: '.$to.' | Error: '.$e->getMessage());
+
             return false;
         }
     }

@@ -24,7 +24,7 @@ class ForceInertiaCacheHeaders
         if ($dest === 'document' || $mode === 'navigate') {
             $isDocumentNavigation = true;
         } elseif ($dest === null && $mode === null) {
-            if (!$request->hasHeader('X-Requested-With') || $request->header('X-Requested-With') !== 'XMLHttpRequest') {
+            if (! $request->hasHeader('X-Requested-With') || $request->header('X-Requested-With') !== 'XMLHttpRequest') {
                 $isDocumentNavigation = true;
             }
         }

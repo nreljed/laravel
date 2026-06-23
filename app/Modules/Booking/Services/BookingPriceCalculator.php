@@ -3,6 +3,7 @@
 namespace App\Modules\Booking\Services;
 
 use App\Modules\Properties\Models\Property;
+use Carbon\Carbon;
 
 class BookingPriceCalculator
 {
@@ -14,8 +15,8 @@ class BookingPriceCalculator
         int $children = 0,
         int $pets = 0,
     ): array {
-        $start = \Carbon\Carbon::parse($startDate);
-        $end = \Carbon\Carbon::parse($endDate);
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
         $nights = $start->diffInDays($end);
 
         $nightlyRate = $property->price ?? 0;

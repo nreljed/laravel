@@ -3,8 +3,8 @@
 namespace App\Modules\Booking\Services;
 
 use App\Modules\Booking\Contracts\BookingPaymentGatewayInterface;
-use App\Modules\Booking\Gateways\WooCommercePaymentGateway;
 use App\Modules\Booking\Gateways\OfflinePaymentGateway;
+use App\Modules\Booking\Gateways\WooCommercePaymentGateway;
 
 class BookingPaymentGateway
 {
@@ -20,7 +20,7 @@ class BookingPaymentGateway
     }
 
     /**
-     * @param class-string<BookingPaymentGatewayInterface> $gatewayClass
+     * @param  class-string<BookingPaymentGatewayInterface>  $gatewayClass
      */
     public static function registerGateway(string $gatewayClass): void
     {
@@ -42,6 +42,7 @@ class BookingPaymentGateway
                 'name' => $class::getGatewayName(),
             ];
         }
+
         return $list;
     }
 
@@ -51,10 +52,11 @@ class BookingPaymentGateway
 
         if ($this->wooCommerceEnabled && isset(self::$gateways['woocommerce'])) {
             $class = self::$gateways['woocommerce'];
-            return new $class();
+
+            return new $class;
         }
 
-        return new OfflinePaymentGateway();
+        return new OfflinePaymentGateway;
     }
 
     /**
@@ -65,24 +67,28 @@ class BookingPaymentGateway
         $gateway = $this->getGatewayForBooking($bookingId);
         $result = $gateway->processPayment($bookingId);
         $result['gateway'] = $gateway::getGatewayId();
+
         return $result;
     }
 
     public function getPaymentStatus(int $bookingId): string
     {
         $gateway = $this->getGatewayForBooking($bookingId);
+
         return $gateway->getPaymentStatus($bookingId);
     }
 
     public function getCheckoutUrl(int $bookingId): ?string
     {
         $gateway = $this->getGatewayForBooking($bookingId);
+
         return $gateway->getCheckoutUrl($bookingId);
     }
 
     public function getOrderId(int $bookingId): ?int
     {
         $gateway = $this->getGatewayForBooking($bookingId);
+
         return $gateway->getOrderId($bookingId);
     }
 

@@ -13,15 +13,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
-    public function create(): Response|\Illuminate\Http\RedirectResponse
+    public function create(): Response|RedirectResponse
     {
-        if (!static::isRegistrationEnabled()) {
+        if (! static::isRegistrationEnabled()) {
             return redirect()->route('login');
         }
 
@@ -30,7 +29,7 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        if (!static::isRegistrationEnabled()) {
+        if (! static::isRegistrationEnabled()) {
             return redirect()->route('login');
         }
 
@@ -76,13 +75,13 @@ class RegisteredUserController extends Controller
         $field = $request->input('field');
         $value = $request->input('value');
 
-        if (!in_array($field, ['username', 'email'], true)) {
+        if (! in_array($field, ['username', 'email'], true)) {
             return response()->json(['available' => true]);
         }
 
         $exists = User::where($field, $value)->exists();
 
-        return response()->json(['available' => !$exists]);
+        return response()->json(['available' => ! $exists]);
     }
 
     public static function isRegistrationEnabled(): bool

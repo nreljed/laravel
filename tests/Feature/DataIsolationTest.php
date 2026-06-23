@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\NotificationPreference;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\NotificationPreference;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class DataIsolationTest extends TestCase
@@ -16,7 +18,7 @@ class DataIsolationTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
     }
 
     protected function createUserWithRole(string $roleSlug): User
@@ -24,6 +26,7 @@ class DataIsolationTest extends TestCase
         $user = User::factory()->create();
         $role = Role::where('slug', $roleSlug)->first();
         $user->roles()->attach($role);
+
         return $user;
     }
 
@@ -89,7 +92,7 @@ class DataIsolationTest extends TestCase
         $user2 = $this->createUserWithRole('crm_user');
 
         $user1->notifications()->create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'type' => 'App\Notifications\Test',
             'data' => ['message' => 'User1 notification'],
         ]);
@@ -104,7 +107,7 @@ class DataIsolationTest extends TestCase
         $user2 = $this->createUserWithRole('crm_user');
 
         $user1->notifications()->create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'type' => 'App\Notifications\Test',
             'data' => ['message' => 'User1 notification'],
         ]);

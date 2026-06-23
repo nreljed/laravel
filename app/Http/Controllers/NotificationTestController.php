@@ -28,7 +28,7 @@ class NotificationTestController extends Controller
         $registry = app(NotificationTypeRegistry::class);
         $templates = [];
         foreach ($registry->all() as $key => $type) {
-            if (!empty($type['email_template'])) {
+            if (! empty($type['email_template'])) {
                 $templates[] = [
                     'value' => $type['email_template'],
                     'label' => $type['label'],

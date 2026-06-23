@@ -1,10 +1,9 @@
 <?php
 
-use App\Modules\ECommerce\Http\Controllers\ProductsController;
-use App\Modules\ECommerce\Http\Controllers\OrdersController;
-use App\Modules\ECommerce\Http\Controllers\CustomersController;
 use App\Modules\ECommerce\Http\Controllers\CartController;
-use App\Modules\ECommerce\Http\Controllers\ECommerceSettingsController;
+use App\Modules\ECommerce\Http\Controllers\CustomersController;
+use App\Modules\ECommerce\Http\Controllers\OrdersController;
+use App\Modules\ECommerce\Http\Controllers\ProductsController;
 use Illuminate\Support\Facades\Route;
 
 // Products

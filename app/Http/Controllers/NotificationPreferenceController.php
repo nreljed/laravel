@@ -25,7 +25,7 @@ class NotificationPreferenceController extends Controller
             'preferences' => NotificationPreference::where('user_id', $user->id)
                 ->get()
                 ->groupBy('type')
-                ->map(fn($items) => $items->pluck('enabled', 'channel')->toArray()),
+                ->map(fn ($items) => $items->pluck('enabled', 'channel')->toArray()),
         ]);
     }
 

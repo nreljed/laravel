@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class BookingSettingsTest extends TestCase
 {
-    use RefreshDatabase, BootsModules;
+    use BootsModules, RefreshDatabase;
 
     protected function setUp(): void
     {

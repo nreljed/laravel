@@ -2,8 +2,8 @@
 
 namespace App\Modules\Booking\Gateways;
 
-use App\Modules\Booking\Contracts\BookingPaymentGatewayInterface;
 use App\Models\Booking;
+use App\Modules\Booking\Contracts\BookingPaymentGatewayInterface;
 
 class OfflinePaymentGateway implements BookingPaymentGatewayInterface
 {

@@ -17,14 +17,14 @@ class BookingIcalController extends Controller
             'property_id' => 'required|integer|exists:properties,id',
         ]);
 
-        $service = new BookingIcalService();
+        $service = new BookingIcalService;
         $result = $service->importFeed(
             (int) $validated['property_id'],
             $validated['url'],
             $validated['name'] ?? '',
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json($result, 400);
         }
 
@@ -34,25 +34,26 @@ class BookingIcalController extends Controller
     public function feeds(Request $request): JsonResponse
     {
         $propertyId = (int) $request->input('property_id');
-        if (!$propertyId) {
+        if (! $propertyId) {
             return response()->json(['feeds' => []]);
         }
 
-        $service = new BookingIcalService();
+        $service = new BookingIcalService;
+
         return response()->json(['feeds' => $service->getFeeds($propertyId)]);
     }
 
     public function sync(string $feedId, Request $request): JsonResponse
     {
         $propertyId = (int) $request->input('property_id');
-        if (!$propertyId) {
+        if (! $propertyId) {
             return response()->json(['success' => false, 'error' => 'Property ID required.'], 400);
         }
 
-        $service = new BookingIcalService();
+        $service = new BookingIcalService;
         $result = $service->syncFeed($propertyId, $feedId);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json($result, 400);
         }
 
@@ -62,14 +63,14 @@ class BookingIcalController extends Controller
     public function destroy(string $feedId, Request $request): JsonResponse
     {
         $propertyId = (int) $request->input('property_id');
-        if (!$propertyId) {
+        if (! $propertyId) {
             return response()->json(['success' => false, 'error' => 'Property ID required.'], 400);
         }
 
-        $service = new BookingIcalService();
+        $service = new BookingIcalService;
         $deleted = $service->deleteFeed($propertyId, $feedId);
 
-        if (!$deleted) {
+        if (! $deleted) {
             return response()->json(['success' => false, 'error' => 'Feed not found.'], 404);
         }
 

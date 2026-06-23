@@ -25,16 +25,16 @@ class ModuleLoader
 
     protected function loadFromPath(string $path): void
     {
-        if (!File::isDirectory($path)) {
+        if (! File::isDirectory($path)) {
             return;
         }
 
         $directories = File::directories($path);
 
         foreach ($directories as $dir) {
-            $moduleFile = $dir . '/' . basename($dir) . 'Module.php';
+            $moduleFile = $dir.'/'.basename($dir).'Module.php';
 
-            if (!File::exists($moduleFile)) {
+            if (! File::exists($moduleFile)) {
                 continue;
             }
 
@@ -47,16 +47,16 @@ class ModuleLoader
             $namespace = str_replace(
                 ['/', '\\'],
                 ['\\', '\\'],
-                'App\\Modules\\' . basename($dir)
+                'App\\Modules\\'.basename($dir)
             );
 
-            $className = $namespace . '\\' . basename($dir) . 'Module';
+            $className = $namespace.'\\'.basename($dir).'Module';
 
-            if (!class_exists($className)) {
+            if (! class_exists($className)) {
                 require_once $moduleFile;
             }
 
-            if (!class_exists($className)) {
+            if (! class_exists($className)) {
                 continue;
             }
 

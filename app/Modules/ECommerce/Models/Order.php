@@ -35,8 +35,8 @@ class Order extends Model
     {
         parent::boot();
         static::creating(function (Order $order) {
-            if (!$order->order_number) {
-                $order->order_number = 'ORD-' . strtoupper(Str::random(8));
+            if (! $order->order_number) {
+                $order->order_number = 'ORD-'.strtoupper(Str::random(8));
             }
         });
     }

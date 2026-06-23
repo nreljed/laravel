@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Notification as NotificationFacade;
 class NotificationService
 {
     protected NotificationTypeRegistry $typeRegistry;
+
     protected ModuleRegistry $moduleRegistry;
+
     protected MailService $mailService;
 
     public function __construct(
@@ -24,11 +26,12 @@ class NotificationService
         $this->mailService = $mailService;
     }
 
-    public function notifyViaPreferences($notifiable, string $type, Notification $notification, array $channels = null): void
+    public function notifyViaPreferences($notifiable, string $type, Notification $notification, ?array $channels = null): void
     {
         $typeConfig = $this->typeRegistry->get($type);
-        if (!$typeConfig) {
+        if (! $typeConfig) {
             NotificationFacade::send($notifiable, $notification);
+
             return;
         }
 
@@ -52,7 +55,7 @@ class NotificationService
             }
         }
 
-        if (!empty($allowedChannels)) {
+        if (! empty($allowedChannels)) {
             $notifiable->notify($notification);
         }
 
@@ -76,7 +79,7 @@ class NotificationService
 
             $this->mailService->send(
                 $user->email,
-                '[' . config('app.name') . '] ' . $label,
+                '['.config('app.name').'] '.$label,
                 $template,
                 array_merge($data, [
                     'userName' => $user->display_name ?: $user->name,
@@ -88,7 +91,7 @@ class NotificationService
                 ])
             );
         } catch (\Throwable $e) {
-            Log::error('[NotificationService] Failed to send notification email for type: ' . $type . ' | Error: ' . $e->getMessage());
+            Log::error('[NotificationService] Failed to send notification email for type: '.$type.' | Error: '.$e->getMessage());
         }
     }
 
@@ -100,7 +103,7 @@ class NotificationService
             ->where('created_at', '<', $cutoff)
             ->delete();
 
-        Log::info('[NotificationService] Purged ' . $deleted . ' notifications older than ' . $retentionDays . ' days.');
+        Log::info('[NotificationService] Purged '.$deleted.' notifications older than '.$retentionDays.' days.');
 
         return $deleted;
     }

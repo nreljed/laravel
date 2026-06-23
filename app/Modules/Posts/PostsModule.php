@@ -5,6 +5,7 @@ namespace App\Modules\Posts;
 use App\Modules\Contracts\ModuleInterface;
 use App\Modules\Posts\Models\Post;
 use App\Modules\Traits\HasRoutes;
+use Illuminate\Support\Facades\Schema;
 
 class PostsModule implements ModuleInterface
 {
@@ -37,7 +38,7 @@ class PostsModule implements ModuleInterface
 
     public function routes(): void
     {
-        $this->loadRoutes(__DIR__ . '/Routes/web.php', '/dashboard/posts', 'dashboard.posts.', 'posts.view');
+        $this->loadRoutes(__DIR__.'/Routes/web.php', '/dashboard/posts', 'dashboard.posts.', 'posts.view');
     }
 
     public function boot(): void
@@ -76,7 +77,7 @@ class PostsModule implements ModuleInterface
 
     public function getDashboardData(): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('posts')) {
+        if (! Schema::hasTable('posts')) {
             return [];
         }
 
@@ -110,7 +111,7 @@ class PostsModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [__DIR__ . '/database/migrations'];
+        return [__DIR__.'/database/migrations'];
     }
 
     public function permissions(): array

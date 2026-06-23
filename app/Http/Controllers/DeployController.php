@@ -13,7 +13,7 @@ class DeployController extends Controller
         $token = $request->input('token', $request->query('token'));
         $expected = config('app.deploy_token');
 
-        if (!$expected || !hash_equals((string) $expected, (string) $token)) {
+        if (! $expected || ! hash_equals((string) $expected, (string) $token)) {
             abort(403, 'Invalid or missing deploy token.');
         }
     }
@@ -24,14 +24,14 @@ class DeployController extends Controller
 
         $content = $request->input('content');
 
-        if (!$content || trim($content) === '') {
+        if (! $content || trim($content) === '') {
             return response()->json(['error' => 'No content provided'], 400);
         }
 
         $envPath = base_path('.env');
 
         if (file_exists($envPath)) {
-            copy($envPath, $envPath . '.backup.' . now()->timestamp);
+            copy($envPath, $envPath.'.backup.'.now()->timestamp);
         }
 
         file_put_contents($envPath, $content);
@@ -137,7 +137,7 @@ class DeployController extends Controller
 
         try {
             $releases = $this->githubApi("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
-            if (!$releases || !isset($releases[0]['tag_name'])) {
+            if (! $releases || ! isset($releases[0]['tag_name'])) {
                 return response()->json(['status' => 'no-release']);
             }
 
@@ -156,20 +156,20 @@ class DeployController extends Controller
                 }
             }
 
-            if (!$assetUrl) {
+            if (! $assetUrl) {
                 return response()->json(['error' => 'No deploy.zip in release']);
             }
 
             $output[] = "New release: $latestTag";
 
             $zipData = $this->githubDownload($assetUrl, $githubToken);
-            if (!$zipData || strlen($zipData) < 100) {
+            if (! $zipData || strlen($zipData) < 100) {
                 return response()->json(['error' => 'Download failed']);
             }
 
-            $zipFile = storage_path('app/deploy-' . uniqid() . '.zip');
+            $zipFile = storage_path('app/deploy-'.uniqid().'.zip');
             file_put_contents($zipFile, $zipData);
-            $output[] = 'Downloaded ' . round(strlen($zipData) / 1048576, 1) . ' MB';
+            $output[] = 'Downloaded '.round(strlen($zipData) / 1048576, 1).' MB';
 
             $backupEnv = file_exists($envPath) ? file_get_contents($envPath) : '';
 
@@ -201,9 +201,9 @@ class DeployController extends Controller
             foreach ($commands as $cmd => [$params]) {
                 try {
                     Artisan::call($cmd, $params);
-                    $output[] = "$cmd: " . strtok(trim(Artisan::output()), "\n");
+                    $output[] = "$cmd: ".strtok(trim(Artisan::output()), "\n");
                 } catch (\Exception $e) {
-                    $output[] = "$cmd: ERROR " . $e->getMessage();
+                    $output[] = "$cmd: ERROR ".$e->getMessage();
                 }
             }
 
@@ -213,20 +213,26 @@ class DeployController extends Controller
         }
     }
 
-    private function githubApi($url, $token): array|null
+    private function githubApi($url, $token): ?array
     {
         $headers = ['User-Agent: CostBreaker360', 'Accept: application/vnd.github.v3+json'];
-        if ($token) $headers[] = "Authorization: Bearer $token";
+        if ($token) {
+            $headers[] = "Authorization: Bearer $token";
+        }
         $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => implode("\r\n", $headers), 'timeout' => 30]]);
         $response = @file_get_contents($url, false, $ctx);
+
         return $response ? json_decode($response, true) : null;
     }
 
     private function githubDownload($url, $token): string|false
     {
         $headers = ['User-Agent: CostBreaker360', 'Accept: application/octet-stream'];
-        if ($token) $headers[] = "Authorization: Bearer $token";
+        if ($token) {
+            $headers[] = "Authorization: Bearer $token";
+        }
         $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => implode("\r\n", $headers), 'timeout' => 300]]);
+
         return @file_get_contents($url, false, $ctx);
     }
 }

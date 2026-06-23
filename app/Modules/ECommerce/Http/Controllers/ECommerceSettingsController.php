@@ -2,8 +2,8 @@
 
 namespace App\Modules\ECommerce\Http\Controllers;
 
-use App\Services\SettingsService;
 use App\Http\Controllers\Controller;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
 
 class ECommerceSettingsController extends Controller

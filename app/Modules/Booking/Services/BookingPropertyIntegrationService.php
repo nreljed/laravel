@@ -27,74 +27,74 @@ class BookingPropertyIntegrationService
         $global = self::getGlobalOptions();
 
         return [
-            'pets_allowed'              => false,
-            'pet_types'                 => [],
-            'max_pets'                  => 1,
-            'pet_size_restrictions'     => '',
-            'pet_fee'                   => 0,
-            'pet_deposit'               => 0,
-            'pet_rules'                 => '',
-            'safety_features'           => [],
-            'security_cameras_details'  => '',
-            'instant_book'              => true,
-            'advance_notice_days'       => (int) ($global['default_advance_notice_days'] ?? 1),
-            'preparation_days'          => (int) ($global['default_preparation_days'] ?? 1),
-            'cancellation_policy'                => $global['default_cancellation_policy'] ?? 'flexible',
-            'cancellation_full_refund_days'      => 1,
+            'pets_allowed' => false,
+            'pet_types' => [],
+            'max_pets' => 1,
+            'pet_size_restrictions' => '',
+            'pet_fee' => 0,
+            'pet_deposit' => 0,
+            'pet_rules' => '',
+            'safety_features' => [],
+            'security_cameras_details' => '',
+            'instant_book' => true,
+            'advance_notice_days' => (int) ($global['default_advance_notice_days'] ?? 1),
+            'preparation_days' => (int) ($global['default_preparation_days'] ?? 1),
+            'cancellation_policy' => $global['default_cancellation_policy'] ?? 'flexible',
+            'cancellation_full_refund_days' => 1,
             'cancellation_partial_refund_cutoff_days' => 0,
             'cancellation_partial_refund_percent' => 50,
-            'host_cancellation_fee'                => 50,
-            'host_cancellation_fee_within_7d'     => 100,
-            'long_term_min_nights'               => 28,
-            'long_term_nonrefundable_nights'     => 30,
-            'require_damage_deposit'             => false,
-            'damage_deposit_amount'              => 0,
-            'damage_deposit_policy'              => '',
-            'deposit_collection_method'          => 'credit_card_hold',
-            'deposit_type'                       => 'fixed_amount',
-            'deposit_percentage'                 => 20,
-            'deposit_refund_days'                => (int) ($global['default_deposit_refund_days'] ?? 7),
-            'enable_damage_waiver'               => false,
-            'damage_waiver_fee'                  => 0,
-            'max_occupancy'             => 4,
-            'children_allowed'          => true,
-            'infants_allowed'           => true,
-            'smoking_allowed'           => 'not_allowed',
-            'neighborhood_description'  => '',
-            'parking_info'              => '',
-            'parking_spaces'            => 0,
-            'transit_info'              => '',
-            'local_recommendations'     => '',
-            'check_in_instructions'     => '',
-            'wifi_password'             => '',
-            'emergency_contact'         => '',
+            'host_cancellation_fee' => 50,
+            'host_cancellation_fee_within_7d' => 100,
+            'long_term_min_nights' => 28,
+            'long_term_nonrefundable_nights' => 30,
+            'require_damage_deposit' => false,
+            'damage_deposit_amount' => 0,
+            'damage_deposit_policy' => '',
+            'deposit_collection_method' => 'credit_card_hold',
+            'deposit_type' => 'fixed_amount',
+            'deposit_percentage' => 20,
+            'deposit_refund_days' => (int) ($global['default_deposit_refund_days'] ?? 7),
+            'enable_damage_waiver' => false,
+            'damage_waiver_fee' => 0,
+            'max_occupancy' => 4,
+            'children_allowed' => true,
+            'infants_allowed' => true,
+            'smoking_allowed' => 'not_allowed',
+            'neighborhood_description' => '',
+            'parking_info' => '',
+            'parking_spaces' => 0,
+            'transit_info' => '',
+            'local_recommendations' => '',
+            'check_in_instructions' => '',
+            'wifi_password' => '',
+            'emergency_contact' => '',
             'allow_unregistered_guests' => true,
-            'unregistered_guest_limit'  => 0,
-            'unregistered_guest_rules'  => '',
-            'allow_early_check_in'      => false,
-            'early_check_in_fee'        => 0,
-            'allow_late_check_out'      => false,
-            'late_check_out_fee'        => 0,
-            'nightly_rate'              => 0,
-            'cleaning_fee'              => 0,
-            'service_fee'               => 0,
-            'service_fee_type'          => 'fixed',
-            'weekend_days'              => ['fri', 'sat'],
-            'weekend_multiplier'        => 1.0,
-            'base_guests'               => 2,
-            'extra_guest_fee'           => 0,
-            'include_checkout_day'      => false,
-            'earliest_bookable_date'    => 0,
-            'latest_bookable_date'      => 12,
-            'check_in_time'             => $global['default_check_in_time'] ?? '15:00',
-            'check_out_time'            => $global['default_check_out_time'] ?? '11:00',
-            'weekday_prices'            => [],
-            'weekday_checkin_only'      => [],
-            'weekday_checkout_only'     => [],
-            'min_nights'                => (int) ($global['default_min_nights'] ?? 1),
-            'max_nights'                => (int) ($global['default_max_nights'] ?? 30),
-            'default_status'            => $global['default_booking_status'] ?? BookingStatus::Pending->value,
-            'currency'                  => '',
+            'unregistered_guest_limit' => 0,
+            'unregistered_guest_rules' => '',
+            'allow_early_check_in' => false,
+            'early_check_in_fee' => 0,
+            'allow_late_check_out' => false,
+            'late_check_out_fee' => 0,
+            'nightly_rate' => 0,
+            'cleaning_fee' => 0,
+            'service_fee' => 0,
+            'service_fee_type' => 'fixed',
+            'weekend_days' => ['fri', 'sat'],
+            'weekend_multiplier' => 1.0,
+            'base_guests' => 2,
+            'extra_guest_fee' => 0,
+            'include_checkout_day' => false,
+            'earliest_bookable_date' => 0,
+            'latest_bookable_date' => 12,
+            'check_in_time' => $global['default_check_in_time'] ?? '15:00',
+            'check_out_time' => $global['default_check_out_time'] ?? '11:00',
+            'weekday_prices' => [],
+            'weekday_checkin_only' => [],
+            'weekday_checkout_only' => [],
+            'min_nights' => (int) ($global['default_min_nights'] ?? 1),
+            'max_nights' => (int) ($global['default_max_nights'] ?? 30),
+            'default_status' => $global['default_booking_status'] ?? BookingStatus::Pending->value,
+            'currency' => '',
         ];
     }
 
@@ -103,17 +103,17 @@ class BookingPropertyIntegrationService
      */
     public static function getPropertyBookingData(int $propertyId): ?array
     {
-        if (!self::isModuleActive()) {
+        if (! self::isModuleActive()) {
             return null;
         }
 
         $property = Property::find($propertyId);
-        if (!$property) {
+        if (! $property) {
             return null;
         }
 
         $meta = $property->metadata ?? [];
-        $isEnabled = !empty($meta['booking_enabled']);
+        $isEnabled = ! empty($meta['booking_enabled']);
 
         $settings = $isEnabled ? self::loadAllSettings($property) : [];
 
@@ -124,23 +124,24 @@ class BookingPropertyIntegrationService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function savePropertyBookingData(int $propertyId, array $data): void
     {
-        if (!self::isModuleActive()) {
+        if (! self::isModuleActive()) {
             return;
         }
 
         $property = Property::findOrFail($propertyId);
         $meta = $property->metadata ?? [];
 
-        $enabled = !empty($data['enabled']);
+        $enabled = ! empty($data['enabled']);
         $meta['booking_enabled'] = $enabled;
 
-        if (!$enabled) {
+        if (! $enabled) {
             $property->metadata = $meta;
             $property->save();
+
             return;
         }
 
@@ -172,13 +173,13 @@ class BookingPropertyIntegrationService
 
         foreach ($settings as $key => $value) {
             if (in_array($key, $booleanKeys)) {
-                $meta[$key] = !empty($value);
+                $meta[$key] = ! empty($value);
             } elseif (in_array($key, $arrayKeys)) {
                 $meta[$key] = is_array($value) ? $value : [];
             } elseif (in_array($key, $numberKeys)) {
                 $meta[$key] = ($value !== '' && $value !== null && is_numeric($value)) ? (float) $value : 0;
             } else {
-                $meta[$key] = !empty($value) ? strip_tags((string) $value) : '';
+                $meta[$key] = ! empty($value) ? strip_tags((string) $value) : '';
             }
         }
 
@@ -195,17 +196,18 @@ class BookingPropertyIntegrationService
 
     public static function isPropertyBookable(int $propertyId): bool
     {
-        if (!self::isModuleActive()) {
+        if (! self::isModuleActive()) {
             return false;
         }
 
         $property = Property::find($propertyId);
-        if (!$property) {
+        if (! $property) {
             return false;
         }
 
         $meta = $property->metadata ?? [];
-        return !empty($meta['booking_enabled']);
+
+        return ! empty($meta['booking_enabled']);
     }
 
     /**
@@ -277,6 +279,7 @@ class BookingPropertyIntegrationService
 
             if ($raw === '' || $raw === null || $raw === false) {
                 $settings[$key] = $defaults[$key] ?? '';
+
                 continue;
             }
 

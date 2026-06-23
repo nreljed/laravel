@@ -5,7 +5,6 @@ namespace App\Modules\Booking\Services;
 use App\Modules\Properties\Models\Property;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class BookingPricingService
 {
@@ -20,7 +19,7 @@ class BookingPricingService
     public function calculate(int $propertyId, string $checkIn, string $checkOut, int $guests, bool $hasPets = false, ?string $unitId = null, ?string $createdAt = null, bool $isNonRefundable = false, ?array $allMeta = null): array
     {
         $cacheVersion = $this->getCacheVersion($propertyId);
-        $cacheKey = 'booking_price_' . $propertyId . '_' . $checkIn . '_' . $checkOut . '_' . $guests . '_' . ($hasPets ? '1' : '0') . '_' . ($unitId ?? 'null') . '_' . ($createdAt ?? 'null') . '_nr' . ($isNonRefundable ? '1' : '0');
+        $cacheKey = 'booking_price_'.$propertyId.'_'.$checkIn.'_'.$checkOut.'_'.$guests.'_'.($hasPets ? '1' : '0').'_'.($unitId ?? 'null').'_'.($createdAt ?? 'null').'_nr'.($isNonRefundable ? '1' : '0');
         $cached = Cache::get($cacheKey);
         if ($cached !== null && isset($cached['_version']) && $cached['_version'] === $cacheVersion) {
             return $cached;
@@ -37,7 +36,7 @@ class BookingPricingService
             return array_key_exists($key, $meta) ? $meta[$key] : $default;
         };
 
-        $unitService = new BookingUnitService();
+        $unitService = new BookingUnitService;
         $effectiveRate = null;
 
         if ($unitId) {
@@ -59,14 +58,14 @@ class BookingPricingService
         $extraGuestFee = (float) ($m('extra_guest_fee') ?: 0);
         $includeCheckoutDay = ($m('include_checkout_day') ?: '') === '1';
 
-        $currency = !empty($m('currency'))
+        $currency = ! empty($m('currency'))
             ? strtoupper(strip_tags((string) $m('currency')))
             : $this->getCurrency($propertyId);
 
         $seasonalRates = $this->getSeasonalRates($property);
         $seasonalRatesParsed = [];
         foreach ($seasonalRates as $i => $rate) {
-            if (!empty($rate['start_date']) && !empty($rate['end_date']) && !empty($rate['nightly_rate'])) {
+            if (! empty($rate['start_date']) && ! empty($rate['end_date']) && ! empty($rate['nightly_rate'])) {
                 $startTs = strtotime($rate['start_date']);
                 $endTs = strtotime($rate['end_date']);
                 if ($startTs && $endTs) {
@@ -107,7 +106,7 @@ class BookingPricingService
             }
 
             $dayAbbr = strtolower(date('D', $current));
-            if (!empty($weekdayPrices[$dayAbbr])) {
+            if (! empty($weekdayPrices[$dayAbbr])) {
                 $rate = (float) $weekdayPrices[$dayAbbr];
             } elseif ($isWeekend && $weekendMultiplier !== 1.0) {
                 $rate = round($rate * $weekendMultiplier, 2);
@@ -125,7 +124,7 @@ class BookingPricingService
             $totalNightsCharged++;
             $current = strtotime('+1 day', $current);
 
-            if (!$includeCheckoutDay && $current >= $checkOutTs) {
+            if (! $includeCheckoutDay && $current >= $checkOutTs) {
                 break;
             }
         }
@@ -224,9 +223,10 @@ class BookingPricingService
     {
         $start = strtotime($checkIn);
         $end = strtotime($checkOut);
-        if (!$start || !$end || $end <= $start) {
+        if (! $start || ! $end || $end <= $start) {
             return 0;
         }
+
         return max(1, (int) ceil(($end - $start) / 86400));
     }
 
@@ -242,7 +242,7 @@ class BookingPricingService
         $rate = $this->findSeasonalRate($date, $seasonalRates) ?: $baseRate;
 
         $dayAbbr = strtolower(date('D', strtotime($date)));
-        if (!empty($weekdayPrices[$dayAbbr])) {
+        if (! empty($weekdayPrices[$dayAbbr])) {
             $rate = (float) $weekdayPrices[$dayAbbr];
         } elseif ($this->isWeekendDay($date, $weekendDays) && $weekendMultiplier !== 1.0) {
             $rate = round($rate * $weekendMultiplier, 2);
@@ -253,11 +253,11 @@ class BookingPricingService
 
     private function getCacheVersion(int $propertyId): int
     {
-        return (int) Cache::get('booking_cache_v_' . $propertyId, 1);
+        return (int) Cache::get('booking_cache_v_'.$propertyId, 1);
     }
 
     /**
-     * @param array<string, mixed> $rates
+     * @param  array<string, mixed>  $rates
      */
     private function findBestTieredRate(int $nights, array $rates): ?float
     {
@@ -285,6 +285,7 @@ class BookingPricingService
     private function getLengthOfStayRates(int $propertyId): array
     {
         $property = Property::find($propertyId);
+
         return $property ? ($property->metadata['length_of_stay_rates'] ?? []) : [];
     }
 
@@ -298,8 +299,10 @@ class BookingPricingService
         $raw = $property->metadata['weekday_prices'] ?? [];
         if (is_string($raw)) {
             $decoded = json_decode($raw, true);
+
             return is_array($decoded) ? $decoded : [];
         }
+
         return is_array($raw) ? $raw : [];
     }
 
@@ -308,8 +311,10 @@ class BookingPricingService
         $raw = $property->metadata['weekend_days'] ?? [];
         if (is_string($raw)) {
             $decoded = json_decode($raw, true);
+
             return is_array($decoded) ? $decoded : ['fri', 'sat'];
         }
+
         return is_array($raw) ? $raw : ['fri', 'sat'];
     }
 
@@ -319,7 +324,7 @@ class BookingPricingService
     }
 
     /**
-     * @param array<string, mixed> $seasonalRates
+     * @param  array<string, mixed>  $seasonalRates
      */
     private function findSeasonalRate(string $date, array $seasonalRates): ?float
     {
@@ -334,11 +339,12 @@ class BookingPricingService
                 return (float) $rate['nightly_rate'];
             }
         }
+
         return null;
     }
 
     /**
-     * @param array<string, mixed> $weekendDays
+     * @param  array<string, mixed>  $weekendDays
      */
     private function isWeekendDay(string $date, array $weekendDays): bool
     {
@@ -348,11 +354,12 @@ class BookingPricingService
             'thu' => 'thu', 'fri' => 'fri', 'sat' => 'sat', 'sun' => 'sun',
         ];
         $abbr = $map[$dayOfWeek] ?? '';
+
         return in_array($abbr, $weekendDays, true);
     }
 
     /**
-     * @param array<string, mixed> $tiers
+     * @param  array<string, mixed>  $tiers
      */
     private function findLengthOfStayDiscount(int $nights, array $tiers): float
     {
@@ -365,16 +372,18 @@ class BookingPricingService
                 $best = $percent;
             }
         }
+
         return $best;
     }
 
     private function getCurrency(int $propertyId): string
     {
         $property = Property::find($propertyId);
-        if ($property && !empty($property->currency)) {
+        if ($property && ! empty($property->currency)) {
             return $property->currency;
         }
         $settings = SettingsService::getGroup('booking');
+
         return $settings['default_currency'] ?? 'USD';
     }
 

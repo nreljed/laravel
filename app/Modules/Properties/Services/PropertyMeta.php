@@ -200,6 +200,7 @@ class PropertyMeta
     public static function getFieldsByGroup(string $group): array
     {
         $fields = self::getFields();
+
         return $fields[$group] ?? [];
     }
 
@@ -218,7 +219,7 @@ class PropertyMeta
     {
         $field = self::getField($fieldKey);
 
-        if (!$field || $field['type'] !== 'repeater') {
+        if (! $field || $field['type'] !== 'repeater') {
             return null;
         }
 
@@ -229,7 +230,7 @@ class PropertyMeta
     {
         $field = self::getField($fieldKey);
 
-        if (!$field || $field['type'] !== 'repeater') {
+        if (! $field || $field['type'] !== 'repeater') {
             return false;
         }
 

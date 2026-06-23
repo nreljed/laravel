@@ -7,6 +7,7 @@ use App\Modules\ModuleRegistry;
 class NotificationTypeRegistry
 {
     protected ModuleRegistry $registry;
+
     protected ?array $types = null;
 
     public function __construct(ModuleRegistry $registry)
@@ -19,6 +20,7 @@ class NotificationTypeRegistry
         if ($this->types === null) {
             $this->types = $this->registry->getAllNotificationTypes();
         }
+
         return $this->types;
     }
 
@@ -29,7 +31,7 @@ class NotificationTypeRegistry
 
     public function getByGroup(string $group): array
     {
-        return array_filter($this->all(), fn($type) => ($type['group'] ?? '') === $group);
+        return array_filter($this->all(), fn ($type) => ($type['group'] ?? '') === $group);
     }
 
     public function groups(): array
@@ -37,11 +39,12 @@ class NotificationTypeRegistry
         $groups = [];
         foreach ($this->all() as $key => $type) {
             $group = $type['group'] ?? 'Other';
-            if (!isset($groups[$group])) {
+            if (! isset($groups[$group])) {
                 $groups[$group] = [];
             }
             $groups[$group][$key] = $type;
         }
+
         return $groups;
     }
 }
