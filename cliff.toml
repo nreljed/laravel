@@ -20,6 +20,8 @@ footer = ""
 conventional_commits = true
 filter_unconventional = true
 split_commits = false
+# Only consider semver tags (ignore existing deploy-N tags)
+tag_pattern = "v[0-9]+.*"
 commit_preprocessors = [
   { pattern = "(\\(\\w+\\))?\\s*", replace = "" },
 ]

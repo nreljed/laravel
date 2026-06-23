@@ -34,12 +34,18 @@ jobs:
           Invoke-WebRequest -Uri $gcUrl -OutFile $gcZip -ErrorAction Stop
           Expand-Archive -Path $gcZip -DestinationPath "$env:TEMP\git-cliff" -Force
           $gc = Get-ChildItem -Path "$env:TEMP\git-cliff" -Recurse -Filter "git-cliff.exe" | Select-Object -First 1 -ExpandProperty FullName
-          & $gc --bumped-version | Set-Content version.txt -NoNewline
-          $ver = (Get-Content version.txt -Raw).Trim()
-          if (-not $ver) { $ver = "0.1.0" }
+          # Try to get bumped version, fall back to 0.1.0 if git-cliff fails
+          $ver = "0.1.0"
+          try {
+            & $gc --bumped-version | Set-Content version.txt -NoNewline -ErrorAction Stop
+            $ver = (Get-Content version.txt -Raw -ErrorAction Stop).Trim()
+          } catch {
+            Write-Output "git-cliff version detection failed, using 0.1.0: $_"
+          }
           echo "version=$ver" >> $env:GITHUB_OUTPUT
-          & $gc --unreleased -o release-notes.md
-          & $gc -o CHANGELOG.md
+          & $gc --unreleased -o release-notes.md 2>$null
+          if (-not (Test-Path release-notes.md)) { Set-Content release-notes.md -Value "No changes for v$ver" }
+          & $gc -o CHANGELOG.md 2>$null
 
       - name: Generate Build .env (SQLite for build process)
         run: |
