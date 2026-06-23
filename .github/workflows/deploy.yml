@@ -75,9 +75,9 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
 
-      - name: Install Composer Dependencies
+      - name: Install Composer Dependencies (with dev)
         if: steps.composer-cache.outputs.cache-hit != 'true'
-        run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader --no-scripts
+        run: composer install --prefer-dist --no-interaction --no-scripts
 
       - name: Package Discover
         run: php artisan package:discover --ansi
@@ -90,6 +90,9 @@ jobs:
 
       - name: PHP Code Style (Pint)
         run: php artisan pint --test
+
+      - name: Strip dev dependencies for production
+        run: composer install --no-dev --optimize-autoloader --no-scripts
 
       - name: Overwrite .env with Production Settings
         run: |
