@@ -85,6 +85,23 @@ jobs:
       - name: Run migrations (SQLite build)
         run: php artisan migrate --force
 
+      - name: Cache npm dependencies
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}
+
+      - name: Install NPM Dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build Assets
+        run: npm run build
+
       - name: PHP Tests
         run: php artisan test
 
@@ -123,23 +140,6 @@ jobs:
           DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
           GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           '@ | Set-Content -Path .env -Encoding UTF8
-
-      - name: Cache npm dependencies
-        id: npm-cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
-
-      - name: Install NPM Dependencies
-        if: steps.npm-cache.outputs.cache-hit != 'true'
-        run: npm install --ignore-scripts --no-audit --no-fund
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build Assets
-        run: npm run build
 
       - name: Copy deploy script to root
         run: Copy-Item -Path scripts/deploy-cron.php -Destination deploy.php
