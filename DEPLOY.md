@@ -3,34 +3,33 @@
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  git push origin main                                        │
-│       ↓                                                      │
-│  deploy.yml (self-hosted GitHub runner, Windows)             │
-│       • generate build .env (SQLite) + empty sqlite file     │
-│       • download composer.phar + install --no-dev --no-scripts│
-│       • php artisan package:discover                         │
-│       • overwrite .env with production MySQL config          │
-│       • npm install --ignore-scripts                         │
-│       • npm run typecheck + npm run build                    │
-│       • package deploy.zip (excludes bootstrap/cache)        │
-│       • create GitHub Release with deploy.zip attached       │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ Release published
-┌──────────────────────────▼───────────────────────────────────┐
-│  cron-deploy.yml (GitHub-hosted runner, every 5 min)         │
-│       • calls GET https://site.com/deploy/check?token=...    │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ HTTP request
-┌──────────────────────────▼───────────────────────────────────┐
-│  /deploy/check endpoint (on the server, in Laravel)          │
-│       • checks .deploy-lock (prevents concurrent runs)       │
-│       • reads GITHUB_TOKEN from .env                         │
-│       • fetches latest release from GitHub API               │
-│       • compares with .deployed-version                      │
-│       • if new: downloads deploy.zip → extracts → artisan    │
-│       • writes .deployed-version, releases lock              │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  git push origin main  (use Conventional Commits)               │
+│       ↓                                                          │
+│  deploy.yml (self-hosted GitHub runner, Windows)                 │
+│       • git-cliff: parse commits → bump semver → generate CHANGES│
+│       • generate build .env (SQLite) + empty sqlite file         │
+│       • [cached] composer install --no-dev --no-scripts          │
+│       • php artisan package:discover                             │
+│       • overwrite .env with production MySQL config              │
+│       • [cached] npm install --ignore-scripts                    │
+│       • php artisan test + php artisan pint --test               │
+│       • npm run typecheck + npm run build                        │
+│       • package deploy.zip (excludes bootstrap/cache)            │
+│       • create GitHub Release with semver tag vX.Y.Z             │
+│         + auto-generated changelog as release body               │
+│       • curl /deploy/check directly on the server ──────────┐    │
+└──────────────────────────────────────────────────────────────│───┘
+                                                               │
+┌──────────────────────────────────────────────────────────────▼──┐
+│  /deploy/check endpoint (on the server, in Laravel)             │
+│       • checks .deploy-lock (prevents concurrent runs)           │
+│       • reads GITHUB_TOKEN from .env                             │
+│       • fetches latest release from GitHub API                   │
+│       • compares with .deployed-version                          │
+│       • if new: downloads deploy.zip → extracts → artisan        │
+│       • writes .deployed-version, releases lock                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ## First-Time Setup
@@ -56,7 +55,7 @@ Create the PAT at `https://github.com/settings/tokens?type=beta`:
 3. Upload to cPanel and extract at `public_html/`
 4. Verify: `curl "https://yoursite.com/deploy/check?token=YOUR_TOKEN"` → `{"status":"current"}`
 
-That's it. Every future push auto-deploys within ~5-10 minutes.
+That's it. Every future push auto-deploys within seconds of the build finishing.
 
 ## What the Endpoint Does
 
@@ -123,6 +122,7 @@ That's it. Every future push auto-deploys within ~5-10 minutes.
 | `.deploy-lock` | Prevents concurrent runs (auto-clears after 10 min) |
 | `.deployed-version` | Stores the last deployed release tag |
 | `.deploy-log` | Log from `deploy.php` (cron fallback only) |
+| `CHANGELOG.md` | Full release history (bundled in deploy.zip) |
 
 ## Deploy Endpoints
 
@@ -134,12 +134,60 @@ All under `/deploy/` and protected by `?token=...`:
 | `/deploy/cache-clear` | GET | Emergency reset — runs migrate:fresh + cache clear (manual safety net) |
 | `/deploy/update-env` | POST | Writes .env from POST body (emergency use only) |
 
+## Automated Quality Gates
+
+As part of the CI pipeline, every push to `main` runs these checks before building:
+
+| Step | What it checks | Tool |
+|------|---------------|------|
+| PHP Tests | Unit & feature tests pass | `php artisan test` (PHPUnit) |
+| Code Style | PHP follows PSR-12 | `php artisan pint --test` |
+| TypeScript | Type safety | `npm run typecheck` (tsc) |
+| Build | Assets compile | `npm run build` (vite) |
+
+If any step fails, the build stops and no release is created.
+
+## Versioning & Changelog
+
+Tags follow **Semantic Versioning**: `vMAJOR.MINOR.PATCH`
+
+| Commit type | Bump |
+|-------------|------|
+| `feat` | minor (1.0.0 → 1.1.0) |
+| `fix` | patch (1.0.0 → 1.0.1) |
+| `BREAKING CHANGE` or `!` | major (1.0.0 → 2.0.0) |
+| `chore`, `docs`, `refactor`, etc. | patch |
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full commit convention.
+
+## Automated Maintenance
+
+### Dependabot (`.github/dependabot.yml`)
+Runs weekly (Mondays) and auto-creates PRs for:
+
+| Ecosystem | What it checks |
+|-----------|---------------|
+| npm | `package.json` + `package-lock.json` |
+| Composer | `composer.json` + `composer.lock` |
+| GitHub Actions | Workflow action versions |
+
+PRs are labeled `dependencies` + ecosystem. Merge at your own pace.
+
+### Stale Bot (`.github/stale.yml`)
+- Issues/PRs with 60 days of inactivity get the `stale` label
+- Closed after 14 more days if no activity
+- Exempts `pinned`, `security`, and `blocked` labels
+
+### Issue & PR Templates
+- Bug reports and feature requests use structured YAML forms
+- PRs include a checklist for tests, typecheck, lint, and commit format
+
 ## Troubleshooting
 
 **Deploy not happening after push:**
-- Check GitHub Actions → `build-deploy.yml` completed and created a Release
-- Check `cron-deploy.yml` ran (Actions tab) — it runs every 5 min on GitHub-hosted runners
-- Manually trigger `cron-deploy.yml` from Actions tab to bypass the 5-min wait
+- Check GitHub Actions → `deploy.yml` completed and created a Release
+- Check the final "Trigger deploy on server" step — it should show the response from the server
+- If the trigger step failed, run `Manually Deploy Check` from the Actions tab (workflow_dispatch)
 
 **Server returns 403 on /deploy/check:**
 - `DEPLOY_TOKEN` in GitHub Secrets doesn't match `.env` on server — update one to match
@@ -162,6 +210,7 @@ All under `/deploy/` and protected by `?token=...`:
 | `.deploy-*` | Runtime files (lock, version) — never included in zip |
 | `node_modules/` | Dev only, never included |
 | `vendor/` | Included — built with `composer install --no-dev --no-scripts`, dev packages removed |
+| `CHANGELOG.md` | Included — generated by git-cliff from conventional commits |
 
 ## Troubleshooting
 

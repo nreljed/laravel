@@ -1,8 +1,6 @@
-name: Cron Deploy Check
+name: Manual Deploy Check
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:

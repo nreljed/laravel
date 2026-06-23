@@ -4,12 +4,34 @@ on:
   push:
     branches: [main]
 
+env:
+  PHP: C:\php\php.exe
+
 jobs:
   build-and-release:
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Determine version & generate changelog
+        id: version
+        shell: pwsh
+        run: |
+          $gcUrl = "https://github.com/orhun/git-cliff/releases/download/v2.8.0/git-cliff-2.8.0-x86_64-pc-windows-msvc.zip"
+          $gcZip = "$env:TEMP\git-cliff.zip"
+          Invoke-WebRequest -Uri $gcUrl -OutFile $gcZip -ErrorAction Stop
+          Expand-Archive -Path $gcZip -DestinationPath "$env:TEMP\git-cliff" -Force
+          $gc = Get-ChildItem -Path "$env:TEMP\git-cliff" -Recurse -Filter "git-cliff.exe" | Select-Object -First 1 -ExpandProperty FullName
+          & $gc --bumped-version | Set-Content version.txt -NoNewline
+          $ver = (Get-Content version.txt -Raw).Trim()
+          if (-not $ver) { $ver = "0.1.0" }
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+          & $gc --unreleased -o release-notes.md
+          & $gc -o CHANGELOG.md
 
       - name: Generate Build .env (SQLite for build process)
         run: |
@@ -31,12 +53,22 @@ jobs:
           "@ | Set-Content -Path .env -Encoding UTF8
           New-Item -ItemType File -Path database/database.sqlite -Force
 
+      - name: Cache Composer dependencies
+        id: composer-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
       - name: Install Composer Dependencies
+        if: steps.composer-cache.outputs.cache-hit != 'true'
         run: |
-          $php = "C:\php\php.exe"
           Invoke-WebRequest -Uri "https://getcomposer.org/composer.phar" -OutFile composer.phar
-          & $php composer.phar install --prefer-dist --no-interaction --no-dev --optimize-autoloader --no-scripts
-          & $php artisan package:discover --ansi
+          & "${{ env.PHP }}" composer.phar install --prefer-dist --no-interaction --no-dev --optimize-autoloader --no-scripts
+
+      - name: Package Discover
+        run: |
+          & "${{ env.PHP }}" artisan package:discover --ansi
 
       - name: Overwrite .env with Production Settings
         run: |
@@ -68,8 +100,24 @@ jobs:
           GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           '@ | Set-Content -Path .env -Encoding UTF8
 
+      - name: Cache npm dependencies
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}
+
       - name: Install NPM Dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: PHP Tests
+        run: |
+          & "${{ env.PHP }}" artisan test
+
+      - name: PHP Code Style (Pint)
+        run: |
+          & "${{ env.PHP }}" artisan pint --test
 
       - name: Typecheck
         run: npm run typecheck
@@ -93,7 +141,7 @@ jobs:
           $items = @(
             "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
             "app", "bootstrap", "config", "database", "public", "resources", "routes",
-            "storage", "vendor", ".env", "deploy.php"
+            "storage", "vendor", ".env", "deploy.php", "CHANGELOG.md"
           )
           $fullPaths = $items | ForEach-Object { Join-Path $src $_ }
           Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal
@@ -109,8 +157,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GH_TOKEN }}
-          tag_name: "deploy-${{ github.run_number }}-${{ github.run_attempt }}"
-          name: "Deploy #${{ github.run_number }}"
-          body: "Production deploy from ${{ github.sha }}"
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "v${{ steps.version.outputs.version }}"
+          body_path: release-notes.md
           files: deploy.zip
           fail_on_unmatched_files: true
+
+      - name: Trigger deploy on server
+        run: |
+          curl -s --max-time 180 "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"
