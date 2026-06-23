@@ -82,6 +82,15 @@ jobs:
       - name: Package Discover
         run: php artisan package:discover --ansi
 
+      - name: Run migrations (SQLite build)
+        run: php artisan migrate --force
+
+      - name: PHP Tests
+        run: php artisan test
+
+      - name: PHP Code Style (Pint)
+        run: php artisan pint --test
+
       - name: Overwrite .env with Production Settings
         run: |
           @'
@@ -122,12 +131,6 @@ jobs:
       - name: Install NPM Dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm install --ignore-scripts --no-audit --no-fund
-
-      - name: PHP Tests
-        run: php artisan test
-
-      - name: PHP Code Style (Pint)
-        run: php artisan pint --test
 
       - name: Typecheck
         run: npm run typecheck
