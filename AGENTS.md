@@ -90,37 +90,40 @@ npm run typecheck          # tsc --noEmit
 
 ## Deployment
 
-### CI/CD Pipeline (GitHub Actions → Release + Web Endpoint)
+### CI/CD Pipeline (GitHub Actions → Release + Server Deploy)
 
 Deploys automatically on every push to `main`:
 
-**Workflow 1 — `deploy.yml`** (GitHub-hosted runner, `windows-latest`, runs on push):
-1. Git-cliff parses commits → bumps semver → generates CHANGELOG
-2. Cached `composer install --no-dev --no-scripts`
-3. Cached `npm install` + `php artisan test` + `php artisan pint --test` + typecheck + build
-4. Packages `deploy.zip` (excludes `bootstrap/cache/`, keeps `.env`)
-5. Creates GitHub Release with semver tag `vX.Y.Z` + changelog body
-6. Curls server's `/deploy/check` endpoint to trigger deploy immediately
+**Workflow 1 — `deploy.yml`** (GitHub-hosted `windows-latest` runner):
+1. Checkout with full depth + tags
+2. Setup PHP 8.4 (extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip) + Node 22
+3. git-cliff: parse commits → bump semver → generate CHANGELOG.md + release-notes.md
+4. Generate build .env (SQLite)
+5. [cached] `composer install --prefer-dist --no-scripts` (WITH dev deps for testing)
+6. `php artisan package:discover + migrate --force`
+7. [cached] `npm install` → `npm run typecheck` → `npm run build` (generates manifest.json)
+8. `php artisan test` + `vendor/bin/pint` (auto-fix)
+9. `composer install --no-dev --optimize-autoloader` (strip dev deps before packaging)
+10. Overwrite .env (production MySQL config)
+11. Package `deploy.zip` (excludes `bootstrap/cache/`)
+12. Create GitHub Release with semver tag `vX.Y.Z` + changelog body + deploy.zip attachment
+13. Curl `/deploy/check?token=` directly on server to trigger deploy
 
 **On the server — `DeployController::check()`**:
-
-**On the server — `DeployController::check()`**:
-9. Verifies token, checks `.deploy-lock`
-10. Fetches latest release from GitHub API via `GITHUB_TOKEN` in `.env`
-11. Downloads `deploy.zip`, extracts over project root (preserves all folder structure)
-12. Restores `.env` from backup (never overwritten)
-13. Runs `package:discover`, `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
+- Verifies token, checks `.deploy-lock` (10 min TTL)
+- Fetches latest release from GitHub API via `GITHUB_TOKEN`
+- Downloads `deploy.zip`, extracts over project root
+- Restores `.env` from backup (never overwritten)
+- Runs: `package:discover`, `migrate`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
 
 ### Prerequisites
 
 | Requirement | Value |
 |------------|-------|
-| PHP | 8.3+ (8.4 recommended, uses `C:\php\php.exe` on runner) |
+| PHP | 8.3+ (8.4 recommended) |
 | MySQL | 8.0+ |
 | SSH | Not required |
-| Composer | Not required (vendor/ in ZIP, downloaded fresh each build) |
-| Cron | Not required — GitHub-hosted runner handles scheduling |
-| GitHub PAT | Fine-grained with **Contents: Read and Write** |
+| GitHub PAT | Fine-grained with **Contents: Read and Write** (stored as `GH_TOKEN`) |
 
 ### GitHub Secrets
 
@@ -131,14 +134,8 @@ Deploys automatically on every push to `main`:
 
 ### Deploy Endpoints
 
-- `GET /deploy/check?token=...` — Main deploy entry point (called by cron-deploy.yml every 5 min)
+- `GET /deploy/check?token=...` — Main deploy entry point (auto-called by deploy.yml; can also be triggered manually via the **Manual Deploy Check** workflow)
 - `GET /deploy/cache-clear?token=...` — Emergency reset: migrate:fresh + cache clear
-
-### Known Pitfalls
-
-- **Missing dev dependencies**: Dev-only packages (like `laravel/breeze`) are not in `vendor/` (built with `--no-dev`). The server's old `bootstrap/cache/packages.php` may reference them. Fixed by running `package:discover` as the first artisan command after extraction.
-- **`.env` wipe**: If `.env` is missing `APP_KEY`, the site returns 500. The build generates a fresh `.env` from `.env.example` locally; the server restores its own `.env` from backup.
-- **bootstrap/cache/ exclusion**: Excluded from zip to preserve the server's runtime config. If cache is stale, hit `/deploy/cache-clear`.
 
 ### After Schema/Seeder Changes
 
