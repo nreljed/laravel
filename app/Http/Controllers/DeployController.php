@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 
 class DeployController extends Controller
 {
     protected function verifyToken(Request $request): void
     {
-        $token = $request->input('token', $request->query('token'));
+        $token = $request->input('token');
         $expected = config('app.deploy_token');
 
         if (! $expected || ! hash_equals((string) $expected, (string) $token)) {
@@ -30,11 +31,11 @@ class DeployController extends Controller
 
         $envPath = base_path('.env');
 
-        if (file_exists($envPath)) {
-            copy($envPath, $envPath.'.backup.'.now()->timestamp);
+        if (File::exists($envPath)) {
+            File::copy($envPath, $envPath.'.backup.'.now()->timestamp);
         }
 
-        file_put_contents($envPath, $content);
+        File::put($envPath, $content);
 
         Artisan::call('config:clear');
 
@@ -54,10 +55,10 @@ class DeployController extends Controller
 
         // Switch back to database sessions now that tables exist
         $envPath = base_path('.env');
-        $env = file_get_contents($envPath);
+        $env = File::get($envPath);
         $env = preg_replace('/^SESSION_DRIVER=file$/m', 'SESSION_DRIVER=database', $env);
         $env = preg_replace('/^QUEUE_CONNECTION=sync$/m', 'QUEUE_CONNECTION=database', $env);
-        file_put_contents($envPath, $env);
+        File::put($envPath, $env);
 
         Artisan::call('cache:clear');
         $output['cache:clear'] = Artisan::output();
@@ -86,8 +87,8 @@ class DeployController extends Controller
         ];
 
         foreach ($files as $file) {
-            if (file_exists($file)) {
-                @unlink($file);
+            if (File::exists($file)) {
+                File::delete($file);
             }
         }
     }
@@ -117,8 +118,8 @@ class DeployController extends Controller
         $githubToken = '';
         $envPath = base_path('.env');
 
-        if (file_exists($envPath)) {
-            foreach (file($envPath) as $line) {
+        if (File::exists($envPath)) {
+            foreach (explode("\n", File::get($envPath)) as $line) {
                 if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {
                     $githubToken = trim(substr(trim($line), strlen('GITHUB_TOKEN=')));
                     $githubToken = trim($githubToken, '"\'');
@@ -130,10 +131,10 @@ class DeployController extends Controller
         $lockFile = base_path('.deploy-lock');
         $repo = 'nreljed/laravel';
 
-        if (file_exists($lockFile) && (time() - filemtime($lockFile)) < 600) {
+        if (File::exists($lockFile) && (time() - File::lastModified($lockFile)) < 600) {
             return response()->json(['status' => 'locked']);
         }
-        file_put_contents($lockFile, getmypid());
+        File::put($lockFile, getmypid());
 
         try {
             $releases = $this->githubApi("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
@@ -142,7 +143,7 @@ class DeployController extends Controller
             }
 
             $latestTag = $releases[0]['tag_name'];
-            $currentTag = file_exists($versionFile) ? trim(file_get_contents($versionFile)) : '';
+            $currentTag = File::exists($versionFile) ? trim(File::get($versionFile)) : '';
 
             if ($latestTag === $currentTag) {
                 return response()->json(['status' => 'current', 'tag' => $latestTag]);
@@ -168,10 +169,10 @@ class DeployController extends Controller
             }
 
             $zipFile = storage_path('app/deploy-'.uniqid().'.zip');
-            file_put_contents($zipFile, $zipData);
+            File::put($zipFile, $zipData);
             $output[] = 'Downloaded '.round(strlen($zipData) / 1048576, 1).' MB';
 
-            $backupEnv = file_exists($envPath) ? file_get_contents($envPath) : '';
+            $backupEnv = File::exists($envPath) ? File::get($envPath) : '';
 
             $zip = new \ZipArchive;
             if ($zip->open($zipFile) !== true) {
@@ -179,19 +180,26 @@ class DeployController extends Controller
             }
             $zip->extractTo(base_path());
             $zip->close();
-            @unlink($zipFile);
+            File::delete($zipFile);
 
             if ($backupEnv) {
-                file_put_contents($envPath, $backupEnv);
+                File::put($envPath, $backupEnv);
                 $output[] = 'Restored .env';
             }
 
-            file_put_contents($versionFile, $latestTag);
+            File::put($versionFile, $latestTag);
             $output[] = "New version: $latestTag";
 
             $commands = [
                 'package:discover' => [[]],
                 'migrate' => [['--force' => true]],
+                'app:create-admin' => [[
+                    '--no-interaction' => true,
+                    '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
+                    '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
+                    '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+                ]],
+                'modules:sync-permissions' => [[]],
                 'config:cache' => [[]],
                 'route:cache' => [[]],
                 'view:cache' => [[]],
@@ -209,30 +217,31 @@ class DeployController extends Controller
 
             return response()->json(['status' => 'deployed', 'tag' => $latestTag, 'output' => $output]);
         } finally {
-            @unlink($lockFile);
+            File::delete($lockFile);
         }
     }
 
-    private function githubApi($url, $token): ?array
+    private function githubApi(string $url, string $token): ?array
     {
-        $headers = ['User-Agent: CostBreaker360', 'Accept: application/vnd.github.v3+json'];
-        if ($token) {
-            $headers[] = "Authorization: Bearer $token";
-        }
-        $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => implode("\r\n", $headers), 'timeout' => 30]]);
-        $response = @file_get_contents($url, false, $ctx);
+        $response = Http::withHeaders([
+            'User-Agent' => 'CostBreaker360',
+            'Accept' => 'application/vnd.github.v3+json',
+        ])->withToken($token)
+            ->timeout(30)
+            ->get($url);
 
-        return $response ? json_decode($response, true) : null;
+        return $response->successful() ? $response->json() : null;
     }
 
-    private function githubDownload($url, $token): string|false
+    private function githubDownload(string $url, string $token): string|false
     {
-        $headers = ['User-Agent: CostBreaker360', 'Accept: application/octet-stream'];
-        if ($token) {
-            $headers[] = "Authorization: Bearer $token";
-        }
-        $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => implode("\r\n", $headers), 'timeout' => 300]]);
+        $response = Http::withHeaders([
+            'User-Agent' => 'CostBreaker360',
+            'Accept' => 'application/octet-stream',
+        ])->withToken($token)
+            ->timeout(300)
+            ->get($url);
 
-        return @file_get_contents($url, false, $ctx);
+        return $response->successful() ? $response->body() : false;
     }
 }

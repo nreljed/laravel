@@ -1,9 +1,15 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BulkUserController;
+use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Api\NotificationPollController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
@@ -37,13 +43,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
 
-    // Notifications
+    // Notifications — page render only (CRUD via JSON API)
     Route::get('/dashboard/notifications', [DashboardController::class, 'notifications'])->name('dashboard.notifications');
-    Route::put('/dashboard/notifications/mark-read', [DashboardController::class, 'markRead'])->name('dashboard.notifications.mark-read');
-    Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markAllRead'])->name('dashboard.notifications.mark-all-read');
-    Route::delete('/dashboard/notifications/{id}', [DashboardController::class, 'destroyNotification'])->name('dashboard.notifications.destroy');
-    Route::post('/dashboard/notifications/mark-bulk', [DashboardController::class, 'markBulk'])->name('dashboard.notifications.mark-bulk');
-    Route::post('/dashboard/notifications/delete-bulk', [DashboardController::class, 'deleteBulk'])->name('dashboard.notifications.delete-bulk');
+
+    // Lightweight JSON API for notification polling (used by use-notifications hook)
+    Route::prefix('/api/notifications')->name('api.notifications.')->group(function () {
+        Route::get('/unread-count', [NotificationPollController::class, 'unreadCount'])->name('unread-count');
+        Route::get('/recent', [NotificationPollController::class, 'recent'])->name('recent');
+        Route::get('/', [NotificationPollController::class, 'index'])->name('index');
+        Route::post('/mark-read', [NotificationPollController::class, 'markRead'])->name('mark-read');
+        Route::post('/mark-all-read', [NotificationPollController::class, 'markAllRead'])->name('mark-all-read');
+        Route::delete('/{id}', [NotificationPollController::class, 'destroy'])->name('destroy');
+        Route::post('/mark-bulk', [NotificationPollController::class, 'markBulk'])->name('mark-bulk');
+        Route::post('/delete-bulk', [NotificationPollController::class, 'deleteBulk'])->name('delete-bulk');
+    });
 
     // Developer tools (admin-only)
     Route::middleware('admin')->group(function () {
@@ -59,6 +72,11 @@ Route::middleware('auth')->group(function () {
 
     // Host/Guest mode switch
     Route::post('/dashboard/user/mode', [DashboardController::class, 'switchMode'])->name('dashboard.switch-mode');
+
+    // Impersonation stop — outside admin middleware so impersonated users can reach it
+    Route::prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
+        Route::post('/impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
+    });
 
     // Account management
     Route::prefix('/dashboard/account')->name('dashboard.')->group(function () {
@@ -83,7 +101,7 @@ Route::middleware('auth')->group(function () {
 // ═══════════════════════════════════════════════════
 // DASHBOARD ADMIN Pages — requires auth + admin
 // ═══════════════════════════════════════════════════
-Route::middleware(['auth', 'admin'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
+Route::middleware(['auth', 'admin', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
@@ -96,11 +114,36 @@ Route::middleware(['auth', 'admin'])->prefix('dashboard/admin')->name('dashboard
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/{user}/verify-email', [UserController::class, 'verifyEmail'])->name('users.verify-email');
+    Route::post('/users/{user}/send-reset-link', [UserController::class, 'sendPasswordReset'])->name('users.send-reset-link');
+    Route::get('/users/{user}/sessions', [SessionController::class, 'index'])->name('users.sessions');
+    Route::delete('/users/{user}/sessions/{session}', [SessionController::class, 'destroy'])->name('users.sessions.destroy');
 
     // Role management
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
+    Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
     Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
     Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+    Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+
+    // Impersonation start
+    Route::post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
+
+    // Bulk operations
+    Route::post('/users/bulk/delete', [BulkUserController::class, 'delete'])->name('users.bulk.delete');
+    Route::get('/users/export', [BulkUserController::class, 'export'])->name('users.export');
+
+    // Audit logs
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // Permission management
+    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
+    Route::post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');
+    Route::get('/permissions/{permission}/edit', [PermissionController::class, 'edit'])->name('permissions.edit');
+    Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
+    Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
 
     Route::prefix('/settings')->name('settings.')->group(function () {
         Route::put('/email', [EmailSettingsController::class, 'update'])->name('email.update');

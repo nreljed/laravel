@@ -1,0 +1,1 @@
+npx eslint resources/js/ && npx tsc --noEmit && prettier --check "resources/js/**/*.{ts,tsx,json,css}" && vendor/bin/pint

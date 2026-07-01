@@ -124,7 +124,7 @@ class AccountService
                 'password-changed',
                 [
                     'userName' => $user->display_name ?: $user->name,
-                    'resetUrl' => url('/forgot-password'),
+                    'resetUrl' => route('password.request'),
                     'siteName' => config('app.name'),
                 ]
             );
@@ -162,7 +162,7 @@ class AccountService
                 [
                     'userName' => $displayName,
                     'siteName' => config('app.name'),
-                    'siteUrl' => url('/'),
+                    'siteUrl' => route('home'),
                 ]
             );
         } catch (\Throwable $e) {

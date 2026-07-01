@@ -15,6 +15,7 @@ Route::post('/{property}/images/upload', [PropertyController::class, 'uploadImag
 Route::delete('/{property}/images/{image}', [PropertyController::class, 'deleteImage'])->name('delete-image');
 Route::post('/{property}/images/reorder', [PropertyController::class, 'reorderImages'])->name('reorder-images');
 Route::post('/{property}/images/{image}/featured', [PropertyController::class, 'setFeaturedImage'])->name('set-featured-image');
+Route::patch('/{property}/status', [PropertyController::class, 'updateStatus'])->name('update-status');
 
 Route::prefix('/terms')->name('terms.')->group(function () {
     Route::get('/types', [PropertyTermController::class, 'indexTypes'])->name('types.index');
@@ -22,10 +23,10 @@ Route::prefix('/terms')->name('terms.')->group(function () {
     Route::put('/types/{type}', [PropertyTermController::class, 'updateType'])->name('types.update');
     Route::delete('/types/{type}', [PropertyTermController::class, 'destroyType'])->name('types.destroy');
 
-    Route::get('/categories', [PropertyTermController::class, 'indexCategories'])->name('categories.index');
-    Route::post('/categories', [PropertyTermController::class, 'storeCategory'])->name('categories.store');
-    Route::put('/categories/{category}', [PropertyTermController::class, 'updateCategory'])->name('categories.update');
-    Route::delete('/categories/{category}', [PropertyTermController::class, 'destroyCategory'])->name('categories.destroy');
+    Route::get('/cities', [PropertyTermController::class, 'indexCities'])->name('cities.index');
+    Route::post('/cities', [PropertyTermController::class, 'storeCity'])->name('cities.store');
+    Route::put('/cities/{city}', [PropertyTermController::class, 'updateCity'])->name('cities.update');
+    Route::delete('/cities/{city}', [PropertyTermController::class, 'destroyCity'])->name('cities.destroy');
 
     Route::get('/features', [PropertyTermController::class, 'indexFeatures'])->name('features.index');
     Route::post('/features', [PropertyTermController::class, 'storeFeature'])->name('features.store');

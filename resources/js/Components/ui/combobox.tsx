@@ -8,13 +8,13 @@ const ChevronDownIcon = ChevronDown;
 const XIcon = X;
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/Components/ui/button"
+import { Button } from "@/Components/ui/button";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from "@/Components/ui/input-group"
+} from "@/Components/ui/input-group";
 
 function Combobox(props: React.ComponentProps<typeof ComboboxPrimitive.Root>): React.JSX.Element {
   return <ComboboxPrimitive.Root data-slot="combobox" {...props} />;

@@ -40,8 +40,8 @@ class ECommerceModule implements ModuleInterface
 
     public function routes(): void
     {
-        $this->loadRoutes(__DIR__.'/Http/Routes/web.php', '/dashboard/ecommerce', 'dashboard.ecommerce.', 'ecommerce.view');
-        $this->loadAdminRoutes(__DIR__.'/Http/Routes/admin.php', '/admin/ecommerce', 'admin.ecommerce.', 'ecommerce.view');
+        $this->loadRoutes(__DIR__.'/Routes/web.php', '/dashboard/ecommerce', 'dashboard.ecommerce.', 'ecommerce.view');
+        $this->loadAdminRoutes(__DIR__.'/Routes/admin.php', '/admin/ecommerce', 'admin.ecommerce.', 'ecommerce.view');
     }
 
     public function boot(): void
@@ -52,6 +52,11 @@ class ECommerceModule implements ModuleInterface
     public function register(): void
     {
         app()->singleton(ECommerceService::class);
+    }
+
+    public function getNavGroupLabel(): ?string
+    {
+        return 'Shop';
     }
 
     public function getNavItems(): array

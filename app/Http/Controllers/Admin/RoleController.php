@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateRoleRequest;
+use App\Http\Requests\Role\StoreRoleRequest;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\AuditService;
+use App\Services\PermissionCacheService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,6 +33,52 @@ class RoleController extends Controller
         return Inertia::render('Admin/Roles/Index', [
             'roles' => $roles,
         ]);
+    }
+
+    public function create(): Response
+    {
+        $permissionGroups = Permission::orderBy('name')
+            ->get()
+            ->groupBy(fn ($p) => explode('.', $p->slug)[0] ?? 'general')
+            ->map(fn ($group, $key) => [
+                'group' => $key,
+                'permissions' => $group->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'slug' => $p->slug,
+                    'description' => $p->description,
+                    'assigned' => false,
+                ]),
+            ])
+            ->values();
+
+        return Inertia::render('Admin/Roles/Form', [
+            'role' => null,
+            'permissionGroups' => $permissionGroups,
+        ]);
+    }
+
+    public function store(StoreRoleRequest $request, PermissionCacheService $cache): RedirectResponse
+    {
+        $role = Role::create([
+            'name' => $request->name,
+            'slug' => $request->slug,
+            'description' => $request->description,
+        ]);
+
+        if ($request->has('permission_ids')) {
+            $role->permissions()->sync($request->permission_ids);
+        }
+
+        $cache->flushAll();
+
+        AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
+            'role' => $role->slug,
+            'permission_ids' => $request->permission_ids ?? [],
+        ]);
+
+        return redirect()->route('dashboard.admin.roles.index')
+            ->with('flash', ['success' => 'Role created successfully.']);
     }
 
     public function edit(Role $role): Response
@@ -61,14 +111,8 @@ class RoleController extends Controller
         ]);
     }
 
-    public function update(Request $request, Role $role): RedirectResponse
+    public function update(UpdateRoleRequest $request, Role $role, PermissionCacheService $cache): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => ['exists:permissions,id'],
-        ]);
 
         $role->update([
             'name' => $request->name,
@@ -79,7 +123,31 @@ class RoleController extends Controller
             $role->permissions()->sync($request->permission_ids);
         }
 
+        $cache->flushAll();
+
+        AuditService::log(AuditAction::PermissionAssigned, $request->user()->id, [
+            'role' => $role->slug,
+            'permission_ids' => $request->permission_ids ?? [],
+        ]);
+
         return redirect()->route('dashboard.admin.roles.index')
             ->with('flash', ['success' => 'Role updated successfully.']);
+    }
+
+    public function destroy(Role $role, PermissionCacheService $cache): RedirectResponse
+    {
+        if ($role->slug === 'admin') {
+            return redirect()->route('dashboard.admin.roles.index')
+                ->with('flash', ['error' => 'The admin role cannot be deleted.']);
+        }
+
+        $role->users()->detach();
+        $role->permissions()->detach();
+        $role->delete();
+
+        $cache->flushAll();
+
+        return redirect()->route('dashboard.admin.roles.index')
+            ->with('flash', ['success' => 'Role deleted successfully.']);
     }
 }

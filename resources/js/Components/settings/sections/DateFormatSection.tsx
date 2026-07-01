@@ -1,43 +1,31 @@
-import * as React from "react"
-import { usePage, router } from "@inertiajs/react"
-import { Section, SectionField } from "@/Components/section"
+import * as React from "react";
+import { usePage, router } from "@inertiajs/react";
+import { Section, SectionField } from "@/Components/section";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/Components/ui/select"
-import { Input } from "@/Components/ui/input"
+} from "@/Components/ui/select";
+import { Input } from "@/Components/ui/input";
 import {
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
-  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
-  ComboboxLabel,
   ComboboxList,
   ComboboxTrigger,
   ComboboxValue,
-} from "@/Components/ui/combobox"
-import { CalendarDays } from "lucide-react"
-import { toast } from "sonner"
+} from "@/Components/ui/combobox";
+import { CalendarDays } from "lucide-react";
+import { toast } from "sonner";
 
 interface FormatOption {
-  value: string
-  label: string
-  example?: string
-}
-
-interface TimezoneOption {
-  value: string
-  label: string
-}
-
-interface TimezoneGroup {
-  label: string
-  options: TimezoneOption[]
+  value: string;
+  label: string;
+  example?: string;
 }
 
 const DATE_FORMAT_OPTIONS: FormatOption[] = [
@@ -49,7 +37,7 @@ const DATE_FORMAT_OPTIONS: FormatOption[] = [
   { value: "l, F j, Y", label: "l, F j, Y", example: "Monday, June 1, 2026" },
   { value: "D, M j", label: "D, M j", example: "Mon, Jun 1" },
   { value: "d.m.Y", label: "d.m.Y", example: "01.06.2026" },
-]
+];
 
 const TIME_FORMAT_OPTIONS: FormatOption[] = [
   { value: "H:i", label: "H:i", example: "14:30" },
@@ -57,7 +45,7 @@ const TIME_FORMAT_OPTIONS: FormatOption[] = [
   { value: "H:i:s", label: "H:i:s", example: "14:30:00" },
   { value: "g:i a", label: "g:i a", example: "2:30 pm" },
   { value: "G:i", label: "G:i", example: "14:30" },
-]
+];
 
 const DAYS_OF_WEEK: FormatOption[] = [
   { value: "0", label: "Sunday" },
@@ -67,85 +55,103 @@ const DAYS_OF_WEEK: FormatOption[] = [
   { value: "4", label: "Thursday" },
   { value: "5", label: "Friday" },
   { value: "6", label: "Saturday" },
-]
+];
 
 function formatWithOptions(date: Date, format: string): string {
   const map: Record<string, string> = {
-    "d": String(date.getDate()).padStart(2, "0"),
-    "m": String(date.getMonth() + 1).padStart(2, "0"),
-    "Y": String(date.getFullYear()),
-    "j": String(date.getDate()),
-    "F": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][date.getMonth()],
-    "l": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()],
-    "D": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()],
-    "M": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][date.getMonth()],
-    "H": String(date.getHours()).padStart(2, "0"),
-    "i": String(date.getMinutes()).padStart(2, "0"),
-    "s": String(date.getSeconds()).padStart(2, "0"),
-    "A": date.getHours() >= 12 ? "PM" : "AM",
-    "a": date.getHours() >= 12 ? "pm" : "am",
-    "G": String(date.getHours()),
-    "g": String(date.getHours() % 12 || 12),
-  }
-  let result = format
+    d: String(date.getDate()).padStart(2, "0"),
+    m: String(date.getMonth() + 1).padStart(2, "0"),
+    Y: String(date.getFullYear()),
+    j: String(date.getDate()),
+    F:
+      [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ][date.getMonth()] ?? "",
+    l:
+      ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
+        date.getDay()
+      ] ?? "",
+    D: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()] ?? "",
+    M:
+      ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
+        date.getMonth()
+      ] ?? "",
+    H: String(date.getHours()).padStart(2, "0"),
+    i: String(date.getMinutes()).padStart(2, "0"),
+    s: String(date.getSeconds()).padStart(2, "0"),
+    A: date.getHours() >= 12 ? "PM" : "AM",
+    a: date.getHours() >= 12 ? "pm" : "am",
+    G: String(date.getHours()),
+    g: String(date.getHours() % 12 || 12),
+  };
+  let result = format;
   for (const [key, val] of Object.entries(map)) {
-    result = result.replaceAll(key, val)
+    result = result.replaceAll(key, val);
   }
-  return result
+  return result;
 }
 
 function getExampleDate(): Date {
-  const d = new Date()
-  d.setHours(14, 30, 0, 0)
-  d.setDate(1)
-  d.setMonth(5)
-  d.setFullYear(2026)
-  return d
+  const d = new Date();
+  d.setHours(14, 30, 0, 0);
+  d.setDate(1);
+  d.setMonth(5);
+  d.setFullYear(2026);
+  return d;
 }
 
-const exampleDate = getExampleDate()
+const exampleDate = getExampleDate();
 
 const DATE_FORMATS_WITH_EXAMPLES = DATE_FORMAT_OPTIONS.map((opt) => ({
   ...opt,
   exampleDisplay: formatWithOptions(exampleDate, opt.value),
-}))
+}));
 
 const TIME_FORMATS_WITH_EXAMPLES = TIME_FORMAT_OPTIONS.map((opt) => ({
   ...opt,
   exampleDisplay: formatWithOptions(exampleDate, opt.value),
-}))
+}));
 
 interface DateFormatSectionProps {
-  asAccordion?: boolean
+  asAccordion?: boolean;
 }
 
 function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
-  const { props } = usePage()
-  const settings = (props.formattingSettings as Record<string, string | undefined>) || {}
+  const { props } = usePage();
+  const settings = (props.formattingSettings as Record<string, string | undefined>) || {};
 
-  const [dateFormat, setDateFormat] = React.useState<string>(
-    settings.date_format || "Y-m-d",
-  )
-  const [timeFormat, setTimeFormat] = React.useState<string>(settings.time_format || "H:i")
-  const [startOfWeek, setStartOfWeek] = React.useState<string>(settings.start_of_week || "0")
-  const [timezone, setTimezone] = React.useState<string>(settings.timezone || "UTC")
+  const [dateFormat, setDateFormat] = React.useState<string>(settings.date_format || "Y-m-d");
+  const [timeFormat, setTimeFormat] = React.useState<string>(settings.time_format || "H:i");
+  const [startOfWeek, setStartOfWeek] = React.useState<string>(settings.start_of_week || "0");
+  const [timezone, setTimezone] = React.useState<string>(settings.timezone || "UTC");
 
-  const [loading, setLoading] = React.useState(false)
-  const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [loading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
 
-  const [showCustomDate, setShowCustomDate] = React.useState(
-    () => !DATE_FORMAT_OPTIONS.some((o) => o.value === (settings.date_format || "Y-m-d")),
-  )
-  const [showCustomTime, setShowCustomTime] = React.useState(
-    () => !TIME_FORMAT_OPTIONS.some((o) => o.value === (settings.time_format || "H:i")),
-  )
+  const [showCustomDate, setShowCustomDate] = React.useState(() =>
+    DATE_FORMAT_OPTIONS.every((o) => o.value !== (settings.date_format || "Y-m-d")),
+  );
+  const [showCustomTime, setShowCustomTime] = React.useState(() =>
+    TIME_FORMAT_OPTIONS.every((o) => o.value !== (settings.time_format || "H:i")),
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (loading) return
+    e.preventDefault();
+    if (loading) return;
 
-    setLoading(true)
-    setErrors({})
+    setLoading(true);
+    setErrors({});
 
     router.put(
       route("dashboard.admin.settings.update"),
@@ -160,16 +166,16 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
         preserveState: true,
         replace: true,
         onSuccess: () => {
-          toast.success("Date & time settings saved!")
+          toast.success("Date & time settings saved!");
         },
         onError: (errs) => {
-          setErrors(errs as Record<string, string>)
-          toast.error(Object.values(errs as Record<string, string>)[0] || "Failed to save")
+          setErrors(errs as Record<string, string>);
+          toast.error(Object.values(errs as Record<string, string>)[0] || "Failed to save");
         },
         onFinish: () => setLoading(false),
       },
-    )
-  }
+    );
+  };
 
   return (
     <Section
@@ -194,10 +200,10 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
             value={showCustomDate ? "__custom__" : dateFormat}
             onValueChange={(val) => {
               if (val === "__custom__") {
-                setShowCustomDate(true)
+                setShowCustomDate(true);
               } else {
-                setShowCustomDate(false)
-                setDateFormat(val)
+                setShowCustomDate(false);
+                setDateFormat(val);
               }
             }}
           >
@@ -239,10 +245,10 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
             value={showCustomTime ? "__custom__" : timeFormat}
             onValueChange={(val) => {
               if (val === "__custom__") {
-                setShowCustomTime(true)
+                setShowCustomTime(true);
               } else {
-                setShowCustomTime(false)
-                setTimeFormat(val)
+                setShowCustomTime(false);
+                setTimeFormat(val);
               }
             }}
           >
@@ -279,10 +285,7 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
         error={errors?.start_of_week}
         description="Sets which day the calendar week starts on"
       >
-        <Select
-          value={String(startOfWeek)}
-          onValueChange={(val) => setStartOfWeek(val)}
-        >
+        <Select value={String(startOfWeek)} onValueChange={(val) => setStartOfWeek(val)}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select start of week" />
           </SelectTrigger>
@@ -316,7 +319,9 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
               <ComboboxList>
                 <ComboboxItem value="UTC">UTC</ComboboxItem>
                 {Intl.supportedValuesOf?.("timeZone")?.map((tz: string) => (
-                  <ComboboxItem key={tz} value={tz}>{tz}</ComboboxItem>
+                  <ComboboxItem key={tz} value={tz}>
+                    {tz}
+                  </ComboboxItem>
                 ))}
               </ComboboxList>
             </ComboboxContent>
@@ -324,7 +329,7 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
         </SectionField>
       </div>
     </Section>
-  )
+  );
 }
 
-export { DateFormatSection }
+export { DateFormatSection };

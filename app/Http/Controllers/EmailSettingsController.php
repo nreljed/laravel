@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Email\SendTestEmailRequest;
+use App\Http\Requests\Email\UpdateEmailSettingsRequest;
 use App\Modules\ModuleRegistry;
 use App\Services\EmailSettingsService;
 use App\Services\EmailTemplateService;
@@ -33,29 +35,9 @@ class EmailSettingsController extends Controller
     /**
      * Update SMTP/email settings.
      */
-    public function update(Request $request)
+    public function update(UpdateEmailSettingsRequest $request)
     {
-        $validated = $request->validate([
-            'mailer' => 'nullable|string|in:smtp,sendmail,mail,log',
-            'smtp_host' => 'nullable|string|max:255',
-            'smtp_port' => 'nullable|integer|min:1|max:65535',
-            'smtp_encryption' => 'nullable|string|in:tls,ssl,none',
-            'smtp_auth' => 'nullable|boolean',
-            'auto_tls' => 'nullable|boolean',
-            'smtp_allow_self_signed' => 'nullable|boolean',
-            'smtp_ehlo_domain' => 'nullable|string|max:255',
-            'smtp_username' => 'nullable|string|max:255',
-            'smtp_password' => 'nullable|string|max:255',
-            'from_email' => 'nullable|email|max:255',
-            'from_name' => 'nullable|string|max:255',
-            'reply_to_email' => 'nullable|email|max:255',
-            'return_path' => 'nullable|email|max:255',
-            'use_from_as_return_path' => 'nullable|boolean',
-            'force_from_email' => 'nullable|boolean',
-            'force_from_name' => 'nullable|boolean',
-        ]);
-
-        $this->settingsService->updateFromRequest($validated);
+        $this->settingsService->updateFromRequest($request->validated());
 
         return redirect()->back()->with('status', 'Email settings saved successfully!');
     }
@@ -129,15 +111,10 @@ class EmailSettingsController extends Controller
     /**
      * Send a template test email for preview.
      */
-    public function sendTemplateTest(Request $request)
+    public function sendTemplateTest(SendTestEmailRequest $request)
     {
-        $validated = $request->validate([
-            'template' => 'required|string',
-            'to' => 'nullable|email',
-        ]);
-
-        $to = $validated['to'] ?: $request->user()->email;
-        $template = $validated['template'];
+        $to = $request->validated('to') ?: $request->user()->email;
+        $template = $request->validated('template');
 
         if (! $this->templateService->exists($template)) {
             return redirect()->back()->withErrors(['error' => 'Template not found: '.$template]);
@@ -312,7 +289,7 @@ class EmailSettingsController extends Controller
                 'group' => 'Account',
                 'sample_data' => [
                     'userName' => $user?->name ?? 'User',
-                    'verificationUrl' => url('/verify-email/sample'),
+                    'verificationUrl' => route('verification.notice'),
                     'siteName' => config('app.name'),
                 ],
             ],

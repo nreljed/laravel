@@ -42,16 +42,31 @@ class SyncModulePermissions extends Command
 
         $this->info("Synced {$synced} new permission(s).");
 
+        $moduleSlugs = [];
+        foreach ($registry->all() as $module) {
+            foreach ($module->permissions() as $perm) {
+                $moduleSlugs[] = $perm['slug'];
+            }
+        }
+        $modulePerms = Permission::whereIn('slug', $moduleSlugs)->pluck('id');
+
+        // Auto-assign all module permissions to admin role (admin gets everything)
+        $admin = Role::where('slug', 'admin')->first();
+        if ($admin) {
+            $existingIds = $admin->permissions()->pluck('permissions.id')->toArray();
+            $newIds = $modulePerms->diff($existingIds)->values()->toArray();
+
+            if (! empty($newIds)) {
+                $admin->permissions()->attach($newIds);
+                $this->line('  Assigned '.count($newIds).' module permission(s) to admin role.');
+            } else {
+                $this->line('  No new module permissions to assign to admin role.');
+            }
+        }
+
         // Auto-assign all module permissions to crm_user role
         $crmUser = Role::where('slug', 'crm_user')->first();
         if ($crmUser) {
-            $moduleSlugs = [];
-            foreach ($registry->all() as $module) {
-                foreach ($module->permissions() as $perm) {
-                    $moduleSlugs[] = $perm['slug'];
-                }
-            }
-            $modulePerms = Permission::whereIn('slug', $moduleSlugs)->pluck('id');
             $existingIds = $crmUser->permissions()->pluck('permissions.id')->toArray();
             $newIds = $modulePerms->diff($existingIds)->values()->toArray();
 

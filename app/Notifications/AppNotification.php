@@ -21,11 +21,20 @@ class AppNotification extends Notification
         return array_merge($this->data, [
             'type' => $this->type,
             'title' => $this->data['title'] ?? $this->type,
+            'severity' => $this->data['severity'] ?? 'info',
+            'module' => $this->data['module'] ?? 'core',
+            'link' => $this->data['link'] ?? $this->data['url'] ?? '',
+            'message' => $this->data['message'] ?? $this->data['body'] ?? '',
         ]);
     }
 
     public function toArray($notifiable): array
     {
-        return $this->data;
+        return array_merge($this->data, [
+            'type' => $this->type,
+            'title' => $this->data['title'] ?? $this->type,
+            'severity' => $this->data['severity'] ?? 'info',
+            'module' => $this->data['module'] ?? 'core',
+        ]);
     }
 }

@@ -22,10 +22,8 @@ class MailerConfigurator
         $settings = $this->settingsService->getOptions();
         $mailer = $settings['mailer'];
 
-        // No SMTP configured via admin UI → fall back to log
+        // No SMTP configured via admin UI → keep .env default (no override)
         if ($mailer === 'smtp' && empty($settings['smtp_host'])) {
-            Config::set('mail.default', 'log');
-
             return;
         }
 

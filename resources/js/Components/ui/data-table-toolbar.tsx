@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { X } from "lucide-react"
-import type { Table } from "@tanstack/react-table"
+import { X } from "lucide-react";
+import type { Table } from "@tanstack/react-table";
 
-import { Button } from "@/Components/ui/button"
-import { Input } from "@/Components/ui/input"
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/Components/ui/select"
+} from "@/Components/ui/select";
 
 interface DataTableToolbarProps<TData> {
-  table: Table<TData>
-  searchKey?: string
-  searchPlaceholder?: string
-  filterOptions?: { label: string; value: string }[]
-  filterKey?: string
-  filterTitle?: string
+  table: Table<TData>;
+  searchKey?: string;
+  searchPlaceholder?: string;
+  filterOptions?: { label: string; value: string }[];
+  filterKey?: string;
+  filterTitle?: string;
 }
 
 export function DataTableToolbar<TData>({
@@ -30,7 +30,7 @@ export function DataTableToolbar<TData>({
   filterKey,
   filterTitle,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const isFiltered = table.getState().columnFilters.length > 0;
 
   return (
     <div className="flex items-center justify-between">
@@ -39,19 +39,15 @@ export function DataTableToolbar<TData>({
           <Input
             placeholder={searchPlaceholder}
             value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
+            onChange={(event) => table.getColumn(searchKey)?.setFilterValue(event.target.value)}
             className="h-8 w-[150px] lg:w-[250px]"
           />
         )}
         {filterKey && filterOptions && (
           <Select
-            value={
-              (table.getColumn(filterKey)?.getFilterValue() as string) ?? ""
-            }
+            value={(table.getColumn(filterKey)?.getFilterValue() as string) ?? ""}
             onValueChange={(value) => {
-              table.getColumn(filterKey)?.setFilterValue(value === "all" ? "" : value)
+              table.getColumn(filterKey)?.setFilterValue(value === "all" ? "" : value);
             }}
           >
             <SelectTrigger className="h-8 w-[150px]">
@@ -79,5 +75,5 @@ export function DataTableToolbar<TData>({
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { router } from "@inertiajs/react";
 
 interface FieldValidationOptions {
   endpoint: string;
@@ -24,7 +25,7 @@ export function useFieldValidation(options: FieldValidationOptions): FieldValida
   });
 
   const valueRef = useRef(value);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const genRef = useRef(0);
 
   useEffect(() => {
     valueRef.current = value;
@@ -37,39 +38,26 @@ export function useFieldValidation(options: FieldValidationOptions): FieldValida
         return;
       }
 
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      abortControllerRef.current = new AbortController();
-
+      const gen = ++genRef.current;
       setStatus((prev) => ({ ...prev, checking: true }));
 
       try {
-        const response = await fetch(
-          `${endpoint}?${param}=${encodeURIComponent(val)}`,
-          { signal: abortControllerRef.current.signal },
-        );
-
-        if (response.status === 403) {
-          setStatus({
-            checking: false,
-            available: null,
-            message: "Session expired. Please refresh the page.",
+        const result = await new Promise<any>((resolve, reject) => {
+          router.get(route(endpoint), { [param]: val } as any, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: (page: any) => resolve(page.props as any),
+            onError: (errors) => reject(errors),
           });
-          return;
-        }
+        });
 
-        const result = await response.json();
+        if (gen !== genRef.current) return;
         setStatus({
           checking: false,
           available: result.available,
           message: result.message || "",
         });
-      } catch (error: unknown) {
-        if ((error as Error).name === "AbortError") {
-          return;
-        }
+      } catch {
         setStatus({ checking: false, available: null, message: "" });
       }
     },
@@ -90,9 +78,7 @@ export function useFieldValidation(options: FieldValidationOptions): FieldValida
 
     return () => {
       clearTimeout(timer);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      genRef.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, debounce]);

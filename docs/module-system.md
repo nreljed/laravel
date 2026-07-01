@@ -4,7 +4,7 @@
 
 A modular CMS-style architecture. Each module is a self-contained unit with its own routes, controllers, models, migrations, frontend pages, permissions, and nav items. Modules are discovered automatically, dependency-resolved, and booted in order.
 
-**4 modules:** Properties, Bookings, Posts, E-Commerce.
+**4 modules:** Properties, Booking, Posts, E-Commerce.
 
 ---
 
@@ -44,6 +44,7 @@ public function boot(): void;                // boot logic
 public function routes(): void;              // route registration (uses HasRoutes trait)
 
 public function getNavItems(): array;        // sidebar nav tree
+public function getNavGroupLabel(): ?string; // "Manage Booking", "Shop", "Content", etc.
 public function getDashboardData(): array;   // stats widgets
 public function getSharedData(): array;      // Inertia-shared props
 public function getSettingsRoute(): ?string; // settings page URL
@@ -74,7 +75,9 @@ Modules declare dependencies via `dependencies()` (e.g., Booking depends on Prop
 
 ### DB Enablement
 
-The `modules` table controls which modules are enabled. Admin toggles via UI route `dashboard/admin/modules/{module}/toggle`. `Module::enabled()` scope filters `enabled = true`.
+The `modules` table controls which modules are enabled and their display order. Admin toggles/reorders via UI route `dashboard/admin/modules/toggle` (uses `ToggleModuleRequest` which validates `modules.*.order`). `Module::enabled()` scope filters `enabled = true`.
+
+Migration `2026_07_01_000001_add_order_to_modules_table.php` added the `order` column (integer). The `Module` model has `order` in `$fillable`.
 
 ---
 
@@ -100,7 +103,7 @@ Route names prefixed with 3rd arg, file defines suffix (e.g., `index`, `create`)
 
 ```php
 $this->loadAdminRoutes(
-    __DIR__ . '/Http/Routes/admin.php',
+    __DIR__ . '/Routes/admin.php',
     '/admin/ecommerce',
     'admin.ecommerce.',
     'ecommerce.view'
@@ -155,6 +158,22 @@ Gate::before(function (User $user, string $ability) {
 
 This means any `$user->can('properties.view')` check resolves against the custom permission system.
 
+### Policy Registration
+
+Five policies are registered in `AppServiceProvider::boot()`:
+
+| Policy | Model | Scope |
+|--------|-------|-------|
+| `PropertyPolicy` | `Property` | Owner or admin |
+| `BookingPolicy` | `Booking` | Owner or admin |
+| `PostPolicy` | `Post` | Owner or admin |
+| `ProductPolicy` | `Product` | Permission-based |
+| `OrderPolicy` | `Order` | Permission-based |
+
+### Permission Count
+
+**25 total:** 11 core permissions (auth, admin, settings, etc.) + 14 module permissions (4 per module for Properties, Booking, Posts; 6 for E-Commerce).
+
 **Route Guard:** `CheckPermission` middleware (`'permission:{slug}'`) calls `$user->hasPermission($slug)`, returns `abort(403)` on failure.
 
 **Frontend:** `HandleInertiaRequests::getUserCapabilities()` builds a flat boolean map shared as `userCapabilities`:
@@ -173,7 +192,14 @@ $caps = [
 
 ## Nav Items (`getNavItems()`)
 
-Each module returns a nav tree for the sidebar:
+Each module returns a nav tree for the sidebar. `ModuleRegistry::getAllNavItems()` enriches each item with `groupLabel` from `getNavGroupLabel()` before sharing:
+
+```php
+// In ModuleRegistry::getAllNavItems():
+$nav['groupLabel'] = $module->getNavGroupLabel();
+```
+
+Example `getNavItems()` return value:
 
 ```php
 public function getNavItems(): array
@@ -187,7 +213,7 @@ public function getNavItems(): array
         'showModeBadge' => true,    // shows "Host" badge on parent item
         'items' => [
             ['title' => 'All Bookings', 'url' => route('dashboard.bookings.index', [], false)],
-            ['title' => 'Add Booking',  'url' => route('dashboard.bookings.create', [], false)],
+            ['title' => 'New Booking',  'url' => route('dashboard.bookings.create', [], false)],
             ['title' => 'Calendar',     'url' => route('dashboard.bookings.calendar', [], false)],
         ],
     ];
@@ -198,6 +224,7 @@ public function getNavItems(): array
 - `icon` is a **string key** (not a component) — resolved via `moduleIcons` map in `app-sidebar.tsx`
 - `permission` controls visibility; `hasPermission()` on frontend filters the nav item
 - `items[]` contains child links rendered in the collapsible dropdown
+- `groupLabel` is appended by `ModuleRegistry` at share time (not part of the module's return) — used by sidebar to render section headings like "Manage Property", "Manage Booking", "Shop", "Content"
 
 ---
 
@@ -209,13 +236,14 @@ app/Modules/{Name}/
   Controllers/                  # or Http/Controllers/
   Models/
   Requests/                     # Form requests
-  Routes/                       # or Http/Routes/
+  Routes/                       # Route files (web.php, admin.php, guest.php)
     web.php
+    admin.php                   # admin-only routes (optional)
     guest.php                   # public routes (optional)
     my-bookings.php             # additional route files (optional)
   Services/
   database/
-    migrations/
+    migrations/                 # module-specific migrations (ECommerce only)
   Resources/
     js/
       index.ts                  # module JS entry point (import.meta.glob)
@@ -223,6 +251,8 @@ app/Modules/{Name}/
       components/               # module-specific React components
       lib/                      # module-specific utilities
 ```
+
+All modules use `Routes/` consistently (no `Http/Routes/`). Module-specific migrations exist only in the ECommerce module; Booking and Posts return `[]` from `migrationPaths()`.
 
 Frontend pages are lazy-loaded via `import.meta.glob` in `resources/js/app.tsx`, which automatically resolves page files from both `resources/js/Pages/` and `app/Modules/*/Resources/js/Pages/`.
 
@@ -266,7 +296,22 @@ class BookingControllerTest extends TestCase
 | **Route middleware** | Module routes include `web`, `auth`, `verified`, `permission:{slug}` |
 | **Permissions** | Module defines CRUD perms; Gates auto-defined by ModuleServiceProvider |
 | **Nav icons** | Pass as **string key** matching iconMap in `app-sidebar.tsx` |
+| **Nav group labels** | `getNavGroupLabel()` returns string; appended by `getAllNavItems()` as `groupLabel` |
+| **Module order** | `order` column in `modules` table; validated via `ToggleModuleRequest` |
 | **Dependencies** | Declared in `dependencies()`, resolved topologically |
 | **Test modules** | Call `$this->bootModules()` in `setUp()` after `parent::setUp()` |
 | **Settings link** | `getSettingsRoute()` returns relative URL for settings tab |
 | **User cleanup** | `onUserDelete()` handles module-specific deletion when user is removed |
+| **Authorization** | Module controllers use `$this->authorize()` + FormRequest `authorize()` + Policies |
+| **Migration paths** | Modules without DB tables return `[]` from `migrationPaths()` |
+
+## Per-Module Documentation
+
+Detailed documentation for each module:
+
+| Module | File |
+|--------|------|
+| Booking | [docs/modules/booking.md](./modules/booking.md) |
+| Properties | [docs/modules/properties.md](./modules/properties.md) |
+| E-Commerce | [docs/modules/ecommerce.md](./modules/ecommerce.md) |
+| Posts | [docs/modules/posts.md](./modules/posts.md) |

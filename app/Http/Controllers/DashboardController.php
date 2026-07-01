@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -52,66 +53,25 @@ class DashboardController extends Controller
         }
 
         $notifications = $query->latest()->paginate(20);
+        $unreadCount = Notification::where('notifiable_id', $user->id)
+            ->where('notifiable_type', get_class($user))
+            ->whereNull('read_at')
+            ->count();
 
         return Inertia::render('Dashboard/Notifications', [
             'notifications' => $notifications,
-            'unreadCount' => $user->unreadNotifications()->count(),
+            'unreadCount' => $unreadCount,
             'filter' => $filter,
             'typeFilter' => $typeFilter,
         ]);
     }
 
-    public function markRead(Request $request)
-    {
-        $request->validate(['id' => 'required|string']);
-
-        $notification = $request->user()->notifications()->findOrFail($request->id);
-        $notification->markAsRead();
-
-        return redirect()->back();
-    }
-
-    public function markAllRead(Request $request)
-    {
-        $request->user()->unreadNotifications->markAsRead();
-
-        return redirect()->back();
-    }
-
-    public function destroyNotification(Request $request, string $id)
-    {
-        $notification = $request->user()->notifications()->findOrFail($id);
-        $notification->delete();
-
-        return redirect()->back();
-    }
-
-    public function markBulk(Request $request)
-    {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return redirect()->back();
-        }
-
-        $request->user()->notifications()->whereIn('id', $ids)->update(['read_at' => now()]);
-
-        return redirect()->back();
-    }
-
-    public function deleteBulk(Request $request)
-    {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return redirect()->back();
-        }
-
-        $request->user()->notifications()->whereIn('id', $ids)->delete();
-
-        return redirect()->back();
-    }
-
     public function switchMode(Request $request)
     {
+        if (! $request->user()->hasPermission('bookings.view')) {
+            abort(403);
+        }
+
         $mode = $request->input('mode', 'host');
 
         if (! in_array($mode, ['host', 'guest'])) {

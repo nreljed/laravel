@@ -28,8 +28,23 @@ interface LoginData {
   remember: boolean;
 }
 
-export default function Login({ status, canResetPassword, errors: pageErrors }: { status?: string; canResetPassword: boolean; errors?: Record<string, string> }) {
-  const { data, setData, post, processing, errors: formErrors, setError } = useForm<LoginData>({
+export default function Login({
+  status,
+  canResetPassword,
+  errors: pageErrors,
+}: {
+  status?: string;
+  canResetPassword: boolean;
+  errors?: Record<string, string>;
+}) {
+  const {
+    data,
+    setData,
+    post,
+    processing,
+    errors: formErrors,
+    setError,
+  } = useForm<LoginData>({
     username: "",
     password: "",
     remember: false,
@@ -73,7 +88,8 @@ export default function Login({ status, canResetPassword, errors: pageErrors }: 
               <Alert className="border-green-500 bg-green-50 dark:bg-green-950 dark:border-green-800">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <AlertDescription className="text-green-700 dark:text-green-300">
-                  Your password has been changed successfully. Please sign in with your new password.
+                  Your password has been changed successfully. Please sign in with your new
+                  password.
                 </AlertDescription>
               </Alert>
             )}
@@ -123,7 +139,9 @@ export default function Login({ status, canResetPassword, errors: pageErrors }: 
                 checked={data.remember}
                 onCheckedChange={(c) => setData("remember", !!c)}
               />
-              <Label htmlFor="remember" className="text-sm font-normal">Remember me</Label>
+              <Label htmlFor="remember" className="text-sm font-normal">
+                Remember me
+              </Label>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

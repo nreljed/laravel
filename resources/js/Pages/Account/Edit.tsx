@@ -38,7 +38,14 @@ export default function AccountEdit() {
     preferences: Record<string, { in_app?: boolean; email?: boolean }>;
     flash?: { status?: string; error?: string };
   };
-  const { user: initialUser, mustVerifyEmail, status, notificationTypes, preferences, flash } = props;
+  const {
+    user: initialUser,
+    mustVerifyEmail,
+    status,
+    notificationTypes,
+    preferences,
+    flash,
+  } = props;
 
   const emailUnverified = mustVerifyEmail && !initialUser.email_verified_at;
 
@@ -66,11 +73,19 @@ export default function AccountEdit() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => router.post(route("verification.send"), {}, {
-                  preserveScroll: true,
-                  onSuccess: () => toast.success("Verification link sent! Please check your email."),
-                  onError: () => toast.error("Failed to send verification link. Please try again."),
-                })}
+                onClick={() =>
+                  router.post(
+                    route("verification.send"),
+                    {},
+                    {
+                      preserveScroll: true,
+                      onSuccess: () =>
+                        toast.success("Verification link sent! Please check your email."),
+                      onError: () =>
+                        toast.error("Failed to send verification link. Please try again."),
+                    },
+                  )
+                }
               >
                 <Send className="mr-1 h-4 w-4" />
                 Resend
@@ -79,7 +94,10 @@ export default function AccountEdit() {
           </Card>
         )}
 
-        <EmailSection user={initialUser as unknown as Record<string, unknown>} initialStatus={status} />
+        <EmailSection
+          user={initialUser as unknown as Record<string, unknown>}
+          initialStatus={status}
+        />
 
         <PasswordSection asAccordion />
 

@@ -1,5 +1,5 @@
-import * as React from "react"
-import { router } from "@inertiajs/react"
+import * as React from "react";
+import { router, usePage } from "@inertiajs/react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -8,25 +8,71 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/Components/ui/command"
-import { Button } from "@/Components/ui/button"
-import { Search, LayoutDashboard, BarChart3, Bell, Users, Settings, User, Activity } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
+} from "@/Components/ui/command";
+import { Button } from "@/Components/ui/button";
+import {
+  Search,
+  LayoutDashboard,
+  BarChart3,
+  Bell,
+  Users,
+  Settings,
+  User,
+  Activity,
+  Building2,
+  Calendar,
+  FileText,
+  ShoppingCart,
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavMenuItem {
-  title: string
-  icon: React.ComponentType<{ className?: string }>
-  url: string
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  url: string;
 }
 
 interface NavMenuGroup {
-  heading: string
-  items: NavMenuItem[]
+  heading: string;
+  items: NavMenuItem[];
+}
+
+const slugToIcon: Record<string, React.ComponentType<{ className?: string }>> = {
+  properties: Building2,
+  bookings: Calendar,
+  posts: FileText,
+  ecommerce: ShoppingCart,
+};
+
+const slugToHeading: Record<string, string> = {
+  properties: "Properties",
+  bookings: "Bookings",
+  posts: "Posts",
+  ecommerce: "E-Commerce",
+};
+
+interface ModuleNavItem {
+  title: string;
+  url: string;
+  icon?: string;
+  permission?: string;
+  module_slug?: string;
+  items?: { title: string; url: string }[];
 }
 
 export function CommandSearch() {
-  const [open, setOpen] = React.useState(false)
-  const { isAdmin } = useAuth()
+  const [open, setOpen] = React.useState(false);
+  const { isAdmin } = useAuth();
+  const pageProps = usePage().props;
+  const moduleNavItems = (pageProps.moduleNavItems as ModuleNavItem[]) || [];
+  const userCapabilities = (pageProps.userCapabilities as Record<string, boolean>) || {};
+
+  const hasPermission = (perm: string | undefined): boolean => {
+    if (!perm) return true;
+    if (isAdmin) return true;
+    if (perm in userCapabilities) return Boolean(userCapabilities[perm]);
+    return false;
+  };
 
   const navigationItems: NavMenuGroup[] = React.useMemo(() => {
     const items: NavMenuGroup[] = [
@@ -40,7 +86,27 @@ export function CommandSearch() {
           { title: "Profile", icon: User, url: route("dashboard.profile.edit") },
         ],
       },
-    ]
+    ];
+
+    moduleNavItems
+      .filter((nav) => hasPermission(nav.permission))
+      .forEach((nav) => {
+        const heading = slugToHeading[nav.module_slug ?? ""] ?? nav.title;
+        const icon = slugToIcon[nav.module_slug ?? ""] ?? LayoutDashboard;
+        const moduleItems: NavMenuItem[] = [];
+
+        if (nav.items && nav.items.length > 0) {
+          nav.items.forEach((child) => {
+            moduleItems.push({ title: child.title, icon, url: child.url });
+          });
+        } else {
+          moduleItems.push({ title: nav.title, icon, url: nav.url });
+        }
+
+        if (moduleItems.length > 0) {
+          items.push({ heading, items: moduleItems });
+        }
+      });
 
     if (isAdmin) {
       items.push({
@@ -50,23 +116,25 @@ export function CommandSearch() {
           { title: "Settings", icon: Settings, url: route("dashboard.admin.settings") },
           { title: "System Health", icon: Activity, url: route("dashboard.admin.system-health") },
         ],
-      })
+      });
     }
 
-    return items
-  }, [isAdmin])
+    return items;
+  }, [isAdmin, moduleNavItems, userCapabilities]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen((open) => !open)
+      if (!(e.key === "k" && (e.metaKey || e.ctrlKey))) {
+        return;
       }
-    }
 
-    document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
-  }, [])
+      e.preventDefault();
+      setOpen((open) => !open);
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   return (
     <>
@@ -76,9 +144,7 @@ export function CommandSearch() {
         onClick={() => setOpen(true)}
       >
         <Search className="size-4 sm:mr-2" />
-        <span className="hidden sm:inline-flex text-muted-foreground">
-          Search...
-        </span>
+        <span className="hidden sm:inline-flex text-muted-foreground">Search...</span>
         <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
@@ -96,8 +162,8 @@ export function CommandSearch() {
                     key={item.url}
                     className="cursor-pointer"
                     onSelect={() => {
-                      setOpen(false)
-                      router.visit(item.url)
+                      setOpen(false);
+                      router.visit(item.url);
                     }}
                   >
                     <item.icon className="mr-2 h-4 w-4" />
@@ -111,5 +177,5 @@ export function CommandSearch() {
         </CommandList>
       </CommandDialog>
     </>
-  )
+  );
 }

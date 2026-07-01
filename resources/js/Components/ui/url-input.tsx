@@ -62,7 +62,8 @@ function UrlInput({
         aria-invalid={!!showError}
         className={cn(
           "pr-10",
-          showError && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
+          showError &&
+            "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
         )}
         {...props}
       />

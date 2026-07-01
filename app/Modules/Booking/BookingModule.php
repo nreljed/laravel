@@ -68,6 +68,11 @@ class BookingModule implements ModuleInterface
         //
     }
 
+    public function getNavGroupLabel(): ?string
+    {
+        return 'Manage Booking';
+    }
+
     public function getNavItems(): array
     {
         return [
@@ -79,7 +84,7 @@ class BookingModule implements ModuleInterface
             'showModeBadge' => true,
             'items' => [
                 ['title' => 'All Bookings', 'url' => route('dashboard.bookings.index', [], false)],
-                ['title' => 'Add Booking', 'url' => route('dashboard.bookings.create', [], false)],
+                ['title' => 'New Booking', 'url' => route('dashboard.bookings.create', [], false)],
                 ['title' => 'Calendar', 'url' => route('dashboard.bookings.calendar', [], false)],
             ],
         ];
@@ -133,7 +138,7 @@ class BookingModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [__DIR__.'/database/migrations'];
+        return [];
     }
 
     public function permissions(): array
@@ -381,7 +386,7 @@ class BookingModule implements ModuleInterface
             }
 
             self::notifyAdmins('booking.created', $bookingId, [
-                'bookingUrl' => $magicLink ?: url('/dashboard/bookings/'.$bookingId),
+                'bookingUrl' => $magicLink ?: route('dashboard.bookings.show', $bookingId),
             ]);
             BookingPipelineTrace::add($bookingId, 'created.admins_notified', 'Admin notification sent');
         } catch (\Throwable $e) {
@@ -421,13 +426,13 @@ class BookingModule implements ModuleInterface
 
             if ($newStatus === BookingStatus::Confirmed->value && $oldStatus !== BookingStatus::Confirmed->value) {
                 self::notifyAdmins('booking.confirmed', $bookingId, [
-                    'bookingUrl' => url('/dashboard/bookings/'.$bookingId),
+                    'bookingUrl' => route('dashboard.bookings.show', $bookingId),
                 ]);
             } elseif ($newStatus !== 'cancelled') {
                 self::notifyAdmins('booking.modified', $bookingId, [
                     'oldStatus' => $oldStatus,
                     'newStatus' => $newStatus,
-                    'bookingUrl' => url('/dashboard/bookings/'.$bookingId),
+                    'bookingUrl' => route('dashboard.bookings.show', $bookingId),
                 ]);
             }
         } catch (\Throwable $e) {

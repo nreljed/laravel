@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Link, router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/Components/ui/empty";
 import { toast } from "sonner";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { DataTable } from "@/Components/ui/data-table";
@@ -24,7 +25,6 @@ import {
   Plus,
   MoreHorizontal,
   Eye,
-  Pencil,
   Building2,
   Home,
   ArrowRight,
@@ -39,6 +39,7 @@ import {
   TrendingUp,
   Clock,
   CalendarCheck,
+  CalendarPlus,
 } from "lucide-react";
 import {
   BOOKING_STATUS,
@@ -172,6 +173,8 @@ export default function BookingsIndex({
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState(filters.payment_status || "");
   const [showArchived, setShowArchived] = useState(filters.show_archived === "1");
+
+  const hasFilters = ["status", "period", "payment_status", "check_in_from", "check_in_to", "check_out_from", "check_out_to"].some((k) => (filters as Record<string, string>)[k]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [processingTransition, setProcessingTransition] = useState<string | null>(null);
 
@@ -410,9 +413,6 @@ export default function BookingsIndex({
               <DropdownMenuItem>
                 <Link href={route("dashboard.bookings.show", booking.id)} className="flex items-center w-full"><Eye className="mr-2 h-4 w-4" /> View</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href={route("dashboard.bookings.edit", booking.id)} className="flex items-center w-full"><Pencil className="mr-2 h-4 w-4" /> Edit</Link>
-              </DropdownMenuItem>
               {(transitions.length > 0 || booking.archived !== undefined) && <DropdownMenuSeparator />}
               {transitions.map((transition: string) => (
                 <DropdownMenuItem key={transition}>
@@ -442,24 +442,67 @@ export default function BookingsIndex({
     },
   ], [handleTransition, handleArchive, handleDelete, processingTransition]);
 
+  if (properties.length === 0) {
+    return (
+      <AuthenticatedLayout header="Bookings">
+        <Head title="Bookings" />
+        <div className="space-y-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem><BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink></BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem><BreadcrumbPage>Bookings</BreadcrumbPage></BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <div className="flex items-center gap-3">
+            <CalendarCheck className="h-6 w-6 text-foreground shrink-0" />
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground">Bookings</h2>
+              <p className="text-muted-foreground">Manage your property bookings</p>
+            </div>
+          </div>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><Home /></EmptyMedia>
+              <EmptyTitle>No properties yet</EmptyTitle>
+              <EmptyDescription>Post your first property to start managing bookings.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => router.visit(route("dashboard.properties.create"))}>
+                <Plus className="mr-2 h-4 w-4" /> Add Property
+              </Button>
+            </EmptyContent>
+          </Empty>
+        </div>
+      </AuthenticatedLayout>
+    )
+  }
+
   const emptyState = (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      {properties.length === 0 ? (
+    <Empty>
+      {hasFilters ? (
         <>
-          <Home className="h-16 w-16 text-muted-foreground/40 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-1">No properties yet</h3>
-          <p className="text-sm text-muted-foreground max-w-sm mb-6">You don&apos;t have any properties listed. Post your first property to start managing bookings.</p>
-          <Link href={route("dashboard.properties.create")}><Button><Plus className="mr-2 h-4 w-4" /> Add Property</Button></Link>
+          <EmptyHeader>
+            <EmptyMedia variant="icon"><Building2 /></EmptyMedia>
+            <EmptyTitle>No bookings match your filters</EmptyTitle>
+            <EmptyDescription>Try adjusting your search or filter criteria.</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button variant="outline" onClick={resetFilters}>
+              <FilterX className="mr-1.5 h-3.5 w-3.5" /> Clear Filters
+            </Button>
+          </EmptyContent>
         </>
       ) : (
         <>
-          <Building2 className="h-16 w-16 text-muted-foreground/40 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-1">No bookings yet</h3>
-          <p className="text-sm text-muted-foreground max-w-sm mb-6">There are no bookings for your properties yet. Share your property page to start receiving reservations.</p>
-          <Link href={route("dashboard.bookings.create")}><Button><Plus className="mr-2 h-4 w-4" /> New Booking</Button></Link>
+          <EmptyHeader>
+            <EmptyMedia variant="icon"><Building2 /></EmptyMedia>
+            <EmptyTitle>No bookings yet</EmptyTitle>
+            <EmptyDescription>Share your property page to start receiving reservations.</EmptyDescription>
+          </EmptyHeader>
         </>
       )}
-    </div>
+    </Empty>
   );
 
   return (
@@ -483,7 +526,8 @@ export default function BookingsIndex({
           </div>
           <div className="flex items-center gap-2">
             <Link href={route("dashboard.bookings.calendar")}><Button variant="outline"><CalendarDays className="mr-1 h-4 w-4" /> Calendar</Button></Link>
-            <Link href={route("dashboard.bookings.create")}><Button><Plus className="mr-2 h-4 w-4" /> New Booking</Button></Link>
+            <Link href={route("dashboard.properties.index")}><Button variant="outline"><Building2 className="mr-2 h-4 w-4" /> Properties</Button></Link>
+            <Link href={route("dashboard.bookings.create")}><Button><CalendarPlus className="mr-2 h-4 w-4" /> Add Booking</Button></Link>
           </div>
         </div>
 

@@ -1,57 +1,77 @@
-import { useState } from "react"
-import { Link, router } from "@inertiajs/react"
-import { toast } from "sonner"
-import { Button } from "@/Components/ui/button"
+import { useState } from "react";
+import { Link, router } from "@inertiajs/react";
+import { toast } from "sonner";
+import { Button } from "@/Components/ui/button";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/Components/ui/alert-dialog"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/Components/ui/alert-dialog";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/Components/ui/dropdown-menu"
-import { MoreHorizontal, Pencil, Trash2, Eye, FileEdit, AlertTriangle } from "lucide-react"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
+import { MoreHorizontal, Pencil, Trash2, Eye, FileEdit, AlertTriangle } from "lucide-react";
 
 export interface ActionItem {
-  id: number | string
-  title?: string
-  status?: string
-  [key: string]: unknown
+  id: number | string;
+  title?: string;
+  status?: string;
+  [key: string]: unknown;
 }
 
 interface ActionCellProps {
-  item: ActionItem
-  baseRoute: string
-  itemLabel: string
-  nonce?: string
-  extraParams?: Record<string, string>
+  item: ActionItem;
+  baseRoute: string;
+  itemLabel: string;
+  nonce?: string;
+  extraParams?: Record<string, string>;
 }
 
-export function ActionCell({ item, baseRoute, itemLabel, nonce, extraParams }: ActionCellProps) {
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [draftOpen, setDraftOpen] = useState(false)
-  const [publishOpen, setPublishOpen] = useState(false)
+export function ActionCell({
+  item,
+  baseRoute,
+  itemLabel,
+  nonce: _nonce,
+  extraParams,
+}: ActionCellProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const handleDelete = () => {
     router.delete(`${baseRoute}/${item.id}`, {
       preserveScroll: true,
       onSuccess: () => toast.success(`${itemLabel} deleted successfully.`),
       onError: () => toast.error(`Failed to delete ${itemLabel.toLowerCase()}.`),
-    })
-  }
+    });
+  };
 
   const handleStatusChange = (newStatus: string) => {
-    router.put(`${baseRoute}/${item.id}/status`, {
-      status: newStatus,
-      ...extraParams,
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        if (newStatus === "publish") toast.success(`${itemLabel} published!`)
-        else toast.success(`${itemLabel} moved to draft.`)
+    router.put(
+      `${baseRoute}/${item.id}/status`,
+      {
+        status: newStatus,
+        ...extraParams,
       },
-      onError: () => toast.error(`Failed to update ${itemLabel.toLowerCase()} status.`),
-    })
-  }
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          if (newStatus === "publish") toast.success(`${itemLabel} published!`);
+          else toast.success(`${itemLabel} moved to draft.`);
+        },
+        onError: () => toast.error(`Failed to update ${itemLabel.toLowerCase()} status.`),
+      },
+    );
+  };
 
   return (
     <>
@@ -102,7 +122,12 @@ export function ActionCell({ item, baseRoute, itemLabel, nonce, extraParams }: A
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -120,7 +145,9 @@ export function ActionCell({ item, baseRoute, itemLabel, nonce, extraParams }: A
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleStatusChange("draft")}>Yes, Change to Draft</AlertDialogAction>
+            <AlertDialogAction onClick={() => handleStatusChange("draft")}>
+              Yes, Change to Draft
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -138,12 +165,14 @@ export function ActionCell({ item, baseRoute, itemLabel, nonce, extraParams }: A
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleStatusChange("publish")}>Yes, Publish</AlertDialogAction>
+            <AlertDialogAction onClick={() => handleStatusChange("publish")}>
+              Yes, Publish
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }
 
-export default ActionCell
+export default ActionCell;

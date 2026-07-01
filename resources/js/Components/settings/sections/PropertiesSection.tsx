@@ -1,18 +1,18 @@
-import * as React from "react"
-import { Section, SectionField } from "@/Components/section"
-import { Input } from "@/Components/ui/input"
-import { Switch } from "@/Components/ui/switch"
-import { Separator } from "@/Components/ui/separator"
-import { Building2, MapIcon, Globe, ZoomIn, BugIcon, ArrowRight } from "lucide-react"
-import { getCountryBounds, getCountryName } from "@/lib/country-bounds"
+import * as React from "react";
+import { Section, SectionField } from "@/Components/section";
+import { Input } from "@/Components/ui/input";
+import { Switch } from "@/Components/ui/switch";
+import { Separator } from "@/Components/ui/separator";
+import { Building2, MapIcon, Globe, ZoomIn, BugIcon, ArrowRight } from "lucide-react";
+import { getCountryBounds, getCountryName } from "@/lib/country-bounds";
 
 interface PropertiesSectionProps {
-  data: Record<string, string | undefined>
-  onChange: (field: string, value: string) => void
-  errors: Record<string, string>
-  loading?: boolean
-  onSubmit?: (e: React.FormEvent) => void
-  asAccordion?: boolean
+  data: Record<string, string | undefined>;
+  onChange: (field: string, value: string) => void;
+  errors: Record<string, string>;
+  loading?: boolean;
+  onSubmit?: (e: React.FormEvent) => void;
+  asAccordion?: boolean;
 }
 
 export function PropertiesSection({
@@ -25,39 +25,39 @@ export function PropertiesSection({
 }: PropertiesSectionProps) {
   const autoFillFromCountry = React.useCallback(
     (code: string) => {
-      onChange("map_country_code", code)
-      const cb = getCountryBounds(code)
-      if (!cb) return
-      onChange("map_center_lat", String(cb.center[0]))
-      onChange("map_center_lng", String(cb.center[1]))
-      onChange("map_bounds_south_west_lat", String(cb.bounds[0]))
-      onChange("map_bounds_south_west_lng", String(cb.bounds[1]))
-      onChange("map_bounds_north_east_lat", String(cb.bounds[2]))
-      onChange("map_bounds_north_east_lng", String(cb.bounds[3]))
-      onChange("map_min_zoom", String(cb.minZoom))
-      onChange("map_default_zoom", String(cb.defaultZoom))
+      onChange("map_country_code", code);
+      const cb = getCountryBounds(code);
+      if (!cb) return;
+      onChange("map_center_lat", String(cb.center[0]));
+      onChange("map_center_lng", String(cb.center[1]));
+      onChange("map_bounds_south_west_lat", String(cb.bounds[0]));
+      onChange("map_bounds_south_west_lng", String(cb.bounds[1]));
+      onChange("map_bounds_north_east_lat", String(cb.bounds[2]));
+      onChange("map_bounds_north_east_lng", String(cb.bounds[3]));
+      onChange("map_min_zoom", String(cb.minZoom));
+      onChange("map_default_zoom", String(cb.defaultZoom));
     },
     [onChange],
-  )
+  );
 
   const handleMapCountry = React.useCallback(
     (field: string, value: string) => {
       if (field === "map_country_code" && value.length === 2) {
-        autoFillFromCountry(value.toUpperCase())
+        autoFillFromCountry(value.toUpperCase());
       } else {
-        onChange(field, value)
+        onChange(field, value);
       }
     },
     [onChange, autoFillFromCountry],
-  )
+  );
 
-  const countryCode = (data?.map_country_code || "").toUpperCase()
-  const countryName = getCountryName(countryCode)
+  const countryCode = (data?.map_country_code || "").toUpperCase();
+  const countryName = getCountryName(countryCode);
   const countryInfo = React.useMemo(() => {
-    const cb = getCountryBounds(countryCode)
-    if (!cb) return null
-    return cb
-  }, [countryCode])
+    const cb = getCountryBounds(countryCode);
+    if (!cb) return null;
+    return cb;
+  }, [countryCode]);
 
   return (
     <div className="space-y-6">
@@ -65,8 +65,7 @@ export function PropertiesSection({
         <div className="flex items-start gap-2">
           <ArrowRight className="mt-0.5 size-4 shrink-0" />
           <span>
-            Currency, number formatting, date format, time format, and timezone are set globally
-            in{" "}
+            Currency, number formatting, date format, time format, and timezone are set globally in{" "}
             <a
               href="/dashboard/admin/settings?tab=general"
               className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
@@ -144,8 +143,8 @@ export function PropertiesSection({
         </div>
 
         <p className="text-xs text-muted-foreground mb-3">
-          These four levels control at what zoom the map starts, how close it gets when a marker
-          is clicked, and how far it can zoom in/out.
+          These four levels control at what zoom the map starts, how close it gets when a marker is
+          clicked, and how far it can zoom in/out.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -259,7 +258,9 @@ export function PropertiesSection({
             <Switch
               id="enable_property_reviews"
               checked={data?.enable_property_reviews !== "0"}
-              onCheckedChange={(checked) => onChange("enable_property_reviews", checked ? "1" : "0")}
+              onCheckedChange={(checked) =>
+                onChange("enable_property_reviews", checked ? "1" : "0")
+              }
               disabled={loading}
             />
             <span className="text-sm">Enable Reviews</span>
@@ -276,5 +277,5 @@ export function PropertiesSection({
         </div>
       </Section>
     </div>
-  )
+  );
 }

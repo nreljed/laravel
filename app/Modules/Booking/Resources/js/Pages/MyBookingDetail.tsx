@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Com
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Label } from "@/Components/ui/label";
+import { Avatar, AvatarFallback } from "@/Components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +43,18 @@ import {
   CalendarDays,
   ExternalLink,
   ArrowLeft,
+  Globe,
 } from "lucide-react";
+
+interface HostPhoneEntry {
+  label: string;
+  phone: string;
+}
+
+interface HostSocialEntry {
+  social_title: string;
+  social_value: string;
+}
 
 interface MyBookingDetailData {
   id: number;
@@ -77,6 +89,11 @@ interface MyBookingDetailData {
   refund_policy_applied?: string;
   host_name?: string;
   host_phone?: string;
+  host_phone_numbers?: HostPhoneEntry[];
+  host_email?: string;
+  host_avatar?: string;
+  host_bio?: string;
+  host_social_media?: HostSocialEntry[];
   pricing?: PricingData | null;
   refund_preview?: {
     policy_applied: string;
@@ -265,20 +282,57 @@ const MyBookingDetail = () => {
         {booking.host_name && (
           <Card>
             <CardHeader className="border-b pb-3">
-              <div className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /><CardTitle className="text-base">Contact Host</CardTitle></div>
+              <div className="flex items-center gap-2"><User className="h-4 w-4 text-primary" /><CardTitle className="text-base">Contact Host</CardTitle></div>
               <CardDescription>Need help? Reach out to your host directly.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm shrink-0"><User className="h-4 w-4" /><span>Host:</span></div>
-                <span className="text-sm font-medium text-right">{booking.host_name}</span>
-              </div>
-              {booking.host_phone && (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm shrink-0"><Phone className="h-4 w-4" /><span>Phone:</span></div>
-                  <a href={`tel:${booking.host_phone}`} className="text-sm font-medium text-primary hover:underline text-right">{booking.host_phone}</a>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  {booking.host_avatar ? (
+                    <img src={booking.host_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  ) : null}
+                  <AvatarFallback className="bg-muted text-xs">
+                    {booking.host_name!.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-foreground">{booking.host_name}</p>
+                  {booking.host_bio && <p className="text-xs text-muted-foreground line-clamp-2">{booking.host_bio}</p>}
                 </div>
-              )}
+              </div>
+              <div className="space-y-1.5">
+                {(booking.host_phone_numbers && booking.host_phone_numbers.length > 0
+                  ? booking.host_phone_numbers
+                  : booking.host_phone ? [{ label: "Phone", phone: booking.host_phone }] : []
+                ).map((entry: HostPhoneEntry, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm shrink-0"><Phone className="h-4 w-4" /><span>{entry.label}:</span></div>
+                    <a href={`tel:${entry.phone}`} className="text-sm font-medium text-primary hover:underline text-right">{entry.phone}</a>
+                  </div>
+                ))}
+                {(booking.host_email || (booking as any).host_email) && (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm shrink-0"><Mail className="h-4 w-4" /><span>Email:</span></div>
+                    <a href={`mailto:${booking.host_email}`} className="text-sm font-medium text-primary hover:underline text-right">{booking.host_email}</a>
+                  </div>
+                )}
+                {(booking.host_social_media ?? []).length > 0 && (
+                  <div className="flex flex-wrap justify-end gap-2 pt-1">
+                    {(booking.host_social_media ?? []).map((s: HostSocialEntry, idx: number) => (
+                      <a
+                        key={idx}
+                        href={s.social_value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <Globe className="h-3 w-3" />
+                        {s.social_title}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}

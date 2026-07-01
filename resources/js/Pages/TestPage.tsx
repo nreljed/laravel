@@ -1,4 +1,4 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -64,54 +64,78 @@ export default function TestPage() {
         <Card>
           <CardHeader className="border-b border-border">
             <CardTitle>Button Variants</CardTitle>
-            <CardDescription>Different button variants available in the Button component</CardDescription>
+            <CardDescription>
+              Different button variants available in the Button component
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Default</h3>
               <div className="flex flex-wrap gap-2">
                 <Button variant="default">Default</Button>
-                <Button variant="default" disabled>Disabled</Button>
-                <Button variant="default" disabled>Loading (disabled)</Button>
+                <Button variant="default" disabled>
+                  Disabled
+                </Button>
+                <Button variant="default" disabled>
+                  Loading (disabled)
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Destructive</h3>
               <div className="flex flex-wrap gap-2">
                 <Button variant="destructive">Destructive</Button>
-                <Button variant="destructive" disabled>Disabled</Button>
-                <Button variant="destructive" disabled>Loading (disabled)</Button>
+                <Button variant="destructive" disabled>
+                  Disabled
+                </Button>
+                <Button variant="destructive" disabled>
+                  Loading (disabled)
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Outline</h3>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline">Outline</Button>
-                <Button variant="outline" disabled>Disabled</Button>
-                <Button variant="outline" disabled>Loading (disabled)</Button>
+                <Button variant="outline" disabled>
+                  Disabled
+                </Button>
+                <Button variant="outline" disabled>
+                  Loading (disabled)
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Secondary</h3>
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary">Secondary</Button>
-                <Button variant="secondary" disabled>Disabled</Button>
-                <Button variant="secondary" disabled>Loading (disabled)</Button>
+                <Button variant="secondary" disabled>
+                  Disabled
+                </Button>
+                <Button variant="secondary" disabled>
+                  Loading (disabled)
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Ghost</h3>
               <div className="flex flex-wrap gap-2">
                 <Button variant="ghost">Ghost</Button>
-                <Button variant="ghost" disabled>Disabled</Button>
-                <Button variant="ghost" disabled>Loading (disabled)</Button>
+                <Button variant="ghost" disabled>
+                  Disabled
+                </Button>
+                <Button variant="ghost" disabled>
+                  Loading (disabled)
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Link</h3>
               <div className="flex flex-wrap gap-2">
                 <Button variant="link">Link</Button>
-                <Button variant="link" disabled>Disabled</Button>
+                <Button variant="link" disabled>
+                  Disabled
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -120,35 +144,45 @@ export default function TestPage() {
         <Card>
           <CardHeader className="border-b border-border">
             <CardTitle>Button Sizes</CardTitle>
-            <CardDescription>Different button sizes available in the Button component</CardDescription>
+            <CardDescription>
+              Different button sizes available in the Button component
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <h3 className="text-lg font-medium">Default (h-9)</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="default">Default</Button>
-                <Button size="default" variant="outline">Default</Button>
+                <Button size="default" variant="outline">
+                  Default
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">XS (h-6)</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="xs">XS</Button>
-                <Button size="xs" variant="outline">XS</Button>
+                <Button size="xs" variant="outline">
+                  XS
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">SM (h-8)</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm">SM</Button>
-                <Button size="sm" variant="outline">SM</Button>
+                <Button size="sm" variant="outline">
+                  SM
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-medium">LG (h-10)</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="lg">LG</Button>
-                <Button size="lg" variant="outline">LG</Button>
+                <Button size="lg" variant="outline">
+                  LG
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -157,7 +191,9 @@ export default function TestPage() {
         <Card>
           <CardHeader className="border-b border-border">
             <CardTitle>Dialog Examples</CardTitle>
-            <CardDescription>Different dialog patterns from shadcn/ui documentation</CardDescription>
+            <CardDescription>
+              Different dialog patterns from shadcn/ui documentation
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -201,7 +237,9 @@ export default function TestPage() {
                       <li>All your posts and property listings</li>
                       <li>All associated data</li>
                     </ul>
-                    <p className="mt-4 font-medium text-foreground">This action cannot be undone.</p>
+                    <p className="mt-4 font-medium text-foreground">
+                      This action cannot be undone.
+                    </p>
                   </div>
                   <DialogFooter>
                     <Button variant="outline">Cancel</Button>
@@ -290,7 +328,9 @@ export default function TestPage() {
         <Card>
           <CardHeader className="border-b border-border">
             <CardTitle>Settings Accordion (Windows 11 Style)</CardTitle>
-            <CardDescription>Reusable SettingsAccordion component mimicking Windows 11 settings</CardDescription>
+            <CardDescription>
+              Reusable SettingsAccordion component mimicking Windows 11 settings
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <SettingsAccordion
@@ -311,18 +351,14 @@ export default function TestPage() {
                   icon: Mail,
                   title: "Email Address",
                   description: "Your email address for communication",
-                  content: (
-                    <p className="text-sm text-muted-foreground">Email content here.</p>
-                  ),
+                  content: <p className="text-sm text-muted-foreground">Email content here.</p>,
                 },
                 {
                   value: "password",
                   icon: Lock,
                   title: "Change Password",
                   description: "Update your password to keep your account secure",
-                  content: (
-                    <p className="text-sm text-muted-foreground">Password content here.</p>
-                  ),
+                  content: <p className="text-sm text-muted-foreground">Password content here.</p>,
                 },
                 {
                   value: "delete",
@@ -344,7 +380,9 @@ export default function TestPage() {
         <Card>
           <CardHeader className="border-b border-border">
             <CardTitle>Collapsible Examples</CardTitle>
-            <CardDescription>Simple collapsible sections for showing/hiding content</CardDescription>
+            <CardDescription>
+              Simple collapsible sections for showing/hiding content
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Collapsible>

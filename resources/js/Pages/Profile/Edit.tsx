@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import { AccountInfoSection } from "@/Components/profile/sections/AccountInfoSection";
 import { AvatarSection } from "@/Components/profile/sections/AvatarSection";
 import { PersonalInfoSection } from "@/Components/profile/sections/PersonalInfoSection";
-import { AdditionalInfoSection } from "@/Components/profile/sections/AdditionalInfoSection";
+import { ContactInfoSection } from "@/Components/profile/sections/ContactInfoSection";
 
 interface TabConfig {
   value: string;
@@ -28,12 +28,12 @@ const CORE_TABS: TabConfig[] = [{ value: "general", label: "General", icon: User
 
 export default function ProfileEdit() {
   const { props } = usePage();
-  const authUser = (props.auth as Record<string, unknown>)?.user as Record<string, unknown> | undefined;
+  const authUser = (props.auth as Record<string, unknown>)?.user as
+    Record<string, unknown> | undefined;
   const serverUser = props.user as Record<string, unknown> | undefined;
   const status = props.status as string | undefined;
   const modulesData = props.modules as { enabled: string[] } | undefined;
-  const moduleProfile = (serverUser?.module_profile as Record<string, unknown>) || {};
-  const capabilities = props.userCapabilities as { can?: Record<string, unknown> } | undefined;
+
   const enabled = modulesData?.enabled ?? [];
 
   const hasProperties = enabled.includes("properties");
@@ -79,12 +79,20 @@ export default function ProfileEdit() {
       user_login: (u.name as string) || (auth.name as string),
       user_email: (u.email as string) || (auth.email as string),
       user_registered: (u.user_registered as string) || (auth.user_registered as string),
-      display_name: (u.display_name as string) || (auth.display_name as string) || (auth.name as string),
-      display_name_options: (u.display_name_options as Record<string, unknown>) || (auth.display_name_options as Record<string, unknown>) || {},
+      display_name:
+        (u.display_name as string) || (auth.display_name as string) || (auth.name as string),
+      display_name_options:
+        (u.display_name_options as Record<string, unknown>) ||
+        (auth.display_name_options as Record<string, unknown>) ||
+        {},
       nickname: (u.nickname as string) || (auth.nickname as string),
       first_name: (u.first_name as string) || (auth.first_name as string),
       last_name: (u.last_name as string) || (auth.last_name as string),
-      description: (u.description as string) || (u.bio as string) || (auth.description as string) || (auth.bio as string),
+      description:
+        (u.description as string) ||
+        (u.bio as string) ||
+        (auth.description as string) ||
+        (auth.bio as string),
       url: (u.url as string) || (auth.url as string) || "",
       avatar: (auth.avatar as string) || (u.avatar as string),
     };
@@ -95,7 +103,13 @@ export default function ProfileEdit() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(() => {
     const u = serverUser || {};
     const a = authUser || {};
-    return (u.custom_avatar_url as string) || (u.avatar as string) || (a.custom_avatar_url as string) || (a.avatar as string) || null;
+    return (
+      (u.custom_avatar_url as string) ||
+      (u.avatar as string) ||
+      (a.custom_avatar_url as string) ||
+      (a.avatar as string) ||
+      null
+    );
   });
   const hasCustomAvatar = !!(avatarPreview && avatarPreview.includes("/avatars/"));
   const currentUploadIdRef = useRef<string | null>(null);
@@ -118,6 +132,7 @@ export default function ProfileEdit() {
         last_name: (data.last_name as string) || "",
         url: (data.url as string) || (data.website as string) || "",
         description: (data.description as string) || (data.bio as string) || "",
+        contact_email: (data.contact_email as string) || "",
       };
     },
     [user],
@@ -142,7 +157,7 @@ export default function ProfileEdit() {
   }, [status]);
 
   const handleFieldChange = useCallback((field: string, value: string) => {
-    setFormData((prev) => ({ ...(prev || {}), [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const handlePersonalInfoSubmit = useCallback(
@@ -175,10 +190,6 @@ export default function ProfileEdit() {
     [formData, buildFormData],
   );
 
-  const csrfToken = useMemo(() => {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
-  }, []);
-
   const handleAvatarUpload = useCallback(
     async (processedFile: File | Blob, uploadId: string) => {
       const filename = `avatar_${Date.now()}.webp`;
@@ -187,35 +198,32 @@ export default function ProfileEdit() {
       setUploading(true);
 
       try {
-        const file = processedFile instanceof File
-          ? processedFile
-          : new File([processedFile], filename, { type: "image/webp" });
+        const file =
+          processedFile instanceof File
+            ? processedFile
+            : new File([processedFile], filename, { type: "image/webp" });
 
         const formData = new FormData();
         formData.append("avatar", file);
-        formData.append("_token", csrfToken);
 
-        const response = await fetch(route("dashboard.profile.avatar.upload").toString(), {
-          method: "POST",
-          body: formData,
-          credentials: "same-origin",
-          headers: {
-            Accept: "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-          },
+        await new Promise<void>((resolve, reject) => {
+          router.post(route("dashboard.profile.avatar.upload"), formData, {
+            preserveState: true,
+            onSuccess: (page: any) => {
+              const result = page.props as any;
+              if (result.avatar?.url) {
+                setAvatarPreview(result.avatar.url);
+              }
+              router.reload({ only: ["auth"], replace: true });
+              resolve();
+            },
+            onError: (errors) => {
+              reject(new Error((errors as any)?.error || "Upload failed"));
+            },
+          });
         });
-
-        const result: { success?: boolean; error?: string; avatar?: { url: string } } =
-          await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.error || "Upload failed");
-        }
-
-        setAvatarPreview(result.avatar!.url);
-        router.reload({ only: ["auth"], replace: true });
-      } catch (err) {
-        const msg = (err as Error).message || "Upload failed. Please try again.";
+      } catch (error) {
+        const msg = (error as Error).message || "Upload failed. Please try again.";
         setAvatarError(msg);
         toast.error(msg);
       } finally {
@@ -225,42 +233,36 @@ export default function ProfileEdit() {
         setUploading(false);
       }
     },
-    [csrfToken],
+    [],
   );
 
-  const handleDeleteAvatar = useCallback(async (deleteId: string) => {
-    setUploading(true);
+  const handleDeleteAvatar = useCallback(
+    async (_deleteId: string) => {
+      setUploading(true);
 
-    try {
-      const formData = new FormData();
-      formData.append("_token", csrfToken);
-      formData.append("_method", "DELETE");
-
-      const response = await fetch(route("dashboard.profile.avatar.destroy").toString(), {
-        method: "POST",
-        body: formData,
-        credentials: "same-origin",
-        headers: {
-          Accept: "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      });
-
-      const result: { success?: boolean; error?: string } = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Delete failed");
+      try {
+        await new Promise<void>((resolve, reject) => {
+          router.delete(route("dashboard.profile.avatar.destroy"), {
+            preserveState: true,
+            onSuccess: () => {
+              setAvatarPreview(null);
+              router.reload({ only: ["auth"], replace: true });
+              toast.success("Avatar removed successfully!");
+              resolve();
+            },
+            onError: (errors) => {
+              reject(new Error((errors as any)?.error || "Failed to remove avatar."));
+            },
+          });
+        });
+      } catch (error) {
+        toast.error((error as Error).message || "Failed to remove avatar.");
+      } finally {
+        setUploading(false);
       }
-
-        setAvatarPreview(null);
-        router.reload({ only: ["auth"], replace: true });
-        toast.success("Avatar removed successfully!");
-      } catch (err) {
-      toast.error((err as Error).message || "Failed to remove avatar.");
-    } finally {
-      setUploading(false);
-    }
-  }, [csrfToken]);
+    },
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -353,17 +355,13 @@ export default function ProfileEdit() {
               asAccordion
               accordionDefaultOpen={false}
             />
-          </TabsContent>
 
-          {hasProperties && (
-            <TabsContent value="properties" className="mt-6">
-              <AdditionalInfoSection
-                data={(moduleProfile?.properties as Record<string, unknown>) || null}
-                asAccordion
-                accordionDefaultOpen={false}
-              />
-            </TabsContent>
-          )}
+            <ContactInfoSection
+              data={user as Record<string, unknown>}
+              asAccordion
+              accordionDefaultOpen={false}
+            />
+          </TabsContent>
         </Tabs>
       </div>
     </AuthenticatedLayout>

@@ -36,15 +36,36 @@ interface UseFormattingReturn {
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: "$", EUR: "€", GBP: "£", TND: "د.ت", MAD: "د.م.", DZD: "DA",
-  EGP: "E£", SAR: "ر.س", AED: "د.إ", QAR: "ر.ق", KWD: "د.ك",
-  BHD: ".د.ب", OMR: "ر.ع", JOD: "د.أ", LYD: "ل.د", SDG: "ج.س.",
-  SYP: "ل.س", IQD: "ع.د", IRR: "﷼", TRY: "₺",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  TND: "د.ت",
+  MAD: "د.م.",
+  DZD: "DA",
+  EGP: "E£",
+  SAR: "ر.س",
+  AED: "د.إ",
+  QAR: "ر.ق",
+  KWD: "د.ك",
+  BHD: ".د.ب",
+  OMR: "ر.ع",
+  JOD: "د.أ",
+  LYD: "ل.د",
+  SDG: "ج.س.",
+  SYP: "ل.س",
+  IQD: "ع.د",
+  IRR: "﷼",
+  TRY: "₺",
 };
 
 const SURFACE_UNITS: Record<string, string> = {
-  sq_ft: "ft²", sq_m: "m²", sq_yd: "yd²",
-  sq_meter: "㎡", sq_feet: "sq ft", acres: "ac", hectares: "ha",
+  sq_ft: "ft²",
+  sq_m: "m²",
+  sq_yd: "yd²",
+  sq_meter: "㎡",
+  sq_feet: "sq ft",
+  acres: "ac",
+  hectares: "ha",
 };
 
 const CURRENCY_OPTIONS: Array<{ value: string; label: string; symbol: string }> = [
@@ -82,11 +103,7 @@ const SURFACE_UNIT_OPTIONS: Array<{ value: string; label: string }> = [
 
 export { CURRENCY_SYMBOLS, SURFACE_UNITS, CURRENCY_OPTIONS, SURFACE_UNIT_OPTIONS };
 
-function buildNumber(
-  value: number | string,
-  thousandsSep: string,
-  decimalSep: string,
-): string {
+function buildNumber(value: number | string, thousandsSep: string, decimalSep: string): string {
   const num = Number(value);
   if (isNaN(num)) return "";
   let formatted = num.toFixed(2);
@@ -96,7 +113,7 @@ function buildNumber(
   if (thousandsSep && num >= 1000) {
     const parts = formatted.split(decimalSep);
     if (parts[0]) {
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
+      parts[0] = parts[0].replaceAll(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
     }
     formatted = parts.join(decimalSep);
   }
@@ -111,10 +128,7 @@ function buildNumber(
   return formatted;
 }
 
-function buildPrice(
-  value: number | string,
-  options: FormattingOptions,
-): string {
+function buildPrice(value: number | string, options: FormattingOptions): string {
   const num = Number(value);
   const emptyText = options.empty_text ?? "";
   if (isNaN(num) || num === 0) {
@@ -127,10 +141,7 @@ function buildPrice(
   return position === "before" ? symbol + formatted : formatted + " " + symbol;
 }
 
-function buildSurface(
-  value: number | string,
-  options: FormattingOptions,
-): string {
+function buildSurface(value: number | string, options: FormattingOptions): string {
   const num = Number(value);
   if (isNaN(num) || num === 0) return "";
   const unit = options.unit || "sq_ft";
@@ -139,17 +150,11 @@ function buildSurface(
   return formatted + " " + unitLabel;
 }
 
-export function formatPriceStatic(
-  value: number | string,
-  options: FormattingOptions,
-): string {
+export function formatPriceStatic(value: number | string, options: FormattingOptions): string {
   return buildPrice(value, options);
 }
 
-export function formatSurfaceStatic(
-  value: number | string,
-  options: FormattingOptions,
-): string {
+export function formatSurfaceStatic(value: number | string, options: FormattingOptions): string {
   const unitPatterns = ["ft²", "m²", "yd²", "ac", "ha", "ft&sup2;", "m&sup2;", "yd&sup2;"];
   if (typeof value === "string") {
     for (const pattern of unitPatterns) {
@@ -164,24 +169,32 @@ export function formatSurfaceStatic(
 
 export function useFormatting(): UseFormattingReturn {
   const { props } = usePage();
-  const raw = (props as Record<string, unknown>).formattingSettings as FormattingSettings | undefined;
+  const raw = (props as Record<string, unknown>).formattingSettings as
+    FormattingSettings | undefined;
 
-  const settings: FormattingSettings = useMemo(() => ({
-    default_currency: raw?.default_currency || "USD",
-    currency_position: raw?.currency_position || "before",
-    price_empty_text: raw?.price_empty_text || "",
-    surface_unit: raw?.surface_unit || "sq_ft",
-    thousands_separator: raw?.thousands_separator || ",",
-    decimal_separator: raw?.decimal_separator || ".",
-    date_format: raw?.date_format || "Y-m-d",
-    time_format: raw?.time_format || "H:i",
-    start_of_week: raw?.start_of_week || "0",
-    timezone: raw?.timezone || "UTC",
-  }), [raw]);
+  const settings: FormattingSettings = useMemo(
+    () => ({
+      default_currency: raw?.default_currency || "USD",
+      currency_position: raw?.currency_position || "before",
+      price_empty_text: raw?.price_empty_text || "",
+      surface_unit: raw?.surface_unit || "sq_ft",
+      thousands_separator: raw?.thousands_separator || ",",
+      decimal_separator: raw?.decimal_separator || ".",
+      date_format: raw?.date_format || "Y-m-d",
+      time_format: raw?.time_format || "H:i",
+      start_of_week: raw?.start_of_week || "0",
+      timezone: raw?.timezone || "UTC",
+    }),
+    [raw],
+  );
 
   const formatNumber = useCallback(
     (value: number | string, thousandsSep?: string, decimalSep?: string): string =>
-      buildNumber(value, thousandsSep || settings.thousands_separator, decimalSep || settings.decimal_separator),
+      buildNumber(
+        value,
+        thousandsSep || settings.thousands_separator,
+        decimalSep || settings.decimal_separator,
+      ),
     [settings.thousands_separator, settings.decimal_separator],
   );
 
@@ -194,7 +207,13 @@ export function useFormatting(): UseFormattingReturn {
         decimal_sep: overrides?.decimal_sep || settings.decimal_separator,
         empty_text: overrides?.empty_text || settings.price_empty_text,
       }),
-    [settings.default_currency, settings.currency_position, settings.thousands_separator, settings.decimal_separator, settings.price_empty_text],
+    [
+      settings.default_currency,
+      settings.currency_position,
+      settings.thousands_separator,
+      settings.decimal_separator,
+      settings.price_empty_text,
+    ],
   );
 
   const formatSurface = useCallback(

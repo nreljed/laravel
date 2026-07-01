@@ -51,6 +51,11 @@ class PropertiesModule implements ModuleInterface
         //
     }
 
+    public function getNavGroupLabel(): ?string
+    {
+        return 'Manage Property';
+    }
+
     public function getNavItems(): array
     {
         return [
@@ -64,7 +69,7 @@ class PropertiesModule implements ModuleInterface
                 ['title' => 'All Properties', 'url' => route('dashboard.properties.index', [], false)],
                 ['title' => 'Add Property', 'url' => route('dashboard.properties.create', [], false)],
                 ['title' => 'Types', 'url' => route('dashboard.properties.terms.types.index', [], false)],
-                ['title' => 'Categories', 'url' => route('dashboard.properties.terms.categories.index', [], false)],
+                ['title' => 'Cities', 'url' => route('dashboard.properties.terms.cities.index', [], false)],
                 ['title' => 'Features', 'url' => route('dashboard.properties.terms.features.index', [], false)],
                 ['title' => 'Statuses', 'url' => route('dashboard.properties.terms.statuses.index', [], false)],
             ],
@@ -112,7 +117,7 @@ class PropertiesModule implements ModuleInterface
             ['path' => '/dashboard/properties/create', 'component' => 'Properties/Form', 'name' => 'dashboard.properties.create'],
             ['path' => '/dashboard/properties/{property}/edit', 'component' => 'Properties/Form', 'name' => 'dashboard.properties.edit'],
             ['path' => '/dashboard/properties/terms/types', 'component' => 'Properties/Types', 'name' => 'dashboard.properties.terms.types.index'],
-            ['path' => '/dashboard/properties/terms/categories', 'component' => 'Properties/Categories', 'name' => 'dashboard.properties.terms.categories.index'],
+            ['path' => '/dashboard/properties/terms/cities', 'component' => 'Properties/Cities', 'name' => 'dashboard.properties.terms.cities.index'],
             ['path' => '/dashboard/properties/terms/features', 'component' => 'Properties/Features', 'name' => 'dashboard.properties.terms.features.index'],
             ['path' => '/dashboard/properties/terms/statuses', 'component' => 'Properties/Statuses', 'name' => 'dashboard.properties.terms.statuses.index'],
         ];

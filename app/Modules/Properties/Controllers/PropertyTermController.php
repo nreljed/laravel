@@ -3,7 +3,7 @@
 namespace App\Modules\Properties\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Properties\Models\PropertyCategory;
+use App\Modules\Properties\Models\City;
 use App\Modules\Properties\Models\PropertyFeature;
 use App\Modules\Properties\Models\PropertyStatus;
 use App\Modules\Properties\Models\PropertyType;
@@ -59,51 +59,49 @@ class PropertyTermController extends Controller
             ->with('status', 'Property type deleted.');
     }
 
-    public function indexCategories(): Response
+    public function indexCities(): Response
     {
-        return Inertia::render('Properties/Categories', [
-            'categories' => PropertyCategory::with('children')->whereNull('parent_id')->orderBy('sort_order')->get(),
+        return Inertia::render('Properties/Cities', [
+            'cities' => City::orderBy('governorate_slug')->orderBy('sort_order')->get(),
         ]);
     }
 
-    public function storeCategory(Request $request): RedirectResponse
+    public function storeCity(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-            'parent_id' => 'nullable|exists:property_categories,id',
+            'governorate' => 'required|string|max:255',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
         ]);
 
-        PropertyCategory::create($validated);
+        City::create($validated);
 
-        return redirect()->route('dashboard.properties.terms.categories.index')
-            ->with('status', 'Category created.');
+        return redirect()->route('dashboard.properties.terms.cities.index')
+            ->with('status', 'City created.');
     }
 
-    public function updateCategory(Request $request, PropertyCategory $category): RedirectResponse
+    public function updateCity(Request $request, City $city): RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-            'parent_id' => 'nullable|exists:property_categories,id|not_in:'.$category->id,
+            'governorate' => 'required|string|max:255',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
         ]);
 
-        $category->update($validated);
+        $city->update($validated);
 
-        return redirect()->route('dashboard.properties.terms.categories.index')
-            ->with('status', 'Category updated.');
+        return redirect()->route('dashboard.properties.terms.cities.index')
+            ->with('status', 'City updated.');
     }
 
-    public function destroyCategory(PropertyCategory $category): RedirectResponse
+    public function destroyCity(City $city): RedirectResponse
     {
-        $category->delete();
+        $city->delete();
 
-        return redirect()->route('dashboard.properties.terms.categories.index')
-            ->with('status', 'Category deleted.');
+        return redirect()->route('dashboard.properties.terms.cities.index')
+            ->with('status', 'City deleted.');
     }
 
     public function indexFeatures(): Response

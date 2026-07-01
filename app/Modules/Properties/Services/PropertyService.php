@@ -2,8 +2,8 @@
 
 namespace App\Modules\Properties\Services;
 
+use App\Modules\Properties\Models\City;
 use App\Modules\Properties\Models\Property;
-use App\Modules\Properties\Models\PropertyCategory;
 use App\Modules\Properties\Models\PropertyFeature;
 use App\Modules\Properties\Models\PropertyStatus;
 use App\Modules\Properties\Models\PropertyType;
@@ -11,15 +11,16 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class PropertyService
 {
-    public function create(array $data, array $typeIds = [], array $categoryIds = [], array $featureIds = [], array $statusIds = []): Property
+    public function create(array $data, array $typeIds = [], ?int $cityId = null, array $featureIds = [], array $statusIds = []): Property
     {
+        if ($cityId) {
+            $data['city_id'] = $cityId;
+        }
+
         $property = Property::create($data);
 
         if ($typeIds) {
             $property->types()->sync($typeIds);
-        }
-        if ($categoryIds) {
-            $property->categories()->sync($categoryIds);
         }
         if ($featureIds) {
             $property->features()->sync($featureIds);
@@ -28,18 +29,19 @@ class PropertyService
             $property->statuses()->sync($statusIds);
         }
 
-        return $property->load(['types', 'categories', 'features', 'statuses']);
+        return $property->load(['types', 'city', 'features', 'statuses']);
     }
 
-    public function update(Property $property, array $data, array $typeIds = [], array $categoryIds = [], array $featureIds = [], array $statusIds = []): Property
+    public function update(Property $property, array $data, array $typeIds = [], ?int $cityId = null, array $featureIds = [], array $statusIds = []): Property
     {
+        if ($cityId !== null) {
+            $data['city_id'] = $cityId;
+        }
+
         $property->update($data);
 
         if (array_key_exists('types', $data) || ! empty($typeIds)) {
             $property->types()->sync($typeIds);
-        }
-        if (array_key_exists('categories', $data) || ! empty($categoryIds)) {
-            $property->categories()->sync($categoryIds);
         }
         if (array_key_exists('features', $data) || ! empty($featureIds)) {
             $property->features()->sync($featureIds);
@@ -48,14 +50,13 @@ class PropertyService
             $property->statuses()->sync($statusIds);
         }
 
-        return $property->load(['types', 'categories', 'features', 'statuses', 'images', 'featuredImage']);
+        return $property->load(['types', 'city', 'features', 'statuses', 'images', 'featuredImage']);
     }
 
     public function deleteWithImages(Property $property): void
     {
         $property->images->each(fn ($image) => $image->delete());
         $property->types()->detach();
-        $property->categories()->detach();
         $property->features()->detach();
         $property->statuses()->detach();
         $property->delete();
@@ -63,7 +64,7 @@ class PropertyService
 
     public function search(array $filters = []): LengthAwarePaginator
     {
-        $query = Property::with(['types', 'categories', 'features', 'statuses', 'featuredImage', 'user']);
+        $query = Property::with(['types', 'city', 'features', 'statuses', 'featuredImage', 'user']);
 
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
@@ -82,7 +83,7 @@ class PropertyService
         }
 
         if (! empty($filters['category_ids'])) {
-            $query->whereHas('categories', fn ($q) => $q->whereIn('property_categories.id', (array) $filters['category_ids']));
+            $query->where('city_id', $filters['category_ids']);
         }
 
         if (! empty($filters['feature_ids'])) {
@@ -118,7 +119,7 @@ class PropertyService
     {
         return [
             'types' => PropertyType::where('is_active', true)->orderBy('sort_order')->get(),
-            'categories' => PropertyCategory::where('is_active', true)->with('children')->orderBy('sort_order')->get(),
+            'cities' => City::where('is_active', true)->orderBy('governorate_slug')->orderBy('sort_order')->get(),
             'features' => PropertyFeature::where('is_active', true)->orderBy('group')->orderBy('sort_order')->get(),
             'statuses' => PropertyStatus::where('is_active', true)->orderBy('sort_order')->get(),
         ];

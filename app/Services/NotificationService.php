@@ -36,15 +36,19 @@ class NotificationService
         }
 
         $channels = $channels ?? ($typeConfig['default_channels'] ?? ['in_app']);
+        $defaultEnabled = $typeConfig['default_enabled'] ?? true;
+
+        // Batch-load all preferences for this user + type in one query
+        $prefs = NotificationPreference::where('user_id', $notifiable->id)
+            ->where('type', $type)
+            ->whereIn('channel', $channels)
+            ->get()
+            ->keyBy('channel');
+
         $allowedChannels = [];
 
         foreach ($channels as $channel) {
-            $pref = NotificationPreference::where('user_id', $notifiable->id)
-                ->where('type', $type)
-                ->where('channel', $channel)
-                ->first();
-
-            $defaultEnabled = $typeConfig['default_enabled'] ?? true;
+            $pref = $prefs[$channel] ?? null;
 
             if ($pref === null) {
                 if ($defaultEnabled) {

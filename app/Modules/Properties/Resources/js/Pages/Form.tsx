@@ -95,7 +95,7 @@ export default function PropertiesForm() {
   const bookingData = props.booking || null
 
   const propertyTypes = props.property_types || []
-  const propertyCities = props.property_cities || []
+  const propertyCities = props.cities || []
   const propertyStatuses = useMemo(() => props.property_statuses || [], [props.property_statuses])
   const propertyFeatures = props.property_features || []
   const selectedType = props.selected_type
@@ -251,7 +251,7 @@ export default function PropertiesForm() {
             onChange={handleFieldChange}
             errors={errors}
             loading={processing}
-            options={{ types: propertyTypes, statuses: propertyStatuses, isForRent, bookingEnabled }}
+            options={{ types: propertyTypes, statuses: propertyStatuses, cities: propertyCities, isForRent, bookingEnabled }}
           />
 
           {bookingActive && (
@@ -263,7 +263,6 @@ export default function PropertiesForm() {
             onChange={handleFieldChange}
             errors={errors}
             loading={processing}
-            options={{ cities: propertyCities }}
           />
 
           <MapSection

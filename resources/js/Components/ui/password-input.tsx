@@ -146,8 +146,11 @@ export function PasswordInput({
   const resolvedForgotPasswordUrl =
     forgotPasswordUrl ??
     (() => {
-      try { return `/forgot-password?redirect_to=${encodeURIComponent(location.href)}`; }
-      catch { return "/forgot-password"; }
+      try {
+        return `/forgot-password?redirect_to=${encodeURIComponent(location.href)}`;
+      } catch {
+        return "/forgot-password";
+      }
     })();
 
   const [showNewPassword, setShowNewPassword] = React.useState(false);
@@ -167,7 +170,9 @@ export function PasswordInput({
       const result = await calculatePasswordStrength(newPassword);
       if (!cancelled) setStrengthResult(result);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [newPassword]);
 
   const currentPassword = currentPasswordValue || "";
@@ -216,7 +221,10 @@ export function PasswordInput({
             required={required}
             autoFocus={autoFocus}
             autoComplete="current-password"
-            className={cn("pe-9", newPasswordError && "border-destructive focus:border-destructive")}
+            className={cn(
+              "pe-9",
+              newPasswordError && "border-destructive focus:border-destructive",
+            )}
             aria-invalid={newPasswordError ? "true" : undefined}
           />
           <InputGroupAddon align="inline-end" className="right-1">
@@ -228,7 +236,9 @@ export function PasswordInput({
                   type="button"
                 >
                   {showNewPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
-                  <span className="sr-only">{showNewPassword ? "Hide password" : "Show password"}</span>
+                  <span className="sr-only">
+                    {showNewPassword ? "Hide password" : "Show password"}
+                  </span>
                 </InputGroupButton>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={4}>
@@ -267,7 +277,10 @@ export function PasswordInput({
             autoComplete="new-password"
             aria-invalid={isSameAsCurrent ? "true" : undefined}
             aria-describedby={isSameAsCurrent ? "password-same-error" : undefined}
-            className={cn("pe-16", isSameAsCurrent && "border-destructive focus:border-destructive")}
+            className={cn(
+              "pe-16",
+              isSameAsCurrent && "border-destructive focus:border-destructive",
+            )}
           />
           <InputGroupAddon align="inline-end" className="right-1 gap-1">
             {passwordIsValid && (
@@ -296,13 +309,19 @@ export function PasswordInput({
                 <TooltipContent side="bottom" sideOffset={4} className="text-xs">
                   <div className="space-y-1">
                     <p className="font-medium mb-1">Password recommendations:</p>
-                    <div className={cn(meetsMinLength ? "text-green-500" : "text-muted-foreground")}>
+                    <div
+                      className={cn(meetsMinLength ? "text-green-500" : "text-muted-foreground")}
+                    >
                       {meetsMinLength ? "✓" : "○"} At least {minLength} chars
                     </div>
-                    <div className={cn(meetsUppercase ? "text-green-500" : "text-muted-foreground")}>
+                    <div
+                      className={cn(meetsUppercase ? "text-green-500" : "text-muted-foreground")}
+                    >
                       {meetsUppercase ? "✓" : "○"} Uppercase (recommended)
                     </div>
-                    <div className={cn(meetsLowercase ? "text-green-500" : "text-muted-foreground")}>
+                    <div
+                      className={cn(meetsLowercase ? "text-green-500" : "text-muted-foreground")}
+                    >
                       {meetsLowercase ? "✓" : "○"} Lowercase (recommended)
                     </div>
                     <div className={cn(meetsNumber ? "text-green-500" : "text-muted-foreground")}>
@@ -312,7 +331,11 @@ export function PasswordInput({
                       {meetsSpecial ? "✓" : "○"} Special (recommended)
                     </div>
                     {disableSameAsCurrent && currentPassword.length > 0 && (
-                      <div className={cn(!isSameAsCurrent ? "text-green-500" : "text-muted-foreground")}>
+                      <div
+                        className={cn(
+                          !isSameAsCurrent ? "text-green-500" : "text-muted-foreground",
+                        )}
+                      >
                         {!isSameAsCurrent ? "✓" : "○"} Different from current
                       </div>
                     )}

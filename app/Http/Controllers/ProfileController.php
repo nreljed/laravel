@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AuditAction;
+use App\Services\AccountService;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,17 +14,21 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        protected AccountService $accountService,
+    ) {}
+
     public function edit(Request $request): Response
     {
         $user = $request->user();
 
         $displayNameOptions = $this->getDisplayNameOptions($user);
 
-        $phoneData = $user->phone
+        $phoneNumbers = $user->phone
             ? (is_string($user->phone) ? json_decode($user->phone, true) : $user->phone)
             : [];
 
-        $socialData = $user->social_links
+        $socialMedia = $user->social_links
             ? (is_string($user->social_links) ? json_decode($user->social_links, true) : $user->social_links)
             : [];
 
@@ -43,14 +48,17 @@ class ProfileController extends Controller
                 'url' => $user->url,
                 'email' => $user->email,
                 'user_email' => $user->email,
+                'contact_email' => $user->contact_email,
+                'phone_numbers' => $phoneNumbers,
+                'social_media' => $socialMedia,
                 'avatar' => $user->avatar_url,
                 'custom_avatar_url' => $user->avatar_url,
                 'user_registered' => $user->created_at,
                 'roles' => $user->roles->pluck('name')->toArray(),
                 'module_profile' => [
                     'properties' => [
-                        'phone_numbers' => $phoneData,
-                        'social_media' => $socialData,
+                        'phone_numbers' => $phoneNumbers,
+                        'social_media' => $socialMedia,
                     ],
                 ],
             ],
@@ -64,7 +72,7 @@ class ProfileController extends Controller
 
         return match ($updateType) {
             'personal-info' => $this->updatePersonalInfo($request),
-            'additional-info' => $this->updatePersonalInfo($request),
+            'contact-info' => $this->updateContactInfo($request),
             default => redirect()->back()->with('error', 'Invalid update type.'),
         };
     }
@@ -80,7 +88,7 @@ class ProfileController extends Controller
             'nickname' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
             'url' => 'nullable|url|max:255',
-            'profile_data' => 'nullable|array',
+            'contact_email' => 'nullable|email|max:255',
         ]);
 
         if (isset($validated['description'])) {
@@ -88,25 +96,57 @@ class ProfileController extends Controller
             unset($validated['description']);
         }
 
-        if (isset($validated['profile_data'])) {
-            $profileData = $validated['profile_data'];
-            if (isset($profileData['phone_numbers'])) {
-                $user->phone = is_string($profileData['phone_numbers'])
-                    ? $profileData['phone_numbers']
-                    : json_encode($profileData['phone_numbers']);
-            }
-            if (isset($profileData['social_media'])) {
-                $user->social_links = is_string($profileData['social_media'])
-                    ? $profileData['social_media']
-                    : json_encode($profileData['social_media']);
-            }
-            unset($validated['profile_data']);
+        $user->fill($validated);
+        $user->save();
+
+        AuditService::log(AuditAction::ProfileUpdate, $user->id, [
+            'changed_fields' => array_keys($user->getChanges()),
+        ]);
+
+        return Redirect::route('dashboard.profile.edit')->with('status', 'Profile updated successfully.');
+    }
+
+    protected function updateContactInfo(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $phoneNumbers = $request->input('phone_numbers');
+        if ($phoneNumbers !== null && is_array($phoneNumbers)) {
+            $filtered = array_filter($phoneNumbers, function ($item) {
+                return ! empty($item['label']) || ! empty($item['phone']);
+            });
+            $processed = array_map(function ($item) {
+                if (! empty($item['label']) && $item['label'] === 'Other' && ! empty($item['label_custom'])) {
+                    $item['label'] = $item['label_custom'];
+                    unset($item['label_custom']);
+                }
+
+                return $item;
+            }, $filtered);
+            $user->phone = json_encode(array_values($processed));
         }
 
-        $user->fill($validated);
+        $socialMedia = $request->input('social_media');
+        if ($socialMedia !== null && is_array($socialMedia)) {
+            $filtered = array_filter($socialMedia, function ($item) {
+                return ! empty($item['social_title']) && ! empty($item['social_value']);
+            });
+            $processed = array_map(function ($item) {
+                if (! empty($item['social_value'])) {
+                    $url = trim($item['social_value']);
+                    if (! preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//', $url)) {
+                        $url = 'https://'.$url;
+                    }
+                    $item['social_value'] = $url;
+                }
+                if (! empty($item['social_title']) && $item['social_title'] === 'Other' && ! empty($item['social_title_custom'])) {
+                    $item['social_title'] = $item['social_title_custom'];
+                    unset($item['social_title_custom']);
+                }
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+                return $item;
+            }, $filtered);
+            $user->social_links = json_encode(array_values($processed));
         }
 
         $user->save();
@@ -115,7 +155,7 @@ class ProfileController extends Controller
             'changed_fields' => array_keys($user->getChanges()),
         ]);
 
-        return Redirect::route('dashboard.profile.edit')->with('status', 'Profile updated successfully.');
+        return Redirect::route('dashboard.profile.edit')->with('status', 'Contact info updated successfully.');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -126,37 +166,18 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        AuditService::log(AuditAction::AccountDelete, $user->id);
-
         Auth::logout();
 
-        $user->delete();
+        $this->accountService->deleteAccount($user);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect()->route('home');
     }
 
     protected function getDisplayNameOptions($user): array
     {
-        $options = [];
-
-        $options['username'] = $user->name;
-        if ($user->nickname) {
-            $options['nickname'] = $user->nickname;
-        }
-        if ($user->first_name) {
-            $options['firstname'] = $user->first_name;
-        }
-        if ($user->last_name) {
-            $options['lastname'] = $user->last_name;
-        }
-        if ($user->first_name && $user->last_name) {
-            $options['firstlast'] = $user->first_name.' '.$user->last_name;
-            $options['lastfirst'] = $user->last_name.' '.$user->first_name;
-        }
-
-        return $options;
+        return $user->getDisplayNameOptions();
     }
 }

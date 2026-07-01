@@ -82,6 +82,7 @@ class ModuleRegistry
         foreach ($this->booted as $module) {
             $nav = $module->getNavItems();
             if (! empty($nav)) {
+                $nav['groupLabel'] = $module->getNavGroupLabel();
                 $items[] = $nav;
             }
         }

@@ -28,15 +28,28 @@ import {
   Maximize2,
 } from "lucide-react";
 
-interface LegacyNotification {
+export interface StructuredNotification {
   id: string;
   type: string;
-  data: Record<string, string>;
+  title?: string;
+  message?: string;
+  link?: string;
+  module?: string;
+  severity?: Severity;
+  is_read?: string;
+  data?: Record<string, string>;
   read_at: string | null;
   created_at: string;
+  created_at_relative?: string;
 }
 
-type TypeIconConfig = { icon: React.ComponentType<{ className?: string }>; color: string; label: string };
+export type Severity = "info" | "warning" | "urgent" | "critical";
+
+type TypeIconConfig = {
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  label: string;
+};
 
 const typeConfig: Record<string, TypeIconConfig> = {
   "booking.created": { icon: CalendarPlus, color: "text-green-500", label: "New Booking" },
@@ -56,7 +69,11 @@ const typeConfig: Record<string, TypeIconConfig> = {
   "password.reset": { icon: KeyRound, color: "text-orange-500", label: "Password Reset" },
   "email.changed": { icon: Mail, color: "text-amber-500", label: "Email Changed" },
   "account.deleted": { icon: Trash2, color: "text-red-500", label: "Account Deleted" },
-  "booking.guest_registered": { icon: UserPlus, color: "text-violet-500", label: "Guest Registered" },
+  "booking.guest_registered": {
+    icon: UserPlus,
+    color: "text-violet-500",
+    label: "Guest Registered",
+  },
 };
 
 function getTypeIcon(type: string) {
@@ -64,8 +81,6 @@ function getTypeIcon(type: string) {
   const match = Object.entries(typeConfig).find(([key]) => type.includes(key));
   return match ? match[1] : null;
 }
-
-export type Severity = "info" | "warning" | "urgent" | "critical";
 
 const severityConfig: Record<Severity, { dot: string; icon: React.ReactNode }> = {
   info: { dot: "bg-primary", icon: null },
@@ -80,15 +95,18 @@ const severityConfig: Record<Severity, { dot: string; icon: React.ReactNode }> =
   critical: { dot: "bg-destructive", icon: <AlertTriangle className="h-3 w-3 text-destructive" /> },
 };
 
-function getSeverity(type: string): Severity {
-  if (type.includes("cancel") || type.includes("deleted") || type === "low_stock") return "critical";
+function getSeverity(type: string, n?: StructuredNotification): Severity {
+  if (n?.severity && ["info", "warning", "urgent", "critical"].includes(n.severity))
+    return n.severity;
+  if (type.includes("cancel") || type.includes("deleted") || type === "low_stock")
+    return "critical";
   if (type.includes("inquiry") || type.includes("modified")) return "warning";
   if (type.includes("reset") || type.includes("changed")) return "urgent";
   return "info";
 }
 
 interface NotificationItemProps {
-  notification: LegacyNotification;
+  notification: StructuredNotification;
   onMarkRead: (id: string) => void;
   onDelete?: (id: string) => void;
   onShowDetail?: (id: string) => void;
@@ -104,17 +122,21 @@ export const NotificationItem = React.memo(function NotificationItem({
   selected,
   onSelect,
 }: NotificationItemProps) {
-  const isUnread = !n.read_at;
+  const isUnread = n.is_read === "0" || !n.read_at;
   const id = n.id;
-  const type = n.type.replace("App\\Notifications\\", "").replace("Notification", "").replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase();
-  const severity = getSeverity(type);
+  const type = n.type
+    .replace("App\\Notifications\\", "")
+    .replace("Notification", "")
+    .replaceAll(/([a-z])([A-Z])/g, "$1.$2")
+    .toLowerCase();
+  const severity = getSeverity(type, n);
   const config = severityConfig[severity];
   const typeIcon = getTypeIcon(type);
 
-  const title = n.data.title || n.data.subject || n.data.message || "Notification";
-  const message = n.data.message !== title ? n.data.message : n.data.body;
-  const link = n.data.link || n.data.url || "";
-  const createdAt = n.created_at;
+  const title = n.title || n.data?.title || n.data?.subject || n.data?.message || "Notification";
+  const message = n.message || n.data?.message || n.data?.body || "";
+  const link = n.link || n.data?.link || n.data?.url || "";
+  const createdAt = n.created_at_relative || n.created_at;
 
   const handleClick = () => {
     if (isUnread) onMarkRead(id);
@@ -135,10 +157,12 @@ export const NotificationItem = React.memo(function NotificationItem({
       role={link ? "button" : undefined}
       tabIndex={link ? 0 : undefined}
       onKeyDown={(e) => {
-        if (link && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault();
-          handleClick();
+        if (!(link && (e.key === "Enter" || e.key === " "))) {
+          return;
         }
+
+        e.preventDefault();
+        handleClick();
       }}
     >
       {onSelect && (
@@ -238,9 +262,7 @@ export const NotificationItem = React.memo(function NotificationItem({
             <Trash2 className="size-3" />
           </Button>
         )}
-        {link && (
-          <ExternalLink className="h-3 w-3 text-muted-foreground self-center" />
-        )}
+        {link && <ExternalLink className="h-3 w-3 text-muted-foreground self-center" />}
       </div>
     </div>
   );

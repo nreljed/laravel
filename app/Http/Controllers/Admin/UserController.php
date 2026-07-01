@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditService;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,7 +33,7 @@ class UserController extends Controller
                 'username' => $user->username,
                 'name' => $user->name,
                 'email' => $user->email,
-                'email_verified_at' => $user->email_verified_at,
+                'email_verified_at' => $user->email_verified_at?->toISOString(),
                 'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
                 'created_at' => $user->created_at->toISOString(),
             ]);
@@ -65,8 +69,21 @@ class UserController extends Controller
             $user->roles()->sync([$request->role_id]);
         }
 
+        if ($request->boolean('send_email')) {
+            Password::sendResetLink(['email' => $user->email]);
+        }
+
+        AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
+            'target_user_id' => $user->id,
+            'role_id' => $request->role_id,
+        ]);
+
+        $message = $request->boolean('send_email')
+            ? 'User created successfully. A password reset link has been sent.'
+            : 'User created successfully.';
+
         return redirect()->route('dashboard.admin.users.index')
-            ->with('flash', ['success' => 'User created successfully.']);
+            ->with('flash', ['success' => $message]);
     }
 
     public function edit(User $user): Response
@@ -80,6 +97,7 @@ class UserController extends Controller
                 'username' => $user->username,
                 'name' => $user->name,
                 'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at?->toISOString(),
                 'role_id' => $user->roles->first()?->id,
             ],
             'roles' => $roles,
@@ -102,6 +120,11 @@ class UserController extends Controller
             $user->roles()->sync([$request->role_id]);
         }
 
+        AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
+            'target_user_id' => $user->id,
+            'role_id' => $request->role_id,
+        ]);
+
         return redirect()->route('dashboard.admin.users.index')
             ->with('flash', ['success' => 'User updated successfully.']);
     }
@@ -117,5 +140,32 @@ class UserController extends Controller
 
         return redirect()->route('dashboard.admin.users.index')
             ->with('flash', ['success' => 'User deleted successfully.']);
+    }
+
+    public function verifyEmail(User $user): RedirectResponse
+    {
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->route('dashboard.admin.users.index')
+                ->with('flash', ['info' => 'Email already verified.']);
+        }
+
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+
+        return redirect()->route('dashboard.admin.users.index')
+            ->with('flash', ['success' => 'Email verified for '.$user->name.'.']);
+    }
+
+    public function sendPasswordReset(User $user): RedirectResponse
+    {
+        $status = Password::sendResetLink(['email' => $user->email]);
+
+        $message = match ($status) {
+            Password::RESET_LINK_SENT => 'Password reset link sent to '.$user->email.'.',
+            default => 'Failed to send password reset link.',
+        };
+
+        return redirect()->route('dashboard.admin.users.index')
+            ->with('flash', ['success' => $message]);
     }
 }

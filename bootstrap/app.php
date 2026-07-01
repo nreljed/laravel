@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'dashboard/bookings/guest/*',
             'dashboard/bookings/ajax/*',
             'deploy/*',
+            'api/notifications/*',
         ]);
 
         $middleware->alias([

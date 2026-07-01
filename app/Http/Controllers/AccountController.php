@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Account\DeleteAccountRequest;
+use App\Http\Requests\Account\UpdateEmailRequest;
+use App\Http\Requests\Account\UpdateNotificationPreferencesRequest;
+use App\Http\Requests\Account\UpdatePasswordRequest;
+use App\Http\Requests\Account\VerifyDeletePasswordRequest;
 use App\Models\NotificationPreference;
 use App\Services\AccountService;
 use App\Services\NotificationTypeRegistry;
 use App\Services\SettingsService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class AccountController extends Controller
@@ -50,16 +53,11 @@ class AccountController extends Controller
         ]);
     }
 
-    public function updateEmail(Request $request)
+    public function updateEmail(UpdateEmailRequest $request)
     {
-        $validated = $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$request->user()->id],
-            'current_password' => ['required', 'current_password'],
-        ]);
-
         $result = $this->accountService->updateEmail(
             $request->user(),
-            $validated['email'],
+            $request->validated('email'),
         );
 
         if (! $result['success']) {
@@ -69,17 +67,12 @@ class AccountController extends Controller
         return redirect()->back()->with('status', $result['message']);
     }
 
-    public function updatePassword(Request $request)
+    public function updatePassword(UpdatePasswordRequest $request)
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
-
         $result = $this->accountService->updatePassword(
             $request->user(),
-            $validated['current_password'],
-            $validated['password'],
+            $request->validated('current_password'),
+            $request->validated('password'),
         );
 
         if (! $result['success']) {
@@ -89,12 +82,8 @@ class AccountController extends Controller
         return redirect()->back()->with('status', $result['message']);
     }
 
-    public function destroy(Request $request)
+    public function destroy(DeleteAccountRequest $request)
     {
-        $request->validate([
-            'confirmation' => ['required', 'string', 'in:delete my account'],
-            'current_password' => ['required', 'current_password'],
-        ]);
 
         $user = $request->user();
 
@@ -108,25 +97,15 @@ class AccountController extends Controller
         return redirect('/');
     }
 
-    public function verifyDeletePassword(Request $request)
+    public function verifyDeletePassword(VerifyDeletePasswordRequest $request)
     {
-        $request->validate([
-            'current_password' => ['required', 'current_password'],
-        ]);
 
         return response()->json(['verified' => true]);
     }
 
-    public function updateNotificationPreferences(Request $request)
+    public function updateNotificationPreferences(UpdateNotificationPreferencesRequest $request)
     {
-        $validated = $request->validate([
-            'preferences' => ['required', 'array'],
-            'preferences.*.type' => ['required', 'string'],
-            'preferences.*.channel' => ['required', 'string', 'in:in_app,email'],
-            'preferences.*.enabled' => ['required', 'boolean'],
-        ]);
-
-        foreach ($validated['preferences'] as $pref) {
+        foreach ($request->validated('preferences') as $pref) {
             NotificationPreference::updateOrCreate(
                 [
                     'user_id' => $request->user()->id,

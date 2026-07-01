@@ -1,8 +1,9 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import { Plus, FileText } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/Components/ui/empty";
 import { Badge } from "@/Components/ui/badge";
 
 interface Post {
@@ -35,15 +36,18 @@ export default function PostsIndex({ posts }: PostsIndexProps) {
         </div>
 
         {posts.data.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <FileText className="mb-2 h-10 w-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No posts yet.</p>
-              <Link href={route("dashboard.posts.create")}>
-                <Button variant="link">Write your first post</Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><FileText /></EmptyMedia>
+              <EmptyTitle>No posts yet</EmptyTitle>
+              <EmptyDescription>Get started by writing your first post.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => router.visit(route("dashboard.posts.create"))}>
+                <Plus className="mr-2 h-4 w-4" /> Write Your First Post
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <div className="space-y-3">
             {posts.data.map((post) => (

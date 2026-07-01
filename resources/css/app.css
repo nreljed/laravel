@@ -1,6 +1,11 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "../";
+@source "../../app/Modules/Booking/Resources/js/";
+@source "../../app/Modules/ECommerce/Resources/js/";
+@source "../../app/Modules/Posts/Resources/js/";
+@source "../../app/Modules/Properties/Resources/js/";
 
-@plugin "tailwindcss-animate";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 

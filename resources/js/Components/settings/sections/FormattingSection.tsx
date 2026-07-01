@@ -1,14 +1,14 @@
-import * as React from "react"
-import { Section, SectionField } from "@/Components/section"
-import { Input } from "@/Components/ui/input"
+import * as React from "react";
+import { Section, SectionField } from "@/Components/section";
+import { Input } from "@/Components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/Components/ui/select"
-import { DollarSign, Ruler, Hash } from "lucide-react"
+} from "@/Components/ui/select";
+import { DollarSign, Ruler, Hash } from "lucide-react";
 
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "US Dollar ($)" },
@@ -31,12 +31,35 @@ const CURRENCY_OPTIONS = [
   { value: "IQD", label: "Iraqi Dinar (ع.د)" },
   { value: "IRR", label: "Iranian Rial (﷼)" },
   { value: "TRY", label: "Turkish Lira (₺)" },
-]
+];
 
 const CURRENCY_POSITION_OPTIONS = [
   { value: "before", label: "Before ($100)" },
   { value: "after", label: "After (100$)" },
-]
+];
+
+const COUNTRY_OPTIONS = [
+  { value: "TN", label: "Tunisia" },
+  { value: "US", label: "United States" },
+  { value: "GB", label: "United Kingdom" },
+  { value: "FR", label: "France" },
+  { value: "DE", label: "Germany" },
+  { value: "IT", label: "Italy" },
+  { value: "ES", label: "Spain" },
+  { value: "MA", label: "Morocco" },
+  { value: "DZ", label: "Algeria" },
+  { value: "LY", label: "Libya" },
+  { value: "EG", label: "Egypt" },
+  { value: "SA", label: "Saudi Arabia" },
+  { value: "AE", label: "United Arab Emirates" },
+  { value: "QA", label: "Qatar" },
+  { value: "KW", label: "Kuwait" },
+  { value: "BH", label: "Bahrain" },
+  { value: "OM", label: "Oman" },
+  { value: "JO", label: "Jordan" },
+  { value: "CA", label: "Canada" },
+  { value: "AU", label: "Australia" },
+];
 
 const SURFACE_UNIT_OPTIONS = [
   { value: "sq_ft", label: "Square Feet (ft²)" },
@@ -46,25 +69,25 @@ const SURFACE_UNIT_OPTIONS = [
   { value: "sq_feet", label: "Square Feet (sq ft)" },
   { value: "acres", label: "Acres (ac)" },
   { value: "hectares", label: "Hectares (ha)" },
-]
+];
 
 const THOUSANDS_SEPARATOR_OPTIONS = [
   { value: ",", label: "Comma (1,000)" },
   { value: " ", label: "Space (1 000)" },
   { value: ".", label: "Period (1.000)" },
-]
+];
 
 const DECIMAL_SEPARATOR_OPTIONS = [
   { value: ".", label: "Period (100.50)" },
   { value: ",", label: "Comma (100,50)" },
-]
+];
 
 interface FormattingSectionProps {
-  data: Record<string, string | undefined>
-  onChange: (field: string, value: string) => void
-  errors: Record<string, unknown>
-  loading?: boolean
-  onSubmit?: (e: React.FormEvent) => void
+  data: Record<string, string | undefined>;
+  onChange: (field: string, value: string) => void;
+  errors: Record<string, unknown>;
+  loading?: boolean;
+  onSubmit?: (e: React.FormEvent) => void;
 }
 
 function FormattingSection({ data, onChange, errors, loading, onSubmit }: FormattingSectionProps) {
@@ -144,12 +167,36 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
 
       <Section
         title="Units & Measurement"
-        description="Global surface area unit — used by all properties. Individual properties can override this."
+        description="Global defaults for location and surface area — inherited by all properties."
         icon={Ruler}
         asAccordion
         onSubmit={onSubmit}
         loading={loading}
       >
+        <SectionField
+          label="Default Country"
+          htmlFor="default_country"
+          error={errors?.default_country as string}
+          description="The default country for new properties."
+        >
+          <Select
+            value={data?.default_country || "TN"}
+            onValueChange={(value) => onChange("default_country", value)}
+            disabled={loading}
+          >
+            <SelectTrigger id="default_country">
+              <SelectValue placeholder="Select country" />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTRY_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SectionField>
+
         <SectionField
           label="Surface Unit"
           htmlFor="surface_unit"
@@ -234,7 +281,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
         </div>
       </Section>
     </div>
-  )
+  );
 }
 
-export { FormattingSection }
+export { FormattingSection };

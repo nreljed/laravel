@@ -1,18 +1,20 @@
 import { Head, useForm, router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/Components/ui/empty";
 import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
+import { Badge } from "@/Components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/Components/ui/card";
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/Components/ui/accordion";
 import {
   Select,
   SelectContent,
@@ -40,11 +42,8 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/Components/ui/dialog";
-import { cn } from "@/lib/utils";
 
-const FEATURE_GROUPS = [
-  "Interior", "Exterior", "Utilities", "Security", "Other",
-];
+const FEATURE_GROUPS = ["Interior", "Exterior", "Utilities", "Security", "Other"];
 
 interface Feature {
   id: number;
@@ -125,10 +124,12 @@ export default function Features({ features }: FeaturesPageProps) {
     setDeleteId(null);
   }, []);
 
-  const groupedFeatures = FEATURE_GROUPS.map((group) => ({
-    group,
-    features: features.filter((f) => (f.group || "Other") === group),
-  })).filter((g) => g.features.length > 0);
+  const groupedFeatures = useMemo(() => {
+    return FEATURE_GROUPS.map((group) => ({
+      group,
+      features: features.filter((f) => (f.group || "Other") === group),
+    })).filter((g) => g.features.length > 0);
+  }, [features]);
 
   return (
     <AuthenticatedLayout header="Property Features">
@@ -198,39 +199,41 @@ export default function Features({ features }: FeaturesPageProps) {
         </div>
 
         {groupedFeatures.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center text-sm text-muted-foreground">
-              No features defined yet.
-            </CardContent>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>No features yet</EmptyTitle>
+              <EmptyDescription>No property features have been defined yet. Create your first feature to get started.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <Accordion type="multiple" defaultValue={groupedFeatures.map((g) => g.group)} className="space-y-3">
             {groupedFeatures.map(({ group, features: groupFeats }) => (
-              <Card key={group}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">{group}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="divide-y">
+              <AccordionItem key={group} value={group} className="border rounded-lg bg-card">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 rounded-t-lg [&[data-state=closed]]:rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{group}</span>
+                    <Badge variant="secondary" className="text-xs font-normal">{groupFeats.length}</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="divide-y border-t px-4">
                     {groupFeats.map((feature) => (
-                      <div key={feature.id} className="flex items-center justify-between px-4 py-2.5">
+                      <div key={feature.id} className="flex items-center justify-between py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">{feature.name}</span>
                           {feature.icon && (
-                            <span className="text-[10px] text-muted-foreground">({feature.icon})</span>
+                            <span className="text-xs text-muted-foreground">({feature.icon})</span>
                           )}
-                          {!feature.is_active && (
-                            <span className="text-xs text-muted-foreground">Inactive</span>
-                          )}
+                          {!feature.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
                         </div>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon" onClick={() => openEdit(feature)}>
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" onClick={() => setDeleteId(feature.id)}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -250,10 +253,10 @@ export default function Features({ features }: FeaturesPageProps) {
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         )}
       </div>
     </AuthenticatedLayout>

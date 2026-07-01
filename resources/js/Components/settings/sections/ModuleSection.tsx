@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
 import { Section } from "@/Components/section";
 import { Switch } from "@/Components/ui/switch";
-import { Label } from "@/Components/ui/label";
 import { Puzzle } from "lucide-react";
 
 interface ModuleSectionProps {
@@ -29,7 +27,9 @@ export function ModuleSection({ availableModules, asAccordion }: ModuleSectionPr
             <div key={mod.id} className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">{mod.name}</p>
-                <p className="text-xs text-muted-foreground">v{mod.version} &middot; {mod.slug}</p>
+                <p className="text-xs text-muted-foreground">
+                  v{mod.version} &middot; {mod.slug}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
@@ -40,12 +40,16 @@ export function ModuleSection({ availableModules, asAccordion }: ModuleSectionPr
                   disabled={toggling[mod.id]}
                   onCheckedChange={() => {
                     setToggling((prev) => ({ ...prev, [mod.id]: true }));
-                    router.put(route("dashboard.admin.modules.toggle", mod.id), {}, {
-                      preserveScroll: true,
-                      preserveState: true,
-                      replace: true,
-                      onFinish: () => setToggling((prev) => ({ ...prev, [mod.id]: false })),
-                    });
+                    router.put(
+                      route("dashboard.admin.modules.toggle", mod.id),
+                      {},
+                      {
+                        preserveScroll: true,
+                        preserveState: true,
+                        replace: true,
+                        onFinish: () => setToggling((prev) => ({ ...prev, [mod.id]: false })),
+                      },
+                    );
                   }}
                 />
               </div>

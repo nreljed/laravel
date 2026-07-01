@@ -22,6 +22,8 @@ interface ModuleInterface
 
     public function getNavItems(): array;
 
+    public function getNavGroupLabel(): ?string;
+
     public function getMetaFormattingConfig(): array;
 
     public function getDashboardData(): array;

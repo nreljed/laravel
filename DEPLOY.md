@@ -3,7 +3,7 @@
 ## Architecture
 
 ```
- push to main (Conventional Commits)
+  push to main (Conventional Commits)
        ↓
  deploy.yml (windows-latest, GitHub-hosted runner)
        • checkout (full depth + tags)
@@ -23,8 +23,8 @@
        • overwrite .env → production MySQL config
        • package deploy.zip (excludes bootstrap/cache/)
        • create GitHub Release with semver tag vX.Y.Z + changelog as body
-       • curl /deploy/check?token= directly on the server ───────────┐
-                                                                     │
+       • curl /deploy/check?token= with admin headers → server ──────┐
+                                                                      │
  /deploy/check endpoint (Laravel DeployController)                   │
        • verifies DEPLOY_TOKEN (403 if wrong)                        │
        • checks .deploy-lock (prevents concurrent runs, 10 min TTL)  │
@@ -33,8 +33,9 @@
        • compares with .deployed-version                             │
        • if new: downloads deploy.zip → extracts over project root   │
        • restores .env from backup (never overwritten)               │
-       • runs: package:discover, migrate, config:cache,              │
-         route:cache, view:cache, storage:link                       │
+       • runs: package:discover, migrate,                            │
+         → app:create-admin (from ADMIN_EMAIL/PASSWORD headers),     │
+         config:cache, route:cache, view:cache, storage:link         │
        • writes .deployed-version, releases lock                     │
        • returns "deployed" ✓                                        │
 ```
@@ -47,6 +48,9 @@
 |--------|---------|
 | `DEPLOY_TOKEN` | Protects deploy endpoints — must match `config('app.deploy_token')` |
 | `GH_TOKEN` | GitHub fine-grained PAT with **Contents: Read and Write** — used by server to fetch releases AND by build workflow to create releases |
+| `ADMIN_EMAIL` | Email for the initial admin user (created on first deploy via `app:create-admin`) |
+| `ADMIN_PASSWORD` | Password for the initial admin user |
+| `ADMIN_NAME` | Display name / username for the initial admin user |
 
 Create the PAT at `https://github.com/settings/tokens?type=beta`:
 - **Repository access**: "Only select repositories" → your repo
@@ -63,6 +67,24 @@ Create the PAT at `https://github.com/settings/tokens?type=beta`:
 4. Verify: `curl "https://yoursite.com/deploy/check?token=YOUR_TOKEN"` → `{"status":"current"}`
 
 That's it. Every future push auto-deploys within seconds of the build finishing.
+
+### 3. Admin User Bootstrap
+
+On every deploy, the server runs `app:create-admin` after `migrate`. On the first deploy (empty database), it creates the admin user from the GitHub secrets passed as `X-Admin-*` headers:
+
+| Header | GitHub Secret | Example |
+|--------|--------------|---------|
+| `X-Admin-Email` | `ADMIN_EMAIL` | `admin@example.com` |
+| `X-Admin-Password` | `ADMIN_PASSWORD` | `your-secure-password` |
+| `X-Admin-Name` | `ADMIN_NAME` | `Admin` |
+
+If the admin already exists, the command skips gracefully. You can also run it manually:
+
+```bash
+php artisan app:create-admin --email=admin@example.com --password=secret
+```
+
+> **Important**: `ADMIN_EMAIL` and `ADMIN_PASSWORD` must be added as GitHub secrets before the first push. The `PASSWORD` is only transmitted over HTTPS (as a header) and is never stored in the codebase.
 
 ## Automated Quality Gates
 

@@ -1,20 +1,20 @@
-import { Building2, ExternalLink, MoreVertical } from "lucide-react"
-import { Link } from "@inertiajs/react"
+import { Building2, ExternalLink, MoreVertical } from "lucide-react";
+import { Link } from "@inertiajs/react";
 import {
   DropdownMenu,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuContent,
-} from "@/Components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/Components/ui/sidebar"
-import { cn } from "@/lib/utils"
+} from "@/Components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/Components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 interface NavLogoProps {
-  logo?: string | null
-  name?: string | null
-  appUrl?: string | null
+  logo?: string | null;
+  name?: string | null;
+  appUrl?: string | null;
 }
 
 export function NavLogo({ logo, name, appUrl }: NavLogoProps) {
@@ -27,7 +27,7 @@ export function NavLogo({ logo, name, appUrl }: NavLogoProps) {
             <Building2 className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
-      )
+      );
     }
 
     return (
@@ -36,8 +36,8 @@ export function NavLogo({ logo, name, appUrl }: NavLogoProps) {
           <Building2 className="h-4 w-4 text-primary-foreground" />
         </AvatarFallback>
       </Avatar>
-    )
-  }
+    );
+  };
 
   return (
     <SidebarMenu>
@@ -62,42 +62,42 @@ export function NavLogo({ logo, name, appUrl }: NavLogoProps) {
                 <MoreVertical className="size-4" />
               </button>
             </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className={cn(
-                  "z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-                  "w-56 rounded-lg",
-                )}
-                side="right"
-                align="start"
-                sideOffset={4}
-              >
-                {appUrl && (
-                  <>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <a
-                        href={appUrl}
-                        target="_self"
-                        rel="noopener noreferrer"
-                        className="flex w-full items-center"
-                      >
-                        <span className="flex items-center flex-1">Visit Website</span>
-                        <ExternalLink className="h-4 w-4 ml-auto" />
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem className="cursor-pointer">
-                  <Link href="/dashboard" className="flex w-full items-center">
-                    <span className="flex items-center flex-1">Dashboard</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <DropdownMenuContent
+              className={cn(
+                "z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                "w-56 rounded-lg",
+              )}
+              side="right"
+              align="start"
+              sideOffset={4}
+            >
+              {appUrl && (
+                <>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <a
+                      href={appUrl}
+                      target="_self"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center"
+                    >
+                      <span className="flex items-center flex-1">Visit Website</span>
+                      <ExternalLink className="h-4 w-4 ml-auto" />
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem className="cursor-pointer">
+                <Link href="/dashboard" className="flex w-full items-center">
+                  <span className="flex items-center flex-1">Dashboard</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
 
-export default NavLogo
+export default NavLogo;

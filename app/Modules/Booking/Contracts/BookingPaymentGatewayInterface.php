@@ -34,12 +34,12 @@ interface BookingPaymentGatewayInterface
     public function processRefund(int $bookingId, float $amount): array;
 
     /**
-     * Unique identifier for this gateway (e.g., 'woocommerce', 'offline').
+     * Unique identifier for this gateway (e.g., 'offline', 'stripe').
      */
     public static function getGatewayId(): string;
 
     /**
-     * Human-readable name for this gateway (e.g., 'WooCommerce', 'Offline / Cash').
+     * Human-readable name for this gateway (e.g., 'Offline / Cash', 'Stripe').
      */
     public static function getGatewayName(): string;
 }

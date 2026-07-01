@@ -38,8 +38,11 @@ export function CurrentPasswordInput({
     const redirectTo =
       forgotPasswordRedirectTo ??
       (() => {
-        try { return location.href; }
-        catch { return null; }
+        try {
+          return location.href;
+        } catch {
+          return null;
+        }
       })();
     if (redirectTo) {
       const separator = url.includes("?") ? "&" : "?";
@@ -90,7 +93,9 @@ export function CurrentPasswordInput({
       </div>
       {hasError && (
         <FieldError id={`${id}-error`} role="alert">
-          {errorArray.map((err, idx) => (<span key={idx}>{err}</span>))}
+          {errorArray.map((err, idx) => (
+            <span key={idx}>{err}</span>
+          ))}
         </FieldError>
       )}
       {showHelpText && !hasError && <FieldDescription>{helpText}</FieldDescription>}

@@ -1,5 +1,17 @@
 import * as React from "react";
-import { Globe, ShieldCheck, Bell, Lock, Mail, Wrench, Languages, Puzzle, Building2, Calendar, ShoppingCart } from "lucide-react";
+import {
+  Globe,
+  ShieldCheck,
+  Bell,
+  Lock,
+  Mail,
+  Wrench,
+  Languages,
+  Puzzle,
+  Building2,
+  Calendar,
+  ShoppingCart,
+} from "lucide-react";
 
 const MODULE_COLORS: Record<string, string> = {
   properties: "bg-blue-500",

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\SettingsService;
@@ -12,7 +13,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,24 +27,11 @@ class RegisteredUserController extends Controller
         return Inertia::render('Auth/Register');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(RegisterRequest $request): RedirectResponse
     {
         if (! static::isRegistrationEnabled()) {
             return redirect()->route('login');
         }
-
-        $request->validate([
-            'username' => [
-                'required',
-                'string',
-                'min:3',
-                'max:60',
-                'unique:'.User::class,
-                'regex:/^[a-zA-Z0-9_.-]+$/',
-            ],
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
 
         $user = User::create([
             'username' => $request->username,

@@ -4,18 +4,14 @@ namespace App\Modules\Booking\Services;
 
 use App\Modules\Booking\Contracts\BookingPaymentGatewayInterface;
 use App\Modules\Booking\Gateways\OfflinePaymentGateway;
-use App\Modules\Booking\Gateways\WooCommercePaymentGateway;
 
 class BookingPaymentGateway
 {
     /** @var array<string, class-string<BookingPaymentGatewayInterface>> */
     protected static array $gateways = [];
 
-    protected bool $wooCommerceEnabled;
-
     public function __construct()
     {
-        $this->wooCommerceEnabled = config('booking.woocommerce.enabled', false);
         self::registerDefaultGateways();
     }
 
@@ -49,12 +45,6 @@ class BookingPaymentGateway
     public function getGatewayForBooking(int $bookingId): BookingPaymentGatewayInterface
     {
         self::registerDefaultGateways();
-
-        if ($this->wooCommerceEnabled && isset(self::$gateways['woocommerce'])) {
-            $class = self::$gateways['woocommerce'];
-
-            return new $class;
-        }
 
         return new OfflinePaymentGateway;
     }
@@ -95,7 +85,6 @@ class BookingPaymentGateway
     protected static function registerDefaultGateways(): void
     {
         if (empty(self::$gateways)) {
-            self::registerGateway(WooCommercePaymentGateway::class);
             self::registerGateway(OfflinePaymentGateway::class);
         }
     }

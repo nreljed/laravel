@@ -6,14 +6,9 @@ import { Separator } from "@/Components/ui/separator";
 import { X, CheckCheck, Bell, BellOff, Eye } from "lucide-react";
 import { Link } from "@inertiajs/react";
 import { NotificationItem } from "@/Components/notifications/NotificationItem";
+import type { StructuredNotification } from "@/Components/notifications/NotificationItem";
 
-interface Notification {
-  id: string;
-  type: string;
-  data: Record<string, string>;
-  read_at: string | null;
-  created_at: string;
-}
+type Notification = StructuredNotification;
 
 interface NotificationPanelProps {
   open: boolean;
@@ -43,7 +38,7 @@ export function NotificationPanel({
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent
         side="right"
-        className="w-[90vw] sm:max-w-md p-0 flex flex-col"
+        className="w-[90vw] sm:max-w-md p-0 flex flex-col overflow-hidden"
         showCloseButton={false}
       >
         <SheetHeader className="px-4 pt-4 pb-0">
@@ -69,54 +64,50 @@ export function NotificationPanel({
           </div>
         </SheetHeader>
         <Separator />
-        <div className="flex-1 min-h-0">
-          {loading && notifications.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+        {loading && notifications.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center py-8">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 py-8 text-center">
+            <BellOff className="h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No notifications</p>
+          </div>
+        ) : (
+          <ScrollArea className="flex-1 w-full min-h-0">
+            <div className="divide-y divide-border w-full">
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkRead={onMarkRead}
+                  onDelete={onDelete}
+                />
+              ))}
             </div>
-          ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-              <BellOff className="h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No notifications</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-full w-full">
-              <div className="divide-y divide-border w-full">
-                {notifications.map((notification) => (
-                  <NotificationItem
-                    key={notification.id}
-                    notification={notification}
-                    onMarkRead={onMarkRead}
-                    onDelete={onDelete}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
+          </ScrollArea>
+        )}
+        <div className="shrink-0 border-t border-border px-3 py-2 flex items-center justify-between gap-2">
+          <Link
+            href="/dashboard/notifications"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => onOpenChange(false)}
+          >
+            <Eye className="size-3" />
+            View all
+          </Link>
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto px-2 py-1 text-xs"
+              onClick={onMarkAllRead}
+            >
+              <CheckCheck className="mr-1 size-3" />
+              Mark all read
+            </Button>
           )}
         </div>
-        {!loading && (
-          <div className="border-t border-border px-3 py-2 flex items-center justify-between gap-2">
-            <Link
-              href="/dashboard/notifications"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => onOpenChange(false)}
-            >
-              <Eye className="size-3" />
-              View all
-            </Link>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto px-2 py-1 text-xs"
-                onClick={onMarkAllRead}
-              >
-                <CheckCheck className="mr-1 size-3" />
-                Mark all read
-              </Button>
-            )}
-          </div>
-        )}
       </SheetContent>
     </Sheet>
   );

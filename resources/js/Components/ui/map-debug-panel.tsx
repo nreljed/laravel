@@ -41,12 +41,12 @@ interface MapDebugPanelProps {
 }
 
 function formatCoord(value: number | null): string {
-  if (value === null) return "\u2014";
+  if (value === null) return "\u{2014}";
   return value.toFixed(6);
 }
 
 function formatDate(date: Date | null): string {
-  if (!date) return "\u2014";
+  if (!date) return "\u{2014}";
   return date.toLocaleTimeString();
 }
 
@@ -76,22 +76,37 @@ function DebugRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm">
       <span className="text-muted-foreground font-medium">{label}</span>
-      <span className="text-foreground font-mono text-xs text-right max-w-[60%] truncate" title={typeof value === "string" ? value : undefined}>
+      <span
+        className="text-foreground font-mono text-xs text-right max-w-[60%] truncate"
+        title={typeof value === "string" ? value : undefined}
+      >
         {value}
       </span>
     </div>
   );
 }
 
-function DebugFieldRow({ label, value, present }: { label: string; value: string; present: boolean }) {
+function DebugFieldRow({
+  label,
+  value,
+  present,
+}: {
+  label: string;
+  value: string;
+  present: boolean;
+}) {
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-1 text-sm">
       <div className="flex items-center gap-1.5">
-        <span className={`size-1.5 rounded-full shrink-0 ${present ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+        <span
+          className={`size-1.5 rounded-full shrink-0 ${present ? "bg-green-500" : "bg-muted-foreground/30"}`}
+        />
         <span className="text-muted-foreground font-medium">{label}</span>
       </div>
-      <span className={`font-mono text-xs text-right max-w-[55%] truncate ${present ? "text-foreground" : "text-muted-foreground/50 italic"}`}>
-        {present ? value : "\u2014"}
+      <span
+        className={`font-mono text-xs text-right max-w-[55%] truncate ${present ? "text-foreground" : "text-muted-foreground/50 italic"}`}
+      >
+        {present ? value : "\u{2014}"}
       </span>
     </div>
   );
@@ -142,29 +157,52 @@ export function MapDebugPanel({ data, zoom, defaultOpen = false, className }: Ma
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
               <BugIcon className="mx-auto size-8 mb-2 opacity-40" />
               <p>No location data yet.</p>
-              <p className="text-xs mt-1">Place a marker on the map or use the search to see debug info.</p>
+              <p className="text-xs mt-1">
+                Place a marker on the map or use the search to see debug info.
+              </p>
             </div>
           ) : (
             <>
               <DebugSection label="Coordinates">
                 <DebugRow label="Latitude" value={formatCoord(data!.latitude)} />
                 <DebugRow label="Longitude" value={formatCoord(data!.longitude)} />
-                <DebugRow label="Zoom" value={zoom != null ? <span className="text-blue-600 dark:text-blue-400 font-semibold">{zoom}</span> : "\u2014"} />
-                <DebugRow label="Within bounds" value={
+                <DebugRow
+                  label="Zoom"
+                  value={
+                    zoom != null ? (
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold">{zoom}</span>
+                    ) : (
+                      "\u{2014}"
+                    )
+                  }
+                />
+                <DebugRow
+                  label="Within bounds"
+                  value={
                     data!.isWithinTunisia ? (
-                      <span className="text-green-600 dark:text-green-400 font-semibold">\u2713 Yes</span>
+                      <span className="text-green-600 dark:text-green-400 font-semibold">
+                        \u2713 Yes
+                      </span>
                     ) : (
                       <span className="text-destructive font-semibold">\u2717 No</span>
                     )
                   }
                 />
                 <DebugRow
-                  label={data!.configuredCountry ? `Matches ${data!.configuredCountry} (geo)` : "Country match (geo)"}
+                  label={
+                    data!.configuredCountry
+                      ? `Matches ${data!.configuredCountry} (geo)`
+                      : "Country match (geo)"
+                  }
                   value={
                     data!.countryCodeMatch ? (
-                      <span className="text-green-600 dark:text-green-400 font-semibold">\u2713 Yes</span>
+                      <span className="text-green-600 dark:text-green-400 font-semibold">
+                        \u2713 Yes
+                      </span>
                     ) : (
-                      <span className="text-amber-500 dark:text-amber-400 font-semibold">\u2717 No</span>
+                      <span className="text-amber-500 dark:text-amber-400 font-semibold">
+                        \u2717 No
+                      </span>
                     )
                   }
                 />
@@ -172,20 +210,28 @@ export function MapDebugPanel({ data, zoom, defaultOpen = false, className }: Ma
 
               <DebugSection label="API Fields (green = populated)">
                 <DebugFieldRow label="Name" value={data!.name} present={!!data!.name} />
-                <DebugFieldRow label="Housenumber" value={data!.housenumber} present={!!data!.housenumber} />
+                <DebugFieldRow
+                  label="Housenumber"
+                  value={data!.housenumber}
+                  present={!!data!.housenumber}
+                />
                 <DebugFieldRow label="Street" value={data!.street} present={!!data!.street} />
                 <DebugFieldRow label="District" value={data!.district} present={!!data!.district} />
                 <DebugFieldRow label="City" value={data!.city} present={!!data!.city} />
                 <DebugFieldRow label="State" value={data!.state} present={!!data!.state} />
                 <DebugFieldRow label="Postcode" value={data!.postcode} present={!!data!.postcode} />
-                <DebugFieldRow label="Country" value={data!.country || data!.countryCode} present={!!data!.country} />
+                <DebugFieldRow
+                  label="Country"
+                  value={data!.country || data!.countryCode}
+                  present={!!data!.country}
+                />
                 <DebugFieldRow label="Locality" value={data!.locality} present={!!data!.locality} />
               </DebugSection>
 
               <DebugSection label="Full Address">
                 <div className="px-3 pb-2">
                   <p className="text-xs font-mono text-foreground leading-relaxed break-all">
-                    {data!.fullAddress || "\u2014"}
+                    {data!.fullAddress || "\u{2014}"}
                   </p>
                 </div>
               </DebugSection>
@@ -195,7 +241,9 @@ export function MapDebugPanel({ data, zoom, defaultOpen = false, className }: Ma
                   label="Governorate (matched)"
                   value={
                     data!.matchedGovernorate ? (
-                      <span className="text-green-600 dark:text-green-400">{data!.matchedGovernorate}</span>
+                      <span className="text-green-600 dark:text-green-400">
+                        {data!.matchedGovernorate}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground italic">Not matched</span>
                     )
@@ -205,7 +253,9 @@ export function MapDebugPanel({ data, zoom, defaultOpen = false, className }: Ma
                   label="Locality (matched)"
                   value={
                     data!.matchedCity ? (
-                      <span className="text-green-600 dark:text-green-400">{data!.matchedCity}</span>
+                      <span className="text-green-600 dark:text-green-400">
+                        {data!.matchedCity}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground italic">Not matched</span>
                     )
@@ -214,31 +264,45 @@ export function MapDebugPanel({ data, zoom, defaultOpen = false, className }: Ma
               </DebugSection>
 
               <DebugSection label="Metadata">
-                <DebugRow label="Geocoding source" value={data!.geocodingSource || "\u2014"} />
-                <DebugRow label="OSM ID" value={data!.osmId ? String(data!.osmId) : "\u2014"} />
-                <DebugRow label="OSM type" value={data!.osmType || "\u2014"} />
+                <DebugRow label="Geocoding source" value={data!.geocodingSource || "\u{2014}"} />
+                <DebugRow label="OSM ID" value={data!.osmId ? String(data!.osmId) : "\u{2014}"} />
+                <DebugRow label="OSM type" value={data!.osmType || "\u{2014}"} />
                 <DebugRow label="Last updated" value={formatDate(data!.updatedAt)} />
               </DebugSection>
 
               {data!.overpassStreet && (
                 <DebugSection label="Overpass Street Detection">
-                  <DebugFieldRow label="Street" value={data!.overpassStreet} present={!!data!.overpassStreet} />
-                  <DebugFieldRow label="Highway type" value={data!.overpassHighway || ""} present={!!data!.overpassHighway} />
+                  <DebugFieldRow
+                    label="Street"
+                    value={data!.overpassStreet}
+                    present={!!data!.overpassStreet}
+                  />
+                  <DebugFieldRow
+                    label="Highway type"
+                    value={data!.overpassHighway || ""}
+                    present={!!data!.overpassHighway}
+                  />
                   <DebugRow
                     label="Perp. distance"
-                    value={data!.overpassPerpDist != null ? `${data!.overpassPerpDist.toFixed(1)}m` : "\u2014"}
+                    value={
+                      data!.overpassPerpDist != null
+                        ? `${data!.overpassPerpDist.toFixed(1)}m`
+                        : "\u{2014}"
+                    }
                   />
                   <DebugRow
                     label="Confidence"
                     value={
                       data!.overpassConfidence === "high" ? (
-                        <span className="text-green-600 dark:text-green-400 font-semibold">High</span>
+                        <span className="text-green-600 dark:text-green-400 font-semibold">
+                          High
+                        </span>
                       ) : data!.overpassConfidence === "medium" ? (
                         <span className="text-amber-600 dark:text-amber-400">Medium</span>
                       ) : data!.overpassConfidence === "low" ? (
                         <span className="text-destructive">Low</span>
                       ) : (
-                        "\u2014"
+                        "\u{2014}"
                       )
                     }
                   />

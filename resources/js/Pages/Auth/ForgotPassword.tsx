@@ -24,9 +24,11 @@ const ALLOWED_REDIRECT_PREFIXES = ["/", "/dashboard"];
 
 function isValidRedirectPath(url: string): boolean {
   try {
-    const parsed = new URL(url, window.location.origin);
-    if (parsed.origin !== window.location.origin) return false;
-    return ALLOWED_REDIRECT_PREFIXES.some((prefix) => parsed.pathname.startsWith(prefix) || parsed.pathname === prefix);
+    const parsed = new URL(url, location.origin);
+    if (parsed.origin !== location.origin) return false;
+    return ALLOWED_REDIRECT_PREFIXES.some(
+      (prefix) => parsed.pathname.startsWith(prefix) || parsed.pathname === prefix,
+    );
   } catch {
     return false;
   }
@@ -41,7 +43,7 @@ function sanitizeRedirect(redirectTo: string | null): string | null {
 function getBackButtonLabel(redirectTo: string | null) {
   if (!redirectTo) return "Back to login";
 
-  const redirectUrl = new URL(redirectTo, window.location.origin);
+  const redirectUrl = new URL(redirectTo, location.origin);
   const path = sanitizeRedirect(redirectTo) ? redirectUrl.pathname : "/login";
   const segments = path.split("/").filter(Boolean);
 
@@ -53,13 +55,27 @@ function getBackButtonLabel(redirectTo: string | null) {
   return `Back to ${targetPage.charAt(0).toUpperCase() + targetPage.slice(1)}`;
 }
 
-export default function ForgotPassword({ status, errors: pageErrors }: { status?: string; errors?: Record<string, string> }) {
+export default function ForgotPassword({
+  status,
+  errors: pageErrors,
+}: {
+  status?: string;
+  errors?: Record<string, string>;
+}) {
   const redirectTo = useMemo(() => {
-    const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    const urlParams =
+      typeof window !== "undefined" ? new URLSearchParams(location.search) : new URLSearchParams();
     return sanitizeRedirect(urlParams.get("redirect_to"));
   }, []);
 
-  const { data, setData, post, processing, errors: formErrors, setError } = useForm({
+  const {
+    data,
+    setData,
+    post,
+    processing,
+    errors: formErrors,
+    setError,
+  } = useForm({
     email: "",
   });
 

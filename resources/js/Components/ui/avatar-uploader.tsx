@@ -1,5 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Upload, Image as ImageIcon, Loader2, Pencil, ImagePlus, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Upload,
+  Image as ImageIcon,
+  Loader2,
+  Pencil,
+  ImagePlus,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";

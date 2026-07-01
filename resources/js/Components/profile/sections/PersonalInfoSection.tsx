@@ -232,6 +232,25 @@ export function PersonalInfoSection({
           />
         </SectionField>
       </div>
+
+      <div className="md:col-span-2">
+        <SectionField
+          label="Contact Email"
+          htmlFor="contact_email"
+          error={errors?.contact_email as string}
+          description="A public contact email (separate from your login email)"
+        >
+          <Input
+            id="contact_email"
+            type="email"
+            value={(data?.contact_email as string) || ""}
+            onChange={(e) => handleChange("contact_email", e.target.value)}
+            placeholder="contact@example.com"
+            disabled={loading}
+            aria-invalid={!!errors?.contact_email}
+          />
+        </SectionField>
+      </div>
     </Section>
   );
 }

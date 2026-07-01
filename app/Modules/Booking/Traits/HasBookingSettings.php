@@ -17,7 +17,6 @@ trait HasBookingSettings
         'default_booking_status' => BookingStatus::Pending->value,
         'calendar_default_range' => 2,
         'calendar_max_range' => 12,
-        'woocommerce_product_id' => 0,
         'auto_checkout_grace_hours' => 24,
         'auto_cancel_no_show_hours' => 48,
         'enable_auto_checkout' => true,
@@ -68,7 +67,6 @@ trait HasBookingSettings
             'default_booking_status' => $options['default_booking_status'] ?? self::BOOKING_DEFAULTS['default_booking_status'],
             'calendar_default_range' => $options['calendar_default_range'] ?? self::BOOKING_DEFAULTS['calendar_default_range'],
             'calendar_max_range' => $options['calendar_max_range'] ?? self::BOOKING_DEFAULTS['calendar_max_range'],
-            'woocommerce_product_id' => $options['woocommerce_product_id'] ?? self::BOOKING_DEFAULTS['woocommerce_product_id'],
 
             // Auto-Transition Controls
             'auto_checkout_grace_hours' => $options['auto_checkout_grace_hours'] ?? self::BOOKING_DEFAULTS['auto_checkout_grace_hours'],
@@ -175,10 +173,6 @@ trait HasBookingSettings
 
         if (isset($data['calendar_max_range'])) {
             $sanitized['calendar_max_range'] = max(1, min(12, (int) $data['calendar_max_range']));
-        }
-
-        if (isset($data['woocommerce_product_id'])) {
-            $sanitized['woocommerce_product_id'] = max(0, (int) $data['woocommerce_product_id']);
         }
 
         // Auto-Transition Controls

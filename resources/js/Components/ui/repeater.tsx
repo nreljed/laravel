@@ -495,7 +495,9 @@ function SortableAccordionItem({
                       <Switch
                         id={`${field.name}-${index}`}
                         checked={Boolean(item[field.name])}
-                        onCheckedChange={(checked: boolean) => handleFieldChange(field.name, checked)}
+                        onCheckedChange={(checked: boolean) =>
+                          handleFieldChange(field.name, checked)
+                        }
                         disabled={disabled}
                       />
                       <Label htmlFor={`${field.name}-${index}`}>{field.label}</Label>
@@ -753,9 +755,9 @@ export function Repeater({
 
     if (accordionMode) {
       const newState: Record<string, boolean> = {};
-      newValue.forEach((_, index) => {
+      for (const index of newValue.keys()) {
         newState[index] = index === newIndex;
-      });
+      }
 
       if (controlled) {
         onUiStateChangeRef.current?.(newState);
@@ -827,7 +829,7 @@ export function Repeater({
 
       if (accordionMode) {
         const newState: Record<string, boolean> = {};
-        newValue.forEach((_, i) => {
+        for (const i of newValue.keys()) {
           if (i === index + 1) {
             newState[i] = true;
           } else if (i < index + 1) {
@@ -840,7 +842,7 @@ export function Repeater({
               ? (openItems[originalIndex] ?? accordionDefaultOpen)
               : (localOpenItems[originalIndex] ?? accordionDefaultOpen);
           }
-        });
+        }
         if (controlled) {
           onUiStateChangeRef.current?.(newState);
         } else {

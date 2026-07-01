@@ -1,15 +1,24 @@
-import { useCallback } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Section, SectionField } from "@/Components/section"
 import { Input } from "@/Components/ui/input"
 import { Textarea } from "@/Components/ui/textarea"
 import { NumberInput } from "@/Components/ui/number-input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/Components/ui/select"
-import { Combobox, ComboboxTrigger, ComboboxValue, ComboboxContent, ComboboxInput, ComboboxEmpty, ComboboxList, ComboboxItem } from "@/Components/ui/combobox"
+import { Combobox, ComboboxTrigger, ComboboxValue, ComboboxContent, ComboboxInput, ComboboxEmpty, ComboboxGroup, ComboboxItem, ComboboxLabel, ComboboxList, ComboboxSeparator } from "@/Components/ui/combobox"
 import { Home } from "lucide-react"
+
+interface CityTerm {
+  id: number
+  name: string
+  slug: string
+  governorate: string
+  governorate_slug: string
+}
 
 interface BasicInfoOptions {
   types?: Array<{ id: number; name: string }>
   statuses?: Array<{ id: number; name: string }>
+  cities?: CityTerm[]
   isForRent?: boolean
   bookingEnabled?: boolean
 }
@@ -32,6 +41,7 @@ interface BasicInfoSectionData {
   taxonomies?: {
     property_type?: string
     property_status?: string
+    property_city?: string
   }
 }
 
@@ -45,7 +55,8 @@ interface BasicInfoSectionProps {
 }
 
 export function BasicInfoSection({ data, onChange, errors, loading, onSubmit, options = {} }: BasicInfoSectionProps) {
-  const { types = [], statuses = [], isForRent = false, bookingEnabled = false } = options
+  const { types = [], statuses = [], cities = [], isForRent = false, bookingEnabled = false } = options
+  const [citySearch, setCitySearch] = useState("")
 
   const handleMetaChange = useCallback((field: string, value: unknown) => {
     onChange(`meta.${field}`, value)
@@ -54,6 +65,19 @@ export function BasicInfoSection({ data, onChange, errors, loading, onSubmit, op
   const handleTaxonomyChange = useCallback((taxonomy: string, value: string) => {
     onChange(`taxonomies.${taxonomy}`, value)
   }, [onChange])
+
+  const groupedCities = useMemo(() => {
+    const govMap = new Map<string, CityTerm[]>()
+    for (const city of cities) {
+      const gov = city.governorate
+      if (!govMap.has(gov)) govMap.set(gov, [])
+      govMap.get(gov)!.push(city)
+    }
+    const groups = Array.from(govMap.entries()).map(([governorate, cities]) => ({ governorate, cities }))
+    if (!citySearch) return groups
+    const s = citySearch.toLowerCase()
+    return groups.map((g) => ({ ...g, cities: g.cities.filter((c) => c.name.toLowerCase().includes(s)) })).filter((g) => g.cities.length > 0)
+  }, [cities, citySearch])
 
   return (
     <Section
@@ -82,7 +106,7 @@ export function BasicInfoSection({ data, onChange, errors, loading, onSubmit, op
           disabled={loading}
         >
           <ComboboxTrigger id="property_type" className="w-full font-normal">
-            <ComboboxValue placeholder="Select property type" />
+            <ComboboxValue placeholder="Select your property type" />
           </ComboboxTrigger>
           <ComboboxContent>
             <ComboboxInput placeholder="Search property type..." />
@@ -107,7 +131,7 @@ export function BasicInfoSection({ data, onChange, errors, loading, onSubmit, op
             disabled={loading}
           >
             <ComboboxTrigger id="property_status" className="w-full font-normal">
-              <ComboboxValue placeholder="Select status" />
+              <ComboboxValue placeholder="Select your status" />
             </ComboboxTrigger>
             <ComboboxContent>
               <ComboboxInput placeholder="Search status..." />
@@ -120,6 +144,31 @@ export function BasicInfoSection({ data, onChange, errors, loading, onSubmit, op
             </ComboboxContent>
           </Combobox>
         )}
+      </SectionField>
+
+      <SectionField label="Property City" htmlFor="property_city" error={errors?.["taxonomies.property_city"]} required>
+        <Combobox items={cities.map((c) => ({ value: String(c.id), label: c.name }))} value={data.taxonomies?.property_city || undefined} onValueChange={(value: string) => { handleTaxonomyChange("property_city", value); setCitySearch("") }} disabled={loading}>
+          <ComboboxTrigger id="property_city" className="w-full font-normal">
+            <ComboboxValue placeholder="Select your city" />
+          </ComboboxTrigger>
+          <ComboboxContent>
+            <ComboboxInput placeholder="Search city..." value={citySearch} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCitySearch(e.target.value)} />
+            <ComboboxEmpty>No city found.</ComboboxEmpty>
+            <ComboboxList>
+              {groupedCities.map((group, i) => (
+                <>
+                  {i > 0 && <ComboboxSeparator />}
+                  <ComboboxGroup>
+                    <ComboboxLabel>{group.governorate}</ComboboxLabel>
+                    {group.cities.map((city) => (
+                      <ComboboxItem key={city.id} value={String(city.id)}>{city.name}</ComboboxItem>
+                    ))}
+                  </ComboboxGroup>
+                </>
+              ))}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </SectionField>
 
       <SectionField label="Price" htmlFor="price" error={errors?.price}>

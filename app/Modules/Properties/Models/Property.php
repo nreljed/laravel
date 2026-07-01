@@ -25,8 +25,8 @@ class Property extends Model
         'user_id', 'name', 'slug', 'description', 'address', 'city', 'state',
         'zip', 'country', 'latitude', 'longitude',
         'price', 'currency', 'surface', 'surface_unit',
-        'status', 'featured', 'images', 'amenities', 'metadata',
-        'video_url', 'virtual_tour_url',
+        'status', 'featured', 'metadata', 'booking_settings',
+        'video_url',
     ];
 
     protected static function newFactory(): Factory
@@ -42,9 +42,8 @@ class Property extends Model
             'surface' => 'decimal:2',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
-            'images' => 'array',
-            'amenities' => 'array',
             'metadata' => 'array',
+            'booking_settings' => 'array',
         ];
     }
 
@@ -96,9 +95,9 @@ class Property extends Model
         return $this->belongsToMany(PropertyType::class, 'property_property_type');
     }
 
-    public function categories(): BelongsToMany
+    public function city(): BelongsTo
     {
-        return $this->belongsToMany(PropertyCategory::class, 'property_property_category');
+        return $this->belongsTo(City::class);
     }
 
     public function features(): BelongsToMany

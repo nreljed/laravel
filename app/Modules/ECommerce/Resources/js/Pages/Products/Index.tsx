@@ -4,6 +4,7 @@ import { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/Components/ui/empty";
 import { Badge } from "@/Components/ui/badge";
 import { Input } from "@/Components/ui/input";
 import {
@@ -146,19 +147,24 @@ export default function ProductsIndex({ products, categories, filters }: Product
         </div>
 
         {products.data.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <ShoppingBag className="mb-2 h-10 w-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {hasFilters ? "No products match your filters." : "No products yet."}
-              </p>
-              {!hasFilters && (
-                <Link href={route("dashboard.ecommerce.products.create")}>
-                  <Button variant="link">Create your first product</Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><ShoppingBag /></EmptyMedia>
+              <EmptyTitle>{hasFilters ? "No products found" : "No products yet"}</EmptyTitle>
+              <EmptyDescription>
+                {hasFilters
+                  ? "No products match your filters. Try adjusting your search or filter criteria."
+                  : "Get started by creating your first product."}
+              </EmptyDescription>
+            </EmptyHeader>
+            {!hasFilters && (
+              <EmptyContent>
+                <Button onClick={() => router.visit(route("dashboard.ecommerce.products.create"))}>
+                  <Plus className="mr-2 h-4 w-4" /> Create Product
+                </Button>
+              </EmptyContent>
+            )}
+          </Empty>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

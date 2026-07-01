@@ -72,7 +72,7 @@ export function NotificationPrefsSection({
   const toggleAll = (enable: boolean) => {
     const updated: Record<string, PrefValue> = {};
     for (const types of Object.values(notificationTypes)) {
-      for (const [key] of Object.entries(types)) {
+      for (const key of Object.keys(types)) {
         updated[key] = { in_app: enable, email: enable };
       }
     }
@@ -88,23 +88,29 @@ export function NotificationPrefsSection({
         flat.push({ type, channel, enabled: enabled ?? false });
       }
     }
-    router.post(route("dashboard.account.notification-preferences"), { preferences: flat }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success("Notification preferences updated.");
-        setSaving(false);
+    router.post(
+      route("dashboard.account.notification-preferences"),
+      { preferences: flat },
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success("Notification preferences updated.");
+          setSaving(false);
+        },
+        onError: () => {
+          toast.error("Failed to update notification preferences.");
+          setSaving(false);
+        },
       },
-      onError: () => {
-        toast.error("Failed to update notification preferences.");
-        setSaving(false);
-      },
-    });
+    );
   };
 
-  const [notificationSound, setNotificationSound] = useState(() => localStorage.getItem('notification_sound_enabled') !== 'false');
+  const [notificationSound, setNotificationSound] = useState(
+    () => localStorage.getItem("notification_sound_enabled") !== "false",
+  );
 
   useEffect(() => {
-    localStorage.setItem('notification_sound_enabled', String(notificationSound));
+    localStorage.setItem("notification_sound_enabled", String(notificationSound));
   }, [notificationSound]);
 
   return (
@@ -140,7 +146,9 @@ export function NotificationPrefsSection({
             )}
             <div>
               <p className="text-sm font-medium">Notification Sound</p>
-              <p className="text-xs text-muted-foreground">Play a sound when new notifications arrive</p>
+              <p className="text-xs text-muted-foreground">
+                Play a sound when new notifications arrive
+              </p>
             </div>
           </div>
           <Checkbox
@@ -178,7 +186,7 @@ export function NotificationPrefsSection({
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
                       {(["in_app", "email"] as const).map((channel) => {
-                        const Icon = CHANNEL_ICONS[channel];
+                        const Icon = CHANNEL_ICONS[channel]!;
                         return (
                           <div key={channel} className="flex items-center gap-1.5">
                             <Checkbox

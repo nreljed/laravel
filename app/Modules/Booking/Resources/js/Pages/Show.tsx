@@ -35,7 +35,7 @@ import {
   getStatusLabel,
   PAYMENT_STATUS_BADGE,
 } from "../lib/booking-status";
-import { ArrowLeft, Edit, CalendarDays, Calendar, User, Mail, Phone, DollarSign, Users, Building2, Clock, History, ArrowRight } from "lucide-react";
+import { ArrowLeft, CalendarDays, Calendar, User, Mail, Phone, DollarSign, Users, Building2, Clock, History, ArrowRight, Globe } from "lucide-react";
 
 interface Property {
   id: number;
@@ -50,10 +50,27 @@ interface User {
   email: string;
 }
 
+interface HostPhoneEntry {
+  label: string;
+  phone: string;
+}
+
+interface HostSocialEntry {
+  social_title: string;
+  social_value: string;
+}
+
 interface Booking {
   id: number;
   property: Property | null;
   user: User | null;
+  host_name?: string;
+  host_phone?: string;
+  host_phone_numbers?: HostPhoneEntry[];
+  host_email?: string;
+  host_avatar?: string;
+  host_bio?: string;
+  host_social_media?: HostSocialEntry[];
   start_date: string;
   end_date: string;
   check_in?: string;
@@ -218,9 +235,6 @@ export default function BookingShow({ booking, timezone }: ShowProps) {
               <p className="text-sm text-muted-foreground">Booking #{booking.id} &middot; {formatDateStr(booking.start_date)} &ndash; {formatDateStr(booking.end_date)}</p>
             </div>
           </div>
-          <Link href={route("dashboard.bookings.edit", booking.id)}>
-            <Button variant="outline"><Edit className="mr-1 h-4 w-4" /> Edit</Button>
-          </Link>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -297,19 +311,62 @@ export default function BookingShow({ booking, timezone }: ShowProps) {
               </CardContent>
             </Card>
 
-            {booking.user && (
+            {(booking.host_name || booking.user) && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <User className="h-4 w-4 text-muted-foreground" />
                     Host / Manager
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="font-medium text-foreground">{booking.user.name}</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <a href={`mailto:${booking.user.email}`} className="hover:underline text-foreground">{booking.user.email}</a>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      {booking.host_avatar ? (
+                        <img src={booking.host_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                      ) : null}
+                      <AvatarFallback className="bg-muted text-xs">
+                        {(booking.host_name || booking.user?.name || "H").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-foreground">{booking.host_name || booking.user?.name}</p>
+                      {booking.host_bio && <p className="text-xs text-muted-foreground line-clamp-2">{booking.host_bio}</p>}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {(booking.host_phone_numbers && booking.host_phone_numbers.length > 0
+                      ? booking.host_phone_numbers
+                      : booking.host_phone ? [{ label: "Phone", phone: booking.host_phone }] : []
+                    ).map((entry: HostPhoneEntry, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-muted-foreground min-w-[60px]">{entry.label}:</span>
+                        <a href={`tel:${entry.phone}`} className="hover:underline text-foreground">{entry.phone}</a>
+                      </div>
+                    ))}
+                    {(booking.host_email || booking.user?.email) && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <a href={`mailto:${booking.host_email || booking.user?.email}`} className="hover:underline text-foreground">{(booking.host_email || booking.user?.email)}</a>
+                      </div>
+                    )}
+                    {(booking.host_social_media ?? []).length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {(booking.host_social_media ?? []).map((s: HostSocialEntry, idx: number) => (
+                          <a
+                            key={idx}
+                            href={s.social_value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <Globe className="h-3 w-3" />
+                            {s.social_title}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

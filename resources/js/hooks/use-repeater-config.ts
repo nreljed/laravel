@@ -1,6 +1,7 @@
 import { usePage } from "@inertiajs/react";
 
-type RepeaterFieldType = "text" | "number" | "textarea" | "select" | "phone" | "url" | "date" | "boolean";
+type RepeaterFieldType =
+  "text" | "number" | "textarea" | "select" | "phone" | "url" | "date" | "boolean";
 
 interface RepeaterField {
   type: RepeaterFieldType;

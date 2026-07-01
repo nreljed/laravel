@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Modules\ModuleLoader;
 use App\Modules\ModuleRegistry;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,12 +38,6 @@ class ModuleServiceProvider extends ServiceProvider
                 if (is_dir($path)) {
                     $this->loadMigrationsFrom($path);
                 }
-            }
-
-            foreach ($module->permissions() as $permission) {
-                Gate::define($permission['slug'], function ($user) use ($permission) {
-                    return $user->hasPermission($permission['slug']);
-                });
             }
         }
     }

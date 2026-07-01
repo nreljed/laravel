@@ -1,7 +1,7 @@
-import * as React from "react"
-import { Link, usePage } from "@inertiajs/react"
-import { ChevronRight } from "lucide-react"
-import { Badge } from "@/Components/ui/badge"
+import * as React from "react";
+import { Link, usePage } from "@inertiajs/react";
+import { ChevronRight } from "lucide-react";
+import { Badge } from "@/Components/ui/badge";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -9,99 +9,90 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/Components/ui/sidebar"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/Components/ui/collapsible"
-import { cn } from "@/lib/utils"
+} from "@/Components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/Components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
-  title: string
-  url?: string
-  icon?: React.ComponentType<{ className?: string }> | string
-  items?: NavItem[]
-  badge?: string
-  badgeVariant?: "default" | "secondary" | "outline" | "destructive"
-  permission?: string
-  module_slug?: string
-  showModeBadge?: boolean
+  title: string;
+  url?: string;
+  icon?: React.ComponentType<{ className?: string }> | string;
+  items?: NavItem[];
+  badge?: string;
+  badgeVariant?: "default" | "secondary" | "outline" | "destructive";
+  permission?: string;
+  module_slug?: string;
+  showModeBadge?: boolean;
+  groupLabel?: string;
 }
 
 interface NavMainProps {
-  items?: NavItem[]
-  defaultOpenKeys?: string[]
-  iconMap?: Record<string, React.ComponentType<{ className?: string }>>
+  items?: NavItem[];
+  defaultOpenKeys?: string[];
+  iconMap?: Record<string, React.ComponentType<{ className?: string }>>;
 }
 
 function normalizeUrl(url: string | undefined): string {
-  if (!url) return ""
+  if (!url) return "";
   try {
-    return new URL(url, globalThis.location?.origin).pathname
+    return new URL(url, globalThis.location?.origin).pathname;
   } catch {
-    return url
+    return url;
   }
 }
 
 const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProps) => {
-  const inertiaPage = usePage()
-  const inertiaUrl = inertiaPage.url
+  const inertiaPage = usePage();
+  const inertiaUrl = inertiaPage.url;
   const currentUrl =
-    globalThis.window !== undefined ? inertiaUrl || globalThis.location.pathname : inertiaUrl || ""
+    globalThis.window !== undefined ? inertiaUrl || location.pathname : inertiaUrl || "";
 
   const isActive = React.useCallback(
     (item: NavItem) => {
-      if (!item.url) return false
+      if (!item.url) return false;
       if (item.items && item.items.length > 0) {
         const hasActiveChild = item.items.some(
-          (subItem) => subItem.url && normalizeUrl(subItem.url) !== normalizeUrl(item.url) && currentUrl === normalizeUrl(subItem.url),
-        )
-        return hasActiveChild
+          (subItem) =>
+            subItem.url &&
+            normalizeUrl(subItem.url) !== normalizeUrl(item.url) &&
+            currentUrl === normalizeUrl(subItem.url),
+        );
+        return hasActiveChild;
       }
-      return currentUrl === normalizeUrl(item.url)
+      return currentUrl === normalizeUrl(item.url);
     },
     [currentUrl],
-  )
+  );
 
   const isParentActive = React.useCallback(
     (item: NavItem) => {
-      if (!item.items) return isActive(item)
-      return item.items.some((subItem) => subItem.url && currentUrl === normalizeUrl(subItem.url))
+      if (!item.items) return isActive(item);
+      return item.items.some((subItem) => subItem.url && currentUrl === normalizeUrl(subItem.url));
     },
     [currentUrl, isActive],
-  )
+  );
 
   const resolveIcon = React.useCallback(
     (iconProp: NavItem["icon"]): React.ComponentType<{ className?: string }> | null => {
-      if (!iconProp) return null
+      if (!iconProp) return null;
       if (typeof iconProp === "function" || (typeof iconProp === "object" && iconProp !== null)) {
-        return iconProp as React.ComponentType<{ className?: string }>
+        return iconProp as React.ComponentType<{ className?: string }>;
       }
       if (typeof iconProp === "string" && iconMap[iconProp]) {
-        return iconMap[iconProp]
+        return iconMap[iconProp];
       }
-      return null
+      return null;
     },
     [iconMap],
-  )
-
-  const renderIcon = React.useCallback(
-    (iconProp: NavItem["icon"]) => {
-      const IconComponent = resolveIcon(iconProp)
-      if (!IconComponent) return null
-      return <IconComponent className="size-4 shrink-0" />
-    },
-    [resolveIcon],
-  )
+  );
 
   return (
     <SidebarMenu>
       {items.map((item) => {
-        const hasChildren = item.items && item.items.length > 0
-        const isItemActive = isActive(item)
-        const parentActive = isParentActive(item)
-        const IconComponent = resolveIcon(item.icon)
+        const hasChildren = item.items && item.items.length > 0;
+        const isItemActive = isActive(item);
+        const parentActive = isParentActive(item);
+        const IconComponent = resolveIcon(item.icon);
 
         if (hasChildren) {
           return (
@@ -147,7 +138,7 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
-          )
+          );
         }
 
         return (
@@ -178,11 +169,11 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-        )
+        );
       })}
     </SidebarMenu>
-  )
-}
+  );
+};
 
-export { NavMain }
-export type { NavItem }
+export { NavMain };
+export type { NavItem };

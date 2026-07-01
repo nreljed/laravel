@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Services\EmailTemplateService;
+use App\Mail\DynamicMailable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -19,16 +19,12 @@ class SendEmail implements ShouldQueue
         protected array $data = [],
     ) {}
 
-    public function handle(EmailTemplateService $templateService): void
+    public function handle(): void
     {
         try {
             $data = array_merge($this->data, ['subject' => $this->subject]);
-            $html = $templateService->renderWithLayout($this->template, $data);
 
-            Mail::html($html, function ($message) {
-                $message->to($this->to)
-                    ->subject($this->subject);
-            });
+            Mail::to($this->to)->send(new DynamicMailable($this->template, $data));
         } catch (\Throwable $e) {
             Log::error('[SendEmail] Failed to send email to: '.$this->to.' | Subject: '.$this->subject.' | Error: '.$e->getMessage());
         }

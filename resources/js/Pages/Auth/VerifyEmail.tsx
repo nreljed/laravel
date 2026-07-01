@@ -15,7 +15,13 @@ import {
 } from "@/Components/ui/card";
 import GuestLayout from "@/Layouts/GuestLayout";
 
-export default function VerifyEmail({ status, errors: pageErrors }: { status?: string; errors?: Record<string, string> }) {
+export default function VerifyEmail({
+  status,
+  errors: pageErrors,
+}: {
+  status?: string;
+  errors?: Record<string, string>;
+}) {
   const { props } = usePage();
   const errorsFromPage = pageErrors || (props.errors as Record<string, string>) || {};
   const { post, processing, errors: formErrors } = useForm({});
@@ -32,8 +38,8 @@ export default function VerifyEmail({ status, errors: pageErrors }: { status?: s
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">Verify your email</CardTitle>
           <CardDescription>
-            Thanks for signing up! Before getting started, please verify your email
-            address by clicking the link we sent you.
+            Thanks for signing up! Before getting started, please verify your email address by
+            clicking the link we sent you.
           </CardDescription>
         </CardHeader>
         <form onSubmit={submit}>

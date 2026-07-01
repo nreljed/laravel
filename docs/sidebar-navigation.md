@@ -108,7 +108,7 @@ if (navItem.module_slug === "bookings" && userMode === "guest") {
 ```
 
 - Guest mode shows only "My Bookings" under "My Trips" label
-- Host mode shows the full Bookings dropdown (All Bookings, Add Booking, Calendar)
+- Host mode shows the full Bookings dropdown (All Bookings, Calendar)
 - Mode switch trigger in sidebar footer: POST to `dashboard.switch-mode`
 
 ---

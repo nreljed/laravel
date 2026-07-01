@@ -1,19 +1,26 @@
-import * as React from "react"
-import { Section, SectionField } from "@/Components/section"
-import { Input } from "@/Components/ui/input"
-import { LogoUploader } from "@/Components/settings/LogoUploader"
-import { Globe } from "lucide-react"
+import * as React from "react";
+import { Section, SectionField } from "@/Components/section";
+import { Input } from "@/Components/ui/input";
+import { LogoUploader } from "@/Components/settings/LogoUploader";
+import { Globe } from "lucide-react";
 
 interface GeneralSectionProps {
-  data: Record<string, string | undefined>
-  onChange: (field: string, value: string) => void
-  errors: Record<string, unknown>
-  loading?: boolean
-  onSubmit?: (e: React.FormEvent) => void
-  asAccordion?: boolean
+  data: Record<string, string | undefined>;
+  onChange: (field: string, value: string) => void;
+  errors: Record<string, unknown>;
+  loading?: boolean;
+  onSubmit?: (e: React.FormEvent) => void;
+  asAccordion?: boolean;
 }
 
-function GeneralSection({ data, onChange, errors, loading, onSubmit, asAccordion }: GeneralSectionProps) {
+function GeneralSection({
+  data,
+  onChange,
+  errors,
+  loading,
+  onSubmit,
+  asAccordion,
+}: GeneralSectionProps) {
   return (
     <Section
       title="App Settings"
@@ -21,7 +28,7 @@ function GeneralSection({ data, onChange, errors, loading, onSubmit, asAccordion
       icon={Globe}
       onSubmit={onSubmit}
       loading={loading}
-      error={errors?.general as string || errors?.message as string}
+      error={(errors?.general as string) || (errors?.message as string)}
       fieldErrors={errors as Record<string, string[]>}
       submitLabel="Save Changes"
       asAccordion={asAccordion}
@@ -84,7 +91,7 @@ function GeneralSection({ data, onChange, errors, loading, onSubmit, asAccordion
         />
       </SectionField>
     </Section>
-  )
+  );
 }
 
-export { GeneralSection }
+export { GeneralSection };

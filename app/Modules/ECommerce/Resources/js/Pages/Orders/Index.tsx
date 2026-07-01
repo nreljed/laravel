@@ -1,5 +1,5 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { Search, X, Eye } from "lucide-react";
+import { Search, X, Eye, ShoppingCart, Users } from "lucide-react";
 import { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
@@ -30,6 +30,7 @@ import {
   PaginationPrevious,
 } from "@/Components/ui/pagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@/Components/ui/empty";
 
 interface OrderItem {
   id: number;
@@ -186,11 +187,13 @@ export default function OrdersIndex({ orders, customers, filters }: OrdersIndexP
             </div>
 
             {orders && orders.data.length === 0 ? (
-              <Card>
-                <CardContent className="py-16 text-center">
-                  <p className="text-sm text-muted-foreground">No orders found.</p>
-                </CardContent>
-              </Card>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon"><ShoppingCart /></EmptyMedia>
+                  <EmptyTitle>No orders found</EmptyTitle>
+                  <EmptyDescription>No orders match your criteria. Try adjusting your filters.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : orders ? (
               <>
                 <Card>
@@ -285,11 +288,13 @@ export default function OrdersIndex({ orders, customers, filters }: OrdersIndexP
             </div>
 
             {customers && customers.data.length === 0 ? (
-              <Card>
-                <CardContent className="py-16 text-center">
-                  <p className="text-sm text-muted-foreground">No customers yet.</p>
-                </CardContent>
-              </Card>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon"><Users /></EmptyMedia>
+                  <EmptyTitle>No customers yet</EmptyTitle>
+                  <EmptyDescription>Customers will appear here once they place their first order.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : customers ? (
               <>
                 <Card>

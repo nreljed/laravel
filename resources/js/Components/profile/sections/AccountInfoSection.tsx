@@ -29,7 +29,21 @@ export function AccountInfoSection({
           <p className="font-medium text-foreground">{String(user?.id ?? "-")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground min-w-[120px]">Date Registration:</p>
+          <p className="text-sm text-muted-foreground min-w-[120px]">Username:</p>
+          <p className="font-medium text-foreground">{String(user?.user_login ?? "-")}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground min-w-[120px]">Email:</p>
+          <p className="font-medium text-foreground">{String(user?.user_email ?? "-")}</p>
+        </div>
+        {!!user?.contact_email && String(user.contact_email) !== String(user.user_email) && (
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground min-w-[120px]">Contact:</p>
+            <p className="font-medium text-foreground">{String(user.contact_email)}</p>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground min-w-[120px]">Registered:</p>
           <p className="font-medium text-foreground">
             {user?.user_registered
               ? (() => {

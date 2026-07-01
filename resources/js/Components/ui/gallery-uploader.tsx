@@ -142,31 +142,33 @@ export function GalleryUploader({
   const [activeImage, setActiveImage] = React.useState<GalleryImageItem | null>(null);
 
   React.useEffect(() => {
-    if (images && Array.isArray(images)) {
-      let processed = [...images];
-
-      if (thumbnailUrl && !userHasSelectedFeaturedRef.current && enableFeatured) {
-        const normalizedThumbnail = (thumbnailUrl ?? "").split("?")[0]?.replace(/\/$/, "") ?? "";
-        processed = processed.map((img) => {
-          const url = getImageUrl(img);
-          const normalizedUrl = (url ?? "").split("?")[0]?.replace(/\/$/, "") ?? "";
-          return normalizedUrl === normalizedThumbnail
-            ? { ...img, featured: true }
-            : { ...img, featured: false };
-        });
-      } else if (enableFeatured) {
-        const hasExplicitFeatured = processed.some((img) => img.featured === true);
-        if (!hasExplicitFeatured && processed.length > 0) {
-          processed = processed.map((img, i) =>
-            i === 0 ? { ...img, featured: true } : { ...img, featured: false },
-          );
-        }
-      } else {
-        processed = processed.map((img) => ({ ...img, featured: false }));
-      }
-
-      setUploadedImages(processed);
+    if (!(images && Array.isArray(images))) {
+      return;
     }
+
+    let processed = [...images];
+
+    if (thumbnailUrl && !userHasSelectedFeaturedRef.current && enableFeatured) {
+      const normalizedThumbnail = (thumbnailUrl ?? "").split("?", 1)[0]?.replace(/\/$/, "") ?? "";
+      processed = processed.map((img) => {
+        const url = getImageUrl(img);
+        const normalizedUrl = (url ?? "").split("?", 1)[0]?.replace(/\/$/, "") ?? "";
+        return normalizedUrl === normalizedThumbnail
+          ? { ...img, featured: true }
+          : { ...img, featured: false };
+      });
+    } else if (enableFeatured) {
+      const hasExplicitFeatured = processed.some((img) => img.featured === true);
+      if (!hasExplicitFeatured && processed.length > 0) {
+        processed = processed.map((img, i) =>
+          i === 0 ? { ...img, featured: true } : { ...img, featured: false },
+        );
+      }
+    } else {
+      processed = processed.map((img) => ({ ...img, featured: false }));
+    }
+
+    setUploadedImages(processed);
   }, [images, thumbnailUrl, enableFeatured]);
 
   React.useEffect(() => {
@@ -233,7 +235,7 @@ export function GalleryUploader({
 
   const onDrop = React.useCallback(
     async (acceptedFiles: File[], fileRejections: FileRejection[], _event: DropEvent) => {
-      fileRejections.forEach(({ file, errors }) => {
+      for (const { file, errors } of fileRejections) {
         const errorMessages = errors.map((e) => {
           switch (e.code) {
             case "file-too-large": {
@@ -248,7 +250,7 @@ export function GalleryUploader({
           }
         });
         toast.error(`${file.name}: ${errorMessages.join(", ")}`);
-      });
+      }
 
       if (acceptedFiles.length === 0) return;
 
@@ -429,11 +431,13 @@ export function GalleryUploader({
   }, []);
 
   const handleConfirmDelete = React.useCallback(async () => {
-    if (imageToDelete) {
-      await handleRemoveUploaded(imageToDelete);
-      setImageToDelete(null);
-      setShowDeleteDialog(false);
+    if (!imageToDelete) {
+      return;
     }
+
+    await handleRemoveUploaded(imageToDelete);
+    setImageToDelete(null);
+    setShowDeleteDialog(false);
   }, [imageToDelete, handleRemoveUploaded]);
 
   const handleCancelPending = React.useCallback((pendingFile: PendingFile) => {
@@ -590,7 +594,7 @@ export function GalleryUploader({
                 : enableDrag
                   ? "Drag to reorder"
                   : ""}
-              {!isSelecting && enableDrag && enableFeatured ? " \u2022 " : ""}
+              {!isSelecting && enableDrag && enableFeatured ? " \u{2022} " : ""}
               {!isSelecting && enableDrag && enableFeatured ? "Click star to set as cover" : ""}
             </p>
             <div className="flex items-center gap-1">
@@ -775,8 +779,7 @@ export function GalleryUploader({
       {!isUploading && uploadedImages.length < maxImages && (
         <div
           {...getRootProps()}
-          className={
-            `relative flex flex-col items-center justify-center gap-3 p-6
+          className={`relative flex flex-col items-center justify-center gap-3 p-6
             border-2 border-dashed rounded-lg cursor-pointer
             transition-colors duration-200 ease-in-out
             ${
@@ -786,8 +789,7 @@ export function GalleryUploader({
                   ? "border-destructive bg-destructive/5"
                   : "border-border hover:border-primary/50 hover:bg-muted/50"
             }
-            ${uploadedImages.length >= maxImages ? "opacity-50 cursor-not-allowed" : ""}`
-          }
+            ${uploadedImages.length >= maxImages ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <input {...getInputProps()} className="sr-only" aria-hidden="true" tabIndex={-1} />
 
@@ -804,7 +806,7 @@ export function GalleryUploader({
               <p className="text-sm font-medium">Click or drag images here</p>
             )}
             <p className="text-xs text-muted-foreground">
-              JPG, PNG, GIF or WebP up to 50MB {"\u2022"}
+              JPG, PNG, GIF or WebP up to 50MB {"\u{2022}"}
               {uploadedImages.length}/{maxImages} images
             </p>
           </div>

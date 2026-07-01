@@ -8,7 +8,7 @@ export default function NotificationBell() {
   const [open, setOpen] = React.useState(false);
   const {
     unreadCount,
-    notifications,
+    recentNotifications: notifications,
     loading,
     markRead,
     markAllRead,

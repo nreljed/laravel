@@ -19,7 +19,11 @@ interface RegistrationSectionProps {
   asAccordion?: boolean;
 }
 
-export function RegistrationSection({ settings, roles = [], asAccordion }: RegistrationSectionProps) {
+export function RegistrationSection({
+  settings,
+  roles = [],
+  asAccordion,
+}: RegistrationSectionProps) {
   const [data, setData] = useState(() => {
     const storedRole = settings.default_role ?? "crm_user";
     const validRole = roles.some((r) => r.slug === storedRole) ? storedRole : "crm_user";
@@ -39,8 +43,15 @@ export function RegistrationSection({ settings, roles = [], asAccordion }: Regis
     router.put(route("dashboard.admin.settings.update"), data, {
       preserveScroll: true,
       preserveState: true,
-      onSuccess: () => { toast.success("Registration settings saved."); setLoading(false); },
-      onError: (errs) => { setErrors(errs); toast.error("Failed to save."); setLoading(false); },
+      onSuccess: () => {
+        toast.success("Registration settings saved.");
+        setLoading(false);
+      },
+      onError: (errs) => {
+        setErrors(errs);
+        toast.error("Failed to save.");
+        setLoading(false);
+      },
     });
   };
 
@@ -109,10 +120,17 @@ export function RegistrationSection({ settings, roles = [], asAccordion }: Regis
           <Checkbox
             id="require_email_verification"
             checked={data.require_email_verification === "1"}
-            onCheckedChange={(c) => setData((p) => ({ ...p, require_email_verification: c ? "1" : "0" }))}
+            onCheckedChange={(c) =>
+              setData((p) => ({ ...p, require_email_verification: c ? "1" : "0" }))
+            }
           />
-          <Label htmlFor="require_email_verification" className="cursor-pointer font-normal text-sm">
-            {data.require_email_verification === "1" ? "Verification required" : "Verification optional"}
+          <Label
+            htmlFor="require_email_verification"
+            className="cursor-pointer font-normal text-sm"
+          >
+            {data.require_email_verification === "1"
+              ? "Verification required"
+              : "Verification optional"}
           </Label>
         </div>
       </SectionField>

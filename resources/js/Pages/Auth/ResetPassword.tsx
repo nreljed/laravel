@@ -1,9 +1,8 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useForm, router } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { PasswordInput } from "@/Components/ui/password-input";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
-import { ErrorMessage } from "@/Components/error-message";
 import { Spinner } from "@/Components/ui/spinner";
 import { resetPasswordSchema } from "@/lib/schemas";
 import { zodErrorsToMap } from "@/lib/utils";
@@ -18,8 +17,26 @@ import {
 import GuestLayout from "@/Layouts/GuestLayout";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 
-export default function ResetPassword({ token, email, status, errors: pageErrors }: { token: string; email: string; status?: string; errors?: Record<string, string> }) {
-  const { data, setData, post, processing, errors: formErrors, reset, setError } = useForm({
+export default function ResetPassword({
+  token,
+  email,
+  status,
+  errors: pageErrors,
+}: {
+  token: string;
+  email: string;
+  status?: string;
+  errors?: Record<string, string>;
+}) {
+  const {
+    data,
+    setData,
+    post,
+    processing,
+    errors: formErrors,
+    reset,
+    setError,
+  } = useForm({
     token: token,
     email: email,
     password: "",
@@ -64,7 +81,8 @@ export default function ResetPassword({ token, email, status, errors: pageErrors
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl">Password Reset Successful!</CardTitle>
             <CardDescription>
-              Your password has been reset successfully. You will be redirected to the login page shortly.
+              Your password has been reset successfully. You will be redirected to the login page
+              shortly.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -128,7 +146,12 @@ export default function ResetPassword({ token, email, status, errors: pageErrors
             <Button
               type="submit"
               className="w-full"
-              disabled={processing || !data.password || !data.password_confirmation || data.password !== data.password_confirmation}
+              disabled={
+                processing ||
+                !data.password ||
+                !data.password_confirmation ||
+                data.password !== data.password_confirmation
+              }
             >
               {processing && <Spinner className="mr-2" />}
               Reset Password

@@ -1,9 +1,20 @@
 import { useState, useMemo, useCallback } from "react";
-import { Head, router, usePage } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import { toast } from "sonner";
 import {
-  Bell, BellOff, CheckCheck, Check, Trash2, X, Loader2, Search,
-  Calendar, Home, ShoppingCart, User, FileText,
+  Bell,
+  BellOff,
+  CheckCheck,
+  Check,
+  Trash2,
+  X,
+  Loader2,
+  Search,
+  Calendar,
+  Home,
+  ShoppingCart,
+  User,
+  FileText,
 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
@@ -18,18 +29,26 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationItem } from "@/Components/notifications/NotificationItem";
 import { NotificationDetailDialog } from "@/Components/notifications/NotificationDetailDialog";
+import type { Severity } from "@/Components/notifications/NotificationItem";
 
-interface Notification {
+interface StructuredNotification {
   id: string;
   type: string;
-  data: Record<string, string>;
+  title?: string;
+  message?: string;
+  link?: string;
+  module?: string;
+  severity?: Severity;
+  is_read?: string;
+  data?: Record<string, string>;
   read_at: string | null;
   created_at: string;
+  created_at_relative?: string;
 }
 
 interface NotificationsPageProps {
   notifications: {
-    data: Notification[];
+    data: StructuredNotification[];
     total: number;
     current_page: number;
     last_page: number;
@@ -59,11 +78,33 @@ function getDateGroup(dateStr: string): string {
 
 function inferTypeGroup(type: string): string {
   const t = type.toLowerCase();
-  if (t.includes("booking") || t.includes("stay") || t.includes("checkin") || t.includes("checkout")) return "booking";
+  if (
+    t.includes("booking") ||
+    t.includes("stay") ||
+    t.includes("checkin") ||
+    t.includes("checkout")
+  )
+    return "booking";
   if (t.includes("property") || t.includes("home")) return "property";
-  if (t.includes("account") || t.includes("user") || t.includes("password") || t.includes("email") || t.includes("register") || t.includes("profile")) return "account";
-  if (t.includes("post") || t.includes("page") || t.includes("content") || t.includes("comment")) return "content";
-  if (t.includes("order") || t.includes("cart") || t.includes("product") || t.includes("stock") || t.includes("ecommerce")) return "orders";
+  if (
+    t.includes("account") ||
+    t.includes("user") ||
+    t.includes("password") ||
+    t.includes("email") ||
+    t.includes("register") ||
+    t.includes("profile")
+  )
+    return "account";
+  if (t.includes("post") || t.includes("page") || t.includes("content") || t.includes("comment"))
+    return "content";
+  if (
+    t.includes("order") ||
+    t.includes("cart") ||
+    t.includes("product") ||
+    t.includes("stock") ||
+    t.includes("ecommerce")
+  )
+    return "orders";
   if (t.includes("payment")) return "orders";
   return "other";
 }
@@ -88,28 +129,34 @@ export default function NotificationsPage({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
-  const [detailNotification, setDetailNotification] = useState<Notification | null>(null);
+  const [detailNotification, setDetailNotification] = useState<StructuredNotification | null>(null);
 
-  const allNotifications = notifsData.data;
+  const [allNotifications, setAllNotifications] = useState(notifsData.data);
   const { current_page, last_page } = notifsData;
+
+  const isUnread = (n: StructuredNotification) => n.is_read === "0" || !n.read_at;
+  const getTitle = (n: StructuredNotification) =>
+    n.title || n.data?.title || n.data?.subject || n.data?.message || "";
+  const getMessage = (n: StructuredNotification) =>
+    n.message || n.data?.message || n.data?.body || "";
 
   const filtered = useMemo(() => {
     let result = allNotifications;
     if (readFilter === "unread") {
-      result = result.filter((n) => !n.read_at);
+      result = result.filter((n) => isUnread(n));
     } else if (readFilter === "read") {
-      result = result.filter((n) => n.read_at);
+      result = result.filter((n) => !isUnread(n));
     }
     if (typeFilter !== "all") {
       result = result.filter((n) => inferTypeGroup(n.type) === typeFilter);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((n) =>
-        (n.data.title || "").toLowerCase().includes(q) ||
-        (n.data.message || "").toLowerCase().includes(q) ||
-        (n.data.body || "").toLowerCase().includes(q) ||
-        n.type.toLowerCase().includes(q)
+      result = result.filter(
+        (n) =>
+          getTitle(n).toLowerCase().includes(q) ||
+          getMessage(n).toLowerCase().includes(q) ||
+          n.type.toLowerCase().includes(q),
       );
     }
     return result;
@@ -158,61 +205,126 @@ export default function NotificationsPage({
     });
   };
 
-  const markAsRead = (id: string) => {
-    router.put(
-      route("dashboard.notifications.mark-read"),
-      { id },
-      {
-        preserveScroll: true,
-        onSuccess: () => toast.success("Marked as read"),
-      },
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        router.post(route("api.notifications.mark-read"), { id } as any, {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: () => resolve(),
+          onError: () => reject(),
+        });
+      });
+      setAllNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, is_read: "1", read_at: new Date().toISOString() } : n,
+        ),
+      );
+      toast.success("Marked as read");
+    } catch {
+      toast.error("Failed to mark as read");
+    }
   };
 
-  const markAllAsRead = () => {
-    router.post(route("dashboard.notifications.mark-all-read"), {}, {
-      preserveScroll: true,
-      onSuccess: () => toast.success("All notifications marked as read"),
-    });
+  const markAllAsRead = async () => {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        router.post(route("api.notifications.mark-all-read"), {} as any, {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: () => resolve(),
+          onError: () => reject(),
+        });
+      });
+      setAllNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: "1", read_at: new Date().toISOString() })),
+      );
+      setSelectedIds(new Set());
+      toast.success("All notifications marked as read");
+    } catch {
+      toast.error("Failed to mark all as read");
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    router.delete(route("dashboard.notifications.destroy", { id }), {
-      preserveScroll: true,
-      onSuccess: () => toast.success("Notification deleted"),
-    });
+  const deleteNotification = async (id: string) => {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        router.delete(route("api.notifications.destroy", { id } as any), {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: () => resolve(),
+          onError: () => reject(),
+        });
+      });
+      setAllNotifications((prev) => prev.filter((n) => n.id !== id));
+      setSelectedIds(new Set());
+      toast.success("Notification deleted");
+    } catch {
+      toast.error("Failed to delete notification");
+    }
   };
 
-  const batchMarkRead = () => {
+  const batchMarkRead = async () => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     clearSelection();
-    router.post(route("dashboard.notifications.mark-bulk"), { ids }, {
-      preserveScroll: true,
-      onSuccess: () => toast.success("Selected notifications marked as read"),
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        router.post(route("api.notifications.mark-bulk"), { ids } as any, {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: () => resolve(),
+          onError: () => reject(),
+        });
+      });
+      setAllNotifications((prev) =>
+        prev.map((n) =>
+          ids.includes(n.id) ? { ...n, is_read: "1", read_at: new Date().toISOString() } : n,
+        ),
+      );
+      toast.success("Selected notifications marked as read");
+    } catch {
+      toast.error("Failed to mark selected as read");
+    }
   };
 
-  const batchDelete = () => {
+  const batchDelete = async () => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     clearSelection();
-    router.post(route("dashboard.notifications.delete-bulk"), { ids }, {
-      preserveScroll: true,
-      onSuccess: () => toast.success("Selected notifications deleted"),
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        router.post(route("api.notifications.delete-bulk"), { ids } as any, {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: () => resolve(),
+          onError: () => reject(),
+        });
+      });
+      setAllNotifications((prev) => prev.filter((n) => !ids.includes(n.id)));
+      toast.success("Selected notifications deleted");
+    } catch {
+      toast.error("Failed to delete selected notifications");
+    }
   };
 
-  const showDetail = useCallback((id: string) => {
-    const n = allNotifications.find((n) => n.id === id);
-    if (n) setDetailNotification(n);
-  }, [allNotifications]);
+  const showDetail = useCallback(
+    (id: string) => {
+      const n = allNotifications.find((n) => n.id === id);
+      if (n) setDetailNotification(n);
+    },
+    [allNotifications],
+  );
 
   const loadMore = () => {
     if (current_page >= last_page) return;
     setLoading(true);
     router.get(
-      route("dashboard.notifications", { filter: readFilter, type_filter: typeFilter, page: current_page + 1 }),
+      route("dashboard.notifications", {
+        filter: readFilter,
+        type_filter: typeFilter,
+        page: current_page + 1,
+      }),
       {},
       {
         preserveScroll: true,
@@ -296,7 +408,12 @@ export default function NotificationsPage({
               <Check className="mr-1 size-3" />
               Mark read
             </Button>
-            <Button variant="ghost" size="sm" onClick={batchDelete} className="text-destructive hover:text-destructive">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={batchDelete}
+              className="text-destructive hover:text-destructive"
+            >
               <Trash2 className="mr-1 size-3" />
               Delete
             </Button>
@@ -341,7 +458,11 @@ export default function NotificationsPage({
           <div className="space-y-2">
             {Object.entries(grouped).map(([dateGroup, items]) => (
               <div key={dateGroup} className="rounded-lg border bg-card">
-                <Accordion type="single" collapsible defaultValue={defaultOpenGroups.has(dateGroup) ? dateGroup : undefined}>
+                <Accordion
+                  type="single"
+                  collapsible
+                  defaultValue={defaultOpenGroups.has(dateGroup) ? dateGroup : undefined}
+                >
                   <AccordionItem value={dateGroup} className="border-0">
                     <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -392,7 +513,9 @@ export default function NotificationsPage({
       <NotificationDetailDialog
         notification={detailNotification}
         open={detailNotification !== null}
-        onOpenChange={(open) => { if (!open) setDetailNotification(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDetailNotification(null);
+        }}
         onMarkRead={markAsRead}
         onDelete={deleteNotification}
       />

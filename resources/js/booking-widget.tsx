@@ -21,14 +21,19 @@ function mountWidgets(): void {
 
     const props = {
       propertyId: Number(container.dataset.propertyId) || 0,
-      minDate: container.dataset.minDate || new Date().toISOString().split("T")[0],
+      minDate: container.dataset.minDate || new Date().toISOString().split("T", 1)[0],
       maxDate: container.dataset.maxDate || undefined,
       guests: Number(container.dataset.guests) || 1,
       theme: (container.dataset.theme as "light" | "dark" | "system") || "system",
     };
 
     root.render(
-      <ThemeProvider attribute="class" defaultTheme={props.theme} enableSystem disableTransitionOnChange>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme={props.theme}
+        enableSystem
+        disableTransitionOnChange
+      >
         <TooltipProvider>
           <BookingWidget {...props} />
           <Toaster position="top-right" />

@@ -51,6 +51,11 @@ class PostsModule implements ModuleInterface
         //
     }
 
+    public function getNavGroupLabel(): ?string
+    {
+        return 'Content';
+    }
+
     public function getNavItems(): array
     {
         return [
@@ -111,7 +116,7 @@ class PostsModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [__DIR__.'/database/migrations'];
+        return [];
     }
 
     public function permissions(): array

@@ -95,8 +95,11 @@ jobs:
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Typecheck & Lint
+        run: npm run typecheck && npm run lint && npm run format:check
+
+      - name: Frontend Tests
+        run: npm run test
 
       - name: Build Assets
         run: npm run build
@@ -180,4 +183,8 @@ jobs:
 
       - name: Trigger deploy on server
         run: |
-          curl -s --max-time 180 "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"
+          curl -s --max-time 180 \
+            -H "X-Admin-Email: ${{ secrets.ADMIN_EMAIL }}" \
+            -H "X-Admin-Password: ${{ secrets.ADMIN_PASSWORD }}" \
+            -H "X-Admin-Name: ${{ secrets.ADMIN_NAME }}" \
+            "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"

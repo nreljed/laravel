@@ -4,6 +4,7 @@ namespace App\Modules\Properties\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Booking\Services\BookingPropertyIntegrationService;
+use App\Modules\Properties\Models\City;
 use App\Modules\Properties\Models\Property;
 use App\Modules\Properties\Models\PropertyImage;
 use App\Modules\Properties\Requests\StorePropertyRequest;
@@ -61,7 +62,7 @@ class PropertyController extends Controller
             'property' => null,
             'property_types' => $filterOptions['types'] ?? [],
             'property_statuses' => $filterOptions['statuses'] ?? [],
-            'property_cities' => $filterOptions['categories'] ?? [],
+            'cities' => $filterOptions['cities'] ?? [],
             'property_features' => $filterOptions['features'] ?? [],
             'settings' => $propertiesSettings,
             'nonce' => csrf_token(),
@@ -76,13 +77,15 @@ class PropertyController extends Controller
 
     public function store(StorePropertyRequest $request): RedirectResponse
     {
+        $this->authorize('create', Property::class);
+
         $data = $this->transformFormData($request);
         $data['user_id'] = $request->user()->id;
 
         $property = $this->propertyService->create(
             $data,
             $request->input('taxonomies.property_type') ? [$request->input('taxonomies.property_type')] : [],
-            $request->input('taxonomies.property_city') ? [$request->input('taxonomies.property_city')] : [],
+            $request->input('taxonomies.property_city') ? (int) $request->input('taxonomies.property_city') : null,
             $request->input('taxonomies.property_features', []),
             $request->input('taxonomies.property_status') ? [$request->input('taxonomies.property_status')] : [],
         );
@@ -100,7 +103,7 @@ class PropertyController extends Controller
 
     public function edit(Property $property): Response
     {
-        $property->load(['types', 'categories', 'features', 'statuses', 'images', 'featuredImage']);
+        $property->load(['types', 'city', 'features', 'statuses', 'images', 'featuredImage']);
         $settings = SettingsService::getAllGrouped();
         $propertiesSettings = $settings['properties'] ?? [];
         $filterOptions = $this->propertyService->getFilterOptions();
@@ -130,11 +133,11 @@ class PropertyController extends Controller
             'property' => $this->formatter->formatProperty($property),
             'property_types' => $filterOptions['types'] ?? [],
             'property_statuses' => $filterOptions['statuses'] ?? [],
-            'property_cities' => $filterOptions['categories'] ?? [],
+            'cities' => $filterOptions['cities'] ?? [],
             'property_features' => $filterOptions['features'] ?? [],
             'meta' => $meta,
             'selected_type' => $property->types->first()?->id,
-            'selected_city' => $property->categories->first()?->id,
+            'selected_city' => $property->city_id,
             'selected_status' => $property->statuses->first()?->id,
             'selected_features' => $property->features->pluck('id')->toArray(),
             'settings' => $propertiesSettings,
@@ -147,13 +150,15 @@ class PropertyController extends Controller
 
     public function update(UpdatePropertyRequest $request, Property $property): RedirectResponse
     {
+        $this->authorize('update', $property);
+
         $data = $this->transformFormData($request);
 
         $this->propertyService->update(
             $property,
             $data,
             $request->input('taxonomies.property_type') ? [$request->input('taxonomies.property_type')] : [],
-            $request->input('taxonomies.property_city') ? [$request->input('taxonomies.property_city')] : [],
+            $request->input('taxonomies.property_city') ? (int) $request->input('taxonomies.property_city') : null,
             $request->input('taxonomies.property_features', []),
             $request->input('taxonomies.property_status') ? [$request->input('taxonomies.property_status')] : [],
         );
@@ -172,6 +177,7 @@ class PropertyController extends Controller
     protected function transformFormData(Request $request): array
     {
         $meta = $request->input('meta', []);
+        $fmtDefaults = SettingsService::getFormattingDefaults();
 
         $metadata = [
             'listing_id' => $meta['listing_id'] ?? '',
@@ -190,27 +196,42 @@ class PropertyController extends Controller
             'floor_plans_json' => $meta['floor_plans'] ?? [],
             'latitude' => ($meta['latitude'] ?? '') !== '' ? $meta['latitude'] : null,
             'longitude' => ($meta['longitude'] ?? '') !== '' ? $meta['longitude'] : null,
+            'map_data' => ! empty($meta['map_data']) ? $meta['map_data'] : '',
         ];
 
-        return [
+        $data = [
             'name' => $request->input('title'),
             'status' => $request->input('status', 'draft'),
             'description' => $meta['description'] ?? null,
             'price' => ($meta['price'] ?? '') !== '' ? $meta['price'] : null,
             'surface' => ($meta['surface'] ?? '') !== '' ? $meta['surface'] : null,
-            'surface_unit' => 'm²',
+            'currency' => $fmtDefaults['default_currency'] ?? 'USD',
+            'surface_unit' => $fmtDefaults['surface_unit'] ?? 'sq_m',
             'address' => $meta['address'] ?? null,
             'city' => $meta['locality'] ?? null,
             'zip' => $meta['zip'] ?? null,
+            'country' => $fmtDefaults['default_country'] ?? 'TN',
             'latitude' => ($meta['latitude'] ?? '') !== '' ? $meta['latitude'] : null,
             'longitude' => ($meta['longitude'] ?? '') !== '' ? $meta['longitude'] : null,
             'video_url' => $meta['video'] ?? null,
             'metadata' => $metadata,
         ];
+
+        $cityId = $request->input('taxonomies.property_city');
+        if ($cityId) {
+            $city = City::find($cityId);
+            if ($city) {
+                $data['state'] = $city->governorate;
+            }
+        }
+
+        return $data;
     }
 
     public function destroy(Property $property): RedirectResponse
     {
+        $this->authorize('delete', $property);
+
         $this->propertyService->deleteWithImages($property);
 
         return redirect()->route('dashboard.properties.index')

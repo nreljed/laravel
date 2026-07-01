@@ -90,7 +90,7 @@ export const TUNISIA_BOUNDS = {
   asPhotonBbox: () => [7.5, 30.2, 11.6, 37.5] as [number, number, number, number],
 };
 
-export const TUNISIA_CENTER = { lat: 34.0, lng: 9.5 };
+export const TUNISIA_CENTER = { lat: 34, lng: 9.5 };
 
 export const TUNISIA_PHOTON_BBOX: [number, number, number, number] = [7.5, 30.2, 11.6, 37.5];
 
@@ -657,8 +657,8 @@ export async function reverseGeocode(
         return result;
       }
       console.warn("[Geocode] Nominatim also returned no data");
-    } catch (err) {
-      console.warn("[Geocode] Nominatim also failed:", err);
+    } catch (error) {
+      console.warn("[Geocode] Nominatim also failed:", error);
     }
 
     return null;

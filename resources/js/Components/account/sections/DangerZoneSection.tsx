@@ -50,23 +50,17 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
     setLoading(true);
 
     try {
-      const res = await fetch(route("dashboard.account.verify-delete-password"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? "",
-          "X-Requested-With": "XMLHttpRequest",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({ current_password: currentPassword }),
+      await new Promise<void>((resolve, reject) => {
+        router.post(route("dashboard.account.verify-delete-password"), { current_password: currentPassword } as any, {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: () => resolve(),
+          onError: (errors) => {
+            setErrors(errors as Record<string, string>);
+            reject();
+          },
+        });
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setErrors(data.errors ?? { current_password: "Current password is incorrect." });
-        setLoading(false);
-        return;
-      }
     } catch {
       setErrors({ current_password: "Failed to verify password. Please try again." });
       setLoading(false);
@@ -81,21 +75,25 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
           clearInterval(countdownRef.current!);
           countdownRef.current = null;
           setLoading(true);
-          router.post(route("dashboard.account.destroy"), {
-            confirmation: "delete my account",
-            current_password: currentPassword,
-          }, {
-            preserveScroll: true,
-            onSuccess: () => {
-              setLoading(false);
-              setShowDialog(false);
+          router.post(
+            route("dashboard.account.destroy"),
+            {
+              confirmation: "delete my account",
+              current_password: currentPassword,
             },
-            onError: (errs) => {
-              setErrors(errs);
-              setLoading(false);
-              setShowDialog(true);
+            {
+              preserveScroll: true,
+              onSuccess: () => {
+                setLoading(false);
+                setShowDialog(false);
+              },
+              onError: (errs) => {
+                setErrors(errs);
+                setLoading(false);
+                setShowDialog(true);
+              },
             },
-          });
+          );
           return 0;
         }
         return prev - 1;
@@ -104,20 +102,23 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
   };
 
   const dialogContent = (
-    <AlertDialog open={showDialog} onOpenChange={(open) => {
-      setShowDialog(open);
-      if (!open) {
-        setDeleteConfirm("");
-        setCurrentPassword("");
-        setCountdown(0);
-        setLoading(false);
-        setErrors({});
-        if (countdownRef.current) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
+    <AlertDialog
+      open={showDialog}
+      onOpenChange={(open) => {
+        setShowDialog(open);
+        if (!open) {
+          setDeleteConfirm("");
+          setCurrentPassword("");
+          setCountdown(0);
+          setLoading(false);
+          setErrors({});
+          if (countdownRef.current) {
+            clearInterval(countdownRef.current);
+            countdownRef.current = null;
+          }
         }
-      }
-    }}>
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -126,10 +127,12 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-4 text-left">
             <p className="text-destructive font-medium">
-              This will permanently delete your account and remove all of your data. This action is irreversible.
+              This will permanently delete your account and remove all of your data. This action is
+              irreversible.
             </p>
             <p className="text-sm text-muted-foreground">
-              All your personal data, content, and account information will be permanently deleted. This action cannot be undone.
+              All your personal data, content, and account information will be permanently deleted.
+              This action cannot be undone.
             </p>
             <div>
               <Label htmlFor="delete_confirm">Type "delete my account" to confirm</Label>
@@ -186,7 +189,8 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
         variant="destructive"
       >
         <p className="text-sm text-muted-foreground mb-4">
-          This will permanently delete your account and remove all of your data from our servers. This action is irreversible.
+          This will permanently delete your account and remove all of your data from our servers.
+          This action is irreversible.
         </p>
         <div className="flex justify-end">
           <Button variant="destructive" onClick={() => setShowDialog(true)}>

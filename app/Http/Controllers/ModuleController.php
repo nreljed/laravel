@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Module\ToggleModuleRequest;
 use App\Models\Module;
 use App\Services\DashboardService;
 use App\Services\FormattingService;
@@ -25,17 +26,11 @@ class ModuleController extends Controller
         );
     }
 
-    public function reorder(Request $request)
+    public function reorder(ToggleModuleRequest $request)
     {
         if (! Schema::hasTable('modules')) {
             return redirect()->back()->with('status', 'Modules table not available.');
         }
-
-        $request->validate([
-            'modules' => 'required|array',
-            'modules.*.id' => 'required|exists:modules,id',
-            'modules.*.order' => 'required|integer|min:0',
-        ]);
 
         foreach ($request->modules as $item) {
             Module::where('id', $item['id'])->update(['order' => $item['order']]);

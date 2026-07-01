@@ -14,6 +14,7 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role_id' => ['nullable', 'exists:roles,id'],
+            'send_email' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -140,7 +140,7 @@ class BookingGuestController extends Controller
             1800
         );
 
-        $cancelUrl = url('/dashboard/booking/view/'.$bookingId.'/confirm-cancel?cancel_token='.$cancelToken);
+        $cancelUrl = route('booking.confirm-cancel', ['bookingId' => $bookingId, 'cancel_token' => $cancelToken]);
 
         $property = Property::find($booking->property_id);
 
@@ -192,7 +192,7 @@ class BookingGuestController extends Controller
 
         $this->releaseLock($bookingId);
 
-        $redirectUrl = url("/dashboard/booking/view?token={$rawToken}");
+        $redirectUrl = route('booking.view', ['token' => $rawToken]);
 
         return response()->json([
             'success' => true,
@@ -240,7 +240,7 @@ class BookingGuestController extends Controller
 
         $this->releaseLock($bookingId);
 
-        $redirectUrl = url("/dashboard/my-bookings/{$bookingId}");
+        $redirectUrl = route('dashboard.my-bookings.show', $bookingId);
 
         return response()->json([
             'success' => true,
@@ -629,7 +629,7 @@ class BookingGuestController extends Controller
             'property_id' => $propertyId,
             'property_title' => $property?->name ?? '',
             'property_thumbnail' => $property?->featuredImage?->url,
-            'property_url' => $property ? url('/properties/'.$property->id) : null,
+            'property_url' => $property ? route('dashboard.properties.edit', $property->id) : null,
             'check_in_date' => $booking->start_date,
             'check_out_date' => $booking->end_date,
             'check_in_time' => $metadata['check_in_time'] ?? '15:00',
@@ -651,6 +651,25 @@ class BookingGuestController extends Controller
             'cancellation_requested' => Cache::get('crm_booking_cancel_req_'.$booking->id) !== null,
             'modification_requested' => ($metadata['has_modification_request'] ?? '') === '1',
         ];
+
+        $hostId = $booking->user_id;
+        if ($hostId) {
+            $bookingData['host_name'] = User::find($hostId)?->display_name ?? User::find($hostId)?->name ?? '';
+            $bookingData['host_phone'] = BookingController::resolveHostPhone($hostId);
+            $bookingData['host_phone_numbers'] = BookingController::resolveHostPhoneNumbers($hostId);
+            $bookingData['host_email'] = BookingController::resolveHostEmail($hostId);
+            $bookingData['host_avatar'] = BookingController::resolveHostAvatar($hostId);
+            $bookingData['host_bio'] = BookingController::resolveHostBio($hostId);
+            $bookingData['host_social_media'] = BookingController::resolveHostSocialMedia($hostId);
+        } else {
+            $bookingData['host_name'] = '';
+            $bookingData['host_phone'] = '';
+            $bookingData['host_phone_numbers'] = [];
+            $bookingData['host_email'] = '';
+            $bookingData['host_avatar'] = '';
+            $bookingData['host_bio'] = '';
+            $bookingData['host_social_media'] = [];
+        }
 
         if ($propertyId) {
             $checkInDate = $bookingData['check_in_date'];
@@ -938,7 +957,7 @@ class BookingGuestController extends Controller
             'property_id' => $propertyId,
             'property_title' => $property?->name ?? '',
             'property_thumbnail' => $property?->featuredImage?->url,
-            'property_url' => $property ? url('/properties/'.$property->id) : null,
+            'property_url' => $property ? route('dashboard.properties.edit', $property->id) : null,
             'guest_name' => $booking->guest_name,
             'guest_email' => $booking->guest_email,
             'guest_phone' => $booking->guest_phone,
@@ -962,7 +981,12 @@ class BookingGuestController extends Controller
             'refund_percent' => isset($metadata['refund_percent']) ? (float) $metadata['refund_percent'] : null,
             'refund_policy_applied' => $metadata['refund_policy_applied'] ?? null,
             'host_name' => $hostId ? User::find($hostId)?->display_name ?? User::find($hostId)?->name : '',
-            'host_phone' => $hostId ? User::find($hostId)?->phone ?? '' : '',
+            'host_phone' => BookingController::resolveHostPhone($hostId),
+            'host_phone_numbers' => BookingController::resolveHostPhoneNumbers($hostId),
+            'host_email' => BookingController::resolveHostEmail($hostId),
+            'host_avatar' => BookingController::resolveHostAvatar($hostId),
+            'host_bio' => BookingController::resolveHostBio($hostId),
+            'host_social_media' => BookingController::resolveHostSocialMedia($hostId),
         ];
 
         if ($propertyId) {
@@ -1018,7 +1042,7 @@ class BookingGuestController extends Controller
                 'status_label' => BookingStatus::tryFrom($booking->status)?->label() ?? $booking->status,
                 'property_title' => $booking->property?->name ?? '',
                 'property_thumbnail' => $featuredImage?->url,
-                'property_url' => $booking->property ? url('/properties/'.$booking->property->id) : null,
+                'property_url' => $booking->property ? route('dashboard.properties.edit', $booking->property->id) : null,
                 'check_in' => $booking->start_date?->toDateString(),
                 'check_out' => $booking->end_date?->toDateString(),
                 'nights' => $booking->nights(),

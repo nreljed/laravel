@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "@inertiajs/react";
-import { Head } from "@inertiajs/react";
+import { Link, Head } from "@inertiajs/react";
 import { Users, TrendingUp, FileText, UserPlus } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -102,8 +101,8 @@ export default function DashboardIndex({ stats = {} }: DashboardIndexProps) {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Activity feed coming soon. This will show recent user actions, registrations,
-                and system events.
+                Activity feed coming soon. This will show recent user actions, registrations, and
+                system events.
               </p>
             </CardContent>
           </Card>

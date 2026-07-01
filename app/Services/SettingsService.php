@@ -56,6 +56,7 @@ class SettingsService
             'currency_position' => $settings['currency_position'] ?? 'before',
             'price_empty_text' => $settings['price_empty_text'] ?? '',
             'surface_unit' => $settings['surface_unit'] ?? 'sq_ft',
+            'default_country' => $settings['default_country'] ?? 'TN',
             'thousands_separator' => $settings['thousands_separator'] ?? ',',
             'decimal_separator' => $settings['decimal_separator'] ?? '.',
             'date_format' => $settings['date_format'] ?? 'Y-m-d',
@@ -76,6 +77,7 @@ class SettingsService
             'decimal_sep' => $defaults['decimal_separator'],
             'empty_text' => $defaults['price_empty_text'],
             'unit' => $defaults['surface_unit'],
+            'default_country' => $defaults['default_country'],
         ];
     }
 
@@ -93,7 +95,7 @@ class SettingsService
     {
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.'_grouped');
-        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties'] as $group) {
+        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties', 'booking'] as $group) {
             Cache::forget(self::CACHE_KEY."_{$group}");
         }
     }

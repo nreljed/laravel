@@ -26,8 +26,15 @@ export function SecuritySection({ settings, asAccordion }: SecuritySectionProps)
     router.put(route("dashboard.admin.settings.update"), data, {
       preserveScroll: true,
       preserveState: true,
-      onSuccess: () => { toast.success("Security settings saved."); setLoading(false); },
-      onError: (errs) => { setErrors(errs); toast.error("Failed to save."); setLoading(false); },
+      onSuccess: () => {
+        toast.success("Security settings saved.");
+        setLoading(false);
+      },
+      onError: (errs) => {
+        setErrors(errs);
+        toast.error("Failed to save.");
+        setLoading(false);
+      },
     });
   };
 

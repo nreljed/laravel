@@ -14,6 +14,6 @@ class AdminController extends Controller
 
     public function systemHealth(SystemHealthService $systemHealth)
     {
-        return Inertia::render('Admin/SystemHealth', $systemHealth->getDiagnostics());
+        return Inertia::render('Admin/SystemHealth', $systemHealth->getAll());
     }
 }

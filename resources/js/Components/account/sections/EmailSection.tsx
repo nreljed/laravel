@@ -52,23 +52,27 @@ export function EmailSection({ user, initialStatus }: EmailSectionProps) {
     setErrors({});
     setSuccess("");
 
-    router.post(route("dashboard.account.update-email"), { email, current_password: currentPassword }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success("Email updated successfully!");
-        setSuccess("Email updated successfully!");
-        setEmail("");
-        setCurrentPassword("");
-        setLoading(false);
+    router.post(
+      route("dashboard.account.update-email"),
+      { email, current_password: currentPassword },
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success("Email updated successfully!");
+          setSuccess("Email updated successfully!");
+          setEmail("");
+          setCurrentPassword("");
+          setLoading(false);
+        },
+        onError: (errs) => {
+          const e = errs as Record<string, string>;
+          setErrors(e);
+          const msg = e.email || e.current_password || "Failed to update email";
+          toast.error(msg);
+          setLoading(false);
+        },
       },
-      onError: (errs) => {
-        const e = errs as Record<string, string>;
-        setErrors(e);
-        const msg = e.email || e.current_password || "Failed to update email";
-        toast.error(msg);
-        setLoading(false);
-      },
-    });
+    );
   };
 
   return (
@@ -114,7 +118,15 @@ export function EmailSection({ user, initialStatus }: EmailSectionProps) {
             id="new_email"
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((prev) => { const next = { ...prev }; delete next.email; return next; }); }}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email)
+                setErrors((prev) => {
+                  const next = { ...prev };
+                  delete next.email;
+                  return next;
+                });
+            }}
             disabled={loading}
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}
@@ -123,7 +135,15 @@ export function EmailSection({ user, initialStatus }: EmailSectionProps) {
         </Field>
         <CurrentPasswordInput
           value={currentPassword}
-          onChange={(e) => { setCurrentPassword(e.target.value); if (errors.current_password) setErrors((prev) => { const next = { ...prev }; delete next.current_password; return next; }); }}
+          onChange={(e) => {
+            setCurrentPassword(e.target.value);
+            if (errors.current_password)
+              setErrors((prev) => {
+                const next = { ...prev };
+                delete next.current_password;
+                return next;
+              });
+          }}
           error={errors.current_password}
           disabled={loading}
           showForgotPasswordLink={false}

@@ -1,5 +1,5 @@
 import { router } from "@inertiajs/react";
-import { X, Check, Trash2, ExternalLink, CalendarDays, Bell } from "lucide-react";
+import { Check, Trash2, ExternalLink, CalendarDays } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,18 +11,10 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { Separator } from "@/Components/ui/separator";
-import type { Severity } from "@/Components/notifications/NotificationItem";
-
-interface Notification {
-  id: string;
-  type: string;
-  data: Record<string, string>;
-  read_at: string | null;
-  created_at: string;
-}
+import type { Severity, StructuredNotification } from "@/Components/notifications/NotificationItem";
 
 interface NotificationDetailDialogProps {
-  notification: Notification | null;
+  notification: StructuredNotification | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarkRead: (id: string) => void;
@@ -36,15 +28,29 @@ const severityColors: Record<Severity, string> = {
   critical: "bg-destructive/10 text-destructive",
 };
 
-function getSeverity(type: string): Severity {
-  if (type.includes("cancel") || type.includes("deleted") || type === "low_stock") return "critical";
+const SEVERITY_LABELS: Record<Severity, string> = {
+  info: "Info",
+  warning: "Warning",
+  urgent: "Urgent",
+  critical: "Critical",
+};
+
+function getSeverity(type: string, n?: StructuredNotification): Severity {
+  if (n?.severity && ["info", "warning", "urgent", "critical"].includes(n.severity))
+    return n.severity;
+  if (type.includes("cancel") || type.includes("deleted") || type === "low_stock")
+    return "critical";
   if (type.includes("inquiry") || type.includes("modified")) return "warning";
   if (type.includes("reset") || type.includes("changed")) return "urgent";
   return "info";
 }
 
 function getTypeLabel(type: string): string {
-  const normalized = type.replace("App\\Notifications\\", "").replace("Notification", "").replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase();
+  const normalized = type
+    .replace("App\\Notifications\\", "")
+    .replace("Notification", "")
+    .replaceAll(/([a-z])([A-Z])/g, "$1.$2")
+    .toLowerCase();
   const labels: Record<string, string> = {
     "booking.created": "New Booking",
     "booking.confirmed": "Booking Confirmed",
@@ -76,12 +82,12 @@ export function NotificationDetailDialog({
 }: NotificationDetailDialogProps) {
   if (!n) return null;
 
-  const isUnread = !n.read_at;
-  const severity = getSeverity(n.type);
-  const title = n.data.title || n.data.subject || n.data.message || "Notification";
-  const message = n.data.message !== title ? n.data.message : n.data.body;
-  const link = n.data.link || n.data.url || "";
-  const createdAt = n.created_at;
+  const isUnread = n.is_read === "0" || !n.read_at;
+  const severity = getSeverity(n.type, n);
+  const title = n.title || n.data?.title || n.data?.subject || n.data?.message || "Notification";
+  const message = n.message || n.data?.message || n.data?.body || "";
+  const link = n.link || n.data?.link || n.data?.url || "";
+  const createdAt = n.created_at_relative || n.created_at;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,11 +95,10 @@ export function NotificationDetailDialog({
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
             <Badge variant="outline" className={severityColors[severity]}>
-              {getTypeLabel(n.type)}
+              {SEVERITY_LABELS[severity]}
             </Badge>
-            {isUnread && (
-              <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
-            )}
+            <Badge variant="outline">{getTypeLabel(n.type)}</Badge>
+            {isUnread && <div className="h-2 w-2 rounded-full bg-primary shrink-0" />}
           </div>
           <DialogTitle className="text-lg">{title}</DialogTitle>
           {createdAt && (

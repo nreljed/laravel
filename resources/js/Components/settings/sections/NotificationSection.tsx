@@ -4,7 +4,13 @@ import { toast } from "sonner";
 import { Section, SectionField } from "@/Components/section";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/Components/ui/select";
 import { Bell } from "lucide-react";
 
 interface NotificationSectionProps {
@@ -27,8 +33,15 @@ export function NotificationSection({ settings, asAccordion }: NotificationSecti
     router.put(route("dashboard.admin.settings.update"), data, {
       preserveScroll: true,
       preserveState: true,
-      onSuccess: () => { toast.success("Notification settings saved."); setLoading(false); },
-      onError: (errs) => { setErrors(errs); toast.error("Failed to save."); setLoading(false); },
+      onSuccess: () => {
+        toast.success("Notification settings saved.");
+        setLoading(false);
+      },
+      onError: (errs) => {
+        setErrors(errs);
+        toast.error("Failed to save.");
+        setLoading(false);
+      },
     });
   };
 
@@ -63,7 +76,9 @@ export function NotificationSection({ settings, asAccordion }: NotificationSecti
           <Switch
             id="email_notifications_enabled"
             checked={data.email_notifications_enabled === "1"}
-            onCheckedChange={(c) => setData((p) => ({ ...p, email_notifications_enabled: c ? "1" : "0" }))}
+            onCheckedChange={(c) =>
+              setData((p) => ({ ...p, email_notifications_enabled: c ? "1" : "0" }))
+            }
           />
           <Label htmlFor="email_notifications_enabled" className="cursor-pointer font-normal">
             {data.email_notifications_enabled === "1" ? "Enabled" : "Disabled"}

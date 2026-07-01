@@ -2,6 +2,7 @@
 
 namespace App\Modules\Properties\Requests;
 
+use App\Modules\Properties\Models\Property;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,9 @@ class UpdatePropertyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $property = $this->route('property');
+
+        return $this->user()?->can('update', $property instanceof Property ? $property : Property::find($property));
     }
 
     public function rules(): array
@@ -45,7 +48,7 @@ class UpdatePropertyRequest extends FormRequest
             'taxonomies' => 'nullable|array',
             'taxonomies.property_type' => 'nullable|exists:property_types,id',
             'taxonomies.property_status' => 'nullable|exists:property_statuses,id',
-            'taxonomies.property_city' => 'nullable|exists:property_categories,id',
+            'taxonomies.property_city' => 'nullable|exists:cities,id',
             'taxonomies.property_features' => 'nullable|array',
             'taxonomies.property_features.*' => Rule::exists('property_features', 'id'),
             'booking' => 'nullable|array',

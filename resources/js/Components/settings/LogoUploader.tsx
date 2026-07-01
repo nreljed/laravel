@@ -19,10 +19,10 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
+    img.addEventListener("load", () => {
       URL.revokeObjectURL(url);
       resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
+    });
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error("Failed to read image"));
@@ -59,11 +59,15 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
       try {
         const { width, height } = await getImageDimensions(file);
         if (width < MIN_DIM || height < MIN_DIM) {
-          toast.error(`Image too small. Minimum ${MIN_DIM}x${MIN_DIM}px (got ${width}x${height}px).`);
+          toast.error(
+            `Image too small. Minimum ${MIN_DIM}x${MIN_DIM}px (got ${width}x${height}px).`,
+          );
           return;
         }
         if (width > MAX_DIM || height > MAX_DIM) {
-          toast.error(`Image too large. Maximum ${MAX_DIM}x${MAX_DIM}px (got ${width}x${height}px).`);
+          toast.error(
+            `Image too large. Maximum ${MAX_DIM}x${MAX_DIM}px (got ${width}x${height}px).`,
+          );
           return;
         }
         setDims({ width, height });
@@ -80,9 +84,13 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
     formData.append("logo", file);
 
     try {
-      const res = await axios.post(route("dashboard.admin.settings.logo.upload") as string, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.post(
+        route("dashboard.admin.settings.logo.upload") as string,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
       const url = res.data.url;
       setPreview(url);
       onLogoChange(url);
@@ -144,12 +152,25 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
         />
 
         <div className="flex flex-col gap-2 pt-1">
-          <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={() => fileInputRef.current?.click()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+            onClick={() => fileInputRef.current?.click()}
+          >
             <Upload className="mr-1 h-3 w-3" />
             {preview ? "Change" : "Upload"}
           </Button>
           {preview && (
-            <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={handleRemove} className="text-destructive">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+              onClick={handleRemove}
+              className="text-destructive"
+            >
               <Trash2 className="mr-1 h-3 w-3" />
               Remove
             </Button>
@@ -167,7 +188,8 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
       <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <Info className="mt-0.5 h-3 w-3 shrink-0" />
         <span>
-          Recommended: <strong>SVG</strong> (vector, any size) or a <strong>512x512px+</strong> square PNG.
+          Recommended: <strong>SVG</strong> (vector, any size) or a <strong>512x512px+</strong>{" "}
+          square PNG.
           {preview && " This logo also serves as the browser tab favicon."}
         </span>
       </div>

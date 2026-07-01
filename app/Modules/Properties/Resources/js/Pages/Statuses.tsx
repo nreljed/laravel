@@ -1,13 +1,15 @@
 import { Head, useForm, router } from "@inertiajs/react";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/Components/ui/empty";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
+import { Badge } from "@/Components/ui/badge";
 import {
   Card,
   CardContent,
@@ -161,32 +163,37 @@ export default function Statuses({ statuses }: StatusesPageProps) {
           </Dialog>
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            {statuses.length === 0 ? (
-              <div className="p-6 text-center text-sm text-muted-foreground">No statuses defined yet.</div>
-            ) : (
-              <div className="divide-y">
-                {statuses.map((status) => (
-                  <div key={status.id} className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <GripVertical className="h-4 w-4 text-muted-foreground/50" />
-                      <div>
-                        <span className="text-sm font-medium">{status.name}</span>
-                        {status.description && (
-                          <p className="text-xs text-muted-foreground">{status.description}</p>
-                        )}
+        {statuses.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>No statuses yet</EmptyTitle>
+              <EmptyDescription>No property statuses have been defined yet. Create your first status to get started.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {statuses.map((status) => (
+              <Card key={status.id} className="relative">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{status.name}</span>
+                        {!status.is_active && <Badge variant="outline" className="text-xs shrink-0">Inactive</Badge>}
                       </div>
+                      {status.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{status.description}</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground/60">Order: {status.sort_order}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!status.is_active && <span className="text-xs text-muted-foreground">Inactive</span>}
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(status)}>
-                        <Pencil className="h-4 w-4" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(status)}>
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteId(status.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                          <Button variant="ghost" size="icon" className="size-8" onClick={() => setDeleteId(status.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -204,11 +211,11 @@ export default function Statuses({ statuses }: StatusesPageProps) {
                       </AlertDialog>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </AuthenticatedLayout>
   );

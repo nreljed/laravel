@@ -21,12 +21,23 @@ import { toast } from "sonner";
 
 interface AdminSettingsProps {
   settings?: Record<string, Record<string, string>>;
-  availableModules?: { id: number; name: string; slug: string; enabled: boolean; version: string }[];
+  availableModules?: {
+    id: number;
+    name: string;
+    slug: string;
+    enabled: boolean;
+    version: string;
+  }[];
   modules?: { enabled: string[] };
   roles?: { id: number; name: string; slug: string }[];
 }
 
-export default function AdminSettings({ settings = {}, availableModules = [], modules, roles = [] }: AdminSettingsProps) {
+export default function AdminSettings({
+  settings = {},
+  availableModules = [],
+  modules,
+  roles = [],
+}: AdminSettingsProps) {
   const flash = usePage().props.flash as Record<string, string> | undefined;
   const enabledModules = modules?.enabled ?? [];
 
@@ -38,12 +49,12 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
   const flatSettings = {
     ...generalData,
     ...formattingData,
-    ...(settings.registration || {}),
-    ...(settings.notifications || {}),
-    ...(settings.security || {}),
-    ...(settings.email || {}),
-    ...(settings.maintenance || {}),
-    ...(settings.localization || {}),
+    ...settings.registration,
+    ...settings.notifications,
+    ...settings.security,
+    ...settings.email,
+    ...settings.maintenance,
+    ...settings.localization,
   };
 
   const [genData, setGenData] = React.useState(generalData);
@@ -59,10 +70,18 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
   const [propLoading, setPropLoading] = React.useState(false);
   const [bookLoading, setBookLoading] = React.useState(false);
 
-  React.useEffect(() => { setGenData(settings.general || {}); }, [settings.general]);
-  React.useEffect(() => { setFmtData(settings.formatting || {}); }, [settings.formatting]);
-  React.useEffect(() => { setPropData(settings.properties || {}); }, [settings.properties]);
-  React.useEffect(() => { setBookData(settings.booking || {}); }, [settings.booking]);
+  React.useEffect(() => {
+    setGenData(settings.general || {});
+  }, [settings.general]);
+  React.useEffect(() => {
+    setFmtData(settings.formatting || {});
+  }, [settings.formatting]);
+  React.useEffect(() => {
+    setPropData(settings.properties || {});
+  }, [settings.properties]);
+  React.useEffect(() => {
+    setBookData(settings.booking || {});
+  }, [settings.booking]);
 
   if (flash?.status) toast.success(flash.status);
 
@@ -75,8 +94,15 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => { toast.success("General settings saved."); setGenLoading(false); },
-      onError: (errs) => { setGenErrors(errs); toast.error("Failed to save."); setGenLoading(false); },
+      onSuccess: () => {
+        toast.success("General settings saved.");
+        setGenLoading(false);
+      },
+      onError: (errs) => {
+        setGenErrors(errs);
+        toast.error("Failed to save.");
+        setGenLoading(false);
+      },
     });
   };
 
@@ -89,8 +115,15 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => { toast.success("Formatting settings saved."); setFmtLoading(false); },
-      onError: (errs) => { setFmtErrors(errs); toast.error("Failed to save."); setFmtLoading(false); },
+      onSuccess: () => {
+        toast.success("Formatting settings saved.");
+        setFmtLoading(false);
+      },
+      onError: (errs) => {
+        setFmtErrors(errs);
+        toast.error("Failed to save.");
+        setFmtLoading(false);
+      },
     });
   };
 
@@ -103,8 +136,15 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => { toast.success("Property settings saved."); setPropLoading(false); },
-      onError: (errs) => { setPropErrors(errs); toast.error("Failed to save."); setPropLoading(false); },
+      onSuccess: () => {
+        toast.success("Property settings saved.");
+        setPropLoading(false);
+      },
+      onError: (errs) => {
+        setPropErrors(errs);
+        toast.error("Failed to save.");
+        setPropLoading(false);
+      },
     });
   };
 
@@ -117,14 +157,21 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => { toast.success("Booking settings saved."); setBookLoading(false); },
-      onError: (errs) => { setBookErrors(errs); toast.error("Failed to save."); setBookLoading(false); },
+      onSuccess: () => {
+        toast.success("Booking settings saved.");
+        setBookLoading(false);
+      },
+      onError: (errs) => {
+        setBookErrors(errs);
+        toast.error("Failed to save.");
+        setBookLoading(false);
+      },
     });
   };
 
   const [activeTab, setActiveTab] = React.useState(() => {
     if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(location.search);
       return params.get("tab") || "general";
     }
     return "general";
@@ -132,10 +179,13 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     searchParams.set("tab", value);
     const qs = searchParams.toString();
-    router.visit(window.location.pathname + (qs ? "?" + qs : ""), { replace: true, preserveState: true });
+    router.visit(location.pathname + (qs ? "?" + qs : ""), {
+      replace: true,
+      preserveState: true,
+    });
   };
 
   return (
@@ -147,12 +197,29 @@ export default function AdminSettings({ settings = {}, availableModules = [], mo
           <p className="text-muted-foreground">Manage your application configuration.</p>
         </div>
 
-        <SettingsNav activeTab={activeTab} onTabChange={handleTabChange} enabledModules={enabledModules} />
+        <SettingsNav
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          enabledModules={enabledModules}
+        />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsContent value="general" className="mt-6 space-y-6">
-            <GeneralSection data={genData} onChange={(f, v) => setGenData((p) => ({ ...p, [f]: v }))} errors={genErrors} loading={genLoading} onSubmit={handleGenSubmit} asAccordion />
-            <FormattingSection data={fmtData} onChange={(f, v) => setFmtData((p) => ({ ...p, [f]: v }))} errors={fmtErrors} loading={fmtLoading} onSubmit={handleFmtSubmit} />
+            <GeneralSection
+              data={genData}
+              onChange={(f, v) => setGenData((p) => ({ ...p, [f]: v }))}
+              errors={genErrors}
+              loading={genLoading}
+              onSubmit={handleGenSubmit}
+              asAccordion
+            />
+            <FormattingSection
+              data={fmtData}
+              onChange={(f, v) => setFmtData((p) => ({ ...p, [f]: v }))}
+              errors={fmtErrors}
+              loading={fmtLoading}
+              onSubmit={handleFmtSubmit}
+            />
             <DateFormatSection asAccordion />
           </TabsContent>
 

@@ -1,17 +1,16 @@
-import * as React from "react"
-import { Section, SectionField } from "@/Components/section"
-import { Input } from "@/Components/ui/input"
-import { Switch } from "@/Components/ui/switch"
-import { Separator } from "@/Components/ui/separator"
-import { CalendarDays, Clock, DollarSign, Bell, ArrowRight } from "lucide-react"
+import * as React from "react";
+import { Section, SectionField } from "@/Components/section";
+import { Input } from "@/Components/ui/input";
+import { Switch } from "@/Components/ui/switch";
+import { CalendarDays, Clock, DollarSign, Bell, ArrowRight } from "lucide-react";
 
 interface BookingSectionProps {
-  data: Record<string, string | undefined>
-  onChange: (field: string, value: string) => void
-  errors: Record<string, string>
-  loading?: boolean
-  onSubmit?: (e: React.FormEvent) => void
-  asAccordion?: boolean
+  data: Record<string, string | undefined>;
+  onChange: (field: string, value: string) => void;
+  errors: Record<string, string>;
+  loading?: boolean;
+  onSubmit?: (e: React.FormEvent) => void;
+  asAccordion?: boolean;
 }
 
 export function BookingSection({
@@ -28,8 +27,7 @@ export function BookingSection({
         <div className="flex items-start gap-2">
           <ArrowRight className="mt-0.5 size-4 shrink-0" />
           <span>
-            Currency, number formatting, date format, time format, and timezone are set globally
-            in{" "}
+            Currency, number formatting, date format, time format, and timezone are set globally in{" "}
             <a
               href="/dashboard/admin/settings?tab=general"
               className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
@@ -222,7 +220,9 @@ export function BookingSection({
             <Switch
               id="booking_notify_on_create"
               checked={data?.booking_notify_on_create !== "0"}
-              onCheckedChange={(checked) => onChange("booking_notify_on_create", checked ? "1" : "0")}
+              onCheckedChange={(checked) =>
+                onChange("booking_notify_on_create", checked ? "1" : "0")
+              }
               disabled={loading}
             />
             <span className="text-sm">Notify on new booking</span>
@@ -232,7 +232,9 @@ export function BookingSection({
             <Switch
               id="booking_notify_on_cancel"
               checked={data?.booking_notify_on_cancel !== "0"}
-              onCheckedChange={(checked) => onChange("booking_notify_on_cancel", checked ? "1" : "0")}
+              onCheckedChange={(checked) =>
+                onChange("booking_notify_on_cancel", checked ? "1" : "0")
+              }
               disabled={loading}
             />
             <span className="text-sm">Notify on cancellation</span>
@@ -252,5 +254,5 @@ export function BookingSection({
         </div>
       </Section>
     </div>
-  )
+  );
 }

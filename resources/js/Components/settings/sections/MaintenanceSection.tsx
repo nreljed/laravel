@@ -27,8 +27,15 @@ export function MaintenanceSection({ settings, asAccordion }: MaintenanceSection
     router.put(route("dashboard.admin.settings.update"), data, {
       preserveScroll: true,
       preserveState: true,
-      onSuccess: () => { toast.success("Maintenance settings saved."); setLoading(false); },
-      onError: (errs) => { setErrors(errs); toast.error("Failed to save."); setLoading(false); },
+      onSuccess: () => {
+        toast.success("Maintenance settings saved.");
+        setLoading(false);
+      },
+      onError: (errs) => {
+        setErrors(errs);
+        toast.error("Failed to save.");
+        setLoading(false);
+      },
     });
   };
 

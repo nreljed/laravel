@@ -16,24 +16,38 @@ export function SystemStatusCards({
 }: SystemStatusCardsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <Card className={`border-l-4 ${notificationTableExists ? "border-l-green-500" : "border-l-amber-500"}`}>
+      <Card
+        className={`border-l-4 ${notificationTableExists ? "border-l-green-500" : "border-l-amber-500"}`}
+      >
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <Database className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">DB Table</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              DB Table
+            </span>
           </div>
-          <Badge variant={notificationTableExists ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+          <Badge
+            variant={notificationTableExists ? "default" : "secondary"}
+            className="text-[10px] px-1.5 py-0"
+          >
             {notificationTableExists ? "Ready" : "Not Created"}
           </Badge>
         </CardContent>
       </Card>
-      <Card className={`border-l-4 ${emailConfigured ? "border-l-green-500" : "border-l-amber-500"}`}>
+      <Card
+        className={`border-l-4 ${emailConfigured ? "border-l-green-500" : "border-l-amber-500"}`}
+      >
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Email
+            </span>
           </div>
-          <Badge variant={emailConfigured ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+          <Badge
+            variant={emailConfigured ? "default" : "secondary"}
+            className="text-[10px] px-1.5 py-0"
+          >
             {emailConfigured ? "Configured" : "Not Set Up"}
           </Badge>
           {emailConfigured && (
@@ -45,10 +59,14 @@ export function SystemStatusCards({
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <Bell className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notifications</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Notifications
+            </span>
           </div>
           <p className="text-lg font-semibold text-foreground">
-            <Link href={route("dashboard.notifications")} className="hover:underline">View &rarr;</Link>
+            <Link href={route("dashboard.notifications")} className="hover:underline">
+              View &rarr;
+            </Link>
           </p>
         </CardContent>
       </Card>
@@ -56,10 +74,14 @@ export function SystemStatusCards({
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <BellRing className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Prefs</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Prefs
+            </span>
           </div>
           <p className="text-lg font-semibold text-foreground">
-            <Link href="/dashboard/account" className="hover:underline">Configure &rarr;</Link>
+            <Link href="/dashboard/account" className="hover:underline">
+              Configure &rarr;
+            </Link>
           </p>
         </CardContent>
       </Card>

@@ -25,31 +25,35 @@ export function PasswordSection({ asAccordion }: PasswordSectionProps) {
     setErrors({});
     setSuccess("");
 
-    router.post(route("dashboard.account.update-password"), {
-      current_password: currentPassword,
-      password: newPassword,
-      password_confirmation: confirmPassword,
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success("Password updated successfully!");
-        setSuccess("Password updated successfully");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setLoading(false);
+    router.post(
+      route("dashboard.account.update-password"),
+      {
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: confirmPassword,
       },
-      onError: (errs) => {
-        const e = errs as Record<string, string>;
-        const mapped: Record<string, string[]> = {};
-        if (e.password) mapped.new_password = [e.password];
-        if (e.current_password) mapped.current_password = [e.current_password];
-        setErrors(mapped);
-        const msg = e.password || e.current_password || "Failed to update password";
-        toast.error(msg);
-        setLoading(false);
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success("Password updated successfully!");
+          setSuccess("Password updated successfully");
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+          setLoading(false);
+        },
+        onError: (errs) => {
+          const e = errs as Record<string, string>;
+          const mapped: Record<string, string[]> = {};
+          if (e.password) mapped.new_password = [e.password];
+          if (e.current_password) mapped.current_password = [e.current_password];
+          setErrors(mapped);
+          const msg = e.password || e.current_password || "Failed to update password";
+          toast.error(msg);
+          setLoading(false);
+        },
       },
-    });
+    );
   };
 
   return (

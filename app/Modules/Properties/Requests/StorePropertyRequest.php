@@ -2,13 +2,14 @@
 
 namespace App\Modules\Properties\Requests;
 
+use App\Modules\Properties\Models\Property;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePropertyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', Property::class);
     }
 
     public function rules(): array
@@ -44,7 +45,7 @@ class StorePropertyRequest extends FormRequest
             'taxonomies' => 'nullable|array',
             'taxonomies.property_type' => 'nullable|exists:property_types,id',
             'taxonomies.property_status' => 'nullable|exists:property_statuses,id',
-            'taxonomies.property_city' => 'nullable|exists:property_categories,id',
+            'taxonomies.property_city' => 'nullable|exists:cities,id',
             'taxonomies.property_features' => 'nullable|array',
             'taxonomies.property_features.*' => 'exists:property_features,id',
             'booking' => 'nullable|array',

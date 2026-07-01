@@ -48,7 +48,7 @@ class BookingEmailService
             'guests' => $booking->guest_count,
             'total' => $booking->total_amount,
             'specialRequests' => $booking->notes,
-            'bookingUrl' => $magicLink ?: url('/dashboard/booking/view/'.$bookingId),
+            'bookingUrl' => $magicLink ?: route('dashboard.bookings.guest.view', $bookingId),
             'siteName' => config('app.name'),
             'adminEmail' => config('mail.from.address'),
         ];

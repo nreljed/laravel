@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SendEmail;
+use App\Mail\DynamicMailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -40,12 +41,8 @@ class MailService
     public function sendNow(string $to, string $subject, string $template, array $data = []): bool
     {
         $data['subject'] = $subject;
-        $html = $this->templateService->renderWithLayout($template, $data);
 
-        Mail::html($html, function ($message) use ($to, $subject) {
-            $message->to($to)
-                ->subject($subject);
-        });
+        Mail::to($to)->send(new DynamicMailable($template, $data));
 
         return true;
     }

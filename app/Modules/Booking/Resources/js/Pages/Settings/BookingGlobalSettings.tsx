@@ -58,7 +58,6 @@ export default function BookingGlobalSettings({ settings, nonces }: BookingGloba
       default_deposit_refund_days: settingsData?.default_deposit_refund_days ?? 7,
       calendar_default_range: settingsData?.calendar_default_range ?? 2,
       calendar_max_range: settingsData?.calendar_max_range ?? 12,
-      woocommerce_product_id: (settingsData?.woocommerce_product_id as number) ?? 0,
       email_checkout_reminder_hours: settingsData?.email_checkout_reminder_hours ?? 24,
       auto_checkout_grace_hours: settingsData?.auto_checkout_grace_hours ?? 24,
       auto_cancel_no_show_hours: settingsData?.auto_cancel_no_show_hours ?? 48,
@@ -212,14 +211,6 @@ export default function BookingGlobalSettings({ settings, nonces }: BookingGloba
       const num = Number(val);
       if (!Number.isFinite(num) || num < cfg.min || num > cfg.max) {
         errors[field] = `${cfg.label} must be between ${cfg.min} and ${cfg.max}`;
-      }
-    }
-
-    const wooId = (d as Record<string, unknown>).woocommerce_product_id;
-    if (wooId != null && wooId !== "") {
-      const num = Number(wooId);
-      if (!Number.isFinite(num) || num < 0) {
-        errors.woocommerce_product_id = "WooCommerce product ID must be 0 or greater";
       }
     }
 

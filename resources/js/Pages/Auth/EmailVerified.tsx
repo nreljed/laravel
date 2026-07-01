@@ -1,14 +1,7 @@
 import { Link, router } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { CheckCircle2 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/Components/ui/card";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/Components/ui/card";
 import GuestLayout from "@/Layouts/GuestLayout";
 
 export default function EmailVerified() {
@@ -21,7 +14,8 @@ export default function EmailVerified() {
           </div>
           <CardTitle className="text-2xl">Email verified!</CardTitle>
           <CardDescription>
-            Your email address has been successfully verified. You can now close this tab or continue to your dashboard.
+            Your email address has been successfully verified. You can now close this tab or
+            continue to your dashboard.
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex flex-col gap-3">

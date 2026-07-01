@@ -1,29 +1,29 @@
-import * as React from "react"
+import * as React from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/Components/ui/accordion"
-import { cn } from "@/lib/utils"
+} from "@/Components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 function getStorageKey(value: string) {
-  if (typeof window === "undefined") return null
-  return `settings-accordion:${location.pathname}:${value}`
+  if (typeof window === "undefined") return null;
+  return `settings-accordion:${location.pathname}:${value}`;
 }
 
 interface SettingsAccordionItemProps {
-  value: string
-  icon?: React.ComponentType<{ className?: string }>
-  title: string
-  description?: string
-  children: React.ReactNode
-  variant?: "default" | "destructive"
-  className?: string
-  defaultOpen?: boolean
-  isOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-  persist?: boolean
+  value: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  variant?: "default" | "destructive";
+  className?: string;
+  defaultOpen?: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  persist?: boolean;
 }
 
 function SettingsAccordionItem({
@@ -39,25 +39,25 @@ function SettingsAccordionItem({
   onOpenChange,
   persist = false,
 }: SettingsAccordionItemProps) {
-  const isDestructive = variant === "destructive"
-  const controlled = controlledIsOpen !== undefined
-  const storageKey = persist ? getStorageKey(value) : null
+  const isDestructive = variant === "destructive";
+  const controlled = controlledIsOpen !== undefined;
+  const storageKey = persist ? getStorageKey(value) : null;
 
   const getInitialState = () => {
-    if (controlled) return controlledIsOpen
+    if (controlled) return controlledIsOpen;
     if (storageKey) {
       try {
-        const saved = localStorage.getItem(storageKey)
-        if (saved !== null) return saved === "true"
+        const saved = localStorage.getItem(storageKey);
+        if (saved !== null) return saved === "true";
       } catch {
         //
       }
     }
-    return defaultOpen
-  }
+    return defaultOpen;
+  };
 
-  const [internalOpen, setInternalOpen] = React.useState(getInitialState)
-  const open = controlled ? controlledIsOpen : internalOpen
+  const [internalOpen, setInternalOpen] = React.useState(getInitialState);
+  const open = controlled ? controlledIsOpen : internalOpen;
 
   return (
     <div
@@ -73,18 +73,18 @@ function SettingsAccordionItem({
         className="w-full"
         value={open ? value : ""}
         onValueChange={(newValue) => {
-          const newOpen = newValue === value
+          const newOpen = newValue === value;
           if (!controlled) {
-            setInternalOpen(newOpen)
+            setInternalOpen(newOpen);
             if (storageKey) {
               try {
-                localStorage.setItem(storageKey, String(newOpen))
+                localStorage.setItem(storageKey, String(newOpen));
               } catch {
                 //
               }
             }
           }
-          onOpenChange?.(newOpen)
+          onOpenChange?.(newOpen);
         }}
       >
         <AccordionItem value={value} className="border-0 m-0">
@@ -119,28 +119,26 @@ function SettingsAccordionItem({
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-4 pt-4 pb-3 px-4 border-t border-border">
-              {children}
-            </div>
+            <div className="space-y-4 pt-4 pb-3 px-4 border-t border-border">{children}</div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
     </div>
-  )
+  );
 }
 
 interface SettingsAccordionItemConfig {
-  value: string
-  icon?: React.ComponentType<{ className?: string }>
-  title: string
-  description?: string
-  content: React.ReactNode
-  variant?: "default" | "destructive"
-  className?: string
-  defaultOpen?: boolean
-  isOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-  persist?: boolean
+  value: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  content: React.ReactNode;
+  variant?: "default" | "destructive";
+  className?: string;
+  defaultOpen?: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  persist?: boolean;
 }
 
 function SettingsAccordion({
@@ -149,12 +147,12 @@ function SettingsAccordion({
   defaultOpen = false,
   persist = false,
 }: {
-  items?: SettingsAccordionItemConfig[]
-  className?: string
-  defaultOpen?: boolean
-  persist?: boolean
+  items?: SettingsAccordionItemConfig[];
+  className?: string;
+  defaultOpen?: boolean;
+  persist?: boolean;
 }) {
-  if (items.length === 0) return null
+  if (items.length === 0) return null;
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -176,7 +174,7 @@ function SettingsAccordion({
         </SettingsAccordionItem>
       ))}
     </div>
-  )
+  );
 }
 
-export { SettingsAccordion, SettingsAccordionItem }
+export { SettingsAccordion, SettingsAccordionItem };

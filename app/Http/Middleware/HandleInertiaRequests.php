@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\EmailSettingsController;
+use App\Models\Notification;
+use App\Models\User;
 use App\Modules\ModuleRegistry;
 use App\Services\EmailSettingsService;
 use App\Services\SettingsService;
@@ -54,16 +56,35 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
             'latestNotifications' => fn () => $request->user()
-                ? $request->user()->notifications()->latest()->take(5)->get()
+                ? $request->user()->notifications()->latest()->take(5)->get()->map(fn (Notification $n) => [
+                    'id' => $n->id,
+                    'type' => $n->type,
+                    'title' => $n->title ?? $n->data['title'] ?? '',
+                    'message' => $n->message ?? $n->data['message'] ?? $n->data['body'] ?? '',
+                    'link' => $n->link ?? $n->data['link'] ?? $n->data['url'] ?? '',
+                    'severity' => $n->severity ?? 'info',
+                    'module' => $n->module ?? 'core',
+                    'is_read' => $n->read_at ? '1' : '0',
+                    'data' => $n->data,
+                    'read_at' => $n->read_at?->toISOString(),
+                    'created_at' => $n->created_at->toISOString(),
+                    'created_at_relative' => self::relativeTime($n->created_at),
+                ])
                 : [],
+            'notificationUnreadCount' => fn () => $request->user()
+                ? Notification::where('notifiable_id', $request->user()->id)
+                    ->where('notifiable_type', get_class($request->user()))
+                    ->whereNull('read_at')
+                    ->count()
+                : 0,
             'userCapabilities' => fn () => $request->user()
                 ? $this->getUserCapabilities($request->user())
                 : [],
             'userMode' => fn () => $request->user()
-                ? ($request->session()->get('user_mode', 'host'))
-                : 'host',
+                ? ($request->session()->get('user_mode', 'guest'))
+                : 'guest',
             'canSwitchMode' => fn () => $request->user()
-                ? $request->user()->hasPermission('bookings.view')
+                ? ($request->user()->hasPermission('bookings.view') && $this->isModuleEnabled('bookings'))
                 : false,
             'formattingSettings' => function () {
                 try {
@@ -84,9 +105,10 @@ class HandleInertiaRequests extends Middleware
                 'name' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
             ],
             'app_url' => fn () => self::safeSetting('app_url', config('app.url')),
-            'notificationUnreadCount' => fn () => $request->user()
-                ? $request->user()->unreadNotifications()->count()
-                : 0,
+            'impersonating' => fn () => $request->session()->get('impersonating', false),
+            'impersonator' => fn () => $request->session()->has('impersonator_id')
+                ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name', 'email'])
+                : null,
             'debug' => fn () => config('app.debug', false),
             'moduleDebugData' => fn () => $this->getModuleDebugData(),
         ];
@@ -156,16 +178,16 @@ class HandleInertiaRequests extends Middleware
         $caps = [
             'isAdmin' => $user->isAdmin(),
             'can' => [
-                'manageUsers' => $user->hasPermission('manage-users'),
-                'manageSettings' => $user->hasPermission('manage-settings'),
-                'manageRoles' => $user->hasPermission('manage-roles'),
-                'viewSystemHealth' => $user->hasPermission('view-system-health'),
-                'viewDashboard' => $user->hasPermission('view-dashboard'),
-                'viewProfile' => $user->hasPermission('view-profile'),
-                'editProfile' => $user->hasPermission('edit-profile'),
-                'deleteAccount' => $user->hasPermission('delete-account'),
-                'viewNotifications' => $user->hasPermission('view-notifications'),
-                'manageNotifications' => $user->hasPermission('manage-notifications'),
+                'manageUsers' => $user->can('manage-users'),
+                'manageSettings' => $user->can('manage-settings'),
+                'manageRoles' => $user->can('manage-roles'),
+                'viewSystemHealth' => $user->can('view-system-health'),
+                'viewDashboard' => $user->can('view-dashboard'),
+                'viewProfile' => $user->can('view-profile'),
+                'editProfile' => $user->can('edit-profile'),
+                'deleteAccount' => $user->can('delete-account'),
+                'viewNotifications' => $user->can('view-notifications'),
+                'manageNotifications' => $user->can('manage-notifications'),
             ],
         ];
 
@@ -173,7 +195,7 @@ class HandleInertiaRequests extends Middleware
             $registry = app(ModuleRegistry::class);
             foreach ($registry->all() as $slug => $module) {
                 foreach ($module->permissions() as $perm) {
-                    $caps[$perm['slug']] = $user->hasPermission($perm['slug']);
+                    $caps[$perm['slug']] = $user->can($perm['slug']);
                 }
                 $caps['hasModule_'.$slug] = $this->isModuleEnabled($slug);
             }
@@ -253,12 +275,32 @@ class HandleInertiaRequests extends Middleware
         }
     }
 
+    protected static function relativeTime(\DateTimeInterface $datetime): string
+    {
+        $diff = time() - $datetime->getTimestamp();
+
+        if ($diff < 60) {
+            return 'just now';
+        }
+        if ($diff < 3600) {
+            return floor($diff / 60).'m ago';
+        }
+        if ($diff < 86400) {
+            return floor($diff / 3600).'h ago';
+        }
+        if ($diff < 604800) {
+            return floor($diff / 86400).'d ago';
+        }
+
+        return $datetime->format('M j');
+    }
+
     private function buildAuthUser($user): array
     {
         $primaryRole = $user->roles->first();
         $roleSlug = $primaryRole?->slug ?? '';
 
-        $displayNameOptions = $this->buildDisplayNameOptions($user);
+        $displayNameOptions = $user->getDisplayNameOptions();
 
         $phoneData = $user->phone
             ? (is_string($user->phone) ? json_decode($user->phone, true) : $user->phone)
@@ -294,37 +336,5 @@ class HandleInertiaRequests extends Middleware
                 ],
             ],
         ];
-    }
-
-    private function buildDisplayNameOptions($user): array
-    {
-        $options = [];
-        $username = $user->name;
-        $firstName = $user->first_name ?? '';
-        $lastName = $user->last_name ?? '';
-        $nickname = $user->nickname ?? '';
-
-        $options['username'] = $username;
-
-        if (! empty($firstName)) {
-            $options['firstname'] = $firstName;
-        }
-        if (! empty($lastName)) {
-            $options['lastname'] = $lastName;
-        }
-        if (! empty($firstName) && ! empty($lastName)) {
-            $options['firstlast'] = $firstName.' '.$lastName;
-            $options['lastfirst'] = $lastName.' '.$firstName;
-        }
-        if (! empty($nickname)) {
-            $options['nickname'] = $nickname;
-        }
-
-        $displayName = $user->display_name ?: $user->name;
-        if (! in_array($displayName, $options)) {
-            $options['display'] = $displayName;
-        }
-
-        return $options;
     }
 }

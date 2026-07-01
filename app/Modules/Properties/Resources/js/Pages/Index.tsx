@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout"
 import { DataTable } from "@/Components/ui/data-table"
 import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/Components/ui/empty"
 import { Button } from "@/Components/ui/button"
 import { Badge } from "@/Components/ui/badge"
 import { ActionCell } from "@/Components/shared/action-cell"
@@ -166,30 +167,36 @@ export default function PropertiesIndex() {
     })
   }, [nonce])
 
+  const header = (
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">Properties</h2>
+        <p className="text-muted-foreground">Manage your real estate properties</p>
+      </div>
+      <Button onClick={() => router.visit(route("dashboard.properties.create"))}>
+        <Plus className="mr-2 h-4 w-4" /> Add Property
+      </Button>
+    </div>
+  );
+
   if (properties.length === 0) {
     return (
       <AuthenticatedLayout header="Properties">
         <Head title="Properties" />
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground">Properties</h2>
-              <p className="text-muted-foreground">Manage your real estate properties</p>
-            </div>
-            <Button onClick={() => router.visit(route("dashboard.properties.create"))}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Property
-            </Button>
-          </div>
-          <div className="flex flex-col items-center justify-center py-12 border border-border rounded-md">
-            <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg text-foreground mb-2">No properties found</p>
-            <p className="text-muted-foreground mb-4">Create your first property to get started</p>
-            <Button onClick={() => router.visit(route("dashboard.properties.create"))}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create your first property
-            </Button>
-          </div>
+          {header}
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><Building2 /></EmptyMedia>
+              <EmptyTitle>No properties found</EmptyTitle>
+              <EmptyDescription>Create your first property to get started</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => router.visit(route("dashboard.properties.create"))}>
+                <Plus className="mr-2 h-4 w-4" /> Create your first property
+              </Button>
+            </EmptyContent>
+          </Empty>
         </div>
       </AuthenticatedLayout>
     )
@@ -199,16 +206,7 @@ export default function PropertiesIndex() {
     <AuthenticatedLayout header="Properties">
       <Head title="Properties" />
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">Properties</h2>
-            <p className="text-muted-foreground">Manage your real estate properties</p>
-          </div>
-          <Button onClick={() => router.visit(route("dashboard.properties.create"))}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Property
-          </Button>
-        </div>
+        {header}
         <DataTable
           columns={columns}
           data={properties}

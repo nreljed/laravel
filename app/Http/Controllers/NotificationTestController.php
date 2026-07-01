@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Notification\SendTestNotificationRequest;
+use App\Http\Requests\Notification\SendToAllRequest;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use App\Services\NotificationService;
@@ -46,17 +48,9 @@ class NotificationTestController extends Controller
         ]);
     }
 
-    public function sendTest(Request $request): JsonResponse
+    public function sendTest(SendTestNotificationRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'type' => 'required|string',
-            'title' => 'required|string|max:255',
-            'message' => 'required|string',
-            'link' => 'nullable|string|max:500',
-            'severity' => 'nullable|string|in:info,warning,urgent,critical',
-            'channels' => 'nullable|string',
-        ]);
-
+        $data = $request->validated();
         $user = $request->user();
         $channels = $data['channels'] ?? null;
         $channelsArray = $channels ? json_decode($channels, true) : ['in_app'];
@@ -66,6 +60,7 @@ class NotificationTestController extends Controller
             'message' => $data['message'],
             'link' => $data['link'] ?? '',
             'severity' => $data['severity'] ?? 'info',
+            'module' => $data['module'] ?? 'core',
         ]);
 
         $emailQueued = false;
@@ -84,21 +79,16 @@ class NotificationTestController extends Controller
         ]);
     }
 
-    public function sendToAll(Request $request): JsonResponse
+    public function sendToAll(SendToAllRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'type' => 'required|string',
-            'title' => 'required|string|max:255',
-            'message' => 'required|string',
-            'link' => 'nullable|string|max:500',
-            'severity' => 'nullable|string|in:info,warning,urgent,critical',
-        ]);
+        $data = $request->validated();
 
         $notification = new AppNotification($data['type'], [
             'title' => $data['title'],
             'message' => $data['message'],
             'link' => $data['link'] ?? '',
             'severity' => $data['severity'] ?? 'info',
+            'module' => $data['module'] ?? 'core',
         ]);
 
         $count = 0;

@@ -1,117 +1,80 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePage, router } from "@inertiajs/react";
 
-interface Notification {
+export type Severity = "info" | "warning" | "urgent" | "critical";
+
+export interface Notification {
   id: string;
   type: string;
+  title: string;
+  message: string;
+  link: string;
+  module: string;
+  is_read: string;
+  severity: Severity;
   data: Record<string, string>;
   read_at: string | null;
   created_at: string;
+  created_at_relative: string;
 }
 
 interface UseNotificationsResult {
   unreadCount: number;
-  notifications: Notification[];
+  recentNotifications: Notification[];
+  allNotifications: Notification[];
   loading: boolean;
-  fetch: () => void;
-  markRead: (id: string) => void;
-  markAllRead: () => void;
-  deleteNotification: (id: string) => void;
+  fetchRecent: () => Promise<void>;
+  fetchAll: (_limit?: number, _offset?: number) => Promise<void>;
+  markRead: (_id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
+  deleteNotification: (_id: string) => Promise<void>;
+  triggerRefresh: () => void;
+  notificationPermission: NotificationPermission | "unsupported";
+  requestNotificationPermission: () => Promise<void>;
 }
 
-export function useNotifications(): UseNotificationsResult {
-  const { props } = usePage();
-  const latestNotifications = (props.latestNotifications as Notification[]) ?? [];
-  const notificationUnreadCount = (props.notificationUnreadCount as number) ?? 0;
+const POLL_INTERVAL_ACTIVE = 10_000;
+const POLL_INTERVAL_IDLE = 30_000;
+const POLL_INTERVAL_STANDBY = 60_000;
+const IDLE_THRESHOLD_1 = 120_000;
+const IDLE_THRESHOLD_2 = 300_000;
+const CHANNEL_NAME = "app-notifications";
+const MAX_CONSECUTIVE_ERRORS = 3;
 
-  const [unreadCount, setUnreadCount] = useState(notificationUnreadCount);
-  const [notifications, setNotifications] = useState<Notification[]>(latestNotifications);
-  const [loading, setLoading] = useState(false);
-  const lastCountRef = useRef(notificationUnreadCount);
-  const soundEnabledRef = useRef(localStorage.getItem('notification_sound_enabled') !== 'false');
+let sharedAudioContext: AudioContext | null = null;
 
-  useEffect(() => {
-    setUnreadCount(notificationUnreadCount);
-    setNotifications(latestNotifications);
-    if (notificationUnreadCount > lastCountRef.current && soundEnabledRef.current) {
-      playNotificationSound();
-    }
-    lastCountRef.current = notificationUnreadCount;
-  }, [notificationUnreadCount, latestNotifications]);
-
-  const fetch = useCallback(() => {
-    setLoading(true);
-    router.reload({
-      only: ["latestNotifications", "notificationUnreadCount"],
-      onFinish: () => setLoading(false),
-    });
-  }, []);
-
-  const markRead = useCallback(
-    (id: string) => {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)),
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-      router.put(
-        route("dashboard.notifications.mark-read") as string,
-        { id },
-        { preserveScroll: true },
-      );
-    },
-    [],
-  );
-
-  const markAllRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read_at: new Date().toISOString() })));
-    setUnreadCount(0);
-    router.post(
-      route("dashboard.notifications.mark-all-read") as string,
-      {},
-      { preserveScroll: true },
-    );
-  }, []);
-
-  const deleteNotification = useCallback(
-    (id: string) => {
-      const wasUnread = notifications.some((n) => n.id === id && !n.read_at);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      if (wasUnread) {
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+function initAudioContext(): void {
+  const handler = () => {
+    try {
+      if (!sharedAudioContext || sharedAudioContext.state === "closed") {
+        sharedAudioContext = new (
+          globalThis.AudioContext ||
+          ((globalThis as unknown as Record<string, unknown>)
+            .webkitAudioContext as typeof AudioContext)
+        )();
       }
-      router.delete(
-        route("dashboard.notifications.destroy", { id }) as string,
-        { preserveScroll: true },
-      );
-    },
-    [notifications],
-  );
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      router.reload({ only: ["latestNotifications", "notificationUnreadCount"] });
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return {
-    unreadCount,
-    notifications,
-    loading,
-    fetch,
-    markRead,
-    markAllRead,
-    deleteNotification,
+    } catch {
+      // audio not supported
+    }
+    document.removeEventListener("click", handler);
+    document.removeEventListener("keydown", handler);
+    document.removeEventListener("touchstart", handler);
   };
+  document.addEventListener("click", handler, { once: true });
+  document.addEventListener("keydown", handler, { once: true });
+  document.addEventListener("touchstart", handler, { once: true });
 }
+
+function getAudioContext(): AudioContext | null {
+  return sharedAudioContext;
+}
+
+initAudioContext();
 
 function playNotificationSound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const AudioContextClass =
-      window.AudioContext ||
-      ((window as unknown as Record<string, unknown>).webkitAudioContext as typeof AudioContext);
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
     oscillator.connect(gain);
@@ -122,8 +85,375 @@ function playNotificationSound(): void {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.25);
-    oscillator.onended = () => ctx.close();
   } catch {
     // audio not supported
   }
+}
+
+function showDesktopNotification(title: string, body: string, link?: string): void {
+  if (!("Notification" in globalThis) || Notification.permission !== "granted") return;
+  try {
+    const n = new Notification(title, { body });
+    if (link) {
+      n.addEventListener("click", () => {
+        window.focus();
+        location.assign(link);
+      });
+    }
+  } catch {
+    // silently fail
+  }
+}
+
+export function useNotifications(): UseNotificationsResult {
+  const { props } = usePage();
+  const initialNotifications = (props.latestNotifications ?? []) as Notification[];
+  const initialCount = (props.notificationUnreadCount as number) ?? 0;
+  const [unreadCount, setUnreadCount] = useState(initialCount);
+  const [recentNotifications, setRecentNotifications] =
+    useState<Notification[]>(initialNotifications);
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("Notification" in globalThis ? Notification.permission : "unsupported");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countEtagRef = useRef<string | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const lastCountRef = useRef(initialCount);
+  const initialCountRef = useRef(initialCount);
+  const soundEnabledRef = useRef(localStorage.getItem("notification_sound_enabled") !== "false");
+  const lastInteractionRef = useRef(Date.now());
+  const pollIntervalRef = useRef(POLL_INTERVAL_ACTIVE);
+  const fetchGenRef = useRef(0);
+  const consecutiveErrorsRef = useRef(0);
+
+  const broadcast = useCallback((count: number) => {
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type: "unread", count });
+    }
+  }, []);
+
+  const fetchList = useCallback(
+    async (background = false) => {
+      const gen = fetchGenRef.current;
+      if (!background) setLoading(true);
+      try {
+        await new Promise<void>((resolve) => {
+          router.get(route("api.notifications.recent"), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: (page: any) => {
+              if (gen !== fetchGenRef.current) return;
+              const data = page.props as any;
+              setRecentNotifications(data.notifications ?? []);
+              const c = data.unread_count ?? 0;
+              if (c > lastCountRef.current && soundEnabledRef.current) {
+                playNotificationSound();
+                if (document.visibilityState === "hidden") {
+                  const latest = (data.notifications ?? [])[0];
+                  if (latest) showDesktopNotification(latest.title, latest.message || "", latest.link);
+                }
+              }
+              lastCountRef.current = c;
+              setUnreadCount(c);
+              broadcast(c);
+              resolve();
+            },
+            onError: () => resolve(),
+          });
+        });
+      } catch {
+        // silently fail
+      } finally {
+        if (gen === fetchGenRef.current && !background) setLoading(false);
+      }
+    },
+    [broadcast],
+  );
+
+  const pollCount = useCallback(() => {
+    const gen = fetchGenRef.current;
+
+    router.get(route("api.notifications.unread-count"), {}, {
+      preserveState: true,
+      preserveScroll: true,
+      onSuccess: (page: any) => {
+        if (gen !== fetchGenRef.current) return;
+        consecutiveErrorsRef.current = 0;
+        const data = page.props as any;
+        const c = data.count ?? 0;
+        if (c > lastCountRef.current && soundEnabledRef.current) {
+          playNotificationSound();
+          if (document.visibilityState === "hidden") {
+            showDesktopNotification(
+              `${c} new notification${c > 1 ? "s" : ""}`,
+              "You have unread notifications",
+              "/dashboard/notifications",
+            );
+          }
+        }
+        lastCountRef.current = c;
+        setUnreadCount(c);
+        fetchList(true);
+      },
+      onError: () => {
+        consecutiveErrorsRef.current += 1;
+      },
+    });
+  }, [fetchList]);
+
+  const getAdaptiveInterval = useCallback((): number => {
+    const errors = consecutiveErrorsRef.current;
+    if (errors > MAX_CONSECUTIVE_ERRORS) {
+      return Math.min(POLL_INTERVAL_STANDBY * (1 << (errors - MAX_CONSECUTIVE_ERRORS)), 300_000);
+    }
+    const idleTime = Date.now() - lastInteractionRef.current;
+    if (idleTime < IDLE_THRESHOLD_1) return POLL_INTERVAL_ACTIVE;
+    if (idleTime < IDLE_THRESHOLD_2) return POLL_INTERVAL_IDLE;
+    return POLL_INTERVAL_STANDBY;
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    pollCount();
+    const next = getAdaptiveInterval();
+    pollIntervalRef.current = next;
+    timerRef.current = setTimeout(startPolling, next);
+  }, [pollCount, getAdaptiveInterval]);
+
+  const stopPolling = useCallback(() => {
+    if (!timerRef.current) {
+      return;
+    }
+
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const triggerRefresh = useCallback(() => {
+    countEtagRef.current = null;
+    fetchGenRef.current += 1;
+    pollCount();
+  }, [pollCount]);
+
+  const fetchRecent = useCallback(async () => {
+    await fetchList();
+  }, [fetchList]);
+
+  const fetchAll = useCallback(
+    async (limit = 20, offset = 0) => {
+      const skipLoading = initialCountRef.current === 0;
+      if (!skipLoading) setLoading(true);
+      try {
+        await new Promise<void>((resolve) => {
+          router.get(route("api.notifications", { limit, offset }), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: (page: any) => {
+              const data = page.props as any;
+              setAllNotifications(data.notifications ?? []);
+              setUnreadCount(data.unread_count ?? 0);
+              lastCountRef.current = data.unread_count ?? 0;
+              broadcast(data.unread_count ?? 0);
+              resolve();
+            },
+            onError: () => resolve(),
+          });
+        });
+      } catch {
+        // silently fail
+      } finally {
+        if (!skipLoading) setLoading(false);
+      }
+    },
+    [broadcast],
+  );
+
+  const markRead = useCallback(
+    async (id: string) => {
+      fetchGenRef.current += 1;
+      setRecentNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: "1" } : n)));
+      setAllNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: "1" } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      countEtagRef.current = null;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          router.post(route("api.notifications.mark-read"), { id } as any, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+              triggerRefresh();
+              resolve();
+            },
+            onError: () => reject(),
+          });
+        });
+      } catch {
+        await triggerRefresh();
+      }
+    },
+    [triggerRefresh],
+  );
+
+  const markAllRead = useCallback(async () => {
+    fetchGenRef.current += 1;
+    setRecentNotifications((prev) => prev.map((n) => ({ ...n, is_read: "1" })));
+    setAllNotifications((prev) => prev.map((n) => ({ ...n, is_read: "1" })));
+    setUnreadCount(0);
+    lastCountRef.current = 0;
+    countEtagRef.current = null;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          router.post(route("api.notifications.mark-all-read"), {} as any, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+              triggerRefresh();
+              resolve();
+            },
+            onError: () => reject(),
+          });
+        });
+      } catch {
+        await triggerRefresh();
+      }
+  }, [triggerRefresh]);
+
+  const deleteNotification = useCallback(
+    async (id: string) => {
+      fetchGenRef.current += 1;
+      setRecentNotifications((prev) => prev.filter((n) => n.id !== id));
+      setAllNotifications((prev) => prev.filter((n) => n.id !== id));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      lastCountRef.current = Math.max(0, lastCountRef.current - 1);
+      countEtagRef.current = null;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          router.delete(route("api.notifications.destroy", { id } as any), {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+              triggerRefresh();
+              resolve();
+            },
+            onError: () => reject(),
+          });
+        });
+      } catch {
+        await triggerRefresh();
+      }
+    },
+    [triggerRefresh],
+  );
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (!("Notification" in globalThis)) return;
+    if (Notification.permission === "granted") {
+      setNotificationPermission("granted");
+      return;
+    }
+    if (Notification.permission === "denied") return;
+    const result = await Notification.requestPermission();
+    setNotificationPermission(result);
+  }, []);
+
+  // Visibility changes — pause/resume polling
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        lastInteractionRef.current = Date.now();
+        countEtagRef.current = null;
+        stopPolling();
+        pollCount();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [pollCount, startPolling, stopPolling]);
+
+  // Track user interaction for adaptive intervals
+  useEffect(() => {
+    const handleInteraction = () => {
+      lastInteractionRef.current = Date.now();
+    };
+    globalThis.addEventListener("mousemove", handleInteraction, { passive: true });
+    globalThis.addEventListener("click", handleInteraction, { passive: true });
+    globalThis.addEventListener("keydown", handleInteraction, { passive: true });
+    globalThis.addEventListener("touchstart", handleInteraction, { passive: true });
+    return () => {
+      globalThis.removeEventListener("mousemove", handleInteraction);
+      globalThis.removeEventListener("click", handleInteraction);
+      globalThis.removeEventListener("keydown", handleInteraction);
+      globalThis.removeEventListener("touchstart", handleInteraction);
+    };
+  }, []);
+
+  // BroadcastChannel for cross-tab sync
+  useEffect(() => {
+    try {
+      const bc = new BroadcastChannel(CHANNEL_NAME);
+      channelRef.current = bc;
+      bc.onmessage = (event) => {
+        if (event.data?.type !== "unread") {
+          return;
+        }
+
+        lastCountRef.current = event.data.count;
+        setUnreadCount(event.data.count);
+      };
+    } catch {
+      // not supported
+    }
+    return () => {
+      if (!channelRef.current) {
+        return;
+      }
+
+      channelRef.current.close();
+      channelRef.current = null;
+    };
+  }, []);
+
+  // Refresh on Inertia navigation finish
+  useEffect(() => {
+    const remove = router.on("finish", () => {
+      countEtagRef.current = null;
+      fetchGenRef.current += 1;
+      pollCount();
+      fetchList();
+    });
+    return remove;
+  }, [pollCount, fetchList]);
+
+  // Start polling on mount, stop on unmount
+  useEffect(() => {
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
+    return stopPolling;
+  }, [startPolling, stopPolling]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchList(true);
+  }, [fetchList]);
+
+  return {
+    unreadCount,
+    recentNotifications,
+    allNotifications,
+    loading,
+    fetchRecent,
+    fetchAll,
+    markRead,
+    markAllRead,
+    deleteNotification,
+    triggerRefresh,
+    notificationPermission,
+    requestNotificationPermission,
+  };
 }

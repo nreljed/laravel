@@ -16,18 +16,7 @@ class AvatarController extends Controller
         $user = $request->user();
         $file = $request->file('avatar');
 
-        $filename = 'avatar-'.$user->id.'-'.time().'.webp';
-        $avatarDir = Storage::disk('avatars')->path('');
-
-        if (! is_dir($avatarDir)) {
-            mkdir($avatarDir, 0755, true);
-        }
-
-        try {
-            $file->move($avatarDir, $filename);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'error' => 'Failed to store avatar file.'], 500);
-        }
+        $filename = $file->store('avatars');
 
         if ($user->avatar && $user->avatar !== $filename) {
             Storage::disk('avatars')->delete($user->avatar);
@@ -37,7 +26,7 @@ class AvatarController extends Controller
         $user->refresh();
 
         $avatarUrl = $user->avatar_url;
-        $cacheBust = $avatarUrl ? filemtime(Storage::disk('avatars')->path($filename)) : time();
+        $cacheBust = $avatarUrl ? time() : time();
         $urlWithBuster = $avatarUrl ? $avatarUrl.'?v='.$cacheBust : null;
 
         return response()->json([

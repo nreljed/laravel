@@ -7,7 +7,6 @@ use App\Modules\Booking\Controllers\BookingDemoController;
 use App\Modules\Booking\Controllers\BookingGlobalSettingsController;
 use App\Modules\Booking\Controllers\BookingGuestController;
 use App\Modules\Booking\Controllers\BookingIcalController;
-use App\Modules\Booking\Controllers\BookingSettingsController;
 use App\Modules\Booking\Controllers\BookingSystemController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,10 +29,10 @@ Route::delete('/ical/feeds/{feedId}', [BookingIcalController::class, 'destroy'])
 
 // ─── Availability ───────────────────────────────────────
 Route::get('/availability', [BookingController::class, 'availability'])->name('availability');
-Route::get('/availability/{property}', [BookingAvailabilityController::class, 'check'])->name('availability.check');
+Route::get('/availability/{propertyId}', [BookingAvailabilityController::class, 'check'])->name('availability.check');
 Route::post('/availability/block', [BookingAvailabilityController::class, 'block'])->name('availability.block');
 Route::post('/availability/unblock/{id}', [BookingAvailabilityController::class, 'unblock'])->name('availability.unblock');
-Route::get('/availability/cache-version/{property}', [BookingAvailabilityController::class, 'cacheVersion'])->name('availability.cache-version');
+Route::get('/availability/cache-version/{propertyId}', [BookingAvailabilityController::class, 'cacheVersion'])->name('availability.cache-version');
 Route::post('/availability/check-api', [BookingAvailabilityController::class, 'checkAvailabilityApi'])->name('availability.check-api');
 Route::post('/availability/clear-opcache', [BookingAvailabilityController::class, 'clearOpcache'])->name('availability.clear-opcache');
 
@@ -43,10 +42,6 @@ Route::post('/block-dates', [BookingController::class, 'blockDates'])->name('blo
 // ─── Archive ────────────────────────────────────────────
 Route::post('/archive/{booking}', [BookingController::class, 'toggleArchive'])->name('archive');
 
-// ─── Property-level Booking Settings ────────────────────
-Route::get('/settings/{property}', [BookingSettingsController::class, 'edit'])->name('settings.edit');
-Route::put('/settings/{property}', [BookingSettingsController::class, 'update'])->name('settings.update');
-
 // ─── Global Booking Settings ───────────────────────────
 Route::get('/global-settings', [BookingGlobalSettingsController::class, 'edit'])->name('global-settings.edit');
 Route::put('/global-settings', [BookingGlobalSettingsController::class, 'update'])->name('global-settings.update');
@@ -55,26 +50,26 @@ Route::put('/global-settings', [BookingGlobalSettingsController::class, 'update'
 Route::get('/demo', [BookingDemoController::class, 'demo'])->name('demo');
 Route::post('/demo/seed', [BookingDemoController::class, 'seed'])->name('demo.seed');
 Route::post('/demo/cleanup', [BookingDemoController::class, 'cleanupAll'])->name('demo.cleanup');
-Route::get('/demo/{booking}', [BookingDemoController::class, 'demoResult'])->name('demo.result');
-Route::get('/demo/{booking}/magic-link', [BookingDemoController::class, 'generateMagicLink'])->name('demo.magic-link');
-Route::get('/demo/{booking}/token-status', [BookingDemoController::class, 'tokenStatus'])->name('demo.token-status');
-Route::get('/demo/{booking}/email-status', [BookingDemoController::class, 'emailStatus'])->name('demo.email-status');
-Route::get('/demo/{booking}/pipeline-trace', [BookingDemoController::class, 'pipelineTrace'])->name('demo.pipeline-trace');
-Route::get('/demo/{booking}/verify', [BookingDemoController::class, 'verifyIntegration'])->name('demo.verify');
+Route::get('/demo/{id}', [BookingDemoController::class, 'demoResult'])->name('demo.result');
+Route::get('/demo/{id}/magic-link', [BookingDemoController::class, 'generateMagicLink'])->name('demo.magic-link');
+Route::get('/demo/{id}/token-status', [BookingDemoController::class, 'tokenStatus'])->name('demo.token-status');
+Route::get('/demo/{id}/email-status', [BookingDemoController::class, 'emailStatus'])->name('demo.email-status');
+Route::get('/demo/{id}/pipeline-trace', [BookingDemoController::class, 'pipelineTrace'])->name('demo.pipeline-trace');
+Route::get('/demo/{id}/verify', [BookingDemoController::class, 'verifyIntegration'])->name('demo.verify');
 Route::get('/demo/diagnose', [BookingDemoController::class, 'diagnose'])->name('demo.diagnose');
 
 // ─── Guest Portal ───────────────────────────────────────
 Route::prefix('/guest')->name('guest.')->group(function () {
-    Route::get('/view/{booking}', [BookingGuestController::class, 'view'])->name('view');
-    Route::get('/show/{token}', [BookingGuestController::class, 'show'])->name('show');
+    Route::get('/view', [BookingGuestController::class, 'view'])->name('view');
+    Route::get('/show/{bookingId}', [BookingGuestController::class, 'show'])->name('show');
     Route::post('/send-magic-link', [BookingGuestController::class, 'sendMagicLink'])->name('send-magic-link');
     Route::post('/inline-login', [BookingGuestController::class, 'inlineLogin'])->name('inline-login');
     Route::post('/register', [BookingGuestController::class, 'registerFromBooking'])->name('register');
-    Route::post('/request-cancellation/{booking}', [BookingGuestController::class, 'requestCancellation'])->name('request-cancellation');
-    Route::post('/request-modification/{booking}', [BookingGuestController::class, 'requestModification'])->name('request-modification');
-    Route::post('/confirm-cancellation/{booking}', [BookingGuestController::class, 'confirmCancellation'])->name('confirm-cancellation');
-    Route::post('/logged-in-modify/{booking}', [BookingGuestController::class, 'loggedInModify'])->name('logged-in-modify');
-    Route::post('/logged-in-cancel/{booking}', [BookingGuestController::class, 'loggedInCancel'])->name('logged-in-cancel');
+    Route::post('/request-cancellation/{bookingId}', [BookingGuestController::class, 'requestCancellation'])->name('request-cancellation');
+    Route::post('/request-modification/{bookingId}', [BookingGuestController::class, 'requestModification'])->name('request-modification');
+    Route::get('/confirm-cancellation/{bookingId}', [BookingGuestController::class, 'confirmCancellation'])->name('confirm-cancellation');
+    Route::post('/logged-in-modify/{bookingId}', [BookingGuestController::class, 'loggedInModify'])->name('logged-in-modify');
+    Route::post('/logged-in-cancel/{bookingId}', [BookingGuestController::class, 'loggedInCancel'])->name('logged-in-cancel');
     Route::post('/toggle-mode', [BookingGuestController::class, 'toggleMode'])->name('toggle-mode');
 });
 
@@ -96,8 +91,8 @@ Route::post('/{booking}/policy-override', [BookingController::class, 'policyOver
 Route::post('/{booking}/request-review', [BookingController::class, 'requestReview'])->name('request-review');
 
 // ─── Parameterized CRUD (must be last) ──────────────────
-Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
 Route::get('/{booking}/edit', [BookingController::class, 'edit'])->name('edit');
 Route::put('/{booking}', [BookingController::class, 'update'])->name('update');
+Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
 Route::delete('/{booking}', [BookingController::class, 'destroy'])->name('destroy');
 Route::post('/{booking}/transition', [BookingController::class, 'transition'])->name('transition');

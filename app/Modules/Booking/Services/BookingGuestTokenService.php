@@ -101,7 +101,7 @@ class BookingGuestTokenService
      */
     public static function getMagicLink(int $bookingId, string $rawToken): string
     {
-        return url('/dashboard/booking/view?token='.$rawToken);
+        return route('booking.view', ['token' => $rawToken]);
     }
 
     /**

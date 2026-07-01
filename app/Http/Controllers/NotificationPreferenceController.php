@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Notification\UpdatePreferencesRequest;
 use App\Models\NotificationPreference;
 use App\Services\NotificationTypeRegistry;
 use Illuminate\Http\Request;
@@ -29,16 +30,9 @@ class NotificationPreferenceController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(UpdatePreferencesRequest $request)
     {
-        $validated = $request->validate([
-            'preferences' => ['required', 'array'],
-            'preferences.*.type' => ['required', 'string'],
-            'preferences.*.channel' => ['required', 'string', 'in:in_app,email'],
-            'preferences.*.enabled' => ['required', 'boolean'],
-        ]);
-
-        foreach ($validated['preferences'] as $pref) {
+        foreach ($request->validated('preferences') as $pref) {
             NotificationPreference::updateOrCreate(
                 [
                     'user_id' => $request->user()->id,

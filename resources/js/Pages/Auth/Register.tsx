@@ -23,7 +23,14 @@ import GuestLayout from "@/Layouts/GuestLayout";
 import { Loader2, Check, X } from "lucide-react";
 
 export default function Register({ errors: pageErrors }: { errors?: Record<string, string> }) {
-  const { data, setData, post, processing, errors: formErrors, setError } = useForm({
+  const {
+    data,
+    setData,
+    post,
+    processing,
+    errors: formErrors,
+    setError,
+  } = useForm({
     username: "",
     email: "",
     password: "",
@@ -81,7 +88,7 @@ export default function Register({ errors: pageErrors }: { errors?: Record<strin
                   placeholder="johndoe"
                   value={data.username}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^a-zA-Z0-9_.-]/g, "");
+                    const val = e.target.value.replaceAll(/[^a-zA-Z0-9_.-]/g, "");
                     setData("username", val);
                     usernameAvail.setValue(val);
                   }}
@@ -94,15 +101,15 @@ export default function Register({ errors: pageErrors }: { errors?: Record<strin
                   {usernameAvail.status === "checking" && (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
-                  {usernameAvail.status === "taken" && (
-                    <X className="h-4 w-4 text-destructive" />
-                  )}
+                  {usernameAvail.status === "taken" && <X className="h-4 w-4 text-destructive" />}
                   {usernameAvail.status === "available" && (
                     <Check className="h-4 w-4 text-green-500" />
                   )}
                 </span>
               </div>
-              <FieldDescription>Your unique login handle. Letters, numbers, underscores, hyphens and periods only.</FieldDescription>
+              <FieldDescription>
+                Your unique login handle. Letters, numbers, underscores, hyphens and periods only.
+              </FieldDescription>
               {usernameAvail.status === "taken" && (
                 <FieldError>
                   <ErrorMessage error="This username is already taken." />
@@ -137,9 +144,7 @@ export default function Register({ errors: pageErrors }: { errors?: Record<strin
                   {emailAvail.status === "checking" && (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
-                  {emailAvail.status === "taken" && (
-                    <X className="h-4 w-4 text-destructive" />
-                  )}
+                  {emailAvail.status === "taken" && <X className="h-4 w-4 text-destructive" />}
                   {emailAvail.status === "available" && (
                     <Check className="h-4 w-4 text-green-500" />
                   )}
@@ -170,11 +175,7 @@ export default function Register({ errors: pageErrors }: { errors?: Record<strin
               confirmError={errors.password_confirmation}
             />
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={processing}
-            >
+            <Button type="submit" className="w-full" disabled={processing}>
               {processing && <Spinner className="mr-2" />}
               Create account
             </Button>

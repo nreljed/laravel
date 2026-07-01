@@ -21,14 +21,12 @@ import {
   Clock,
   Calendar,
   GitBranch,
-  Globe,
   Settings2,
   Play,
   Circle,
   RefreshCw,
   Mail,
   Percent,
-  Info,
   AlertTriangle,
 } from "lucide-react";
 
@@ -722,42 +720,6 @@ export function BookingGlobalSettingsSection({
               ))}
             </div>
           </SectionField>
-        </Section>
-
-        <Section
-          title="Workflow & Integrations"
-          description="WooCommerce payments integration — active when WooCommerce plugin is detected"
-          icon={Globe}
-          asAccordion
-        >
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/30">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-              <div className="text-sm text-blue-700 dark:text-blue-400">
-                WooCommerce integration is active and working. If the WooCommerce plugin is
-                installed, booking payments are routed through WooCommerce orders automatically. No
-                per-property configuration needed. This section is preliminary and will be expanded
-                in a future update.
-              </div>
-            </div>
-
-            <SectionField
-              label="WooCommerce Product ID"
-              htmlFor="woocommerce_product_id"
-              error={errors?.woocommerce_product_id}
-              description="Product ID used for booking fee line items."
-            >
-              <Input
-                id="woocommerce_product_id"
-                type="number"
-                min="0"
-                value={d?.woocommerce_product_id ?? 0}
-                onChange={(e) => handleChange("woocommerce_product_id", e.target.value)}
-                placeholder="0"
-                disabled={loading}
-              />
-            </SectionField>
-          </div>
         </Section>
 
         <Section

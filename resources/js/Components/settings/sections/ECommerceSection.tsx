@@ -1,42 +1,42 @@
-import { Section, SectionField } from "@/Components/section"
-import { Input } from "@/Components/ui/input"
-import { Switch } from "@/Components/ui/switch"
+import { Section, SectionField } from "@/Components/section";
+import { Input } from "@/Components/ui/input";
+import { Switch } from "@/Components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/Components/ui/select"
-import { router, usePage } from "@inertiajs/react"
-import { toast } from "sonner"
-import { useState } from "react"
-import { ShoppingCart } from "lucide-react"
+} from "@/Components/ui/select";
+import { router, usePage } from "@inertiajs/react";
+import { toast } from "sonner";
+import { useState } from "react";
+import { ShoppingCart } from "lucide-react";
 
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "US Dollar ($)" },
   { value: "EUR", label: "Euro (€)" },
   { value: "GBP", label: "British Pound (£)" },
   { value: "TND", label: "Tunisian Dinar (د.ت)" },
-]
+];
 
 const WEIGHT_UNITS = [
   { value: "kg", label: "kg" },
   { value: "g", label: "g" },
   { value: "lb", label: "lb" },
   { value: "oz", label: "oz" },
-]
+];
 
 const DIMENSION_UNITS = [
   { value: "cm", label: "cm" },
   { value: "m", label: "m" },
   { value: "in", label: "in" },
   { value: "ft", label: "ft" },
-]
+];
 
 export function ECommerceSection({ asAccordion = false }: { asAccordion?: boolean }) {
-  const flash = usePage().props.flash as Record<string, string> | undefined
-  const [saving, setSaving] = useState(false)
+  const flash = usePage().props.flash as Record<string, string> | undefined;
+  const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     default_product_status: "draft",
     low_stock_threshold: "5",
@@ -48,24 +48,30 @@ export function ECommerceSection({ asAccordion = false }: { asAccordion?: boolea
     enable_reviews: true,
     enable_wishlist: true,
     auto_complete_orders: false,
-  })
+  });
 
-  if (flash?.status) toast.success(flash.status)
+  if (flash?.status) toast.success(flash.status);
 
   const handleChange = (field: string, value: string | boolean) => {
-    setSettings((prev) => ({ ...prev, [field]: value }))
-  }
+    setSettings((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (saving) return
-    setSaving(true)
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     router.put(route("dashboard.admin.ecommerce.settings.update"), settings, {
       preserveScroll: true,
-      onSuccess: () => { toast.success("E-Commerce settings saved."); setSaving(false) },
-      onError: () => { toast.error("Failed to save."); setSaving(false) },
-    })
-  }
+      onSuccess: () => {
+        toast.success("E-Commerce settings saved.");
+        setSaving(false);
+      },
+      onError: () => {
+        toast.error("Failed to save.");
+        setSaving(false);
+      },
+    });
+  };
 
   return (
     <Section
@@ -106,16 +112,15 @@ export function ECommerceSection({ asAccordion = false }: { asAccordion?: boolea
 
       <div className="grid grid-cols-2 gap-4">
         <SectionField label="Currency" htmlFor="currency">
-          <Select
-            value={settings.currency}
-            onValueChange={(v) => handleChange("currency", v)}
-          >
+          <Select value={settings.currency} onValueChange={(v) => handleChange("currency", v)}>
             <SelectTrigger id="currency">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {CURRENCY_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -147,7 +152,9 @@ export function ECommerceSection({ asAccordion = false }: { asAccordion?: boolea
             </SelectTrigger>
             <SelectContent>
               {WEIGHT_UNITS.map((u) => (
-                <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                <SelectItem key={u.value} value={u.value}>
+                  {u.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -162,7 +169,9 @@ export function ECommerceSection({ asAccordion = false }: { asAccordion?: boolea
             </SelectTrigger>
             <SelectContent>
               {DIMENSION_UNITS.map((u) => (
-                <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                <SelectItem key={u.value} value={u.value}>
+                  {u.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -186,5 +195,5 @@ export function ECommerceSection({ asAccordion = false }: { asAccordion?: boolea
         ))}
       </div>
     </Section>
-  )
+  );
 }

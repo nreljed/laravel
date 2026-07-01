@@ -205,7 +205,7 @@ export function PropertyFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Categories</label>
+            <label className="text-xs font-medium text-muted-foreground">City</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="h-8 w-full justify-start text-xs font-normal">
