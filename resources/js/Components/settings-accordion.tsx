@@ -22,7 +22,7 @@ interface SettingsAccordionItemProps {
   className?: string;
   defaultOpen?: boolean;
   isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  onOpenChange?: (_open: boolean) => void;
   persist?: boolean;
 }
 
@@ -137,7 +137,7 @@ interface SettingsAccordionItemConfig {
   className?: string;
   defaultOpen?: boolean;
   isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  onOpenChange?: (_open: boolean) => void;
   persist?: boolean;
 }
 

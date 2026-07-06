@@ -401,8 +401,11 @@ function FileUpload(props: FileUploadProps) {
     return {
       getState: () => state,
       dispatch: (action: FileUploadAction) => {
+        // eslint-disable-next-line react-hooks/immutability
         state = reducer(state, action);
-        for (const listener of listeners) listener();
+        for (const listener of listeners) {
+          listener();
+        }
       },
       subscribe: (listener: () => void) => {
         listeners.add(listener);
@@ -692,6 +695,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
 
   const onDrop = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
+      // eslint-disable-line react-hooks/immutability
       propsRef.current.onDrop?.(event);
       if (event.defaultPrevented) return;
       event.preventDefault();
@@ -700,7 +704,10 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       const inputElement = context.inputRef.current;
       if (!inputElement) return;
       const dataTransfer = new DataTransfer();
-      for (const file of files) dataTransfer.items.add(file);
+      for (const file of files) {
+        dataTransfer.items.add(file);
+      }
+      // eslint-disable-next-line react-hooks/immutability
       inputElement.files = dataTransfer.files;
       inputElement.dispatchEvent(new Event("change", { bubbles: true }));
     },
@@ -709,6 +716,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
 
   const onPaste = React.useCallback(
     (event: React.ClipboardEvent<HTMLDivElement>) => {
+      // eslint-disable-line react-hooks/immutability
       propsRef.current.onPaste?.(event);
       if (event.defaultPrevented) return;
       event.preventDefault();
@@ -725,7 +733,10 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       const inputElement = context.inputRef.current;
       if (!inputElement) return;
       const dataTransfer = new DataTransfer();
-      for (const file of files) dataTransfer.items.add(file);
+      for (const file of files) {
+        dataTransfer.items.add(file);
+      }
+      // eslint-disable-next-line react-hooks/immutability
       inputElement.files = dataTransfer.files;
       inputElement.dispatchEvent(new Event("change", { bubbles: true }));
     },
@@ -873,7 +884,7 @@ function FileUploadItem(props: FileUploadItemProps) {
   const fileState = useStore((state) => state.files.get(value));
   const fileCount = useStore((state) => state.files.size);
   const fileIndex = useStore((state) => {
-    const files = [...state.files.keys()];
+    const files = state.files.keys().toArray();
     return files.indexOf(value) + 1;
   });
 

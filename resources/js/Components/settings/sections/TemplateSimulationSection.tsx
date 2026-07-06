@@ -55,12 +55,14 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     }
 
     const keys = Object.keys(emailTemplates);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (keys.length > 0) setSelectedTemplate(keys[0] ?? "");
   }, [emailTemplates, selectedTemplate]);
 
   useEffect(() => {
     const debug = flash?.mail_debug as MailDebug | undefined;
     if (debug) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDebugLog((prev) => [debug, ...prev].slice(0, 20));
     }
   }, [flash?.mail_debug]);
@@ -73,7 +75,7 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     router.get(
       route("dashboard.admin.settings.email.template-preview", {
         template: selectedTemplate,
-      } as any),
+      } as Record<string, unknown>),
       {},
       {
         preserveScroll: true,
@@ -128,7 +130,7 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
   if (emailTemplates) {
     for (const [key, tpl] of Object.entries(emailTemplates)) {
       const group = tpl.group || "Other";
-      if (!groupedTemplates[group]) groupedTemplates[group] = [];
+      if (!Object.hasOwn(groupedTemplates, group)) groupedTemplates[group] = [];
       groupedTemplates[group].push({ value: key, label: tpl.label });
     }
   }

@@ -58,10 +58,15 @@ export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-muted-foreground text-xs">{order.items_count} items</span>
                   <span className="font-medium tabular-nums">{currency.format(order.total)}</span>
-                  <Badge variant="outline" className={`text-xs capitalize ${statusColors[order.status] ?? ""}`}>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs capitalize ${statusColors[order.status] ?? ""}`}
+                  >
                     {order.status}
                   </Badge>
-                  <span className="text-xs text-muted-foreground hidden lg:inline">{order.created_at}</span>
+                  <span className="text-xs text-muted-foreground hidden lg:inline">
+                    {order.created_at}
+                  </span>
                 </div>
               </div>
             ))}

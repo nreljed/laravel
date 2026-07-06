@@ -77,7 +77,7 @@ const typeConfig: Record<string, TypeIconConfig> = {
 };
 
 function getTypeIcon(type: string) {
-  if (typeConfig[type]) return typeConfig[type];
+  if (Object.hasOwn(typeConfig, type)) return typeConfig[type];
   const match = Object.entries(typeConfig).find(([key]) => type.includes(key));
   return match ? match[1] : null;
 }
@@ -107,11 +107,11 @@ function getSeverity(type: string, n?: StructuredNotification): Severity {
 
 interface NotificationItemProps {
   notification: StructuredNotification;
-  onMarkRead: (id: string) => void;
-  onDelete?: (id: string) => void;
-  onShowDetail?: (id: string) => void;
+  onMarkRead: (_id: string) => void;
+  onDelete?: (_id: string) => void;
+  onShowDetail?: (_id: string) => void;
   selected?: boolean;
-  onSelect?: (id: string) => void;
+  onSelect?: (_id: string) => void;
 }
 
 export const NotificationItem = React.memo(function NotificationItem({

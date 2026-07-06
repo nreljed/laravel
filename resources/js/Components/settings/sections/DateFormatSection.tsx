@@ -97,7 +97,7 @@ function formatWithOptions(date: Date, format: string): string {
   };
   let result = format;
   for (const [key, val] of Object.entries(map)) {
-    result = result.replaceAll(key, val);
+    result = result.split(key).join(val);
   }
   return result;
 }

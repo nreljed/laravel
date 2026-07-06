@@ -77,8 +77,8 @@ interface GalleryUploaderProps {
   description?: string;
   value?: GalleryImage[];
   thumbnailUrl?: string;
-  onChange?: (images: GalleryImage[]) => void;
-  onThumbnailChange?: (url: string) => void;
+  onChange?: (_images: GalleryImage[]) => void;
+  onThumbnailChange?: (_url: string) => void;
   disabled?: boolean;
   maxImages?: number;
   imageConfig?: Partial<typeof DEFAULT_IMAGE_CONFIG>;
@@ -86,10 +86,15 @@ interface GalleryUploaderProps {
   enableDragOverlay?: boolean;
   enableDragHandle?: boolean;
   enableFeatured?: boolean;
-  onUpload?: (file: File, onProgress: (pct: number) => void, signal: AbortSignal, pendingId: string) => Promise<UploadResult>;
-  onDelete?: (image: GalleryImage) => Promise<void>;
-  onSetFeatured?: (image: GalleryImage) => Promise<void>;
-  onReorder?: (images: GalleryImage[]) => Promise<void>;
+  onUpload?: (
+    _file: File,
+    _onProgress: (_pct: number) => void,
+    _signal: AbortSignal,
+    _pendingId: string,
+  ) => Promise<UploadResult>;
+  onDelete?: (_image: GalleryImage) => Promise<void>;
+  onSetFeatured?: (_image: GalleryImage) => Promise<void>;
+  onReorder?: (_images: GalleryImage[]) => Promise<void>;
 }
 
 const UPLOAD_CONCURRENCY = 3;
@@ -214,7 +219,7 @@ export function GalleryUploader({
   const uploadFile = React.useCallback(
     async (
       file: File,
-      onProgress: (progress: number) => void,
+      onProgress: (_progress: number) => void,
       signal: AbortSignal,
       pendingId: string,
     ) => {
@@ -241,12 +246,15 @@ export function GalleryUploader({
       for (const { file, errors } of fileRejections) {
         const errorMessages = errors.map((e) => {
           switch (e.code) {
-            case "file-too-large":
+            case "file-too-large": {
               return "File too large (max 50MB)";
-            case "file-invalid-type":
+            }
+            case "file-invalid-type": {
               return "Invalid file type";
-            default:
+            }
+            default: {
               return e.message;
+            }
           }
         });
         toast.error(`${file.name}: ${errorMessages.join(", ")}`);
@@ -665,9 +673,13 @@ export function GalleryUploader({
               <DragOverlay>
                 {activeImage ? (
                   <div className="aspect-square rounded-lg border-2 border-primary bg-muted overflow-hidden shadow-lg">
-                    {getImageUrl(activeImage as { url?: string; url_raw?: string; urlRaw?: string }) ? (
+                    {getImageUrl(
+                      activeImage as { url?: string; url_raw?: string; urlRaw?: string },
+                    ) ? (
                       <img
-                        src={getImageUrl(activeImage as { url?: string; url_raw?: string; urlRaw?: string })}
+                        src={getImageUrl(
+                          activeImage as { url?: string; url_raw?: string; urlRaw?: string },
+                        )}
                         alt={activeImage.name || "Dragging image"}
                         loading="lazy"
                         className="size-full object-cover"
@@ -824,7 +836,9 @@ export function GalleryUploader({
             {imageToDelete?.featured === true ? (
               <AlertDialogAction
                 onClick={() => {
-                  const firstOther = uploadedImages.find((img) => normalizeId(img) !== normalizeId(imageToDelete!));
+                  const firstOther = uploadedImages.find(
+                    (img) => normalizeId(img) !== normalizeId(imageToDelete!),
+                  );
                   if (firstOther) {
                     handleSetFeatured(firstOther);
                   }

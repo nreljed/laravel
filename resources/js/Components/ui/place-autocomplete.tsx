@@ -94,7 +94,7 @@ function buildSearchUrl({
   if (zoom !== void 0) url.searchParams.set("zoom", String(zoom));
   if (locationBiasScale !== void 0)
     url.searchParams.set("location_bias_scale", String(locationBiasScale));
-  return String(url);
+  return url.href;
 }
 
 function useDebounce(value: string, delay = 300): string {
@@ -178,6 +178,7 @@ function usePlaceSearch({ debounceMs, query, ...props }: UsePlaceSearchProps): {
     fetchResults();
 
     return () => abortController.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     debouncedQuery,
     props.lang,

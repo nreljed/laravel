@@ -40,7 +40,7 @@ import { ChevronDown } from "lucide-react";
 interface BulkAction {
   label: string;
   value: string;
-  show?: (statuses: string[]) => boolean;
+  show?: (_statuses: string[]) => boolean;
   destructive?: boolean;
 }
 
@@ -54,7 +54,7 @@ interface DataTableProps<TData, TValue> {
   filterTitle?: string;
   pageSize?: number;
   bulkActions?: BulkAction[];
-  onBulkAction?: (action: string, ids: number[]) => void;
+  onBulkAction?: (_action: string, _ids: number[]) => void;
   emptyState?: React.ReactNode;
 }
 
@@ -76,6 +76,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -131,7 +132,7 @@ export function DataTable<TData, TValue>({
                     onClick={() => {
                       const ids = table
                         .getFilteredSelectedRowModel()
-                        .rows.map((r) => (r.original as any).id)
+                        .rows.map((r) => (r.original as Record<string, unknown>).id)
                         .filter(Boolean);
                       onBulkAction(action.value, ids);
                     }}

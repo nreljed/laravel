@@ -38,7 +38,15 @@ function resolveQuality(width: number, height: number, baseQuality: number): num
   return baseQuality;
 }
 
-let webpSupported: boolean | undefined;
+const getWebpSupported: () => Promise<boolean> = (() => {
+  let cached: boolean | undefined;
+  return async () => {
+    if (cached === undefined) {
+      cached = await detectWebPSupport();
+    }
+    return cached;
+  };
+})();
 
 async function detectWebPSupport(): Promise<boolean> {
   const canvas = document.createElement("canvas");
@@ -66,10 +74,10 @@ function loadImageElement(file: File): Promise<HTMLImageElement> {
       URL.revokeObjectURL(url);
       resolve(img);
     });
-    img.onerror = () => {
+    img.addEventListener("error", () => {
       URL.revokeObjectURL(url);
       reject(new Error("Could not load image"));
-    };
+    });
     img.src = url;
   });
 }
@@ -78,9 +86,7 @@ export async function processImage(
   file: File,
   config: Partial<typeof DEFAULT_IMAGE_CONFIG> = DEFAULT_IMAGE_CONFIG,
 ): Promise<File> {
-  if (webpSupported === undefined) {
-    webpSupported = await detectWebPSupport();
-  }
+  const webpSupported = await getWebpSupported();
 
   let imageSource: ImageBitmap | HTMLImageElement;
   let width: number;
@@ -120,15 +126,16 @@ export async function processImage(
 
   if (bitmap) bitmap.close();
 
-  const isJpeg = !webpSupported;
   const outputFormat = webpSupported
     ? (config.format ?? DEFAULT_IMAGE_CONFIG.format)
     : "image/jpeg";
   const ext = webpSupported ? "webp" : "jpg";
 
-  const encodedQuality = isJpeg
-    ? resolveQuality(width, height, 0.8)
-    : resolveQuality(width, height, config.quality ?? DEFAULT_IMAGE_CONFIG.quality);
+  const encodedQuality = resolveQuality(
+    width,
+    height,
+    !webpSupported ? 0.8 : (config.quality ?? DEFAULT_IMAGE_CONFIG.quality),
+  );
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

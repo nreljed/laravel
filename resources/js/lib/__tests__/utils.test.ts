@@ -7,7 +7,7 @@ describe("cn", () => {
   });
 
   it("handles conditional classes", () => {
-    expect(cn("base", false && "hidden", "visible")).toBe("base visible");
+    expect(cn("base", false, "visible")).toBe("base visible");
   });
 
   it("merges tailwind classes correctly", () => {
@@ -35,7 +35,7 @@ describe("formatDate", () => {
   });
 
   it("formats a timestamp", () => {
-    expect(formatDate(1705276800000)).toBe("Jan 15, 2024");
+    expect(formatDate(1_705_276_800_000)).toBe("Jan 15, 2024");
   });
 
   it("applies custom PHP date format", () => {

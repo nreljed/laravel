@@ -95,7 +95,7 @@ export function ActionCell({
               Publish
             </DropdownMenuItem>
           )}
-          {(item.status === "publish" || item.status === "published" || item.status === "future") && (
+          {["publish", "published", "future"].includes(item.status ?? "") && (
             <DropdownMenuItem onClick={() => setDraftOpen(true)}>
               <FileEdit className="mr-2 h-4 w-4" />
               Make Draft

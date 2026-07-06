@@ -10,9 +10,10 @@ import BookingWidget from "@modules-booking/components/BookingWidget";
 const widgetRoots: Root[] = [];
 
 function mountWidgets(): void {
-  const containers = document.querySelectorAll<HTMLElement>("#booking-widget");
+  const el = document.querySelector("#booking-widget") as HTMLElement | null;
+  const containers: HTMLElement[] = el ? [el] : [];
 
-  containers.forEach((container) => {
+  for (const container of containers) {
     if ((container as HTMLElement & { _reactRoot?: Root })._reactRoot) return;
 
     const root = createRoot(container);
@@ -40,7 +41,7 @@ function mountWidgets(): void {
         </TooltipProvider>
       </ThemeProvider>,
     );
-  });
+  }
 }
 
 if (typeof document !== "undefined") {

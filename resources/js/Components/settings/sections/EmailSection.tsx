@@ -84,17 +84,21 @@ export function EmailSection({ asAccordion = false }: { asAccordion?: boolean })
     e.preventDefault();
     if (saving) return;
     setSaving(true);
-    router.put(route("dashboard.admin.settings.email.update"), settings as any, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success("Email settings saved.");
-        setSaving(false);
+    router.put(
+      route("dashboard.admin.settings.email.update"),
+      settings as Record<string, unknown>,
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success("Email settings saved.");
+          setSaving(false);
+        },
+        onError: () => {
+          toast.error("Failed to save email settings.");
+          setSaving(false);
+        },
       },
-      onError: () => {
-        toast.error("Failed to save email settings.");
-        setSaving(false);
-      },
-    });
+    );
   };
 
   const handleSendTest = () => {

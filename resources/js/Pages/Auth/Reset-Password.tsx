@@ -17,6 +17,47 @@ import {
 import GuestLayout from "@/Layouts/GuestLayout";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 
+function SuccessRedirect({ status }: { status: string }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.visit(route("login"), { method: "get", replace: true });
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <GuestLayout title="Password Reset">
+      <Card>
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl">Password Reset Successful!</CardTitle>
+          <CardDescription>
+            Your password has been reset successfully. You will be redirected to the login page
+            shortly.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="bg-green-500/10 border-green-500/20 dark:bg-green-500/20">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+            <AlertDescription className="text-green-700 dark:text-green-300">
+              {status}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+        <CardFooter className="flex flex-col pt-6">
+          <Button
+            variant="outline"
+            onClick={() => router.visit(route("login"), { replace: true })}
+            className="w-full"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Go to Login
+          </Button>
+        </CardFooter>
+      </Card>
+    </GuestLayout>
+  );
+}
+
 export default function ResetPassword({
   token,
   email,
@@ -46,13 +87,9 @@ export default function ResetPassword({
   const errors = { ...formErrors, ...pageErrors } as Record<string, string>;
   const success = !!status && status.toLowerCase().includes("success");
 
-  useEffect(() => {
-    if (!success) return;
-    const timer = setTimeout(() => {
-      router.visit(route("login"), { method: "get", replace: true });
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [success]);
+  if (success) {
+    return <SuccessRedirect status={status!} />;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,40 +110,6 @@ export default function ResetPassword({
       onFinish: () => reset("password", "password_confirmation"),
     });
   };
-
-  if (success) {
-    return (
-      <GuestLayout title="Password Reset">
-        <Card>
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl">Password Reset Successful!</CardTitle>
-            <CardDescription>
-              Your password has been reset successfully. You will be redirected to the login page
-              shortly.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert className="bg-green-500/10 border-green-500/20 dark:bg-green-500/20">
-              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
-              <AlertDescription className="text-green-700 dark:text-green-300">
-                {status}
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-          <CardFooter className="flex flex-col pt-6">
-            <Button
-              variant="outline"
-              onClick={() => router.visit(route("login"), { replace: true })}
-              className="w-full"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Go to Login
-            </Button>
-          </CardFooter>
-        </Card>
-      </GuestLayout>
-    );
-  }
 
   return (
     <GuestLayout title="Reset Password">

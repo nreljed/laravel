@@ -20,9 +20,9 @@ interface ErrorHandlerConfig {
 }
 
 interface HandleErrorOptions {
-  onFieldError?: (fieldErrors: Record<string, string>) => void;
-  onFormError?: (message: string) => void;
-  onComplete?: (parsed: ParsedError) => void;
+  onFieldError?: (_fieldErrors: Record<string, string>) => void;
+  onFormError?: (_message: string) => void;
+  onComplete?: (_parsed: ParsedError) => void;
   clearFirst?: boolean;
   showError?: boolean;
 }
@@ -32,16 +32,16 @@ interface UseErrorHandlerReturn {
   fieldErrors: Record<string, string>;
   isErrorVisible: boolean;
   hasErrors: boolean;
-  setError: (message: string) => void;
-  setFieldError: (field: string, message: string) => void;
+  setError: (_message: string) => void;
+  setFieldError: (_field: string, _message: string) => void;
   clearErrors: () => void;
-  clearFieldError: (field: string) => void;
+  clearFieldError: (_field: string) => void;
   hideError: () => void;
   showError: () => void;
-  handleError: (err: unknown, options?: HandleErrorOptions) => ParsedError;
-  parseErrors: (err: unknown) => ParsedError;
-  getFieldError: (field: string) => string | null;
-  hasFieldError: (field: string) => boolean;
+  handleError: (_err: unknown, _options?: HandleErrorOptions) => ParsedError;
+  parseErrors: (_err: unknown) => ParsedError;
+  getFieldError: (_field: string) => string | null;
+  hasFieldError: (_field: string) => boolean;
 }
 
 function parseErrorResponse(error: unknown): ParsedError {
@@ -76,11 +76,9 @@ function parseErrorResponse(error: unknown): ParsedError {
     const fieldErrors: Record<string, string> = {};
     let message = (err.message as string) || (err.error as string) || DEFAULT_CONFIG.defaultMessage;
 
-    Object.keys(err).forEach((key) => {
-      const value = err[key];
-
+    for (const [key, value] of Object.entries(err)) {
       if (["message", "error", "code", "status"].includes(key)) {
-        return;
+        continue;
       }
 
       if (Array.isArray(value)) {
@@ -89,16 +87,15 @@ function parseErrorResponse(error: unknown): ParsedError {
         fieldErrors[key] = value;
       } else if (value && typeof value === "object") {
         const nestedErr = value as Record<string, unknown>;
-        Object.keys(nestedErr).forEach((nestedKey) => {
-          const nestedValue = nestedErr[nestedKey];
+        for (const [nestedKey, nestedValue] of Object.entries(nestedErr)) {
           fieldErrors[nestedKey] = Array.isArray(nestedValue)
             ? String(nestedValue[0])
             : (nestedValue as Record<string, string>)?.message ||
               (nestedValue as Record<string, string>)?.error ||
               "Invalid";
-        });
+        }
       }
-    });
+    }
 
     return {
       message,
@@ -220,7 +217,7 @@ export function useErrorHandler(config?: ErrorHandlerConfig): UseErrorHandlerRet
 
   const hasFieldErrorFn = useCallback(
     (field: string): boolean => {
-      return !!fieldErrors[field];
+      return Object.hasOwn(fieldErrors, field);
     },
     [fieldErrors],
   );

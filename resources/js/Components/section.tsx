@@ -30,7 +30,7 @@ function Section({
   title: string;
   description?: string;
   icon?: React.ComponentType<{ className?: string }>;
-  onSubmit?: (e: React.FormEvent) => void;
+  onSubmit?: (_e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
   submitVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";

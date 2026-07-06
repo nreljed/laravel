@@ -12,13 +12,13 @@ type Notification = StructuredNotification;
 
 interface NotificationPanelProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (_open: boolean) => void;
   notifications: Notification[];
   unreadCount: number;
   loading: boolean;
-  onMarkRead: (id: string) => void;
+  onMarkRead: (_id: string) => void;
   onMarkAllRead: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (_id: string) => void;
   children: React.ReactNode;
 }
 

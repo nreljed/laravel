@@ -16,9 +16,9 @@ import type { Severity, StructuredNotification } from "@/Components/notification
 interface NotificationDetailDialogProps {
   notification: StructuredNotification | null;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onMarkRead: (id: string) => void;
-  onDelete: (id: string) => void;
+  onOpenChange: (_open: boolean) => void;
+  onMarkRead: (_id: string) => void;
+  onDelete: (_id: string) => void;
 }
 
 const severityColors: Record<Severity, string> = {

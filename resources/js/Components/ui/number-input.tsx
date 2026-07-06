@@ -7,7 +7,7 @@ interface NumberInputProps {
   className?: string;
   value?: number;
   defaultValue?: number;
-  onValueChange?: (value: number | string) => void;
+  onValueChange?: (_value: number | string) => void;
   min?: number;
   max?: number;
   step?: number;

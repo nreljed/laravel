@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { usePage, router } from "@inertiajs/react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/Components/ui/select";
 
 export function CurrencySwitcher() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { activeCurrencies, selectedCurrency } = usePage<any>().props;
   const [loading, setLoading] = useState(false);
 

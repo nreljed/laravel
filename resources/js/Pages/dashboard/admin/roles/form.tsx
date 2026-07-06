@@ -87,7 +87,7 @@ export default function AdminRolesForm() {
       );
     } else {
       const existing = new Set(data.permission_ids);
-      ids.forEach((id) => existing.add(id));
+      for (const id of ids) existing.add(id);
       setData("permission_ids", [...existing]);
     }
   };

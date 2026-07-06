@@ -55,7 +55,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const hasPermission = (perm: string | undefined): boolean => {
     if (!perm) return true;
     if (isAdmin) return true;
-    if (perm in userCapabilities) return Boolean(userCapabilities[perm]);
+    if (Object.hasOwn(userCapabilities, perm)) return userCapabilities[perm] === true;
     return false;
   };
 

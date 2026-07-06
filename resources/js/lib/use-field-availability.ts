@@ -20,8 +20,8 @@ export function useFieldAvailability(field: "username" | "email") {
 
   useEffect(() => {
     if (!debouncedValue || debouncedValue.length < 3) {
-      setStatus("idle");
-      return;
+      const id = setTimeout(() => setStatus("idle"), 0);
+      return () => clearTimeout(id);
     }
 
     if (debouncedValue === lastChecked.current) return;
@@ -31,19 +31,20 @@ export function useFieldAvailability(field: "username" | "email") {
 
     const params = new URLSearchParams({ field, value: debouncedValue });
 
-    fetch(`${route("register.availability")}?${params}`, {
-      headers: { Accept: "application/json" },
-    })
-      .then((res) => res.json())
-      .then((data: { available: boolean }) => {
+    (async () => {
+      try {
+        const res = await fetch(`${route("register.availability")}?${params}`, {
+          headers: { Accept: "application/json" },
+        });
+        const data: { available: boolean } = await res.json();
         if (gen !== genRef.current) return;
         lastChecked.current = debouncedValue;
         setStatus(data.available ? "available" : "taken");
-      })
-      .catch(() => {
+      } catch {
         if (gen !== genRef.current) return;
         setStatus("idle");
-      });
+      }
+    })();
   }, [debouncedValue, field]);
 
   return { status, setValue };

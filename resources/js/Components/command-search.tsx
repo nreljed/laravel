@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useMemo } from "react";
 import { router, usePage } from "@inertiajs/react";
 import {
   CommandDialog,
@@ -10,7 +11,16 @@ import {
   CommandSeparator,
 } from "@/Components/ui/command";
 import { Button } from "@/Components/ui/button";
-import { Search, LayoutDashboard, BarChart3, Bell, User, Users, Settings, Activity } from "lucide-react";
+import {
+  Search,
+  LayoutDashboard,
+  BarChart3,
+  Bell,
+  User,
+  Users,
+  Settings,
+  Activity,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { moduleIcons } from "@/lib/icons";
 
@@ -39,17 +49,20 @@ export function CommandSearch() {
   const [open, setOpen] = React.useState(false);
   const { isAdmin } = useAuth();
   const pageProps = usePage().props;
-  const moduleNavItems = (pageProps.moduleNavItems as ModuleNavItem[]) || [];
-  const userCapabilities = (pageProps.userCapabilities as Record<string, boolean>) || {};
-
-  const hasPermission = (perm: string | undefined): boolean => {
-    if (!perm) return true;
-    if (isAdmin) return true;
-    if (perm in userCapabilities) return Boolean(userCapabilities[perm]);
-    return false;
-  };
+  const moduleNavItems = pageProps.moduleNavItems as ModuleNavItem[] | undefined;
+  const userCapabilities = useMemo(
+    () => (pageProps.userCapabilities as Record<string, boolean>) || {},
+    [pageProps.userCapabilities],
+  );
 
   const navigationItems: NavMenuGroup[] = React.useMemo(() => {
+    const hasPermissionInner = (perm: string | undefined): boolean => {
+      if (!perm) return true;
+      if (isAdmin) return true;
+      if (Object.hasOwn(userCapabilities, perm)) return userCapabilities[perm] === true;
+      return false;
+    };
+
     const items: NavMenuGroup[] = [
       {
         heading: "Navigation",
@@ -63,25 +76,27 @@ export function CommandSearch() {
       },
     ];
 
-    moduleNavItems
-      .filter((nav) => hasPermission(nav.permission))
-      .forEach((nav) => {
-        const heading = nav.groupLabel ?? nav.title;
-        const IconComponent = (nav.icon && moduleIcons[nav.icon]) || LayoutDashboard;
-        const moduleItems: NavMenuItem[] = [];
+    const navList = moduleNavItems || [];
+    for (const nav of navList) {
+      if (!hasPermissionInner(nav.permission)) continue;
 
-        if (nav.items && nav.items.length > 0) {
-          nav.items.forEach((child) => {
-            moduleItems.push({ title: child.title, icon: IconComponent, url: child.url });
-          });
-        } else {
-          moduleItems.push({ title: nav.title, icon: IconComponent, url: nav.url });
-        }
+      const heading = nav.groupLabel ?? nav.title;
+      const IconComponent =
+        nav.icon && Object.hasOwn(moduleIcons, nav.icon) ? moduleIcons[nav.icon] : LayoutDashboard;
+      const moduleItems: NavMenuItem[] = [];
 
-        if (moduleItems.length > 0) {
-          items.push({ heading, items: moduleItems });
+      if (nav.items && nav.items.length > 0) {
+        for (const child of nav.items) {
+          moduleItems.push({ title: child.title, icon: IconComponent, url: child.url });
         }
-      });
+      } else {
+        moduleItems.push({ title: nav.title, icon: IconComponent, url: nav.url });
+      }
+
+      if (moduleItems.length > 0) {
+        items.push({ heading, items: moduleItems });
+      }
+    }
 
     if (isAdmin) {
       items.push({

@@ -7,11 +7,7 @@ import { Label } from "@/Components/ui/label";
 import { ErrorMessage } from "@/Components/error-message";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { ScrollArea } from "@/Components/ui/scroll-area";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/Components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/Components/ui/popover";
 
 interface TermOption {
   id: number | string;
@@ -26,13 +22,13 @@ interface TermsSelectorProps {
   description?: string;
   options?: TermOption[];
   value?: (number | string)[];
-  onChange?: (value: (number | string)[]) => void;
+  onChange?: (_value: (number | string)[]) => void;
   canAdd?: boolean;
   placeholder?: string;
   error?: string;
   disabled?: boolean;
   taxonomyName?: string;
-  onCreateTerm?: (name: string) => Promise<TermOption | null>;
+  onCreateTerm?: (_name: string) => Promise<TermOption | null>;
 }
 
 export function TermsSelector({
@@ -80,9 +76,7 @@ export function TermsSelector({
   const handleAddNewTerm = useCallback(() => {
     const searchTerm = searchQuery.trim();
     if (searchTerm) {
-      const exists = options.some(
-        (opt) => opt.name.toLowerCase() === searchTerm.toLowerCase(),
-      );
+      const exists = options.some((opt) => opt.name.toLowerCase() === searchTerm.toLowerCase());
       if (!exists) {
         setNewTermName(searchTerm);
       }
@@ -112,18 +106,24 @@ export function TermsSelector({
     return options.filter((opt) => opt.name.toLowerCase().includes(search));
   }, [options, searchQuery]);
 
-  const showCreateButton = searchQuery.trim() && canAdd && onCreateTerm &&
-    !options.some((opt) => opt.name.toLowerCase() === searchQuery.trim().toLowerCase());
+  const showCreateButton =
+    searchQuery.trim() &&
+    canAdd &&
+    onCreateTerm &&
+    options.every((opt) => opt.name.toLowerCase() !== searchQuery.trim().toLowerCase());
 
   return (
     <div className="space-y-2">
       {label && <Label className="text-sm font-medium">{label}</Label>}
       {description && <p className="text-sm text-muted-foreground">{description}</p>}
 
-      <Popover open={open} onOpenChange={(newOpen) => {
-        setOpen(newOpen);
-        if (!newOpen) setSearchQuery("");
-      }}>
+      <Popover
+        open={open}
+        onOpenChange={(newOpen) => {
+          setOpen(newOpen);
+          if (!newOpen) setSearchQuery("");
+        }}
+      >
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -136,15 +136,19 @@ export function TermsSelector({
               "cursor-pointer",
             )}
           >
-            <span className={cn(
-              selectedOptions.length === 0 && "text-muted-foreground",
-              "truncate",
-            )}>
+            <span
+              className={cn(selectedOptions.length === 0 && "text-muted-foreground", "truncate")}
+            >
               {selectedOptions.length > 0
                 ? `${selectedOptions.length} ${taxonomyName}${selectedOptions.length !== 1 ? "s" : ""} selected`
                 : placeholder}
             </span>
-            <ChevronDown className={cn("h-4 w-4 text-muted-foreground shrink-0 transition-transform", open && "rotate-180")} />
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground shrink-0 transition-transform",
+                open && "rotate-180",
+              )}
+            />
           </button>
         </PopoverTrigger>
 

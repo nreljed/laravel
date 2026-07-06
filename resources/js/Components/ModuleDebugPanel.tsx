@@ -20,9 +20,9 @@ export function ModuleDebugPanel() {
   const debug = pageProps.debug as boolean | undefined;
   const moduleDebugData = pageProps.moduleDebugData as ModuleDebugItem[] | undefined;
 
-  if (!debug || !moduleDebugData?.length) return null;
-
   const [open, setOpen] = useState(false);
+
+  if (!debug || !moduleDebugData?.length) return null;
 
   return (
     <div className="border-t border-border">

@@ -116,9 +116,9 @@ export default function ProfileEdit() {
 
   const [uploading, setUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Record<string, unknown> | null>(null);
+  const [formData, setFormData] = useState<Record<string, unknown> | null>(initialFormData);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = formData === null;
 
   const buildFormData = useCallback(
     (userData?: Record<string, unknown>) => {
@@ -138,19 +138,12 @@ export default function ProfileEdit() {
     [user],
   );
 
-  useEffect(() => {
+  const initialFormData = useMemo(() => {
     const u = user as Record<string, unknown>;
     const hasUserData = u && (u.id || u.user_login || u.display_name || u.nickname);
-    if (formData === null) {
-      const timer = setTimeout(() => {
-        if (hasUserData) {
-          setFormData(buildFormData());
-        }
-        setIsLoading(false);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [user, formData, buildFormData]);
+    if (hasUserData) return buildFormData();
+    return null;
+  }, [buildFormData, user]);
 
   useEffect(() => {
     if (status) toast.success(status);
@@ -190,79 +183,74 @@ export default function ProfileEdit() {
     [formData, buildFormData],
   );
 
-  const handleAvatarUpload = useCallback(
-    async (processedFile: File | Blob, uploadId: string) => {
-      const filename = `avatar_${Date.now()}.webp`;
-      currentUploadIdRef.current = uploadId;
-      setAvatarError(null);
-      setUploading(true);
+  const handleAvatarUpload = useCallback(async (processedFile: File | Blob, uploadId: string) => {
+    const filename = `avatar_${Date.now()}.webp`;
+    currentUploadIdRef.current = uploadId;
+    setAvatarError(null);
+    setUploading(true);
 
-      try {
-        const file =
-          processedFile instanceof File
-            ? processedFile
-            : new File([processedFile], filename, { type: "image/webp" });
+    try {
+      const file =
+        processedFile instanceof File
+          ? processedFile
+          : new File([processedFile], filename, { type: "image/webp" });
 
-        const formData = new FormData();
-        formData.append("avatar", file);
+      const formData = new FormData();
+      formData.append("avatar", file);
 
-        await new Promise<void>((resolve, reject) => {
-          router.post(route("dashboard.profile.avatar.upload"), formData, {
-            preserveState: true,
-            onSuccess: (page: any) => {
-              const result = page.props as any;
-              if (result.avatar?.url) {
-                setAvatarPreview(result.avatar.url);
-              }
-              router.reload({ only: ["auth"], replace: true });
-              resolve();
-            },
-            onError: (errors) => {
-              reject(new Error((errors as any)?.error || "Upload failed"));
-            },
-          });
+      await new Promise<void>((resolve, reject) => {
+        router.post(route("dashboard.profile.avatar.upload"), formData, {
+          preserveState: true,
+          onSuccess: (page: { props: Record<string, unknown> }) => {
+            const result = page.props;
+            const avatar = result.avatar as { url?: string } | undefined;
+            if (avatar?.url) {
+              setAvatarPreview(avatar.url);
+            }
+            router.reload({ only: ["auth"], replace: true });
+            resolve();
+          },
+          onError: (errors: Record<string, string>) => {
+            reject(new Error(errors.error || "Upload failed"));
+          },
         });
-      } catch (error) {
-        const msg = (error as Error).message || "Upload failed. Please try again.";
-        setAvatarError(msg);
-        toast.error(msg);
-      } finally {
-        if (currentUploadIdRef.current === uploadId) {
-          currentUploadIdRef.current = null;
-        }
-        setUploading(false);
+      });
+    } catch (error) {
+      const msg = (error as Error).message || "Upload failed. Please try again.";
+      setAvatarError(msg);
+      toast.error(msg);
+    } finally {
+      if (currentUploadIdRef.current === uploadId) {
+        currentUploadIdRef.current = null;
       }
-    },
-    [],
-  );
+      setUploading(false);
+    }
+  }, []);
 
-  const handleDeleteAvatar = useCallback(
-    async (_deleteId: string) => {
-      setUploading(true);
+  const handleDeleteAvatar = useCallback(async (_deleteId: string) => {
+    setUploading(true);
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          router.delete(route("dashboard.profile.avatar.destroy"), {
-            preserveState: true,
-            onSuccess: () => {
-              setAvatarPreview(null);
-              router.reload({ only: ["auth"], replace: true });
-              toast.success("Avatar removed successfully!");
-              resolve();
-            },
-            onError: (errors) => {
-              reject(new Error((errors as any)?.error || "Failed to remove avatar."));
-            },
-          });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        router.delete(route("dashboard.profile.avatar.destroy"), {
+          preserveState: true,
+          onSuccess: () => {
+            setAvatarPreview(null);
+            router.reload({ only: ["auth"], replace: true });
+            toast.success("Avatar removed successfully!");
+            resolve();
+          },
+          onError: (errors: Record<string, string>) => {
+            reject(new Error(errors.error || "Failed to remove avatar."));
+          },
         });
-      } catch (error) {
-        toast.error((error as Error).message || "Failed to remove avatar.");
-      } finally {
-        setUploading(false);
-      }
-    },
-    [],
-  );
+      });
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to remove avatar.");
+    } finally {
+      setUploading(false);
+    }
+  }, []);
 
   if (isLoading) {
     return (

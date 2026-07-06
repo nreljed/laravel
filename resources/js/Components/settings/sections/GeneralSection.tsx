@@ -6,10 +6,10 @@ import { Globe } from "lucide-react";
 
 interface GeneralSectionProps {
   data: Record<string, string | undefined>;
-  onChange: (field: string, value: string) => void;
+  onChange: (_field: string, _value: string) => void;
   errors: Record<string, unknown>;
   loading?: boolean;
-  onSubmit?: (e: React.FormEvent) => void;
+  onSubmit?: (_e: React.FormEvent) => void;
   asAccordion?: boolean;
 }
 

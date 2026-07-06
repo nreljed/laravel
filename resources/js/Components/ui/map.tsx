@@ -76,7 +76,8 @@ function createLazyComponent(factory) {
   const Component = (props) => {
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
-      setIsMounted(true);
+      const timer = setTimeout(() => setIsMounted(true), 0);
+      return () => clearTimeout(timer);
     }, []);
     if (!isMounted) return null;
     return (
@@ -88,11 +89,10 @@ function createLazyComponent(factory) {
   Component.displayName = "LazyComponent";
   return Component;
 }
-const LeafletMarkerClusterGroup = createLazyComponent(async () =>
-  import("react-leaflet-markercluster").then((mod) => ({
-    default: mod.default,
-  })),
-);
+const LeafletMarkerClusterGroup = createLazyComponent(async () => {
+  const mod = await import("react-leaflet-markercluster");
+  return { default: mod.default };
+});
 const Map = React.forwardRef(
   (
     {
@@ -238,7 +238,7 @@ function MapLayers({ defaultTileLayer, defaultLayerGroups = [], ...props }) {
         defaultTileLayer && tileLayers.some((layer) => layer.name === defaultTileLayer)
           ? defaultTileLayer
           : tileLayers[0].name;
-      setSelectedTileLayer(validDefaultValue);
+      setTimeout(() => setSelectedTileLayer(validDefaultValue), 0);
     }
     if (
       defaultLayerGroups.length > 0 &&
@@ -577,6 +577,7 @@ function MapLocateControl({
   const [location, setLocation] = useState(null);
   const onFoundRef = useRef(null);
   const onErrorRef = useRef(null);
+  const stopLocatingRef = useRef(null);
   function startLocating() {
     if (onFoundRef.current || onErrorRef.current) stopLocating();
     setIsLocating(true);
@@ -630,15 +631,15 @@ function MapLocateControl({
     setLocation(null);
     setIsLocating(false);
   }
+  stopLocatingRef.current = stopLocating;
   useEffect(() => {
-    if (stop) stopLocating();
+    if (stop) stopLocatingRef.current();
   }, [stop]);
-  useEffect(
-    () => () => {
-      stopLocating();
-    },
-    [],
-  );
+  useEffect(() => {
+    return () => {
+      stopLocatingRef.current();
+    };
+  }, []);
   return (
     <MapControlContainer className={cn(position, className)}>
       <Button
@@ -710,6 +711,7 @@ function MapControls({
   const [location, setLocation] = useState(null);
   const onFoundRef = useRef(null);
   const onErrorRef = useRef(null);
+  const stopLocatingRef = useRef(null);
 
   useMapEvents({
     zoomend: () => {
@@ -770,15 +772,15 @@ function MapControls({
     setLocation(null);
     setIsLocating(false);
   }
+  stopLocatingRef.current = stopLocating;
   useEffect(() => {
-    if (stop) stopLocating();
+    if (stop) stopLocatingRef.current();
   }, [stop]);
-  useEffect(
-    () => () => {
-      stopLocating();
-    },
-    [],
-  );
+  useEffect(() => {
+    return () => {
+      stopLocatingRef.current();
+    };
+  }, []);
 
   const showTileLayersDropdown = layersContext?.tileLayers?.length > 1;
   const showLayerGroupsDropdown = (layersContext?.layerGroups?.length ?? 0) > 0;
@@ -916,6 +918,8 @@ function MapDrawControl({
   const featureGroupRef = useRef(null);
   const editControlRef = useRef(null);
   const deleteControlRef = useRef(null);
+  const handleDrawCreatedRef = useRef(null);
+  const handleDrawEditedOrDeletedRef = useRef(null);
   const [activeMode, setActiveMode] = useState(null);
   const [layersCount, setLayersCount] = useState(0);
   const [hasOnlyMarkers, setHasOnlyMarkers] = useState(false);
@@ -942,7 +946,10 @@ function MapDrawControl({
       }
       if (enforceSingle) {
         const layers = group.getLayers();
-        if (layers.length > 1) layers.slice(1).forEach((layer) => group.removeLayer(layer));
+        if (layers.length > 1) {
+          const remaining = layers.slice(1);
+          for (const layer of remaining) group.removeLayer(layer);
+        }
       }
       const layers = group.getLayers();
       setLayersCount(layers.length);
@@ -980,6 +987,10 @@ function MapDrawControl({
     onLayersChange?.(featureGroupRef.current);
     setActiveMode(null);
   }
+  useEffect(() => {
+    handleDrawCreatedRef.current = handleDrawCreated;
+    handleDrawEditedOrDeletedRef.current = handleDrawEditedOrDeleted;
+  });
   function clearLayers() {
     if (!featureGroupRef.current) return;
     featureGroupRef.current.clearLayers();
@@ -990,13 +1001,15 @@ function MapDrawControl({
   }
   useEffect(() => {
     if (!L || !LeafletDraw || !map) return;
-    map.on(L.Draw.Event.CREATED, handleDrawCreated);
-    map.on(L.Draw.Event.EDITED, handleDrawEditedOrDeleted);
-    map.on(L.Draw.Event.DELETED, handleDrawEditedOrDeleted);
+    const createdHandler = (e) => handleDrawCreatedRef.current(e);
+    const editedHandler = (e) => handleDrawEditedOrDeletedRef.current(e);
+    map.on(L.Draw.Event.CREATED, createdHandler);
+    map.on(L.Draw.Event.EDITED, editedHandler);
+    map.on(L.Draw.Event.DELETED, editedHandler);
     return () => {
-      map.off(L.Draw.Event.CREATED, handleDrawCreated);
-      map.off(L.Draw.Event.EDITED, handleDrawEditedOrDeleted);
-      map.off(L.Draw.Event.DELETED, handleDrawEditedOrDeleted);
+      map.off(L.Draw.Event.CREATED, createdHandler);
+      map.off(L.Draw.Event.EDITED, editedHandler);
+      map.off(L.Draw.Event.DELETED, editedHandler);
     };
   }, [L, LeafletDraw, map, onLayersChange]);
 
@@ -1302,7 +1315,7 @@ function MapDrawActionButton({
       control.disable?.();
       controlRef.current = null;
     };
-  }, [L, map, isActive, featureGroup, createDrawTool, editable, shouldUseDrawControl]);
+  }, [L, map, isActive, featureGroup, createDrawTool, editable, shouldUseDrawControl, controlRef]);
   function handleClick() {
     if (!editable) return;
     if (isActive) controlRef.current?.save?.();
@@ -1333,8 +1346,9 @@ function MapDrawEdit({ selectedPathOptions = { dashArray: "5, 5" }, ...props }) 
     if (!L || !mapDrawHandleIcon) return;
     try {
       if (L.Edit?.Marker) {
-        if (!L.Edit.Marker.prototype.options) L.Edit.Marker.prototype.options = {};
         const originalRemoveHooks = L.Edit.Marker.prototype.removeHooks;
+        /* eslint-disable unicorn/no-this-outside-of-class -- Leaflet prototype method override */
+        // eslint-disable-next-line react-hooks/immutability -- Modifying Leaflet API, not React state
         L.Edit.Marker.prototype.removeHooks = function () {
           if (this._marker) {
             if (!this._marker.dragging)
@@ -1347,6 +1361,7 @@ function MapDrawEdit({ selectedPathOptions = { dashArray: "5, 5" }, ...props }) 
             console.warn("Leaflet Draw removeHooks caught crash:", error);
           }
         };
+        /* eslint-enable unicorn/no-this-outside-of-class */
         L.Edit.Marker.mergeOptions({
           selectedPathOptions: {
             dashArray: "5, 5",
@@ -1378,7 +1393,7 @@ function MapDrawEdit({ selectedPathOptions = { dashArray: "5, 5" }, ...props }) 
       subtext: "",
     };
     L.drawLocal.edit.handlers.remove.tooltip = { text: "Click on a shape to remove." };
-  }, [mapDrawHandleIcon]);
+  }, [L, mapDrawHandleIcon]);
   const { featureGroup, hasOnlyMarkers } = drawContext;
   const createEditTool = (L2, map, group) => {
     const activeFeatureGroup = group || featureGroup;
@@ -1494,7 +1509,8 @@ function useDebounceLoadingState(delay = 200) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      setShowLoading(false);
+      const timer = setTimeout(() => setShowLoading(false), 0);
+      timeoutRef.current = timer;
     }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);

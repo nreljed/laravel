@@ -26,11 +26,16 @@ export default function TopProductsTable({ products }: TopProductsTableProps) {
       </CardHeader>
       <CardContent className="p-0">
         {products.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">No products sold yet.</div>
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            No products sold yet.
+          </div>
         ) : (
           <div className="divide-y">
             {products.map((product, i) => (
-              <div key={product.product_id} className="flex items-center justify-between px-6 py-3 text-sm">
+              <div
+                key={product.product_id}
+                className="flex items-center justify-between px-6 py-3 text-sm"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}</span>
                   <Link
@@ -42,7 +47,9 @@ export default function TopProductsTable({ products }: TopProductsTableProps) {
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <span className="text-muted-foreground text-xs">{product.total_qty} sold</span>
-                  <span className="font-medium tabular-nums">{currency.format(product.total_revenue)}</span>
+                  <span className="font-medium tabular-nums">
+                    {currency.format(product.total_revenue)}
+                  </span>
                 </div>
               </div>
             ))}

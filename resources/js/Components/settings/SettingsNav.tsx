@@ -28,7 +28,7 @@ interface SettingsNavItem {
 
 interface SettingsNavProps {
   activeTab: string;
-  onTabChange: (tab: string) => void;
+  onTabChange: (_tab: string) => void;
   enabledModules?: string[];
 }
 

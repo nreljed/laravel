@@ -26,11 +26,11 @@ export interface FormattingOptions {
 
 interface UseFormattingReturn {
   settings: FormattingSettings;
-  formatPrice: (value: number | string, overrides?: FormattingOptions) => string;
-  formatSurface: (value: number | string, overrides?: FormattingOptions) => string;
-  formatNumber: (value: number | string, thousandsSep?: string, decimalSep?: string) => string;
-  getCurrencySymbol: (currencyCode?: string) => string;
-  getSurfaceUnit: (unitCode?: string) => string;
+  formatPrice: (_value: number | string, _overrides?: FormattingOptions) => string;
+  formatSurface: (_value: number | string, _overrides?: FormattingOptions) => string;
+  formatNumber: (_value: number | string, _thousandsSep?: string, _decimalSep?: string) => string;
+  getCurrencySymbol: (_currencyCode?: string) => string;
+  getSurfaceUnit: (_unitCode?: string) => string;
   currencyOptions: Array<{ value: string; label: string; symbol: string }>;
   surfaceUnitOptions: Array<{ value: string; label: string }>;
 }
@@ -105,23 +105,21 @@ export { CURRENCY_SYMBOLS, SURFACE_UNITS, CURRENCY_OPTIONS, SURFACE_UNIT_OPTIONS
 
 function buildNumber(value: number | string, thousandsSep: string, decimalSep: string): string {
   const num = Number(value);
-  if (isNaN(num)) return "";
+  if (Number.isNaN(num)) return "";
   let formatted = num.toFixed(2);
   if (decimalSep !== ".") {
-    formatted = formatted.replace(".", decimalSep);
+    formatted = formatted.split(".").join(decimalSep);
   }
   if (thousandsSep && num >= 1000) {
     const parts = formatted.split(decimalSep);
     if (parts[0]) {
-      parts[0] = parts[0].replaceAll(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
+      parts[0] = parts[0].replaceAll(/\B(?=(\d{3})+(?!\d))/g, () => thousandsSep);
     }
     formatted = parts.join(decimalSep);
   }
-  if (num === Math.floor(num)) {
+  if (Number.isSafeInteger(num)) {
     const suffix = decimalSep + "00";
     if (formatted.endsWith(suffix)) {
-      formatted = formatted.slice(0, -3);
-    } else if (formatted.endsWith(".00")) {
       formatted = formatted.slice(0, -3);
     }
   }
@@ -131,7 +129,7 @@ function buildNumber(value: number | string, thousandsSep: string, decimalSep: s
 function buildPrice(value: number | string, options: FormattingOptions): string {
   const num = Number(value);
   const emptyText = options.empty_text ?? "";
-  if (isNaN(num) || num === 0) {
+  if (Number.isNaN(num) || num === 0) {
     return emptyText || "";
   }
   const currency = options.currency || "USD";
@@ -143,7 +141,7 @@ function buildPrice(value: number | string, options: FormattingOptions): string 
 
 function buildSurface(value: number | string, options: FormattingOptions): string {
   const num = Number(value);
-  if (isNaN(num) || num === 0) return "";
+  if (Number.isNaN(num) || num === 0) return "";
   const unit = options.unit || "sq_ft";
   const unitLabel = SURFACE_UNITS[unit] ?? unit;
   const formatted = buildNumber(value, options.thousands_sep || ",", options.decimal_sep || ".");

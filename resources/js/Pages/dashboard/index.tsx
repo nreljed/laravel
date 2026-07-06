@@ -1,6 +1,15 @@
 import { useMemo } from "react";
 import { Link, Head } from "@inertiajs/react";
-import { Users, TrendingUp, FileText, UserPlus, DollarSign, ShoppingCart, BarChart3, Package } from "lucide-react";
+import {
+  Users,
+  TrendingUp,
+  FileText,
+  UserPlus,
+  DollarSign,
+  ShoppingCart,
+  BarChart3,
+  Package,
+} from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -92,7 +101,8 @@ export default function DashboardIndex({ stats = {}, analytics }: DashboardIndex
   const analyticsKpis = analytics?.kpis ?? [];
 
   const formatKpiValue = (val: number, fmt?: string) => {
-    if (fmt === "currency") return new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }).format(val);
+    if (fmt === "currency")
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }).format(val);
     if (fmt === "percent") return `${val}%`;
     return val.toLocaleString();
   };
@@ -196,7 +206,10 @@ export default function DashboardIndex({ stats = {}, analytics }: DashboardIndex
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Revenue</span>
                     <span className="font-medium tabular-nums">
-                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }).format(analytics.total_revenue)}
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "EUR",
+                      }).format(analytics.total_revenue)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">

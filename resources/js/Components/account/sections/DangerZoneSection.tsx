@@ -51,15 +51,19 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        router.post(route("dashboard.account.verify-delete-password"), { current_password: currentPassword } as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: () => resolve(),
-          onError: (errors) => {
-            setErrors(errors as Record<string, string>);
-            reject();
+        router.post(
+          route("dashboard.account.verify-delete-password"),
+          { current_password: currentPassword } as Record<string, unknown>,
+          {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => resolve(),
+            onError: (errors) => {
+              setErrors(errors as Record<string, string>);
+              reject();
+            },
           },
-        });
+        );
       });
     } catch {
       setErrors({ current_password: "Failed to verify password. Please try again." });

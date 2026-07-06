@@ -32,7 +32,7 @@ export function useRepeaterConfig() {
 
   function getRepeater(key: string): RepeaterConfig | undefined {
     for (const moduleConfigs of Object.values(allConfigs)) {
-      if (moduleConfigs[key]) {
+      if (Object.hasOwn(moduleConfigs, key)) {
         return moduleConfigs[key];
       }
     }

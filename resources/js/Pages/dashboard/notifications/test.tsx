@@ -15,8 +15,8 @@ import {
 } from "@/Components/ui/select";
 import { Separator } from "@/Components/ui/separator";
 import { SettingsAccordion } from "@/Components/ui/settings-accordion";
-import { SystemStatusCards } from "@/Pages/dashboard/notifications/system-status-cards";
-import { QuickSendSection } from "@/Pages/dashboard/notifications/quick-send-section";
+import { SystemStatusCards } from "@/Pages/Dashboard/notifications/system-status-cards";
+import { QuickSendSection } from "@/Pages/Dashboard/notifications/quick-send-section";
 import {
   Bell,
   BellDot,
@@ -128,11 +128,11 @@ export default function NotificationsTest() {
       if (alsoSendEmail || overrides?.sendEmail) {
         body.channels = JSON.stringify(["in_app", "email"]);
       }
-      const data = await new Promise<any>((resolve, reject) => {
-        router.post(route("dashboard.notifications.test-send"), body as any, {
+      const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        router.post(route("dashboard.notifications.test-send"), body, {
           preserveState: true,
           preserveScroll: true,
-          onSuccess: (page: any) => resolve(page.props as any),
+          onSuccess: (page: { props: Record<string, unknown> }) => resolve(page.props),
           onError: (errors) => reject(errors),
         });
       });
@@ -164,13 +164,17 @@ export default function NotificationsTest() {
     setResult(null);
     const now = new Date();
     try {
-      const data = await new Promise<any>((resolve, reject) => {
-        router.post(route("dashboard.notifications.test-send-all"), { type, title, message, link, severity } as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: (page: any) => resolve(page.props as any),
-          onError: (errors) => reject(errors),
-        });
+      const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        router.post(
+          route("dashboard.notifications.test-send-all"),
+          { type, title, message, link, severity },
+          {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: (page: { props: Record<string, unknown> }) => resolve(page.props),
+            onError: (errors) => reject(errors),
+          },
+        );
       });
       const msg = data.success ? `Sent to ${data.count} users!` : `Error: ${data.error}`;
       addResult({
@@ -198,11 +202,11 @@ export default function NotificationsTest() {
     setResult(null);
     const now = new Date();
     try {
-      const data = await new Promise<any>((resolve, reject) => {
+      const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
         router.delete(route("dashboard.notifications.test-clear"), {
           preserveState: true,
           preserveScroll: true,
-          onSuccess: (page: any) => resolve(page.props as any),
+          onSuccess: (page: { props: Record<string, unknown> }) => resolve(page.props),
           onError: (errors) => reject(errors),
         });
       });
@@ -235,7 +239,7 @@ export default function NotificationsTest() {
       const payload: Record<string, unknown> = {};
       if (customEmail) payload.to = customEmail;
       await new Promise<void>((resolve, reject) => {
-        router.post(route("dashboard.admin.settings.email.test"), payload as any, {
+        router.post(route("dashboard.admin.settings.email.test"), payload, {
           preserveState: true,
           preserveScroll: true,
           onSuccess: () => resolve(),
@@ -270,7 +274,7 @@ export default function NotificationsTest() {
       const payload: Record<string, unknown> = { template: selectedTemplate };
       if (customEmail) payload.email = customEmail;
       await new Promise<void>((resolve, reject) => {
-        router.post(route("dashboard.admin.settings.email.template-test"), payload as any, {
+        router.post(route("dashboard.admin.settings.email.template-test"), payload, {
           preserveState: true,
           preserveScroll: true,
           onSuccess: () => resolve(),
@@ -300,8 +304,7 @@ export default function NotificationsTest() {
   const groupedTemplates = useMemo(() => {
     const groups: Record<string, { value: string; label: string }[]> = {};
     for (const t of emailTemplates) {
-      if (!groups[t.group]) groups[t.group] = [];
-      groups[t.group]!.push(t);
+      (groups[t.group] ??= []).push(t);
     }
     return groups;
   }, [emailTemplates]);

@@ -11,7 +11,7 @@ const MAX_DIM = 4096;
 
 interface LogoUploaderProps {
   currentLogo?: string;
-  onLogoChange: (url: string) => void;
+  onLogoChange: (_url: string) => void;
   disabled?: boolean;
 }
 
@@ -23,10 +23,10 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
       URL.revokeObjectURL(url);
       resolve({ width: img.naturalWidth, height: img.naturalHeight });
     });
-    img.onerror = () => {
+    img.addEventListener("error", () => {
       URL.revokeObjectURL(url);
       reject(new Error("Failed to read image"));
-    };
+    });
     img.src = url;
   });
 }
@@ -38,7 +38,10 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!uploading) setPreview(currentLogo ?? null);
+    const timeout = setTimeout(() => {
+      if (!uploading) setPreview(currentLogo ?? null);
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [currentLogo, uploading]);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {

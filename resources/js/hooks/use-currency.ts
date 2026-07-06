@@ -11,18 +11,28 @@ interface Currency {
 }
 
 export function useCurrency() {
-  const { activeCurrencies, selectedCurrency } = usePage<any>().props;
+  const { activeCurrencies, selectedCurrency } = usePage<{
+    activeCurrencies: Currency[];
+    selectedCurrency: string;
+  }>().props;
 
   return useMemo(() => {
     const currencies: Currency[] = activeCurrencies || [];
-    const current: Currency = currencies.find((c: Currency) => c.code === selectedCurrency) || currencies.find((c: Currency) => c.code === "EUR") || { code: "EUR", name: "Euro", symbol: "€" };
-    const defaultCurrency: Currency = currencies.find((c: Currency) => c.is_default) || currencies[0] || { code: "EUR", name: "Euro", symbol: "€" };
+    const current: Currency = currencies.find((c: Currency) => c.code === selectedCurrency) ||
+      currencies.find((c: Currency) => c.code === "EUR") || {
+        code: "EUR",
+        name: "Euro",
+        symbol: "€",
+      };
+    const defaultCurrency: Currency = currencies.find((c: Currency) => c.is_default) ||
+      currencies[0] || { code: "EUR", name: "Euro", symbol: "€" };
 
-    const exchangeRate = current.code === defaultCurrency.code
-      ? 1
-      : (current.exchange_rate && defaultCurrency.exchange_rate
-        ? current.exchange_rate / defaultCurrency.exchange_rate
-        : 1);
+    const exchangeRate =
+      current.code === defaultCurrency.code
+        ? 1
+        : current.exchange_rate && defaultCurrency.exchange_rate
+          ? current.exchange_rate / defaultCurrency.exchange_rate
+          : 1;
 
     const format = (amount: number): string => {
       const converted = amount * exchangeRate;

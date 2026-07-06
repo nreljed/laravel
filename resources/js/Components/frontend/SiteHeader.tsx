@@ -1,6 +1,17 @@
 import { Link, router, usePage } from "@inertiajs/react";
 import React, { useState, useEffect } from "react";
-import { ShoppingCart, Menu, X, Search, Package, ChevronDown, Heart, Store, Plus, Minus } from "lucide-react";
+import {
+  ShoppingCart,
+  Menu,
+  X,
+  Search,
+  Package,
+  ChevronDown,
+  Heart,
+  Store,
+  Plus,
+  Minus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
@@ -94,9 +105,7 @@ const ListItem = React.forwardRef<
           {...props}
         >
           <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">{children}</p>
         </a>
       </NavigationMenuLink>
     </li>
@@ -122,10 +131,12 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
   useEffect(() => {
     if (!isStore) return;
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setSearchOpen((open) => !open);
+      if (!(e.key === "k" && (e.metaKey || e.ctrlKey))) {
+        return;
       }
+
+      e.preventDefault();
+      setSearchOpen((open) => !open);
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
@@ -151,7 +162,8 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
     if (newQty < 0) return;
     setCartUpdating((prev) => ({ ...prev, [itemId]: true }));
     try {
-      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+      const token =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
       const res = await fetch(route("store.cart.update-item", itemId), {
         method: "PUT",
         headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": token },
@@ -165,7 +177,8 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
 
   const removeItem = async (itemId: number) => {
     try {
-      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+      const token =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
       await fetch(route("store.cart.remove-item", itemId), {
         method: "DELETE",
         headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": token },
@@ -206,7 +219,11 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
   const cartSheet = (
     <Sheet open={cartOpen} onOpenChange={setCartOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative text-muted-foreground hover:text-foreground"
+        >
           <ShoppingCart className="h-5 w-5" />
           {itemCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
@@ -230,7 +247,9 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
             <p className="text-muted-foreground">Your cart is empty</p>
             <SheetClose asChild>
               <Link href={route("store.index")}>
-                <Button variant="outline" className="mt-4">Browse Products</Button>
+                <Button variant="outline" className="mt-4">
+                  Browse Products
+                </Button>
               </Link>
             </SheetClose>
           </div>
@@ -259,7 +278,9 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                           {item.product?.name || `Product #${item.product_id}`}
                         </Link>
                         {item.variant_label && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{item.variant_label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {item.variant_label}
+                          </p>
                         )}
                         <div className="flex items-center gap-1.5 mt-2">
                           <Button
@@ -271,7 +292,9 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="w-6 text-center text-xs tabular-nums font-medium">{item.quantity}</span>
+                          <span className="w-6 text-center text-xs tabular-nums font-medium">
+                            {item.quantity}
+                          </span>
                           <Button
                             variant="outline"
                             size="icon-xs"
@@ -288,7 +311,12 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <p className="text-sm font-medium tabular-nums">{formatPrice(itemTotal)}</p>
-                        <Button variant="ghost" size="icon-xs" className="h-6 w-6 text-destructive" onClick={() => removeItem(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="h-6 w-6 text-destructive"
+                          onClick={() => removeItem(item.id)}
+                        >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
@@ -300,12 +328,16 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
             <div className="border-t px-6 py-4 space-y-3 shrink-0 bg-background">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium tabular-nums">{formatPrice(currentCart.subtotal)}</span>
+                <span className="font-medium tabular-nums">
+                  {formatPrice(currentCart.subtotal)}
+                </span>
               </div>
               {currentCart.discount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Discount</span>
-                  <span className="tabular-nums text-destructive">-{formatPrice(currentCart.discount)}</span>
+                  <span className="tabular-nums text-destructive">
+                    -{formatPrice(currentCart.discount)}
+                  </span>
                 </div>
               )}
               <Separator />
@@ -320,7 +352,9 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
               </SheetClose>
               <SheetClose asChild>
                 <Link href={route("store.checkout.index")} className="block w-full">
-                  <Button variant="outline" className="w-full">Proceed to Checkout</Button>
+                  <Button variant="outline" className="w-full">
+                    Proceed to Checkout
+                  </Button>
                 </Link>
               </SheetClose>
             </div>
@@ -333,28 +367,54 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
   const searchDialog = (
     <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
       <form onSubmit={handleSearch}>
-        <CommandInput placeholder="Search products..." value={searchQuery} onValueChange={setSearchQuery} />
+        <CommandInput
+          placeholder="Search products..."
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
       </form>
       <CommandList>
         <CommandEmpty>
           {searchQuery.trim() ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               <p>No products found for "{searchQuery}"</p>
-              <Button variant="link" size="sm" className="mt-2" onClick={() => { router.get(route("store.index"), { search: searchQuery.trim() }); setSearchOpen(false); setSearchQuery(""); }}>
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  router.get(route("store.index"), { search: searchQuery.trim() });
+                  setSearchOpen(false);
+                  setSearchQuery("");
+                }}
+              >
                 View all results
               </Button>
             </div>
           ) : (
-            <div className="py-6 text-center text-sm text-muted-foreground">Type to search products...</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              Type to search products...
+            </div>
           )}
         </CommandEmpty>
         <CommandGroup heading="Quick Links">
-          <CommandItem onSelect={() => { router.get(route("store.index")); setSearchOpen(false); }}>
+          <CommandItem
+            onSelect={() => {
+              router.get(route("store.index"));
+              setSearchOpen(false);
+            }}
+          >
             <Package className="mr-2 h-4 w-4" />
             <span>Browse all products</span>
           </CommandItem>
           {categories.slice(0, 5).map((cat) => (
-            <CommandItem key={cat.id} onSelect={() => { router.get(route("store.category", cat.slug)); setSearchOpen(false); }}>
+            <CommandItem
+              key={cat.id}
+              onSelect={() => {
+                router.get(route("store.category", cat.slug));
+                setSearchOpen(false);
+              }}
+            >
               <ChevronDown className="mr-2 h-4 w-4" />
               <span>{cat.name}</span>
             </CommandItem>
@@ -366,7 +426,9 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
 
   return (
     <>
-      <nav className={`border-b border-border bg-background ${isStore ? "sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80" : ""}`}>
+      <nav
+        className={`border-b border-border bg-background ${isStore ? "sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80" : ""}`}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -391,7 +453,8 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                                 <Store className="h-6 w-6" />
                                 <div className="mb-2 mt-4 text-lg font-medium">All Products</div>
                                 <p className="text-sm leading-tight text-muted-foreground">
-                                  Browse our full product catalog with search, filters, and categories
+                                  Browse our full product catalog with search, filters, and
+                                  categories
                                 </p>
                               </Link>
                             </NavigationMenuLink>
@@ -417,7 +480,10 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                           <ul className="grid w-56 gap-1 p-3">
                             <li>
                               <NavigationMenuLink asChild>
-                                <Link href={route("store.index")} className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent">
+                                <Link
+                                  href={route("store.index")}
+                                  className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent"
+                                >
                                   All Products
                                 </Link>
                               </NavigationMenuLink>
@@ -425,7 +491,10 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                             {categories.map((cat) => (
                               <li key={cat.id}>
                                 <NavigationMenuLink asChild>
-                                  <Link href={route("store.category", cat.slug)} className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent">
+                                  <Link
+                                    href={route("store.category", cat.slug)}
+                                    className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent"
+                                  >
                                     {cat.name}
                                   </Link>
                                 </NavigationMenuLink>
@@ -436,17 +505,26 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
                       </NavigationMenuItem>
                     )}
                     <NavigationMenuItem>
-                      <Link href={route("about")} className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors">
+                      <Link
+                        href={route("about")}
+                        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                      >
                         About
                       </Link>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
-                      <Link href={route("services")} className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors">
+                      <Link
+                        href={route("services")}
+                        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                      >
                         Services
                       </Link>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
-                      <Link href={route("contact")} className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors">
+                      <Link
+                        href={route("contact")}
+                        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                      >
                         Contact
                       </Link>
                     </NavigationMenuItem>
@@ -460,12 +538,25 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
           <div className="flex items-center gap-2">
             {isStore && (
               <>
-                <Button variant="ghost" size="icon" className="hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => setSearchOpen(true)} title="Search (Ctrl+K)">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
+                  onClick={() => setSearchOpen(true)}
+                  title="Search (Ctrl+K)"
+                >
                   <Search className="h-5 w-5" />
                 </Button>
                 <CurrencySwitcher />
-                <Link href={route('store.wishlist.index')} className="hidden sm:inline-flex relative text-muted-foreground hover:text-foreground">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href={route("store.wishlist.index")}
+                  className="hidden sm:inline-flex relative text-muted-foreground hover:text-foreground"
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     <Heart className="h-5 w-5" />
                     {wishlistIds.length > 0 && (
                       <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
@@ -481,7 +572,12 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
               <NavUser variant="basic" />
             </div>
             {isStore && (
-              <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             )}
@@ -490,27 +586,50 @@ export function SiteHeader({ variant = "default", categories = [], cart }: SiteH
         {isStore && mobileMenuOpen && (
           <div className="border-t border-border md:hidden">
             <div className="space-y-1 px-4 py-3">
-              <Link href={route("store.index")} className="block rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href={route("store.index")}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Store
               </Link>
               {categories.length > 0 && (
                 <>
-                  <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categories</p>
+                  <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Categories
+                  </p>
                   {categories.map((cat) => (
-                    <Link key={cat.id} href={route("store.category", cat.slug)} className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent pl-8" onClick={() => setMobileMenuOpen(false)}>
+                    <Link
+                      key={cat.id}
+                      href={route("store.category", cat.slug)}
+                      className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent pl-8"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
                       {cat.name}
                     </Link>
                   ))}
                 </>
               )}
               <Separator className="my-2" />
-              <Link href={route("about")} className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href={route("about")}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 About
               </Link>
-              <Link href={route("services")} className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href={route("services")}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Services
               </Link>
-              <Link href={route("contact")} className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href={route("contact")}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Contact
               </Link>
               <Separator className="my-2" />

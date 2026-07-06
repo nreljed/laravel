@@ -27,6 +27,7 @@ export function EmailSection({ user, initialStatus }: EmailSectionProps) {
   const emailVerified = !!user.email_verified_at;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialStatus) setSuccess(initialStatus);
   }, [initialStatus]);
 

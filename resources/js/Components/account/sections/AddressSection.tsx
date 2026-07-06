@@ -29,12 +29,28 @@ interface Props {
 export function AddressSection({ billingAddress, shippingAddress, asAccordion }: Props) {
   const { data, setData, put, processing, recentlySuccessful } = useForm({
     billing_address: billingAddress ?? {
-      first_name: "", last_name: "", company: "", address_line1: "", address_line2: "",
-      city: "", state: "", postcode: "", country: "", phone: "",
+      first_name: "",
+      last_name: "",
+      company: "",
+      address_line1: "",
+      address_line2: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
+      phone: "",
     },
     shipping_address: shippingAddress ?? {
-      first_name: "", last_name: "", company: "", address_line1: "", address_line2: "",
-      city: "", state: "", postcode: "", country: "", phone: "",
+      first_name: "",
+      last_name: "",
+      company: "",
+      address_line1: "",
+      address_line2: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
+      phone: "",
     },
   });
 
@@ -63,48 +79,90 @@ export function AddressSection({ billingAddress, shippingAddress, asAccordion }:
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="billing_first_name">First Name</Label>
-              <Input id="billing_first_name" value={data.billing_address.first_name} onChange={(e) => setBilling("first_name", e.target.value)} />
+              <Input
+                id="billing_first_name"
+                value={data.billing_address.first_name}
+                onChange={(e) => setBilling("first_name", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="billing_last_name">Last Name</Label>
-              <Input id="billing_last_name" value={data.billing_address.last_name} onChange={(e) => setBilling("last_name", e.target.value)} />
+              <Input
+                id="billing_last_name"
+                value={data.billing_address.last_name}
+                onChange={(e) => setBilling("last_name", e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="billing_company">Company</Label>
-            <Input id="billing_company" value={data.billing_address.company} onChange={(e) => setBilling("company", e.target.value)} />
+            <Input
+              id="billing_company"
+              value={data.billing_address.company}
+              onChange={(e) => setBilling("company", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="billing_address_line1">Address Line 1</Label>
-            <Input id="billing_address_line1" value={data.billing_address.address_line1} onChange={(e) => setBilling("address_line1", e.target.value)} />
+            <Input
+              id="billing_address_line1"
+              value={data.billing_address.address_line1}
+              onChange={(e) => setBilling("address_line1", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="billing_address_line2">Address Line 2</Label>
-            <Input id="billing_address_line2" value={data.billing_address.address_line2} onChange={(e) => setBilling("address_line2", e.target.value)} />
+            <Input
+              id="billing_address_line2"
+              value={data.billing_address.address_line2}
+              onChange={(e) => setBilling("address_line2", e.target.value)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="billing_city">City</Label>
-              <Input id="billing_city" value={data.billing_address.city} onChange={(e) => setBilling("city", e.target.value)} />
+              <Input
+                id="billing_city"
+                value={data.billing_address.city}
+                onChange={(e) => setBilling("city", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="billing_state">State</Label>
-              <Input id="billing_state" value={data.billing_address.state} onChange={(e) => setBilling("state", e.target.value)} />
+              <Input
+                id="billing_state"
+                value={data.billing_address.state}
+                onChange={(e) => setBilling("state", e.target.value)}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="billing_postcode">Postcode</Label>
-              <Input id="billing_postcode" value={data.billing_address.postcode} onChange={(e) => setBilling("postcode", e.target.value)} />
+              <Input
+                id="billing_postcode"
+                value={data.billing_address.postcode}
+                onChange={(e) => setBilling("postcode", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="billing_country">Country</Label>
-              <Input id="billing_country" maxLength={2} placeholder="US" value={data.billing_address.country} onChange={(e) => setBilling("country", e.target.value)} />
+              <Input
+                id="billing_country"
+                maxLength={2}
+                placeholder="US"
+                value={data.billing_address.country}
+                onChange={(e) => setBilling("country", e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="billing_phone">Phone</Label>
-            <Input id="billing_phone" value={data.billing_address.phone} onChange={(e) => setBilling("phone", e.target.value)} />
+            <Input
+              id="billing_phone"
+              value={data.billing_address.phone}
+              onChange={(e) => setBilling("phone", e.target.value)}
+            />
           </div>
         </div>
 
@@ -118,48 +176,90 @@ export function AddressSection({ billingAddress, shippingAddress, asAccordion }:
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="shipping_first_name">First Name</Label>
-              <Input id="shipping_first_name" value={data.shipping_address.first_name} onChange={(e) => setShipping("first_name", e.target.value)} />
+              <Input
+                id="shipping_first_name"
+                value={data.shipping_address.first_name}
+                onChange={(e) => setShipping("first_name", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="shipping_last_name">Last Name</Label>
-              <Input id="shipping_last_name" value={data.shipping_address.last_name} onChange={(e) => setShipping("last_name", e.target.value)} />
+              <Input
+                id="shipping_last_name"
+                value={data.shipping_address.last_name}
+                onChange={(e) => setShipping("last_name", e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="shipping_company">Company</Label>
-            <Input id="shipping_company" value={data.shipping_address.company} onChange={(e) => setShipping("company", e.target.value)} />
+            <Input
+              id="shipping_company"
+              value={data.shipping_address.company}
+              onChange={(e) => setShipping("company", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="shipping_address_line1">Address Line 1</Label>
-            <Input id="shipping_address_line1" value={data.shipping_address.address_line1} onChange={(e) => setShipping("address_line1", e.target.value)} />
+            <Input
+              id="shipping_address_line1"
+              value={data.shipping_address.address_line1}
+              onChange={(e) => setShipping("address_line1", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="shipping_address_line2">Address Line 2</Label>
-            <Input id="shipping_address_line2" value={data.shipping_address.address_line2} onChange={(e) => setShipping("address_line2", e.target.value)} />
+            <Input
+              id="shipping_address_line2"
+              value={data.shipping_address.address_line2}
+              onChange={(e) => setShipping("address_line2", e.target.value)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="shipping_city">City</Label>
-              <Input id="shipping_city" value={data.shipping_address.city} onChange={(e) => setShipping("city", e.target.value)} />
+              <Input
+                id="shipping_city"
+                value={data.shipping_address.city}
+                onChange={(e) => setShipping("city", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="shipping_state">State</Label>
-              <Input id="shipping_state" value={data.shipping_address.state} onChange={(e) => setShipping("state", e.target.value)} />
+              <Input
+                id="shipping_state"
+                value={data.shipping_address.state}
+                onChange={(e) => setShipping("state", e.target.value)}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="shipping_postcode">Postcode</Label>
-              <Input id="shipping_postcode" value={data.shipping_address.postcode} onChange={(e) => setShipping("postcode", e.target.value)} />
+              <Input
+                id="shipping_postcode"
+                value={data.shipping_address.postcode}
+                onChange={(e) => setShipping("postcode", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="shipping_country">Country</Label>
-              <Input id="shipping_country" maxLength={2} placeholder="US" value={data.shipping_address.country} onChange={(e) => setShipping("country", e.target.value)} />
+              <Input
+                id="shipping_country"
+                maxLength={2}
+                placeholder="US"
+                value={data.shipping_address.country}
+                onChange={(e) => setShipping("country", e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="shipping_phone">Phone</Label>
-            <Input id="shipping_phone" value={data.shipping_address.phone} onChange={(e) => setShipping("phone", e.target.value)} />
+            <Input
+              id="shipping_phone"
+              value={data.shipping_address.phone}
+              onChange={(e) => setShipping("phone", e.target.value)}
+            />
           </div>
         </div>
       </div>

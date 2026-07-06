@@ -9,7 +9,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/Components/ui/select";
-import { ShoppingCart, Package, Clock, RotateCcw, Warehouse, Mail, CalendarDays } from "lucide-react";
+import {
+  ShoppingCart,
+  Package,
+  Clock,
+  RotateCcw,
+  Warehouse,
+  Mail,
+  CalendarDays,
+} from "lucide-react";
 import { Separator } from "@/Components/ui/separator";
 
 const CURRENCY_OPTIONS = [
@@ -48,10 +56,10 @@ const BACKORDER_OPTIONS = [
 
 interface ShopSectionProps {
   data: Record<string, string | undefined>;
-  onChange: (field: string, value: string) => void;
+  onChange: (_field: string, _value: string) => void;
   errors: Record<string, string>;
   loading?: boolean;
-  onSubmit?: (e: React.FormEvent) => void;
+  onSubmit?: (_e: React.FormEvent) => void;
   asAccordion?: boolean;
 }
 
@@ -126,15 +134,8 @@ export function ShopSection({
         loading={loading}
       >
         <div className="grid grid-cols-2 gap-4">
-          <SectionField
-            label="Currency"
-            htmlFor="currency"
-            error={errors?.currency}
-          >
-            <Select
-              value={data?.currency ?? "EUR"}
-              onValueChange={(v) => onChange("currency", v)}
-            >
+          <SectionField label="Currency" htmlFor="currency" error={errors?.currency}>
+            <Select value={data?.currency ?? "EUR"} onValueChange={(v) => onChange("currency", v)}>
               <SelectTrigger id="currency">
                 <SelectValue />
               </SelectTrigger>
@@ -190,11 +191,7 @@ export function ShopSection({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <SectionField
-            label="Weight Unit"
-            htmlFor="weight_unit"
-            error={errors?.weight_unit}
-          >
+          <SectionField label="Weight Unit" htmlFor="weight_unit" error={errors?.weight_unit}>
             <Select
               value={data?.weight_unit ?? "kg"}
               onValueChange={(v) => onChange("weight_unit", v)}
@@ -248,9 +245,7 @@ export function ShopSection({
             <Switch
               id="inventory_enabled"
               checked={data?.inventory_enabled !== "0"}
-              onCheckedChange={(checked) =>
-                onChange("inventory_enabled", checked ? "1" : "0")
-              }
+              onCheckedChange={(checked) => onChange("inventory_enabled", checked ? "1" : "0")}
               disabled={loading}
             />
             <span className="text-sm">Enable Inventory Tracking</span>
@@ -287,8 +282,8 @@ export function ShopSection({
         </div>
 
         <p className="text-xs text-muted-foreground mb-3">
-          Temporarily reserve stock when a pending order is placed. Stock is
-          released if the order is not completed within the set time.
+          Temporarily reserve stock when a pending order is placed. Stock is released if the order
+          is not completed within the set time.
         </p>
 
         <div className="flex flex-wrap items-center gap-6 pt-2">
@@ -296,9 +291,7 @@ export function ShopSection({
             <Switch
               id="hold_stock_enabled"
               checked={data?.hold_stock_enabled !== "0"}
-              onCheckedChange={(checked) =>
-                onChange("hold_stock_enabled", checked ? "1" : "0")
-              }
+              onCheckedChange={(checked) => onChange("hold_stock_enabled", checked ? "1" : "0")}
               disabled={loading}
             />
             <span className="text-sm">Enable Hold Stock</span>
@@ -338,9 +331,7 @@ export function ShopSection({
             <Switch
               id="abandoned_cart_enabled"
               checked={data?.abandoned_cart_enabled !== "0"}
-              onCheckedChange={(checked) =>
-                onChange("abandoned_cart_enabled", checked ? "1" : "0")
-              }
+              onCheckedChange={(checked) => onChange("abandoned_cart_enabled", checked ? "1" : "0")}
               disabled={loading}
             />
             <span className="text-sm">Enable Abandoned Cart Recovery</span>
@@ -414,7 +405,8 @@ export function ShopSection({
           </label>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          When enabled, sale start/end times are automatically adjusted to midnight for cleaner date handling.
+          When enabled, sale start/end times are automatically adjusted to midnight for cleaner date
+          handling.
         </p>
       </Section>
 
@@ -437,9 +429,7 @@ export function ShopSection({
               <Switch
                 id={key}
                 checked={data?.[key] !== "0"}
-                onCheckedChange={(checked) =>
-                  onChange(key, checked ? "1" : "0")
-                }
+                onCheckedChange={(checked) => onChange(key, checked ? "1" : "0")}
                 disabled={loading}
               />
               <span className="text-sm">{label}</span>

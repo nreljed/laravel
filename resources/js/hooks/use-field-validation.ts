@@ -6,7 +6,7 @@ interface FieldValidationOptions {
   param: string;
   value: string;
   debounce?: number;
-  validate?: (value: string) => boolean;
+  validate?: (_value: string) => boolean;
 }
 
 interface FieldValidationStatus {
@@ -42,14 +42,17 @@ export function useFieldValidation(options: FieldValidationOptions): FieldValida
       setStatus((prev) => ({ ...prev, checking: true }));
 
       try {
-        const result = await new Promise<any>((resolve, reject) => {
-          router.get(route(endpoint), { [param]: val } as any, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: (page: any) => resolve(page.props as any),
-            onError: (errors) => reject(errors),
-          });
-        });
+        const result = await new Promise<{ available: boolean; message?: string }>(
+          (resolve, reject) => {
+            router.get(route(endpoint), { [param]: val } as Record<string, string>, {
+              preserveState: true,
+              preserveScroll: true,
+              onSuccess: (page: { props: { available: boolean; message?: string } }) =>
+                resolve(page.props),
+              onError: (errors) => reject(errors),
+            });
+          },
+        );
 
         if (gen !== genRef.current) return;
         setStatus({

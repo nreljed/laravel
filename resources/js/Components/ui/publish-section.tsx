@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 interface PublishSectionProps {
   status?: string;
   publishDate?: string | null;
-  onStatusChange?: (status: string) => void;
-  onDateChange?: (date: string | null) => void;
+  onStatusChange?: (_status: string) => void;
+  onDateChange?: (_date: string | null) => void;
   disabled?: boolean;
   showStatusOptions?: boolean;
   onSubmit?: () => void;

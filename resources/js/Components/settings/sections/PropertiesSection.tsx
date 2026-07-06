@@ -8,10 +8,10 @@ import { getCountryBounds, getCountryName } from "@/lib/country-bounds";
 
 interface PropertiesSectionProps {
   data: Record<string, string | undefined>;
-  onChange: (field: string, value: string) => void;
+  onChange: (_field: string, _value: string) => void;
   errors: Record<string, string>;
   loading?: boolean;
-  onSubmit?: (e: React.FormEvent) => void;
+  onSubmit?: (_e: React.FormEvent) => void;
   asAccordion?: boolean;
 }
 

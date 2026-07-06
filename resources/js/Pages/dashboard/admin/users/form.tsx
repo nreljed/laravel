@@ -69,7 +69,9 @@ export default function AdminUsersForm() {
 
   useEffect(() => {
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       clearTimeout(usernameTimer.current);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       clearTimeout(emailTimer.current);
     };
   }, []);
@@ -90,16 +92,20 @@ export default function AdminUsersForm() {
       if (value === lastChecked.current) return;
       setStatus("checking");
 
-      router.get(route("register.availability"), { field, value } as any, {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: (page: any) => {
-          const data = page.props as any;
-          lastChecked.current = value;
-          setStatus(data.available ? "available" : "taken");
+      router.get(
+        route("register.availability"),
+        { field, value },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          onSuccess: (page: { props: Record<string, unknown> }) => {
+            const data = page.props;
+            lastChecked.current = value;
+            setStatus(data.available ? "available" : "taken");
+          },
+          onError: () => setStatus("idle"),
         },
-        onError: () => setStatus("idle"),
-      });
+      );
     }, 400);
   };
 

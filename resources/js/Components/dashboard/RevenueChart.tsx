@@ -12,9 +12,6 @@ interface RevenueChartProps {
 }
 
 export default function RevenueChart({ data }: RevenueChartProps) {
-  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
-  const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" });
-
   if (data.length === 0) {
     return (
       <Card>
@@ -30,6 +27,9 @@ export default function RevenueChart({ data }: RevenueChartProps) {
       </Card>
     );
   }
+
+  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
+  const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" });
 
   return (
     <Card>

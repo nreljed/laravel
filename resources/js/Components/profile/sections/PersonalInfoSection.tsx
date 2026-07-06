@@ -55,7 +55,7 @@ export function PersonalInfoSection({
       "lastfirst",
     ];
     const entries = Object.entries(displayNameOptions);
-    return [...entries].sort((a, b) => {
+    return [...entries].toSorted((a, b) => {
       const indexA = displayNameOrder.indexOf(a[0]);
       const indexB = displayNameOrder.indexOf(b[0]);
       return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);

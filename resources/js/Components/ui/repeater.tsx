@@ -200,6 +200,19 @@ function SortableRepeaterItem({
 
       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {fields.map((field: RepeaterField) => {
+          if (field.type === "boolean") {
+            return (
+              <div key={field.name} className="sm:col-span-2 flex items-center gap-3">
+                <Switch
+                  id={`${field.name}-${index}`}
+                  checked={item[field.name] === true}
+                  onCheckedChange={(checked: boolean) => handleFieldChange(field.name, checked)}
+                  disabled={disabled}
+                />
+                <Label htmlFor={`${field.name}-${index}`}>{field.label}</Label>
+              </div>
+            );
+          }
           const fieldName = field.name;
           const indexStr = String(index);
           const matchingKey = Object.keys(errors).find((k) => {
@@ -209,19 +222,6 @@ function SortableRepeaterItem({
             return lastPart === fieldName && hasIndex;
           });
           const error = matchingKey ? errors[matchingKey] : undefined;
-          if (field.type === "boolean") {
-            return (
-              <div key={field.name} className="sm:col-span-2 flex items-center gap-3">
-                <Switch
-                  id={`${field.name}-${index}`}
-                  checked={Boolean(item[field.name])}
-                  onCheckedChange={(checked: boolean) => handleFieldChange(field.name, checked)}
-                  disabled={disabled}
-                />
-                <Label htmlFor={`${field.name}-${index}`}>{field.label}</Label>
-              </div>
-            );
-          }
           return (
             <div key={field.name} className={`space-y-2 ${field.fullWidth ? "sm:col-span-2" : ""}`}>
               <Label htmlFor={`${field.name}-${index}`}>
@@ -404,7 +404,8 @@ function SortableAccordionItem({
     onChange(index, { ...item, [fieldName]: value });
   };
 
-  let title = titleField && item[titleField] ? String(item[titleField]) : `Item ${index + 1}`;
+  const titleValue = titleField ? item[titleField] : undefined;
+  let title = titleValue ? String(titleValue) : `Item ${index + 1}`;
   if (showFieldsInTitle.length > 0) {
     const additionalValues = showFieldsInTitle
       .map((fieldName) => {
@@ -413,7 +414,7 @@ function SortableAccordionItem({
       })
       .filter(Boolean);
     if (additionalValues.length > 0) {
-      title = `${title} • ${additionalValues.join(" • ")}`;
+      title += ` • ${additionalValues.join(" • ")}`;
     }
   }
 
@@ -480,21 +481,12 @@ function SortableAccordionItem({
           <div className="px-4 pb-4 pt-2 border-t">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {fields.map((field: RepeaterField) => {
-                const fieldName = field.name;
-                const indexStr = String(index);
-                const matchingKey = Object.keys(errors).find((k) => {
-                  const parts = k.split(".");
-                  const lastPart = parts.at(-1);
-                  const hasIndex = parts.some((part, idx) => idx > 0 && part === indexStr);
-                  return lastPart === fieldName && hasIndex;
-                });
-                const error = matchingKey ? errors[matchingKey] : undefined;
                 if (field.type === "boolean") {
                   return (
                     <div key={field.name} className="sm:col-span-2 flex items-center gap-3">
                       <Switch
                         id={`${field.name}-${index}`}
-                        checked={Boolean(item[field.name])}
+                        checked={item[field.name] === true}
                         onCheckedChange={(checked: boolean) =>
                           handleFieldChange(field.name, checked)
                         }
@@ -504,6 +496,15 @@ function SortableAccordionItem({
                     </div>
                   );
                 }
+                const fieldName = field.name;
+                const indexStr = String(index);
+                const matchingKey = Object.keys(errors).find((k) => {
+                  const parts = k.split(".");
+                  const lastPart = parts.at(-1);
+                  const hasIndex = parts.some((part, idx) => idx > 0 && part === indexStr);
+                  return lastPart === fieldName && hasIndex;
+                });
+                const error = matchingKey ? errors[matchingKey] : undefined;
                 return (
                   <div
                     key={field.name}
@@ -627,7 +628,8 @@ function SortableAccordionItem({
 }
 
 function DragOverlayItem({ fields, item, titleField }: DragOverlayItemProps) {
-  const title = titleField && item[titleField] ? String(item[titleField]) : "(empty)";
+  const rawTitle = titleField ? item[titleField] : undefined;
+  const title = rawTitle ? String(rawTitle) : "(empty)";
 
   return (
     <div className="flex items-start gap-3 p-4 border rounded-lg bg-card shadow-lg ring-2 ring-primary opacity-90">
@@ -699,7 +701,11 @@ export function Repeater({
         });
       } else {
         setLocalOpenItems((prev) => {
-          const nextOpen = forceOpen !== undefined ? forceOpen : !prev[index];
+          const prevIsOpen = prev[index];
+          const nextOpen =
+            forceOpen !== undefined
+              ? forceOpen
+              : !(Object.hasOwn(prev, String(index)) && prevIsOpen);
           return { ...prev, [index]: nextOpen };
         });
       }
@@ -730,9 +736,9 @@ export function Repeater({
       const timer = setTimeout(() => {
         setLocalOpenItems((prev) => {
           const newState: Record<string, boolean> = {};
-          localValue.forEach((_, index) => {
+          for (const [index] of localValue.entries()) {
             newState[index] = prev[index] !== undefined ? prev[index] : accordionDefaultOpen;
-          });
+          }
           return newState;
         });
       }, 0);
@@ -744,9 +750,9 @@ export function Repeater({
     if (localValue.length >= maxItems) return;
 
     const itemToAdd: Record<string, unknown> = {};
-    fields.forEach((field: RepeaterField) => {
+    for (const field of fields) {
       itemToAdd[field.name] = "";
-    });
+    }
 
     const newIndex = localValue.length;
     const newValue = [...localValue, itemToAdd];
@@ -778,26 +784,26 @@ export function Repeater({
       if (accordionMode) {
         if (controlled) {
           const newState: Record<string, boolean> = {};
-          Object.keys(openItems).forEach((key) => {
+          for (const [key, value] of Object.entries(openItems)) {
             const keyIndex = Number.parseInt(key);
             if (keyIndex < index) {
-              newState[keyIndex] = openItems[key] ?? false;
+              newState[keyIndex] = value ?? false;
             } else if (keyIndex > index) {
-              newState[keyIndex - 1] = openItems[key] ?? false;
+              newState[keyIndex - 1] = value ?? false;
             }
-          });
+          }
           onUiStateChangeRef.current?.(newState);
         } else {
           setLocalOpenItems((prev) => {
             const newState: Record<string, boolean> = {};
-            Object.keys(prev).forEach((key) => {
+            for (const [key, value] of Object.entries(prev)) {
               const keyIndex = Number.parseInt(key);
               if (keyIndex < index) {
-                newState[keyIndex] = prev[key] ?? false;
+                newState[keyIndex] = value ?? false;
               } else if (keyIndex > index) {
-                newState[keyIndex - 1] = prev[key] ?? false;
+                newState[keyIndex - 1] = value ?? false;
               }
-            });
+            }
             return newState;
           });
         }
@@ -888,10 +894,9 @@ export function Repeater({
           const sourceStates = controlled ? openItems : localOpenItems;
           const openStatesArray = localValue.map((_, i) => sourceStates[i] ?? accordionDefaultOpen);
           const movedStates = arrayMove(openStatesArray, activeIndex, overIndex);
-          const newOpenItems: Record<string, boolean> = {};
-          movedStates.forEach((state, i) => {
-            newOpenItems[i] = state;
-          });
+          const newOpenItems = Object.fromEntries(
+            movedStates.map((state, i) => [i, state]),
+          ) as Record<string, boolean>;
 
           if (controlled) {
             onUiStateChangeRef.current?.(newOpenItems);

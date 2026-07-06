@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { router } from "@inertiajs/react";
 
 interface UsePasswordVerificationReturn {
-  verifyPassword: (password: string) => Promise<boolean>;
+  verifyPassword: (_password: string) => Promise<boolean>;
   isVerifying: boolean;
   isVerified: boolean;
   error: string | null;
@@ -25,14 +25,21 @@ export function usePasswordVerification(): UsePasswordVerificationReturn {
     setError(null);
 
     try {
-      const result = await new Promise<{ verified: boolean; message?: string }>((resolve, reject) => {
-        router.post(route("dashboard.account.verify-delete-password"), { password } as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: (page: any) => resolve(page.props as any),
-          onError: (errors) => reject(errors),
-        });
-      });
+      const result = await new Promise<{ verified: boolean; message?: string }>(
+        (resolve, reject) => {
+          router.post(
+            route("dashboard.account.verify-delete-password"),
+            { password } as Record<string, string>,
+            {
+              preserveState: true,
+              preserveScroll: true,
+              onSuccess: (page: { props: { verified: boolean; message?: string } }) =>
+                resolve(page.props),
+              onError: (errors) => reject(errors),
+            },
+          );
+        },
+      );
 
       if (result.verified) {
         setIsVerified(true);

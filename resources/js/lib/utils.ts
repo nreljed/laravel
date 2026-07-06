@@ -33,7 +33,7 @@ function phpToDateFormat(php: string): string {
     if (c === "\\" && i + 1 < php.length) {
       result += php[i + 1]!;
       i++;
-    } else if (PHP_DATE_TOKENS[c]) {
+    } else if (Object.hasOwn(PHP_DATE_TOKENS, c)) {
       result += PHP_DATE_TOKENS[c]!;
     } else {
       result += c;
@@ -49,7 +49,7 @@ export function formatDate(
 ): string {
   if (date == null) return fallback || "-";
   const d = typeof date === "object" ? date : new Date(date);
-  if (isNaN(d.getTime())) return fallback || "-";
+  if (Number.isNaN(d.getTime())) return fallback || "-";
   const fmt = dateFormat ? phpToDateFormat(dateFormat) : "MMM d, yyyy";
   return format(d, fmt);
 }
@@ -61,7 +61,7 @@ export function zodErrorsToMap(
   if (!issues) return errors;
   for (const issue of issues) {
     const key = issue.path.join(".");
-    if (!errors[key]) {
+    if (!Object.hasOwn(errors, key)) {
       errors[key] = issue.message;
     }
   }
@@ -76,7 +76,7 @@ export function formatDateTime(
 ): string {
   if (date == null) return fallback || "-";
   const d = typeof date === "object" ? date : new Date(date);
-  if (isNaN(d.getTime())) return fallback || "-";
+  if (Number.isNaN(d.getTime())) return fallback || "-";
   const df = dateFormat ? phpToDateFormat(dateFormat) : "MMM d, yyyy";
   const tf = timeFormat ? phpToDateFormat(timeFormat) : "HH:mm";
   return `${format(d, df)} ${format(d, tf)}`;

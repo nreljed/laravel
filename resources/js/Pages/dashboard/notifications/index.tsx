@@ -135,12 +135,20 @@ export default function NotificationsPage({
   const { current_page, last_page } = notifsData;
 
   const isUnread = (n: StructuredNotification) => n.is_read === "0" || !n.read_at;
-  const getTitle = (n: StructuredNotification) =>
-    n.title || n.data?.title || n.data?.subject || n.data?.message || "";
-  const getMessage = (n: StructuredNotification) =>
-    n.message || n.data?.message || n.data?.body || "";
 
   const filtered = useMemo(() => {
+    const getDataValue = (n: StructuredNotification, ...keys: string[]) => {
+      if (!n.data) return "";
+      for (const key of keys) {
+        if (Object.hasOwn(n.data, key)) return n.data[key] as string;
+      }
+      return "";
+    };
+    const getTitle = (n: StructuredNotification) =>
+      n.title || getDataValue(n, "title", "subject", "message");
+    const getMessage = (n: StructuredNotification) =>
+      n.message || getDataValue(n, "message", "body");
+
     let result = allNotifications;
     if (readFilter === "unread") {
       result = result.filter((n) => isUnread(n));
@@ -166,7 +174,7 @@ export default function NotificationsPage({
     const groups: Record<string, typeof filtered> = {};
     for (const n of filtered) {
       const dateGroup = getDateGroup(n.created_at);
-      if (!groups[dateGroup]) groups[dateGroup] = [];
+      if (!Object.hasOwn(groups, dateGroup)) groups[dateGroup] = [];
       groups[dateGroup]!.push(n);
     }
     return groups;
@@ -208,12 +216,16 @@ export default function NotificationsPage({
   const markAsRead = async (id: string) => {
     try {
       await new Promise<void>((resolve, reject) => {
-        router.post(route("api.notifications.mark-read"), { id } as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: () => resolve(),
-          onError: () => reject(),
-        });
+        router.post(
+          route("api.notifications.mark-read"),
+          { id },
+          {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => resolve(),
+            onError: () => reject(),
+          },
+        );
       });
       setAllNotifications((prev) =>
         prev.map((n) =>
@@ -229,12 +241,16 @@ export default function NotificationsPage({
   const markAllAsRead = async () => {
     try {
       await new Promise<void>((resolve, reject) => {
-        router.post(route("api.notifications.mark-all-read"), {} as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: () => resolve(),
-          onError: () => reject(),
-        });
+        router.post(
+          route("api.notifications.mark-all-read"),
+          {},
+          {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => resolve(),
+            onError: () => reject(),
+          },
+        );
       });
       setAllNotifications((prev) =>
         prev.map((n) => ({ ...n, is_read: "1", read_at: new Date().toISOString() })),
@@ -249,7 +265,7 @@ export default function NotificationsPage({
   const deleteNotification = async (id: string) => {
     try {
       await new Promise<void>((resolve, reject) => {
-        router.delete(route("api.notifications.destroy", { id } as any), {
+        router.delete(route("api.notifications.destroy", { id }), {
           preserveState: true,
           preserveScroll: true,
           onSuccess: () => resolve(),
@@ -270,12 +286,16 @@ export default function NotificationsPage({
     clearSelection();
     try {
       await new Promise<void>((resolve, reject) => {
-        router.post(route("api.notifications.mark-bulk"), { ids } as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: () => resolve(),
-          onError: () => reject(),
-        });
+        router.post(
+          route("api.notifications.mark-bulk"),
+          { ids },
+          {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => resolve(),
+            onError: () => reject(),
+          },
+        );
       });
       setAllNotifications((prev) =>
         prev.map((n) =>
@@ -294,12 +314,16 @@ export default function NotificationsPage({
     clearSelection();
     try {
       await new Promise<void>((resolve, reject) => {
-        router.post(route("api.notifications.delete-bulk"), { ids } as any, {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: () => resolve(),
-          onError: () => reject(),
-        });
+        router.post(
+          route("api.notifications.delete-bulk"),
+          { ids },
+          {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => resolve(),
+            onError: () => reject(),
+          },
+        );
       });
       setAllNotifications((prev) => prev.filter((n) => !ids.includes(n.id)));
       toast.success("Selected notifications deleted");

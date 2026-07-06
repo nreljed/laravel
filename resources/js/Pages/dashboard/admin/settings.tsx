@@ -74,22 +74,6 @@ export default function AdminSettings({
   const [bookLoading, setBookLoading] = React.useState(false);
   const [ecomLoading, setEcomLoading] = React.useState(false);
 
-  React.useEffect(() => {
-    setGenData(settings.general || {});
-  }, [settings.general]);
-  React.useEffect(() => {
-    setFmtData(settings.formatting || {});
-  }, [settings.formatting]);
-  React.useEffect(() => {
-    setPropData(settings.properties || {});
-  }, [settings.properties]);
-  React.useEffect(() => {
-    setBookData(settings.booking || {});
-  }, [settings.booking]);
-  React.useEffect(() => {
-    setEcomFormData(settings.shop || {});
-  }, [settings.shop]);
-
   if (flash?.status) toast.success(flash.status);
 
   const handleGenSubmit = (e: React.FormEvent) => {
@@ -101,7 +85,9 @@ export default function AdminSettings({
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => {
+      onSuccess: (page: unknown) => {
+        const pg = page as { props?: { settings?: Record<string, Record<string, string>> } };
+        if (pg.props?.settings?.general) setGenData(pg.props.settings.general);
         toast.success("General settings saved.");
         setGenLoading(false);
       },
@@ -122,7 +108,9 @@ export default function AdminSettings({
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => {
+      onSuccess: (page: unknown) => {
+        const pg = page as { props?: { settings?: Record<string, Record<string, string>> } };
+        if (pg.props?.settings?.formatting) setFmtData(pg.props.settings.formatting);
         toast.success("Formatting settings saved.");
         setFmtLoading(false);
       },
@@ -143,7 +131,9 @@ export default function AdminSettings({
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => {
+      onSuccess: (page: unknown) => {
+        const pg = page as { props?: { settings?: Record<string, Record<string, string>> } };
+        if (pg.props?.settings?.properties) setPropData(pg.props.settings.properties);
         toast.success("Property settings saved.");
         setPropLoading(false);
       },
@@ -164,7 +154,9 @@ export default function AdminSettings({
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => {
+      onSuccess: (page: unknown) => {
+        const pg = page as { props?: { settings?: Record<string, Record<string, string>> } };
+        if (pg.props?.settings?.booking) setBookData(pg.props.settings.booking);
         toast.success("Booking settings saved.");
         setBookLoading(false);
       },
@@ -185,7 +177,9 @@ export default function AdminSettings({
       preserveScroll: true,
       preserveState: true,
       replace: true,
-      onSuccess: () => {
+      onSuccess: (page: unknown) => {
+        const pg = page as { props?: { settings?: Record<string, Record<string, string>> } };
+        if (pg.props?.settings?.shop) setEcomFormData(pg.props.settings.shop);
         toast.success("Shop settings saved.");
         setEcomLoading(false);
       },

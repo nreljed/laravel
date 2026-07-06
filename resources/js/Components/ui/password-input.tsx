@@ -34,6 +34,7 @@ async function getZxcvbn(): Promise<ZxcvbnFn> {
   if (zxcvbnInstance) return zxcvbnInstance;
   if (zxcvbnLoading) return zxcvbnLoading;
 
+  // eslint-disable-next-line unicorn/no-top-level-assignment-in-function
   zxcvbnLoading = (async () => {
     const [{ ZxcvbnFactory }, zxcvbnCommon, zxcvbnEn] = await Promise.all([
       import("@zxcvbn-ts/core"),
@@ -51,7 +52,9 @@ async function getZxcvbn(): Promise<ZxcvbnFn> {
       },
     });
 
+    // eslint-disable-next-line unicorn/no-top-level-assignment-in-function
     zxcvbnInstance = zxcvbn.check.bind(zxcvbn) as unknown as ZxcvbnFn;
+    // eslint-disable-next-line unicorn/no-top-level-assignment-in-function
     zxcvbnLoading = null;
     return zxcvbnInstance;
   })();

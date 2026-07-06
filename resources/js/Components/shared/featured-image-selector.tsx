@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 interface FeaturedImageSelectorProps {
   value?: string;
-  onChange: (url: string, path?: string) => void;
+  onChange: (_url: string, _path?: string) => void;
   label?: string;
   description?: string;
   disabled?: boolean;
@@ -23,6 +23,7 @@ export function FeaturedImageSelector({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreview(value);
   }, [value]);
 
@@ -37,7 +38,8 @@ export function FeaturedImageSelector({
       const formData = new FormData();
       formData.append("file", file);
 
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+      const csrfToken =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
       const res = await fetch(route("dashboard.shop.products.upload-image"), {
         method: "POST",
         body: formData,
@@ -70,6 +72,7 @@ export function FeaturedImageSelector({
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file) handleFileSelect(file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
@@ -99,11 +102,27 @@ export function FeaturedImageSelector({
         <div className="relative group rounded-lg overflow-hidden border">
           <img src={preview} alt="Featured" loading="lazy" className="w-full h-48 object-cover" />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <Button type="button" variant="secondary" size="sm" onClick={handleClick} disabled={uploading || disabled}>
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleClick}
+              disabled={uploading || disabled}
+            >
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
               Change
             </Button>
-            <Button type="button" variant="destructive" size="sm" onClick={handleRemove} disabled={disabled}>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleRemove}
+              disabled={disabled}
+            >
               <X className="h-4 w-4 mr-2" />
               Remove
             </Button>

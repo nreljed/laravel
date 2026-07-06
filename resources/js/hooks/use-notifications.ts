@@ -42,35 +42,23 @@ const IDLE_THRESHOLD_2 = 300_000;
 const CHANNEL_NAME = "app-notifications";
 const MAX_CONSECUTIVE_ERRORS = 3;
 
-let sharedAudioContext: AudioContext | null = null;
-
-function initAudioContext(): void {
-  const handler = () => {
-    try {
-      if (!sharedAudioContext || sharedAudioContext.state === "closed") {
-        sharedAudioContext = new (
+const getAudioContext: () => AudioContext | null = (() => {
+  let ctx: AudioContext | null = null;
+  return () => {
+    if (!ctx || ctx.state === "closed") {
+      try {
+        ctx = new (
           globalThis.AudioContext ||
           ((globalThis as unknown as Record<string, unknown>)
             .webkitAudioContext as typeof AudioContext)
         )();
+      } catch {
+        // audio not supported
       }
-    } catch {
-      // audio not supported
     }
-    document.removeEventListener("click", handler);
-    document.removeEventListener("keydown", handler);
-    document.removeEventListener("touchstart", handler);
+    return ctx;
   };
-  document.addEventListener("click", handler, { once: true });
-  document.addEventListener("keydown", handler, { once: true });
-  document.addEventListener("touchstart", handler, { once: true });
-}
-
-function getAudioContext(): AudioContext | null {
-  return sharedAudioContext;
-}
-
-initAudioContext();
+})();
 
 function playNotificationSound(): void {
   const ctx = getAudioContext();
@@ -124,7 +112,7 @@ export function useNotifications(): UseNotificationsResult {
   const lastCountRef = useRef(initialCount);
   const initialCountRef = useRef(initialCount);
   const soundEnabledRef = useRef(localStorage.getItem("notification_sound_enabled") !== "false");
-  const lastInteractionRef = useRef(Date.now());
+  const lastInteractionRef = useRef(0);
   const pollIntervalRef = useRef(POLL_INTERVAL_ACTIVE);
   const fetchGenRef = useRef(0);
   const consecutiveErrorsRef = useRef(0);
@@ -164,10 +152,11 @@ export function useNotifications(): UseNotificationsResult {
     [broadcast],
   );
 
-  const pollCount = useCallback(() => {
+  const pollCount = useCallback(async () => {
     const gen = fetchGenRef.current;
 
-    axios.get(route("api.notifications.unread-count")).then((response) => {
+    try {
+      const response = await axios.get(route("api.notifications.unread-count"));
       if (gen !== fetchGenRef.current) return;
       consecutiveErrorsRef.current = 0;
       const data = response.data;
@@ -185,9 +174,9 @@ export function useNotifications(): UseNotificationsResult {
       lastCountRef.current = c;
       setUnreadCount(c);
       fetchList(true);
-    }).catch(() => {
+    } catch {
       consecutiveErrorsRef.current += 1;
-    });
+    }
   }, [fetchList]);
 
   const getAdaptiveInterval = useCallback((): number => {
@@ -201,13 +190,19 @@ export function useNotifications(): UseNotificationsResult {
     return POLL_INTERVAL_STANDBY;
   }, []);
 
+  const startPollingRef = useRef<() => void>();
+
   const startPolling = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     pollCount();
     const next = getAdaptiveInterval();
     pollIntervalRef.current = next;
-    timerRef.current = setTimeout(startPolling, next);
+    timerRef.current = setTimeout(() => startPollingRef.current?.(), next);
   }, [pollCount, getAdaptiveInterval]);
+
+  useEffect(() => {
+    startPollingRef.current = startPolling;
+  }, [startPolling]);
 
   const stopPolling = useCallback(() => {
     if (!timerRef.current) {
@@ -272,12 +267,12 @@ export function useNotifications(): UseNotificationsResult {
     setUnreadCount(0);
     lastCountRef.current = 0;
     countEtagRef.current = null;
-      try {
-        await axios.post(route("api.notifications.mark-all-read"), {});
-        triggerRefresh();
-      } catch {
-        await triggerRefresh();
-      }
+    try {
+      await axios.post(route("api.notifications.mark-all-read"), {});
+      triggerRefresh();
+    } catch {
+      await triggerRefresh();
+    }
   }, [triggerRefresh]);
 
   const deleteNotification = useCallback(
@@ -328,18 +323,19 @@ export function useNotifications(): UseNotificationsResult {
 
   // Track user interaction for adaptive intervals
   useEffect(() => {
+    lastInteractionRef.current = Date.now();
     const handleInteraction = () => {
       lastInteractionRef.current = Date.now();
     };
-    globalThis.addEventListener("mousemove", handleInteraction, { passive: true });
-    globalThis.addEventListener("click", handleInteraction, { passive: true });
-    globalThis.addEventListener("keydown", handleInteraction, { passive: true });
-    globalThis.addEventListener("touchstart", handleInteraction, { passive: true });
+    addEventListener("mousemove", handleInteraction, { passive: true });
+    addEventListener("click", handleInteraction, { passive: true });
+    addEventListener("keydown", handleInteraction, { passive: true });
+    addEventListener("touchstart", handleInteraction, { passive: true });
     return () => {
-      globalThis.removeEventListener("mousemove", handleInteraction);
-      globalThis.removeEventListener("click", handleInteraction);
-      globalThis.removeEventListener("keydown", handleInteraction);
-      globalThis.removeEventListener("touchstart", handleInteraction);
+      removeEventListener("mousemove", handleInteraction);
+      removeEventListener("click", handleInteraction);
+      removeEventListener("keydown", handleInteraction);
+      removeEventListener("touchstart", handleInteraction);
     };
   }, []);
 
@@ -348,14 +344,14 @@ export function useNotifications(): UseNotificationsResult {
     try {
       const bc = new BroadcastChannel(CHANNEL_NAME);
       channelRef.current = bc;
-      bc.onmessage = (event) => {
+      bc.addEventListener("message", (event) => {
         if (event.data?.type !== "unread") {
           return;
         }
 
         lastCountRef.current = event.data.count;
         setUnreadCount(event.data.count);
-      };
+      });
     } catch {
       // not supported
     }
@@ -383,15 +379,14 @@ export function useNotifications(): UseNotificationsResult {
   // Start polling on mount, stop on unmount
   useEffect(() => {
     if (document.visibilityState === "visible") {
-      startPolling();
+      const id = setTimeout(startPolling, 0);
+      return () => {
+        clearTimeout(id);
+        stopPolling();
+      };
     }
     return stopPolling;
   }, [startPolling, stopPolling]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchList(true);
-  }, [fetchList]);
 
   return {
     unreadCount,

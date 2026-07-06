@@ -229,10 +229,10 @@ async function reverseViaPhoton(
   url.searchParams.set("limit", "5");
   url.searchParams.set("lang", "fr");
 
-  console.log(`[Photon] GET ${String(url)}`);
+  console.log(`[Photon] GET ${url.href}`);
   const t0 = performance.now();
 
-  const response = await fetch(String(url), { signal });
+  const response = await fetch(url.href, { signal });
 
   if (!response.ok) {
     throw new Error(`Photon API error: ${response.status}`);
@@ -343,11 +343,11 @@ async function reverseViaOverpass(
   const url = new URL("https://overpass-api.de/api/interpreter");
   url.searchParams.set("data", query);
 
-  console.log(`[Overpass] GET ${String(url)}`);
   const t0 = performance.now();
 
-  const response = await fetch(String(url), { signal });
-  const ms = Math.round(performance.now() - t0);
+  console.log(`[Overpass] GET ${url.href}`);
+
+  const response = await fetch(url.href, { signal });
 
   if (!response.ok) {
     throw new Error(
@@ -355,6 +355,7 @@ async function reverseViaOverpass(
     );
   }
 
+  const ms = Math.round(performance.now() - t0);
   const data: OverpassResponse = await response.json();
   console.log(
     `[Overpass] Response ${response.status} (${ms}ms) — ${data.elements?.length ?? 0} ways`,
@@ -401,9 +402,9 @@ async function reverseViaOverpass(
   );
 
   if (scored.length > 1) {
-    scored.slice(1).forEach((s, i) => {
+    for (const [i, s] of scored.slice(1).entries()) {
       console.log(`[Overpass]   #${i + 2}: ${s.name} (perpDist=${s.perpDist.toFixed(1)}m)`);
-    });
+    }
   }
 
   return {
@@ -426,10 +427,10 @@ async function reverseViaNominatim(
   url.searchParams.set("lon", String(lng));
   url.searchParams.set("addressdetails", "1");
 
-  console.log(`[Nominatim] GET ${String(url)}`);
+  console.log(`[Nominatim] GET ${url.href}`);
   const t0 = performance.now();
 
-  const response = await fetch(String(url), {
+  const response = await fetch(url.href, {
     signal,
     headers: {
       "User-Agent": "CRM-Dashboard/1.0",
@@ -552,9 +553,10 @@ export async function reverseGeocode(
 
   try {
     const [overpassResult, photonResult] = await Promise.allSettled([
-      reverseViaOverpass(lat, lng, overpassSignal).finally(() => clearTimeout(overpassTimeoutId)),
+      reverseViaOverpass(lat, lng, overpassSignal),
       reverseViaPhoton(lat, lng, combinedSignal),
     ]);
+    clearTimeout(overpassTimeoutId);
 
     const overpass = overpassResult.status === "fulfilled" ? overpassResult.value : null;
     const photon = photonResult.status === "fulfilled" ? photonResult.value : null;

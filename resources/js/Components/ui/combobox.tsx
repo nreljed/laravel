@@ -84,9 +84,9 @@ function ComboboxInput({
   showTrigger = false,
   showClear = false,
   placeholder,
-  onKeyDown,
-  onChange,
-  value,
+  _onKeyDown,
+  _onChange,
+  _value,
   ...props
 }: {
   className?: string;
@@ -95,9 +95,9 @@ function ComboboxInput({
   showTrigger?: boolean;
   showClear?: boolean;
   placeholder?: string;
-  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
-  onChange?: React.ChangeEventHandler<HTMLInputElement>;
-  value?: string;
+  _onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  _onChange?: React.ChangeEventHandler<HTMLInputElement>;
+  _value?: string;
 }): React.JSX.Element {
   return (
     <InputGroup className={cn("w-auto", className)}>
