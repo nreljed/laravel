@@ -40,7 +40,7 @@ export function ContactInfoSection({
   const syncedRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (!(data && !syncedRef.current)) {
+    if (!data || syncedRef.current) {
       return;
     }
 

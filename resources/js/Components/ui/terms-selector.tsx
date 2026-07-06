@@ -243,7 +243,7 @@ function TermsSelector({
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!(containerRef.current && !containerRef.current.contains(event.target as Node))) {
+      if (!containerRef.current || containerRef.current.contains(event.target as Node)) {
         return;
       }
       setOpen(false);

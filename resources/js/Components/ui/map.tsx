@@ -1030,7 +1030,7 @@ function MapDrawControl({
   }, [editable, activeMode]);
 
   useEffect(() => {
-    if (!(!editable && activeMode !== null)) {
+    if (editable || activeMode === null) {
       return;
     }
 

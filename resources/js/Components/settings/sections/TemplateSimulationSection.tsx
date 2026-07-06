@@ -50,7 +50,7 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
   const [debugLog, setDebugLog] = useState<MailDebug[]>([]);
 
   useEffect(() => {
-    if (!(emailTemplates && !selectedTemplate)) {
+    if (!emailTemplates || selectedTemplate) {
       return;
     }
 
