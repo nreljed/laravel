@@ -184,7 +184,7 @@ class DeployController extends Controller
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $stat = $zip->statIndex($i);
                 if ($stat && $stat['name'] !== '' && ! str_ends_with($stat['name'], '/')) {
-                    $zipFiles[$stat['name']] = true;
+                    $zipFiles[str_replace('\\', '/', $stat['name'])] = true;
                 }
             }
 
@@ -284,7 +284,7 @@ class DeployController extends Controller
         $expected = [];
         $lines = file($manifestPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($lines ?: [] as $line) {
-            $expected[trim($line)] = true;
+            $expected[str_replace('\\', '/', trim($line))] = true;
         }
 
         // Directories to scan for stale files

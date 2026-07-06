@@ -137,7 +137,7 @@ $zipFiles = [];
 for ($i = 0; $i < $zip->numFiles; $i++) {
     $stat = $zip->statIndex($i);
     if ($stat && $stat['name'] !== '' && ! str_ends_with($stat['name'], '/')) {
-        $zipFiles[$stat['name']] = true;
+        $zipFiles[str_replace('\\', '/', $stat['name'])] = true;
     }
 }
 
