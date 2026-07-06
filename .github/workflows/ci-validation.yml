@@ -37,5 +37,5 @@ jobs:
       - run: npm run format:check
       - run: vendor/bin/pint --test
       - run: npm run test
-      - run: php artisan test
       - run: npm run build
+      - run: php artisan test
