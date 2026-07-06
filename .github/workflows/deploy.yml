@@ -184,8 +184,5 @@ jobs:
       - name: Trigger deploy on server
         shell: bash
         run: |
-          curl -s --max-time 180 \
-            -H "X-Admin-Email: ${{ secrets.ADMIN_EMAIL }}" \
-            -H "X-Admin-Password: ${{ secrets.ADMIN_PASSWORD }}" \
-            -H "X-Admin-Name: ${{ secrets.ADMIN_NAME }}" \
+          curl -sf --max-time 180 \
             "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"
