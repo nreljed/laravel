@@ -24,6 +24,7 @@ jobs:
           cache: 'npm'
 
       - run: cp .env.example .env
+      - run: touch database/database.sqlite
       - run: composer install
 
       - run: npm ci --legacy-peer-deps

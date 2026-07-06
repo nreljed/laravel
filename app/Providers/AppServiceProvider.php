@@ -86,11 +86,11 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureMailer(): void
     {
-        if (! Schema::hasTable('settings')) {
-            return;
-        }
-
         try {
+            if (! Schema::hasTable('settings')) {
+                return;
+            }
+
             $configurator = $this->app->make(MailerConfigurator::class);
             $configurator->configure();
         } catch (\Throwable $e) {
