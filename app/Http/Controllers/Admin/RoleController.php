@@ -30,7 +30,7 @@ class RoleController extends Controller
                 'permissions_count' => $role->permissions_count,
             ]);
 
-        return Inertia::render('Admin/Roles/Index', [
+        return Inertia::render('dashboard/admin/roles/index', [
             'roles' => $roles,
         ]);
     }
@@ -52,7 +52,7 @@ class RoleController extends Controller
             ])
             ->values();
 
-        return Inertia::render('Admin/Roles/Form', [
+        return Inertia::render('dashboard/admin/roles/form', [
             'role' => null,
             'permissionGroups' => $permissionGroups,
         ]);
@@ -100,7 +100,7 @@ class RoleController extends Controller
             ])
             ->values();
 
-        return Inertia::render('Admin/Roles/Form', [
+        return Inertia::render('dashboard/admin/roles/form', [
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,

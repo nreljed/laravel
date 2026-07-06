@@ -3,8 +3,8 @@
 namespace App\Modules\Booking\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\BookableRegistry;
 use App\Modules\ModuleRegistry;
-use App\Modules\Properties\Models\Property;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,9 +58,9 @@ class BookingGlobalSettingsController extends Controller
     public function getCurrency(?int $propertyId = null): string
     {
         if ($propertyId) {
-            $property = Property::find($propertyId);
-            if ($property && ! empty($property->metadata['currency'])) {
-                return strtoupper($property->metadata['currency']);
+            $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
+            if ($property && ! empty($property->getMeta()['currency'])) {
+                return strtoupper($property->getMeta()['currency']);
             }
         }
         if ($this->moduleRegistry->isEnabled('properties')) {
@@ -130,7 +130,7 @@ class BookingGlobalSettingsController extends Controller
 
         $settings = $this->getOptions();
 
-        return Inertia::render('Bookings/Settings/BookingGlobalSettings', [
+        return Inertia::render('Modules/Bookings/Settings/BookingGlobalSettings', [
             'settings' => $settings,
             'page' => [
                 'title' => 'Booking Settings',
@@ -152,7 +152,7 @@ class BookingGlobalSettingsController extends Controller
         $data = $request->all();
         $updated = $this->updateFromRequest($data);
 
-        return Inertia::render('Bookings/Settings/BookingGlobalSettings', [
+        return Inertia::render('Modules/Bookings/Settings/BookingGlobalSettings', [
             'settings' => $updated,
             'status' => 'Booking settings saved successfully!',
         ]);

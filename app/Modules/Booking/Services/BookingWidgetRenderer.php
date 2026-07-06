@@ -2,7 +2,7 @@
 
 namespace App\Modules\Booking\Services;
 
-use App\Modules\Properties\Models\Property;
+use App\Modules\BookableRegistry;
 use App\Modules\Properties\Services\PropertyFormattingService;
 use App\Services\SettingsService;
 
@@ -22,7 +22,7 @@ class BookingWidgetRenderer
         $buttonText = ! empty($atts['button_text']) ? $atts['button_text'] : 'Book Now';
         $mode = ! empty($atts['mode']) ? $atts['mode'] : 'full';
 
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return '<p class="crm-booking-error">'.__('Property not found.').'</p>';
         }

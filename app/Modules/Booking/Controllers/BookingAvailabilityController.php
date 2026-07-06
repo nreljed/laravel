@@ -3,10 +3,10 @@
 namespace App\Modules\Booking\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Services\BookingAvailabilityService;
 use App\Modules\Booking\Services\BookingCacheService;
 use App\Modules\Booking\Services\BookingPriceCalculator;
-use App\Modules\Properties\Models\Property;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -21,7 +21,7 @@ class BookingAvailabilityController extends Controller
 
     public function check(int $propertyId, Request $request): JsonResponse
     {
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return response()->json(['error' => 'Property not found'], 404);
         }
@@ -62,13 +62,13 @@ class BookingAvailabilityController extends Controller
             return response()->json(['error' => 'End date must be after start date.'], 400);
         }
 
-        $property = Property::find($propertyId);
-        if (! $property || $property->user_id !== auth()->id()) {
+        $bookable = app(BookableRegistry::class)->resolve('properties', $propertyId);
+        if (! $bookable || $bookable->getOwnerId() !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $metadata = $property->metadata ?? [];
-        $blockedDates = $metadata['blocked_dates'] ?? [];
+        $meta = $bookable->getMeta() ?? [];
+        $blockedDates = $meta['blocked_dates'] ?? [];
         if (! is_array($blockedDates)) {
             $blockedDates = [];
         }
@@ -80,8 +80,8 @@ class BookingAvailabilityController extends Controller
             'created_at' => now()->toDateTimeString(),
         ];
 
-        $metadata['blocked_dates'] = $blockedDates;
-        $property->update(['metadata' => $metadata]);
+        $meta['blocked_dates'] = $blockedDates;
+        $bookable->update(['metadata' => $meta]);
 
         $this->cacheService->bustPropertyCache($propertyId);
 
@@ -92,13 +92,13 @@ class BookingAvailabilityController extends Controller
     {
         $propertyId = (int) $request->input('property_id');
 
-        $property = Property::find($propertyId);
-        if (! $property || $property->user_id !== auth()->id()) {
+        $bookable = app(BookableRegistry::class)->resolve('properties', $propertyId);
+        if (! $bookable || $bookable->getOwnerId() !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $metadata = $property->metadata ?? [];
-        $blockedDates = $metadata['blocked_dates'] ?? [];
+        $meta = $bookable->getMeta() ?? [];
+        $blockedDates = $meta['blocked_dates'] ?? [];
         if (! is_array($blockedDates)) {
             return response()->json(['error' => 'No blocked dates found'], 404);
         }
@@ -109,8 +109,8 @@ class BookingAvailabilityController extends Controller
 
         unset($blockedDates[$id]);
         $blockedDates = array_values($blockedDates);
-        $metadata['blocked_dates'] = $blockedDates;
-        $property->update(['metadata' => $metadata]);
+        $meta['blocked_dates'] = $blockedDates;
+        $bookable->update(['metadata' => $meta]);
 
         $this->cacheService->bustPropertyCache($propertyId);
 
@@ -188,19 +188,19 @@ class BookingAvailabilityController extends Controller
         $errorReason = null;
 
         if ($checkIn && $checkOut) {
-            $property = Property::find($propertyId);
+            $bookable = app(BookableRegistry::class)->resolve('properties', $propertyId);
             $timings['get_property'] = round((microtime(true) - $t0) * 1000, 1);
             $t1 = microtime(true);
 
-            $metadata = $property?->metadata ?? [];
-            $prepDays = (int) ($metadata['preparation_days'] ?? 1);
+            $meta = $bookable?->getMeta() ?? [];
+            $prepDays = (int) ($meta['preparation_days'] ?? 1);
             $adjustedCheckIn = $prepDays > 0
                 ? now()->parse($checkIn)->subDays($prepDays)->toDateString()
                 : $checkIn;
 
-            $hasUnits = ! empty($metadata['units'] ?? []);
+            $hasUnits = ! empty($meta['units'] ?? []);
             if ($hasUnits) {
-                $units = $metadata['units'] ?? [];
+                $units = $meta['units'] ?? [];
                 $timings['units_check'] = round((microtime(true) - $t1) * 1000, 1);
                 if ($unitId) {
                     $unitIds = array_column($units, 'id');
@@ -225,8 +225,8 @@ class BookingAvailabilityController extends Controller
         }
 
         $t1 = microtime(true);
-        $property = $property ?? Property::find($propertyId);
-        $price = $available ? $this->priceCalculator->calculateTotal($property, $checkIn, $checkOut, $guests, 0, $hasPets ? 1 : 0) : null;
+        $bookable = $bookable ?? app(BookableRegistry::class)->resolve('properties', $propertyId);
+        $price = $available ? $this->priceCalculator->calculateTotal($bookable, $checkIn, $checkOut, $guests, 0, $hasPets ? 1 : 0) : null;
         $timings['calculate_price'] = round((microtime(true) - $t1) * 1000, 1);
 
         $timings['total'] = round((microtime(true) - $requestStart) * 1000, 1);

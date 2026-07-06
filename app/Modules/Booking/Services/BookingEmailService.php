@@ -2,9 +2,9 @@
 
 namespace App\Modules\Booking\Services;
 
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
-use App\Modules\Properties\Models\Property;
 use App\Services\MailService;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +32,7 @@ class BookingEmailService
         $hours = sprintf('%02d', (int) (abs($offset) / 3600));
         $mins = sprintf('%02d', (int) ((abs($offset) % 3600) / 60));
 
-        $property = $propertyId ? Property::find($propertyId) : null;
+        $property = $propertyId ? app(BookableRegistry::class)->resolve('properties', $propertyId) : null;
 
         return [
             'bookingId' => $bookingId,

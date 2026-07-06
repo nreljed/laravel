@@ -2,6 +2,7 @@
 
 namespace App\Modules\Booking\Services;
 
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\ModuleRegistry;
 use App\Modules\Properties\Models\Property;
@@ -107,7 +108,7 @@ class BookingPropertyIntegrationService
             return null;
         }
 
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return null;
         }
@@ -132,7 +133,7 @@ class BookingPropertyIntegrationService
             return;
         }
 
-        $property = Property::findOrFail($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId) ?? abort(404);
         $meta = $property->metadata ?? [];
 
         $enabled = ! empty($data['enabled']);
@@ -200,7 +201,7 @@ class BookingPropertyIntegrationService
             return false;
         }
 
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return false;
         }

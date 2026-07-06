@@ -2,13 +2,13 @@
 
 namespace App\Modules\Booking\Services;
 
-use App\Modules\Properties\Models\Property;
+use App\Modules\Contracts\Bookable;
 use Carbon\Carbon;
 
 class BookingPriceCalculator
 {
     public function calculateTotal(
-        Property $property,
+        Bookable $bookable,
         string $startDate,
         string $endDate,
         int $adults = 1,
@@ -19,13 +19,13 @@ class BookingPriceCalculator
         $end = Carbon::parse($endDate);
         $nights = $start->diffInDays($end);
 
-        $nightlyRate = $property->price ?? 0;
-        $currency = $property->currency ?? 'USD';
+        $nightlyRate = $bookable->getPrice() ?? 0;
+        $currency = $bookable->getCurrency() ?? 'USD';
 
         $subtotal = $nightlyRate * $nights;
-        $cleaningFee = $property->cleaning_fee ?? 0;
+        $cleaningFee = $bookable->getCleaningFee() ?? 0;
         $serviceFee = round($subtotal * 0.05, 2);
-        $damageDeposit = $property->damage_deposit ?? 0;
+        $damageDeposit = $bookable->getDamageDeposit() ?? 0;
         $totalAmount = $subtotal + $cleaningFee + $serviceFee + $damageDeposit;
 
         return [

@@ -46,6 +46,7 @@ interface City {
   id: number;
   name: string;
   slug: string;
+  image: string | null;
   governorate: string;
   governorate_slug: string;
   sort_order: number;
@@ -63,6 +64,7 @@ export default function Cities({ cities }: CitiesPageProps) {
 
   const form = useForm({
     name: "",
+    image: "",
     governorate: "",
     sort_order: 0,
     is_active: true,
@@ -77,6 +79,7 @@ export default function Cities({ cities }: CitiesPageProps) {
   const openEdit = useCallback((city: City) => {
     form.setData({
       name: city.name,
+      image: city.image || "",
       governorate: city.governorate,
       sort_order: city.sort_order,
       is_active: city.is_active,
@@ -163,6 +166,11 @@ export default function Cities({ cities }: CitiesPageProps) {
                     {form.errors.name && <p className="text-sm text-destructive">{form.errors.name}</p>}
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="city-image">Image URL</Label>
+                    <Input id="city-image" value={form.data.image} onChange={(e) => form.setData("image", e.target.value)} placeholder="https://example.com/image.jpg" />
+                    {form.data.image && <img src={form.data.image} alt="" className="h-12 w-12 rounded object-cover border" />}
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="city-governorate">Governorate</Label>
                     <Input id="city-governorate" value={form.data.governorate} onChange={(e) => form.setData("governorate", e.target.value)} list="governorates-list" required />
                     <datalist id="governorates-list">
@@ -213,6 +221,7 @@ export default function Cities({ cities }: CitiesPageProps) {
                     {govCities.map((city) => (
                       <div key={city.id} className="flex items-center justify-between py-2.5">
                         <div className="flex items-center gap-2">
+                          {city.image && <img src={city.image} alt="" className="h-5 w-5 rounded object-cover border shrink-0" />}
                           <span className="text-sm">{city.name}</span>
                           {!city.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
                         </div>

@@ -56,6 +56,7 @@ class PropertyService
     public function deleteWithImages(Property $property): void
     {
         $property->images->each(fn ($image) => $image->delete());
+        $property->bookings()->delete();
         $property->types()->detach();
         $property->features()->detach();
         $property->statuses()->detach();

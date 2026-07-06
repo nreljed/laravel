@@ -6,6 +6,9 @@ use App\Http\Controllers\EmailSettingsController;
 use App\Models\Notification;
 use App\Models\User;
 use App\Modules\ModuleRegistry;
+use App\Modules\Shop\Models\Cart;
+use App\Modules\Shop\Models\Wishlist;
+use App\Modules\Shop\Services\CurrencyService;
 use App\Services\EmailSettingsService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
@@ -105,12 +108,58 @@ class HandleInertiaRequests extends Middleware
                 'name' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
             ],
             'app_url' => fn () => self::safeSetting('app_url', config('app.url')),
+            'cart' => function () use ($request) {
+                if (! $request->hasSession()) {
+                    return ['items' => [], 'subtotal' => 0, 'total' => 0];
+                }
+
+                $cart = $request->user()
+                    ? Cart::where('user_id', $request->user()->id)->first()
+                    : Cart::where('session_id', $request->session()->getId())->first();
+
+                if (! $cart) {
+                    return ['items' => [], 'subtotal' => 0, 'total' => 0];
+                }
+
+                $cart->load('items.product', 'items.variation');
+
+                return [
+                    'id' => $cart->id,
+                    'items' => $cart->items->map(fn ($item) => [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'unit_price' => (float) $item->unit_price,
+                        'variant_label' => $item->variant_label,
+                        'product' => $item->product ? [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'slug' => $item->product->slug,
+                            'thumbnail_url' => $item->product->thumbnail_url,
+                        ] : null,
+                        'variation' => $item->variation ? [
+                            'id' => $item->variation->id,
+                            'image_url' => $item->variation->image_url,
+                        ] : null,
+                    ])->values()->all(),
+                    'subtotal' => (float) $cart->subtotal,
+                    'total' => (float) $cart->total,
+                    'coupon_code' => $cart->coupon_code,
+                    'discount' => (float) $cart->discount,
+                ];
+            },
+            'wishlistIds' => fn () => $request->user()
+                ? Wishlist::where('user_id', $request->user()->id)->pluck('product_id')
+                : collect(),
+            'wishlistResult' => fn () => null,
             'impersonating' => fn () => $request->session()->get('impersonating', false),
             'impersonator' => fn () => $request->session()->has('impersonator_id')
                 ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name', 'email'])
                 : null,
             'debug' => fn () => config('app.debug', false),
             'moduleDebugData' => fn () => $this->getModuleDebugData(),
+            'activeCurrencies' => fn () => $this->getActiveCurrencies(),
+            'selectedCurrency' => fn () => session('selected_currency', 'EUR'),
         ];
     }
 
@@ -255,6 +304,15 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $data;
+    }
+
+    protected function getActiveCurrencies(): array
+    {
+        try {
+            return app(CurrencyService::class)->getAllForSelector();
+        } catch (\Throwable) {
+            return [['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'is_default' => true]];
+        }
     }
 
     protected function getEmailTemplates(): array

@@ -40,7 +40,7 @@ class UserController extends Controller
 
         $roles = Role::orderBy('name')->get(['id', 'name', 'slug']);
 
-        return Inertia::render('Admin/Users/Index', [
+        return Inertia::render('dashboard/admin/users/index', [
             'users' => $users,
             'roles' => $roles,
             'filters' => $request->only(['search']),
@@ -51,7 +51,7 @@ class UserController extends Controller
     {
         $roles = Role::orderBy('name')->get(['id', 'name', 'slug']);
 
-        return Inertia::render('Admin/Users/Form', [
+        return Inertia::render('dashboard/admin/users/form', [
             'roles' => $roles,
         ]);
     }
@@ -91,7 +91,7 @@ class UserController extends Controller
         $user->load('roles');
         $roles = Role::orderBy('name')->get(['id', 'name', 'slug']);
 
-        return Inertia::render('Admin/Users/Form', [
+        return Inertia::render('dashboard/admin/users/form', [
             'user' => [
                 'id' => $user->id,
                 'username' => $user->username,

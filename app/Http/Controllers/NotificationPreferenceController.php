@@ -21,7 +21,7 @@ class NotificationPreferenceController extends Controller
     {
         $user = $request->user();
 
-        return Inertia::render('Account/Edit', [
+        return Inertia::render('dashboard/account/edit', [
             'notificationTypes' => $this->typeRegistry->groups(),
             'preferences' => NotificationPreference::where('user_id', $user->id)
                 ->get()

@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class City extends Model
 {
     protected $fillable = [
-        'name', 'slug', 'governorate', 'governorate_slug', 'is_active', 'sort_order',
+        'name', 'slug', 'image', 'governorate', 'governorate_slug', 'is_active', 'sort_order',
     ];
 
     protected function casts(): array

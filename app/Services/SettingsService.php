@@ -83,19 +83,19 @@ class SettingsService
 
     public static function formatPrice(float|int|string $value): string
     {
-        return FormattingService::formatPrice($value, self::getFormattingOptions());
+        return app(FormattingService::class)->formatPrice($value, self::getFormattingOptions());
     }
 
     public static function formatSurface(float|int|string $value): string
     {
-        return FormattingService::formatSurface($value, self::getFormattingOptions());
+        return app(FormattingService::class)->formatSurface($value, self::getFormattingOptions());
     }
 
     public static function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.'_grouped');
-        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties', 'booking'] as $group) {
+        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties', 'booking', 'shop'] as $group) {
             Cache::forget(self::CACHE_KEY."_{$group}");
         }
     }

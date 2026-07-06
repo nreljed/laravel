@@ -4,6 +4,7 @@ use App\Modules\Properties\Controllers\PropertyController;
 use App\Modules\Properties\Controllers\PropertyTermController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/dashboard', [PropertyController::class, 'dashboard'])->name('dashboard');
 Route::get('/', [PropertyController::class, 'index'])->name('index');
 Route::get('/create', [PropertyController::class, 'create'])->name('create');
 Route::post('/', [PropertyController::class, 'store'])->name('store');
@@ -16,6 +17,7 @@ Route::delete('/{property}/images/{image}', [PropertyController::class, 'deleteI
 Route::post('/{property}/images/reorder', [PropertyController::class, 'reorderImages'])->name('reorder-images');
 Route::post('/{property}/images/{image}/featured', [PropertyController::class, 'setFeaturedImage'])->name('set-featured-image');
 Route::patch('/{property}/status', [PropertyController::class, 'updateStatus'])->name('update-status');
+Route::post('/bulk', [PropertyController::class, 'bulkAction'])->name('bulk');
 
 Route::prefix('/terms')->name('terms.')->group(function () {
     Route::get('/types', [PropertyTermController::class, 'indexTypes'])->name('types.index');

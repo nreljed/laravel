@@ -9,11 +9,11 @@ class AdminController extends Controller
 {
     public function settings()
     {
-        return Inertia::render('Admin/Settings');
+        return Inertia::render('dashboard/admin/settings');
     }
 
     public function systemHealth(SystemHealthService $systemHealth)
     {
-        return Inertia::render('Admin/SystemHealth', $systemHealth->getAll());
+        return Inertia::render('dashboard/admin/system-health', $systemHealth->getAll());
     }
 }

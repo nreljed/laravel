@@ -20,6 +20,7 @@ class PropertyFactory extends Factory
             'surface' => fake()->randomFloat(2, 30, 500),
             'surface_unit' => 'm²',
             'status' => 'published',
+            'published_at' => now(),
             'featured' => false,
             'address' => fake()->address(),
             'city' => fake()->city(),

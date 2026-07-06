@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../";
 @source "../../app/Modules/Booking/Resources/js/";
-@source "../../app/Modules/ECommerce/Resources/js/";
+@source "../../app/Modules/Shop/Resources/js/";
 @source "../../app/Modules/Posts/Resources/js/";
 @source "../../app/Modules/Properties/Resources/js/";
 

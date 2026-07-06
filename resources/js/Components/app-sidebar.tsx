@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Building2,
   Globe,
   LayoutDashboard,
   BarChart3,
@@ -10,14 +9,12 @@ import {
   Activity,
   IdCard,
   User,
-  Calendar,
-  FileText,
-  ShoppingCart,
   Shield,
   ShieldCheck,
   ScrollText,
   Beaker,
   FlaskConical,
+  Calendar,
   CalendarCheck,
 } from "lucide-react";
 import { usePage } from "@inertiajs/react";
@@ -35,15 +32,7 @@ import {
   SidebarGroupContent,
 } from "@/Components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-
-const moduleIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Building2,
-  Calendar,
-  FileText,
-  Settings,
-  LayoutDashboard,
-  ShoppingCart,
-};
+import { moduleIcons } from "@/lib/icons";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAdmin } = useAuth();

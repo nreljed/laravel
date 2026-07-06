@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Shop\Models\Order;
 use App\Services\PermissionCacheService;
 use App\Traits\UserDataTrait;
 use Database\Factories\UserFactory;
@@ -10,17 +11,19 @@ use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\App;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'contact_email', 'password', 'username', 'display_name', 'first_name', 'last_name', 'nickname', 'bio', 'description', 'avatar', 'social_links', 'phone', 'url'])]
+#[Fillable(['name', 'email', 'contact_email', 'password', 'username', 'display_name', 'first_name', 'last_name', 'nickname', 'bio', 'description', 'avatar', 'social_links', 'phone', 'url', 'billing_address', 'shipping_address'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, MustVerifyEmail, Notifiable, UserDataTrait;
+    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable, UserDataTrait;
 
     protected $appends = ['avatar_url'];
 
@@ -35,6 +38,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function roles()
     {
         return $this->belongsToMany(Role::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function permissions()
@@ -157,6 +165,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'social_links' => 'array',
+            'billing_address' => 'array',
+            'shipping_address' => 'array',
         ];
     }
 }

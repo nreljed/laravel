@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 
 class FormattingService
 {
-    protected static array $currencySymbols = [
+    protected array $currencySymbols = [
         'USD' => '$',
         'EUR' => '€',
         'GBP' => '£',
@@ -30,7 +30,7 @@ class FormattingService
         'TRY' => '₺',
     ];
 
-    protected static array $surfaceUnits = [
+    protected array $surfaceUnits = [
         'sq_ft' => 'ft²',
         'sq_m' => 'm²',
         'sq_yd' => 'yd²',
@@ -40,7 +40,7 @@ class FormattingService
         'hectares' => 'ha',
     ];
 
-    public static function formatPrice(float|int|string $value, array $options = []): string
+    public function formatPrice(float|int|string $value, array $options = []): string
     {
         $price = floatval($value);
 
@@ -55,15 +55,15 @@ class FormattingService
         $thousandsSep = $options['thousands_sep'] ?? ',';
         $decimalSep = $options['decimal_sep'] ?? '.';
 
-        $symbol = self::$currencySymbols[$currency] ?? $currency;
-        $formatted = self::formatNumber($price, $thousandsSep, $decimalSep);
+        $symbol = $this->currencySymbols[$currency] ?? $currency;
+        $formatted = $this->formatNumber($price, $thousandsSep, $decimalSep);
 
         return $position === 'before'
             ? $symbol.$formatted
             : $formatted.' '.$symbol;
     }
 
-    public static function formatSurface(float|int|string $value, array $options = []): string
+    public function formatSurface(float|int|string $value, array $options = []): string
     {
         $surface = floatval($value);
 
@@ -75,13 +75,13 @@ class FormattingService
         $thousandsSep = $options['thousands_sep'] ?? ',';
         $decimalSep = $options['decimal_sep'] ?? '.';
 
-        $unitLabel = self::$surfaceUnits[$unit] ?? 'ft²';
-        $formatted = self::formatNumber($surface, $thousandsSep, $decimalSep);
+        $unitLabel = $this->surfaceUnits[$unit] ?? 'ft²';
+        $formatted = $this->formatNumber($surface, $thousandsSep, $decimalSep);
 
         return $formatted.' '.$unitLabel;
     }
 
-    public static function formatNumber(float|int|string $number, string $thousandsSep = ',', string $decimalSep = '.'): string
+    public function formatNumber(float|int|string $number, string $thousandsSep = ',', string $decimalSep = '.'): string
     {
         $number = floatval($number);
         $formatted = number_format($number, 2, $decimalSep, $thousandsSep);
@@ -94,23 +94,23 @@ class FormattingService
         return $formatted;
     }
 
-    public static function getCurrencySymbol(string $currencyCode): string
+    public function getCurrencySymbol(string $currencyCode): string
     {
-        return self::$currencySymbols[$currencyCode] ?? $currencyCode;
+        return $this->currencySymbols[$currencyCode] ?? $currencyCode;
     }
 
-    public static function getSurfaceUnit(string $unitCode): string
+    public function getSurfaceUnit(string $unitCode): string
     {
-        return self::$surfaceUnits[$unitCode] ?? $unitCode;
+        return $this->surfaceUnits[$unitCode] ?? $unitCode;
     }
 
-    public static function getCurrencyOptions(): array
+    public function getCurrencyOptions(): array
     {
         $options = [];
-        foreach (self::$currencySymbols as $code => $symbol) {
+        foreach ($this->currencySymbols as $code => $symbol) {
             $options[] = [
                 'value' => $code,
-                'label' => self::getCurrencyLabel($code, $symbol),
+                'label' => $this->getCurrencyLabel($code, $symbol),
                 'symbol' => $symbol,
             ];
         }
@@ -118,20 +118,20 @@ class FormattingService
         return $options;
     }
 
-    public static function getSurfaceUnitOptions(): array
+    public function getSurfaceUnitOptions(): array
     {
         $options = [];
-        foreach (self::$surfaceUnits as $code => $label) {
+        foreach ($this->surfaceUnits as $code => $label) {
             $options[] = [
                 'value' => $code,
-                'label' => self::getUnitLabel($code),
+                'label' => $this->getUnitLabel($code),
             ];
         }
 
         return $options;
     }
 
-    public static function getCurrencyPositionOptions(): array
+    public function getCurrencyPositionOptions(): array
     {
         return [
             ['value' => 'before', 'label' => 'Before ($100)'],
@@ -139,7 +139,7 @@ class FormattingService
         ];
     }
 
-    public static function getThousandsSeparatorOptions(): array
+    public function getThousandsSeparatorOptions(): array
     {
         return [
             ['value' => ',', 'label' => 'Comma (1,000)'],
@@ -148,7 +148,7 @@ class FormattingService
         ];
     }
 
-    public static function getDecimalSeparatorOptions(): array
+    public function getDecimalSeparatorOptions(): array
     {
         return [
             ['value' => '.', 'label' => 'Period (100.50)'],
@@ -156,7 +156,7 @@ class FormattingService
         ];
     }
 
-    public static function getDateFormatOptions(): array
+    public function getDateFormatOptions(): array
     {
         return [
             ['value' => 'd/m/Y', 'label' => 'd/m/Y', 'example' => now()->format('d/m/Y')],
@@ -170,7 +170,7 @@ class FormattingService
         ];
     }
 
-    public static function getTimeFormatOptions(): array
+    public function getTimeFormatOptions(): array
     {
         return [
             ['value' => 'H:i', 'label' => 'H:i', 'example' => now()->format('H:i')],
@@ -181,7 +181,7 @@ class FormattingService
         ];
     }
 
-    public static function getDaysOfWeek(): array
+    public function getDaysOfWeek(): array
     {
         return [
             ['value' => '0', 'label' => 'Sunday'],
@@ -194,7 +194,7 @@ class FormattingService
         ];
     }
 
-    protected static function getCurrencyLabel(string $code, string $symbol): string
+    protected function getCurrencyLabel(string $code, string $symbol): string
     {
         $labels = [
             'USD' => 'US Dollar ($)',
@@ -222,7 +222,7 @@ class FormattingService
         return $labels[$code] ?? "{$code} ({$symbol})";
     }
 
-    protected static function getUnitLabel(string $code): string
+    protected function getUnitLabel(string $code): string
     {
         $labels = [
             'sq_ft' => 'Square Feet (ft²)',
@@ -237,7 +237,7 @@ class FormattingService
         return $labels[$code] ?? $code;
     }
 
-    public static function getModuleMetaConfigs(): array
+    public function getModuleMetaConfigs(): array
     {
         return Cache::remember('formatting.module_configs', 3600, function () {
             if (! app()->resolved(ModuleRegistry::class)) {
@@ -248,9 +248,9 @@ class FormattingService
         });
     }
 
-    public static function formatRepeaterData(array $data, string $moduleSlug, array $globalOptions = []): array
+    public function formatRepeaterData(array $data, string $moduleSlug, array $globalOptions = []): array
     {
-        $configs = self::getModuleMetaConfigs();
+        $configs = $this->getModuleMetaConfigs();
         $config = $configs[$moduleSlug] ?? [];
 
         $priceFields = $config['price_fields'] ?? [];
@@ -260,18 +260,18 @@ class FormattingService
             return $data;
         }
 
-        $options = array_merge(SettingsService::getFormattingOptions(), $globalOptions);
+        $options = array_merge(app(SettingsService::class)->getFormattingOptions(), $globalOptions);
 
         return array_map(function ($row) use ($priceFields, $surfaceFields, $options) {
             foreach ($priceFields as $field) {
                 if (isset($row[$field]) && $row[$field] !== '' && $row[$field] !== null) {
-                    $row[$field.'_formatted'] = self::formatPrice($row[$field], $options);
+                    $row[$field.'_formatted'] = $this->formatPrice($row[$field], $options);
                 }
             }
 
             foreach ($surfaceFields as $field) {
                 if (isset($row[$field]) && $row[$field] !== '' && $row[$field] !== null) {
-                    $row[$field.'_formatted'] = self::formatSurface($row[$field], $options);
+                    $row[$field.'_formatted'] = $this->formatSurface($row[$field], $options);
                 }
             }
 
@@ -279,7 +279,7 @@ class FormattingService
         }, $data);
     }
 
-    public static function clearModuleConfigCache(): void
+    public function clearModuleConfigCache(): void
     {
         Cache::forget('formatting.module_configs');
     }

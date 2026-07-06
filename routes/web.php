@@ -26,7 +26,7 @@ use Inertia\Inertia;
 // FRONTEND (Public) Pages — no auth required
 // ═══════════════════════════════════════════════════
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
+    return Inertia::render('public/welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
     ]);
@@ -61,7 +61,7 @@ Route::middleware('auth')->group(function () {
     // Developer tools (admin-only)
     Route::middleware('admin')->group(function () {
         Route::get('/dashboard/developer/test-page', function () {
-            return Inertia::render('TestPage');
+            return Inertia::render('dashboard/developer/test-page');
         })->name('dashboard.developer.test-page');
 
         Route::get('/dashboard/notifications/test', [NotificationTestController::class, 'index'])->name('dashboard.notifications.test');
@@ -86,6 +86,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/delete', [AccountController::class, 'destroy'])->name('account.destroy');
         Route::post('/verify-delete-password', [AccountController::class, 'verifyDeletePassword'])->name('account.verify-delete-password');
         Route::post('/notification-preferences', [AccountController::class, 'updateNotificationPreferences'])->name('account.notification-preferences');
+        Route::put('/address', [AccountController::class, 'updateAddress'])->name('account.address');
+        Route::get('/tokens', [AccountController::class, 'tokens'])->name('account.tokens');
+        Route::post('/tokens', [AccountController::class, 'createToken'])->name('account.tokens.create');
+        Route::delete('/tokens/{tokenId}', [AccountController::class, 'deleteToken'])->name('account.tokens.destroy');
     });
 
     // Profile management

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Booking\Services;
 
+use App\Modules\BookableRegistry;
 use App\Modules\Properties\Models\Property;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Cache;
@@ -30,7 +31,7 @@ class BookingPricingService
             return $this->emptyBreakdown($propertyId, $this->getCurrency($propertyId));
         }
 
-        $property = Property::findOrFail($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId) ?? abort(404);
         $meta = $allMeta ?? ($property->metadata ?? []);
         $m = function (string $key, mixed $default = null) use ($meta) {
             return array_key_exists($key, $meta) ? $meta[$key] : $default;
@@ -232,7 +233,7 @@ class BookingPricingService
 
     public function getPerNightPrice(int $propertyId, string $date): float
     {
-        $property = Property::findOrFail($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId) ?? abort(404);
         $baseRate = (float) ($property->metadata['nightly_rate'] ?? $property->price ?? 0);
         $seasonalRates = $this->getSeasonalRates($property);
         $weekendDays = $this->getWeekendDays($property);
@@ -284,7 +285,7 @@ class BookingPricingService
 
     private function getLengthOfStayRates(int $propertyId): array
     {
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
 
         return $property ? ($property->metadata['length_of_stay_rates'] ?? []) : [];
     }
@@ -378,7 +379,7 @@ class BookingPricingService
 
     private function getCurrency(int $propertyId): string
     {
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if ($property && ! empty($property->currency)) {
             return $property->currency;
         }

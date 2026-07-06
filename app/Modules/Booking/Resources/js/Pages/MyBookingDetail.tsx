@@ -391,6 +391,65 @@ const MyBookingDetail = () => {
           </Card>
         )}
 
+        {(booking.status === BOOKING_STATUS.Confirmed || booking.status === BOOKING_STATUS.CheckedIn) && (
+          <Card className="border-green-200 dark:border-green-800">
+            <CardHeader className="border-b pb-3">
+              <div className="flex items-center gap-2">
+                {booking.status === BOOKING_STATUS.Confirmed ? (
+                  <CalendarDays className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <CalendarDays className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                )}
+                <CardTitle className="text-base">
+                  {booking.status === BOOKING_STATUS.Confirmed ? "Check In" : "Check Out"}
+                </CardTitle>
+              </div>
+              <CardDescription>
+                {booking.status === BOOKING_STATUS.Confirmed
+                  ? "Let your host know you've arrived."
+                  : "Let your host know you're leaving."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                className="w-full"
+                variant={booking.status === BOOKING_STATUS.Confirmed ? "default" : "outline"}
+                disabled={cancelling}
+                onClick={async () => {
+                  setCancelling(true);
+                  try {
+                    const routeName = booking.status === BOOKING_STATUS.Confirmed
+                      ? "dashboard.my-bookings.check-in"
+                      : "dashboard.my-bookings.check-out";
+                    const res = await fetch(route(routeName, booking.id), {
+                      method: "POST",
+                      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    });
+                    if (res.ok) {
+                      toast.success(booking.status === BOOKING_STATUS.Confirmed ? "Checked in!" : "Checked out!");
+                      setTimeout(() => location.reload(), 1500);
+                    } else {
+                      toast.error("Action failed.");
+                    }
+                  } catch {
+                    toast.error("Network error. Please try again.");
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Processing...</>
+                ) : booking.status === BOOKING_STATUS.Confirmed ? (
+                  <><CalendarDays className="mr-1.5 h-3.5 w-3.5" /> I've Arrived</>
+                ) : (
+                  <><CalendarDays className="mr-1.5 h-3.5 w-3.5" /> I'm Leaving</>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {canManage && (
           <Card className="border-destructive/30">
             <CardHeader className="border-b pb-3">

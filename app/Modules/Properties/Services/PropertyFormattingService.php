@@ -9,25 +9,29 @@ use Illuminate\Support\Collection;
 
 class PropertyFormattingService
 {
+    public function __construct(
+        protected FormattingService $formattingService,
+    ) {}
+
     public function formatPrice(Property $property, array $overrides = []): string
     {
         $options = array_merge($property->getFormattingOptions(), $overrides);
 
-        return FormattingService::formatPrice($property->price, $options);
+        return $this->formattingService->formatPrice($property->price, $options);
     }
 
     public function formatSurface(Property $property, array $overrides = []): string
     {
         $options = array_merge($property->getFormattingOptions(), $overrides);
 
-        return FormattingService::formatSurface($property->surface, $options);
+        return $this->formattingService->formatSurface($property->surface, $options);
     }
 
     public function formatNumber(float|int|string $value, array $overrides = []): string
     {
         $options = array_merge(SettingsService::getFormattingOptions(), $overrides);
 
-        return FormattingService::formatNumber(
+        return $this->formattingService->formatNumber(
             $value,
             $options['thousands_sep'] ?? ',',
             $options['decimal_sep'] ?? '.',
@@ -40,11 +44,11 @@ class PropertyFormattingService
         $options = array_merge($property->getFormattingOptions(), $overrides);
 
         $data['price_formatted'] = $property->price
-            ? FormattingService::formatPrice($property->price, $options)
+            ? $this->formattingService->formatPrice($property->price, $options)
             : '';
 
         $data['surface_formatted'] = $property->surface
-            ? FormattingService::formatSurface($property->surface, $options)
+            ? $this->formattingService->formatSurface($property->surface, $options)
             : '';
 
         return $data;
@@ -57,6 +61,6 @@ class PropertyFormattingService
 
     public function formatRepeaterRows(array $rows, array $overrides = []): array
     {
-        return FormattingService::formatRepeaterData($rows, 'properties', $overrides);
+        return $this->formattingService->formatRepeaterData($rows, 'properties', $overrides);
     }
 }

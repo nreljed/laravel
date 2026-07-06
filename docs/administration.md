@@ -87,7 +87,7 @@ Every permission slug is registered as a Laravel Gate, so all standard Laravel a
 | `view-notifications` | View notifications |
 | `manage-notifications` | Mark read, delete notifications |
 
-Module permissions follow the pattern `{module}.{action}` (e.g. `properties.view`, `bookings.create`, `ecommerce.products.edit`).
+Module permissions follow the pattern `{module}.{action}` (e.g. `properties.view`, `bookings.create`, `shop.products.edit`).
 
 ---
 

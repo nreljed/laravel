@@ -8,16 +8,16 @@ class PublicController extends Controller
 {
     public function about()
     {
-        return Inertia::render('Public/About');
+        return Inertia::render('public/about');
     }
 
     public function services()
     {
-        return Inertia::render('Public/Services');
+        return Inertia::render('public/services');
     }
 
     public function contact()
     {
-        return Inertia::render('Public/Contact');
+        return Inertia::render('public/contact');
     }
 }

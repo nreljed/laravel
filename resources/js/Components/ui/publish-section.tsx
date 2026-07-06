@@ -1,8 +1,10 @@
+import * as React from "react";
 import { router } from "@inertiajs/react";
+import { useFormatDate } from "@/hooks/use-format-date";
+import { DateTimePicker } from "@/Components/ui/datetime-picker";
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group";
 import { Label } from "@/Components/ui/label";
 import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
 import {
   Card,
   CardContent,
@@ -11,7 +13,7 @@ import {
   CardTitle,
   CardFooter,
 } from "@/Components/ui/card";
-import { Calendar, Send, FileEdit, Eye } from "lucide-react";
+import { Calendar, Clock, Send, FileEdit, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PublishSectionProps {
@@ -37,6 +39,43 @@ export function PublishSection({
   loading,
   cancelUrl,
 }: PublishSectionProps) {
+  const { formatDateTime } = useFormatDate();
+  const [internalStatus, setInternalStatus] = React.useState(status);
+  const [internalDate, setInternalDate] = React.useState(publishDate);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setInternalStatus(status), 0);
+    return () => clearTimeout(timer);
+  }, [status]);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setInternalDate(publishDate), 0);
+    return () => clearTimeout(timer);
+  }, [publishDate]);
+
+  const handleStatusChange = (newStatus: string) => {
+    setInternalStatus(newStatus);
+    onStatusChange?.(newStatus);
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setInternalDate(newDate);
+    onDateChange?.(newDate);
+  };
+
+  const formatScheduledDate = () => {
+    if (!internalDate || internalStatus !== "future") return null;
+    const date = new Date(internalDate);
+    if (Number.isNaN(date.getTime())) return null;
+    return formatDateTime(date);
+  };
+
+  const minDate = React.useMemo(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - 1);
+    return now;
+  }, []);
+
   const statusOptions = [
     { value: "publish", label: "Publish Now", icon: Send },
     { value: "future", label: "Schedule", icon: Calendar },
@@ -54,14 +93,18 @@ export function PublishSection({
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         {showStatusOptions && (
-          <RadioGroup value={status} onValueChange={onStatusChange} className="flex flex-col gap-2">
+          <RadioGroup
+            value={internalStatus}
+            onValueChange={handleStatusChange}
+            className="flex flex-col gap-2"
+          >
             {statusOptions.map((option) => {
               const Icon = option.icon;
-              const isSelected = status === option.value;
+              const isSelected = internalStatus === option.value;
               return (
                 <Label
                   key={option.value}
-                  htmlFor={`pub-status-${option.value}`}
+                  htmlFor={`status-${option.value}`}
                   className={cn(
                     "cursor-pointer flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all",
                     "hover:border-primary/50 hover:bg-accent",
@@ -72,7 +115,7 @@ export function PublishSection({
                 >
                   <RadioGroupItem
                     value={option.value}
-                    id={`pub-status-${option.value}`}
+                    id={`status-${option.value}`}
                     className="sr-only"
                   />
                   <Icon className="h-4 w-4" />
@@ -83,26 +126,29 @@ export function PublishSection({
           </RadioGroup>
         )}
 
-        {status === "future" && (
+        {internalStatus === "future" && (
           <div className="space-y-2">
             <Label className="text-muted-foreground">Publish on:</Label>
-            <Input
-              type="datetime-local"
-              value={publishDate || ""}
-              onChange={(e) => onDateChange?.(e.target.value || null)}
+            <DateTimePicker
+              value={internalDate ?? undefined}
+              onChange={handleDateChange}
+              minDate={minDate}
               disabled={disabled}
+              placeholder="Select date and time"
             />
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              Will be published on the selected date
-            </p>
+            {formatScheduledDate() && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                Will be published: {formatScheduledDate()}
+              </p>
+            )}
           </div>
         )}
 
-        {status === "publish" && (
+        {internalStatus === "publish" && (
           <p className="text-sm text-muted-foreground">This will be published immediately.</p>
         )}
-        {status === "draft" && (
+        {internalStatus === "draft" && (
           <p className="text-sm text-muted-foreground">
             This will be saved as a draft and won't be visible.
           </p>

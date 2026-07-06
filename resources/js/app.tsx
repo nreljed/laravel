@@ -43,7 +43,7 @@ const bookingPages = import.meta.glob(
   "../../app/Modules/Booking/Resources/js/Pages/**/*.tsx",
 ) as Record<string, ImportFn>;
 
-const ecommercePages = import.meta.glob("@modules-ecommerce/Pages/**/*.tsx") as Record<
+const shopPages = import.meta.glob("@modules-shop/Pages/**/*.tsx") as Record<
   string,
   ImportFn
 >;
@@ -56,7 +56,7 @@ Object.keys(pages).forEach((path) => {
   const match = path.match(/\.\/Pages\/(.+)\.tsx$/);
   const componentPath = match?.[1];
   if (componentPath) {
-    pageMap[componentPath] = pages[path]!;
+    pageMap[componentPath.toLowerCase()] = pages[path]!;
   }
 });
 
@@ -73,7 +73,7 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
   const aliasPrefixMap: Record<string, string> = {
     Properties: "@modules-properties",
     Booking: "@modules-booking",
-    ECommerce: "@modules-ecommerce",
+    Shop: "@modules-shop",
     Posts: "@modules-posts",
   };
   const alias = aliasPrefixMap[moduleName];
@@ -92,35 +92,35 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
 Object.keys(propertyPages).forEach((path) => {
   const componentPath = extractComponentPath(path, "Properties");
   if (componentPath) {
-    pageMap[`Properties/${componentPath}`] = propertyPages[path]!;
+    pageMap[`Modules/Properties/${componentPath}`.toLowerCase()] = propertyPages[path]!;
   }
 });
 
 Object.keys(bookingPages).forEach((path) => {
   const componentPath = extractComponentPath(path, "Booking");
   if (componentPath) {
-    pageMap[`Bookings/${componentPath}`] = bookingPages[path]!;
+    pageMap[`Modules/Bookings/${componentPath}`.toLowerCase()] = bookingPages[path]!;
   }
 });
 
-Object.keys(ecommercePages).forEach((path) => {
-  const componentPath = extractComponentPath(path, "ECommerce");
+Object.keys(shopPages).forEach((path) => {
+  const componentPath = extractComponentPath(path, "Shop");
   if (componentPath) {
-    pageMap[`ECommerce/${componentPath}`] = ecommercePages[path]!;
+    pageMap[`Modules/Shop/${componentPath}`.toLowerCase()] = shopPages[path]!;
   }
 });
 
 Object.keys(postsPages).forEach((path) => {
   const componentPath = extractComponentPath(path, "Posts");
   if (componentPath) {
-    pageMap[`Posts/${componentPath}`] = postsPages[path]!;
+    pageMap[`Modules/Posts/${componentPath}`.toLowerCase()] = postsPages[path]!;
   }
 });
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
   resolve: (name) => {
-    const importPage = pageMap[name];
+    const importPage = pageMap[name.toLowerCase()];
     if (!importPage) {
       throw new Error(`Page not found: ${name}`);
     }

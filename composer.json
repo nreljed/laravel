@@ -13,6 +13,7 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "minishlink/web-push": "^10.1",
+        "stripe/stripe-php": "*",
         "tightenco/ziggy": "^2.6"
     },
     "require-dev": {
@@ -21,6 +22,7 @@
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
+        "laravel/telescope": "^5.20",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^13.2"

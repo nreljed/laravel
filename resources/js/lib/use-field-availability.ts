@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { router } from "@inertiajs/react";
 
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -30,17 +29,21 @@ export function useFieldAvailability(field: "username" | "email") {
     const gen = ++genRef.current;
     setStatus("checking");
 
-    router.get(route("register.availability"), { field, value: debouncedValue } as any, {
-      preserveState: true,
-      preserveScroll: true,
-      onSuccess: (page: any) => {
+    const params = new URLSearchParams({ field, value: debouncedValue });
+
+    fetch(`${route("register.availability")}?${params}`, {
+      headers: { Accept: "application/json" },
+    })
+      .then((res) => res.json())
+      .then((data: { available: boolean }) => {
         if (gen !== genRef.current) return;
-        const data = page.props as any;
         lastChecked.current = debouncedValue;
         setStatus(data.available ? "available" : "taken");
-      },
-      onError: () => {},
-    });
+      })
+      .catch(() => {
+        if (gen !== genRef.current) return;
+        setStatus("idle");
+      });
   }, [debouncedValue, field]);
 
   return { status, setValue };

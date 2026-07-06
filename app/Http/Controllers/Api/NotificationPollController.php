@@ -22,19 +22,10 @@ class NotificationPollController extends Controller
             ->selectRaw('COUNT(*) as count, COALESCE(MAX(id), 0) as latest_id, COALESCE(MAX(created_at), \'\') as latest_at')
             ->first();
 
-        $etag = md5("{$meta->count}:{$meta->latest_id}:{$meta->latest_at}");
-
-        if ($request->header('If-None-Match') === "\"{$etag}\"") {
-            return response()->json(null, 304);
-        }
-
         return response()->json([
             'count' => (int) $meta->count,
             'latest_id' => (string) $meta->latest_id,
             'latest_at' => (string) $meta->latest_at,
-        ])->withHeaders([
-            'ETag' => "\"{$etag}\"",
-            'Cache-Control' => 'private, no-cache, must-revalidate, max-age=0',
         ]);
     }
 
@@ -49,17 +40,6 @@ class NotificationPollController extends Controller
             ->whereNull('read_at')
             ->count();
 
-        $allMeta = Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', $userType)
-            ->selectRaw('COALESCE(MAX(id), 0) as latest_id, COALESCE(MAX(created_at), \'\') as latest_at')
-            ->first();
-
-        $etag = md5("{$unreadCount}:{$allMeta->latest_id}:{$allMeta->latest_at}");
-
-        if ($request->header('If-None-Match') === "\"{$etag}\"") {
-            return response()->json(null, 304);
-        }
-
         $notifications = Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', $userType)
             ->latest()
@@ -70,9 +50,6 @@ class NotificationPollController extends Controller
         return response()->json([
             'notifications' => $notifications,
             'unread_count' => $unreadCount,
-        ])->withHeaders([
-            'ETag' => "\"{$etag}\"",
-            'Cache-Control' => 'private, no-cache, must-revalidate, max-age=0',
         ]);
     }
 

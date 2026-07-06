@@ -115,7 +115,7 @@ export default function PropertiesForm() {
     return term ? String(term.id) : null
   }, [propertyStatuses])
 
-  const { data, setData, post, put, processing, errors } = useForm<PropertyFormData>({
+  const { data, setData, post, put, processing, errors, isDirty } = useForm<PropertyFormData>({
     title: propertyData.title || "",
     status: propertyData.status || defaultStatus,
     publish_date: propertyData.publish_date || null,
@@ -209,11 +209,10 @@ export default function PropertiesForm() {
         const first = Object.values(errs)[0]
         if (first) toast.error(first)
       },
-      preserveScroll: true,
     }
 
     if (isEditing) {
-      post(route("dashboard.properties.update", propertyData.id) + "?_method=PATCH", options)
+      post(route("dashboard.properties.update", propertyData.id) + "?_method=PUT", options)
     } else {
       post(route("dashboard.properties.store"), options)
     }

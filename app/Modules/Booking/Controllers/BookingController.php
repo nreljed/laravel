@@ -5,6 +5,7 @@ namespace App\Modules\Booking\Controllers;
 use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingAvailabilityService;
@@ -15,11 +16,13 @@ use App\Modules\Booking\Services\BookingIcalService;
 use App\Modules\Booking\Services\BookingPriceCalculator;
 use App\Modules\Booking\Services\BookingService;
 use App\Modules\Booking\Services\BookingStatusManager;
+use App\Modules\Booking\Services\HostProfileService;
 use App\Modules\Properties\Models\Property;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class BookingController extends Controller
 {
@@ -28,6 +31,7 @@ class BookingController extends Controller
         protected BookingStatusManager $statusManager,
         protected BookingAvailabilityService $availabilityService,
         protected BookingPriceCalculator $priceCalculator,
+        protected HostProfileService $hostProfile,
     ) {}
 
     public function index(Request $request)
@@ -40,11 +44,30 @@ class BookingController extends Controller
 
         $properties = Property::select('id', 'name')->get();
 
-        return Inertia::render('Bookings/Index', [
+        return Inertia::render('Modules/Bookings/Index', [
             'bookings' => $bookings->items(),
             'stats' => $stats,
             'properties' => $properties,
             'filters' => $filters,
+        ]);
+    }
+
+    public function dashboard(): Response
+    {
+        $this->authorize('viewAny', Booking::class);
+
+        $now = now();
+        $today = $now->toDateString();
+
+        return Inertia::render('Modules/Bookings/Dashboard', [
+            'stats' => $this->bookingService->getStats(),
+            'todayCheckIns' => Booking::whereDate('start_date', $today)->count(),
+            'todayCheckOuts' => Booking::whereDate('end_date', $today)->count(),
+            'propertiesCount' => Property::count(),
+            'recentBookings' => Booking::with('property')
+                ->latest()
+                ->take(5)
+                ->get(['id', 'status', 'guest_name', 'start_date', 'end_date', 'total_amount', 'currency', 'property_id', 'created_at']),
         ]);
     }
 
@@ -54,7 +77,7 @@ class BookingController extends Controller
 
         $properties = Property::select('id', 'name')->where('status', 'published')->get();
 
-        return Inertia::render('Bookings/Form', [
+        return Inertia::render('Modules/Bookings/Form', [
             'booking' => null,
             'properties' => $properties,
         ]);
@@ -77,7 +100,7 @@ class BookingController extends Controller
             'notes' => 'nullable|string|max:5000',
         ]);
 
-        $property = Property::findOrFail($validated['property_id']);
+        $property = app(BookableRegistry::class)->resolve('properties', $validated['property_id']) ?? abort(404);
         $price = $this->priceCalculator->calculateTotal(
             $property,
             $validated['start_date'],
@@ -131,7 +154,7 @@ class BookingController extends Controller
 
         $properties = Property::select('id', 'name')->where('status', 'published')->get();
 
-        return Inertia::render('Bookings/Form', [
+        return Inertia::render('Modules/Bookings/Form', [
             'booking' => $booking->load('property'),
             'properties' => $properties,
         ]);
@@ -170,14 +193,9 @@ class BookingController extends Controller
 
         $bookingArray = $booking->toArray();
         $bookingArray['host_name'] = $hostUser?->display_name ?: $hostUser?->name ?? '';
-        $bookingArray['host_phone'] = self::resolveHostPhone($hostId);
-        $bookingArray['host_phone_numbers'] = self::resolveHostPhoneNumbers($hostId);
-        $bookingArray['host_email'] = self::resolveHostEmail($hostId);
-        $bookingArray['host_avatar'] = self::resolveHostAvatar($hostId);
-        $bookingArray['host_bio'] = self::resolveHostBio($hostId);
-        $bookingArray['host_social_media'] = self::resolveHostSocialMedia($hostId);
+        $bookingArray = array_merge($bookingArray, $this->hostProfile->resolveAll($hostId));
 
-        return Inertia::render('Bookings/Show', [
+        return Inertia::render('Modules/Bookings/Show', [
             'booking' => $bookingArray,
         ]);
     }
@@ -253,7 +271,7 @@ class BookingController extends Controller
 
         $properties = Property::select('id', 'name')->get();
 
-        return Inertia::render('Bookings/Calendar', [
+        return Inertia::render('Modules/Bookings/Calendar', [
             'calendar' => $data,
             'properties' => $properties,
             'year' => (int) $year,
@@ -274,7 +292,7 @@ class BookingController extends Controller
             'pets' => 'nullable|integer|min:0',
         ]);
 
-        $property = Property::findOrFail($validated['property_id']);
+        $property = app(BookableRegistry::class)->resolve('properties', $validated['property_id']) ?? abort(404);
 
         $price = $this->priceCalculator->calculateTotal(
             $property,
@@ -542,113 +560,5 @@ class BookingController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
-    }
-
-    public static function resolveHostPhone(?int $hostId): string
-    {
-        if (! $hostId) {
-            return '';
-        }
-        $user = User::find($hostId);
-        if (! $user) {
-            return '';
-        }
-        $phoneNumbers = $user->phone;
-        if (empty($phoneNumbers)) {
-            return '';
-        }
-        $decoded = is_string($phoneNumbers) ? json_decode($phoneNumbers, true) : $phoneNumbers;
-        if (! is_array($decoded) || empty($decoded)) {
-            return '';
-        }
-        $preferred = ['Mobile', 'Work', 'WhatsApp', 'Home'];
-        foreach ($preferred as $label) {
-            foreach ($decoded as $entry) {
-                if (($entry['label'] ?? '') === $label && ! empty($entry['phone'])) {
-                    return $entry['phone'];
-                }
-            }
-        }
-
-        return $decoded[0]['phone'] ?? '';
-    }
-
-    public static function resolveHostPhoneNumbers(?int $hostId): array
-    {
-        if (! $hostId) {
-            return [];
-        }
-        $user = User::find($hostId);
-        if (! $user) {
-            return [];
-        }
-        $raw = $user->phone;
-        if (empty($raw)) {
-            return [];
-        }
-        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    public static function resolveHostEmail(?int $hostId): string
-    {
-        if (! $hostId) {
-            return '';
-        }
-        $user = User::find($hostId);
-        if (! $user) {
-            return '';
-        }
-
-        return $user->contact_email ?: $user->email;
-    }
-
-    public static function resolveHostAvatar(?int $hostId): string
-    {
-        if (! $hostId) {
-            return '';
-        }
-        $user = User::find($hostId);
-        if (! $user) {
-            return '';
-        }
-        if ($user->avatar_url) {
-            return $user->avatar_url;
-        }
-        $gravatar = 'https://www.gravatar.com/avatar/'.md5(strtolower(trim($user->email))).'?d=mp';
-
-        return $gravatar;
-    }
-
-    public static function resolveHostBio(?int $hostId): string
-    {
-        if (! $hostId) {
-            return '';
-        }
-        $user = User::find($hostId);
-        if (! $user) {
-            return '';
-        }
-
-        return $user->bio ?: $user->description ?? '';
-    }
-
-    public static function resolveHostSocialMedia(?int $hostId): array
-    {
-        if (! $hostId) {
-            return [];
-        }
-        $user = User::find($hostId);
-        if (! $user) {
-            return [];
-        }
-        $raw = $user->social_links;
-        if (empty($raw)) {
-            return [];
-        }
-        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
-
-        return is_array($decoded) ? $decoded : [];
     }
 }

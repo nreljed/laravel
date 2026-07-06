@@ -53,21 +53,24 @@ class PostsModule implements ModuleInterface
 
     public function getNavGroupLabel(): ?string
     {
-        return 'Content';
+        return 'Manage Posts';
     }
 
     public function getNavItems(): array
     {
         return [
             'title' => 'Posts',
-            'url' => route('dashboard.posts.index', [], false),
+            'url' => route('dashboard.posts.dashboard', [], false),
             'icon' => 'FileText',
             'permission' => 'posts.view',
             'module_slug' => 'posts',
             'showModeBadge' => false,
             'items' => [
+                ['title' => 'Dashboard', 'url' => route('dashboard.posts.dashboard', [], false)],
                 ['title' => 'All Posts', 'url' => route('dashboard.posts.index', [], false)],
                 ['title' => 'Add Post', 'url' => route('dashboard.posts.create', [], false)],
+                ['title' => 'Categories', 'url' => route('dashboard.posts.categories.index', [], false)],
+                ['title' => 'Tags', 'url' => route('dashboard.posts.tags.index', [], false)],
             ],
         ];
     }
@@ -108,15 +111,18 @@ class PostsModule implements ModuleInterface
     public function getFrontendPages(): array
     {
         return [
+            ['path' => '/dashboard/posts/dashboard', 'component' => 'Posts/Dashboard', 'name' => 'dashboard.posts.dashboard'],
             ['path' => '/dashboard/posts', 'component' => 'Posts/Index', 'name' => 'dashboard.posts.index'],
             ['path' => '/dashboard/posts/create', 'component' => 'Posts/Form', 'name' => 'dashboard.posts.create'],
             ['path' => '/dashboard/posts/{post}/edit', 'component' => 'Posts/Form', 'name' => 'dashboard.posts.edit'],
+            ['path' => '/dashboard/posts/categories', 'component' => 'Posts/Categories/Index', 'name' => 'dashboard.posts.categories.index'],
+            ['path' => '/dashboard/posts/tags', 'component' => 'Posts/Tags/Index', 'name' => 'dashboard.posts.tags.index'],
         ];
     }
 
     public function migrationPaths(): array
     {
-        return [];
+        return [__DIR__.'/database/migrations'];
     }
 
     public function permissions(): array

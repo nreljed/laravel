@@ -1,6 +1,6 @@
 import { PropsWithChildren } from "react";
 import { Head, usePage } from "@inertiajs/react";
-import { BrandLogo } from "@/Components/BrandLogo";
+import { BrandLogo } from "@/Components/frontend/BrandLogo";
 
 export default function GuestLayout({ children, title }: PropsWithChildren<{ title?: string }>) {
   const pageProps = usePage().props;

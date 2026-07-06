@@ -2,8 +2,8 @@
 
 namespace App\Modules\Booking\Services;
 
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Models\Booking;
-use App\Modules\Properties\Models\Property;
 use App\Services\MailService;
 
 class BookingRefundMailService
@@ -23,7 +23,7 @@ class BookingRefundMailService
             return;
         }
 
-        $property = $booking->property_id ? Property::find($booking->property_id) : null;
+        $property = $booking->property_id ? app(BookableRegistry::class)->resolve('properties', $booking->property_id) : null;
 
         $data = [
             'bookingId' => $bookingId,

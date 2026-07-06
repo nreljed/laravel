@@ -16,7 +16,7 @@ import {
 const MODULE_COLORS: Record<string, string> = {
   properties: "bg-blue-500",
   booking: "bg-amber-500",
-  ecommerce: "bg-pink-500",
+  shop: "bg-pink-500",
 };
 
 interface SettingsNavItem {
@@ -46,7 +46,7 @@ const CORE_ITEMS: SettingsNavItem[] = [
 const MODULE_ITEMS: SettingsNavItem[] = [
   { value: "properties", label: "Properties", icon: Building2, module: "properties" },
   { value: "booking", label: "Booking", icon: Calendar, module: "booking" },
-  { value: "ecommerce", label: "E-Commerce", icon: ShoppingCart, module: "ecommerce" },
+  { value: "shop", label: "Shop", icon: ShoppingCart, module: "shop" },
 ];
 
 export function SettingsNav({ activeTab, onTabChange, enabledModules = [] }: SettingsNavProps) {

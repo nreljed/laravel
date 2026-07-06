@@ -107,7 +107,7 @@ class BookingDemoController extends Controller
         }
 
         return Inertia::render(
-            'Bookings/BookingDemo',
+            'Modules/Bookings/BookingDemo',
             [
                 'properties' => $bookableProperties,
                 'page' => ['title' => 'Booking Demo'],
@@ -538,13 +538,13 @@ class BookingDemoController extends Controller
         }
 
         return Inertia::render(
-            'Bookings/BookingDemoResult',
+            'Modules/Bookings/BookingDemoResult',
             [
                 'booking' => [
                     'id' => $booking->id,
                     'title' => $booking->guest_name ? 'Booking: '.$booking->guest_name : 'Booking #'.$booking->id,
-                    'status' => $booking->status,
-                    'status_label' => BookingStatus::tryFrom($booking->status)?->label() ?? $booking->status,
+                    'status' => $booking->status->value,
+                    'status_label' => $booking->status->label(),
                     'status_badge_class' => $this->getStatusBadgeClass($booking->status),
                     'property_id' => $booking->property_id,
                     'property_title' => $property->name ?? '',
@@ -574,11 +574,9 @@ class BookingDemoController extends Controller
         );
     }
 
-    protected function getStatusBadgeClass(string $status): string
+    protected function getStatusBadgeClass(BookingStatus $status): string
     {
-        $enum = BookingStatus::tryFrom($status);
-
-        return match ($enum) {
+        return match ($status) {
             BookingStatus::Pending => 'bg-yellow-100 text-yellow-800',
             BookingStatus::Confirmed => 'bg-blue-100 text-blue-800',
             BookingStatus::CheckedIn => 'bg-green-100 text-green-800',
@@ -590,15 +588,11 @@ class BookingDemoController extends Controller
         };
     }
 
-    protected function getAllowedTransitions(string $status): array
+    protected function getAllowedTransitions(BookingStatus $status): array
     {
-        $enum = BookingStatus::tryFrom($status);
-        if (! $enum) {
-            return [];
-        }
         $result = [];
         foreach (BookingStatus::cases() as $target) {
-            if ($enum->canTransitionTo($target)) {
+            if ($status->canTransitionTo($target)) {
                 $result[] = [
                     'value' => $target->value,
                     'label' => $target->label(),

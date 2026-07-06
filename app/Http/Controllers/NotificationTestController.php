@@ -39,7 +39,7 @@ class NotificationTestController extends Controller
             }
         }
 
-        return Inertia::render('Notifications/Test', [
+        return Inertia::render('dashboard/notifications/test', [
             'emailConfigured' => $fromEmail !== '',
             'fromEmail' => $fromEmail,
             'fromName' => $fromName,

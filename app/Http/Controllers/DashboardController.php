@@ -11,14 +11,15 @@ class DashboardController extends Controller
 {
     public function index(DashboardService $dashboard)
     {
-        return Inertia::render('Dashboard/Index', [
+        return Inertia::render('dashboard/index', [
             'stats' => $dashboard->getStats(),
+            'analytics' => $dashboard->getAnalytics(),
         ]);
     }
 
     public function stats()
     {
-        return Inertia::render('Dashboard/Stats');
+        return Inertia::render('dashboard/stats');
     }
 
     public function notifications(Request $request)
@@ -42,7 +43,7 @@ class DashboardController extends Controller
                     'property' => ['property.%', '%property%'],
                     'account' => ['%user%', '%password%', '%email%', '%account%'],
                     'content' => ['post.%', '%content%'],
-                    'orders' => ['order.%', '%stock%', '%ecommerce%'],
+                    'orders' => ['order.%', '%stock%', '%shop%'],
                 ];
 
                 $patterns = $typePatterns[$typeFilter] ?? ["{$typeFilter}%"];
@@ -58,7 +59,7 @@ class DashboardController extends Controller
             ->whereNull('read_at')
             ->count();
 
-        return Inertia::render('Dashboard/Notifications', [
+        return Inertia::render('dashboard/notifications/index', [
             'notifications' => $notifications,
             'unreadCount' => $unreadCount,
             'filter' => $filter,

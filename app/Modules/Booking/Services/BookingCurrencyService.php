@@ -2,7 +2,7 @@
 
 namespace App\Modules\Booking\Services;
 
-use App\Modules\Properties\Models\Property;
+use App\Modules\BookableRegistry;
 use App\Services\FormattingService;
 use App\Services\SettingsService;
 
@@ -10,7 +10,7 @@ class BookingCurrencyService
 {
     public static function getCurrency(int $propertyId): string
     {
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
 
         if ($property && ! empty($property->currency)) {
             return strtoupper($property->currency);
@@ -39,7 +39,7 @@ class BookingCurrencyService
         $currency = self::getCurrency($propertyId);
         $formatting = SettingsService::getFormattingOptions();
 
-        return FormattingService::formatPrice($value, array_merge($formatting, [
+        return app(FormattingService::class)->formatPrice($value, array_merge($formatting, [
             'currency' => $currency,
         ]));
     }

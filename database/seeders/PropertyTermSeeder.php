@@ -14,10 +14,20 @@ class PropertyTermSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            ['name' => 'Rent', 'slug' => 'rent', 'description' => 'Properties available for rent', 'sort_order' => 1],
-            ['name' => 'Buy', 'slug' => 'buy', 'description' => 'Properties available for purchase', 'sort_order' => 2],
-            ['name' => 'Short Stay', 'slug' => 'short-stay', 'description' => 'Short-term rental properties', 'sort_order' => 3],
-            ['name' => 'Commercial', 'slug' => 'commercial', 'description' => 'Commercial property listings', 'sort_order' => 4],
+            ['name' => 'Apartment', 'slug' => 'apartment', 'description' => 'Apartment in a multi-unit building', 'sort_order' => 1],
+            ['name' => 'Villa', 'slug' => 'villa', 'description' => 'Detached villa with garden', 'sort_order' => 2],
+            ['name' => 'House', 'slug' => 'house', 'description' => 'Individual or semi-detached house', 'sort_order' => 3],
+            ['name' => 'Studio', 'slug' => 'studio', 'description' => 'Studio / open-plan living', 'sort_order' => 4],
+            ['name' => 'Duplex', 'slug' => 'duplex', 'description' => 'Two-story apartment', 'sort_order' => 5],
+            ['name' => 'Penthouse', 'slug' => 'penthouse', 'description' => 'Luxury top-floor apartment', 'sort_order' => 6],
+            ['name' => 'Land', 'slug' => 'land', 'description' => 'Vacant or buildable land', 'sort_order' => 7],
+            ['name' => 'Commercial', 'slug' => 'commercial', 'description' => 'Commercial or professional space', 'sort_order' => 8],
+            ['name' => 'Office', 'slug' => 'office', 'description' => 'Office space or professional suite', 'sort_order' => 9],
+            ['name' => 'Shop', 'slug' => 'shop', 'description' => 'Retail shop', 'sort_order' => 10],
+            ['name' => 'Building', 'slug' => 'building', 'description' => 'Entire building for sale', 'sort_order' => 11],
+            ['name' => 'Farm', 'slug' => 'farm', 'description' => 'Farm or countryside property', 'sort_order' => 12],
+            ['name' => 'Chalet', 'slug' => 'chalet', 'description' => 'Mountain or beach chalet', 'sort_order' => 13],
+            ['name' => 'Loft', 'slug' => 'loft', 'description' => 'Industrial or atypical loft', 'sort_order' => 14],
         ];
 
         foreach ($types as $type) {
@@ -232,38 +242,61 @@ class PropertyTermSeeder extends Seeder
         }
 
         $groups = [
+            'Exterior' => [
+                ['name' => 'Balcony', 'icon' => 'Building2'],
+                ['name' => 'Garden', 'icon' => 'Flower2'],
+                ['name' => 'Patio', 'icon' => 'Sun'],
+                ['name' => 'Terrace', 'icon' => 'Sun'],
+                ['name' => 'Rooftop Terrace', 'icon' => 'ArrowUpToLine'],
+                ['name' => 'Swimming Pool', 'icon' => 'Pool'],
+                ['name' => 'Barbecue / Grill', 'icon' => 'CookingPot'],
+                ['name' => 'Outdoor Kitchen', 'icon' => 'CookingPot'],
+                ['name' => 'Deck', 'icon' => 'Sun'],
+                ['name' => 'Yard', 'icon' => 'Flower2'],
+                ['name' => 'Parking', 'icon' => 'ParkingCircle'],
+                ['name' => 'Garage', 'icon' => 'Car'],
+            ],
             'Interior' => [
                 ['name' => 'Air Conditioning', 'icon' => 'Snowflake'],
                 ['name' => 'Heating', 'icon' => 'Thermometer'],
-                ['name' => 'Washer', 'icon' => 'WashingMachine'],
-                ['name' => 'Dryer', 'icon' => 'Dryer'],
-                ['name' => 'Dishwasher', 'icon' => 'Utensils'],
-                ['name' => 'Refrigerator', 'icon' => 'Refrigerator'],
-                ['name' => 'Oven', 'icon' => 'CookingPot'],
-                ['name' => 'Microwave', 'icon' => 'Microwave'],
+                ['name' => 'Central Heating', 'icon' => 'Thermometer'],
+                ['name' => 'Fireplace', 'icon' => 'Flame'],
                 ['name' => 'Furnished', 'icon' => 'Sofa'],
-            ],
-            'Exterior' => [
-                ['name' => 'Swimming Pool', 'icon' => 'Pool'],
-                ['name' => 'Garden', 'icon' => 'Flower2'],
-                ['name' => 'Terrace', 'icon' => 'Sun'],
-                ['name' => 'Balcony', 'icon' => 'Building2'],
-                ['name' => 'Garage', 'icon' => 'Car'],
-                ['name' => 'Parking', 'icon' => 'ParkingCircle'],
-                ['name' => 'Rooftop', 'icon' => 'ArrowUpToLine'],
-            ],
-            'Utilities' => [
-                ['name' => 'WiFi', 'icon' => 'Wifi'],
-                ['name' => 'Water', 'icon' => 'Droplets'],
-                ['name' => 'Electricity', 'icon' => 'Zap'],
-                ['name' => 'Gas', 'icon' => 'Flame'],
-                ['name' => 'Solar Panels', 'icon' => 'SunMedium'],
+                ['name' => 'Fully Equipped Kitchen', 'icon' => 'CookingPot'],
+                ['name' => 'Washer / Dryer', 'icon' => 'WashingMachine'],
+                ['name' => 'Dishwasher', 'icon' => 'Utensils'],
+                ['name' => 'Smart TV', 'icon' => 'Tv'],
+                ['name' => 'High Speed Internet', 'icon' => 'Wifi'],
+                ['name' => 'Home Office', 'icon' => 'Briefcase'],
+                ['name' => 'Elevator', 'icon' => 'ArrowUpFromLine'],
+                ['name' => 'Walk-in Closet', 'icon' => 'DoorOpen'],
+                ['name' => 'Storage', 'icon' => 'Package'],
+                ['name' => 'Laundry Room', 'icon' => 'WashingMachine'],
             ],
             'Security' => [
-                ['name' => 'Security System', 'icon' => 'Shield'],
-                ['name' => 'CCTV', 'icon' => 'Camera'],
-                ['name' => 'Doorman', 'icon' => 'UserCheck'],
-                ['name' => 'Gated Community', 'icon' => 'Fence'],
+                ['name' => 'Security Guard', 'icon' => 'UserCheck'],
+                ['name' => 'Alarm System', 'icon' => 'Shield'],
+                ['name' => 'Intercom System', 'icon' => 'Phone'],
+                ['name' => 'Secure Parking', 'icon' => 'ParkingCircle'],
+                ['name' => 'Security Camera', 'icon' => 'Camera'],
+                ['name' => 'Smoke Detectors', 'icon' => 'Flame'],
+                ['name' => 'Doorman / Digicode', 'icon' => 'UserCheck'],
+                ['name' => 'Electric Gate', 'icon' => 'Fence'],
+                ['name' => 'Safe', 'icon' => 'Lock'],
+            ],
+            'Special' => [
+                ['name' => 'Game Room', 'icon' => 'Gamepad2'],
+                ['name' => 'Gym', 'icon' => 'Dumbbell'],
+                ['name' => 'Home Theater', 'icon' => 'Clapperboard'],
+                ['name' => 'Jacuzzi', 'icon' => 'Bath'],
+                ['name' => 'Sauna', 'icon' => 'Bath'],
+                ['name' => 'Hot Tub', 'icon' => 'Bath'],
+                ['name' => 'Pet Friendly', 'icon' => 'PawPrint'],
+                ['name' => 'Wine Cellar', 'icon' => 'Wine'],
+                ['name' => 'Private Entrance', 'icon' => 'DoorOpen'],
+                ['name' => 'Beach Access', 'icon' => 'Umbrella'],
+                ['name' => 'Rooftop Access', 'icon' => 'ArrowUpToLine'],
+                ['name' => 'BBQ Area', 'icon' => 'CookingPot'],
             ],
         ];
 
@@ -283,11 +316,14 @@ class PropertyTermSeeder extends Seeder
         }
 
         $statuses = [
-            ['name' => 'For Sale', 'slug' => 'for-sale', 'description' => 'Property is listed for sale', 'sort_order' => 1],
-            ['name' => 'For Rent', 'slug' => 'for-rent', 'description' => 'Property is listed for rent', 'sort_order' => 2],
+            ['name' => 'For Sale', 'slug' => 'for-sale', 'description' => 'Property listed for sale', 'sort_order' => 1],
+            ['name' => 'For Rent', 'slug' => 'for-rent', 'description' => 'Property listed for rent', 'sort_order' => 2],
             ['name' => 'Sold', 'slug' => 'sold', 'description' => 'Property has been sold', 'sort_order' => 3],
             ['name' => 'Rented', 'slug' => 'rented', 'description' => 'Property has been rented', 'sort_order' => 4],
-            ['name' => 'Under Contract', 'slug' => 'under-contract', 'description' => 'Property is under contract', 'sort_order' => 5],
+            ['name' => 'Under Offer', 'slug' => 'under-offer', 'description' => 'Sale agreement signed, awaiting finalisation', 'sort_order' => 5],
+            ['name' => 'Off Market', 'slug' => 'off-market', 'description' => 'Property not publicly listed', 'sort_order' => 6],
+            ['name' => 'Under Construction', 'slug' => 'under-construction', 'description' => 'Property under construction, off-plan sale', 'sort_order' => 7],
+            ['name' => 'Promissory', 'slug' => 'promissory', 'description' => 'Promissory agreement signed', 'sort_order' => 8],
         ];
 
         foreach ($statuses as $status) {

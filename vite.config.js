@@ -29,7 +29,7 @@ export default defineConfig({
         alias: {
             '@modules-properties': path.resolve(__dirname, './app/Modules/Properties/Resources/js'),
             '@modules-booking': path.resolve(__dirname, './app/Modules/Booking/Resources/js'),
-            '@modules-ecommerce': path.resolve(__dirname, './app/Modules/ECommerce/Resources/js'),
+            '@modules-shop': path.resolve(__dirname, './app/Modules/Shop/Resources/js'),
             '@modules-posts': path.resolve(__dirname, './app/Modules/Posts/Resources/js'),
         },
     },
@@ -39,6 +39,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks(id) {
+                    if (id.includes('Components/ui/')) return 'ui-kit';
                     if (id.includes('node_modules/react')) return 'react-vendor';
                     if (id.includes('node_modules/@radix-ui')) return 'ui-vendor';
                     if (id.includes('node_modules/lucide-react')) return 'icons-vendor';

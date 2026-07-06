@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePage, router } from "@inertiajs/react";
+import axios from "axios";
 
 export type Severity = "info" | "warning" | "urgent" | "critical";
 
@@ -139,30 +140,21 @@ export function useNotifications(): UseNotificationsResult {
       const gen = fetchGenRef.current;
       if (!background) setLoading(true);
       try {
-        await new Promise<void>((resolve) => {
-          router.get(route("api.notifications.recent"), {}, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: (page: any) => {
-              if (gen !== fetchGenRef.current) return;
-              const data = page.props as any;
-              setRecentNotifications(data.notifications ?? []);
-              const c = data.unread_count ?? 0;
-              if (c > lastCountRef.current && soundEnabledRef.current) {
-                playNotificationSound();
-                if (document.visibilityState === "hidden") {
-                  const latest = (data.notifications ?? [])[0];
-                  if (latest) showDesktopNotification(latest.title, latest.message || "", latest.link);
-                }
-              }
-              lastCountRef.current = c;
-              setUnreadCount(c);
-              broadcast(c);
-              resolve();
-            },
-            onError: () => resolve(),
-          });
-        });
+        const response = await axios.get(route("api.notifications.recent"));
+        if (gen !== fetchGenRef.current) return;
+        const data = response.data;
+        setRecentNotifications(data.notifications ?? []);
+        const c = data.unread_count ?? 0;
+        if (c > lastCountRef.current && soundEnabledRef.current) {
+          playNotificationSound();
+          if (document.visibilityState === "hidden") {
+            const latest = (data.notifications ?? [])[0];
+            if (latest) showDesktopNotification(latest.title, latest.message || "", latest.link);
+          }
+        }
+        lastCountRef.current = c;
+        setUnreadCount(c);
+        broadcast(c);
       } catch {
         // silently fail
       } finally {
@@ -175,31 +167,26 @@ export function useNotifications(): UseNotificationsResult {
   const pollCount = useCallback(() => {
     const gen = fetchGenRef.current;
 
-    router.get(route("api.notifications.unread-count"), {}, {
-      preserveState: true,
-      preserveScroll: true,
-      onSuccess: (page: any) => {
-        if (gen !== fetchGenRef.current) return;
-        consecutiveErrorsRef.current = 0;
-        const data = page.props as any;
-        const c = data.count ?? 0;
-        if (c > lastCountRef.current && soundEnabledRef.current) {
-          playNotificationSound();
-          if (document.visibilityState === "hidden") {
-            showDesktopNotification(
-              `${c} new notification${c > 1 ? "s" : ""}`,
-              "You have unread notifications",
-              "/dashboard/notifications",
-            );
-          }
+    axios.get(route("api.notifications.unread-count")).then((response) => {
+      if (gen !== fetchGenRef.current) return;
+      consecutiveErrorsRef.current = 0;
+      const data = response.data;
+      const c = data.count ?? 0;
+      if (c > lastCountRef.current && soundEnabledRef.current) {
+        playNotificationSound();
+        if (document.visibilityState === "hidden") {
+          showDesktopNotification(
+            `${c} new notification${c > 1 ? "s" : ""}`,
+            "You have unread notifications",
+            "/dashboard/notifications",
+          );
         }
-        lastCountRef.current = c;
-        setUnreadCount(c);
-        fetchList(true);
-      },
-      onError: () => {
-        consecutiveErrorsRef.current += 1;
-      },
+      }
+      lastCountRef.current = c;
+      setUnreadCount(c);
+      fetchList(true);
+    }).catch(() => {
+      consecutiveErrorsRef.current += 1;
     });
   }, [fetchList]);
 
@@ -246,21 +233,12 @@ export function useNotifications(): UseNotificationsResult {
       const skipLoading = initialCountRef.current === 0;
       if (!skipLoading) setLoading(true);
       try {
-        await new Promise<void>((resolve) => {
-          router.get(route("api.notifications", { limit, offset }), {}, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: (page: any) => {
-              const data = page.props as any;
-              setAllNotifications(data.notifications ?? []);
-              setUnreadCount(data.unread_count ?? 0);
-              lastCountRef.current = data.unread_count ?? 0;
-              broadcast(data.unread_count ?? 0);
-              resolve();
-            },
-            onError: () => resolve(),
-          });
-        });
+        const response = await axios.get(route("api.notifications", { limit, offset }));
+        const data = response.data;
+        setAllNotifications(data.notifications ?? []);
+        setUnreadCount(data.unread_count ?? 0);
+        lastCountRef.current = data.unread_count ?? 0;
+        broadcast(data.unread_count ?? 0);
       } catch {
         // silently fail
       } finally {
@@ -278,17 +256,8 @@ export function useNotifications(): UseNotificationsResult {
       setUnreadCount((prev) => Math.max(0, prev - 1));
       countEtagRef.current = null;
       try {
-        await new Promise<void>((resolve, reject) => {
-          router.post(route("api.notifications.mark-read"), { id } as any, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-              triggerRefresh();
-              resolve();
-            },
-            onError: () => reject(),
-          });
-        });
+        await axios.post(route("api.notifications.mark-read"), { id });
+        triggerRefresh();
       } catch {
         await triggerRefresh();
       }
@@ -304,17 +273,8 @@ export function useNotifications(): UseNotificationsResult {
     lastCountRef.current = 0;
     countEtagRef.current = null;
       try {
-        await new Promise<void>((resolve, reject) => {
-          router.post(route("api.notifications.mark-all-read"), {} as any, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-              triggerRefresh();
-              resolve();
-            },
-            onError: () => reject(),
-          });
-        });
+        await axios.post(route("api.notifications.mark-all-read"), {});
+        triggerRefresh();
       } catch {
         await triggerRefresh();
       }
@@ -329,17 +289,8 @@ export function useNotifications(): UseNotificationsResult {
       lastCountRef.current = Math.max(0, lastCountRef.current - 1);
       countEtagRef.current = null;
       try {
-        await new Promise<void>((resolve, reject) => {
-          router.delete(route("api.notifications.destroy", { id } as any), {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-              triggerRefresh();
-              resolve();
-            },
-            onError: () => reject(),
-          });
-        });
+        await axios.delete(route("api.notifications.destroy", { id }));
+        triggerRefresh();
       } catch {
         await triggerRefresh();
       }

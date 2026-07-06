@@ -10,6 +10,9 @@ use App\Modules\Booking\Controllers\BookingIcalController;
 use App\Modules\Booking\Controllers\BookingSystemController;
 use Illuminate\Support\Facades\Route;
 
+// ─── Dashboard ──────────────────────────────────────────
+Route::get('/dashboard', [BookingController::class, 'dashboard'])->name('dashboard');
+
 // ─── CRUD ───────────────────────────────────────────────
 Route::get('/', [BookingController::class, 'index'])->name('index');
 Route::get('/create', [BookingController::class, 'create'])->name('create');
@@ -58,18 +61,12 @@ Route::get('/demo/{id}/pipeline-trace', [BookingDemoController::class, 'pipeline
 Route::get('/demo/{id}/verify', [BookingDemoController::class, 'verifyIntegration'])->name('demo.verify');
 Route::get('/demo/diagnose', [BookingDemoController::class, 'diagnose'])->name('demo.diagnose');
 
-// ─── Guest Portal ───────────────────────────────────────
+// ─── Guest Portal (logged-in-only routes; public guest routes are in guest.php) ──
 Route::prefix('/guest')->name('guest.')->group(function () {
-    Route::get('/view', [BookingGuestController::class, 'view'])->name('view');
-    Route::get('/show/{bookingId}', [BookingGuestController::class, 'show'])->name('show');
-    Route::post('/send-magic-link', [BookingGuestController::class, 'sendMagicLink'])->name('send-magic-link');
-    Route::post('/inline-login', [BookingGuestController::class, 'inlineLogin'])->name('inline-login');
-    Route::post('/register', [BookingGuestController::class, 'registerFromBooking'])->name('register');
-    Route::post('/request-cancellation/{bookingId}', [BookingGuestController::class, 'requestCancellation'])->name('request-cancellation');
-    Route::post('/request-modification/{bookingId}', [BookingGuestController::class, 'requestModification'])->name('request-modification');
-    Route::get('/confirm-cancellation/{bookingId}', [BookingGuestController::class, 'confirmCancellation'])->name('confirm-cancellation');
     Route::post('/logged-in-modify/{bookingId}', [BookingGuestController::class, 'loggedInModify'])->name('logged-in-modify');
     Route::post('/logged-in-cancel/{bookingId}', [BookingGuestController::class, 'loggedInCancel'])->name('logged-in-cancel');
+    Route::post('/logged-in-check-in/{bookingId}', [BookingGuestController::class, 'loggedInCheckIn'])->name('logged-in-check-in');
+    Route::post('/logged-in-check-out/{bookingId}', [BookingGuestController::class, 'loggedInCheckOut'])->name('logged-in-check-out');
     Route::post('/toggle-mode', [BookingGuestController::class, 'toggleMode'])->name('toggle-mode');
 });
 

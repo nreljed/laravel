@@ -3,6 +3,7 @@
 namespace App\Modules\Booking;
 
 use App\Models\User;
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingCacheService;
@@ -11,7 +12,6 @@ use App\Modules\Booking\Services\BookingGuestTokenService;
 use App\Modules\Booking\Services\BookingPipelineTrace;
 use App\Modules\Booking\Services\BookingRefundMailService;
 use App\Modules\Contracts\ModuleInterface;
-use App\Modules\Properties\Models\Property;
 use App\Modules\Traits\HasRoutes;
 use App\Notifications\AppNotification;
 use App\Services\NotificationService;
@@ -53,6 +53,7 @@ class BookingModule implements ModuleInterface
         $this->loadRoutes(__DIR__.'/Routes/web.php', '/dashboard/bookings', 'dashboard.bookings.', 'bookings.view');
         $this->loadRoutes(__DIR__.'/Routes/my-bookings.php', '/dashboard', 'dashboard.', 'bookings.view');
         $this->loadPublicRoutes(__DIR__.'/Routes/guest.php', '');
+        $this->loadPublicRoutes(__DIR__.'/Routes/api.php', 'api');
     }
 
     public function boot(): void
@@ -77,12 +78,13 @@ class BookingModule implements ModuleInterface
     {
         return [
             'title' => 'Bookings',
-            'url' => route('dashboard.bookings.index', [], false),
+            'url' => route('dashboard.bookings.dashboard', [], false),
             'icon' => 'Calendar',
             'permission' => 'bookings.view',
             'module_slug' => 'bookings',
             'showModeBadge' => true,
             'items' => [
+                ['title' => 'Dashboard', 'url' => route('dashboard.bookings.dashboard', [], false)],
                 ['title' => 'All Bookings', 'url' => route('dashboard.bookings.index', [], false)],
                 ['title' => 'New Booking', 'url' => route('dashboard.bookings.create', [], false)],
                 ['title' => 'Calendar', 'url' => route('dashboard.bookings.calendar', [], false)],
@@ -126,6 +128,7 @@ class BookingModule implements ModuleInterface
     public function getFrontendPages(): array
     {
         return [
+            ['path' => '/dashboard/bookings/dashboard', 'component' => 'Bookings/Dashboard', 'name' => 'dashboard.bookings.dashboard'],
             ['path' => '/dashboard/bookings', 'component' => 'Bookings/Index', 'name' => 'dashboard.bookings.index'],
             ['path' => '/dashboard/bookings/create', 'component' => 'Bookings/Form', 'name' => 'dashboard.bookings.create'],
             ['path' => '/dashboard/bookings/{booking}/edit', 'component' => 'Bookings/Form', 'name' => 'dashboard.bookings.edit'],
@@ -138,7 +141,7 @@ class BookingModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [];
+        return [__DIR__.'/database/migrations'];
     }
 
     public function permissions(): array
@@ -192,6 +195,52 @@ class BookingModule implements ModuleInterface
                     'start_date' => ['type' => 'date', 'label' => 'Start Date'],
                     'end_date' => ['type' => 'date', 'label' => 'End Date'],
                     'nightly_rate' => ['type' => 'number', 'label' => 'Nightly Rate'],
+                ],
+            ],
+            'length_of_stay_rates' => [
+                'label' => 'Length-of-Stay Rates',
+                'json_key' => 'length_of_stay_rates_json',
+                'enable_key' => 'enable_length_of_stay_rates',
+                'min_items' => 0,
+                'max_items' => 20,
+                'fields' => [
+                    'label' => ['type' => 'text', 'label' => 'Label', 'required' => true],
+                    'min_nights' => ['type' => 'number', 'label' => 'Min Nights', 'required' => true],
+                    'rate_per_night' => ['type' => 'number', 'label' => 'Rate per Night', 'required' => true],
+                ],
+            ],
+            'length_of_stay_tiers' => [
+                'label' => 'Length-of-Stay Discounts',
+                'json_key' => 'length_of_stay_tiers_json',
+                'enable_key' => 'enable_length_of_stay_tiers',
+                'min_items' => 0,
+                'max_items' => 20,
+                'fields' => [
+                    'label' => ['type' => 'text', 'label' => 'Label', 'required' => true],
+                    'min_nights' => ['type' => 'number', 'label' => 'Min Nights', 'required' => true],
+                    'max_nights' => ['type' => 'number', 'label' => 'Max Nights'],
+                    'discount_percent' => ['type' => 'number', 'label' => 'Discount (%)', 'required' => true],
+                ],
+            ],
+            'unit_config' => [
+                'label' => 'Bookable Units',
+                'json_key' => 'unit_config_json',
+                'enable_key' => 'enable_unit_config',
+                'min_items' => 0,
+                'max_items' => 50,
+                'fields' => [
+                    'name' => ['type' => 'text', 'label' => 'Unit Name', 'required' => true],
+                    'type' => ['type' => 'select', 'label' => 'Unit Type', 'options' => [
+                        ['label' => 'Room', 'value' => 'room'],
+                        ['label' => 'Suite', 'value' => 'suite'],
+                        ['label' => 'Dorm/Bed', 'value' => 'dorm_bed'],
+                        ['label' => 'Entire Place', 'value' => 'entire_place'],
+                    ]],
+                    'quantity' => ['type' => 'number', 'label' => 'Quantity'],
+                    'nightly_rate' => ['type' => 'number', 'label' => 'Nightly Rate'],
+                    'max_occupancy' => ['type' => 'number', 'label' => 'Max Occupancy'],
+                    'amenities' => ['type' => 'text', 'label' => 'Amenities (comma-separated)'],
+                    'description' => ['type' => 'textarea', 'label' => 'Description'],
                 ],
             ],
         ];
@@ -336,7 +385,7 @@ class BookingModule implements ModuleInterface
 
             $service = app(NotificationService::class);
             $property = $booking->property_id
-                ? Property::find($booking->property_id)
+                ? app(BookableRegistry::class)->resolve('properties', $booking->property_id)
                 : null;
 
             $data = array_merge([

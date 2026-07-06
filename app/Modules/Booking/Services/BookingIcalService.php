@@ -2,7 +2,7 @@
 
 namespace App\Modules\Booking\Services;
 
-use App\Modules\Properties\Models\Property;
+use App\Modules\BookableRegistry;
 use Carbon\Carbon;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Support\Facades\Http;
@@ -122,7 +122,7 @@ class BookingIcalService
 
     public function getFeeds(int $propertyId): array
     {
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return [];
         }
@@ -145,7 +145,7 @@ class BookingIcalService
 
     private function saveFeeds(int $propertyId, array $feeds): void
     {
-        $property = Property::findOrFail($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId) ?? abort(404);
         $metadata = $property->metadata ?? [];
         $metadata['booking_ical_feeds'] = $feeds;
         $property->metadata = $metadata;
@@ -154,7 +154,7 @@ class BookingIcalService
 
     private function getBlockedDates(int $propertyId): array
     {
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return [];
         }
@@ -166,7 +166,7 @@ class BookingIcalService
 
     private function saveBlockedDates(int $propertyId, array $blocks): void
     {
-        $property = Property::findOrFail($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId) ?? abort(404);
         $metadata = $property->metadata ?? [];
         $metadata['booking_blocked_dates'] = $blocks;
         $property->metadata = $metadata;

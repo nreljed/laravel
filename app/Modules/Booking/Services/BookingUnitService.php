@@ -2,9 +2,9 @@
 
 namespace App\Modules\Booking\Services;
 
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
-use App\Modules\Properties\Models\Property;
 use Illuminate\Support\Facades\Log;
 
 class BookingUnitService
@@ -18,7 +18,7 @@ class BookingUnitService
     public function getUnitConfig(int $propertyId): array
     {
         if (! isset(self::$unitConfigCache[$propertyId])) {
-            $property = Property::find($propertyId);
+            $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
             self::$unitConfigCache[$propertyId] = $property ? ($property->metadata['unit_config'] ?? []) : [];
         }
 
@@ -62,7 +62,7 @@ class BookingUnitService
         if (! empty($unit['nightly_rate'])) {
             return (float) $unit['nightly_rate'];
         }
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
 
         return (float) ($property->metadata['nightly_rate'] ?? $property->price ?? 0);
     }

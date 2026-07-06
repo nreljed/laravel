@@ -12,7 +12,7 @@ class ModuleSeeder extends Seeder
         $modules = [
             ['slug' => 'properties', 'name' => 'Properties', 'description' => 'Manage property listings with pricing, surface area, and rich metadata.', 'enabled' => true],
             ['slug' => 'bookings', 'name' => 'Bookings', 'description' => 'Manage guest bookings, availability, and reservations.', 'enabled' => true],
-            ['slug' => 'ecommerce', 'name' => 'E-Commerce', 'description' => 'Manage your online store: products, orders, inventory, and customers.', 'enabled' => true],
+            ['slug' => 'shop', 'name' => 'Shop', 'description' => 'Manage your online store: products, orders, inventory, and customers.', 'enabled' => true],
             ['slug' => 'posts', 'name' => 'Posts', 'description' => 'Create and manage blog posts and articles.', 'enabled' => true],
         ];
 

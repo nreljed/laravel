@@ -5,6 +5,7 @@ namespace App\Modules\Booking\Controllers;
 use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\BookableRegistry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingAvailabilityService;
@@ -12,7 +13,7 @@ use App\Modules\Booking\Services\BookingCacheService;
 use App\Modules\Booking\Services\BookingGuestTokenService;
 use App\Modules\Booking\Services\BookingPriceCalculator;
 use App\Modules\Booking\Services\BookingStatusManager;
-use App\Modules\Properties\Models\Property;
+use App\Modules\Booking\Services\HostProfileService;
 use App\Services\AuditService;
 use App\Services\MailService;
 use App\Services\SettingsService;
@@ -39,6 +40,7 @@ class BookingGuestController extends Controller
         protected BookingPriceCalculator $priceCalculator,
         protected BookingStatusManager $statusManager,
         protected MailService $mailService,
+        protected HostProfileService $hostProfile,
     ) {}
 
     private function acquireLock(int $bookingId, int $ttl = 10): bool
@@ -67,7 +69,7 @@ class BookingGuestController extends Controller
 
         $bookingId = $this->guestTokenService->getBookingId($rawToken);
         if (! $bookingId) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Link Expired or Invalid',
                     'message' => 'This booking link has expired or is invalid. Please check your email for the most recent link or contact the host.',
@@ -78,7 +80,7 @@ class BookingGuestController extends Controller
 
         $booking = Booking::find($bookingId);
         if (! $booking) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Booking Not Found',
                     'message' => 'This booking could not be found. It may have been deleted.',
@@ -93,7 +95,7 @@ class BookingGuestController extends Controller
         $guestEmail = $booking->guest_email;
         $needsLogin = $guestEmail && User::where('email', $guestEmail)->exists();
 
-        return Inertia::render('Bookings/GuestView', [
+        return Inertia::render('Modules/Bookings/GuestView', [
             'booking' => $bookingData,
             'token' => $rawToken,
             'error' => null,
@@ -124,7 +126,7 @@ class BookingGuestController extends Controller
 
         $settings = SettingsService::getGroup('booking');
         $allowedStatuses = $settings['allow_guest_cancellation_statuses'] ?? [BookingStatus::Pending->value, BookingStatus::Confirmed->value];
-        if (! in_array($booking->status, $allowedStatuses, true)) {
+        if (! in_array($booking->status->value, $allowedStatuses, true)) {
             return response()->json(['error' => 'Cancellation is not allowed for bookings in this status.'], 400);
         }
 
@@ -142,7 +144,7 @@ class BookingGuestController extends Controller
 
         $cancelUrl = route('booking.confirm-cancel', ['bookingId' => $bookingId, 'cancel_token' => $cancelToken]);
 
-        $property = Property::find($booking->property_id);
+        $property = app(BookableRegistry::class)->resolve('properties', $booking->property_id);
 
         $this->mailService->send(
             $guestEmail,
@@ -273,7 +275,7 @@ class BookingGuestController extends Controller
 
         $settings = SettingsService::getGroup('booking');
         $allowedStatuses = $settings['allow_guest_cancellation_statuses'] ?? [BookingStatus::Pending->value, BookingStatus::Confirmed->value];
-        if (! in_array($booking->status, $allowedStatuses, true)) {
+        if (! in_array($booking->status->value, $allowedStatuses, true)) {
             return response()->json(['error' => 'Cancellation is not allowed for bookings in this status.'], 400);
         }
 
@@ -286,8 +288,8 @@ class BookingGuestController extends Controller
         }
 
         $newStatus = BookingStatus::Cancelled;
-        $currentStatus = BookingStatus::tryFrom($booking->status);
-        if (! $currentStatus || ! $currentStatus->canTransitionTo($newStatus)) {
+        $currentStatus = $booking->status;
+        if (! $currentStatus->canTransitionTo($newStatus)) {
             $this->releaseLock($bookingId);
 
             return response()->json(['error' => 'Cannot cancel this booking in its current status.'], 400);
@@ -325,8 +327,8 @@ class BookingGuestController extends Controller
         $currentStatus = $booking->status;
         $settings = SettingsService::getGroup('booking');
         $allowedModifyStatuses = $settings['allow_guest_modification_statuses'] ?? [BookingStatus::Pending->value, BookingStatus::Confirmed->value, BookingStatus::CheckedIn->value];
-        if (! in_array($currentStatus, $allowedModifyStatuses, true)) {
-            $label = BookingStatus::tryFrom($currentStatus)?->label() ?? $currentStatus;
+        if (! in_array($currentStatus->value, $allowedModifyStatuses, true)) {
+            $label = $currentStatus->label();
 
             return ['error' => 'Modification is not allowed for bookings with status "'.$label.'".', 'status' => 400];
         }
@@ -354,7 +356,7 @@ class BookingGuestController extends Controller
         }
 
         $hasPets = ($booking->pets ?? 0) > 0;
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
         if (! $property) {
             return ['error' => 'Property not found.', 'status' => 404];
         }
@@ -411,10 +413,230 @@ class BookingGuestController extends Controller
         ];
     }
 
+    public function guestCheckIn(int $bookingId, Request $request): JsonResponse
+    {
+        if (! $this->acquireLock($bookingId)) {
+            return response()->json(['error' => 'A request is already being processed for this booking. Please wait.'], 429);
+        }
+
+        $rawToken = $request->input('token', '');
+        if (empty($rawToken) || ! $this->guestTokenService->validateToken($bookingId, $rawToken)) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Invalid or expired link.'], 403);
+        }
+
+        $booking = Booking::find($bookingId);
+        if (! $booking) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Booking not found.'], 404);
+        }
+
+        $currentStatus = $booking->status;
+        if (! $currentStatus->canTransitionTo(BookingStatus::CheckedIn)) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Check-in is not allowed for bookings in this status.'], 400);
+        }
+
+        try {
+            $this->statusManager->transition($booking, BookingStatus::CheckedIn, 'guest check-in');
+        } catch (\Exception $e) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        AuditService::log(AuditAction::BookingUpdate, 0, [
+            'booking_id' => $bookingId,
+            'action' => 'check_in',
+            'performed_by' => 'guest',
+            'property_id' => $booking->property_id,
+        ]);
+
+        $this->releaseLock($bookingId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-in successful. Welcome!',
+        ]);
+    }
+
+    public function guestCheckOut(int $bookingId, Request $request): JsonResponse
+    {
+        if (! $this->acquireLock($bookingId)) {
+            return response()->json(['error' => 'A request is already being processed for this booking. Please wait.'], 429);
+        }
+
+        $rawToken = $request->input('token', '');
+        if (empty($rawToken) || ! $this->guestTokenService->validateToken($bookingId, $rawToken)) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Invalid or expired link.'], 403);
+        }
+
+        $booking = Booking::find($bookingId);
+        if (! $booking) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Booking not found.'], 404);
+        }
+
+        $currentStatus = $booking->status;
+        if (! $currentStatus->canTransitionTo(BookingStatus::CheckedOut)) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Check-out is not allowed for bookings in this status.'], 400);
+        }
+
+        try {
+            $this->statusManager->transition($booking, BookingStatus::CheckedOut, 'guest check-out');
+        } catch (\Exception $e) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        AuditService::log(AuditAction::BookingUpdate, 0, [
+            'booking_id' => $bookingId,
+            'action' => 'check_out',
+            'performed_by' => 'guest',
+            'property_id' => $booking->property_id,
+        ]);
+
+        $this->releaseLock($bookingId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-out successful. Thank you for staying!',
+        ]);
+    }
+
+    public function loggedInCheckIn(int $bookingId, Request $request): JsonResponse
+    {
+        if (! $this->acquireLock($bookingId)) {
+            return response()->json(['error' => 'A request is already being processed for this booking. Please wait.'], 429);
+        }
+
+        if (! Auth::check()) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Authentication required.'], 401);
+        }
+
+        $user = Auth::user();
+        $userId = $user->id;
+
+        $booking = Booking::find($bookingId);
+        if (! $booking) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Booking not found.'], 404);
+        }
+
+        $guestEmail = $booking->guest_email;
+        $bookingUserId = $booking->user_id;
+        if ($guestEmail !== $user->email && $bookingUserId !== $userId) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Unauthorized.'], 403);
+        }
+
+        $currentStatus = $booking->status;
+        if (! $currentStatus->canTransitionTo(BookingStatus::CheckedIn)) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Check-in is not allowed for bookings in this status.'], 400);
+        }
+
+        try {
+            $this->statusManager->transition($booking, BookingStatus::CheckedIn, 'guest check-in');
+        } catch (\Exception $e) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        AuditService::log(AuditAction::BookingUpdate, auth()->id(), [
+            'booking_id' => $bookingId,
+            'action' => 'check_in',
+            'performed_by' => 'guest',
+            'property_id' => $booking->property_id,
+        ]);
+
+        $this->releaseLock($bookingId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-in successful. Welcome!',
+        ]);
+    }
+
+    public function loggedInCheckOut(int $bookingId, Request $request): JsonResponse
+    {
+        if (! $this->acquireLock($bookingId)) {
+            return response()->json(['error' => 'A request is already being processed for this booking. Please wait.'], 429);
+        }
+
+        if (! Auth::check()) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Authentication required.'], 401);
+        }
+
+        $user = Auth::user();
+        $userId = $user->id;
+
+        $booking = Booking::find($bookingId);
+        if (! $booking) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Booking not found.'], 404);
+        }
+
+        $guestEmail = $booking->guest_email;
+        $bookingUserId = $booking->user_id;
+        if ($guestEmail !== $user->email && $bookingUserId !== $userId) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Unauthorized.'], 403);
+        }
+
+        $currentStatus = $booking->status;
+        if (! $currentStatus->canTransitionTo(BookingStatus::CheckedOut)) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => 'Check-out is not allowed for bookings in this status.'], 400);
+        }
+
+        try {
+            $this->statusManager->transition($booking, BookingStatus::CheckedOut, 'guest check-out');
+        } catch (\Exception $e) {
+            $this->releaseLock($bookingId);
+
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        AuditService::log(AuditAction::BookingUpdate, auth()->id(), [
+            'booking_id' => $bookingId,
+            'action' => 'check_out',
+            'performed_by' => 'guest',
+            'property_id' => $booking->property_id,
+        ]);
+
+        $this->releaseLock($bookingId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-out successful. Thank you for staying!',
+        ]);
+    }
+
     public function confirmCancellation(int $bookingId, Request $request): Response|RedirectResponse
     {
         if (! $this->acquireLock($bookingId)) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Please Wait',
                     'message' => 'A request is already being processed for this booking.',
@@ -436,7 +658,7 @@ class BookingGuestController extends Controller
         if (! $tokenData || ! is_array($tokenData) || (int) $tokenData['booking_id'] !== $bookingId) {
             $this->releaseLock($bookingId);
 
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Cancellation Link Expired',
                     'message' => 'This cancellation confirmation link has expired. Please go back and request cancellation again.',
@@ -450,7 +672,7 @@ class BookingGuestController extends Controller
         if (! $booking) {
             $this->releaseLock($bookingId);
 
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Booking Not Found',
                     'message' => 'This booking could not be found.',
@@ -466,7 +688,7 @@ class BookingGuestController extends Controller
         } catch (\Exception $e) {
             $this->releaseLock($bookingId);
 
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Cancellation Failed',
                     'message' => $e->getMessage(),
@@ -490,9 +712,9 @@ class BookingGuestController extends Controller
         $this->releaseLock($bookingId);
 
         $metadata = $booking->metadata ?? [];
-        $property = Property::find($booking->property_id);
+        $property = app(BookableRegistry::class)->resolve('properties', $booking->property_id);
 
-        return Inertia::render('Bookings/GuestView', [
+        return Inertia::render('Modules/Bookings/GuestView', [
             'booking' => [
                 'id' => $bookingId,
                 'status' => BookingStatus::Cancelled->value,
@@ -516,7 +738,7 @@ class BookingGuestController extends Controller
         $password = $request->input('password', '');
 
         if (! $bookingId || empty($rawToken)) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Invalid Link',
                     'message' => 'This link is invalid. Please check your email for the correct link.',
@@ -527,7 +749,7 @@ class BookingGuestController extends Controller
         }
 
         if (! $this->guestTokenService->validateToken($bookingId, $rawToken)) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Link Expired',
                     'message' => 'This booking link has expired. Please request a new link.',
@@ -539,7 +761,7 @@ class BookingGuestController extends Controller
 
         $booking = Booking::find($bookingId);
         if (! $booking) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Booking Not Found',
                     'message' => 'This booking could not be found.',
@@ -554,7 +776,7 @@ class BookingGuestController extends Controller
         $guestPhone = $booking->guest_phone;
 
         if (! $guestEmail) {
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'error' => [
                     'title' => 'Registration Failed',
                     'message' => 'No guest email found for this booking.',
@@ -570,7 +792,7 @@ class BookingGuestController extends Controller
         if ($existingUser) {
             $bookingData = $this->buildBookingDataArray($booking, $booking->property_id);
 
-            return Inertia::render('Bookings/GuestView', [
+            return Inertia::render('Modules/Bookings/GuestView', [
                 'booking' => $bookingData,
                 'token' => $rawToken,
                 'needs_login' => true,
@@ -599,7 +821,7 @@ class BookingGuestController extends Controller
 
         $this->guestTokenService->revokeTokens($bookingId);
 
-        $property = Property::find($booking->property_id);
+        $property = app(BookableRegistry::class)->resolve('properties', $booking->property_id);
 
         AuditService::log(AuditAction::BookingGuestRegister, $user->id, [
             'booking_id' => $bookingId,
@@ -616,7 +838,7 @@ class BookingGuestController extends Controller
     private function buildBookingDataArray(Booking $booking, int $propertyId): array
     {
         $metadata = $booking->metadata ?? [];
-        $property = Property::find($propertyId);
+        $property = app(BookableRegistry::class)->resolve('properties', $propertyId);
 
         $bookingData = [
             'id' => $booking->id,
@@ -654,13 +876,9 @@ class BookingGuestController extends Controller
 
         $hostId = $booking->user_id;
         if ($hostId) {
+            $hostProfile = $this->hostProfile->resolveAll($hostId);
             $bookingData['host_name'] = User::find($hostId)?->display_name ?? User::find($hostId)?->name ?? '';
-            $bookingData['host_phone'] = BookingController::resolveHostPhone($hostId);
-            $bookingData['host_phone_numbers'] = BookingController::resolveHostPhoneNumbers($hostId);
-            $bookingData['host_email'] = BookingController::resolveHostEmail($hostId);
-            $bookingData['host_avatar'] = BookingController::resolveHostAvatar($hostId);
-            $bookingData['host_bio'] = BookingController::resolveHostBio($hostId);
-            $bookingData['host_social_media'] = BookingController::resolveHostSocialMedia($hostId);
+            $bookingData = array_merge($bookingData, $hostProfile);
         } else {
             $bookingData['host_name'] = '';
             $bookingData['host_phone'] = '';
@@ -707,8 +925,8 @@ class BookingGuestController extends Controller
 
             $propertyMeta = [];
             if ($propertyId) {
-                $prop = Property::find($propertyId);
-                $propertyMeta = $prop->metadata ?? [];
+                $prop = app(BookableRegistry::class)->resolve('properties', $propertyId);
+                $propertyMeta = $prop->getMeta() ?? [];
             }
 
             $globalSettings = SettingsService::getGroup('booking');
@@ -812,11 +1030,9 @@ class BookingGuestController extends Controller
         ];
     }
 
-    private function getStatusBadgeClass(string $status): string
+    private function getStatusBadgeClass(BookingStatus $status): string
     {
-        $enum = BookingStatus::tryFrom($status);
-
-        return match ($enum) {
+        return match ($status) {
             BookingStatus::Pending => 'bg-yellow-100 text-yellow-800',
             BookingStatus::Confirmed => 'bg-blue-100 text-blue-800',
             BookingStatus::CheckedIn => 'bg-green-100 text-green-800',
@@ -857,7 +1073,7 @@ class BookingGuestController extends Controller
         $rawToken = $this->guestTokenService->generateToken($bookingId, $email);
         $magicLink = $this->guestTokenService->getMagicLink($bookingId, $rawToken);
 
-        $property = Property::find($booking->property_id);
+        $property = app(BookableRegistry::class)->resolve('properties', $booking->property_id);
 
         $this->mailService->send(
             $email,
@@ -952,7 +1168,7 @@ class BookingGuestController extends Controller
         $bookingData = [
             'id' => $booking->id,
             'status' => $booking->status,
-            'status_label' => BookingStatus::tryFrom($booking->status)?->label() ?? $booking->status,
+            'status_label' => $booking->status->label(),
             'status_badge_class' => $this->getStatusBadgeClass($booking->status),
             'property_id' => $propertyId,
             'property_title' => $property?->name ?? '',
@@ -981,13 +1197,7 @@ class BookingGuestController extends Controller
             'refund_percent' => isset($metadata['refund_percent']) ? (float) $metadata['refund_percent'] : null,
             'refund_policy_applied' => $metadata['refund_policy_applied'] ?? null,
             'host_name' => $hostId ? User::find($hostId)?->display_name ?? User::find($hostId)?->name : '',
-            'host_phone' => BookingController::resolveHostPhone($hostId),
-            'host_phone_numbers' => BookingController::resolveHostPhoneNumbers($hostId),
-            'host_email' => BookingController::resolveHostEmail($hostId),
-            'host_avatar' => BookingController::resolveHostAvatar($hostId),
-            'host_bio' => BookingController::resolveHostBio($hostId),
-            'host_social_media' => BookingController::resolveHostSocialMedia($hostId),
-        ];
+        ] + $this->hostProfile->resolveAll($hostId);
 
         if ($propertyId) {
             try {
@@ -1010,7 +1220,7 @@ class BookingGuestController extends Controller
 
         $bookingData['refund_preview'] = $this->computeRefundPreview($booking, $propertyId);
 
-        return Inertia::render('Bookings/MyBookingDetail', [
+        return Inertia::render('Modules/Bookings/MyBookingDetail', [
             'booking' => $bookingData,
         ]);
     }
@@ -1039,7 +1249,7 @@ class BookingGuestController extends Controller
             return [
                 'id' => $booking->id,
                 'status' => $booking->status,
-                'status_label' => BookingStatus::tryFrom($booking->status)?->label() ?? $booking->status,
+                'status_label' => $booking->status->label(),
                 'property_title' => $booking->property?->name ?? '',
                 'property_thumbnail' => $featuredImage?->url,
                 'property_url' => $booking->property ? route('dashboard.properties.edit', $booking->property->id) : null,
@@ -1054,7 +1264,7 @@ class BookingGuestController extends Controller
             ];
         });
 
-        return Inertia::render('Bookings/MyBookings', [
+        return Inertia::render('Modules/Bookings/MyBookings', [
             'bookings' => $bookings,
             'filters' => ['status' => $request->input('status', 'all')],
         ]);

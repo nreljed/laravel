@@ -49,7 +49,7 @@ class AuditLogController extends Controller
         $actions = AuditLog::distinct()->pluck('action')->sort()->values();
         $users = User::orderBy('name')->get(['id', 'name', 'email']);
 
-        return Inertia::render('Admin/AuditLogs/Index', [
+        return Inertia::render('dashboard/admin/audit-logs/index', [
             'logs' => $logs,
             'actions' => $actions,
             'users' => $users,

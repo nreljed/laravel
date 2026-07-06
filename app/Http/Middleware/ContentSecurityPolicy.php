@@ -12,31 +12,29 @@ class ContentSecurityPolicy
     {
         $response = $next($request);
 
+        if (! app()->environment('production')) {
+            return $response;
+        }
+
         if (strpos($request->getRequestUri(), '/dashboard') !== 0) {
             return $response;
         }
 
-        $isDev = file_exists(public_path('hot'));
-        $csp = $this->buildPolicy($isDev);
+        $csp = $this->buildPolicy();
         $response->headers->set('Content-Security-Policy', $csp);
 
         return $response;
     }
 
-    protected function buildPolicy(bool $isDev): string
+    protected function buildPolicy(): string
     {
-        $scriptSrc = "script-src 'self' 'unsafe-inline'";
-        if ($isDev) {
-            $scriptSrc .= " 'unsafe-eval'";
-        }
-
         $directives = [
             "default-src 'self'",
-            $scriptSrc,
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net",
             "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self'".($isDev ? ' ws://* wss://*' : ''),
+            "connect-src 'self' ws://* wss://*",
             "worker-src 'self' blob:",
             "frame-src 'none'",
             "object-src 'none'",

@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react"
 import { Section, SectionField } from "@/Components/section"
-import { GalleryUploader } from "@/Components/ui/gallery-uploader"
-import type { GalleryImageItem, UploadResultData } from "@/Components/ui/gallery-uploader"
+import { GalleryUploader } from "@/Components/shared/gallery-uploader"
+import type { GalleryImage, UploadResult } from "@/Components/shared/gallery-uploader"
 import { Image } from "lucide-react"
 import { router } from "@inertiajs/react"
 import { toast } from "sonner"
@@ -36,11 +36,11 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
   const galleryValue = useMemo(() => {
     const gallery = data.meta?.gallery
     if (!gallery) return []
-    if (Array.isArray(gallery)) return gallery as GalleryImageItem[]
-    try { return JSON.parse(gallery as string) as GalleryImageItem[] } catch { return [] }
+    if (Array.isArray(gallery)) return gallery as GalleryImage[]
+    try { return JSON.parse(gallery as string) as GalleryImage[] } catch { return [] }
   }, [data.meta?.gallery])
 
-  const handleGalleryChange = useCallback((images: GalleryImageItem[]) => {
+  const handleGalleryChange = useCallback((images: GalleryImage[]) => {
     onChange("meta.gallery", images)
   }, [onChange])
 
@@ -49,7 +49,7 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
     onProgress: (pct: number) => void,
     signal: AbortSignal,
     _pendingId: string,
-  ): Promise<UploadResultData> => {
+  ): Promise<UploadResult> => {
     if (!propertyId) throw new Error("Property must be saved before uploading images")
 
     return new Promise((resolve, reject) => {
@@ -68,7 +68,7 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
         if (xhr.status >= 200 && xhr.status < 300) {
           onProgress(100)
           try {
-            const result = JSON.parse(xhr.responseText) as UploadResultData
+            const result = JSON.parse(xhr.responseText) as UploadResult
             resolve(result)
           } catch {
             resolve({})
@@ -93,7 +93,7 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
     })
   }, [propertyId])
 
-  const handleDelete = useCallback(async (image: GalleryImageItem) => {
+  const handleDelete = useCallback(async (image: GalleryImage) => {
     if (!propertyId) throw new Error("Property required")
     if (!image.attachment_id) return
 
@@ -107,7 +107,7 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
     })
   }, [propertyId])
 
-  const handleSetFeatured = useCallback(async (image: GalleryImageItem) => {
+  const handleSetFeatured = useCallback(async (image: GalleryImage) => {
     if (!propertyId) return
     if (!image.attachment_id) return
 
@@ -121,7 +121,7 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
     }
   }, [propertyId])
 
-  const handleReorder = useCallback(async (images: GalleryImageItem[]) => {
+  const handleReorder = useCallback(async (images: GalleryImage[]) => {
     if (!propertyId) return
     const orderedIds = images.map((img) => img.attachment_id).filter(Boolean)
 
@@ -140,8 +140,8 @@ export function MediaSection({ data, onChange, errors, loading, onSubmit, option
         <GalleryUploader
           label="Property Gallery"
           description="Add multiple images"
-          images={galleryValue}
-          onImagesChange={handleGalleryChange}
+          value={galleryValue}
+          onChange={handleGalleryChange}
           maxImages={20}
           onUpload={handleUpload}
           onDelete={handleDelete}

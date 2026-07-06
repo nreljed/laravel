@@ -109,7 +109,7 @@ Pluggable feature modules live in `app/Modules/`. Each module can register route
 |--------|-------------|
 | Booking | Property booking management |
 | Properties | Property CRUD and management |
-| E-commerce | Online store functionality |
+| Shop | Online store functionality |
 
 Enable/disable modules via the admin dashboard (requires admin role).
 
@@ -144,7 +144,7 @@ app/
   Http/Middleware/         # HandleInertiaRequests (shares auth, notifications, mode, flash)
   Models/                  # Eloquent models (User, Role, Permission, Setting)
   Services/                # Business logic (AccountService, SettingsService, NotificationService)
-  Modules/                 # Feature modules (Booking, Properties, E-commerce)
+  Modules/                 # Feature modules (Booking, Properties, Shop)
 database/
   migrations/              # Standard Laravel migrations
   seeders/                 # Seeders (roles, permissions, settings)

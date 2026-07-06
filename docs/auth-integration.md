@@ -156,7 +156,7 @@ DangerZoneSection (`resources/js/Components/account/sections/DangerZoneSection.t
 - 10s countdown before allowing delete
 - Posts to `route("account.destroy")`
 - ModuleRegistry::cleanupUserData() iterates all 4 modules calling onUserDelete()
-- ECommerce orders are orphaned (SET NULL), not deleted
+- Shop orders are orphaned (SET NULL), not deleted
 
 ## Admin CRUD
 

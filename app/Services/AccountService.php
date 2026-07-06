@@ -80,6 +80,67 @@ class AccountService
         ];
     }
 
+    public function updatePersonalInfo(User $user, array $data): void
+    {
+        if (isset($data['description'])) {
+            $data['bio'] = $data['description'];
+            unset($data['description']);
+        }
+
+        $user->fill($data);
+        $user->save();
+
+        AuditService::log(AuditAction::ProfileUpdate, $user->id, [
+            'changed_fields' => array_keys($user->getChanges()),
+        ]);
+    }
+
+    public function updateContactInfo(User $user, array $phoneNumbers, ?array $socialMedia): void
+    {
+        if ($phoneNumbers !== null) {
+            $filtered = array_filter($phoneNumbers, function ($item) {
+                return ! empty($item['label']) || ! empty($item['phone']);
+            });
+            $processed = array_map(function ($item) {
+                if (! empty($item['label']) && $item['label'] === 'Other' && ! empty($item['label_custom'])) {
+                    $item['label'] = $item['label_custom'];
+                    unset($item['label_custom']);
+                }
+
+                return $item;
+            }, $filtered);
+            $user->phone = json_encode(array_values($processed));
+        }
+
+        if ($socialMedia !== null) {
+            $filtered = array_filter($socialMedia, function ($item) {
+                return ! empty($item['social_title']) && ! empty($item['social_value']);
+            });
+            $processed = array_map(function ($item) {
+                if (! empty($item['social_value'])) {
+                    $url = trim($item['social_value']);
+                    if (! preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//', $url)) {
+                        $url = 'https://'.$url;
+                    }
+                    $item['social_value'] = $url;
+                }
+                if (! empty($item['social_title']) && $item['social_title'] === 'Other' && ! empty($item['social_title_custom'])) {
+                    $item['social_title'] = $item['social_title_custom'];
+                    unset($item['social_title_custom']);
+                }
+
+                return $item;
+            }, $filtered);
+            $user->social_links = json_encode(array_values($processed));
+        }
+
+        $user->save();
+
+        AuditService::log(AuditAction::ProfileUpdate, $user->id, [
+            'changed_fields' => array_keys($user->getChanges()),
+        ]);
+    }
+
     public function deleteAccount(User $user): void
     {
         AuditService::log(AuditAction::AccountDelete, $user->id);

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Properties;
 
+use App\Modules\BookableRegistry;
 use App\Modules\Contracts\ModuleInterface;
 use App\Modules\Properties\Models\Property;
 use App\Modules\Traits\HasRoutes;
@@ -48,7 +49,8 @@ class PropertiesModule implements ModuleInterface
 
     public function register(): void
     {
-        //
+        $registry = app(BookableRegistry::class);
+        $registry->register('properties', fn (int $id) => Property::find($id));
     }
 
     public function getNavGroupLabel(): ?string
@@ -60,12 +62,13 @@ class PropertiesModule implements ModuleInterface
     {
         return [
             'title' => 'Properties',
-            'url' => route('dashboard.properties.index', [], false),
+            'url' => route('dashboard.properties.dashboard', [], false),
             'icon' => 'Building2',
             'permission' => 'properties.view',
             'module_slug' => 'properties',
             'showModeBadge' => false,
             'items' => [
+                ['title' => 'Dashboard', 'url' => route('dashboard.properties.dashboard', [], false)],
                 ['title' => 'All Properties', 'url' => route('dashboard.properties.index', [], false)],
                 ['title' => 'Add Property', 'url' => route('dashboard.properties.create', [], false)],
                 ['title' => 'Types', 'url' => route('dashboard.properties.terms.types.index', [], false)],
@@ -113,6 +116,7 @@ class PropertiesModule implements ModuleInterface
     public function getFrontendPages(): array
     {
         return [
+            ['path' => '/dashboard/properties/dashboard', 'component' => 'Properties/Dashboard', 'name' => 'dashboard.properties.dashboard'],
             ['path' => '/dashboard/properties', 'component' => 'Properties/Index', 'name' => 'dashboard.properties.index'],
             ['path' => '/dashboard/properties/create', 'component' => 'Properties/Form', 'name' => 'dashboard.properties.create'],
             ['path' => '/dashboard/properties/{property}/edit', 'component' => 'Properties/Form', 'name' => 'dashboard.properties.edit'],
@@ -125,7 +129,7 @@ class PropertiesModule implements ModuleInterface
 
     public function migrationPaths(): array
     {
-        return [];
+        return [__DIR__.'/database/migrations'];
     }
 
     public function permissions(): array

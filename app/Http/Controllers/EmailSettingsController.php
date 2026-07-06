@@ -186,7 +186,7 @@ class EmailSettingsController extends Controller
         $html = $this->templateService->renderWithLayout($template, $sampleData);
 
         if ($request->inertia()) {
-            return inertia()->render('Admin/Settings', [
+            return inertia()->render('dashboard/admin/settings', [
                 'previewHtml' => $html,
             ]);
         }

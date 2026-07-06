@@ -16,13 +16,13 @@ class SettingsController extends Controller
     public function edit()
     {
         if (! Schema::hasTable('settings')) {
-            return Inertia::render('Admin/Settings', [
+            return Inertia::render('dashboard/admin/settings', [
                 'settings' => new \stdClass,
                 'availableModules' => [],
             ]);
         }
 
-        return Inertia::render('Admin/Settings', [
+        return Inertia::render('dashboard/admin/settings', [
             'settings' => SettingsService::getAllGrouped(),
             'availableModules' => Schema::hasTable('modules')
                 ? Module::select('id', 'name', 'slug', 'enabled', 'version')->get()

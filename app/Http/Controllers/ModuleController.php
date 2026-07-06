@@ -12,12 +12,16 @@ use Illuminate\Support\Facades\Schema;
 
 class ModuleController extends Controller
 {
+    public function __construct(
+        protected FormattingService $formattingService,
+    ) {}
+
     public function toggle(Request $request, Module $module)
     {
         $module->update(['enabled' => ! $module->enabled]);
 
         SettingsService::clearCache();
-        FormattingService::clearModuleConfigCache();
+        $this->formattingService->clearModuleConfigCache();
         app(DashboardService::class)->clearStatsCache();
 
         return redirect()->back()->with(

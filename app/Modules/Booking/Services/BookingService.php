@@ -59,7 +59,7 @@ class BookingService
                     SettingsService::getFormattingOptions(),
                     ['currency' => $booking->currency ?? 'USD'],
                 );
-                $data['total_amount_formatted'] = FormattingService::formatPrice($booking->total_amount, $options);
+                $data['total_amount_formatted'] = app(FormattingService::class)->formatPrice($booking->total_amount, $options);
             }
 
             return $data;

@@ -53,7 +53,7 @@ Toggles the host/guest mode in session. Validates `mode` is `host` or `guest`. R
 | `property` | `property.%`, `%property%` |
 | `account` | `%user%`, `%password%`, `%email%`, `%account%` |
 | `content` | `post.%`, `%content%` |
-| `orders` | `order.%`, `%stock%`, `%ecommerce%` |
+| `orders` | `order.%`, `%stock%`, `%shop%` |
 
 ## Routes Applied
 

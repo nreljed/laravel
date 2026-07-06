@@ -12,7 +12,9 @@ use App\Modules\Properties\Requests\UpdatePropertyRequest;
 use App\Modules\Properties\Services\ImageUploadService;
 use App\Modules\Properties\Services\PropertyFormattingService;
 use App\Modules\Properties\Services\PropertyService;
+use App\Modules\Properties\Services\PropertyUserCountManager;
 use App\Services\SettingsService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -39,7 +41,7 @@ class PropertyController extends Controller
             fn (Property $property) => $this->formatter->formatProperty($property)
         );
 
-        return Inertia::render('Properties/Index', [
+        return Inertia::render('Modules/Properties/Index', [
             'properties' => $properties->items(),
             'filters' => $filters,
             'filterOptions' => $this->propertyService->getFilterOptions(),
@@ -58,7 +60,7 @@ class PropertyController extends Controller
         $propertiesSettings = $settings['properties'] ?? [];
         $filterOptions = $this->propertyService->getFilterOptions();
 
-        return Inertia::render('Properties/Form', [
+        return Inertia::render('Modules/Properties/Form', [
             'property' => null,
             'property_types' => $filterOptions['types'] ?? [],
             'property_statuses' => $filterOptions['statuses'] ?? [],
@@ -97,6 +99,8 @@ class PropertyController extends Controller
             );
         }
 
+        app(PropertyUserCountManager::class)->updateCount($request->user()->id);
+
         return redirect()->route('dashboard.properties.index')
             ->with('status', 'Property created successfully.');
     }
@@ -129,8 +133,16 @@ class PropertyController extends Controller
             $bookingData = BookingPropertyIntegrationService::getPropertyBookingData($property->id);
         }
 
-        return Inertia::render('Properties/Form', [
-            'property' => $this->formatter->formatProperty($property),
+        $publishDate = null;
+        if ($property->status === 'future' && $property->published_at) {
+            $publishDate = $property->published_at->format('Y-m-d\TH:i:s');
+        }
+
+        return Inertia::render('Modules/Properties/Form', [
+            'property' => array_merge(
+                $this->formatter->formatProperty($property),
+                ['publish_date' => $publishDate],
+            ),
             'property_types' => $filterOptions['types'] ?? [],
             'property_statuses' => $filterOptions['statuses'] ?? [],
             'cities' => $filterOptions['cities'] ?? [],
@@ -199,9 +211,27 @@ class PropertyController extends Controller
             'map_data' => ! empty($meta['map_data']) ? $meta['map_data'] : '',
         ];
 
+        $status = $request->input('status', 'draft');
+        $publishDate = $request->input('publish_date');
+        $publishedAt = null;
+
+        if ($status === 'publish') {
+            $status = 'published';
+            $publishedAt = now();
+        } elseif ($status === 'future') {
+            $publishedAt = $publishDate ? Carbon::parse($publishDate) : now();
+        } elseif ($status === 'draft') {
+            $publishedAt = null;
+        }
+
+        if ($status === 'published' && ! $publishedAt) {
+            $publishedAt = now();
+        }
+
         $data = [
             'name' => $request->input('title'),
-            'status' => $request->input('status', 'draft'),
+            'status' => $status,
+            'published_at' => $publishedAt,
             'description' => $meta['description'] ?? null,
             'price' => ($meta['price'] ?? '') !== '' ? $meta['price'] : null,
             'surface' => ($meta['surface'] ?? '') !== '' ? $meta['surface'] : null,
@@ -233,6 +263,8 @@ class PropertyController extends Controller
         $this->authorize('delete', $property);
 
         $this->propertyService->deleteWithImages($property);
+
+        app(PropertyUserCountManager::class)->updateCount($property->user_id);
 
         return redirect()->route('dashboard.properties.index')
             ->with('status', 'Property deleted successfully.');
@@ -282,16 +314,31 @@ class PropertyController extends Controller
         $this->authorize('update', $property);
 
         $validated = $request->validate([
-            'status' => 'required|string|in:draft,published,archived',
+            'status' => 'required|string|in:draft,published,future,archived',
+            'publish_date' => 'nullable|string',
         ]);
 
-        $oldStatus = $property->status;
-        $property->update(['status' => $validated['status']]);
+        $update = ['status' => $validated['status']];
+
+        if ($validated['status'] === 'published') {
+            if (! $property->published_at) {
+                $update['published_at'] = now();
+            }
+        } elseif ($validated['status'] === 'future') {
+            $update['published_at'] = $validated['publish_date']
+                ? Carbon::parse($validated['publish_date'])
+                : null;
+        } elseif ($validated['status'] === 'draft') {
+            $update['published_at'] = null;
+        }
+
+        $property->update($update);
 
         app(PropertyUserCountManager::class)->updateCount($property->user_id);
 
         $messages = [
             'published' => 'Property published successfully.',
+            'future' => 'Property scheduled for publication.',
             'draft' => 'Property moved to draft.',
             'archived' => 'Property archived.',
         ];
@@ -317,14 +364,17 @@ class PropertyController extends Controller
         $properties = Property::whereIn('id', $ids)->get();
 
         foreach ($properties as $property) {
-            if ($user->cannot('update', $property)) {
+            if ($action === 'delete' && $user->cannot('delete', $property)) {
+                continue;
+            }
+            if ($action !== 'delete' && $user->cannot('update', $property)) {
                 continue;
             }
 
             match ($action) {
                 'delete' => $this->propertyService->deleteWithImages($property),
-                'draft' => $property->update(['status' => 'draft']),
-                'publish' => $property->update(['status' => 'published']),
+                'draft' => $property->update(['status' => 'draft', 'published_at' => null]),
+                'publish' => $property->update(['status' => 'published', 'published_at' => $property->published_at ?? now()]),
             };
 
             $processed++;
@@ -340,5 +390,20 @@ class PropertyController extends Controller
             'status',
             "{$processed} property(s) {$actionLabels[$action]} successfully.",
         );
+    }
+
+    public function dashboard(): Response
+    {
+        $this->authorize('viewAny', Property::class);
+
+        return Inertia::render('Modules/Properties/Dashboard', [
+            'stats' => [
+                'total' => Property::count(),
+                'published' => Property::where('status', 'published')->count(),
+                'draft' => Property::where('status', 'draft')->count(),
+                'totalValue' => (float) Property::where('status', 'published')->sum('price'),
+            ],
+            'recentProperties' => Property::latest()->take(5)->get(['id', 'name', 'status', 'price', 'created_at']),
+        ]);
     }
 }

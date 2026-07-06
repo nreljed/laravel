@@ -12,6 +12,7 @@ import {
   LogIn,
   Hotel,
   UserRound,
+  UserPlus,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -53,17 +54,63 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
   const isBasic = variant === "basic";
 
   if (!isLoggedIn || !user) {
-    const content = (
-      <Link
-        href={route("login")}
-        className="flex items-center gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md p-2"
-      >
-        <LogIn className="h-4 w-4" />
-        <span className="text-sm font-medium">Sign In</span>
-      </Link>
-    );
+    if (isBasic) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Sign In</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem asChild>
+              <Link href={route("login")} className="flex w-full items-center">
+                <LogIn className="mr-2 h-4 w-4" />
+                <span>Sign In</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={route("register")} className="flex w-full items-center">
+                <UserPlus className="mr-2 h-4 w-4" />
+                <span>Create Account</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
 
-    if (isBasic) return content;
+    const content = (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md p-2 w-full"
+          >
+            <LogIn className="h-4 w-4" />
+            <span className="text-sm font-medium">Sign In</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem asChild>
+            <Link href={route("login")} className="flex w-full items-center">
+              <LogIn className="mr-2 h-4 w-4" />
+              <span>Sign In</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={route("register")} className="flex w-full items-center">
+              <UserPlus className="mr-2 h-4 w-4" />
+              <span>Create Account</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
 
     return (
       <SidebarMenu>

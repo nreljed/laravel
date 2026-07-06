@@ -26,7 +26,7 @@ class SessionController extends Controller
                 'is_current' => $session->id === session()->getId(),
             ]);
 
-        return Inertia::render('Admin/Users/Sessions', [
+        return Inertia::render('dashboard/admin/users/sessions', [
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,

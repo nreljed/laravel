@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Modules\Shop\Services\CartMergeService;
 use App\Services\SettingsService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,7 @@ class RegisteredUserController extends Controller
             return redirect()->route('login');
         }
 
-        return Inertia::render('Auth/Register');
+        return Inertia::render('auth/register');
     }
 
     public function store(RegisterRequest $request): RedirectResponse
@@ -47,6 +48,8 @@ class RegisteredUserController extends Controller
         }
 
         event(new Registered($user));
+
+        app(CartMergeService::class)->mergeGuestCartIntoUserCart($user);
 
         Auth::login($user);
 

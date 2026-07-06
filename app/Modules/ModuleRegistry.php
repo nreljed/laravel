@@ -63,6 +63,7 @@ class ModuleRegistry
         $sorted = $this->resolveDependencyOrder($enabled);
 
         foreach ($sorted as $module) {
+            $module->register();
             $module->boot();
             $this->booted->put($module->slug(), $module);
         }

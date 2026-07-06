@@ -10,21 +10,9 @@ import {
   CommandSeparator,
 } from "@/Components/ui/command";
 import { Button } from "@/Components/ui/button";
-import {
-  Search,
-  LayoutDashboard,
-  BarChart3,
-  Bell,
-  Users,
-  Settings,
-  User,
-  Activity,
-  Building2,
-  Calendar,
-  FileText,
-  ShoppingCart,
-} from "lucide-react";
+import { Search, LayoutDashboard, BarChart3, Bell, User, Users, Settings, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { moduleIcons } from "@/lib/icons";
 
 interface NavMenuItem {
   title: string;
@@ -37,26 +25,13 @@ interface NavMenuGroup {
   items: NavMenuItem[];
 }
 
-const slugToIcon: Record<string, React.ComponentType<{ className?: string }>> = {
-  properties: Building2,
-  bookings: Calendar,
-  posts: FileText,
-  ecommerce: ShoppingCart,
-};
-
-const slugToHeading: Record<string, string> = {
-  properties: "Properties",
-  bookings: "Bookings",
-  posts: "Posts",
-  ecommerce: "E-Commerce",
-};
-
 interface ModuleNavItem {
   title: string;
   url: string;
   icon?: string;
   permission?: string;
   module_slug?: string;
+  groupLabel?: string;
   items?: { title: string; url: string }[];
 }
 
@@ -91,16 +66,16 @@ export function CommandSearch() {
     moduleNavItems
       .filter((nav) => hasPermission(nav.permission))
       .forEach((nav) => {
-        const heading = slugToHeading[nav.module_slug ?? ""] ?? nav.title;
-        const icon = slugToIcon[nav.module_slug ?? ""] ?? LayoutDashboard;
+        const heading = nav.groupLabel ?? nav.title;
+        const IconComponent = (nav.icon && moduleIcons[nav.icon]) || LayoutDashboard;
         const moduleItems: NavMenuItem[] = [];
 
         if (nav.items && nav.items.length > 0) {
           nav.items.forEach((child) => {
-            moduleItems.push({ title: child.title, icon, url: child.url });
+            moduleItems.push({ title: child.title, icon: IconComponent, url: child.url });
           });
         } else {
-          moduleItems.push({ title: nav.title, icon, url: nav.url });
+          moduleItems.push({ title: nav.title, icon: IconComponent, url: nav.url });
         }
 
         if (moduleItems.length > 0) {

@@ -173,7 +173,7 @@ CRM-dashboard uses a more explicit Tailwind v4 content source config:
 @source "../resources/js/";
 @source "../../app/Modules/Properties/Resources/js/";
 @source "../../app/Modules/Booking/Resources/js/";
-@source "../../app/Modules/ECommerce/Resources/js/";
+@source "../../app/Modules/Shop/Resources/js/";
 @source "../../app/Modules/Posts/Resources/js/";
 ```
 

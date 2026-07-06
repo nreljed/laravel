@@ -191,6 +191,43 @@ export default function MyBookings({ bookings = [], filters = {} }: MyBookingsPr
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {booking.status === BOOKING_STATUS.Confirmed && (
+                <DropdownMenuItem>
+                  <button type="button" className="flex items-center w-full cursor-pointer"
+                    onClick={() => {
+                      setProcessingTransition(`${booking.id}-checkin`);
+                      router.post(route("dashboard.my-bookings.check-in", booking.id), {}, {
+                        preserveScroll: true,
+                        onSuccess: () => { toast.success("Checked in successfully!"); setTimeout(() => location.reload(), 1000); },
+                        onError: () => toast.error("Check-in failed."),
+                        onFinish: () => setProcessingTransition(null),
+                      });
+                    }}
+                    disabled={processingTransition === `${booking.id}-checkin`}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    Check In
+                  </button>
+                </DropdownMenuItem>
+              )}
+              {booking.status === BOOKING_STATUS.CheckedIn && (
+                <DropdownMenuItem>
+                  <button type="button" className="flex items-center w-full cursor-pointer"
+                    onClick={() => {
+                      setProcessingTransition(`${booking.id}-checkout`);
+                      router.post(route("dashboard.my-bookings.check-out", booking.id), {}, {
+                        preserveScroll: true,
+                        onSuccess: () => { toast.success("Checked out successfully!"); setTimeout(() => location.reload(), 1000); },
+                        onError: () => toast.error("Check-out failed."),
+                        onFinish: () => setProcessingTransition(null),
+                      });
+                    }}
+                    disabled={processingTransition === `${booking.id}-checkout`}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    Check Out
+                  </button>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
               {(!allowedCancelStatuses || allowedCancelStatuses.includes(booking.status ?? "")) && (
                 <DropdownMenuItem>
                   <button type="button" className="flex items-center w-full cursor-pointer text-destructive"

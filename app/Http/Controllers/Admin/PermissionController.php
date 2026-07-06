@@ -28,14 +28,14 @@ class PermissionController extends Controller
                 'created_at' => $p->created_at->toISOString(),
             ]);
 
-        return Inertia::render('Admin/Permissions/Index', [
+        return Inertia::render('dashboard/admin/permissions/index', [
             'permissions' => $permissions,
         ]);
     }
 
     public function create(): Response
     {
-        return Inertia::render('Admin/Permissions/Form', [
+        return Inertia::render('dashboard/admin/permissions/form', [
             'permission' => null,
         ]);
     }
@@ -57,7 +57,7 @@ class PermissionController extends Controller
 
     public function edit(Permission $permission): Response
     {
-        return Inertia::render('Admin/Permissions/Form', [
+        return Inertia::render('dashboard/admin/permissions/form', [
             'permission' => [
                 'id' => $permission->id,
                 'name' => $permission->name,

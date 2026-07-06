@@ -384,7 +384,7 @@ Update `resources/css/app.css`:
 @source "../resources/js/";
 @source "../../app/Modules/Properties/Resources/js/";
 @source "../../app/Modules/Booking/Resources/js/";
-@source "../../app/Modules/ECommerce/Resources/js/";
+@source "../../app/Modules/Shop/Resources/js/";
 @source "../../app/Modules/Posts/Resources/js/";
 
 @plugin "tw-animate-css";

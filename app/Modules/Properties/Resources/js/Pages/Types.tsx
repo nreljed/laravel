@@ -39,6 +39,7 @@ interface Type {
   id: number;
   name: string;
   slug: string;
+  image: string | null;
   description: string | null;
   sort_order: number;
   is_active: boolean;
@@ -55,6 +56,7 @@ export default function Types({ types }: TypesPageProps) {
 
   const form = useForm({
     name: "",
+    image: "",
     description: "",
     sort_order: 0,
     is_active: true,
@@ -69,6 +71,7 @@ export default function Types({ types }: TypesPageProps) {
   const openEdit = useCallback((type: Type) => {
     form.setData({
       name: type.name,
+      image: type.image || "",
       description: type.description || "",
       sort_order: type.sort_order,
       is_active: type.is_active,
@@ -141,6 +144,11 @@ export default function Types({ types }: TypesPageProps) {
                     {form.errors.name && <p className="text-sm text-destructive">{form.errors.name}</p>}
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="image">Image URL</Label>
+                    <Input id="image" value={form.data.image} onChange={(e) => form.setData("image", e.target.value)} placeholder="https://example.com/image.jpg" />
+                    {form.data.image && <img src={form.data.image} alt="" className="h-12 w-12 rounded object-cover border" />}
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="description">Description</Label>
                     <Textarea id="description" value={form.data.description} onChange={(e) => form.setData("description", e.target.value)} />
                   </div>
@@ -178,6 +186,7 @@ export default function Types({ types }: TypesPageProps) {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
+                        {type.image && <img src={type.image} alt="" className="h-6 w-6 rounded object-cover border shrink-0" />}
                         <span className="font-medium">{type.name}</span>
                         {!type.is_active && <Badge variant="outline" className="text-xs shrink-0">Inactive</Badge>}
                       </div>

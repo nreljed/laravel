@@ -11,3 +11,5 @@ Route::post('/booking/register', [BookingGuestController::class, 'registerFromBo
 Route::post('/booking/cancel/{bookingId}', [BookingGuestController::class, 'requestCancellation'])->name('booking.cancel');
 Route::post('/booking/modify/{bookingId}', [BookingGuestController::class, 'requestModification'])->name('booking.modify');
 Route::get('/booking/confirm-cancel/{bookingId}', [BookingGuestController::class, 'confirmCancellation'])->name('booking.confirm-cancel');
+Route::post('/booking/check-in/{bookingId}', [BookingGuestController::class, 'guestCheckIn'])->name('booking.check-in');
+Route::post('/booking/check-out/{bookingId}', [BookingGuestController::class, 'guestCheckOut'])->name('booking.check-out');
