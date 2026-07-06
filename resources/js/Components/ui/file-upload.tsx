@@ -694,8 +694,8 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
   );
 
   const onDrop = React.useCallback(
+    // eslint-disable-next-line react-hooks/immutability
     (event: React.DragEvent<HTMLDivElement>) => {
-      // eslint-disable-line react-hooks/immutability
       propsRef.current.onDrop?.(event);
       if (event.defaultPrevented) return;
       event.preventDefault();
@@ -715,8 +715,8 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
   );
 
   const onPaste = React.useCallback(
+    // eslint-disable-next-line react-hooks/immutability
     (event: React.ClipboardEvent<HTMLDivElement>) => {
-      // eslint-disable-line react-hooks/immutability
       propsRef.current.onPaste?.(event);
       if (event.defaultPrevented) return;
       event.preventDefault();
