@@ -28,7 +28,7 @@ function InertiaFlashListener() {
       if (flash.error) toast.error(String(flash.error));
     };
     showFlash();
-    return router.on("navigate", showFlash);
+    return router.on("navigate", () => showFlash());
   }, []);
   return null;
 }

@@ -131,7 +131,8 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     for (const [key, tpl] of Object.entries(emailTemplates)) {
       const group = tpl.group || "Other";
       if (!Object.hasOwn(groupedTemplates, group)) groupedTemplates[group] = [];
-      groupedTemplates[group].push({ value: key, label: tpl.label });
+      const gt = groupedTemplates[group];
+      if (gt) gt.push({ value: key, label: tpl.label });
     }
   }
 

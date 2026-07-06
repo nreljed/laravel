@@ -132,8 +132,8 @@ export function DataTable<TData, TValue>({
                     onClick={() => {
                       const ids = table
                         .getFilteredSelectedRowModel()
-                        .rows.map((r) => (r.original as Record<string, unknown>).id)
-                        .filter(Boolean);
+                        .rows.map((r) => (r.original as Record<string, unknown>).id as number)
+                        .filter((id): id is number => id != null);
                       onBulkAction(action.value, ids);
                     }}
                   >

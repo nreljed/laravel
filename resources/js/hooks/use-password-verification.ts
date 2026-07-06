@@ -33,8 +33,13 @@ export function usePasswordVerification(): UsePasswordVerificationReturn {
             {
               preserveState: true,
               preserveScroll: true,
-              onSuccess: (page: { props: { verified: boolean; message?: string } }) =>
-                resolve(page.props),
+              onSuccess: ((e: unknown) => {
+                const p = (
+                  e as { detail?: { page?: { props?: { verified?: boolean; message?: string } } } }
+                )?.detail?.page?.props;
+                resolve({ verified: p?.verified ?? false, message: p?.message });
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              }) as any,
               onError: (errors) => reject(errors),
             },
           );

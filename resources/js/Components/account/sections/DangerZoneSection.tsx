@@ -53,7 +53,8 @@ export function DangerZoneSection({ asAccordion }: DangerZoneSectionProps) {
       await new Promise<void>((resolve, reject) => {
         router.post(
           route("dashboard.account.verify-delete-password"),
-          { current_password: currentPassword } as Record<string, unknown>,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { current_password: currentPassword } as any,
           {
             preserveState: true,
             preserveScroll: true,

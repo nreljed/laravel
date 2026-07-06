@@ -87,10 +87,18 @@ export function CommandSearch() {
 
       if (nav.items && nav.items.length > 0) {
         for (const child of nav.items) {
-          moduleItems.push({ title: child.title, icon: IconComponent, url: child.url });
+          moduleItems.push({
+            title: child.title,
+            icon: IconComponent as React.ComponentType<{ className?: string }>,
+            url: child.url,
+          });
         }
       } else {
-        moduleItems.push({ title: nav.title, icon: IconComponent, url: nav.url });
+        moduleItems.push({
+          title: nav.title,
+          icon: IconComponent as React.ComponentType<{ className?: string }>,
+          url: nav.url,
+        });
       }
 
       if (moduleItems.length > 0) {

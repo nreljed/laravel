@@ -47,8 +47,13 @@ export function useFieldValidation(options: FieldValidationOptions): FieldValida
             router.get(route(endpoint), { [param]: val } as Record<string, string>, {
               preserveState: true,
               preserveScroll: true,
-              onSuccess: (page: { props: { available: boolean; message?: string } }) =>
-                resolve(page.props),
+              onSuccess: ((e: unknown) => {
+                const p = (
+                  e as { detail?: { page?: { props?: { available?: boolean; message?: string } } } }
+                )?.detail?.page?.props;
+                resolve({ available: p?.available ?? false, message: p?.message });
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              }) as any,
               onError: (errors) => reject(errors),
             });
           },

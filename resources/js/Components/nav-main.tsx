@@ -79,7 +79,7 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
         return iconProp as React.ComponentType<{ className?: string }>;
       }
       if (typeof iconProp === "string" && Object.hasOwn(iconMap, iconProp)) {
-        return iconMap[iconProp];
+        return iconMap[iconProp] ?? null;
       }
       return null;
     },

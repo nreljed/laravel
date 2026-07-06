@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { usePage } from "@inertiajs/react";
+import type { PageProps } from "@inertiajs/core";
 
 interface Currency {
   code: string;
@@ -11,10 +12,12 @@ interface Currency {
 }
 
 export function useCurrency() {
-  const { activeCurrencies, selectedCurrency } = usePage<{
-    activeCurrencies: Currency[];
-    selectedCurrency: string;
-  }>().props;
+  const { activeCurrencies, selectedCurrency } = usePage<
+    PageProps & {
+      activeCurrencies: Currency[];
+      selectedCurrency: string;
+    }
+  >().props;
 
   return useMemo(() => {
     const currencies: Currency[] = activeCurrencies || [];

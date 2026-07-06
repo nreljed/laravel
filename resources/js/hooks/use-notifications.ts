@@ -190,7 +190,7 @@ export function useNotifications(): UseNotificationsResult {
     return POLL_INTERVAL_STANDBY;
   }, []);
 
-  const startPollingRef = useRef<() => void>();
+  const startPollingRef = useRef<() => void>(undefined);
 
   const startPolling = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);

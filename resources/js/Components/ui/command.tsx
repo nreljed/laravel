@@ -35,6 +35,7 @@ function CommandDialog({
   title?: string;
   description?: string;
   className?: string;
+  _showCloseButton?: boolean;
   showCloseButton?: boolean;
 }) {
   return (

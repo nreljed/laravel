@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from "react";
 import { Link, Head, router, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
 import { User, Building2, ShoppingCart, Loader2, LucideIcon } from "lucide-react";
@@ -59,7 +59,7 @@ export default function ProfileEdit() {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
     const valid = tab && allTabs.some((t) => t.value === tab);
-    if (valid && tab !== activeTab) setActiveTab(tab!);
+    if (valid && tab !== activeTab) startTransition(() => setActiveTab(tab!));
   }, [allTabs, activeTab]);
 
   const handleTabChange = useCallback((value: string) => {
@@ -114,12 +114,6 @@ export default function ProfileEdit() {
   const hasCustomAvatar = !!(avatarPreview && avatarPreview.includes("/avatars/"));
   const currentUploadIdRef = useRef<string | null>(null);
 
-  const [uploading, setUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Record<string, unknown> | null>(initialFormData);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const isLoading = formData === null;
-
   const buildFormData = useCallback(
     (userData?: Record<string, unknown>) => {
       const data = userData || (user as Record<string, unknown>) || {};
@@ -144,6 +138,12 @@ export default function ProfileEdit() {
     if (hasUserData) return buildFormData();
     return null;
   }, [buildFormData, user]);
+
+  const [uploading, setUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, unknown> | null>(initialFormData);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const isLoading = formData === null;
 
   useEffect(() => {
     if (status) toast.success(status);

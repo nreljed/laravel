@@ -86,7 +86,8 @@ export function EmailSection({ asAccordion = false }: { asAccordion?: boolean })
     setSaving(true);
     router.put(
       route("dashboard.admin.settings.email.update"),
-      settings as Record<string, unknown>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      settings as any,
       {
         preserveScroll: true,
         onSuccess: () => {
