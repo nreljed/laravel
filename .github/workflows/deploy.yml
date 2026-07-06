@@ -161,10 +161,23 @@ jobs:
             "app", "bootstrap", "config", "database", "public", "resources", "routes",
             "storage", "vendor", ".env", "deploy.php", "CHANGELOG.md"
           )
-          $fullPaths = $items | ForEach-Object { Join-Path $src $_ }
+          # Generate file manifest for post-deploy stale file cleanup
+          $manifest = @()
+          foreach ($item in $items) {
+            $fullPath = Join-Path $src $item
+            if (Test-Path -LiteralPath $fullPath -PathType Container) {
+              Get-ChildItem -Path $fullPath -Recurse -File | ForEach-Object {
+                $manifest += $_.FullName.Substring($src.Length + 1).Replace("\", "/")
+              }
+            } elseif (Test-Path -LiteralPath $fullPath -PathType Leaf) {
+              $manifest += $item.Replace("\", "/")
+            }
+          }
+          $manifest | Set-Content -Path "$src\manifest.txt" -Encoding UTF8
+          $fullPaths = $items + "manifest.txt" | ForEach-Object { Join-Path $src $_ }
           Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal
           $size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
-          Write-Output "deploy.zip created: $size MB"
+          Write-Output "deploy.zip created: $size MB (manifest: $($manifest.Count) files)"
           # Restore cache directory
           if (Test-Path "$src\bootstrap\cache.bak") {
             Remove-Item "$src\bootstrap\cache" -Recurse -Force -ErrorAction SilentlyContinue
@@ -186,3 +199,8 @@ jobs:
         run: |
           curl -sf --max-time 180 \
             "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"
+          echo ""
+          echo "Waiting for OPcache to revalidate..."
+          sleep 5
+          curl -sf --max-time 120 \
+            "https://laravel.tunispromo.tn/deploy/cleanup-stale?token=${{ secrets.DEPLOY_TOKEN }}"

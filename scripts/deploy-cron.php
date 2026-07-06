@@ -127,16 +127,60 @@ logMsg('Downloaded '.round(strlen($zipResponse->body()) / 1048576, 1).' MB');
 // Backup .env
 $backupEnv = File::exists($envPath) ? File::get($envPath) : '';
 
-// Extract
+// Build a lookup set of all entries in the zip (excluding dir markers)
 $zip = new ZipArchive;
 if ($zip->open($zipFile) !== true) {
     logMsg('Failed to open ZIP');
     exit(1);
 }
+$zipFiles = [];
+for ($i = 0; $i < $zip->numFiles; $i++) {
+    $stat = $zip->statIndex($i);
+    if ($stat && $stat['name'] !== '' && ! str_ends_with($stat['name'], '/')) {
+        $zipFiles[$stat['name']] = true;
+    }
+}
+
 $zip->extractTo(base_path());
 $zip->close();
 File::delete($zipFile);
 logMsg('Extracted to '.base_path());
+
+// Remove stale files — files on disk that are NOT in the zip
+$staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
+$protected = ['bootstrap/cache/'];
+$rootLen = strlen(base_path()) + 1;
+$removed = 0;
+foreach ($staleDirs as $dir) {
+    $full = base_path($dir);
+    if (! is_dir($full)) {
+        continue;
+    }
+    $files = File::allFiles($full);
+    foreach ($files as $file) {
+        $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
+        $skip = false;
+        foreach ($protected as $p) {
+            if (str_starts_with($rel, $p)) {
+                $skip = true;
+                break;
+            }
+        }
+        if ($skip) {
+            continue;
+        }
+        if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
+            continue;
+        }
+        if (! isset($zipFiles[$rel])) {
+            File::delete($file->getPathname());
+            $removed++;
+        }
+    }
+}
+if ($removed > 0) {
+    logMsg("Removed $removed stale files");
+}
 
 // Restore .env
 if ($backupEnv) {
