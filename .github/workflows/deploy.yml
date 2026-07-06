@@ -162,12 +162,13 @@ jobs:
             "storage", "vendor", ".env", "deploy.php", "CHANGELOG.md"
           )
           # Generate file manifest for post-deploy stale file cleanup
+          $srcStr = $src.Path  # Convert PathInfo to string for .Length
           $manifest = @()
           foreach ($item in $items) {
             $fullPath = Join-Path $src $item
             if (Test-Path -LiteralPath $fullPath -PathType Container) {
               Get-ChildItem -Path $fullPath -Recurse -File | ForEach-Object {
-                $manifest += $_.FullName.Substring($src.Length + 1).Replace("\", "/")
+                $manifest += $_.FullName.Substring($srcStr.Length + 1).Replace("\", "/")
               }
             } elseif (Test-Path -LiteralPath $fullPath -PathType Leaf) {
               $manifest += $item.Replace("\", "/")

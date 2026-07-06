@@ -293,6 +293,7 @@ class DeployController extends Controller
         $rootLen = strlen(base_path()) + 1;
         $removed = 0;
         $removedFiles = [];
+        $totalCandidate = 0;
 
         foreach ($staleDirs as $dir) {
             $full = base_path($dir);
@@ -316,11 +317,31 @@ class DeployController extends Controller
                 if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
                     continue;
                 }
+                $totalCandidate++;
                 if (! isset($expected[$rel])) {
-                    File::delete($file->getPathname());
                     $removed++;
                     $removedFiles[] = $rel;
                 }
+            }
+        }
+
+        // Safety check: if more than 10% of candidate files would be removed,
+        // something is wrong (e.g. manifest path mismatch). Skip deletion.
+        if ($totalCandidate > 0 && $removed / $totalCandidate > 0.10) {
+            return response()->json([
+                'status' => 'aborted',
+                'reason' => 'Safety threshold exceeded',
+                'removed' => 0,
+                'files' => $removedFiles,
+                'totalCandidate' => $totalCandidate,
+                'ratio' => round($removed / $totalCandidate, 3),
+            ]);
+        }
+
+        foreach ($removedFiles as $rel) {
+            $path = base_path($rel);
+            if (File::exists($path)) {
+                File::delete($path);
             }
         }
 
