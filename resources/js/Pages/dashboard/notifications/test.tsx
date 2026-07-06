@@ -15,8 +15,8 @@ import {
 } from "@/Components/ui/select";
 import { Separator } from "@/Components/ui/separator";
 import { SettingsAccordion } from "@/Components/ui/settings-accordion";
-import { SystemStatusCards } from "@/Pages/Dashboard/notifications/system-status-cards";
-import { QuickSendSection } from "@/Pages/Dashboard/notifications/quick-send-section";
+import { SystemStatusCards } from "@/Pages/dashboard/notifications/system-status-cards";
+import { QuickSendSection } from "@/Pages/dashboard/notifications/quick-send-section";
 import {
   Bell,
   BellDot,
