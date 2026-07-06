@@ -39,7 +39,7 @@ jobs:
           $ver = "0.1.0"
           try {
             & $gc --bumped-version | Set-Content version.txt -NoNewline -ErrorAction Stop
-            $ver = (Get-Content version.txt -Raw -ErrorAction Stop).Trim()
+            $ver = (Get-Content version.txt -Raw -ErrorAction Stop).Trim().TrimStart('v')
           } catch {
             Write-Output "git-cliff version detection failed, using 0.1.0: $_"
           }
@@ -182,6 +182,7 @@ jobs:
           fail_on_unmatched_files: true
 
       - name: Trigger deploy on server
+        shell: bash
         run: |
           curl -s --max-time 180 \
             -H "X-Admin-Email: ${{ secrets.ADMIN_EMAIL }}" \
