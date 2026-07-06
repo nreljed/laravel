@@ -201,10 +201,13 @@ class DeployController extends Controller
             $output[] = "New version: $latestTag";
 
             // Remove stale files — files on disk that are NOT in the zip.
-            // This ensures deleted repo files are removed from the server too.
+            // Uses zip entries as the source of truth (no separate manifest needed).
             $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
             $protected = ['bootstrap/cache/'];
             $rootLen = strlen(base_path()) + 1;
+            $staleCandidates = 0;
+            $staleRemoved = 0;
+            $staleList = [];
             foreach ($staleDirs as $dir) {
                 $full = base_path($dir);
                 if (! is_dir($full)) {
@@ -223,15 +226,25 @@ class DeployController extends Controller
                     if ($skip) {
                         continue;
                     }
-                    // Only remove PHP and JS/TS source files — safe to delete
                     if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
                         continue;
                     }
+                    $staleCandidates++;
                     if (! isset($zipFiles[$rel])) {
-                        File::delete($file->getPathname());
-                        $output[] = "Removed stale: $rel";
+                        $staleRemoved++;
+                        $staleList[] = $rel;
                     }
                 }
+            }
+            // Safety: if >10% of source files look stale, something is wrong.
+            $staleRatio = $staleCandidates > 0 ? $staleRemoved / $staleCandidates : 0;
+            if ($staleRatio > 0.10) {
+                $output[] = "Stale cleanup aborted (ratio: $staleRatio)";
+            } else {
+                foreach ($staleList as $rel) {
+                    File::delete(base_path($rel));
+                }
+                $output[] = "Removed $staleRemoved stale files";
             }
 
             $commands = [
@@ -263,96 +276,6 @@ class DeployController extends Controller
         } finally {
             File::delete($lockFile);
         }
-    }
-
-    public function cleanupStale(Request $request)
-    {
-        $this->verifyToken($request);
-        set_time_limit(120);
-
-        // Clear OPcache so the freshly-extracted PHP files take effect
-        if (function_exists('opcache_reset')) {
-            opcache_reset();
-        }
-
-        $manifestPath = base_path('manifest.txt');
-        if (! File::exists($manifestPath)) {
-            return response()->json(['status' => 'no-manifest', 'message' => 'manifest.txt not found — cleanup skipped']);
-        }
-
-        // Parse manifest into a lookup set
-        $expected = [];
-        $lines = file($manifestPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines ?: [] as $line) {
-            $expected[str_replace('\\', '/', trim($line))] = true;
-        }
-
-        // Directories to scan for stale files
-        $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
-        $protected = ['bootstrap/cache/'];
-        $rootLen = strlen(base_path()) + 1;
-        $removed = 0;
-        $removedFiles = [];
-        $totalCandidate = 0;
-
-        foreach ($staleDirs as $dir) {
-            $full = base_path($dir);
-            if (! is_dir($full)) {
-                continue;
-            }
-            $files = File::allFiles($full);
-            foreach ($files as $file) {
-                $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
-                $skip = false;
-                foreach ($protected as $p) {
-                    if (str_starts_with($rel, $p)) {
-                        $skip = true;
-                        break;
-                    }
-                }
-                if ($skip) {
-                    continue;
-                }
-                // Only remove source files (PHP, JS, TS, TSX)
-                if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
-                    continue;
-                }
-                $totalCandidate++;
-                if (! isset($expected[$rel])) {
-                    $removed++;
-                    $removedFiles[] = $rel;
-                }
-            }
-        }
-
-        // Safety check: if more than 10% of candidate files would be removed,
-        // something is wrong (e.g. manifest path mismatch). Skip deletion.
-        if ($totalCandidate > 0 && $removed / $totalCandidate > 0.10) {
-            return response()->json([
-                'status' => 'aborted',
-                'reason' => 'Safety threshold exceeded',
-                'removed' => 0,
-                'files' => $removedFiles,
-                'totalCandidate' => $totalCandidate,
-                'ratio' => round($removed / $totalCandidate, 3),
-            ]);
-        }
-
-        foreach ($removedFiles as $rel) {
-            $path = base_path($rel);
-            if (File::exists($path)) {
-                File::delete($path);
-            }
-        }
-
-        // Clean up the manifest itself
-        File::delete($manifestPath);
-
-        return response()->json([
-            'status' => 'ok',
-            'removed' => $removed,
-            'files' => $removedFiles,
-        ]);
     }
 
     private function githubApi(string $url, string $token): ?array
