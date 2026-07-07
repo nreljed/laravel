@@ -181,9 +181,10 @@ jobs:
           files: deploy.zip
           fail_on_unmatched_files: true
 
-      - name: Trigger deploy on server
+      - name: Upload deploy archive to server
         shell: bash
         run: |
-          curl -sf --max-time 180 \
-            "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"
+          curl -sf --max-time 300 \
+            -F "file=@deploy.zip;filename=deploy.zip" \
+            "https://laravel.tunispromo.tn/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}"
           echo ""

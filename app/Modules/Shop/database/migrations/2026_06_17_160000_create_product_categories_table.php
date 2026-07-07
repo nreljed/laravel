@@ -19,16 +19,10 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('product_category_product', function (Blueprint $table) {
-            $table->foreignId('product_category_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->primary(['product_category_id', 'product_id']);
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('product_category_product');
         Schema::dropIfExists('product_categories');
     }
 };

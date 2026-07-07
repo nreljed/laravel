@@ -79,6 +79,125 @@ class DeployController extends Controller
         return response()->json(['success' => true, 'output' => $output]);
     }
 
+    public function upload(Request $request)
+    {
+        $this->verifyToken($request);
+        set_time_limit(300);
+
+        if (! $request->hasFile('file')) {
+            return response()->json(['error' => 'No file uploaded'], 400);
+        }
+
+        $file = $request->file('file');
+        if ($file->getClientOriginalExtension() !== 'zip') {
+            return response()->json(['error' => 'File must be a zip'], 400);
+        }
+
+        $output = [];
+        $envPath = base_path('.env');
+        $backupEnv = File::exists($envPath) ? File::get($envPath) : '';
+
+        $zipFile = $file->storeAs('deploy', 'deploy-uploaded.zip');
+        $zipPath = storage_path("app/$zipFile");
+        $output[] = 'Uploaded '.round(filesize($zipPath) / 1048576, 1).' MB';
+
+        $zip = new \ZipArchive;
+        if ($zip->open($zipPath) !== true) {
+            return response()->json(['error' => 'Failed to open ZIP']);
+        }
+
+        // Build lookup set of all zip entries for stale cleanup
+        $zipFiles = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            if ($stat && $stat['name'] !== '' && ! str_ends_with($stat['name'], '/')) {
+                $zipFiles[str_replace('\\', '/', $stat['name'])] = true;
+            }
+        }
+
+        $zip->extractTo(base_path());
+        $zip->close();
+        File::delete($zipPath);
+        $output[] = 'Extracted ('.count($zipFiles).' files)';
+
+        if ($backupEnv) {
+            File::put($envPath, $backupEnv);
+            $output[] = 'Restored .env';
+        }
+
+        // Remove stale files — files on disk that are NOT in the zip.
+        $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
+        $protected = ['bootstrap/cache/'];
+        $rootLen = strlen(base_path()) + 1;
+        $staleCandidates = 0;
+        $staleRemoved = 0;
+        $staleList = [];
+        foreach ($staleDirs as $dir) {
+            $full = base_path($dir);
+            if (! is_dir($full)) {
+                continue;
+            }
+            $files = File::allFiles($full);
+            foreach ($files as $file) {
+                $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
+                $skip = false;
+                foreach ($protected as $p) {
+                    if (str_starts_with($rel, $p)) {
+                        $skip = true;
+                        break;
+                    }
+                }
+                if ($skip) {
+                    continue;
+                }
+                if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
+                    continue;
+                }
+                $staleCandidates++;
+                if (! isset($zipFiles[$rel])) {
+                    $staleRemoved++;
+                    $staleList[] = $rel;
+                }
+            }
+        }
+        $staleRatio = $staleCandidates > 0 ? $staleRemoved / $staleCandidates : 0;
+        if ($staleRatio > 0.10) {
+            $output[] = "Stale cleanup aborted ($staleRemoved/$staleCandidates = ".round($staleRatio * 100).'%)';
+        } else {
+            foreach ($staleList as $rel) {
+                File::delete(base_path($rel));
+            }
+            $output[] = "Removed $staleRemoved stale files";
+        }
+
+        $commands = [
+            'package:discover' => [[]],
+            'migrate:fresh' => [['--force' => true, '--seed' => true]],
+            'app:create-admin' => [[
+                '--no-interaction' => true,
+                '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
+                '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
+                '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+            ]],
+            'modules:sync-permissions' => [[]],
+            'config:cache' => [[]],
+            'route:cache' => [[]],
+            'view:cache' => [[]],
+            'storage:link' => [['--force' => true]],
+        ];
+
+        foreach ($commands as $cmd => [$params]) {
+            try {
+                Artisan::call($cmd, $params);
+                $output[] = "$cmd: ".strtok(trim(Artisan::output()), "\n");
+            } catch (\Throwable $e) {
+                $output[] = "$cmd: ERROR ".$e->getMessage();
+            }
+        }
+
+        return response()->json(['status' => 'deployed', 'output' => $output]);
+    }
+
     private function cleanupDeployFiles(): void
     {
         $files = [

@@ -167,10 +167,10 @@ require __DIR__.'/auth.php';
 // ═══════════════════════════════════════════════════
 // DEPLOY Endpoints — token-protected, no CSRF
 // ═══════════════════════════════════════════════════
+Route::post('/deploy/upload', [DeployController::class, 'upload']);
 Route::post('/deploy/update-env', [DeployController::class, 'updateEnv']);
 Route::get('/deploy/cache-clear', [DeployController::class, 'cacheClear']);
 Route::get('/deploy/check', [DeployController::class, 'check']);
-Route::get('/deploy/cleanup-stale', [DeployController::class, 'cleanupStale']);
 
 // Module routes (Properties, Bookings) are loaded by their respective
 // Module classes via HasRoutes trait — no duplication needed here.

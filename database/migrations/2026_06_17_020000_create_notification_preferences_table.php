@@ -11,10 +11,12 @@ return new class extends Migration
         Schema::create('notification_preferences', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('type')->default('');
             $table->string('channel')->default('in_app');
             $table->boolean('enabled')->default(true);
             $table->timestamps();
-            $table->unique(['user_id', 'channel']);
+            $table->index('user_id');
+            $table->unique(['user_id', 'type', 'channel']);
         });
     }
 
