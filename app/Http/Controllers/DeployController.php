@@ -45,15 +45,38 @@ class DeployController extends Controller
     public function cacheClear(Request $request)
     {
         $this->verifyToken($request);
+        set_time_limit(300);
 
         $output = [];
 
         // Wipe all cached files first to break the chicken-and-egg cycle
         $this->wipeCache();
 
-        // Now that cache is gone, run fresh migrations (wipe old tables)
-        Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
-        $output['migrate:fresh'] = strtok(trim(Artisan::output()), "\n");
+        $commands = [
+            'migrate:fresh' => [['--force' => true, '--seed' => true]],
+            'cache:clear' => [[]],
+            'package:discover' => [[]],
+            'app:create-admin' => [[
+                '--no-interaction' => true,
+                '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
+                '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
+                '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+            ]],
+            'modules:sync-permissions' => [[]],
+            'config:cache' => [[]],
+            'route:cache' => [[]],
+            'view:cache' => [[]],
+            'storage:link' => [['--force' => true]],
+        ];
+
+        foreach ($commands as $cmd => [$params]) {
+            try {
+                Artisan::call($cmd, $params);
+                $output[$cmd] = strtok(trim(Artisan::output()), "\n") ?: 'ok';
+            } catch (\Throwable $e) {
+                $output[$cmd] = 'ERROR: '.$e->getMessage();
+            }
+        }
 
         // Switch to database sessions now that tables exist
         $envPath = base_path('.env');
@@ -61,37 +84,6 @@ class DeployController extends Controller
         $env = preg_replace('/^SESSION_DRIVER=file$/m', 'SESSION_DRIVER=database', $env);
         $env = preg_replace('/^QUEUE_CONNECTION=sync$/m', 'QUEUE_CONNECTION=database', $env);
         File::put($envPath, $env);
-
-        Artisan::call('cache:clear');
-        $output['cache:clear'] = strtok(trim(Artisan::output()), "\n");
-
-        // Post-deploy commands
-        Artisan::call('package:discover');
-        $output['package:discover'] = strtok(trim(Artisan::output()), "\n");
-
-        Artisan::call('app:create-admin', [
-            '--no-interaction' => true,
-            '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
-            '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
-            '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
-        ]);
-        $output['admin'] = strtok(trim(Artisan::output()), "\n");
-
-        Artisan::call('modules:sync-permissions');
-        $output['permissions'] = strtok(trim(Artisan::output()), "\n");
-
-        // Re-cache for production
-        Artisan::call('config:cache');
-        $output['config:cache'] = strtok(trim(Artisan::output()), "\n");
-
-        Artisan::call('route:cache');
-        $output['route:cache'] = strtok(trim(Artisan::output()), "\n");
-
-        Artisan::call('view:cache');
-        $output['view:cache'] = strtok(trim(Artisan::output()), "\n");
-
-        Artisan::call('storage:link', ['--force' => true]);
-        $output['storage:link'] = strtok(trim(Artisan::output()), "\n");
 
         // Clean up deploy-only files
         $this->cleanupDeployFiles();
