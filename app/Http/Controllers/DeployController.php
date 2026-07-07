@@ -46,14 +46,16 @@ class DeployController extends Controller
     {
         $this->verifyToken($request);
 
+        $output = [];
+
         // Wipe all cached files first to break the chicken-and-egg cycle
         $this->wipeCache();
 
-        // Now that cache is gone, run fresh migrations (wipe old Laravel 11 tables)
+        // Now that cache is gone, run fresh migrations (wipe old tables)
         Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
-        $output['migrate:fresh'] = Artisan::output();
+        $output['migrate:fresh'] = strtok(trim(Artisan::output()), "\n");
 
-        // Switch back to database sessions now that tables exist
+        // Switch to database sessions now that tables exist
         $envPath = base_path('.env');
         $env = File::get($envPath);
         $env = preg_replace('/^SESSION_DRIVER=file$/m', 'SESSION_DRIVER=database', $env);
@@ -61,19 +63,37 @@ class DeployController extends Controller
         File::put($envPath, $env);
 
         Artisan::call('cache:clear');
-        $output['cache:clear'] = Artisan::output();
+        $output['cache:clear'] = strtok(trim(Artisan::output()), "\n");
+
+        // Post-deploy commands
+        Artisan::call('package:discover');
+        $output['package:discover'] = strtok(trim(Artisan::output()), "\n");
+
+        Artisan::call('app:create-admin', [
+            '--no-interaction' => true,
+            '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
+            '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
+            '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+        ]);
+        $output['admin'] = strtok(trim(Artisan::output()), "\n");
+
+        Artisan::call('modules:sync-permissions');
+        $output['permissions'] = strtok(trim(Artisan::output()), "\n");
 
         // Re-cache for production
         Artisan::call('config:cache');
-        $output['config:cache'] = Artisan::output();
+        $output['config:cache'] = strtok(trim(Artisan::output()), "\n");
 
         Artisan::call('route:cache');
-        $output['route:cache'] = Artisan::output();
+        $output['route:cache'] = strtok(trim(Artisan::output()), "\n");
 
         Artisan::call('view:cache');
-        $output['view:cache'] = Artisan::output();
+        $output['view:cache'] = strtok(trim(Artisan::output()), "\n");
 
-        // Clean up deploy-only auto-prepend files now that the app works
+        Artisan::call('storage:link', ['--force' => true]);
+        $output['storage:link'] = strtok(trim(Artisan::output()), "\n");
+
+        // Clean up deploy-only files
         $this->cleanupDeployFiles();
 
         return response()->json(['success' => true, 'output' => $output]);
