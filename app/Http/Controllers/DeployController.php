@@ -94,16 +94,26 @@ class DeployController extends Controller
         }
 
         $output = [];
+        $result = $this->processUploadedZip($request, $output);
+
+        return response()->json(['status' => $result ? 'deployed' : 'error', 'output' => $output]);
+    }
+
+    private function processUploadedZip(Request $request, array &$output): bool
+    {
+        $file = $request->file('file');
         $envPath = base_path('.env');
         $backupEnv = File::exists($envPath) ? File::get($envPath) : '';
 
         $zipFile = $file->storeAs('deploy', 'deploy-uploaded.zip');
         $zipPath = storage_path("app/$zipFile");
-        $output[] = 'Uploaded '.round(filesize($zipPath) / 1048576, 1).' MB';
+        $output[] = 'Received '.round(filesize($zipPath) / 1048576, 1).' MB';
 
         $zip = new \ZipArchive;
         if ($zip->open($zipPath) !== true) {
-            return response()->json(['error' => 'Failed to open ZIP']);
+            $output[] = 'ERROR: Failed to open ZIP';
+
+            return false;
         }
 
         // Build lookup set of all zip entries for stale cleanup
@@ -195,7 +205,7 @@ class DeployController extends Controller
             }
         }
 
-        return response()->json(['status' => 'deployed', 'output' => $output]);
+        return true;
     }
 
     private function cleanupDeployFiles(): void
@@ -234,9 +244,14 @@ class DeployController extends Controller
         set_time_limit(300);
 
         $output = [];
-        $githubToken = '';
         $envPath = base_path('.env');
 
+        // If a file was uploaded directly (CI fallback), bypass GitHub API entirely
+        if ($request->hasFile('file')) {
+            return $this->processUploadedZip($request, $output);
+        }
+
+        $githubToken = '';
         if (File::exists($envPath)) {
             foreach (explode("\n", File::get($envPath)) as $line) {
                 if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {

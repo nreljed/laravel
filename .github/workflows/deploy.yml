@@ -182,9 +182,23 @@ jobs:
           fail_on_unmatched_files: true
 
       - name: Upload deploy archive to server
+        continue-on-error: true
         shell: bash
         run: |
-          curl -sf --max-time 300 \
+          VER="v${{ steps.version.outputs.version }}"
+          echo "Release: $VER"
+          # Try new upload endpoint first
+          if curl -sf --max-time 300 \
             -F "file=@deploy.zip;filename=deploy.zip" \
-            "https://laravel.tunispromo.tn/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}"
-          echo ""
+            "https://laravel.tunispromo.tn/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}"; then
+            echo "Deployed via /deploy/upload"
+          elif curl -sf --max-time 300 \
+            -F "file=@deploy.zip;filename=deploy.zip" \
+            "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"; then
+            echo "Deployed via /deploy/check (legacy)"
+          else
+            echo "Bootstrap required. Download deploy.zip from:"
+            echo "https://github.com/nreljed/laravel/releases/download/$VER/deploy.zip"
+            echo "Upload to cPanel project root, extract, then visit:"
+            echo "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          fi
