@@ -95,7 +95,7 @@ class SettingsService
     {
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.'_grouped');
-        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties', 'booking', 'shop'] as $group) {
+        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting'] as $group) {
             Cache::forget(self::CACHE_KEY."_{$group}");
         }
     }

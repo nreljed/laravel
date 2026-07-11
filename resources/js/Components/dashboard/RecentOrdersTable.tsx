@@ -1,7 +1,6 @@
-import { Link } from "@inertiajs/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
-import { ShoppingCart } from "lucide-react";
+import { Package } from "lucide-react";
 
 interface RecentOrder {
   id: number;
@@ -33,7 +32,7 @@ export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4" />
+          <Package className="h-4 w-4" />
           Recent Orders
         </CardTitle>
       </CardHeader>
@@ -45,12 +44,9 @@ export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
             {orders.map((order) => (
               <div key={order.id} className="flex items-center justify-between px-6 py-3 text-sm">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Link
-                    href={route("dashboard.shop.orders.edit", order.id)}
-                    className="font-medium hover:underline truncate"
-                  >
+                  <span className="font-medium truncate">
                     {order.order_number}
-                  </Link>
+                  </span>
                   <span className="text-muted-foreground truncate hidden sm:inline">
                     {order.customer_name}
                   </span>

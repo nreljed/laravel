@@ -22,6 +22,10 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Delete Account', 'slug' => 'delete-account', 'description' => 'Delete own account'],
             ['name' => 'View Notifications', 'slug' => 'view-notifications', 'description' => 'View notifications'],
             ['name' => 'Manage Notifications', 'slug' => 'manage-notifications', 'description' => 'Mark read, delete notifications'],
+            ['name' => 'View Posts', 'slug' => 'posts.view', 'description' => 'View blog posts.'],
+            ['name' => 'Create Posts', 'slug' => 'posts.create', 'description' => 'Create new blog posts.'],
+            ['name' => 'Edit Posts', 'slug' => 'posts.edit', 'description' => 'Edit existing blog posts.'],
+            ['name' => 'Delete Posts', 'slug' => 'posts.delete', 'description' => 'Delete blog posts.'],
         ];
 
         foreach ($permissions as $p) {
@@ -48,7 +52,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete-account',
                 'view-notifications',
                 'manage-notifications',
-                'shop.view',
             ])->pluck('id')
         );
     }

@@ -9,7 +9,3 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('schedule:publish')->everyMinute();
-Schedule::command('shop:abandoned-cart-process')->hourly();
-Schedule::command('webhooks:process')->everyMinute();
-Schedule::command('shop:release-expired-holds')->everyFiveMinutes();
-Schedule::command('shop:process-scheduled-sales')->everyMinute();

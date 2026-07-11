@@ -19,17 +19,9 @@ composer.phar
 /.opencode
 /storage/temp/
 /PLAN.md
-/category-dialog.txt
-/console-log.txt
-/cookies.txt
-/cookies2.txt
-/headers1.txt
-/inspect_product.php
-/login_body.html
-/product-edit-page.txt
-/product-edit-snapshot.md
-/test_cartesian.php
-/verify_variations.php
-/vm_chunk_sample.txt
-/_fix_autoload.php
-/_schema_dump.php
+
+# Debug/temp files (root only)
+/*.txt
+/*.html
+/_*.php
+/sql/*.sql

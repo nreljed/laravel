@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Modules\ModuleRegistry;
-
 class GalleryService
 {
     public static function getConfig(string $module): ?array
@@ -15,11 +13,11 @@ class GalleryService
 
     public static function getAllConfigs(): array
     {
-        if (! app()->resolved(ModuleRegistry::class)) {
+        if (! app()->resolved(FeatureRegistry::class)) {
             return [];
         }
 
-        return app(ModuleRegistry::class)->getAllGalleryConfigs();
+        return app(FeatureRegistry::class)->getAllGalleryConfigs();
     }
 
     public static function getGalleryConfig(string $module, string $galleryKey): ?array

@@ -6,14 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Role;
 use App\Models\User;
-use App\Modules\Shop\Services\CartMergeService;
 use App\Services\SettingsService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -38,7 +36,7 @@ class RegisteredUserController extends Controller
             'username' => $request->username,
             'name' => $request->username,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
         ]);
 
         $defaultRoleSlug = SettingsService::get('default_role', 'crm_user');
@@ -48,8 +46,6 @@ class RegisteredUserController extends Controller
         }
 
         event(new Registered($user));
-
-        app(CartMergeService::class)->mergeGuestCartIntoUserCart($user);
 
         Auth::login($user);
 

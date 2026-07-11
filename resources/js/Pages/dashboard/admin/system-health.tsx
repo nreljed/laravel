@@ -1,21 +1,20 @@
-import { Head, usePage } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 import {
   Database,
   Cpu,
   Globe,
   HardDrive,
-  CheckCircle2,
-  XCircle,
   Users,
   Puzzle,
-  Boxes,
   Lightbulb,
   Activity,
   Layers,
   Terminal,
   FileText,
   AlertTriangle,
+  CheckCircle2,
   Info,
+  XCircle,
 } from "lucide-react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -125,11 +124,11 @@ interface FilesystemInfo {
   disks: string[];
 }
 
-interface ModuleItem {
+interface FeatureItem {
   name: string;
-  slug: string;
-  enabled: boolean;
-  version: string | null;
+  slug?: string;
+  enabled?: boolean;
+  version?: string | null;
 }
 
 interface CronItem {
@@ -158,18 +157,6 @@ interface BuildInfo {
   age?: string;
 }
 
-interface ModuleDebugItem {
-  name: string;
-  slug: string;
-  enabled: boolean;
-  booted: boolean;
-  dependencies: string[];
-  nav: {
-    parent?: { title: string; url: string | null };
-    children?: { title: string; url: string | null }[];
-  };
-}
-
 interface SystemHealthProps {
   php: PhpInfo;
   laravel: LaravelInfo;
@@ -185,7 +172,7 @@ interface SystemHealthProps {
   mail: MailInfo;
   session: SessionInfo;
   filesystem: FilesystemInfo;
-  modules: ModuleItem[];
+  features: FeatureItem[];
   cron: CronItem[];
   logs: LogInfo;
   users: UsersInfo;
@@ -221,9 +208,6 @@ function severityVariant(severity: string): "destructive" | "secondary" | "outli
 }
 
 export default function SystemHealth(props: SystemHealthProps) {
-  const pageProps = usePage().props as Record<string, unknown>;
-  const moduleDebugData = pageProps.moduleDebugData as ModuleDebugItem[] | undefined;
-
   const sections = [
     {
       title: "Application",
@@ -285,7 +269,7 @@ export default function SystemHealth(props: SystemHealthProps) {
         { label: "Verified", value: String(props.users.verified) },
         { label: "Unverified", value: String(props.users.unverified) },
         { label: "Admins", value: String(props.users.admin) },
-        { label: "Database Modules", value: String(props.modules.length) },
+        { label: "Registered Features", value: String(props.features.length) },
       ],
     },
     {
@@ -554,57 +538,6 @@ export default function SystemHealth(props: SystemHealthProps) {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {moduleDebugData && moduleDebugData.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Boxes className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">Modules</CardTitle>
-              <CardDescription>
-                {moduleDebugData.filter((m) => m.enabled).length} enabled / {moduleDebugData.length}{" "}
-                total
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {moduleDebugData.map((mod) => (
-                  <div key={mod.slug} className="flex items-start gap-3 rounded-lg border p-3">
-                    {mod.enabled && mod.booted ? (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-                    ) : (
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium leading-none">{mod.name}</span>
-                        <span className="text-xs text-muted-foreground">({mod.slug})</span>
-                      </div>
-                      {mod.dependencies.length > 0 && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Depends on: {mod.dependencies.join(", ")}
-                        </p>
-                      )}
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        <Badge
-                          variant={mod.enabled ? "default" : "secondary"}
-                          className="text-[10px] px-1.5 py-0"
-                        >
-                          {mod.enabled ? "enabled" : "disabled"}
-                        </Badge>
-                        <Badge
-                          variant={mod.booted ? "default" : "secondary"}
-                          className="text-[10px] px-1.5 py-0"
-                        >
-                          {mod.booted ? "booted" : "not booted"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>

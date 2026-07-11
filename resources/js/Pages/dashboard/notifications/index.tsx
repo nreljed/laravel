@@ -10,11 +10,9 @@ import {
   X,
   Loader2,
   Search,
-  Calendar,
-  Home,
-  ShoppingCart,
   User,
   FileText,
+  ShoppingCart,
 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
@@ -79,14 +77,6 @@ function getDateGroup(dateStr: string): string {
 function inferTypeGroup(type: string): string {
   const t = type.toLowerCase();
   if (
-    t.includes("booking") ||
-    t.includes("stay") ||
-    t.includes("checkin") ||
-    t.includes("checkout")
-  )
-    return "booking";
-  if (t.includes("property") || t.includes("home")) return "property";
-  if (
     t.includes("account") ||
     t.includes("user") ||
     t.includes("password") ||
@@ -99,10 +89,8 @@ function inferTypeGroup(type: string): string {
     return "content";
   if (
     t.includes("order") ||
-    t.includes("cart") ||
     t.includes("product") ||
-    t.includes("stock") ||
-    t.includes("shop")
+    t.includes("stock")
   )
     return "orders";
   if (t.includes("payment")) return "orders";
@@ -111,8 +99,6 @@ function inferTypeGroup(type: string): string {
 
 const TYPE_FILTERS = [
   { value: "all", label: "All", icon: Bell },
-  { value: "booking", label: "Booking", icon: Calendar },
-  { value: "property", label: "Property", icon: Home },
   { value: "account", label: "Account", icon: User },
   { value: "content", label: "Content", icon: FileText },
   { value: "orders", label: "Orders", icon: ShoppingCart },

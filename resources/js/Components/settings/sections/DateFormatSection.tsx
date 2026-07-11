@@ -180,7 +180,7 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
   return (
     <Section
       title="Date & Time Format"
-      description="Global date, time, and timezone settings — these apply to every module, email, calendar, and booking across the entire dashboard."
+      description="Global date, time, and timezone settings — these apply to every module, email, and calendar across the entire dashboard."
       icon={CalendarDays}
       onSubmit={handleSubmit}
       loading={loading}

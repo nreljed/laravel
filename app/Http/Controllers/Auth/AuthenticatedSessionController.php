@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Modules\Shop\Services\CartMergeService;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,8 +36,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         AuditService::log(AuditAction::Login, Auth::id());
-
-        app(CartMergeService::class)->mergeGuestCartIntoUserCart($request->user());
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

@@ -5,11 +5,8 @@ namespace App\Http\Middleware;
 use App\Http\Controllers\EmailSettingsController;
 use App\Models\Notification;
 use App\Models\User;
-use App\Modules\ModuleRegistry;
-use App\Modules\Shop\Models\Cart;
-use App\Modules\Shop\Models\Wishlist;
-use App\Modules\Shop\Services\CurrencyService;
 use App\Services\EmailSettingsService;
+use App\Services\FeatureRegistry;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -86,9 +83,7 @@ class HandleInertiaRequests extends Middleware
             'userMode' => fn () => $request->user()
                 ? ($request->session()->get('user_mode', 'guest'))
                 : 'guest',
-            'canSwitchMode' => fn () => $request->user()
-                ? ($request->user()->hasPermission('bookings.view') && $this->isModuleEnabled('bookings'))
-                : false,
+            'canSwitchMode' => fn () => false,
             'formattingSettings' => function () {
                 try {
                     return SettingsService::getFormattingDefaults();
@@ -98,9 +93,6 @@ class HandleInertiaRequests extends Middleware
             },
             'moduleNavItems' => fn () => $this->getModuleNavItems(),
             'moduleData' => fn () => $this->getModuleSharedData(),
-            'modules' => fn () => $this->getModulesData(),
-            'repeaterConfigs' => fn () => $this->getRepeaterConfigs(),
-            'profileFieldConfigs' => fn () => $this->getProfileFieldConfigs(),
             'emailSettings' => fn () => $this->getEmailSettings(),
             'emailTemplates' => fn () => $this->getEmailTemplates(),
             'brand' => [
@@ -108,56 +100,13 @@ class HandleInertiaRequests extends Middleware
                 'name' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
             ],
             'app_url' => fn () => self::safeSetting('app_url', config('app.url')),
-            'cart' => function () use ($request) {
-                if (! $request->hasSession()) {
-                    return ['items' => [], 'subtotal' => 0, 'total' => 0];
-                }
-
-                $cart = $request->user()
-                    ? Cart::where('user_id', $request->user()->id)->first()
-                    : Cart::where('session_id', $request->session()->getId())->first();
-
-                if (! $cart) {
-                    return ['items' => [], 'subtotal' => 0, 'total' => 0];
-                }
-
-                $cart->load('items.product', 'items.variation');
-
-                return [
-                    'id' => $cart->id,
-                    'items' => $cart->items->map(fn ($item) => [
-                        'id' => $item->id,
-                        'product_id' => $item->product_id,
-                        'quantity' => $item->quantity,
-                        'unit_price' => (float) $item->unit_price,
-                        'variant_label' => $item->variant_label,
-                        'product' => $item->product ? [
-                            'id' => $item->product->id,
-                            'name' => $item->product->name,
-                            'slug' => $item->product->slug,
-                            'thumbnail_url' => $item->product->thumbnail_url,
-                        ] : null,
-                        'variation' => $item->variation ? [
-                            'id' => $item->variation->id,
-                            'image_url' => $item->variation->image_url,
-                        ] : null,
-                    ])->values()->all(),
-                    'subtotal' => (float) $cart->subtotal,
-                    'total' => (float) $cart->total,
-                    'coupon_code' => $cart->coupon_code,
-                    'discount' => (float) $cart->discount,
-                ];
-            },
-            'wishlistIds' => fn () => $request->user()
-                ? Wishlist::where('user_id', $request->user()->id)->pluck('product_id')
-                : collect(),
+            'wishlistIds' => fn () => collect(),
             'wishlistResult' => fn () => null,
             'impersonating' => fn () => $request->session()->get('impersonating', false),
             'impersonator' => fn () => $request->session()->has('impersonator_id')
                 ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name', 'email'])
                 : null,
             'debug' => fn () => config('app.debug', false),
-            'moduleDebugData' => fn () => $this->getModuleDebugData(),
             'activeCurrencies' => fn () => $this->getActiveCurrencies(),
             'selectedCurrency' => fn () => session('selected_currency', 'EUR'),
         ];
@@ -165,52 +114,20 @@ class HandleInertiaRequests extends Middleware
 
     protected function getModuleNavItems(): array
     {
-        if (! app()->resolved(ModuleRegistry::class)) {
+        try {
+            return app(FeatureRegistry::class)->getAllNavItems();
+        } catch (\Throwable $e) {
             return [];
         }
-
-        return app(ModuleRegistry::class)->getAllNavItems();
     }
 
     protected function getModuleSharedData(): array
     {
-        if (! app()->resolved(ModuleRegistry::class)) {
+        try {
+            return app(FeatureRegistry::class)->getAllSharedData();
+        } catch (\Throwable $e) {
             return [];
         }
-
-        return app(ModuleRegistry::class)->getAllSharedData();
-    }
-
-    protected function getModulesData(): array
-    {
-        if (! app()->resolved(ModuleRegistry::class)) {
-            return ['enabled' => [], 'list' => []];
-        }
-
-        $registry = app(ModuleRegistry::class);
-
-        return [
-            'enabled' => $registry->getEnabledModuleSlugs(),
-            'list' => $registry->getModuleList(),
-        ];
-    }
-
-    protected function getRepeaterConfigs(): array
-    {
-        if (! app()->resolved(ModuleRegistry::class)) {
-            return [];
-        }
-
-        return app(ModuleRegistry::class)->getAllRepeaterConfigs();
-    }
-
-    protected function getProfileFieldConfigs(): array
-    {
-        if (! app()->resolved(ModuleRegistry::class)) {
-            return [];
-        }
-
-        return app(ModuleRegistry::class)->getAllProfileFieldConfigs();
     }
 
     protected function getEmailSettings(): array
@@ -237,82 +154,19 @@ class HandleInertiaRequests extends Middleware
                 'deleteAccount' => $user->can('delete-account'),
                 'viewNotifications' => $user->can('view-notifications'),
                 'manageNotifications' => $user->can('manage-notifications'),
+                'postsView' => $user->can('posts.view'),
+                'postsCreate' => $user->can('posts.create'),
+                'postsEdit' => $user->can('posts.edit'),
+                'postsDelete' => $user->can('posts.delete'),
             ],
         ];
-
-        if (app()->resolved(ModuleRegistry::class)) {
-            $registry = app(ModuleRegistry::class);
-            foreach ($registry->all() as $slug => $module) {
-                foreach ($module->permissions() as $perm) {
-                    $caps[$perm['slug']] = $user->can($perm['slug']);
-                }
-                $caps['hasModule_'.$slug] = $this->isModuleEnabled($slug);
-            }
-        }
 
         return $caps;
     }
 
-    private function isModuleEnabled(string $slug): bool
-    {
-        if (! app()->resolved(ModuleRegistry::class)) {
-            return false;
-        }
-
-        return app(ModuleRegistry::class)->isEnabled($slug);
-    }
-
-    protected function getModuleDebugData(): array
-    {
-        if (! app()->resolved(ModuleRegistry::class)) {
-            return [];
-        }
-
-        $registry = app(ModuleRegistry::class);
-        $data = [];
-
-        foreach ($registry->all() as $slug => $module) {
-            try {
-                $nav = $module->getNavItems();
-            } catch (\Throwable $e) {
-                $nav = [];
-            }
-
-            $navUrls = [];
-
-            if (! empty($nav)) {
-                $navUrls['parent'] = [
-                    'title' => $nav['title'] ?? '',
-                    'url' => $nav['url'] ?? null,
-                ];
-                foreach ($nav['items'] ?? [] as $sub) {
-                    $navUrls['children'][] = [
-                        'title' => $sub['title'] ?? '',
-                        'url' => $sub['url'] ?? null,
-                    ];
-                }
-            }
-
-            $data[] = [
-                'name' => $module->name(),
-                'slug' => $slug,
-                'enabled' => $registry->isEnabled($slug),
-                'booted' => $registry->getBooted()->has($slug),
-                'nav' => $navUrls,
-                'dependencies' => $module->dependencies(),
-            ];
-        }
-
-        return $data;
-    }
-
     protected function getActiveCurrencies(): array
     {
-        try {
-            return app(CurrencyService::class)->getAllForSelector();
-        } catch (\Throwable) {
-            return [['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'is_default' => true]];
-        }
+        return [['code' => 'EUR', 'name' => 'Euro', 'symbol' => "\u{20ac}", 'is_default' => true]];
     }
 
     protected function getEmailTemplates(): array

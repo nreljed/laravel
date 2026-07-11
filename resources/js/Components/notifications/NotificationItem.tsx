@@ -9,14 +9,6 @@ import {
   Trash2,
   AlertTriangle,
   AlertCircle,
-  CalendarPlus,
-  CheckCircle2,
-  XCircle,
-  Pencil,
-  UserPlus,
-  Home,
-  RefreshCw,
-  MessageCircle,
   ShoppingCart,
   ArrowLeftRight,
   Package,
@@ -26,6 +18,7 @@ import {
   KeyRound,
   Mail,
   Maximize2,
+  UserPlus,
 } from "lucide-react";
 
 export interface StructuredNotification {
@@ -52,13 +45,6 @@ type TypeIconConfig = {
 };
 
 const typeConfig: Record<string, TypeIconConfig> = {
-  "booking.created": { icon: CalendarPlus, color: "text-green-500", label: "New Booking" },
-  "booking.confirmed": { icon: CheckCircle2, color: "text-blue-500", label: "Confirmed" },
-  "booking.cancelled": { icon: XCircle, color: "text-red-500", label: "Cancelled" },
-  "booking.modified": { icon: Pencil, color: "text-amber-500", label: "Modified" },
-  "property.created": { icon: Home, color: "text-green-500", label: "New Property" },
-  "property.updated": { icon: RefreshCw, color: "text-blue-500", label: "Updated" },
-  "property.inquiry": { icon: MessageCircle, color: "text-purple-500", label: "Inquiry" },
   "order.placed": { icon: ShoppingCart, color: "text-green-500", label: "New Order" },
   "order.status_changed": { icon: ArrowLeftRight, color: "text-blue-500", label: "Status Changed" },
   low_stock: { icon: Package, color: "text-red-500", label: "Low Stock" },
@@ -69,11 +55,6 @@ const typeConfig: Record<string, TypeIconConfig> = {
   "password.reset": { icon: KeyRound, color: "text-orange-500", label: "Password Reset" },
   "email.changed": { icon: Mail, color: "text-amber-500", label: "Email Changed" },
   "account.deleted": { icon: Trash2, color: "text-red-500", label: "Account Deleted" },
-  "booking.guest_registered": {
-    icon: UserPlus,
-    color: "text-violet-500",
-    label: "Guest Registered",
-  },
 };
 
 function getTypeIcon(type: string) {

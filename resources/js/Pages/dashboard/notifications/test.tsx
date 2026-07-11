@@ -45,12 +45,6 @@ interface TestResult {
 
 const TYPE_OPTIONS = [
   { value: "test", label: "Test (generic)" },
-  { value: "booking.created", label: "Booking Created" },
-  { value: "booking.confirmed", label: "Booking Confirmed" },
-  { value: "booking.cancelled", label: "Booking Cancelled" },
-  { value: "booking.modified", label: "Booking Modified" },
-  { value: "property.created", label: "Property Created" },
-  { value: "property.updated", label: "Property Updated" },
   { value: "user.registered", label: "User Registered" },
   { value: "password.changed", label: "Password Changed" },
   { value: "email.changed", label: "Email Changed" },

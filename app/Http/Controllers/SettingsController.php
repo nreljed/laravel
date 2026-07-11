@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateSettingsRequest;
 use App\Http\Requests\UploadLogoRequest;
-use App\Models\Module;
 use App\Models\Role;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Schema;
@@ -18,15 +17,11 @@ class SettingsController extends Controller
         if (! Schema::hasTable('settings')) {
             return Inertia::render('dashboard/admin/settings', [
                 'settings' => new \stdClass,
-                'availableModules' => [],
             ]);
         }
 
         return Inertia::render('dashboard/admin/settings', [
             'settings' => SettingsService::getAllGrouped(),
-            'availableModules' => Schema::hasTable('modules')
-                ? Module::select('id', 'name', 'slug', 'enabled', 'version')->get()
-                : [],
             'roles' => Schema::hasTable('roles')
                 ? Role::where('slug', '!=', 'admin')->select('id', 'name', 'slug')->orderBy('name')->get()
                 : [],

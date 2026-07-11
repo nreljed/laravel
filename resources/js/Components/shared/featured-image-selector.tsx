@@ -9,6 +9,7 @@ interface FeaturedImageSelectorProps {
   label?: string;
   description?: string;
   disabled?: boolean;
+  uploadRoute?: string;
 }
 
 export function FeaturedImageSelector({
@@ -17,6 +18,7 @@ export function FeaturedImageSelector({
   label = "Featured Image",
   description = "Select a featured image",
   disabled,
+  uploadRoute = "dashboard.profile.avatar.upload",
 }: FeaturedImageSelectorProps) {
   const [preview, setPreview] = useState(value);
   const [uploading, setUploading] = useState(false);
@@ -40,7 +42,7 @@ export function FeaturedImageSelector({
 
       const csrfToken =
         document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
-      const res = await fetch(route("dashboard.shop.products.upload-image"), {
+      const res = await fetch(route(uploadRoute), {
         method: "POST",
         body: formData,
         headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": csrfToken },

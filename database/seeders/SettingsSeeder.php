@@ -53,35 +53,6 @@ class SettingsSeeder extends Seeder
             ['key' => 'surface_unit', 'value' => 'sq_ft', 'group' => 'formatting'],
             ['key' => 'thousands_separator', 'value' => ',', 'group' => 'formatting'],
             ['key' => 'decimal_separator', 'value' => '.', 'group' => 'formatting'],
-
-            // Properties (Map)
-            ['key' => 'map_country_code', 'value' => 'TN', 'group' => 'properties'],
-            ['key' => 'map_bounds_south_west_lat', 'value' => '30.24', 'group' => 'properties'],
-            ['key' => 'map_bounds_south_west_lng', 'value' => '7.52', 'group' => 'properties'],
-            ['key' => 'map_bounds_north_east_lat', 'value' => '37.54', 'group' => 'properties'],
-            ['key' => 'map_bounds_north_east_lng', 'value' => '11.6', 'group' => 'properties'],
-            ['key' => 'map_center_lat', 'value' => '34.0', 'group' => 'properties'],
-            ['key' => 'map_center_lng', 'value' => '9.5', 'group' => 'properties'],
-            ['key' => 'map_min_zoom', 'value' => '6', 'group' => 'properties'],
-            ['key' => 'map_max_zoom', 'value' => '18', 'group' => 'properties'],
-            ['key' => 'map_default_zoom', 'value' => '7', 'group' => 'properties'],
-            ['key' => 'map_marker_zoom', 'value' => '18', 'group' => 'properties'],
-            ['key' => 'map_debug_show', 'value' => '0', 'group' => 'properties'],
-            ['key' => 'enable_property_reviews', 'value' => '1', 'group' => 'properties'],
-            ['key' => 'require_approval', 'value' => '0', 'group' => 'properties'],
-
-            // Booking
-            ['key' => 'booking_check_in_time', 'value' => '15:00', 'group' => 'booking'],
-            ['key' => 'booking_check_out_time', 'value' => '11:00', 'group' => 'booking'],
-            ['key' => 'booking_min_nights', 'value' => '1', 'group' => 'booking'],
-            ['key' => 'booking_default_cleaning_fee', 'value' => '50', 'group' => 'booking'],
-            ['key' => 'booking_service_fee_percent', 'value' => '5', 'group' => 'booking'],
-            ['key' => 'booking_default_damage_deposit', 'value' => '200', 'group' => 'booking'],
-            ['key' => 'booking_auto_checkout_hours', 'value' => '24', 'group' => 'booking'],
-            ['key' => 'booking_no_show_days', 'value' => '2', 'group' => 'booking'],
-            ['key' => 'booking_notify_on_create', 'value' => '1', 'group' => 'booking'],
-            ['key' => 'booking_notify_on_cancel', 'value' => '1', 'group' => 'booking'],
-            ['key' => 'booking_auto_confirm', 'value' => '0', 'group' => 'booking'],
         ];
 
         foreach ($settings as $s) {

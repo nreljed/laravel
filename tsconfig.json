@@ -16,12 +16,14 @@
         "noEmit": true,
         "paths": {
             "@/*": ["./resources/js/*"],
-            "@modules-booking": ["./app/Modules/Booking/Resources/js"],
-            "@modules-booking/*": ["./app/Modules/Booking/Resources/js/*"],
-            "@modules-properties": ["./app/Modules/Properties/Resources/js"],
-            "@modules-properties/*": ["./app/Modules/Properties/Resources/js/*"],
+            "@blog": ["./app/Blog/Resources/js"],
+            "@blog/*": ["./app/Blog/Resources/js/*"],
             "ziggy-js": ["./vendor/tightenco/ziggy"]
         }
     },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx", "resources/js/**/*.d.ts"]
+    "include": [
+        "resources/js/**/*.ts",
+        "resources/js/**/*.tsx",
+        "resources/js/**/*.d.ts"
+    ]
 }

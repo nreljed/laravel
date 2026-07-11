@@ -14,7 +14,6 @@ use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\EmailSettingsController;
-use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationTestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
@@ -109,7 +108,6 @@ Route::middleware(['auth', 'admin', 'throttle:60,1'])->prefix('dashboard/admin')
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
-    Route::put('/modules/{module}/toggle', [ModuleController::class, 'toggle'])->name('modules.toggle');
 
     // User management
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -165,12 +163,9 @@ Route::middleware(['auth', 'admin', 'throttle:60,1'])->prefix('dashboard/admin')
 require __DIR__.'/auth.php';
 
 // ═══════════════════════════════════════════════════
-// DEPLOY Endpoints — token-protected, no CSRF
+// DEPLOY Endpoints — token-protected, no CSRF, POST-only, rate-limited
 // ═══════════════════════════════════════════════════
-Route::post('/deploy/upload', [DeployController::class, 'upload']);
-Route::post('/deploy/update-env', [DeployController::class, 'updateEnv']);
-Route::get('/deploy/cache-clear', [DeployController::class, 'cacheClear']);
-Route::match(['get', 'post'], '/deploy/check', [DeployController::class, 'check']);
-
-// Module routes (Properties, Bookings) are loaded by their respective
-// Module classes via HasRoutes trait — no duplication needed here.
+Route::post('/deploy/upload', [DeployController::class, 'upload'])->middleware('throttle:5,60');
+Route::post('/deploy/update-env', [DeployController::class, 'updateEnv'])->middleware('throttle:5,60');
+Route::post('/deploy/cache-clear', [DeployController::class, 'cacheClear'])->middleware('throttle:5,60');
+Route::post('/deploy/check', [DeployController::class, 'check'])->middleware('throttle:5,60');

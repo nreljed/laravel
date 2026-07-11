@@ -44,20 +44,6 @@ class UpdateSettingsRequest extends FormRequest
             'default_country' => 'nullable|string|size:2',
             'thousands_separator' => 'nullable|string|max:1',
             'decimal_separator' => 'nullable|string|max:1',
-            'enable_property_reviews' => 'nullable|boolean',
-            'require_approval' => 'nullable|boolean',
-            'map_country_code' => 'nullable|string|size:2',
-            'map_bounds_south_west_lat' => 'nullable|numeric|between:-90,90',
-            'map_bounds_south_west_lng' => 'nullable|numeric|between:-180,180',
-            'map_bounds_north_east_lat' => 'nullable|numeric|between:-90,90',
-            'map_bounds_north_east_lng' => 'nullable|numeric|between:-180,180',
-            'map_center_lat' => 'nullable|numeric|between:-90,90',
-            'map_center_lng' => 'nullable|numeric|between:-180,180',
-            'map_min_zoom' => 'nullable|integer|min:1|max:20',
-            'map_max_zoom' => 'nullable|integer|min:1|max:20',
-            'map_default_zoom' => 'nullable|integer|min:1|max:20',
-            'map_marker_zoom' => 'nullable|integer|min:1|max:20',
-            'map_debug_show' => 'nullable|in:0,1',
         ];
     }
 }

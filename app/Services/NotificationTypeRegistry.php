@@ -2,15 +2,13 @@
 
 namespace App\Services;
 
-use App\Modules\ModuleRegistry;
-
 class NotificationTypeRegistry
 {
-    protected ModuleRegistry $registry;
+    protected FeatureRegistry $registry;
 
     protected ?array $types = null;
 
-    public function __construct(ModuleRegistry $registry)
+    public function __construct(FeatureRegistry $registry)
     {
         $this->registry = $registry;
     }

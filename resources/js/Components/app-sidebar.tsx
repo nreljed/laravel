@@ -14,8 +14,6 @@ import {
   ScrollText,
   Beaker,
   FlaskConical,
-  Calendar,
-  CalendarCheck,
 } from "lucide-react";
 import { usePage } from "@inertiajs/react";
 import { NavMain, type NavItem } from "@/Components/nav-main";
@@ -40,7 +38,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const moduleNavItems = (pageProps.moduleNavItems as NavItem[]) || [];
   const userCapabilities = (pageProps.userCapabilities as Record<string, boolean>) || {};
   const notificationUnreadCount = (pageProps.notificationUnreadCount as number) || 0;
-  const userMode = (pageProps.userMode as string) || "guest";
   const brand = (pageProps.brand as { logo?: string; name?: string }) || {};
   const appUrl = (pageProps.app_url as string) || null;
 
@@ -74,7 +71,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const devNavItems: NavItem[] = [
     { title: "Test Components", url: safeRoute("dashboard.developer.test-page"), icon: Beaker },
-    { title: "Booking Demo", url: safeRoute("dashboard.bookings.demo"), icon: CalendarCheck },
     {
       title: "Notification Test",
       url: safeRoute("dashboard.notifications.test"),
@@ -115,40 +111,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {moduleNavItems
           .filter((navItem) => hasPermission(navItem.permission))
           .map((navItem) => {
-            if (navItem.module_slug === "bookings" && userMode === "guest") {
-              return (
-                <SidebarGroup key={navItem.title}>
-                  <SidebarGroupLabel>My Trips</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <NavMain
-                      items={[
-                        {
-                          title: "My Bookings",
-                          url: safeRoute("dashboard.bookings.index"),
-                          icon: Calendar,
-                          badge: "guest",
-                          badgeVariant: "outline",
-                        },
-                      ]}
-                      iconMap={moduleIcons}
-                    />
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              );
-            }
-
             const groupLabel = navItem.groupLabel ?? "";
-
-            const enrichedItem =
-              navItem.module_slug === "bookings" && userMode === "host"
-                ? { ...navItem, badge: "host", badgeVariant: "default" as const }
-                : navItem;
 
             return (
               <SidebarGroup key={navItem.title}>
                 {groupLabel && <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>}
                 <SidebarGroupContent>
-                  <NavMain items={[enrichedItem]} iconMap={moduleIcons} />
+                  <NavMain items={[navItem]} iconMap={moduleIcons} />
                 </SidebarGroupContent>
               </SidebarGroup>
             );

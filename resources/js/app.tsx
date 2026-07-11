@@ -40,17 +40,7 @@ type PageMap = Record<string, ImportFn | { default: React.ComponentType<unknown>
 
 const pages = import.meta.glob("./Pages/**/*.tsx") as Record<string, ImportFn>;
 
-const propertyPages = import.meta.glob(
-  "../../app/Modules/Properties/Resources/js/Pages/**/*.tsx",
-) as Record<string, ImportFn>;
-
-const bookingPages = import.meta.glob(
-  "../../app/Modules/Booking/Resources/js/Pages/**/*.tsx",
-) as Record<string, ImportFn>;
-
-const shopPages = import.meta.glob("@modules-shop/Pages/**/*.tsx") as Record<string, ImportFn>;
-
-const postsPages = import.meta.glob("@modules-posts/Pages/**/*.tsx") as Record<string, ImportFn>;
+const postsPages = import.meta.glob("@blog/Pages/**/*.tsx") as Record<string, ImportFn>;
 
 const pageMap: PageMap = {};
 
@@ -65,7 +55,7 @@ for (const [path, importFn] of Object.entries(pages)) {
 function extractComponentPath(fullPath: string, moduleName: string): string | null {
   const normalized = fullPath.replaceAll("\\", "/");
 
-  const fsMarker = `app/Modules/${moduleName}/Resources/js/Pages/`;
+  const fsMarker = `app/Blog/Resources/js/Pages/`;
   const fsIdx = normalized.indexOf(fsMarker);
   if (fsIdx !== -1) {
     const relative = normalized.slice(fsIdx + fsMarker.length);
@@ -73,10 +63,7 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
   }
 
   const aliasPrefixMap: Record<string, string> = {
-    Properties: "@modules-properties",
-    Booking: "@modules-booking",
-    Shop: "@modules-shop",
-    Posts: "@modules-posts",
+    Blog: "@blog",
   };
   const alias = aliasPrefixMap[moduleName];
   if (alias) {
@@ -91,31 +78,10 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
   return null;
 }
 
-for (const [path, importFn] of Object.entries(propertyPages)) {
-  const componentPath = extractComponentPath(path, "Properties");
-  if (componentPath) {
-    pageMap[`Modules/Properties/${componentPath}`.toLowerCase()] = importFn;
-  }
-}
-
-for (const [path, importFn] of Object.entries(bookingPages)) {
-  const componentPath = extractComponentPath(path, "Booking");
-  if (componentPath) {
-    pageMap[`Modules/Bookings/${componentPath}`.toLowerCase()] = importFn;
-  }
-}
-
-for (const [path, importFn] of Object.entries(shopPages)) {
-  const componentPath = extractComponentPath(path, "Shop");
-  if (componentPath) {
-    pageMap[`Modules/Shop/${componentPath}`.toLowerCase()] = importFn;
-  }
-}
-
 for (const [path, importFn] of Object.entries(postsPages)) {
-  const componentPath = extractComponentPath(path, "Posts");
+  const componentPath = extractComponentPath(path, "Blog");
   if (componentPath) {
-    pageMap[`Modules/Posts/${componentPath}`.toLowerCase()] = importFn;
+    pageMap[`Blog/${componentPath}`.toLowerCase()] = importFn;
   }
 }
 

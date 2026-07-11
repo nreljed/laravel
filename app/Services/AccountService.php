@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\AuditAction;
 use App\Models\NotificationPreference;
 use App\Models\User;
-use App\Modules\ModuleRegistry;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -158,7 +157,7 @@ class AccountService
     public function deleteAllUserData(User $user): void
     {
         try {
-            ModuleRegistry::cleanupUserData($user->id);
+            app(FeatureRegistry::class)->cleanupUserData($user->id);
         } catch (\Throwable $e) {
             Log::warning('Module data cleanup failed for user '.$user->id.': '.$e->getMessage());
         }

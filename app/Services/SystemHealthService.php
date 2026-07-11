@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Module;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
@@ -60,12 +59,9 @@ class SystemHealthService
                 'default' => config('filesystems.default'),
                 'disks' => array_keys(config('filesystems.disks', [])),
             ],
-            'modules' => Module::all()->map(fn (Module $m) => [
-                'name' => $m->name,
-                'slug' => $m->slug,
-                'enabled' => $m->enabled,
-                'version' => $m->version,
-            ])->values()->toArray(),
+            'features' => app()->bound(FeatureRegistry::class)
+                ? app(FeatureRegistry::class)->getAll()
+                : [],
             'cron' => $this->getScheduledCommands(),
             'logs' => $this->getLogInfo(),
             'users' => [

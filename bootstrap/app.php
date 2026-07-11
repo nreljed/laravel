@@ -5,7 +5,6 @@ use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Http\Middleware\ModuleEnabled;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,18 +29,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'profile/avatar',
-            'booking/*',
-            'dashboard/bookings/guest/*',
-            'dashboard/bookings/ajax/*',
             'deploy/*',
             'api/notifications/*',
+            'stripe/webhook',
         ]);
 
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'role' => CheckRole::class,
             'permission' => CheckPermission::class,
-            'module' => ModuleEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

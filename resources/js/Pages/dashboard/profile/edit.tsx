@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from "react";
 import { Link, Head, router, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
-import { User, Building2, ShoppingCart, Loader2, LucideIcon } from "lucide-react";
+import { User, Loader2, LucideIcon } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
   Breadcrumb,
@@ -32,21 +32,10 @@ export default function ProfileEdit() {
     Record<string, unknown> | undefined;
   const serverUser = props.user as Record<string, unknown> | undefined;
   const status = props.status as string | undefined;
-  const modulesData = props.modules as { enabled: string[] } | undefined;
-
-  const enabled = modulesData?.enabled ?? [];
-
-  const hasProperties = enabled.includes("properties");
-  const hasBookings = enabled.includes("bookings");
-  const hasShop = enabled.includes("shop");
 
   const allTabs = useMemo(() => {
-    const tabs = [...CORE_TABS];
-    if (hasProperties) tabs.push({ value: "properties", label: "Properties", icon: Building2 });
-    if (hasBookings) tabs.push({ value: "bookings", label: "Bookings", icon: Building2 });
-    if (hasShop) tabs.push({ value: "shop", label: "Shop", icon: ShoppingCart });
-    return tabs;
-  }, [hasProperties, hasBookings, hasShop]);
+    return [...CORE_TABS];
+  }, []);
 
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);

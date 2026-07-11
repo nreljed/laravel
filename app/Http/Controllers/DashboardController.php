@@ -3,18 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
-use App\Services\DashboardService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index(DashboardService $dashboard)
+    public function index()
     {
-        return Inertia::render('dashboard/index', [
-            'stats' => $dashboard->getStats(),
-            'analytics' => $dashboard->getAnalytics(),
-        ]);
+        return Inertia::render('dashboard/index');
     }
 
     public function stats()
@@ -39,11 +35,9 @@ class DashboardController extends Controller
         if ($typeFilter !== 'all') {
             $query->where(function ($q) use ($typeFilter) {
                 $typePatterns = [
-                    'booking' => ['booking.%', '%booking%'],
-                    'property' => ['property.%', '%property%'],
                     'account' => ['%user%', '%password%', '%email%', '%account%'],
                     'content' => ['post.%', '%content%'],
-                    'orders' => ['order.%', '%stock%', '%shop%'],
+                    'orders' => ['order.%', '%stock%'],
                 ];
 
                 $patterns = $typePatterns[$typeFilter] ?? ["{$typeFilter}%"];
@@ -69,10 +63,6 @@ class DashboardController extends Controller
 
     public function switchMode(Request $request)
     {
-        if (! $request->user()->hasPermission('bookings.view')) {
-            abort(403);
-        }
-
         $mode = $request->input('mode', 'host');
 
         if (! in_array($mode, ['host', 'guest'])) {

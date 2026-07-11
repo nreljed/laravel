@@ -2,34 +2,13 @@
 
 namespace App\Providers;
 
+use App\Blog\Models\Post;
 use App\Models\Notification;
 use App\Models\User;
-use App\Modules\Booking\Models\Booking;
-use App\Modules\Posts\Models\Post;
-use App\Modules\Properties\Models\Property;
-use App\Modules\Shop\Models\Coupon;
-use App\Modules\Shop\Models\Currency;
-use App\Modules\Shop\Models\Order;
-use App\Modules\Shop\Models\Product;
-use App\Modules\Shop\Models\ProductReview;
-use App\Modules\Shop\Models\ShippingMethod;
-use App\Modules\Shop\Models\ShippingZone;
-use App\Modules\Shop\Models\TaxRate;
-use App\Modules\Shop\Models\Webhook;
 use App\Notifications\ResetPassword as CustomResetPassword;
 use App\Notifications\VerifyEmail as CustomVerifyEmail;
-use App\Policies\BookingPolicy;
-use App\Policies\CouponPolicy;
-use App\Policies\CurrencyPolicy;
-use App\Policies\OrderPolicy;
 use App\Policies\PostPolicy;
-use App\Policies\ProductPolicy;
-use App\Policies\ProductReviewPolicy;
-use App\Policies\PropertyPolicy;
-use App\Policies\ShippingMethodPolicy;
-use App\Policies\ShippingZonePolicy;
-use App\Policies\TaxRatePolicy;
-use App\Policies\WebhookPolicy;
+use App\Services\FeatureRegistry;
 use App\Services\FormattingService;
 use App\Services\MailerConfigurator;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -44,22 +23,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FormattingService::class);
+        $this->app->singleton(FeatureRegistry::class);
     }
 
     public function boot(): void
     {
-        Gate::policy(Property::class, PropertyPolicy::class);
-        Gate::policy(Booking::class, BookingPolicy::class);
         Gate::policy(Post::class, PostPolicy::class);
-        Gate::policy(Product::class, ProductPolicy::class);
-        Gate::policy(Order::class, OrderPolicy::class);
-        Gate::policy(Coupon::class, CouponPolicy::class);
-        Gate::policy(Currency::class, CurrencyPolicy::class);
-        Gate::policy(ProductReview::class, ProductReviewPolicy::class);
-        Gate::policy(ShippingMethod::class, ShippingMethodPolicy::class);
-        Gate::policy(ShippingZone::class, ShippingZonePolicy::class);
-        Gate::policy(TaxRate::class, TaxRatePolicy::class);
-        Gate::policy(Webhook::class, WebhookPolicy::class);
 
         Gate::before(function (User $user, string $ability) {
             if ($user->isAdmin()) {

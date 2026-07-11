@@ -95,7 +95,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
     <div className="space-y-6">
       <Section
         title="Pricing & Currency"
-        description="Global currency and price formatting — these are the defaults inherited by all properties and the Booking module. Properties can be overridden individually."
+        description="Global currency and price formatting defaults across the system."
         icon={DollarSign}
         asAccordion
         onSubmit={onSubmit}
@@ -167,7 +167,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
 
       <Section
         title="Units & Measurement"
-        description="Global defaults for location and surface area — inherited by all properties."
+        description="Global defaults for location and surface area."
         icon={Ruler}
         asAccordion
         onSubmit={onSubmit}
@@ -177,7 +177,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
           label="Default Country"
           htmlFor="default_country"
           error={errors?.default_country as string}
-          description="The default country for new properties."
+          description="The default country."
         >
           <Select
             value={data?.default_country || "TN"}

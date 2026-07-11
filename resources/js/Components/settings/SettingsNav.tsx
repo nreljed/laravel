@@ -7,29 +7,17 @@ import {
   Mail,
   Wrench,
   Languages,
-  Puzzle,
-  Building2,
-  Calendar,
-  ShoppingCart,
 } from "lucide-react";
-
-const MODULE_COLORS: Record<string, string> = {
-  properties: "bg-blue-500",
-  booking: "bg-amber-500",
-  shop: "bg-pink-500",
-};
 
 interface SettingsNavItem {
   value: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  module?: string;
 }
 
 interface SettingsNavProps {
   activeTab: string;
   onTabChange: (_tab: string) => void;
-  enabledModules?: string[];
 }
 
 const CORE_ITEMS: SettingsNavItem[] = [
@@ -40,44 +28,14 @@ const CORE_ITEMS: SettingsNavItem[] = [
   { value: "email", label: "Email", icon: Mail },
   { value: "maintenance", label: "Maintenance", icon: Wrench },
   { value: "localization", label: "Localization", icon: Languages },
-  { value: "modules", label: "Modules", icon: Puzzle },
 ];
 
-const MODULE_ITEMS: SettingsNavItem[] = [
-  { value: "properties", label: "Properties", icon: Building2, module: "properties" },
-  { value: "booking", label: "Booking", icon: Calendar, module: "booking" },
-  { value: "shop", label: "Shop", icon: ShoppingCart, module: "shop" },
-];
-
-export function SettingsNav({ activeTab, onTabChange, enabledModules = [] }: SettingsNavProps) {
-  const allItems = React.useMemo(() => {
-    const mods = Array.isArray(enabledModules) ? enabledModules : [];
-    const items: SettingsNavItem[] = [...CORE_ITEMS];
-
-    const hasModules = MODULE_ITEMS.some((m) => mods.includes(m.module ?? ""));
-    if (hasModules) {
-      items.push({ value: "", label: "", icon: Globe, module: "separator" });
-    }
-
-    for (const item of MODULE_ITEMS) {
-      if (mods.includes(item.module ?? "")) {
-        items.push(item);
-      }
-    }
-
-    return items;
-  }, [enabledModules]);
-
+export function SettingsNav({ activeTab, onTabChange }: SettingsNavProps) {
   return (
     <nav className="flex items-center gap-1 p-1 bg-muted rounded-lg flex-wrap">
-      {allItems.map((item) => {
-        if (item.module === "separator") {
-          return <div key="sep" className="w-px h-6 bg-border/50 mx-0.5" role="separator" />;
-        }
-
+      {CORE_ITEMS.map((item) => {
         const Icon = item.icon;
         const active = activeTab === item.value;
-        const dotColor = item.module ? MODULE_COLORS[item.module] : null;
 
         return (
           <button
@@ -90,7 +48,6 @@ export function SettingsNav({ activeTab, onTabChange, enabledModules = [] }: Set
                 : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             }`}
           >
-            {dotColor && <span className={`h-1.5 w-1.5 rounded-full ${dotColor} shrink-0`} />}
             <Icon className="h-4 w-4" />
             <span className="hidden sm:inline">{item.label}</span>
           </button>

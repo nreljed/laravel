@@ -52,13 +52,6 @@ function getTypeLabel(type: string): string {
     .replaceAll(/([a-z])([A-Z])/g, "$1.$2")
     .toLowerCase();
   const labels: Record<string, string> = {
-    "booking.created": "New Booking",
-    "booking.confirmed": "Booking Confirmed",
-    "booking.cancelled": "Booking Cancelled",
-    "booking.modified": "Booking Modified",
-    "property.created": "New Property",
-    "property.updated": "Property Updated",
-    "property.inquiry": "Property Inquiry",
     "order.placed": "New Order",
     "order.status_changed": "Order Status Changed",
     low_stock: "Low Stock Alert",

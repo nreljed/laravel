@@ -1,4 +1,3 @@
-import { Link } from "@inertiajs/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Package } from "lucide-react";
 
@@ -38,12 +37,9 @@ export default function TopProductsTable({ products }: TopProductsTableProps) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}</span>
-                  <Link
-                    href={route("dashboard.shop.products.edit", product.product_id)}
-                    className="font-medium hover:underline truncate"
-                  >
+                  <span className="font-medium truncate">
                     {product.product_name}
-                  </Link>
+                  </span>
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <span className="text-muted-foreground text-xs">{product.total_qty} sold</span>

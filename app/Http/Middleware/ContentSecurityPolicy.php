@@ -16,10 +16,6 @@ class ContentSecurityPolicy
             return $response;
         }
 
-        if (strpos($request->getRequestUri(), '/dashboard') !== 0) {
-            return $response;
-        }
-
         $csp = $this->buildPolicy();
         $response->headers->set('Content-Security-Policy', $csp);
 
@@ -28,13 +24,16 @@ class ContentSecurityPolicy
 
     protected function buildPolicy(): string
     {
+        $appUrl = config('app.url');
+        $wsUrl = str_replace(['https://', 'http://'], ['wss://', 'ws://'], $appUrl);
+
         $directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "script-src 'self' 'unsafe-inline'",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net",
             "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self' ws://* wss://*",
+            "connect-src 'self' $wsUrl",
             "worker-src 'self' blob:",
             "frame-src 'none'",
             "object-src 'none'",

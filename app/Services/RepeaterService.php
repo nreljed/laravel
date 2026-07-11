@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\RepeaterData;
-use App\Modules\ModuleRegistry;
 
 class RepeaterService
 {
@@ -15,11 +14,7 @@ class RepeaterService
 
     public static function getConfig(): array
     {
-        if (static::$configCache === null) {
-            static::$configCache = app(ModuleRegistry::class)->getAllRepeaterConfigs();
-        }
-
-        return static::$configCache;
+        return static::$configCache ??= [];
     }
 
     public static function getRepeaters(?string $module = null): array

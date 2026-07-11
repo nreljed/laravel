@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePermissionRequest;
 use App\Http\Requests\Admin\UpdatePermissionRequest;
-use App\Http\Requests\Permission\StorePermissionRequest;
 use App\Models\Permission;
 use App\Services\PermissionCacheService;
 use Illuminate\Http\RedirectResponse;
