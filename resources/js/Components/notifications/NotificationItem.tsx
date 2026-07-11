@@ -27,7 +27,7 @@ export interface StructuredNotification {
   title?: string;
   message?: string;
   link?: string;
-  module?: string;
+  feature?: string;
   severity?: Severity;
   is_read?: string;
   data?: Record<string, string>;

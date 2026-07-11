@@ -21,7 +21,7 @@ interface NavItem {
   badge?: string;
   badgeVariant?: "default" | "secondary" | "outline" | "destructive";
   permission?: string;
-  module_slug?: string;
+  feature_slug?: string;
   showModeBadge?: boolean;
   groupLabel?: string;
 }

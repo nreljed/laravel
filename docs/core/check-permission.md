@@ -26,10 +26,12 @@ public function handle(Request $request, Closure $next, string $slug): Response
 
 ## Usage in Routes
 
-Applied automatically by the `HasRoutes` trait when modules load routes with a permission parameter:
+Applied via route group middleware arrays:
 
 ```php
-$this->loadRoutes(__DIR__.'/Routes/web.php', '/dashboard/bookings', 'dashboard.bookings.', 'bookings.view');
+Route::middleware(['auth', 'verified', 'permission:posts.view'])->group(function () {
+    Route::get('/dashboard/posts', [PostController::class, 'index'])->name('dashboard.posts.index');
+});
 ```
 
-This produces route groups with middleware: `['web', 'auth', 'verified', 'permission:bookings.view']`.
+This produces route groups with middleware: `['web', 'auth', 'verified', 'permission:posts.view']`.

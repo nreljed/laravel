@@ -11,11 +11,9 @@ vendor/bin/pint          # Laravel Pint (PSR-12)
 php artisan migrate      # Run migrations
 ```
 
-## Module Commands
+## Feature Commands
 
 ```bash
-php artisan modules:sync-permissions  # Sync module permissions to DB
-php artisan modules:debug {slug?}     # Debug module registration
 php artisan permissions:list          # List all permissions
 ```
 

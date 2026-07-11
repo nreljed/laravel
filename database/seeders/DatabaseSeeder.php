@@ -35,8 +35,6 @@ class DatabaseSeeder extends Seeder
             Role::where('slug', 'admin')->first()->id
         );
 
-        $this->call(ModuleSeeder::class);
         $this->call(SettingsSeeder::class);
-        $this->call(PropertyTermSeeder::class);
     }
 }

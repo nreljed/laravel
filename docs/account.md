@@ -2,7 +2,7 @@
 
 **Route:** `/dashboard/account` (named `dashboard.account`)  
 **Controller:** `AccountController@edit`  
-**Layout:** `AuthenticatedLayout` with `header="Account"`  
+**Layout:** `AuthenticatedLayout` with `header="Account"`
 
 ---
 
@@ -12,7 +12,7 @@ The account page is a single-page composition of four sections, listed top to bo
 
 ### 1. Email Verification Banner
 
-*Conditional* — only shown when `mustVerifyEmail` is `true` (both the `User` model implements `MustVerifyEmail` AND `require_email_verification` setting is enabled) AND `email_verified_at` is `null`.
+_Conditional_ — only shown when `mustVerifyEmail` is `true` (both the `User` model implements `MustVerifyEmail` AND `require_email_verification` setting is enabled) AND `email_verified_at` is `null`.
 
 - Amber card with `AlertTriangle` icon
 - Message: "Email not verified — Please verify your email address to access all features."
@@ -74,7 +74,7 @@ The account page is a single-page composition of four sections, listed top to bo
 - Click opens an `AlertDialog` with:
   - Confirmation text input: type **"delete my account"**
   - **Current Password** input (via `CurrentPasswordInput`) — security gate
-  - Generic message: *"All your personal data, content, and account information will be permanently deleted."*
+  - Generic message: _"All your personal data, content, and account information will be permanently deleted."_
   - **Cancel** button — **always active**, even during countdown
 - **Two-phase flow:**
   1. **Pre-check** — `fetch` POST to `verify-delete-password` with `current_password`. Server validates password immediately. On failure → red inline error on password field instantly.
@@ -82,20 +82,20 @@ The account page is a single-page composition of four sections, listed top to bo
   3. **Execute** — After countdown, `router.post` to `destroy` with `confirmation` + `current_password`.
 - **Error handling**: Server validation errors shown inline on respective fields. Dialog stays open. Errors clear on typing.
 - **Cancel**: Resets confirmation text, password, countdown, errors, and clears interval.
-- Deletes: all personal data, content, account info, tokens, notifications, notification preferences, and module data via `ModuleRegistry::cleanupUserData()`.
+- Deletes: all personal data, content, account info, tokens, notifications, notification preferences, and feature data via `FeatureRegistry::cleanupUserData()`.
 - Sends "account deleted" confirmation email synchronously via `MailService::sendNow()`.
 
 ---
 
 ## Backend Props (from `AccountController@edit`)
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `user` | `{ id, name, display_name, email, email_verified_at, avatar, user_login }` | Current user data |
-| `mustVerifyEmail` | `boolean` | `true` only when `MustVerifyEmail` contract AND `require_email_verification === '1'` |
-| `status` | `string?` | Flash status from session (e.g. `"verification-link-sent"`) |
-| `notificationTypes` | `Record<string, Record<string, NotificationTypeConfig>>` | Grouped notification type definitions from `NotificationTypeRegistry` |
-| `preferences` | `Record<string, { in_app?, email? }>` | Current user notification preferences |
+| Prop                | Type                                                                       | Description                                                                          |
+| ------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `user`              | `{ id, name, display_name, email, email_verified_at, avatar, user_login }` | Current user data                                                                    |
+| `mustVerifyEmail`   | `boolean`                                                                  | `true` only when `MustVerifyEmail` contract AND `require_email_verification === '1'` |
+| `status`            | `string?`                                                                  | Flash status from session (e.g. `"verification-link-sent"`)                          |
+| `notificationTypes` | `Record<string, Record<string, NotificationTypeConfig>>`                   | Grouped notification type definitions from `NotificationTypeRegistry`                |
+| `preferences`       | `Record<string, { in_app?, email? }>`                                      | Current user notification preferences                                                |
 
 ---
 
@@ -110,15 +110,15 @@ The account page is a single-page composition of four sections, listed top to bo
 
 The system uses a **soft-prompt** model — inspired by GitHub, Slack, and modern SaaS apps.
 
-| Aspect | Behavior |
-|--------|----------|
+| Aspect                               | Behavior                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------- |
 | `require_email_verification` setting | When `'0'`: `User::hasVerifiedEmail()` always returns `true`. Banner hidden. No gate. |
-| After registration | Verification email sent; user lands on dashboard (no redirect) |
-| `verified` middleware | **Not applied** to any route group. Removed from `routes/web.php`. |
-| Account page banner | Shown only when setting is `'1'` AND user hasn't verified |
-| Resend action | `POST /email/verification-notification` (throttled 6/1 min) |
-| Email change | Nullifies `email_verified_at`; sends verification only if setting is `'1'` |
-| Future sensitive actions | Will check `$request->user()->hasVerifiedEmail()` individually |
+| After registration                   | Verification email sent; user lands on dashboard (no redirect)                        |
+| `verified` middleware                | **Not applied** to any route group. Removed from `routes/web.php`.                    |
+| Account page banner                  | Shown only when setting is `'1'` AND user hasn't verified                             |
+| Resend action                        | `POST /email/verification-notification` (throttled 6/1 min)                           |
+| Email change                         | Nullifies `email_verified_at`; sends verification only if setting is `'1'`            |
+| Future sensitive actions             | Will check `$request->user()->hasVerifiedEmail()` individually                        |
 
 The dedicated `/verify-email` page remains accessible for direct visits, but is never auto-redirected to.
 
@@ -126,13 +126,13 @@ The dedicated `/verify-email` page remains accessible for direct visits, but is 
 
 ## Related Files
 
-| File | Purpose |
-|------|---------|
-| `app/Http/Controllers/AccountController.php` | Server-side controller |
-| `app/Services/AccountService.php` | Business logic (email, password, delete) |
-| `app/Notifications/VerifyEmail.php` | Branded verification email notification |
-| `resources/js/Pages/Account/Edit.tsx` | Account page composition |
-| `resources/js/Components/account/sections/DangerZoneSection.tsx` | Delete account dialog with two-phase flow |
-| `resources/js/Pages/Auth/EmailVerified.tsx` | Verification success page |
-| `routes/web.php` | Route definitions (no `verified` middleware) |
-| `routes/auth.php` | Email verification routes (`verification.send`, `verification.notice`, `verification.verify`, `verification.verified`) |
+| File                                                             | Purpose                                                                                                                |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `app/Http/Controllers/AccountController.php`                     | Server-side controller                                                                                                 |
+| `app/Services/AccountService.php`                                | Business logic (email, password, delete)                                                                               |
+| `app/Notifications/VerifyEmail.php`                              | Branded verification email notification                                                                                |
+| `resources/js/Pages/Account/Edit.tsx`                            | Account page composition                                                                                               |
+| `resources/js/Components/account/sections/DangerZoneSection.tsx` | Delete account dialog with two-phase flow                                                                              |
+| `resources/js/Pages/Auth/EmailVerified.tsx`                      | Verification success page                                                                                              |
+| `routes/web.php`                                                 | Route definitions (no `verified` middleware)                                                                           |
+| `routes/auth.php`                                                | Email verification routes (`verification.send`, `verification.notice`, `verification.verify`, `verification.verified`) |

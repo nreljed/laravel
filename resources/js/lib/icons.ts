@@ -16,7 +16,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 
-export const moduleIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+export const featureIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   FileText,
   LayoutDashboard,
   BarChart3,

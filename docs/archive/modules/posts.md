@@ -10,17 +10,17 @@ Create and manage blog posts and articles.
 
 ## Permissions
 
-| Slug | Name |
-|------|------|
-| `posts.view` | View Posts |
+| Slug           | Name         |
+| -------------- | ------------ |
+| `posts.view`   | View Posts   |
 | `posts.create` | Create Posts |
-| `posts.edit` | Edit Posts |
+| `posts.edit`   | Edit Posts   |
 | `posts.delete` | Delete Posts |
 
 ## Routes
 
-| File | Prefix | Auth | Middleware |
-|------|--------|------|------------|
+| File             | Prefix             | Auth     | Middleware   |
+| ---------------- | ------------------ | -------- | ------------ |
 | `Routes/web.php` | `/dashboard/posts` | Required | `posts.view` |
 
 ### Web Routes
@@ -48,8 +48,8 @@ Content                (SidebarGroupLabel)
 
 ## Policy
 
-| Policy | Model | Scope |
-|--------|-------|-------|
+| Policy       | Model  | Scope          |
+| ------------ | ------ | -------------- |
 | `PostPolicy` | `Post` | Owner or admin |
 
 ## Migration Paths
@@ -58,8 +58,8 @@ Returns `[]` — no module-specific migrations. The `posts` table is created via
 
 ## Notification Types
 
-| Type | Channels |
-|------|----------|
+| Type             | Channels    |
+| ---------------- | ----------- |
 | `post.published` | in_app only |
 | `post.scheduled` | in_app only |
 

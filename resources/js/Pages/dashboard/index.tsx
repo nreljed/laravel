@@ -15,7 +15,7 @@ export default function DashboardIndex() {
             Welcome back, {user?.name || "User"}!
           </h2>
           <p className="text-muted-foreground">
-            Use the sidebar to navigate your modules and settings.
+            Use the sidebar to navigate your features and settings.
           </p>
         </div>
       </div>

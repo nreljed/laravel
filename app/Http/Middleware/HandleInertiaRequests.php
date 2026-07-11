@@ -91,8 +91,8 @@ class HandleInertiaRequests extends Middleware
                     return [];
                 }
             },
-            'moduleNavItems' => fn () => $this->getModuleNavItems(),
-            'moduleData' => fn () => $this->getModuleSharedData(),
+            'featureNavItems' => fn () => $this->getFeatureNavItems(),
+            'featureData' => fn () => $this->getFeatureSharedData(),
             'emailSettings' => fn () => $this->getEmailSettings(),
             'emailTemplates' => fn () => $this->getEmailTemplates(),
             'brand' => [
@@ -112,7 +112,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    protected function getModuleNavItems(): array
+    protected function getFeatureNavItems(): array
     {
         try {
             return app(FeatureRegistry::class)->getAllNavItems();
@@ -121,7 +121,7 @@ class HandleInertiaRequests extends Middleware
         }
     }
 
-    protected function getModuleSharedData(): array
+    protected function getFeatureSharedData(): array
     {
         try {
             return app(FeatureRegistry::class)->getAllSharedData();
@@ -241,7 +241,7 @@ class HandleInertiaRequests extends Middleware
             'user_registered' => $user->created_at?->toISOString(),
             'roles' => $user->roles->pluck('slug')->toArray(),
             'role' => $roleSlug,
-            'module_profile' => [
+            'profile_data' => [
                 'properties' => [
                     'phone_numbers' => $phoneData,
                     'social_media' => $socialData,

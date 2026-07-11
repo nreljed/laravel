@@ -35,7 +35,7 @@ interface StructuredNotification {
   title?: string;
   message?: string;
   link?: string;
-  module?: string;
+  feature?: string;
   severity?: Severity;
   is_read?: string;
   data?: Record<string, string>;
@@ -87,12 +87,7 @@ function inferTypeGroup(type: string): string {
     return "account";
   if (t.includes("post") || t.includes("page") || t.includes("content") || t.includes("comment"))
     return "content";
-  if (
-    t.includes("order") ||
-    t.includes("product") ||
-    t.includes("stock")
-  )
-    return "orders";
+  if (t.includes("order") || t.includes("product") || t.includes("stock")) return "orders";
   if (t.includes("payment")) return "orders";
   return "other";
 }

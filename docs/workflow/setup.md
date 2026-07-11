@@ -25,7 +25,6 @@ php artisan migrate
 
 # 4. Seed roles, permissions, and demo data
 php artisan db:seed --class=RolesAndPermissionsSeeder
-php artisan modules:sync-permissions
 
 # 5. Create admin user
 php artisan app:create-admin
@@ -56,7 +55,6 @@ vendor/bin/pint                        # PHP CS fixer
 ```bash
 php artisan migrate
 php artisan db:seed --class=RolesAndPermissionsSeeder
-php artisan modules:sync-permissions
 npm run typecheck
 npm run build
 php artisan test

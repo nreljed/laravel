@@ -41,9 +41,10 @@ class BookingControllerTest extends TestCase
 ```
 
 `bootModules()`:
-1. Loads module classes via `ModuleLoader`
-2. Seeds module records (`ModuleSeeder`) and roles/permissions (`RolesAndPermissionsSeeder`)
-3. Boots enabled modules and registers routes
+
+1. Loads feature service providers via `FeatureRegistry`
+2. Seeds roles/permissions (`RolesAndPermissionsSeeder`)
+3. Boots registered features and loads routes
 4. Calls `RouteCollection::refreshNameLookups()` — required for `route()` helper
 5. Creates any missing permissions and syncs to admin role
 

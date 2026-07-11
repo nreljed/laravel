@@ -4,7 +4,7 @@
 
 Central dispatch for sending notifications respecting user preferences.
 
-Dependencies: `NotificationTypeRegistry`, `ModuleRegistry`, `MailService`
+Dependencies: `MailService`
 
 ## Methods
 
@@ -20,7 +20,7 @@ Central dispatch method. For each channel (in_app, email):
 
 ### `sendNotificationEmail($notifiable, Notification $notification, string $templateKey)`
 
-Builds and sends email using the module-defined email template. Merges notification data with user info.
+Builds and sends email using the feature-defined email template. Merges notification data with user info.
 
 ### `purge(int $retentionDays = 90)`
 
@@ -30,6 +30,6 @@ Hard-deletes all notifications older than the retention period. Returns count of
 
 Users can opt in/out of specific notification channels per type via `NotificationPreference` model. The system:
 
-- Reads `NotificationType` definitions from all modules (via `NotificationTypeRegistry`)
+- Reads `NotificationType` definitions from features (via `NotificationTypeRegistry`)
 - Stores preferences in `notification_preferences` table
 - Default behavior is defined by `default_enabled` on each type definition

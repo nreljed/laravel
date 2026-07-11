@@ -43,12 +43,12 @@ class PermissionGateServiceProvider extends ServiceProvider
                 'manage-notifications',
             ];
 
-            $moduleSlugs = [];
+            $featureSlugs = [];
 
             if ($this->app->resolved(FeatureRegistry::class)) {
                 $registry = $this->app->make(FeatureRegistry::class);
                 foreach ($registry->permissions() as $perm) {
-                    $moduleSlugs[] = $perm['slug'];
+                    $featureSlugs[] = $perm['slug'];
                 }
             }
 
@@ -58,7 +58,7 @@ class PermissionGateServiceProvider extends ServiceProvider
             } catch (\Throwable) {
             }
 
-            return array_unique(array_merge($corePermissions, $moduleSlugs, $dbSlugs));
+            return array_unique(array_merge($corePermissions, $featureSlugs, $dbSlugs));
         } catch (\Throwable) {
             return [];
         }

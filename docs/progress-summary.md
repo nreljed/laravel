@@ -1,7 +1,9 @@
 ## Goal
+
 Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified Laravel alignment.
 
 ## Constraints & Preferences
+
 - Rename existing `user` role → `crm_user` with all module permissions
 - All modules (Properties, Booking, Shop, Posts) are for all logged-in users, not just admin
 - Only admin-specific pages (Users, Roles, Settings, System Health) are hidden from `crm_user`
@@ -18,8 +20,10 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
 - Email layout must match WP plugin with conditional logo support — **fixed**: logoUrl passed via EmailTemplateService, layout now conditionally shows image or h1 text
 
 ## Progress
+
 ### Done
-- HasRoutes trait: `loadRoutes()` and `loadAdminRoutes()` accept optional `$permission` param
+
+- Route permission middleware: `loadRoutes()` and `loadAdminRoutes()` accept optional `$permission` param
 - All four module `routes()` methods pass `$this->slug() . '.view'` permission
 - SyncModulePermissions auto-assigns new module permissions to `crm_user` role
 - RolesAndPermissionsSeeder creates `crm_user` (not `user`) with all module + profile/notification permissions
@@ -45,6 +49,7 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
 - `tsc --noEmit` + `vite build` both pass clean
 
 ### Remaining
+
 - PHP test `AuthenticationTest::test_login_screen_can_be_rendered` still 500s — module route registration timing issue in test lifecycle (works in production)
 - Add async username/email availability checks on Register page (matching WP plugin pattern)
 - Consider adding `is_active` migration for user disable/enable
@@ -54,13 +59,15 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
 ### Phase 6 — Admin Modernization (completed 2026-06-24)
 
 #### Unified Authorization Layer
+
 - PermissionCacheService: caches permission→slug mappings, per-role and per-user lists, flushed on any role/permission/assignment change
 - PermissionGateServiceProvider: registers ALL permission slugs (core + DB + modules) as Laravel Gates, with `Gate::before` granting admins full access
-- Removed per-module Gate::define loop from ModuleServiceProvider (replaced by central provider)
+- Removed per-module Gate::define loop from service provider (replaced by central PermissionGateServiceProvider)
 - User model: `hasPermission()` now uses cache, added `canAny()` matching parent signature, `hasAllPermissions()`
 - HandleInertiaRequests: switched to `$user->can()` via Gates
 
 #### Complete Admin CRUD
+
 - RoleController: added `create()`/`store()`/`destroy()` (admin role protected from deletion), StoreRoleRequest, routes
 - Roles/Form.tsx: unified create/edit with auto-slugify from name
 - Roles/Index.tsx: create button, delete button (hidden for admin), slug column
@@ -71,6 +78,7 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
 - app-sidebar.tsx: added Permissions nav item
 
 #### Admin Power Features
+
 - ImpersonationController: start (admin) stores `impersonator_id` in session, stop (auth-only) restores, both logged to audit_logs
 - ImpersonationBanner.tsx: amber banner with stop button, shared via HandleInertiaRequests
 - BulkUserController: bulk delete (self-protected) + CSV export
@@ -79,12 +87,14 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
 - app-sidebar.tsx: added Audit Logs nav item
 
 #### Security Hardening
+
 - SessionController: index (device/browser/IP/last activity) + destroy (revoke), reads sessions DB table
 - Sessions.tsx: session management UI with current session indicator
 - `throttle:60,1` on entire admin route group
 - Audit logging in RoleController (store/update/destroy) and UserController (store/update)
 
 #### Developer Experience
+
 - Console commands: `roles:create` (with permission assignment), `permissions:list` (with role/group/format filters)
 - Factories: PermissionFactory, RoleFactory
 - Tests: 6 new suites (119 total, all passing, 261 assertions):
@@ -94,6 +104,7 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
   - BulkOperationsTest (bulk delete/self-protection/CSV export)
 
 #### New/Updated Files
+
 - `app/Services/PermissionCacheService.php` — permission caching
 - `app/Providers/PermissionGateServiceProvider.php` — Gate registration
 - `bootstrap/providers.php` — provider registration
@@ -125,6 +136,7 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
 ### Phase 18 — FormattingService Injectable + HostProfileService Extraction (completed 2026-07-03)
 
 #### FormattingService — Static → Injectable Singleton
+
 - Converted all `static` methods to instance methods
 - Registered as `singleton` in `AppServiceProvider::register()`
 - Updated callers:
@@ -135,17 +147,20 @@ Deliver a production-ready auth system with RBAC, admin CRUD UI, and verified La
   - `BookingCurrencyService` — `app(FormattingService::class)` bridge
 
 #### HostProfileService — Extracted from BookingController
+
 - Created `App\Modules\Booking\Services\HostProfileService` with 6 resolve methods + `resolveAll()`
 - **BookingController** — removed 110 lines of static methods, now uses `$this->hostProfile->resolveAll()`
 - **BookingGuestController** — replaced 12 `BookingController::resolveHost*()` static calls with `$this->hostProfile->resolveAll()` (eliminated cross-controller static dependency)
 - Docs updated: `docs/core/formatting.md`, `docs/modules/booking/services.md`, `docs/modules/booking/controllers.md`
 
 #### Verification
+
 - **157/157** PHPUnit tests pass
 - **TypeScript** clean (`tsc --noEmit`)
 - **Production build** succeeds in 3.24s
 
 #### New / Modified Files
+
 ```
 NEW:
   app/Modules/Booking/Services/HostProfileService.php
@@ -167,6 +182,7 @@ MODIFIED:
 ```
 
 ## Key Decisions
+
 - `crm_user` gets ALL module permissions + standard profile/notification permissions; does NOT get admin permissions
 - `permission:` middleware added to all module route groups
 - Module onUserDelete() individual deletes are redundant with FK CASCADE but kept for model event firing
@@ -179,8 +195,8 @@ MODIFIED:
 - Email layout now conditionally shows logo image (if set) or h1 site name text — matches WP plugin `@if($logoUrl)` pattern
 
 ## Relevant Files
-- `app/Modules/Traits/HasRoutes.php`
-- `app/Modules/ModuleRegistry.php` (static `cleanupUserData`)
+
+- `app/Services/FeatureRegistry.php` (central feature registry, cleanup hooks)
 - `app/Http/Controllers/Admin/UserController.php`, `RoleController.php`
 - `app/Http/Requests/Admin/StoreUserRequest.php`, `UpdateUserRequest.php`
 - `database/migrations/2026_06_19_000000_rename_user_role_to_crm_user.php`
@@ -220,6 +236,7 @@ MODIFIED:
 ### Phase 4 — Booking Services & Guest Portal Parity (completed 2026-07-01)
 
 #### Booking PHP Services
+
 - `BookingAction` model + migration for `booking_actions` table
 - `BookingActionService` — records/retrieves booking actions
 - `BookingActivityDashboardService` — admin activity feed
@@ -228,12 +245,14 @@ MODIFIED:
 - `config/booking-meta.php` — configuration array
 
 #### Property Module Improvements
+
 - **Scheduled publishing**: `published_at` column, `PublishScheduledProperties` artisan command (every minute)
 - **Term image support**: `image` column on `property_types` and `cities`
 - **Taxonomy seed data**: 14 types, 8 statuses, 4 feature groups (48 features), 200+ cities
 - **Property fixes**: bulk action route, route method mismatch, user count cache, cascade delete, updateStatus validation
 
 #### Guest Portal Parity
+
 - **API routes**: check-availability, cache-version, modify, cancel
 - **Check-in/check-out**: `guestCheckIn/guestCheckOut` (token auth), `loggedInCheckIn/loggedInCheckOut` (session auth)
 - **Routes**: `guest.php`, `my-bookings.php`, `web.php` (admin guest portal)
@@ -242,6 +261,7 @@ MODIFIED:
 - **All 119 tests passing, typecheck clean, Pint clean**
 
 #### Documentation Restructure (completed 2026-07-01)
+
 - Master navigation hub at `docs/index.md`
 - Per-module subdirectories with structured sub-docs: `index.md`, `controllers.md`, `services.md`, `frontend.md`, `architecture.md`, `settings.md`, `guest-portal.md`
 - Core architecture docs: `architecture.md`, `routes.md`, `formatting.md`, `modules.md`

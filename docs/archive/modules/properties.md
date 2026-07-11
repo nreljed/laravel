@@ -10,17 +10,17 @@ Manage property listings with pricing, surface area, and rich metadata.
 
 ## Permissions
 
-| Slug | Name |
-|------|------|
-| `properties.view` | View Properties |
+| Slug                | Name              |
+| ------------------- | ----------------- |
+| `properties.view`   | View Properties   |
 | `properties.create` | Create Properties |
-| `properties.edit` | Edit Properties |
+| `properties.edit`   | Edit Properties   |
 | `properties.delete` | Delete Properties |
 
 ## Routes
 
-| File | Prefix | Auth | Middleware |
-|------|--------|------|------------|
+| File             | Prefix                  | Auth     | Middleware        |
+| ---------------- | ----------------------- | -------- | ----------------- |
 | `Routes/web.php` | `/dashboard/properties` | Required | `properties.view` |
 
 ### Web Routes (`Routes/web.php`)
@@ -80,10 +80,10 @@ Extends the user profile with:
 
 ## Notification Types
 
-| Type | Channels |
-|------|----------|
-| `property.created` | in_app only |
-| `property.updated` | in_app only |
+| Type               | Channels                                     |
+| ------------------ | -------------------------------------------- |
+| `property.created` | in_app only                                  |
+| `property.updated` | in_app only                                  |
 | `property.inquiry` | in_app + email (template `property-inquiry`) |
 
 ## Email Templates

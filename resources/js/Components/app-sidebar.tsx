@@ -30,12 +30,12 @@ import {
   SidebarGroupContent,
 } from "@/Components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { moduleIcons } from "@/lib/icons";
+import { featureIcons } from "@/lib/icons";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAdmin } = useAuth();
   const pageProps = usePage().props;
-  const moduleNavItems = (pageProps.moduleNavItems as NavItem[]) || [];
+  const featureNavItems = (pageProps.featureNavItems as NavItem[]) || [];
   const userCapabilities = (pageProps.userCapabilities as Record<string, boolean>) || {};
   const notificationUnreadCount = (pageProps.notificationUnreadCount as number) || 0;
   const brand = (pageProps.brand as { logo?: string; name?: string }) || {};
@@ -108,7 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {moduleNavItems
+        {featureNavItems
           .filter((navItem) => hasPermission(navItem.permission))
           .map((navItem) => {
             const groupLabel = navItem.groupLabel ?? "";
@@ -117,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarGroup key={navItem.title}>
                 {groupLabel && <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>}
                 <SidebarGroupContent>
-                  <NavMain items={[navItem]} iconMap={moduleIcons} />
+                  <NavMain items={[navItem]} iconMap={featureIcons} />
                 </SidebarGroupContent>
               </SidebarGroup>
             );

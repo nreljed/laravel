@@ -22,7 +22,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { moduleIcons } from "@/lib/icons";
+import { featureIcons } from "@/lib/icons";
 
 interface NavMenuItem {
   title: string;
@@ -35,12 +35,12 @@ interface NavMenuGroup {
   items: NavMenuItem[];
 }
 
-interface ModuleNavItem {
+interface FeatureNavItem {
   title: string;
   url: string;
   icon?: string;
   permission?: string;
-  module_slug?: string;
+  feature_slug?: string;
   groupLabel?: string;
   items?: { title: string; url: string }[];
 }
@@ -49,7 +49,7 @@ export function CommandSearch() {
   const [open, setOpen] = React.useState(false);
   const { isAdmin } = useAuth();
   const pageProps = usePage().props;
-  const moduleNavItems = pageProps.moduleNavItems as ModuleNavItem[] | undefined;
+  const featureNavItems = pageProps.featureNavItems as FeatureNavItem[] | undefined;
   const userCapabilities = useMemo(
     () => (pageProps.userCapabilities as Record<string, boolean>) || {},
     [pageProps.userCapabilities],
@@ -76,33 +76,35 @@ export function CommandSearch() {
       },
     ];
 
-    const navList = moduleNavItems || [];
+    const navList = featureNavItems || [];
     for (const nav of navList) {
       if (!hasPermissionInner(nav.permission)) continue;
 
       const heading = nav.groupLabel ?? nav.title;
       const IconComponent =
-        nav.icon && Object.hasOwn(moduleIcons, nav.icon) ? moduleIcons[nav.icon] : LayoutDashboard;
-      const moduleItems: NavMenuItem[] = [];
+        nav.icon && Object.hasOwn(featureIcons, nav.icon)
+          ? featureIcons[nav.icon]
+          : LayoutDashboard;
+      const featureItems: NavMenuItem[] = [];
 
       if (nav.items && nav.items.length > 0) {
         for (const child of nav.items) {
-          moduleItems.push({
+          featureItems.push({
             title: child.title,
             icon: IconComponent as React.ComponentType<{ className?: string }>,
             url: child.url,
           });
         }
       } else {
-        moduleItems.push({
+        featureItems.push({
           title: nav.title,
           icon: IconComponent as React.ComponentType<{ className?: string }>,
           url: nav.url,
         });
       }
 
-      if (moduleItems.length > 0) {
-        items.push({ heading, items: moduleItems });
+      if (featureItems.length > 0) {
+        items.push({ heading, items: featureItems });
       }
     }
 
@@ -118,7 +120,7 @@ export function CommandSearch() {
     }
 
     return items;
-  }, [isAdmin, moduleNavItems, userCapabilities]);
+  }, [isAdmin, featureNavItems, userCapabilities]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

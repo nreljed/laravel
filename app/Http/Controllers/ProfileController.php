@@ -53,7 +53,7 @@ class ProfileController extends Controller
                 'custom_avatar_url' => $user->avatar_url,
                 'user_registered' => $user->created_at,
                 'roles' => $user->roles->pluck('name')->toArray(),
-                'module_profile' => [
+                'profile_data' => [
                     'properties' => [
                         'phone_numbers' => $phoneNumbers,
                         'social_media' => $socialMedia,
