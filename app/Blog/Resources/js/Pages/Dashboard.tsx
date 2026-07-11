@@ -1,5 +1,4 @@
-import { usePage, Link } from "@inertiajs/react"
-import { Head } from "@inertiajs/react"
+import { usePage, Link, Head  } from "@inertiajs/react"
 import { Plus, List, FileEdit, CheckCircle2, Archive } from "lucide-react"
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"

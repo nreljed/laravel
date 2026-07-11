@@ -111,7 +111,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = () => {
+    input.addEventListener('change', () => {
       const file = input.files?.[0];
       if (!file) return;
       const formData = new FormData();
@@ -127,7 +127,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
         },
         onError: () => toast.error("Upload failed."),
       });
-    };
+    });
     input.click();
   };
 
@@ -292,7 +292,11 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
                     <Input
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                      onKeyDown={(e) => { if (e.key !== "Enter") {
+                      	return;
+                      }
+
+                      e.preventDefault(); addTag(); }}
                       placeholder="New tag..."
                       className="w-32"
                     />
