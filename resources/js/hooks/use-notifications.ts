@@ -1,23 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePage, router } from "@inertiajs/react";
 import axios from "axios";
-
-export type Severity = "info" | "warning" | "urgent" | "critical";
-
-export interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link: string;
-  module: string;
-  is_read: string;
-  severity: Severity;
-  data: Record<string, string>;
-  read_at: string | null;
-  created_at: string;
-  created_at_relative: string;
-}
+import type { Notification } from "@/lib/notifications";
 
 interface UseNotificationsResult {
   unreadCount: number;
@@ -111,11 +95,20 @@ export function useNotifications(): UseNotificationsResult {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const lastCountRef = useRef(initialCount);
   const initialCountRef = useRef(initialCount);
-  const soundEnabledRef = useRef(localStorage.getItem("notification_sound_enabled") !== "false");
   const lastInteractionRef = useRef(0);
   const pollIntervalRef = useRef(POLL_INTERVAL_ACTIVE);
   const fetchGenRef = useRef(0);
   const consecutiveErrorsRef = useRef(0);
+  const recentNotificationsRef = useRef(recentNotifications);
+
+  const isSoundEnabled = useCallback(
+    () => localStorage.getItem("notification_sound_enabled") !== "false",
+    [],
+  );
+
+  useEffect(() => {
+    recentNotificationsRef.current = recentNotifications;
+  }, [recentNotifications]);
 
   const broadcast = useCallback((count: number) => {
     if (channelRef.current) {
@@ -133,7 +126,7 @@ export function useNotifications(): UseNotificationsResult {
         const data = response.data;
         setRecentNotifications(data.notifications ?? []);
         const c = data.unread_count ?? 0;
-        if (c > lastCountRef.current && soundEnabledRef.current) {
+        if (c > lastCountRef.current && isSoundEnabled()) {
           playNotificationSound();
           if (document.visibilityState === "hidden") {
             const latest = (data.notifications ?? [])[0];
@@ -146,22 +139,22 @@ export function useNotifications(): UseNotificationsResult {
       } catch {
         // silently fail
       } finally {
-        if (gen === fetchGenRef.current && !background) setLoading(false);
+        if (!background && gen === fetchGenRef.current) setLoading(false);
       }
     },
-    [broadcast],
+    [broadcast, isSoundEnabled],
   );
 
   const pollCount = useCallback(async () => {
     const gen = fetchGenRef.current;
 
     try {
-      const response = await axios.get(route("api.notifications.unread-count"));
+      const response = await axios.get(route("api.notifications.recent"));
       if (gen !== fetchGenRef.current) return;
       consecutiveErrorsRef.current = 0;
       const data = response.data;
-      const c = data.count ?? 0;
-      if (c > lastCountRef.current && soundEnabledRef.current) {
+      const c = data.unread_count ?? 0;
+      if (c > lastCountRef.current && isSoundEnabled()) {
         playNotificationSound();
         if (document.visibilityState === "hidden") {
           showDesktopNotification(
@@ -173,11 +166,12 @@ export function useNotifications(): UseNotificationsResult {
       }
       lastCountRef.current = c;
       setUnreadCount(c);
-      fetchList(true);
+      setRecentNotifications(data.notifications ?? []);
+      broadcast(c);
     } catch {
       consecutiveErrorsRef.current += 1;
     }
-  }, [fetchList]);
+  }, [broadcast, isSoundEnabled]);
 
   const getAdaptiveInterval = useCallback((): number => {
     const errors = consecutiveErrorsRef.current;
@@ -246,8 +240,10 @@ export function useNotifications(): UseNotificationsResult {
   const markRead = useCallback(
     async (id: string) => {
       fetchGenRef.current += 1;
-      setRecentNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: "1" } : n)));
-      setAllNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: "1" } : n)));
+      setRecentNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      );
+      setAllNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
       countEtagRef.current = null;
       try {
@@ -262,8 +258,8 @@ export function useNotifications(): UseNotificationsResult {
 
   const markAllRead = useCallback(async () => {
     fetchGenRef.current += 1;
-    setRecentNotifications((prev) => prev.map((n) => ({ ...n, is_read: "1" })));
-    setAllNotifications((prev) => prev.map((n) => ({ ...n, is_read: "1" })));
+    setRecentNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setAllNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
     lastCountRef.current = 0;
     countEtagRef.current = null;
@@ -278,10 +274,15 @@ export function useNotifications(): UseNotificationsResult {
   const deleteNotification = useCallback(
     async (id: string) => {
       fetchGenRef.current += 1;
+      const wasUnread = recentNotificationsRef.current.some(
+        (n) => n.id === id && !n.is_read && !n.read_at,
+      );
       setRecentNotifications((prev) => prev.filter((n) => n.id !== id));
       setAllNotifications((prev) => prev.filter((n) => n.id !== id));
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-      lastCountRef.current = Math.max(0, lastCountRef.current - 1);
+      if (wasUnread) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        lastCountRef.current = Math.max(0, lastCountRef.current - 1);
+      }
       countEtagRef.current = null;
       try {
         await axios.delete(route("api.notifications.destroy", { id }));
@@ -403,3 +404,5 @@ export function useNotifications(): UseNotificationsResult {
     requestNotificationPermission,
   };
 }
+
+export { type Severity, type Notification } from "@/lib/notifications";

@@ -4,7 +4,7 @@ import { BrandLogo } from "@/Components/frontend/BrandLogo";
 
 export default function GuestLayout({ children, title }: PropsWithChildren<{ title?: string }>) {
   const pageProps = usePage().props;
-  const brand = (pageProps.brand as { logo?: string; name?: string }) || {};
+  const brand = (pageProps.brand as { logo?: string; favicon?: string; name?: string }) || {};
 
   return (
     <>
@@ -12,7 +12,12 @@ export default function GuestLayout({ children, title }: PropsWithChildren<{ tit
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="flex justify-center">
-            <BrandLogo logo={brand.logo || null} name={brand.name || null} size="lg" />
+            <BrandLogo
+              favicon={brand.favicon || null}
+              name={brand.name || null}
+              size="lg"
+              showName
+            />
           </div>
           {children}
         </div>

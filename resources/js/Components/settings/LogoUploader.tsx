@@ -193,7 +193,6 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
         <span>
           Recommended: <strong>SVG</strong> (vector, any size) or a <strong>512x512px+</strong>{" "}
           square PNG.
-          {preview && " This logo also serves as the browser tab favicon."}
         </span>
       </div>
     </div>

@@ -6,7 +6,19 @@ Extends `Illuminate\Foundation\Auth\User` (Authenticatable). Implements `MustVer
 
 ## Fillable
 
-`name`, `email`, `password`, `username`, `display_name`, `first_name`, `last_name`, `nickname`, `bio`, `description`, `avatar`, `social_links`, `phone`, `url`
+`username`, `name`, `display_name`, `email`, `password`, `first_name`, `last_name`, `bio`, `avatar`, `social_links`, `phone`, `url`, `contact_email`, `billing_address`, `shipping_address`
+
+## Field Roles
+
+| Field           | Purpose                                    | Editable by User        |
+| --------------- | ------------------------------------------ | ----------------------- |
+| `username`      | Login ID, unique, never changed            | Never                   |
+| `name`          | Display name (what others see)             | Yes                     |
+| `first_name`    | Legal/real first name                      | Yes                     |
+| `last_name`     | Legal/real last name                       | Yes                     |
+| `display_name`  | Derived from user-selected option          | User picks from options |
+| `bio`           | Biographical info                          | Yes                     |
+| `contact_email` | Public contact email (separate from login) | Yes                     |
 
 ## Hidden
 
@@ -54,28 +66,29 @@ Checks `hasRole('admin')`.
 
 ### `getDisplayNameOptions(): array`
 
-Returns all display name formatting options:
+Returns all display name formatting options based on filled profile fields:
 
 ```php
 [
-    'username'  => $user->name,
-    'firstname' => $user->first_name,
-    'lastname'  => $user->last_name,
-    'firstlast' => 'First Last',
-    'lastfirst' => 'Last First',
-    'nickname'  => $user->nickname,
-    'display'   => $user->display_name,
+    'username'   => $user->username,
+    'first'      => $user->first_name,
+    'last'       => $user->last_name,
+    'first_last' => 'First Last',
+    'last_first' => 'Last First',
+    'display'    => $user->display_name,  // if differs from above
 ]
 ```
 
-Used by both `ProfileController` and `HandleInertiaRequests::buildAuthUser()` to avoid duplicating the logic.
+Options with empty source values are excluded. Used by `UserAccountController` and `HandleInertiaRequests::buildAuthUser()`.
 
 ### `assignRole(string $roleSlug)`
 
-Syncs a single role without detaching other roles. Used by `scripts/create-admin.php`.
+Syncs a single role without detaching other roles.
 
 ## Casts
 
 - `email_verified_at`: datetime
 - `password`: hashed
 - `social_links`: array
+- `billing_address`: array
+- `shipping_address`: array

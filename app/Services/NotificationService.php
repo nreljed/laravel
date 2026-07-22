@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\NotificationPreference;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
 
@@ -15,6 +16,10 @@ class NotificationService
 
     protected MailService $mailService;
 
+    private const UNREAD_CACHE_PREFIX = 'notif:unread:';
+
+    private const UNREAD_CACHE_TTL = 5;
+
     public function __construct(
         NotificationTypeRegistry $typeRegistry,
         FeatureRegistry $featureRegistry,
@@ -23,6 +28,24 @@ class NotificationService
         $this->typeRegistry = $typeRegistry;
         $this->featureRegistry = $featureRegistry;
         $this->mailService = $mailService;
+    }
+
+    public function getCachedUnreadCount(int $userId, string $userType): int
+    {
+        $key = self::UNREAD_CACHE_PREFIX.$userId;
+
+        return (int) Cache::remember($key, self::UNREAD_CACHE_TTL, function () use ($userId, $userType) {
+            return \DB::table('notifications')
+                ->where('notifiable_id', $userId)
+                ->where('notifiable_type', $userType)
+                ->whereNull('read_at')
+                ->count();
+        });
+    }
+
+    public function invalidateUnreadCache(int $userId): void
+    {
+        Cache::forget(self::UNREAD_CACHE_PREFIX.$userId);
     }
 
     public function notifyViaPreferences($notifiable, string $type, Notification $notification, ?array $channels = null): void
@@ -59,6 +82,7 @@ class NotificationService
 
         if (! empty($allowedChannels)) {
             $notifiable->notify($notification);
+            $this->invalidateUnreadCache($notifiable->id);
         }
 
         if (in_array('email', $allowedChannels, true)) {

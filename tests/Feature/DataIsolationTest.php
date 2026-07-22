@@ -3,15 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\NotificationPreference;
-use App\Models\Role;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
 class DataIsolationTest extends TestCase
 {
+    use CreatesTestUsers;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -19,15 +19,6 @@ class DataIsolationTest extends TestCase
         parent::setUp();
 
         $this->seed(RolesAndPermissionsSeeder::class);
-    }
-
-    protected function createUserWithRole(string $roleSlug): User
-    {
-        $user = User::factory()->create();
-        $role = Role::where('slug', $roleSlug)->first();
-        $user->roles()->attach($role);
-
-        return $user;
     }
 
     public function test_user_can_only_see_own_notification_preferences(): void
@@ -71,7 +62,7 @@ class DataIsolationTest extends TestCase
         $user1 = $this->createUserWithRole('crm_user');
         $user2 = $this->createUserWithRole('crm_user');
 
-        $response = $this->actingAs($user2)->get('/dashboard/profile');
+        $response = $this->actingAs($user2)->get('/dashboard/account');
         $response->assertStatus(200);
 
         $this->assertNotEquals($user1->id, $user2->id);

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { usePage, router } from "@inertiajs/react";
-import { Section, SectionField } from "@/Components/section";
+import { router } from "@inertiajs/react";
+import { Section, SectionField } from "@/Components/shared/section";
 import {
   Select,
   SelectContent,
@@ -124,13 +124,11 @@ const TIME_FORMATS_WITH_EXAMPLES = TIME_FORMAT_OPTIONS.map((opt) => ({
 }));
 
 interface DateFormatSectionProps {
+  settings: Record<string, string>;
   asAccordion?: boolean;
 }
 
-function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
-  const { props } = usePage();
-  const settings = (props.formattingSettings as Record<string, string | undefined>) || {};
-
+function DateFormatSection({ settings, asAccordion }: DateFormatSectionProps) {
   const [dateFormat, setDateFormat] = React.useState<string>(settings.date_format || "Y-m-d");
   const [timeFormat, setTimeFormat] = React.useState<string>(settings.time_format || "H:i");
   const [startOfWeek, setStartOfWeek] = React.useState<string>(settings.start_of_week || "0");
@@ -203,7 +201,7 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
                 setShowCustomDate(true);
               } else {
                 setShowCustomDate(false);
-                setDateFormat(val);
+                setDateFormat(val ?? "");
               }
             }}
           >
@@ -248,7 +246,7 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
                 setShowCustomTime(true);
               } else {
                 setShowCustomTime(false);
-                setTimeFormat(val);
+                setTimeFormat(val ?? "");
               }
             }}
           >
@@ -285,7 +283,7 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
         error={errors?.start_of_week}
         description="Sets which day the calendar week starts on"
       >
-        <Select value={String(startOfWeek)} onValueChange={(val) => setStartOfWeek(val)}>
+        <Select value={String(startOfWeek)} onValueChange={(val) => setStartOfWeek(val ?? "")}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select start of week" />
           </SelectTrigger>
@@ -317,7 +315,6 @@ function DateFormatSection({ asAccordion }: DateFormatSectionProps) {
               <ComboboxInput placeholder="Search timezone..." />
               <ComboboxEmpty>No timezone found.</ComboboxEmpty>
               <ComboboxList>
-                <ComboboxItem value="UTC">UTC</ComboboxItem>
                 {Intl.supportedValuesOf?.("timeZone")?.map((tz: string) => (
                   <ComboboxItem key={tz} value={tz}>
                     {tz}

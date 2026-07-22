@@ -1,0 +1,94 @@
+<?php
+
+namespace Tests\Feature\Notifications;
+
+use App\Services\NotificationService;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Tests\Concerns\CreatesTestUsers;
+use Tests\TestCase;
+
+class NotificationServiceTest extends TestCase
+{
+    use CreatesTestUsers;
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
+
+    public function test_get_cached_unread_count_returns_correct_count(): void
+    {
+        $user = $this->regularUser();
+
+        $this->createNotificationsFor($user, 3);
+
+        $service = app(NotificationService::class);
+        $count = $service->getCachedUnreadCount($user->id, get_class($user));
+
+        $this->assertEquals(3, $count);
+    }
+
+    public function test_invalidate_unread_count_clears_cache(): void
+    {
+        $user = $this->regularUser();
+
+        $this->createNotificationsFor($user, 3);
+
+        $service = app(NotificationService::class);
+
+        $countBefore = $service->getCachedUnreadCount($user->id, get_class($user));
+        $this->assertEquals(3, $countBefore);
+
+        $service->invalidateUnreadCache($user->id);
+
+        $this->createNotificationsFor($user, 1);
+
+        $countAfter = $service->getCachedUnreadCount($user->id, get_class($user));
+        $this->assertEquals(4, $countAfter);
+    }
+
+    public function test_purge_removes_old_notifications(): void
+    {
+        $user = $this->regularUser();
+
+        $this->createNotificationsFor($user, 1);
+
+        $oldId = (string) Str::uuid();
+        DB::table('notifications')->insert([
+            'id' => $oldId,
+            'type' => 'App\Notifications\TestNotification',
+            'notifiable_id' => $user->id,
+            'notifiable_type' => get_class($user),
+            'data' => json_encode(['title' => 'Old notification', 'message' => 'Old']),
+            'created_at' => now()->subDays(100),
+        ]);
+
+        $service = app(NotificationService::class);
+        $deleted = $service->purge(90);
+
+        $this->assertGreaterThanOrEqual(1, $deleted);
+        $this->assertDatabaseMissing('notifications', ['id' => $oldId]);
+        $this->assertDatabaseCount('notifications', 1);
+    }
+
+    protected function createNotificationsFor($user, int $count): array
+    {
+        $notifications = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $notifications[] = $user->notifications()->create([
+                'id' => (string) Str::uuid(),
+                'type' => 'App\Notifications\TestNotification',
+                'data' => ['title' => 'Test', 'message' => 'Test message '.$i],
+            ]);
+        }
+
+        return $notifications;
+    }
+}

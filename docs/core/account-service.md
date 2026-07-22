@@ -41,5 +41,4 @@ Logs audit, calls `deleteAllUserData()`, deletes the user, sends deletion confir
 
 ## Usage
 
-- Called by `ProfileController` for account editing (My Account page).
-- Called by `AccountController` for account management.
+- Called by `UserAccountController` for profile + account management.

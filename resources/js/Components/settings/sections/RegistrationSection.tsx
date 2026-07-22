@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section, SectionField } from "@/Components/section";
+import { Section, SectionField } from "@/Components/shared/section";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import {
@@ -90,7 +90,7 @@ export function RegistrationSection({
       >
         <Select
           value={data.default_role}
-          onValueChange={(v) => setData((p) => ({ ...p, default_role: v }))}
+          onValueChange={(v) => setData((p) => ({ ...p, default_role: v ?? "" }))}
         >
           <SelectTrigger id="default_role" className="w-full">
             <SelectValue placeholder="Select a role..." />

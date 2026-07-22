@@ -1,5 +1,4 @@
 import "../css/app.css";
-import "leaflet/dist/leaflet.css";
 import "./bootstrap";
 
 import { createInertiaApp, router } from "@inertiajs/react";
@@ -42,6 +41,8 @@ const pages = import.meta.glob("./Pages/**/*.tsx") as Record<string, ImportFn>;
 
 const postsPages = import.meta.glob("@blog/Pages/**/*.tsx") as Record<string, ImportFn>;
 
+const testPostsPages = import.meta.glob("@test-posts/Pages/**/*.tsx") as Record<string, ImportFn>;
+
 const pageMap: PageMap = {};
 
 for (const [path, importFn] of Object.entries(pages)) {
@@ -55,15 +56,22 @@ for (const [path, importFn] of Object.entries(pages)) {
 function extractComponentPath(fullPath: string, moduleName: string): string | null {
   const normalized = fullPath.replaceAll("\\", "/");
 
-  const fsMarker = `app/Blog/Resources/js/Pages/`;
-  const fsIdx = normalized.indexOf(fsMarker);
-  if (fsIdx !== -1) {
-    const relative = normalized.slice(fsIdx + fsMarker.length);
-    return relative.replace(/\.tsx$/, "");
+  const fsMarkers: Record<string, string> = {
+    Blog: "app/Blog/Resources/js/Pages/",
+    TestPosts: "app/TestPosts/Resources/js/Pages/",
+  };
+  const fsMarker = fsMarkers[moduleName];
+  if (fsMarker) {
+    const fsIdx = normalized.indexOf(fsMarker);
+    if (fsIdx !== -1) {
+      const relative = normalized.slice(fsIdx + fsMarker.length);
+      return relative.replace(/\.tsx$/, "");
+    }
   }
 
   const aliasPrefixMap: Record<string, string> = {
     Blog: "@blog",
+    TestPosts: "@test-posts",
   };
   const alias = aliasPrefixMap[moduleName];
   if (alias) {
@@ -82,6 +90,13 @@ for (const [path, importFn] of Object.entries(postsPages)) {
   const componentPath = extractComponentPath(path, "Blog");
   if (componentPath) {
     pageMap[`Blog/${componentPath}`.toLowerCase()] = importFn;
+  }
+}
+
+for (const [path, importFn] of Object.entries(testPostsPages)) {
+  const componentPath = extractComponentPath(path, "TestPosts");
+  if (componentPath) {
+    pageMap[`TestPosts/${componentPath}`.toLowerCase()] = importFn;
   }
 }
 

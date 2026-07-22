@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Badge } from "@/Components/ui/badge";
-import { PasswordInput } from "@/Components/ui/password-input";
+import { PasswordInput } from "@/Components/shared/password-input";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import { Separator } from "@/Components/ui/separator";
@@ -129,11 +129,11 @@ export default function AdminUsersForm() {
       <Head title={isEditing ? "Edit User" : "Create User"} />
 
       <div className="mb-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={route("dashboard.admin.users.index")}>
+        <Link href={route("dashboard.admin.users.index")}>
+          <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-1 size-4" /> Back to Users
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -248,7 +248,10 @@ export default function AdminUsersForm() {
 
                     <Field>
                       <FieldLabel htmlFor="role">Role</FieldLabel>
-                      <Select value={data.role_id} onValueChange={(v) => setData("role_id", v)}>
+                      <Select
+                        value={data.role_id}
+                        onValueChange={(v) => setData("role_id", v ?? "")}
+                      >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
@@ -291,9 +294,11 @@ export default function AdminUsersForm() {
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="outline" asChild>
-                      <Link href={route("dashboard.admin.users.index")}>Cancel</Link>
-                    </Button>
+                    <Link href={route("dashboard.admin.users.index")}>
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </Link>
                     <Button type="submit" disabled={processing || !canSubmit}>
                       <Save className="mr-1 size-4" /> {isEditing ? "Update User" : "Create User"}
                     </Button>

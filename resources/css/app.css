@@ -1,136 +1,574 @@
 @import "tailwindcss" source(none);
 @source "../";
-@source "../../app/Modules/Booking/Resources/js/";
-@source "../../app/Modules/Shop/Resources/js/";
-@source "../../app/Modules/Posts/Resources/js/";
-@source "../../app/Modules/Properties/Resources/js/";
+@source "../../app/Blog/Resources/js/";
 
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-    --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-    --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.99 0 0);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Link color — distinct from primary for visibility */
+  --link: oklch(0.45 0.18 265);
+  --link-foreground: oklch(0.45 0.18 265);
+
+  /* Table cell background colors — curated palette for the rich-text editor */
+  --cell-bg-gray: oklch(0.97 0 0);
+  --cell-bg-red: oklch(0.95 0.03 25);
+  --cell-bg-orange: oklch(0.95 0.05 50);
+  --cell-bg-yellow: oklch(0.96 0.05 85);
+  --cell-bg-green: oklch(0.95 0.04 150);
+  --cell-bg-blue: oklch(0.95 0.03 255);
+  --cell-bg-purple: oklch(0.95 0.04 300);
+  --cell-bg-teal: oklch(0.95 0.04 185);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --destructive-foreground: oklch(0.99 0 0);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+  --link: oklch(0.65 0.18 265);
+  --link-foreground: oklch(0.65 0.18 265);
+
+  /* Table cell background colors — dark mode variants */
+  --cell-bg-gray: oklch(0.27 0 0);
+  --cell-bg-red: oklch(0.27 0.05 25);
+  --cell-bg-orange: oklch(0.27 0.06 50);
+  --cell-bg-yellow: oklch(0.28 0.06 85);
+  --cell-bg-green: oklch(0.27 0.06 150);
+  --cell-bg-blue: oklch(0.27 0.05 255);
+  --cell-bg-purple: oklch(0.27 0.06 300);
+  --cell-bg-teal: oklch(0.27 0.06 185);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  /* Link color — distinct from primary for visibility */
+  --link: oklch(0.65 0.18 265);
+  --link-foreground: oklch(0.65 0.18 265);
 }
 
 @theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-border: var(--border);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
-    --color-chart-1: var(--chart-1);
-    --color-chart-2: var(--chart-2);
-    --color-chart-3: var(--chart-3);
-    --color-chart-4: var(--chart-4);
-    --color-chart-5: var(--chart-5);
-    --color-sidebar: var(--sidebar);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-link: var(--link);
+  --color-link-foreground: var(--link-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
-    * {
-        @apply border-border outline-ring/50;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Lexical editor: checklist checkbox styles */
+.lexical-check-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.lexical-check-list-item input[type="checkbox"] {
+  margin-top: 0.25rem;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Lexical editor: table styles */
+[data-lexical-editor] table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: fit-content;
+}
+[data-lexical-editor] table td,
+[data-lexical-editor] table th {
+  width: 75px;
+  vertical-align: top;
+  text-align: start;
+  padding: 6px 8px;
+  position: relative;
+  outline: none;
+  overflow: auto;
+  word-break: break-word;
+}
+[data-lexical-editor] table td > *,
+[data-lexical-editor] table th > * {
+  overflow: inherit;
+}
+/* Colgroup col elements set explicit widths via style attribute */
+[data-lexical-editor] table colgroup col {
+  width: auto;
+}
+/* Dark mode: boost table border contrast — the default --border (white 10%) is too subtle for tables,
+   especially between th cells where bg-muted (0.269) and the effective border (~0.285) are nearly identical.
+   20% white gives effective lightness ~0.364, creating visible contrast against both th and td backgrounds. */
+.dark [data-lexical-editor] table td,
+.dark [data-lexical-editor] table th {
+  border-color: oklch(1 0 0 / 20%);
+}
+/* Public blog: responsive tables rendered from Lexical HTML */
+.prose table {
+  table-layout: fixed;
+  width: fit-content;
+}
+.prose table td,
+.prose table th {
+  width: 75px;
+  min-width: 75px;
+  max-width: 100%;
+  word-break: break-word;
+}
+/* Frozen row — first row sticks to top when scrolling (44px = below sticky toolbar at h-16) */
+/* Note: Lexical applies tableFrozenRow class to the wrapper div, not the table element */
+/* Lexical table DOM: colgroup precedes tr, so use :first-of-type not :first-child */
+/* position:sticky needs overflow:clip or visible on scrollable container */
+.table-frozen-row {
+  overflow-x: clip;
+}
+.table-frozen-row > table > tr:first-of-type > td,
+.table-frozen-row > table > tr:first-of-type > th {
+  position: sticky !important;
+  z-index: 2 !important;
+  top: 44px;
+  overflow: clip;
+}
+.table-frozen-row > table > tr:first-of-type > th {
+  background-color: var(--muted);
+}
+.table-frozen-row > table > tr:first-of-type > td {
+  background-color: var(--background);
+}
+/* Bottom border separator on frozen row cells */
+.table-frozen-row > table > tr:first-of-type > td::after,
+.table-frozen-row > table > tr:first-of-type > th::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+/* Frozen column — first column sticks to left when scrolling */
+.table-frozen-col > table > tr > td:first-child,
+.table-frozen-col > table > tr > th:first-child {
+  position: sticky !important;
+  z-index: 2 !important;
+  left: 0;
+}
+.table-frozen-col > table > tr > th:first-child {
+  background-color: var(--muted);
+}
+.table-frozen-col > table > tr > td:first-child {
+  background-color: var(--background);
+}
+/* Right border separator on frozen column cells */
+.table-frozen-col > table > tr > td:first-child::after,
+.table-frozen-col > table > tr > th:first-child::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 100%;
+  border-right: 1px solid var(--border);
+}
+/* Dark mode: boost frozen separator borders to match table cell borders */
+.dark .table-frozen-row > table > tr:first-of-type > td::after,
+.dark .table-frozen-row > table > tr:first-of-type > th::after {
+  border-bottom-color: oklch(1 0 0 / 20%);
+}
+.dark .table-frozen-col > table > tr > td:first-child::after,
+.dark .table-frozen-col > table > tr > th:first-child::after {
+  border-right-color: oklch(1 0 0 / 20%);
+}
+/* Frozen row + frozen column intersection cell */
+.table-frozen-row.table-frozen-col > table > tr:first-of-type > th:first-child {
+  z-index: 3 !important;
+}
+/* Table cell selection — semi-transparent highlight visible in both light & dark */
+.lexical-table-cell-selected {
+  caret-color: transparent;
+}
+[contenteditable]:focus-within .lexical-table-cell-selected::after {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background-color: rgba(130, 200, 255, 0.35);
+  content: "";
+  pointer-events: none;
+}
+/* Prevent native text selection from showing during table selection */
+.table-selection *::selection {
+  background-color: transparent;
+}
+/* Table add columns / rows buttons */
+.table-add-columns {
+  position: absolute;
+  background-color: hsl(var(--muted));
+  height: 100%;
+  animation: table-controls 0.2s ease;
+  border: 0;
+  cursor: pointer;
+}
+.table-add-columns::after {
+  content: "+";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.6;
+}
+.table-add-rows {
+  position: absolute;
+  width: calc(100% - 25px);
+  background-color: hsl(var(--muted));
+  animation: table-controls 0.2s ease;
+  border: 0;
+  cursor: pointer;
+}
+.table-add-rows::after {
+  content: "+";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.6;
+}
+.table-add-columns:hover,
+.table-add-rows:hover {
+  background-color: hsl(var(--accent));
+}
+@keyframes table-controls {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+/* Table cell action button container */
+.table-cell-action-btn-container {
+  display: block;
+  right: 5px;
+  top: 6px;
+  position: absolute;
+  z-index: 4;
+  width: 20px;
+  height: 20px;
+}
+.table-cell-action-btn {
+  background-color: hsl(var(--muted));
+  display: block;
+  border: 0;
+  border-radius: 20px;
+  width: 20px;
+  height: 20px;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+}
+.table-cell-action-btn:hover {
+  background-color: hsl(var(--accent));
+}
+/* Table cell resizer handle */
+.table-cell-resizer {
+  position: absolute;
+  right: -4px;
+  height: 100%;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 10;
+  top: 0;
+}
+.lexical-table-resize-handle {
+  position: absolute;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 10;
+}
+.lexical-table-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 1px;
+}
+.lexical-table-resize-handle:hover::after {
+  opacity: 0.5;
+}
+/* Table ruler line shown during resize */
+.lexical-table-cell-resize-ruler {
+  display: block;
+  position: absolute;
+  width: 1px;
+  background-color: var(--primary);
+  height: 100%;
+  top: 0;
+}
+/* Table scroll shadows */
+.table-scroll-shadow-left {
+  box-shadow: inset 10px 0 10px rgba(0, 0, 0, 0.1);
+}
+.table-scroll-shadow-right {
+  box-shadow: inset -10px 0 10px rgba(0, 0, 0, 0.1);
+}
+.table-scroll-shadow-middle {
+  box-shadow:
+    inset 10px 0 10px rgba(0, 0, 0, 0.1),
+    inset -10px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Prism theme for Lexical code blocks */
+@import "prismjs/themes/prism-tomorrow.min.css";
+
+/* Lexical editor content: link color in prose containers (dark mode override) */
+.dark .prose a {
+  color: var(--link) !important;
+  text-decoration: underline !important;
+  text-decoration-color: color-mix(in oklch, var(--link) 40%, transparent) !important;
+  text-underline-offset: 0.2em !important;
+  text-decoration-thickness: 1px !important;
+  font-weight: 500 !important;
+  transition: text-decoration-color 0.15s;
+}
+.dark .prose a:hover {
+  text-decoration-color: var(--link) !important;
+}
+
+/* Lexical editor content: ensure links inside editor also get the right color */
+[data-lexical-editor] a {
+  color: var(--link) !important;
+  text-decoration: underline !important;
+  text-decoration-color: color-mix(in oklch, var(--link) 40%, transparent) !important;
+  text-underline-offset: 0.2em !important;
+  text-decoration-thickness: 1px !important;
+  font-weight: 500 !important;
+}
+
+/* Lexical editor: layout columns (matching Lexical Playground style) */
+[data-lexical-editor] [data-lexical-layout-container] {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0;
+}
+[data-lexical-editor] [data-lexical-layout-item] {
+  border: 1px dashed #ddd;
+  padding: 8px 16px;
+  min-height: 1.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.dark [data-lexical-editor] [data-lexical-layout-item] {
+  border-color: oklch(1 0 0 / 20%);
+}
+
+/* Lexical editor: image resizer handles */
+.image-resizer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--background);
+  border: 2px solid var(--primary);
+  border-radius: 2px;
+  z-index: 10;
+  box-shadow: 0 0 0 1px var(--border);
+  transition:
+    background-color 0.15s,
+    transform 0.15s;
+}
+.image-resizer:hover {
+  background: var(--primary);
+  transform: scale(1.15);
+}
+.image-resizer-n {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+.image-resizer-ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+.image-resizer-e {
+  top: 50%;
+  right: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+.image-resizer-se {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+.image-resizer-s {
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+.image-resizer-sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+.image-resizer-w {
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+.image-resizer-nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+.image-control-wrapper--resizing {
+  user-select: none;
+}
+
+/* Menu utility classes for Base UI (shadcn/ui base-vega) */
+.cn-menu-target {
+  /* Menu target positioning utility */
+  transform-origin: var(--transform-origin);
+}
+
+.cn-menu-translucent {
+  /* Menu translucency with backdrop blur */
+  background-color: color-mix(in oklch, var(--popover) 80%, transparent);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+/* Draggable block handle — hidden by default, visible on hover */
+.draggable-block-menu {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.draggable-block-menu.draggable-block-menu-visible {
+  opacity: 1;
+}
+.draggable-block-menu:hover {
+  opacity: 1;
 }

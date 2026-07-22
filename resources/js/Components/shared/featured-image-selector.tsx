@@ -1,90 +1,161 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import * as React from "react";
+import { X, Image as ImageIcon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Progress } from "@/Components/ui/progress";
 import { toast } from "sonner";
+import { useImageUpload } from "@/hooks/use-image-upload";
 
 interface FeaturedImageSelectorProps {
   value?: string;
-  onChange: (_url: string, _path?: string) => void;
+  onChange: (_url: string) => void;
   label?: string;
   description?: string;
-  disabled?: boolean;
-  uploadRoute?: string;
+  uploadUrl?: string;
+  deleteUrl?: string;
+  compress?: boolean;
 }
 
-export function FeaturedImageSelector({
+const FeaturedImageSelector = ({
   value = "",
   onChange,
   label = "Featured Image",
   description = "Select a featured image",
-  disabled,
-  uploadRoute = "dashboard.profile.avatar.upload",
-}: FeaturedImageSelectorProps) {
-  const [preview, setPreview] = useState(value);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  uploadUrl,
+  deleteUrl,
+  compress = true,
+}: FeaturedImageSelectorProps) => {
+  const [preview, setPreview] = React.useState(value);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [error, setError] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { upload, remove } = useImageUpload({
+    uploadUrl: uploadUrl || "",
+    deleteUrl: deleteUrl || "",
+    compress,
+  });
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPreview(value);
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setPreview(value);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [value]);
 
-  const handleFileSelect = async (file: File) => {
+  const handleRemove = async () => {
+    const oldUrl = preview;
+    setPreview("");
+    setError(null);
+    onChange("");
+
+    if (oldUrl && oldUrl.startsWith("/storage/")) {
+      try {
+        const path = oldUrl.replace(/^\/storage\//, "");
+        await remove(path);
+      } catch {
+        // Best-effort delete
+      }
+    }
+
+    toast.info("Featured image removed");
+  };
+
+  const handleFileSelect = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+
+    const file = files[0]!;
+
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
 
-    setUploading(true);
+    setError(null);
+    setProgress(10);
+
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const csrfToken =
-        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
-      const res = await fetch(route(uploadRoute), {
-        method: "POST",
-        body: formData,
-        headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": csrfToken },
-      });
-
-      if (!res.ok) throw new Error("Upload failed");
-
-      const data = await res.json();
-      if (data?.url) {
-        setPreview(data.url);
-        onChange(data.url);
-        toast.success("Image uploaded successfully");
-      }
-    } catch {
+      const result = await upload(file);
+      setProgress(100);
+      setPreview(result.url);
+      onChange(result.url);
+      toast.success("Featured image uploaded");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Upload failed");
       toast.error("Upload failed");
     } finally {
-      setUploading(false);
+      setProgress(0);
     }
   };
 
-  const handleRemove = () => {
-    setPreview("");
-    onChange("");
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = [...e.dataTransfer.files];
+    handleFileSelect(files);
   };
 
-  const handleClick = () => fileInputRef.current?.click();
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFileSelect(file);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setIsDragging(true);
+  };
 
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = [...(e.target.files ?? [])];
+    handleFileSelect(files);
+    e.target.value = "";
+  };
 
   return (
-    <div className="space-y-3">
-      {label && (
-        <div>
-          <label className="text-sm font-medium">{label}</label>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <div className="space-y-2">
+      {label && <label className="text-sm font-medium">{label}</label>}
+      {description && <p className="text-sm text-muted-foreground">{description}</p>}
+
+      {preview ? (
+        <div className="relative overflow-hidden rounded-lg border">
+          <img src={preview} alt="Featured" className="w-full h-48 object-cover" />
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            className="absolute top-2 right-2"
+            onClick={handleRemove}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
+          className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors hover:bg-accent/30 ${
+            isDragging ? "border-primary bg-accent/30" : "border-border"
+          }`}
+        >
+          {progress > 0 && progress < 100 ? (
+            <>
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Uploading...</p>
+              <Progress value={progress} className="w-32" />
+            </>
+          ) : error ? (
+            <>
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-xs text-muted-foreground">Click to try again</p>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Drop an image here or click to browse</p>
+            </>
+          )}
         </div>
       )}
 
@@ -93,71 +164,10 @@ export function FeaturedImageSelector({
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFileSelect(file);
-          e.target.value = "";
-        }}
+        onChange={handleInputChange}
       />
-
-      {preview ? (
-        <div className="relative group rounded-lg overflow-hidden border">
-          <img src={preview} alt="Featured" loading="lazy" className="w-full h-48 object-cover" />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleClick}
-              disabled={uploading || disabled}
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Upload className="h-4 w-4 mr-2" />
-              )}
-              Change
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleRemove}
-              disabled={disabled}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Remove
-            </Button>
-          </div>
-          <div className="absolute top-2 left-2">
-            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary/90 text-primary-foreground">
-              Featured
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div
-          className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors hover:bg-accent/50"
-          onClick={handleClick}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-        >
-          {uploading ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Uploading...</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <div className="p-3 rounded-full bg-muted">
-                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium">Click or drag to upload</p>
-              <p className="text-xs text-muted-foreground">Recommended: 1920x1080px</p>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
-}
+};
+
+export { FeaturedImageSelector };

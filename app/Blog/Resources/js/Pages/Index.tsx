@@ -1,18 +1,28 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { Plus, FileText, Search as SearchIcon, X } from "lucide-react";
-import { useState } from "react";
+import { Plus, FileText } from "lucide-react";
+import { useMemo, useCallback } from "react";
+import { toast } from "sonner";
+import type { ColumnDef } from "@tanstack/react-table";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { DataTable } from "@/Components/ui/data-table";
+import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header";
 import { Button } from "@/Components/ui/button";
-import { Card, CardContent } from "@/Components/ui/card";
-import { Input } from "@/Components/ui/input";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/Components/ui/empty";
 import { Badge } from "@/Components/ui/badge";
+import { ActionCell } from "@/Components/shared/action-cell";
+import { TermsBadge } from "@/Components/shared/terms-badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/Components/ui/select";
-import {
-  Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
-} from "@/Components/ui/pagination";
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/Components/ui/empty";
+
+interface Tag {
+  id: number;
+  name: string;
+}
 
 interface Category {
   id: number;
@@ -25,36 +35,131 @@ interface Post {
   slug: string;
   excerpt: string | null;
   status: string;
+  featured_image: string | null;
   published_at: string | null;
+  created_at: string;
   user: { id: number; name: string } | null;
   category: Category | null;
+  tags: Tag[];
 }
 
 interface PostsIndexProps {
-  posts: { data: Post[]; current_page: number; last_page: number; links: { url: string | null; label: string; active: boolean }[] };
-  categories: Category[];
-  filters: { search?: string; status?: string; category_id?: string };
+  posts: Post[];
 }
 
-export default function PostsIndex({ posts, categories, filters }: PostsIndexProps) {
-  const [search, setSearch] = useState(filters.search || "");
+export default function PostsIndex({ posts }: PostsIndexProps) {
+  const handleBulkAction = useCallback((action: string, ids: number[]) => {
+    router.post(
+      route("dashboard.posts.bulk.action"),
+      { ids, action },
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Bulk action completed.`);
+          router.reload({ only: ["posts"] });
+        },
+        onError: () => toast.error("Bulk action failed."),
+      },
+    );
+  }, []);
 
-  const applyFilter = (key: string, value: string) => {
-    const params = { ...filters, [key]: value || undefined };
-    router.get(route("dashboard.posts.index"), params, { preserveState: true, replace: true });
-  };
+  const bulkActions = useMemo(
+    () => [
+      {
+        label: "Publish",
+        value: "publish",
+        show: (statuses: string[]) => statuses.some((s) => s !== "published"),
+      },
+      {
+        label: "Draft",
+        value: "draft",
+        show: (statuses: string[]) => statuses.some((s) => s !== "draft"),
+      },
+      { label: "Delete", value: "delete", destructive: true },
+    ],
+    [],
+  );
 
-  const clearFilters = () => {
-    setSearch("");
-    router.get(route("dashboard.posts.index"), {}, { preserveState: true, replace: true });
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    applyFilter("search", search);
-  };
-
-  const hasFilters = filters.search || filters.status || filters.category_id;
+  const columns = useMemo(() => {
+    const cols: ColumnDef<Post>[] = [
+      {
+        id: "featured_image",
+        header: "Image",
+        cell: ({ row }) => (
+          <div className="size-10 shrink-0 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+            {row.original.featured_image ? (
+              <img
+                src={row.original.featured_image}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <FileText className="h-4 w-4 text-muted-foreground/50" />
+            )}
+          </div>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "title",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        cell: ({ row }) => (
+          <Link
+            href={route("dashboard.posts.edit", row.original.id)}
+            className="font-medium hover:underline"
+          >
+            {row.original.title}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        cell: ({ row }) => (
+          <Badge variant={row.original.status === "published" ? "default" : "secondary"}>
+            {row.original.status}
+          </Badge>
+        ),
+      },
+      {
+        id: "date",
+        accessorFn: (row) => row.published_at ?? row.created_at,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
+        cell: ({ row }) => {
+          const date = row.original.published_at ?? row.original.created_at;
+          return (
+            <span className="text-sm text-muted-foreground">
+              {new Date(date).toLocaleDateString()}
+            </span>
+          );
+        },
+      },
+      {
+        id: "terms",
+        header: "Terms",
+        cell: ({ row }) => {
+          const terms = [
+            ...(row.original.category ? [row.original.category] : []),
+            ...row.original.tags,
+          ];
+          return <TermsBadge terms={terms} maxVisible={2} />;
+        },
+        enableSorting: false,
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <ActionCell
+            item={row.original}
+            baseRoute={route("dashboard.posts.index").replace(/\/+$/, "")}
+            itemLabel="Post"
+          />
+        ),
+        enableSorting: false,
+      },
+    ];
+    return cols;
+  }, []);
 
   return (
     <AuthenticatedLayout header="Posts">
@@ -69,109 +174,39 @@ export default function PostsIndex({ posts, categories, filters }: PostsIndexPro
           </Link>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <div className="relative">
-              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search posts..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-60 pl-8" />
-            </div>
-            <Button type="submit" variant="secondary" size="sm">Search</Button>
-          </form>
-
-          <Select value={filters.status || ""} onValueChange={(v) => applyFilter("status", v)}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.category_id || ""} onValueChange={(v) => applyFilter("category_id", v)}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X className="mr-1 h-3 w-3" /> Clear
-            </Button>
-          )}
-        </div>
-
-        {posts.data.length === 0 ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon"><FileText /></EmptyMedia>
-              <EmptyTitle>{hasFilters ? "No posts found" : "No posts yet"}</EmptyTitle>
-              <EmptyDescription>
-                {hasFilters ? "No posts match your filters." : "Get started by writing your first post."}
-              </EmptyDescription>
-            </EmptyHeader>
-            {!hasFilters && (
+        <DataTable
+          columns={columns}
+          data={posts}
+          searchKey="title"
+          searchPlaceholder="Search posts..."
+          filterKey="status"
+          filterTitle="Status"
+          filterOptions={[
+            { label: "Draft", value: "draft" },
+            { label: "Published", value: "published" },
+            { label: "Archived", value: "archived" },
+          ]}
+          bulkActions={bulkActions}
+          onBulkAction={handleBulkAction}
+          emptyState={
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileText />
+                </EmptyMedia>
+                <EmptyTitle>No posts yet</EmptyTitle>
+                <EmptyDescription>Get started by writing your first post.</EmptyDescription>
+              </EmptyHeader>
               <EmptyContent>
-                <Button onClick={() => router.visit(route("dashboard.posts.create"))}>
-                  <Plus className="mr-2 h-4 w-4" /> Write Your First Post
-                </Button>
+                <Link href={route("dashboard.posts.create")}>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Write Your First Post
+                  </Button>
+                </Link>
               </EmptyContent>
-            )}
-          </Empty>
-        ) : (
-          <div className="space-y-3">
-            {posts.data.map((post) => (
-              <Card key={post.id}>
-                <CardContent className="flex items-start justify-between p-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={post.status === "published" ? "default" : "secondary"}>{post.status}</Badge>
-                      {post.category && <span className="text-xs text-muted-foreground">{post.category.name}</span>}
-                    </div>
-                    <Link href={route("dashboard.posts.edit", post.id)} className="font-medium hover:underline truncate block">
-                      {post.title}
-                    </Link>
-                    {post.excerpt && <p className="text-sm text-muted-foreground truncate mt-1">{post.excerpt}</p>}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      by {post.user?.name || "Unknown"} &middot; {post.published_at ? new Date(post.published_at).toLocaleDateString() : "Not published"}
-                    </p>
-                  </div>
-                  <Link href={route("dashboard.posts.edit", post.id)}>
-                    <Button variant="ghost" size="sm">Edit</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-
-            {posts.last_page > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  {posts.links.map((link, i) => {
-                    if (link.label.includes("Previous")) {
-                      return <PaginationItem key={i}><PaginationPrevious href={link.url ?? "#"} /></PaginationItem>;
-                    }
-                    if (link.label.includes("Next")) {
-                      return <PaginationItem key={i}><PaginationNext href={link.url ?? "#"} /></PaginationItem>;
-                    }
-                    return (
-                      <PaginationItem key={i}>
-                        <PaginationLink href={link.url ?? "#"} isActive={link.active}>{link.label}</PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
-                </PaginationContent>
-              </Pagination>
-            )}
-          </div>
-        )}
+            </Empty>
+          }
+        />
       </div>
     </AuthenticatedLayout>
   );

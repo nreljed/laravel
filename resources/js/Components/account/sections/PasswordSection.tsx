@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section } from "@/Components/section";
+import { Section } from "@/Components/shared/section";
 import { Shield } from "lucide-react";
-import { CurrentPasswordInput } from "@/Components/ui/current-password-input";
-import { PasswordInput } from "@/Components/ui/password-input";
+import { CurrentPasswordInput } from "@/Components/shared/current-password-input";
+import { PasswordInput } from "@/Components/shared/password-input";
 
 interface PasswordSectionProps {
   asAccordion?: boolean;
+  accordionDefaultOpen?: boolean;
 }
 
-export function PasswordSection({ asAccordion }: PasswordSectionProps) {
+export function PasswordSection({
+  asAccordion,
+  accordionDefaultOpen: _accordionDefaultOpen,
+}: PasswordSectionProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,7 +30,7 @@ export function PasswordSection({ asAccordion }: PasswordSectionProps) {
     setSuccess("");
 
     router.post(
-      route("dashboard.account.update-password"),
+      route("dashboard.account.password"),
       {
         current_password: currentPassword,
         password: newPassword,

@@ -65,11 +65,11 @@ export default function AdminPermissionsForm() {
       <Head title={isEditing ? `Edit: ${permission!.name}` : "Create Permission"} />
 
       <div className="mb-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={route("dashboard.admin.permissions.index")}>
+        <Link href={route("dashboard.admin.permissions.index")}>
+          <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-1 size-4" /> Back to Permissions
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <Card className="max-w-lg">
@@ -117,9 +117,11 @@ export default function AdminPermissionsForm() {
               </Field>
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" asChild>
-                  <Link href={route("dashboard.admin.permissions.index")}>Cancel</Link>
-                </Button>
+                <Link href={route("dashboard.admin.permissions.index")}>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </Link>
                 <Button type="submit" disabled={processing}>
                   <Save className="mr-1 size-4" />{" "}
                   {isEditing ? "Update Permission" : "Create Permission"}

@@ -33,7 +33,7 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
+        $request->session()->regenerate(true);
 
         AuditService::log(AuditAction::Login, Auth::id());
 

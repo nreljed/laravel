@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Section } from "@/Components/section";
+import { Section } from "@/Components/shared/section";
 import { router, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
 import { Eye, Send, FileText, Bug, CheckCircle2, XCircle } from "lucide-react";
@@ -147,7 +147,10 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
         <div className="flex items-end gap-4">
           <div className="grid gap-2 flex-1">
             <Label htmlFor="template-select">Email Template</Label>
-            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+            <Select
+              value={selectedTemplate}
+              onValueChange={(value) => setSelectedTemplate(value ?? "")}
+            >
               <SelectTrigger id="template-select" className="w-full">
                 <SelectValue placeholder="Select a template..." />
               </SelectTrigger>

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Section, SectionField } from "@/Components/section";
+import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import {
   Select,
@@ -65,8 +65,6 @@ const SURFACE_UNIT_OPTIONS = [
   { value: "sq_ft", label: "Square Feet (ft²)" },
   { value: "sq_m", label: "Square Meters (m²)" },
   { value: "sq_yd", label: "Square Yards (yd²)" },
-  { value: "sq_meter", label: "Square Meters (㎡)" },
-  { value: "sq_feet", label: "Square Feet (sq ft)" },
   { value: "acres", label: "Acres (ac)" },
   { value: "hectares", label: "Hectares (ha)" },
 ];
@@ -109,7 +107,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
         >
           <Select
             value={data?.default_currency || "USD"}
-            onValueChange={(value) => onChange("default_currency", value)}
+            onValueChange={(value) => onChange("default_currency", value ?? "")}
             disabled={loading}
           >
             <SelectTrigger id="default_currency">
@@ -133,7 +131,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
         >
           <Select
             value={data?.currency_position || "before"}
-            onValueChange={(value) => onChange("currency_position", value)}
+            onValueChange={(value) => onChange("currency_position", value ?? "")}
             disabled={loading}
           >
             <SelectTrigger id="currency_position">
@@ -181,7 +179,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
         >
           <Select
             value={data?.default_country || "TN"}
-            onValueChange={(value) => onChange("default_country", value)}
+            onValueChange={(value) => onChange("default_country", value ?? "")}
             disabled={loading}
           >
             <SelectTrigger id="default_country">
@@ -205,7 +203,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
         >
           <Select
             value={data?.surface_unit || "sq_ft"}
-            onValueChange={(value) => onChange("surface_unit", value)}
+            onValueChange={(value) => onChange("surface_unit", value ?? "")}
             disabled={loading}
           >
             <SelectTrigger id="surface_unit">
@@ -239,7 +237,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
           >
             <Select
               value={data?.thousands_separator || ","}
-              onValueChange={(value) => onChange("thousands_separator", value)}
+              onValueChange={(value) => onChange("thousands_separator", value ?? "")}
               disabled={loading}
             >
               <SelectTrigger id="thousands_separator">
@@ -263,7 +261,7 @@ function FormattingSection({ data, onChange, errors, loading, onSubmit }: Format
           >
             <Select
               value={data?.decimal_separator || "."}
-              onValueChange={(value) => onChange("decimal_separator", value)}
+              onValueChange={(value) => onChange("decimal_separator", value ?? "")}
               disabled={loading}
             >
               <SelectTrigger id="decimal_separator">

@@ -6,24 +6,36 @@ import { Button } from "@/Components/ui/button";
 import { Label } from "@/Components/ui/label";
 import { Badge } from "@/Components/ui/badge";
 import { Field, FieldError, FieldLabel } from "@/Components/ui/field";
-import { SettingsAccordionItem } from "@/Components/settings-accordion";
+import { SettingsAccordionItem } from "@/Components/shared/settings-accordion";
 import { cn } from "@/lib/utils";
 import { Mail, CheckCircle2 } from "lucide-react";
-import { CurrentPasswordInput } from "@/Components/ui/current-password-input";
+import { CurrentPasswordInput } from "@/Components/shared/current-password-input";
 
 interface EmailSectionProps {
-  user: Record<string, unknown>;
+  user?: Record<string, unknown>;
+  email?: string;
+  mustVerifyEmail?: boolean;
   initialStatus?: string;
+  asAccordion?: boolean;
+  accordionDefaultOpen?: boolean;
 }
 
-export function EmailSection({ user, initialStatus }: EmailSectionProps) {
+export function EmailSection({
+  user: userProp,
+  email: emailProp,
+  mustVerifyEmail: _mustVerifyEmail,
+  initialStatus,
+  asAccordion: _asAccordion,
+  accordionDefaultOpen,
+}: EmailSectionProps) {
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(initialStatus || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const currentEmail = (user.email as string) || "";
+  const user = userProp || {};
+  const currentEmail = emailProp || (user.email as string) || "";
   const emailVerified = !!user.email_verified_at;
 
   useEffect(() => {
@@ -54,7 +66,7 @@ export function EmailSection({ user, initialStatus }: EmailSectionProps) {
     setSuccess("");
 
     router.post(
-      route("dashboard.account.update-email"),
+      route("dashboard.account.email"),
       { email, current_password: currentPassword },
       {
         preserveScroll: true,
@@ -82,7 +94,7 @@ export function EmailSection({ user, initialStatus }: EmailSectionProps) {
       icon={Mail}
       title="Email Address"
       description="Used for notifications and login"
-      defaultOpen
+      defaultOpen={accordionDefaultOpen}
     >
       {emailVerified && success && (
         <div className="mb-4 flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-500">

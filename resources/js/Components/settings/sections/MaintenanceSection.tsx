@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section, SectionField } from "@/Components/section";
+import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
@@ -50,6 +50,10 @@ export function MaintenanceSection({ settings, asAccordion }: MaintenanceSection
       submitLabel="Save Changes"
       asAccordion={asAccordion}
     >
+      <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+        When enabled, non-admin users will see a maintenance page. Admins can still access the
+        dashboard.
+      </div>
       <SectionField label="Maintenance Mode" htmlFor="maintenance_mode">
         <div className="flex items-center gap-2">
           <Switch

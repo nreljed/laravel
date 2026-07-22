@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section, SectionField } from "@/Components/section";
+import { Section, SectionField } from "@/Components/shared/section";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
 import {
@@ -48,7 +48,7 @@ export function NotificationSection({ settings, asAccordion }: NotificationSecti
   return (
     <Section
       title="Notifications"
-      description="Configure notification defaults."
+      description="Configure notification defaults for new users."
       icon={Bell}
       onSubmit={handleSubmit}
       loading={loading}
@@ -56,10 +56,14 @@ export function NotificationSection({ settings, asAccordion }: NotificationSecti
       submitLabel="Save Changes"
       asAccordion={asAccordion}
     >
+      <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+        These are default settings applied to new users. Existing users can override these in their{" "}
+        <span className="font-medium text-foreground">Account → Notifications</span> preferences.
+      </div>
       <SectionField label="Default Notification Channel" htmlFor="default_notification_channel">
         <Select
           value={data.default_notification_channel}
-          onValueChange={(v) => setData((p) => ({ ...p, default_notification_channel: v }))}
+          onValueChange={(v) => setData((p) => ({ ...p, default_notification_channel: v ?? "" }))}
         >
           <SelectTrigger id="default_notification_channel">
             <SelectValue />

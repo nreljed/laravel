@@ -6,15 +6,30 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Label } from "@/Components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Card, CardContent } from "@/Components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/Components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@/Components/ui/empty";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
+} from "@/Components/ui/empty";
 
 interface Category {
   id: number;
@@ -56,12 +71,18 @@ export default function PostCategoriesIndex({ categories }: Props) {
     if (editing) {
       router.put(route("dashboard.posts.categories.update", editing.id), form, {
         preserveScroll: true,
-        onSuccess: () => { setOpen(false); resetForm(); },
+        onSuccess: () => {
+          setOpen(false);
+          resetForm();
+        },
       });
     } else {
       router.post(route("dashboard.posts.categories.store"), form, {
         preserveScroll: true,
-        onSuccess: () => { setOpen(false); resetForm(); },
+        onSuccess: () => {
+          setOpen(false);
+          resetForm();
+        },
       });
     }
   };
@@ -78,7 +99,13 @@ export default function PostCategoriesIndex({ categories }: Props) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Categories</h2>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+          <Dialog
+            open={open}
+            onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) resetForm();
+            }}
+          >
             <DialogTrigger>
               <Button onClick={() => resetForm()}>
                 <Plus className="mr-1 h-4 w-4" /> Add Category
@@ -91,11 +118,20 @@ export default function PostCategoriesIndex({ categories }: Props) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="cat-name">Name</Label>
-                  <Input id="cat-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                  <Input
+                    id="cat-name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cat-desc">Description</Label>
-                  <Textarea id="cat-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                  <Textarea
+                    id="cat-desc"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cat-parent">Parent Category</Label>
@@ -106,16 +142,28 @@ export default function PostCategoriesIndex({ categories }: Props) {
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   >
                     <option value="">None (top level)</option>
-                    {categories.filter((c) => c.id !== editing?.id).map((cat) => (
-                      <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
-                    ))}
+                    {categories
+                      .filter((c) => c.id !== editing?.id)
+                      .map((cat) => (
+                        <option key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cat-order">Order</Label>
-                  <Input id="cat-order" type="number" min="0" value={form.order} onChange={(e) => setForm({ ...form, order: e.target.value })} />
+                  <Input
+                    id="cat-order"
+                    type="number"
+                    min="0"
+                    value={form.order}
+                    onChange={(e) => setForm({ ...form, order: e.target.value })}
+                  />
                 </div>
-                <Button type="submit" className="w-full">{editing ? "Update" : "Create"}</Button>
+                <Button type="submit" className="w-full">
+                  {editing ? "Update" : "Create"}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -124,7 +172,9 @@ export default function PostCategoriesIndex({ categories }: Props) {
         {categories.length === 0 ? (
           <Empty>
             <EmptyHeader>
-              <EmptyMedia variant="icon"><FolderTree /></EmptyMedia>
+              <EmptyMedia variant="icon">
+                <FolderTree />
+              </EmptyMedia>
               <EmptyTitle>No categories yet</EmptyTitle>
               <EmptyDescription>Create categories to organize your posts.</EmptyDescription>
             </EmptyHeader>
@@ -146,8 +196,14 @@ export default function PostCategoriesIndex({ categories }: Props) {
                     <TableRow key={cat.id}>
                       <TableCell>
                         <span className="font-medium">{cat.name}</span>
-                        {cat.parent_id && <Badge variant="outline" className="ml-2 text-xs">Sub</Badge>}
-                        {cat.description && <p className="text-xs text-muted-foreground">{cat.description}</p>}
+                        {cat.parent_id && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Sub
+                          </Badge>
+                        )}
+                        {cat.description && (
+                          <p className="text-xs text-muted-foreground">{cat.description}</p>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{cat.slug}</TableCell>
                       <TableCell>{cat.posts_count}</TableCell>

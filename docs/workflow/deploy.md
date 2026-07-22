@@ -1,34 +1,47 @@
 # Deployment
 
-> Full deployment documentation: [DEPLOY.md](../../DEPLOY.md)
+## CI/CD Pipeline
 
-## Quick Reference
+Deploys automatically on push to `main`.
 
-### Server Deploy Endpoints
+### GitHub-Hosted Runner (`deploy.yml`)
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /deploy/check?token=` | Main deploy entry point |
-| `GET /deploy/cache-clear?token=` | Emergency reset (migrate:fresh + cache clear) |
+1. Checkout + tags → Setup PHP 8.4 + Node 22
+2. git-cliff: parse commits → bump semver → CHANGELOG.md
+3. Build .env (SQLite) → composer install → migrate
+4. npm install → typecheck → build → test → pint
+5. composer install --no-dev → Package `deploy.zip`
+6. Create GitHub Release with tag `vX.Y.Z`
+7. Curl `/deploy/check?token=` on server to trigger deploy
 
-### Required GitHub Secrets
+### Server (`DeployController::check()`)
 
-| Secret | Purpose |
-|--------|---------|
-| `DEPLOY_TOKEN` | Must match `config('app.deploy_token')` |
-| `GH_TOKEN` | Fine-grained PAT with Contents: Read and Write |
-| `DB_DATABASE` | Production database name |
-| `DB_USERNAME` | Production username |
-| `DB_PASSWORD` | Production password |
-| `ADMIN_EMAIL` | Initial admin email |
-| `ADMIN_PASSWORD` | Initial admin password |
-| `ADMIN_NAME` | Initial admin name |
-
-### Server Process
-
-On deploy trigger:
-1. Verify token, check `.deploy-lock` (10 min TTL)
+1. Verify token + lock file (10 min TTL)
 2. Fetch latest release from GitHub API
-3. Download `deploy.zip`, extract over project root
-4. Restore `.env` from backup (never overwritten)
-5. Run: `package:discover`, `migrate`, `app:create-admin`, `config:cache`, `route:cache`, `view:cache`, `storage:link`
+3. Download `deploy.zip`, extract, restore `.env`
+4. Run: migrate, create-admin, cache, storage:link
+
+## Endpoints
+
+| Endpoint                         | Purpose                 |
+| -------------------------------- | ----------------------- |
+| `GET /deploy/check?token=`       | Main deploy entry point |
+| `GET /deploy/cache-clear?token=` | Emergency reset         |
+
+## GitHub Secrets
+
+| Secret                                          | Purpose                                 |
+| ----------------------------------------------- | --------------------------------------- |
+| `DEPLOY_TOKEN`                                  | Must match `config('app.deploy_token')` |
+| `GH_TOKEN`                                      | Fine-grained PAT (Contents: Read+Write) |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`   | Production MySQL                        |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | Initial admin bootstrap                 |
+
+## After Schema/Seeder Changes
+
+```bash
+php artisan migrate
+php artisan db:seed --class=RolesAndPermissionsSeeder
+```
+
+Then run typecheck + build + phpunit and deliver results.

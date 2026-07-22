@@ -7,10 +7,12 @@ use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
 class AuthorizationTest extends TestCase
 {
+    use CreatesTestUsers;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -19,15 +21,6 @@ class AuthorizationTest extends TestCase
 
         $this->seed(RolesAndPermissionsSeeder::class);
         Setting::set('require_email_verification', '1');
-    }
-
-    protected function createUserWithRole(string $roleSlug): User
-    {
-        $user = User::factory()->create();
-        $role = Role::where('slug', $roleSlug)->first();
-        $user->roles()->attach($role);
-
-        return $user;
     }
 
     public function test_crm_user_cannot_access_admin_dashboard(): void

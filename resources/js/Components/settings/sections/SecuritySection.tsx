@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Section, SectionField } from "@/Components/section";
+import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Lock } from "lucide-react";
 
@@ -49,26 +49,48 @@ export function SecuritySection({ settings, asAccordion }: SecuritySectionProps)
       submitLabel="Save Changes"
       asAccordion={asAccordion}
     >
-      <SectionField label="Minimum Password Length" htmlFor="password_min_length">
+      <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+        These settings are enforced in real-time. Password length applies to registration and
+        password changes. Session lifetime and login attempts take effect on the next request.
+      </div>
+      <SectionField
+        label="Minimum Password Length"
+        htmlFor="password_min_length"
+        description="Minimum characters required for new passwords"
+      >
         <Input
           id="password_min_length"
           type="number"
+          min={8}
+          max={128}
           value={data.password_min_length}
           onChange={(e) => setData((p) => ({ ...p, password_min_length: e.target.value }))}
         />
       </SectionField>
-      <SectionField label="Session Lifetime (minutes)" htmlFor="session_lifetime">
+      <SectionField
+        label="Session Lifetime (minutes)"
+        htmlFor="session_lifetime"
+        description="How long a user stays logged in before re-authentication"
+      >
         <Input
           id="session_lifetime"
           type="number"
+          min={1}
+          max={43_200}
           value={data.session_lifetime}
           onChange={(e) => setData((p) => ({ ...p, session_lifetime: e.target.value }))}
         />
       </SectionField>
-      <SectionField label="Max Login Attempts" htmlFor="max_login_attempts">
+      <SectionField
+        label="Max Login Attempts"
+        htmlFor="max_login_attempts"
+        description="Number of failed attempts before temporary lockout"
+      >
         <Input
           id="max_login_attempts"
           type="number"
+          min={1}
+          max={100}
           value={data.max_login_attempts}
           onChange={(e) => setData((p) => ({ ...p, max_login_attempts: e.target.value }))}
         />

@@ -1,55 +1,40 @@
 # Development Workflow
 
-## Commands
+## Daily Commands
 
 ```bash
-npm run dev              # Vite HMR dev server
-npm run build            # tsc + vite build (production)
-npm run typecheck        # tsc --noEmit
-php artisan test         # PHPUnit
+npm run build            # Production build (tsc + vite)
+npm run dev              # Vite dev server with HMR
+npm run typecheck        # TypeScript check
+npm run lint             # ESLint
 vendor/bin/pint          # Laravel Pint (PSR-12)
-php artisan migrate      # Run migrations
+php artisan test         # PHPUnit
 ```
 
-## Feature Commands
+## Adding Features
+
+See [Features](../core/features.md) for the full guide.
+
+## Code Conventions
+
+- **4 spaces** indent (PHP), **2 spaces** (TSX)
+- Use `cn()` from `@/lib/utils` for class merging
+- All routes via Ziggy's `route()` helper — no hardcoded URLs
+- Inertia `useForm` for all form state
+- `useAuth()` hook from `@/hooks/use-auth` for auth state
+- `asChild` / `Slot` pattern for component composition
+- Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
+
+## After Schema/Seeder Changes
 
 ```bash
-php artisan permissions:list          # List all permissions
+php artisan migrate
+php artisan db:seed --class=RolesAndPermissionsSeeder
 ```
 
-## Git Conventions
+Then run typecheck + build + phpunit and deliver results. Do not wait for user approval to deploy.
 
-### Commit Messages
+## Git Branching
 
-Follow Conventional Commits:
-
-```
-type(scope): description
-
-feat:     New feature
-fix:      Bug fix
-refactor: Code change (no feature/fix)
-docs:     Documentation only
-style:    Formatting only
-test:     Adding tests
-chore:    Build/config changes
-```
-
-Scopes: `booking`, `properties`, `shop`, `posts`, `admin`, `auth`, `deploy`, `docs`
-
-### Branch Strategy
-
-- `main` — Production-ready, auto-deploys
-- Feature branches from `main`
-- PRs squash-merge to `main`
-
-## Code Review Checklist
-
-- [ ] `npm run typecheck` passes
-- [ ] `vendor/bin/pint` passes
-- [ ] `php artisan test` passes
-- [ ] Routes use `route()` helper (no hardcoded URLs)
-- [ ] Form data uses Inertia `useForm`
-- [ ] Authorization checks (`$this->authorize()`, Policy, FormRequest)
-- [ ] No console.log / dd() / debug code
-- [ ] TypeScript strict — no `any`
+- `main` — production-ready
+- `beta` — active development

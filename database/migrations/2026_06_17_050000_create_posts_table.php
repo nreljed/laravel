@@ -16,7 +16,7 @@ return new class extends Migration
             $table->text('content');
             $table->text('excerpt')->nullable();
             $table->string('featured_image')->nullable();
-            $table->string('status')->default('draft');
+            $table->string('status')->default('published');
             $table->string('category')->nullable();
             $table->json('tags')->nullable();
             $table->timestamp('published_at')->nullable();

@@ -1,0 +1,177 @@
+name: Build Deploy Package
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version string for the deploy.zip"
+        required: true
+        type: string
+    outputs:
+      version:
+        description: "The version used"
+        value: ${{ jobs.package.outputs.version }}
+
+jobs:
+  package:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ inputs.version }}" -ne "") {
+            $ver = "${{ inputs.version }}"
+          } else {
+            $ver = "0.1.0"
+            $gcUrl = "https://github.com/orhun/git-cliff/releases/download/v2.8.0/git-cliff-2.8.0-x86_64-pc-windows-msvc.zip"
+            $gcZip = "$env:TEMP\git-cliff.zip"
+            Invoke-WebRequest -Uri $gcUrl -OutFile $gcZip -ErrorAction Stop
+            Expand-Archive -Path $gcZip -DestinationPath "$env:TEMP\git-cliff" -Force
+            $gc = Get-ChildItem -Path "$env:TEMP\git-cliff" -Recurse -Filter "git-cliff.exe" | Select-Object -First 1 -ExpandProperty FullName
+            try {
+              & $gc --bumped-version | Set-Content version.txt -NoNewline -ErrorAction Stop
+              $ver = (Get-Content version.txt -Raw -ErrorAction Stop).Trim().TrimStart('v')
+            } catch {
+              Write-Output "git-cliff version detection failed, using 0.1.0: $_"
+            }
+          }
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Generate build .env (SQLite)
+        shell: pwsh
+        run: |
+          $dbPath = "$((Get-Location).Path.Replace('\', '/'))/database/database.sqlite"
+          @"
+          APP_NAME=Laravel
+          APP_ENV=local
+          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_DEBUG=true
+          APP_URL=http://localhost
+          DB_CONNECTION=sqlite
+          DB_DATABASE=$dbPath
+          SESSION_DRIVER=file
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          DEPLOY_TOKEN=build
+          GITHUB_TOKEN=build
+          "@ | Set-Content -Path .env -Encoding UTF8
+          New-Item -ItemType File -Path database/database.sqlite -Force
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Install Composer dependencies (dev)
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Package Discover
+        run: php artisan package:discover --ansi
+
+      - name: Run migrations (SQLite build)
+        run: php artisan migrate --force
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}
+
+      - name: Install npm dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Strip dev dependencies
+        run: composer install --no-dev --optimize-autoloader --no-scripts
+
+      - name: Overwrite .env with production settings
+        shell: pwsh
+        run: |
+          @'
+          APP_NAME=Laravel
+          APP_ENV=production
+          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_DEBUG=false
+          APP_URL=https://laravel.tunispromo.tn
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          BCRYPT_ROUNDS=12
+          LOG_CHANNEL=stack
+          LOG_LEVEL=error
+          DB_CONNECTION=mysql
+          DB_HOST=localhost
+          DB_PORT=3306
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SESSION_DRIVER=file
+          SESSION_LIFETIME=120
+          SESSION_DOMAIN=.tunispromo.tn
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
+          GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+          '@ | Set-Content -Path .env -Encoding UTF8
+
+      - name: Copy deploy script
+        run: Copy-Item -Path scripts/deploy-cron.php -Destination deploy.php
+
+      - name: Create deploy.zip
+        shell: pwsh
+        run: |
+          $src = Get-Location
+          $zip = "$src\deploy.zip"
+          Remove-Item -Force $zip -ErrorAction SilentlyContinue
+          if (Test-Path "$src\bootstrap\cache") {
+            Move-Item "$src\bootstrap\cache" "$src\bootstrap\cache.bak"
+          }
+          $items = @(
+            "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
+            "app", "bootstrap", "config", "database", "public", "resources", "routes",
+            "storage", "vendor", ".env", "deploy.php", "CHANGELOG.md"
+          )
+          $fullPaths = $items | ForEach-Object { Join-Path $src $_ }
+          Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal
+          $size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
+          Write-Output "deploy.zip created: $size MB"
+          if (Test-Path "$src\bootstrap\cache.bak") {
+            Remove-Item "$src\bootstrap\cache" -Recurse -Force -ErrorAction SilentlyContinue
+            Move-Item "$src\bootstrap\cache.bak" "$src\bootstrap\cache"
+          }
+
+      - name: Upload deploy.zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy.zip
+          retention-days: 3
+          if-no-files-found: error

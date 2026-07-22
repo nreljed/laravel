@@ -4,11 +4,11 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Separator } from "@/Components/ui/separator";
 import { BrandLogo } from "@/Components/frontend/BrandLogo";
-import { NavUser } from "@/Components/nav-user";
+import { NavUser } from "@/Components/navigation/nav-user";
 
 export function SiteHeader() {
   const { props } = usePage();
-  const brand = (props.brand as { logo?: string; name?: string }) || {};
+  const brand = (props.brand as { logo?: string; favicon?: string; name?: string }) || {};
   const appName = brand.name || "Cost Breaker 360";
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,6 +20,18 @@ export function SiteHeader() {
         className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
       >
         Home
+      </Link>
+      <Link
+        href={route("blog.index")}
+        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+      >
+        Blog
+      </Link>
+      <Link
+        href={route("test-posts.index")}
+        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+      >
+        Tests
       </Link>
       <Link
         href={route("about")}
@@ -47,7 +59,13 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <BrandLogo logo={brand.logo || null} name={appName} size="sm" showName />
+            <BrandLogo
+              logo={brand.logo || null}
+              favicon={brand.favicon || null}
+              name={appName}
+              size="sm"
+              showName
+            />
           </Link>
           <div className="hidden sm:flex items-center gap-1">{siteLinks}</div>
         </div>
@@ -74,6 +92,20 @@ export function SiteHeader() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Home
+            </Link>
+            <Link
+              href={route("blog.index")}
+              className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Blog
+            </Link>
+            <Link
+              href={route("test-posts.index")}
+              className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Tests
             </Link>
             <Link
               href={route("about")}

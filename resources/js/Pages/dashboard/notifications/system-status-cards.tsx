@@ -79,7 +79,7 @@ export function SystemStatusCards({
             </span>
           </div>
           <p className="text-lg font-semibold text-foreground">
-            <Link href="/dashboard/account" className="hover:underline">
+            <Link href={route("dashboard.account")} className="hover:underline">
               Configure &rarr;
             </Link>
           </p>

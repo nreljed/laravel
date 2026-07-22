@@ -80,11 +80,11 @@ export default function AdminUserSessions() {
       <Head title={`Sessions: ${user.name}`} />
 
       <div className="mb-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={route("dashboard.admin.users.edit", { user: user.id })}>
+        <Link href={route("dashboard.admin.users.edit", { user: user.id })}>
+          <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-1 size-4" /> Back to {user.name}
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <Card>

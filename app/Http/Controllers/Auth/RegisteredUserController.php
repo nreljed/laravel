@@ -20,7 +20,7 @@ class RegisteredUserController extends Controller
     public function create(): Response|RedirectResponse
     {
         if (! static::isRegistrationEnabled()) {
-            return redirect()->route('login');
+            return Inertia::render('Auth/RegisterClosed');
         }
 
         return Inertia::render('auth/register');
@@ -29,7 +29,8 @@ class RegisteredUserController extends Controller
     public function store(RegisterRequest $request): RedirectResponse
     {
         if (! static::isRegistrationEnabled()) {
-            return redirect()->route('login');
+            return redirect()->route('login')
+                ->with('error', 'Registration is currently closed.');
         }
 
         $user = User::create([

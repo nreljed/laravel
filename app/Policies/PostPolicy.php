@@ -17,7 +17,7 @@ class PostPolicy
 
     public function view(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id || $user->isAdmin();
+        return $user->hasPermission('posts.view') || $user->id === $post->user_id || $user->isAdmin();
     }
 
     public function create(User $user): bool

@@ -1,70 +1,68 @@
-# Core Architecture
+# Architecture
 
 ## Boot Process
 
 ```
 1. index.php → Laravel Application
 2. AppServiceProvider::boot()
-   ├── Gate::before() — permission fallback
-   ├── Policy registration
+   ├── Gate::before() — admin bypasses all permissions
+   ├── Policy registration (PostPolicy)
    ├── FeatureRegistry singleton binding
-   └── Blade component namespace registration
+   ├── Notification creating hook (populates title/message/link/severity)
+   └── Vite::prefetch(concurrency: 3)
 
 3. HandleInertiaRequests::share()
-   ├── auth.user, impersonating
+   ├── auth.user (full profile with roles, display options)
    ├── latestNotifications, notificationUnreadCount
-   ├── flash, userMode, canSwitchMode
-   ├── featureNavItems (with groupLabel)
-   ├── userCapabilities (flat permission map)
-   ├── emailSettings, brand
-   └── formattingSettings, ...
+   ├── flash (status, error, mail_debug)
+   ├── featureNavItems (dynamic sidebar from FeatureRegistry)
+   ├── userCapabilities (admin flag + granular permissions)
+   ├── formattingSettings, emailSettings, brand, seo
+   └── impersonating, impersonator
 ```
 
 ## Middleware Stack
 
-Applied in `kernel.php`:
+Configured in `bootstrap/app.php`:
 
-**Global:**
+**Web group:**
 
-- `CheckForMaintenanceMode`
-- `EncryptCookies`
-- `AddQueuedCookiesToResponse`
-- `StartSession`
-- `ShareErrorsFromSession`
-- `SubstituteBindings`
-- `ContentSecurityPolicy`
-- `ForceInertiaCacheHeaders`
+1. `ContentSecurityPolicy` — CSP headers (production only)
+2. `HandleInertiaRequests` — Inertia shared props
+3. `AddLinkHeadersForPreloadedAssets`
 
-**Web Group:**
+**Route aliases:**
 
-- All global middleware
-- `VerifyCsrfToken`
+- `admin` → `AdminMiddleware` (403 if not admin)
+- `role` → `CheckRole` (accepts variadic role slugs)
+- `permission` → `CheckPermission` (checks `$user->hasPermission($slug)`)
 
 ## Service Providers
 
-| Provider                        | Registration                                                        |
-| ------------------------------- | ------------------------------------------------------------------- |
-| `AppServiceProvider`            | Policies, FeatureRegistry singleton, Blade components, Gate::before |
-| `PermissionGateServiceProvider` | Permission-based Gate definitions                                   |
-| `BlogServiceProvider`           | Blog feature routes, permissions, nav items                         |
-| `AuthServiceProvider`           | Auth guards, Sanctum config                                         |
+| Provider                        | Purpose                                     |
+| ------------------------------- | ------------------------------------------- |
+| `AppServiceProvider`            | Singletons, policies, gates, mail config    |
+| `PermissionGateServiceProvider` | Gate::define() for every permission slug    |
+| `BlogServiceProvider`           | Blog feature routes, permissions, nav items |
+| `TelescopeServiceProvider`      | Debug toolbar (conditional)                 |
 
-## Key Singletons
+## Directory Structure
 
-| Class                 | Registered In        | Purpose                                                   |
-| --------------------- | -------------------- | --------------------------------------------------------- |
-| `FeatureRegistry`     | `AppServiceProvider` | Central registry — delegates to feature service providers |
-| `SettingsService`     | `AppServiceProvider` | DB-driven configuration                                   |
-| `NotificationService` | `AppServiceProvider` | Multi-channel notification dispatch                       |
-| `DashboardService`    | `AppServiceProvider` | Cached dashboard stats                                    |
-| `FormattingService`   | `AppServiceProvider` | Price/surface formatting                                  |
-
-## Configuration
-
-| File                 | Purpose                                                 |
-| -------------------- | ------------------------------------------------------- |
-| `.env`               | Environment variables (DB, mail, app URL, deploy token) |
-| `config/app.php`     | App name, URL, timezone, locale                         |
-| `config/sanctum.php` | SPA auth configuration                                  |
-| `config/session.php` | Session driver (file, database)                         |
-| `config/mail.php`    | Mail driver (SMTP, log, array)                          |
+```
+app/
+  Blog/                    # Self-contained feature
+  Console/Commands/        # Artisan commands
+  Enums/                   # AuditAction enum
+  Http/
+    Controllers/           # By domain (Admin/, Api/, Auth/)
+    Middleware/             # Inertia, Admin, Permission, Role, CSP
+    Requests/              # FormRequest classes by domain
+  Jobs/                    # SendEmail
+  Mail/                    # DynamicMailable
+  Models/                  # User, Notification, etc.
+  Notifications/           # Database notification classes
+  Policies/                # PostPolicy
+  Providers/               # Service providers
+  Services/                # Business logic
+  Traits/                  # Shared traits
+```

@@ -10,12 +10,13 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            // General
+            // General (includes locale)
             ['key' => 'app_name', 'value' => 'Cost Breaker 360', 'group' => 'general'],
             ['key' => 'app_description', 'value' => 'SaaS application for cost management', 'group' => 'general'],
             ['key' => 'app_url', 'value' => config('app.url'), 'group' => 'general'],
             ['key' => 'app_logo', 'value' => '', 'group' => 'general'],
-            ['key' => 'timezone', 'value' => 'UTC', 'group' => 'general'],
+            ['key' => 'app_favicon', 'value' => '', 'group' => 'general'],
+            ['key' => 'locale', 'value' => 'en', 'group' => 'general'],
 
             // Registration
             ['key' => 'enable_registration', 'value' => '1', 'group' => 'registration'],
@@ -40,19 +41,17 @@ class SettingsSeeder extends Seeder
             ['key' => 'maintenance_mode', 'value' => '0', 'group' => 'maintenance'],
             ['key' => 'maintenance_message', 'value' => 'We are performing scheduled maintenance. Please check back soon.', 'group' => 'maintenance'],
 
-            // Localization
-            ['key' => 'locale', 'value' => 'en', 'group' => 'localization'],
-            ['key' => 'date_format', 'value' => 'Y-m-d', 'group' => 'localization'],
-            ['key' => 'time_format', 'value' => 'H:i', 'group' => 'localization'],
-            ['key' => 'start_of_week', 'value' => '0', 'group' => 'localization'],
-
-            // Formatting
+            // Formatting (includes date/time)
             ['key' => 'default_currency', 'value' => 'USD', 'group' => 'formatting'],
             ['key' => 'currency_position', 'value' => 'before', 'group' => 'formatting'],
             ['key' => 'price_empty_text', 'value' => '', 'group' => 'formatting'],
             ['key' => 'surface_unit', 'value' => 'sq_ft', 'group' => 'formatting'],
             ['key' => 'thousands_separator', 'value' => ',', 'group' => 'formatting'],
             ['key' => 'decimal_separator', 'value' => '.', 'group' => 'formatting'],
+            ['key' => 'date_format', 'value' => 'Y-m-d', 'group' => 'formatting'],
+            ['key' => 'time_format', 'value' => 'H:i', 'group' => 'formatting'],
+            ['key' => 'start_of_week', 'value' => '0', 'group' => 'formatting'],
+            ['key' => 'timezone', 'value' => 'UTC', 'group' => 'formatting'],
         ];
 
         foreach ($settings as $s) {

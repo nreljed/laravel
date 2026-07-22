@@ -74,13 +74,11 @@ export default function AdminPermissionsIndex() {
         id: "actions",
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon-xs" asChild>
-              <Link
-                href={route("dashboard.admin.permissions.edit", { permission: row.original.id })}
-              >
+            <Link href={route("dashboard.admin.permissions.edit", { permission: row.original.id })}>
+              <Button variant="ghost" size="icon-xs">
                 <Pencil className="size-3.5" />
-              </Link>
-            </Button>
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon-xs"
@@ -110,11 +108,11 @@ export default function AdminPermissionsIndex() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Permissions</h2>
-          <Button asChild>
-            <Link href={route("dashboard.admin.permissions.create")}>
+          <Link href={route("dashboard.admin.permissions.create")}>
+            <Button>
               <Plus className="mr-1 size-4" /> Create Permission
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
 
         <DataTable

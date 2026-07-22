@@ -1,13 +1,5 @@
 import * as React from "react";
-import {
-  Globe,
-  ShieldCheck,
-  Bell,
-  Lock,
-  Mail,
-  Wrench,
-  Languages,
-} from "lucide-react";
+import { Globe, ShieldCheck, Bell, Lock, Mail, Wrench } from "lucide-react";
 
 interface SettingsNavItem {
   value: string;
@@ -27,7 +19,6 @@ const CORE_ITEMS: SettingsNavItem[] = [
   { value: "security", label: "Security", icon: Lock },
   { value: "email", label: "Email", icon: Mail },
   { value: "maintenance", label: "Maintenance", icon: Wrench },
-  { value: "localization", label: "Localization", icon: Languages },
 ];
 
 export function SettingsNav({ activeTab, onTabChange }: SettingsNavProps) {
@@ -42,6 +33,7 @@ export function SettingsNav({ activeTab, onTabChange }: SettingsNavProps) {
             key={item.value}
             type="button"
             onClick={() => onTabChange(item.value)}
+            title={item.label}
             className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
               active
                 ? "bg-background text-foreground shadow-sm"

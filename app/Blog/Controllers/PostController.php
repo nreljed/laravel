@@ -6,6 +6,7 @@ use App\Blog\Models\ContentBlock;
 use App\Blog\Models\Post;
 use App\Blog\Models\PostCategory;
 use App\Blog\Models\PostTag;
+use App\Blog\Requests\BulkActionRequest;
 use App\Http\Controllers\Controller;
 use App\Services\MediaService;
 use Illuminate\Http\Request;
@@ -13,33 +14,16 @@ use Inertia\Inertia;
 
 class PostController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $this->authorize('viewAny', Post::class);
 
-        $query = Post::with('user', 'category');
-
-        if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('excerpt', 'like', "%{$search}%");
-            });
-        }
-
-        if ($status = $request->status) {
-            $query->where('status', $status);
-        }
-
-        if ($categoryId = $request->category_id) {
-            $query->where('category_id', $categoryId);
-        }
-
-        $posts = $query->latest()->paginate(12)->withQueryString();
+        $posts = Post::with('user', 'category', 'tags')
+            ->latest()
+            ->get(['id', 'title', 'slug', 'excerpt', 'status', 'featured_image', 'published_at', 'category_id', 'user_id', 'created_at']);
 
         return Inertia::render('Blog/Index', [
             'posts' => $posts,
-            'categories' => PostCategory::orderBy('name')->get(['id', 'name']),
-            'filters' => $request->only(['search', 'status', 'category_id']),
         ]);
     }
 
@@ -70,7 +54,6 @@ class PostController extends Controller
             'tag_ids.*' => 'exists:post_tags,id',
             'meta_title' => 'nullable|string|max:70',
             'meta_description' => 'nullable|string|max:160',
-            'og_image' => 'nullable|string|max:255',
             'content_blocks' => 'nullable|array',
             'content_blocks.*.type' => 'required|string|in:rich_text,image,gallery,embed,code,separator,heading',
             'content_blocks.*.content' => 'nullable|string',
@@ -130,9 +113,6 @@ class PostController extends Controller
             'category_id' => 'nullable|exists:post_categories,id',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:post_tags,id',
-            'meta_title' => 'nullable|string|max:70',
-            'meta_description' => 'nullable|string|max:160',
-            'og_image' => 'nullable|string|max:255',
             'content_blocks' => 'nullable|array',
             'content_blocks.*.id' => 'nullable|integer|exists:content_blocks,id',
             'content_blocks.*.type' => 'required|string|in:rich_text,image,gallery,embed,code,separator,heading',
@@ -169,6 +149,74 @@ class PostController extends Controller
             ->with('status', 'Post deleted successfully.');
     }
 
+    public function bulkAction(BulkActionRequest $request)
+    {
+        $user = $request->user();
+        $action = $request->input('action');
+        $ids = $request->input('ids');
+
+        $permission = match ($action) {
+            'delete' => 'posts.delete',
+            default => 'posts.edit',
+        };
+
+        if (! $user->isAdmin() && ! $user->hasPermissionTo($permission)) {
+            return redirect()->back()->with('flash.error', 'You are not authorized to update the selected posts.');
+        }
+
+        $query = Post::whereIn('id', $ids);
+
+        if (! $user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        $posts = $query->get();
+        $count = $posts->count();
+
+        if ($count === 0) {
+            return redirect()->back()->with('flash.error', 'You are not authorized to update the selected posts.');
+        }
+
+        match ($action) {
+            'publish' => $posts->each(fn (Post $post) => $post->update([
+                'status' => 'published',
+                'published_at' => now(),
+            ])),
+            'draft' => $posts->each(fn (Post $post) => $post->update([
+                'status' => 'draft',
+                'published_at' => null,
+            ])),
+            'delete' => $posts->each->delete(),
+        };
+
+        $label = match ($action) {
+            'publish' => 'updated to published',
+            'draft' => 'updated to draft',
+            'delete' => 'deleted successfully',
+        };
+
+        return redirect()->route('dashboard.posts.index')
+            ->with('flash.success', "{$count} post(s) {$label}.");
+    }
+
+    public function updateStatus(Request $request, Post $post)
+    {
+        $this->authorize('update', $post);
+
+        $validated = $request->validate([
+            'status' => 'required|string|in:draft,published,archived',
+        ]);
+
+        $data = $this->applyPostScheduleStatus([
+            'status' => $validated['status'],
+        ]);
+
+        $post->update($data);
+
+        return redirect()->route('dashboard.posts.index')
+            ->with('flash.success', 'Post status updated successfully.');
+    }
+
     protected function applyPostScheduleStatus(array $validated): array
     {
         $status = $validated['status'] ?? 'draft';
@@ -197,6 +245,8 @@ class PostController extends Controller
 
     public function uploadImage(Request $request)
     {
+        $this->authorize('create', Post::class);
+
         $service = app(MediaService::class);
         $validated = $request->validate($service->getValidationRules());
 
@@ -207,6 +257,8 @@ class PostController extends Controller
 
     public function deleteImage(Request $request)
     {
+        $this->authorize('create', Post::class);
+
         $request->validate(['path' => 'required|string']);
 
         app(MediaService::class)->delete($request->path);

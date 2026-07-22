@@ -1,0 +1,14 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - ".gitignore"
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit

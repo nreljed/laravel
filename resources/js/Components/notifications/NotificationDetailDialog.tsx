@@ -11,7 +11,8 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { Separator } from "@/Components/ui/separator";
-import type { Severity, StructuredNotification } from "@/Components/notifications/NotificationItem";
+import { getSeverity, getTypeLabel, SEVERITY_COLORS, SEVERITY_LABELS } from "@/lib/notifications";
+import type { StructuredNotification } from "@/lib/notifications";
 
 interface NotificationDetailDialogProps {
   notification: StructuredNotification | null;
@@ -19,51 +20,6 @@ interface NotificationDetailDialogProps {
   onOpenChange: (_open: boolean) => void;
   onMarkRead: (_id: string) => void;
   onDelete: (_id: string) => void;
-}
-
-const severityColors: Record<Severity, string> = {
-  info: "bg-primary/10 text-primary",
-  warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  urgent: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-  critical: "bg-destructive/10 text-destructive",
-};
-
-const SEVERITY_LABELS: Record<Severity, string> = {
-  info: "Info",
-  warning: "Warning",
-  urgent: "Urgent",
-  critical: "Critical",
-};
-
-function getSeverity(type: string, n?: StructuredNotification): Severity {
-  if (n?.severity && ["info", "warning", "urgent", "critical"].includes(n.severity))
-    return n.severity;
-  if (type.includes("cancel") || type.includes("deleted") || type === "low_stock")
-    return "critical";
-  if (type.includes("inquiry") || type.includes("modified")) return "warning";
-  if (type.includes("reset") || type.includes("changed")) return "urgent";
-  return "info";
-}
-
-function getTypeLabel(type: string): string {
-  const normalized = type
-    .replace("App\\Notifications\\", "")
-    .replace("Notification", "")
-    .replaceAll(/([a-z])([A-Z])/g, "$1.$2")
-    .toLowerCase();
-  const labels: Record<string, string> = {
-    "order.placed": "New Order",
-    "order.status_changed": "Order Status Changed",
-    low_stock: "Low Stock Alert",
-    "post.published": "Post Published",
-    "post.scheduled": "Post Scheduled",
-    "user.registered": "New User",
-    "password.changed": "Password Changed",
-    "password.reset": "Password Reset",
-    "email.changed": "Email Changed",
-    "account.deleted": "Account Deleted",
-  };
-  return labels[normalized] || normalized;
 }
 
 export function NotificationDetailDialog({
@@ -75,7 +31,7 @@ export function NotificationDetailDialog({
 }: NotificationDetailDialogProps) {
   if (!n) return null;
 
-  const isUnread = n.is_read === "0" || !n.read_at;
+  const isUnread = !n.is_read && !n.read_at;
   const severity = getSeverity(n.type, n);
   const title = n.title || n.data?.title || n.data?.subject || n.data?.message || "Notification";
   const message = n.message || n.data?.message || n.data?.body || "";
@@ -87,7 +43,7 @@ export function NotificationDetailDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
-            <Badge variant="outline" className={severityColors[severity]}>
+            <Badge variant="outline" className={SEVERITY_COLORS[severity]}>
               {SEVERITY_LABELS[severity]}
             </Badge>
             <Badge variant="outline">{getTypeLabel(n.type)}</Badge>
@@ -104,10 +60,8 @@ export function NotificationDetailDialog({
 
         <Separator />
 
-        <DialogDescription asChild>
-          <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
-            {message || "No additional details."}
-          </div>
+        <DialogDescription className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+          {message || "No additional details."}
         </DialogDescription>
 
         <DialogFooter className="gap-2 sm:gap-0">

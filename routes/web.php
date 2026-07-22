@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AccountController;
+use App\Ai\Controllers\AiProviderController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BulkUserController;
 use App\Http\Controllers\Admin\ImpersonationController;
@@ -15,30 +15,33 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\NotificationTestController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\UserAccountController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // ═══════════════════════════════════════════════════
 // FRONTEND (Public) Pages — no auth required
 // ═══════════════════════════════════════════════════
-Route::get('/', function () {
-    return Inertia::render('public/welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-    ]);
-})->name('home');
+Route::middleware('maintenance')->group(function () {
+    Route::get('/', function () {
+        return Inertia::render('public/welcome', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+        ]);
+    })->name('home');
 
-Route::get('/about', [PublicController::class, 'about'])->name('about');
-Route::get('/services', [PublicController::class, 'services'])->name('services');
-Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
+    Route::get('/about', [PublicController::class, 'about'])->name('about');
+    Route::get('/services', [PublicController::class, 'services'])->name('services');
+    Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
+});
 
 // ═══════════════════════════════════════════════════
 // DASHBOARD (Backend) Pages — requires auth
 // ═══════════════════════════════════════════════════
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
 
@@ -46,27 +49,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/notifications', [DashboardController::class, 'notifications'])->name('dashboard.notifications');
 
     // Lightweight JSON API for notification polling (used by use-notifications hook)
-    Route::prefix('/api/notifications')->name('api.notifications.')->group(function () {
+    Route::prefix('/api/notifications')->name('api.notifications.')->middleware('throttle:120,1')->group(function () {
         Route::get('/unread-count', [NotificationPollController::class, 'unreadCount'])->name('unread-count');
         Route::get('/recent', [NotificationPollController::class, 'recent'])->name('recent');
         Route::get('/', [NotificationPollController::class, 'index'])->name('index');
         Route::post('/mark-read', [NotificationPollController::class, 'markRead'])->name('mark-read');
         Route::post('/mark-all-read', [NotificationPollController::class, 'markAllRead'])->name('mark-all-read');
         Route::delete('/{id}', [NotificationPollController::class, 'destroy'])->name('destroy');
-        Route::post('/mark-bulk', [NotificationPollController::class, 'markBulk'])->name('mark-bulk');
-        Route::post('/delete-bulk', [NotificationPollController::class, 'deleteBulk'])->name('delete-bulk');
-    });
-
-    // Developer tools (admin-only)
-    Route::middleware('admin')->group(function () {
-        Route::get('/dashboard/developer/test-page', function () {
-            return Inertia::render('dashboard/developer/test-page');
-        })->name('dashboard.developer.test-page');
-
-        Route::get('/dashboard/notifications/test', [NotificationTestController::class, 'index'])->name('dashboard.notifications.test');
-        Route::post('/dashboard/notifications/test', [NotificationTestController::class, 'sendTest'])->name('dashboard.notifications.test-send');
-        Route::post('/dashboard/notifications/test/send-to-all', [NotificationTestController::class, 'sendToAll'])->name('dashboard.notifications.test-send-all');
-        Route::delete('/dashboard/notifications/test/clear', [NotificationTestController::class, 'clearAll'])->name('dashboard.notifications.test-clear');
+        Route::post('/mark-bulk', [NotificationPollController::class, 'markBulk'])->middleware('throttle:20,1')->name('mark-bulk');
+        Route::post('/delete-bulk', [NotificationPollController::class, 'deleteBulk'])->middleware('throttle:20,1')->name('delete-bulk');
     });
 
     // Host/Guest mode switch
@@ -77,34 +68,33 @@ Route::middleware('auth')->group(function () {
         Route::post('/impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
     });
 
-    // Account management
-    Route::prefix('/dashboard/account')->name('dashboard.')->group(function () {
-        Route::get('/', [AccountController::class, 'edit'])->name('account');
-        Route::post('/email', [AccountController::class, 'updateEmail'])->name('account.update-email');
-        Route::post('/password', [AccountController::class, 'updatePassword'])->name('account.update-password');
-        Route::post('/delete', [AccountController::class, 'destroy'])->name('account.destroy');
-        Route::post('/verify-delete-password', [AccountController::class, 'verifyDeletePassword'])->name('account.verify-delete-password');
-        Route::post('/notification-preferences', [AccountController::class, 'updateNotificationPreferences'])->name('account.notification-preferences');
-        Route::put('/address', [AccountController::class, 'updateAddress'])->name('account.address');
-        Route::get('/tokens', [AccountController::class, 'tokens'])->name('account.tokens');
-        Route::post('/tokens', [AccountController::class, 'createToken'])->name('account.tokens.create');
-        Route::delete('/tokens/{tokenId}', [AccountController::class, 'deleteToken'])->name('account.tokens.destroy');
-    });
+    // User account — consolidated profile + account management
+    Route::prefix('/dashboard/account')->group(function () {
+        Route::get('/', [UserAccountController::class, 'index'])->name('dashboard.account');
+        Route::patch('/profile', [UserAccountController::class, 'updateProfile'])->name('dashboard.account.profile');
+        Route::patch('/contact', [UserAccountController::class, 'updateContact'])->name('dashboard.account.contact');
+        Route::post('/email', [UserAccountController::class, 'updateEmail'])->name('dashboard.account.email');
+        Route::post('/password', [UserAccountController::class, 'updatePassword'])->name('dashboard.account.password');
+        Route::delete('/', [UserAccountController::class, 'destroy'])->name('dashboard.account.destroy');
+        Route::post('/verify-delete-password', [UserAccountController::class, 'verifyDeletePassword'])->name('dashboard.account.verify-delete-password');
+        Route::post('/notifications', [UserAccountController::class, 'updateNotificationPreferences'])->name('dashboard.account.notifications');
+        Route::put('/address', [UserAccountController::class, 'updateAddress'])->name('dashboard.account.address');
+        Route::post('/avatar', [AvatarController::class, 'upload'])->name('dashboard.account.avatar.upload');
+        Route::delete('/avatar', [AvatarController::class, 'destroy'])->name('dashboard.account.avatar.destroy');
 
-    // Profile management
-    Route::prefix('/dashboard/profile')->name('dashboard.profile.')->group(function () {
-        Route::get('/', [ProfileController::class, 'edit'])->name('edit');
-        Route::patch('/', [ProfileController::class, 'update'])->name('update');
-        Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
-        Route::post('/avatar', [AvatarController::class, 'upload'])->name('avatar.upload');
-        Route::delete('/avatar', [AvatarController::class, 'destroy'])->name('avatar.destroy');
+        // AI Provider Keys (BYOK)
+        Route::get('/ai-keys', [AiProviderController::class, 'index'])->name('dashboard.account.ai-keys.index');
+        Route::post('/ai-keys', [AiProviderController::class, 'store'])->name('dashboard.account.ai-keys.store');
+        Route::put('/ai-keys/{aiProvider}', [AiProviderController::class, 'update'])->name('dashboard.account.ai-keys.update');
+        Route::delete('/ai-keys/{aiProvider}', [AiProviderController::class, 'destroy'])->name('dashboard.account.ai-keys.destroy');
+        Route::post('/ai-keys/test', [AiProviderController::class, 'test'])->name('dashboard.account.ai-keys.test');
     });
 });
 
 // ═══════════════════════════════════════════════════
 // DASHBOARD ADMIN Pages — requires auth + admin
 // ═══════════════════════════════════════════════════
-Route::middleware(['auth', 'admin', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
+Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
@@ -147,6 +137,16 @@ Route::middleware(['auth', 'admin', 'throttle:60,1'])->prefix('dashboard/admin')
     Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
     Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
 
+    // Developer tools
+    Route::get('/developer/style-guide', function () {
+        return Inertia::render('dashboard/developer/style-guide');
+    })->name('developer.style-guide');
+
+    Route::get('/notifications/test', [NotificationTestController::class, 'index'])->name('notifications.test');
+    Route::post('/notifications/test', [NotificationTestController::class, 'sendTest'])->name('notifications.test-send');
+    Route::post('/notifications/test/send-to-all', [NotificationTestController::class, 'sendToAll'])->name('notifications.test-send-all');
+    Route::delete('/notifications/test/clear', [NotificationTestController::class, 'clearAll'])->name('notifications.test-clear');
+
     Route::prefix('/settings')->name('settings.')->group(function () {
         Route::put('/email', [EmailSettingsController::class, 'update'])->name('email.update');
         Route::post('/email/test', [EmailSettingsController::class, 'sendTest'])->name('email.test');
@@ -154,6 +154,8 @@ Route::middleware(['auth', 'admin', 'throttle:60,1'])->prefix('dashboard/admin')
         Route::get('/email/template-preview/{template}', [EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
         Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
         Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
+        Route::post('/favicon', [SettingsController::class, 'uploadFavicon'])->name('favicon.upload');
+        Route::delete('/favicon', [SettingsController::class, 'deleteFavicon'])->name('favicon.delete');
     });
 });
 
@@ -166,6 +168,14 @@ require __DIR__.'/auth.php';
 // DEPLOY Endpoints — token-protected, no CSRF, POST-only, rate-limited
 // ═══════════════════════════════════════════════════
 Route::post('/deploy/upload', [DeployController::class, 'upload'])->middleware('throttle:5,60');
-Route::post('/deploy/update-env', [DeployController::class, 'updateEnv'])->middleware('throttle:5,60');
 Route::post('/deploy/cache-clear', [DeployController::class, 'cacheClear'])->middleware('throttle:5,60');
 Route::post('/deploy/check', [DeployController::class, 'check'])->middleware('throttle:5,60');
+
+// ═══════════════════════════════════════════════════
+// CSP Report Endpoint — receives violation reports
+// ═══════════════════════════════════════════════════
+Route::post('/csp-report', function (Request $request) {
+    report(new Exception('CSP Violation: '.$request->safe()->input('csp-report.effective-directive', 'unknown')));
+
+    return response()->json(['status' => 'ok']);
+})->middleware('throttle:30,1')->name('csp.report');

@@ -22,6 +22,7 @@ class BlogServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadRoutes();
+        $this->loadPublicRoutes();
         $this->loadMigrations();
     }
 
@@ -31,6 +32,13 @@ class BlogServiceProvider extends ServiceProvider
             ->prefix('dashboard/posts')
             ->name('dashboard.posts.')
             ->group(__DIR__.'/Routes/web.php');
+    }
+
+    protected function loadPublicRoutes(): void
+    {
+        Route::middleware(['web'])
+            ->prefix('blog')
+            ->group(__DIR__.'/Routes/public.php');
     }
 
     protected function loadMigrations(): void

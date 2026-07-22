@@ -2,21 +2,26 @@
 
 namespace App\Models;
 
+use App\Ai\Models\AiProvider;
+use App\Ai\Models\AiUsageLog;
 use App\Services\PermissionCacheService;
 use App\Traits\UserDataTrait;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Ai\Concerns\HasConversations;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable, UserDataTrait;
+    use HasApiTokens, HasConversations, HasFactory, MustVerifyEmail, Notifiable, UserDataTrait;
 
     protected $fillable = [
         'username',
@@ -26,15 +31,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'password',
         'first_name',
         'last_name',
-        'nickname',
         'url',
         'bio',
-        'description',
         'avatar',
         'phone',
         'social_links',
         'billing_address',
         'shipping_address',
+        'contact_email',
     ];
 
     protected $hidden = [
@@ -49,19 +53,29 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->morphMany(Notification::class, 'notifiable')->latest();
     }
 
-    public function roles()
+    public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
     }
 
-    public function permissions()
+    public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class);
     }
 
-    public function hasRole(string|array $roles): bool
+    public function aiProviders(): HasMany
     {
-        $roles = is_array($roles) ? $roles : func_get_args();
+        return $this->hasMany(AiProvider::class);
+    }
+
+    public function aiUsageLogs(): HasMany
+    {
+        return $this->hasMany(AiUsageLog::class);
+    }
+
+    public function hasRole(string|array ...$roles): bool
+    {
+        $roles = array_merge(...array_map(fn ($r) => is_array($r) ? $r : [$r], $roles));
 
         return $this->roles()->whereIn('slug', $roles)->exists();
     }
@@ -84,13 +98,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
             $cache = app(PermissionCacheService::class);
             $userSlugs = $cache->getUserPermissionSlugs($this->id);
 
-            foreach ($abilities as $slug) {
-                if (in_array($slug, $userSlugs, true)) {
-                    return true;
-                }
-            }
-
-            return false;
+            return array_any(
+                iterator_to_array($abilities),
+                fn (string $slug) => in_array($slug, $userSlugs, true),
+            );
         }
 
         return parent::canAny($abilities, $arguments);
@@ -101,13 +112,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
         $cache = app(PermissionCacheService::class);
         $userSlugs = $cache->getUserPermissionSlugs($this->id);
 
-        foreach ($permissions as $slug) {
-            if (! in_array($slug, $userSlugs, true)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(
+            iterator_to_array($permissions),
+            fn (string $slug) => in_array($slug, $userSlugs, true),
+        );
     }
 
     public function hasVerifiedEmail(): bool
@@ -128,20 +136,17 @@ class User extends Authenticatable implements MustVerifyEmailContract
     {
         $options = [];
 
-        $options['username'] = $this->name;
+        $options['username'] = $this->username;
 
         if (! empty($this->first_name)) {
-            $options['firstname'] = $this->first_name;
+            $options['first'] = $this->first_name;
         }
         if (! empty($this->last_name)) {
-            $options['lastname'] = $this->last_name;
+            $options['last'] = $this->last_name;
         }
         if (! empty($this->first_name) && ! empty($this->last_name)) {
-            $options['firstlast'] = $this->first_name.' '.$this->last_name;
-            $options['lastfirst'] = $this->last_name.' '.$this->first_name;
-        }
-        if (! empty($this->nickname)) {
-            $options['nickname'] = $this->nickname;
+            $options['first_last'] = $this->first_name.' '.$this->last_name;
+            $options['last_first'] = $this->last_name.' '.$this->first_name;
         }
 
         $displayName = $this->display_name ?: $this->name;
@@ -169,7 +174,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
         static::creating(function (User $user) {
             if (empty($user->username) && ! empty($user->name)) {
-                $user->username = str($user->name)->slug('_')->toString();
+                $user->username = $user->name;
             }
         });
     }
@@ -179,6 +184,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'phone' => 'array',
             'social_links' => 'array',
             'billing_address' => 'array',
             'shipping_address' => 'array',

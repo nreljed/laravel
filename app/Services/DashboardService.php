@@ -72,12 +72,7 @@ class DashboardService
         return [
             'kpis' => [],
             'revenue_over_time' => [],
-            'recent_orders' => [],
-            'top_products' => [],
-            'order_status_counts' => [],
             'total_revenue' => 0.0,
-            'total_orders' => 0,
-            'total_products' => 0,
             'total_customers' => 0,
         ];
     }

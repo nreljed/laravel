@@ -3,16 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateSettingsRequest;
+use App\Http\Requests\UploadFaviconRequest;
 use App\Http\Requests\UploadLogoRequest;
 use App\Models\Role;
 use App\Services\SettingsService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class SettingsController extends Controller
 {
-    public function edit()
+    public function edit(): Response
     {
         if (! Schema::hasTable('settings')) {
             return Inertia::render('dashboard/admin/settings', [
@@ -28,7 +32,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function update(UpdateSettingsRequest $request)
+    public function update(UpdateSettingsRequest $request): Response|RedirectResponse
     {
         if (! Schema::hasTable('settings')) {
             return redirect()->back()->with('status', 'Settings table not yet migrated.');
@@ -42,7 +46,7 @@ class SettingsController extends Controller
         return redirect()->back()->with('status', 'Settings saved successfully.');
     }
 
-    public function uploadLogo(UploadLogoRequest $request)
+    public function uploadLogo(UploadLogoRequest $request): JsonResponse
     {
         $file = $request->file('logo');
 
@@ -66,7 +70,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function deleteLogo()
+    public function deleteLogo(): JsonResponse
     {
         $oldLogo = SettingsService::get('app_logo', '');
         if ($oldLogo) {
@@ -82,6 +86,49 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Logo removed successfully!',
+        ]);
+    }
+
+    public function uploadFavicon(UploadFaviconRequest $request): JsonResponse
+    {
+        $file = $request->file('favicon');
+
+        $filename = $file->store('favicons');
+
+        $oldFavicon = SettingsService::get('app_favicon', '');
+        if ($oldFavicon) {
+            $oldPath = str_replace(Storage::disk('favicons')->url(''), '', $oldFavicon);
+            if ($oldPath && Storage::disk('favicons')->exists($oldPath)) {
+                Storage::disk('favicons')->delete($oldPath);
+            }
+        }
+
+        SettingsService::set('app_favicon', Storage::disk('favicons')->url($filename));
+        SettingsService::clearCache();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Favicon uploaded successfully!',
+            'url' => Storage::disk('favicons')->url($filename).'?v='.time(),
+        ]);
+    }
+
+    public function deleteFavicon(): JsonResponse
+    {
+        $oldFavicon = SettingsService::get('app_favicon', '');
+        if ($oldFavicon) {
+            $oldPath = str_replace(Storage::disk('favicons')->url(''), '', $oldFavicon);
+            if ($oldPath && Storage::disk('favicons')->exists($oldPath)) {
+                Storage::disk('favicons')->delete($oldPath);
+            }
+        }
+
+        SettingsService::set('app_favicon', '');
+        SettingsService::clearCache();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Favicon removed successfully!',
         ]);
     }
 }

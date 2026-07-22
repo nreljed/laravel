@@ -7,12 +7,16 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Services\EmailSettingsService;
 use App\Services\FeatureRegistry;
+use App\Services\NotificationService;
 use App\Services\SettingsService;
+use App\Traits\RelativeTime;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    use RelativeTime;
+
     protected $rootView = 'app';
 
     public function version(Request $request): ?string
@@ -64,7 +68,7 @@ class HandleInertiaRequests extends Middleware
                     'link' => $n->link ?? $n->data['link'] ?? $n->data['url'] ?? '',
                     'severity' => $n->severity ?? 'info',
                     'module' => $n->module ?? 'core',
-                    'is_read' => $n->read_at ? '1' : '0',
+                    'is_read' => (bool) $n->read_at,
                     'data' => $n->data,
                     'read_at' => $n->read_at?->toISOString(),
                     'created_at' => $n->created_at->toISOString(),
@@ -72,10 +76,10 @@ class HandleInertiaRequests extends Middleware
                 ])
                 : [],
             'notificationUnreadCount' => fn () => $request->user()
-                ? Notification::where('notifiable_id', $request->user()->id)
-                    ->where('notifiable_type', get_class($request->user()))
-                    ->whereNull('read_at')
-                    ->count()
+                ? app(NotificationService::class)->getCachedUnreadCount(
+                    $request->user()->id,
+                    get_class($request->user())
+                )
                 : 0,
             'userCapabilities' => fn () => $request->user()
                 ? $this->getUserCapabilities($request->user())
@@ -97,16 +101,25 @@ class HandleInertiaRequests extends Middleware
             'emailTemplates' => fn () => $this->getEmailTemplates(),
             'brand' => [
                 'logo' => fn () => self::safeSetting('app_logo', ''),
+                'favicon' => fn () => self::safeSetting('app_favicon', ''),
                 'name' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
             ],
+            'seo' => [
+                'title' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
+                'description' => fn () => self::safeSetting('app_description', ''),
+                'og_image' => fn () => self::safeSetting('app_logo', ''),
+            ],
             'app_url' => fn () => self::safeSetting('app_url', config('app.url')),
+            'registration' => [
+                'enabled' => fn () => self::safeSetting('enable_registration', '1') === '1',
+                'require_email_verification' => fn () => self::safeSetting('require_email_verification', '0') === '1',
+            ],
             'wishlistIds' => fn () => collect(),
             'wishlistResult' => fn () => null,
             'impersonating' => fn () => $request->session()->get('impersonating', false),
             'impersonator' => fn () => $request->session()->has('impersonator_id')
                 ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name', 'email'])
                 : null,
-            'debug' => fn () => config('app.debug', false),
             'activeCurrencies' => fn () => $this->getActiveCurrencies(),
             'selectedCurrency' => fn () => session('selected_currency', 'EUR'),
         ];
@@ -187,26 +200,6 @@ class HandleInertiaRequests extends Middleware
         }
     }
 
-    protected static function relativeTime(\DateTimeInterface $datetime): string
-    {
-        $diff = time() - $datetime->getTimestamp();
-
-        if ($diff < 60) {
-            return 'just now';
-        }
-        if ($diff < 3600) {
-            return floor($diff / 60).'m ago';
-        }
-        if ($diff < 86400) {
-            return floor($diff / 3600).'h ago';
-        }
-        if ($diff < 604800) {
-            return floor($diff / 86400).'d ago';
-        }
-
-        return $datetime->format('M j');
-    }
-
     private function buildAuthUser($user): array
     {
         $primaryRole = $user->roles->first();
@@ -214,16 +207,12 @@ class HandleInertiaRequests extends Middleware
 
         $displayNameOptions = $user->getDisplayNameOptions();
 
-        $phoneData = $user->phone
-            ? (is_string($user->phone) ? json_decode($user->phone, true) : $user->phone)
-            : [];
-
-        $socialData = $user->social_links
-            ? (is_string($user->social_links) ? json_decode($user->social_links, true) : $user->social_links)
-            : [];
+        $phoneData = $user->phone ?? [];
+        $socialData = $user->social_links ?? [];
 
         return [
             'id' => $user->id,
+            'username' => $user->username,
             'name' => $user->name,
             'email' => $user->email,
             'user_email' => $user->email,
@@ -231,13 +220,12 @@ class HandleInertiaRequests extends Middleware
             'custom_avatar_url' => $user->avatar_url,
             'display_name' => $user->display_name ?: $user->name,
             'display_name_options' => $displayNameOptions,
-            'user_login' => $user->name,
+            'user_login' => $user->username,
             'first_name' => $user->first_name ?? '',
             'last_name' => $user->last_name ?? '',
-            'nickname' => $user->nickname ?? '',
             'url' => $user->url ?? '',
-            'website' => $user->url ?? '',
-            'description' => $user->bio ?? '',
+            'bio' => $user->bio ?? '',
+            'contact_email' => $user->contact_email ?? '',
             'user_registered' => $user->created_at?->toISOString(),
             'roles' => $user->roles->pluck('slug')->toArray(),
             'role' => $roleSlug,

@@ -3,22 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): Response
     {
         return Inertia::render('dashboard/index');
     }
 
-    public function stats()
+    public function stats(): Response
     {
         return Inertia::render('dashboard/stats');
     }
 
-    public function notifications(Request $request)
+    public function notifications(Request $request): Response
     {
         $user = $request->user();
 
@@ -37,7 +39,6 @@ class DashboardController extends Controller
                 $typePatterns = [
                     'account' => ['%user%', '%password%', '%email%', '%account%'],
                     'content' => ['post.%', '%content%'],
-                    'orders' => ['order.%', '%stock%'],
                 ];
 
                 $patterns = $typePatterns[$typeFilter] ?? ["{$typeFilter}%"];
@@ -61,7 +62,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function switchMode(Request $request)
+    public function switchMode(Request $request): RedirectResponse
     {
         $mode = $request->input('mode', 'host');
 

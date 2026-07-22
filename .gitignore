@@ -23,5 +23,15 @@ composer.phar
 # Debug/temp files (root only)
 /*.txt
 /*.html
+/*.png
 /_*.php
 /sql/*.sql
+
+# Laravel Boost auto-generated files
+.cursorrules
+CLAUDE.md
+.github/copilot-instructions.md
+.ai/
+.ai/guidelines/
+.ai/skills/
+boost.json

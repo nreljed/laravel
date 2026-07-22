@@ -39,6 +39,7 @@ class ContentSecurityPolicy
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
+            'report-uri /csp-report',
         ];
 
         return implode('; ', $directives);

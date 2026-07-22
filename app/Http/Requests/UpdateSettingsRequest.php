@@ -12,6 +12,7 @@ class UpdateSettingsRequest extends FormRequest
         return [
             'app_name' => 'nullable|string|max:255',
             'app_logo' => 'nullable|string|max:500',
+            'app_favicon' => 'nullable|string|max:500',
             'app_description' => 'nullable|string|max:500',
             'app_url' => 'nullable|url|max:255',
             'timezone' => 'nullable|string|max:100',

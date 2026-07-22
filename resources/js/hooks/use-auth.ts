@@ -1,14 +1,9 @@
 import { useMemo } from "react";
 import { usePage } from "@inertiajs/react";
+import { User } from "@/types";
 
 interface AuthData {
-  user?: {
-    id?: number;
-    name?: string;
-    email?: string;
-    avatar?: string | null;
-    [key: string]: unknown;
-  } | null;
+  user?: User | null;
 }
 
 interface UserCapabilities {

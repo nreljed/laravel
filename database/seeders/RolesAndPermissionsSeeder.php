@@ -26,6 +26,10 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Create Posts', 'slug' => 'posts.create', 'description' => 'Create new blog posts.'],
             ['name' => 'Edit Posts', 'slug' => 'posts.edit', 'description' => 'Edit existing blog posts.'],
             ['name' => 'Delete Posts', 'slug' => 'posts.delete', 'description' => 'Delete blog posts.'],
+            ['name' => 'View Tests', 'slug' => 'test-posts.view', 'description' => 'View tests.'],
+            ['name' => 'Create Tests', 'slug' => 'test-posts.create', 'description' => 'Create new tests.'],
+            ['name' => 'Edit Tests', 'slug' => 'test-posts.edit', 'description' => 'Edit existing tests.'],
+            ['name' => 'Delete Tests', 'slug' => 'test-posts.delete', 'description' => 'Delete tests.'],
         ];
 
         foreach ($permissions as $p) {

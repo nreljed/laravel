@@ -3,29 +3,31 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\BulkNotificationRequest;
 use App\Http\Requests\Api\MarkReadRequest;
 use App\Models\Notification;
+use App\Services\NotificationService;
+use App\Traits\RelativeTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class NotificationPollController extends Controller
 {
+    use RelativeTime;
+
+    public function __construct(
+        protected NotificationService $notificationService,
+    ) {}
+
     public function unreadCount(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $userId = $user->id;
-        $userType = get_class($user);
+        $userId = $request->user()->id;
+        $userType = get_class($request->user());
 
-        $meta = Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', $userType)
-            ->whereNull('read_at')
-            ->selectRaw('COUNT(*) as count, COALESCE(MAX(id), 0) as latest_id, COALESCE(MAX(created_at), \'\') as latest_at')
-            ->first();
+        $count = $this->notificationService->getCachedUnreadCount($userId, $userType);
 
         return response()->json([
-            'count' => (int) $meta->count,
-            'latest_id' => (string) $meta->latest_id,
-            'latest_at' => (string) $meta->latest_at,
+            'count' => $count,
         ]);
     }
 
@@ -35,17 +37,14 @@ class NotificationPollController extends Controller
         $userId = $user->id;
         $userType = get_class($user);
 
-        $unreadCount = Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', $userType)
-            ->whereNull('read_at')
-            ->count();
-
         $notifications = Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', $userType)
             ->latest()
             ->take(5)
             ->get()
             ->map(fn (Notification $n) => $this->format($n));
+
+        $unreadCount = $this->notificationService->getCachedUnreadCount($userId, $userType);
 
         return response()->json([
             'notifications' => $notifications,
@@ -56,24 +55,23 @@ class NotificationPollController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        $userId = $user->id;
+        $userType = get_class($user);
         $limit = min((int) $request->input('limit', 20), 100);
         $offset = max((int) $request->input('offset', 0), 0);
         $type = $request->input('type', '');
 
-        $query = Notification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', get_class($user));
+        $query = Notification::where('notifiable_id', $userId)
+            ->where('notifiable_type', $userType);
 
         if ($type) {
-            $query->where('type', 'like', "%{$type}%");
+            $query->where('type', $type);
         }
 
         $total = $query->count();
         $notifications = $query->latest()->skip($offset)->take($limit)->get()->map(fn (Notification $n) => $this->format($n));
 
-        $unreadCount = Notification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', get_class($user))
-            ->whereNull('read_at')
-            ->count();
+        $unreadCount = $this->notificationService->getCachedUnreadCount($userId, $userType);
 
         return response()->json([
             'notifications' => $notifications,
@@ -86,8 +84,11 @@ class NotificationPollController extends Controller
 
     public function markRead(MarkReadRequest $request): JsonResponse
     {
-        $updated = Notification::where('notifiable_id', $request->user()->id)
-            ->where('notifiable_type', get_class($request->user()))
+        $userId = $request->user()->id;
+        $userType = get_class($request->user());
+
+        $updated = Notification::where('notifiable_id', $userId)
+            ->where('notifiable_type', $userType)
             ->where('id', $request->id)
             ->update(['read_at' => now()]);
 
@@ -95,22 +96,30 @@ class NotificationPollController extends Controller
             return response()->json(['error' => 'Notification not found'], 404);
         }
 
+        $this->notificationService->invalidateUnreadCache($userId);
+
         return response()->json(['success' => true]);
     }
 
     public function markAllRead(Request $request): JsonResponse
     {
-        Notification::where('notifiable_id', $request->user()->id)
+        $userId = $request->user()->id;
+
+        Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', get_class($request->user()))
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
+
+        $this->notificationService->invalidateUnreadCache($userId);
 
         return response()->json(['success' => true]);
     }
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $deleted = Notification::where('notifiable_id', $request->user()->id)
+        $userId = $request->user()->id;
+
+        $deleted = Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', get_class($request->user()))
             ->where('id', $id)
             ->delete();
@@ -119,35 +128,35 @@ class NotificationPollController extends Controller
             return response()->json(['error' => 'Notification not found'], 404);
         }
 
+        $this->notificationService->invalidateUnreadCache($userId);
+
         return response()->json(['success' => true]);
     }
 
-    public function markBulk(Request $request): JsonResponse
+    public function markBulk(BulkNotificationRequest $request): JsonResponse
     {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return response()->json(['error' => 'No IDs provided'], 400);
-        }
+        $userId = $request->user()->id;
 
-        Notification::where('notifiable_id', $request->user()->id)
+        Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', get_class($request->user()))
-            ->whereIn('id', $ids)
+            ->whereIn('id', $request->ids)
             ->update(['read_at' => now()]);
 
+        $this->notificationService->invalidateUnreadCache($userId);
+
         return response()->json(['success' => true]);
     }
 
-    public function deleteBulk(Request $request): JsonResponse
+    public function deleteBulk(BulkNotificationRequest $request): JsonResponse
     {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return response()->json(['error' => 'No IDs provided'], 400);
-        }
+        $userId = $request->user()->id;
 
-        Notification::where('notifiable_id', $request->user()->id)
+        Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', get_class($request->user()))
-            ->whereIn('id', $ids)
+            ->whereIn('id', $request->ids)
             ->delete();
+
+        $this->notificationService->invalidateUnreadCache($userId);
 
         return response()->json(['success' => true]);
     }
@@ -162,30 +171,10 @@ class NotificationPollController extends Controller
             'link' => $n->link ?? $n->data['link'] ?? $n->data['url'] ?? '',
             'severity' => $n->severity ?? 'info',
             'module' => $n->module ?? 'core',
-            'is_read' => $n->read_at ? '1' : '0',
+            'is_read' => (bool) $n->read_at,
             'read_at' => $n->read_at?->toISOString(),
             'created_at' => $n->created_at->toISOString(),
-            'created_at_relative' => $this->relativeTime($n->created_at),
+            'created_at_relative' => self::relativeTime($n->created_at),
         ];
-    }
-
-    protected function relativeTime(\DateTimeInterface $datetime): string
-    {
-        $diff = time() - $datetime->getTimestamp();
-
-        if ($diff < 60) {
-            return 'just now';
-        }
-        if ($diff < 3600) {
-            return floor($diff / 60).'m ago';
-        }
-        if ($diff < 86400) {
-            return floor($diff / 3600).'h ago';
-        }
-        if ($diff < 604800) {
-            return floor($diff / 86400).'d ago';
-        }
-
-        return $datetime->format('M j');
     }
 }

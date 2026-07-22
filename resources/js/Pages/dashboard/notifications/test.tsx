@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Separator } from "@/Components/ui/separator";
-import { SettingsAccordion } from "@/Components/ui/settings-accordion";
+import { SettingsAccordion } from "@/Components/shared/settings-accordion";
 import { SystemStatusCards } from "@/Pages/dashboard/notifications/system-status-cards";
 import { QuickSendSection } from "@/Pages/dashboard/notifications/quick-send-section";
 import {
@@ -82,7 +82,7 @@ export default function NotificationsTest() {
   const [link, setLink] = useState("");
   const [severity, setSeverity] = useState("info");
   const [alsoSendEmail, setAlsoSendEmail] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState("booking-confirmation");
+  const [selectedTemplate, setSelectedTemplate] = useState("test");
   const [customEmail, setCustomEmail] = useState("");
 
   const [sending, setSending] = useState<string | null>(null);
@@ -123,7 +123,7 @@ export default function NotificationsTest() {
         body.channels = JSON.stringify(["in_app", "email"]);
       }
       const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
-        router.post(route("dashboard.notifications.test-send"), body, {
+        router.post(route("dashboard.admin.notifications.test-send"), body, {
           preserveState: true,
           preserveScroll: true,
           onSuccess: (page: { props: Record<string, unknown> }) => resolve(page.props),
@@ -160,7 +160,7 @@ export default function NotificationsTest() {
     try {
       const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
         router.post(
-          route("dashboard.notifications.test-send-all"),
+          route("dashboard.admin.notifications.test-send-all"),
           { type, title, message, link, severity },
           {
             preserveState: true,
@@ -197,7 +197,7 @@ export default function NotificationsTest() {
     const now = new Date();
     try {
       const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
-        router.delete(route("dashboard.notifications.test-clear"), {
+        router.delete(route("dashboard.admin.notifications.test-clear"), {
           preserveState: true,
           preserveScroll: true,
           onSuccess: (page: { props: Record<string, unknown> }) => resolve(page.props),
@@ -325,18 +325,18 @@ export default function NotificationsTest() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={route("dashboard.notifications")}>
+            <Link href={route("dashboard.notifications")}>
+              <Button variant="outline" size="sm">
                 <ListChecks className="mr-1.5 h-3.5 w-3.5" />
                 My Notifications
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/admin/settings">
+              </Button>
+            </Link>
+            <Link href={route("dashboard.admin.settings")}>
+              <Button variant="outline" size="sm">
                 <Settings className="mr-1.5 h-3.5 w-3.5" />
                 Email Settings
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -359,7 +359,7 @@ export default function NotificationsTest() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="type">Type</Label>
-                      <Select value={type} onValueChange={setType}>
+                      <Select value={type} onValueChange={(value) => setType(value ?? "")}>
                         <SelectTrigger id="type">
                           <SelectValue />
                         </SelectTrigger>
@@ -374,7 +374,7 @@ export default function NotificationsTest() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="severity">Severity</Label>
-                      <Select value={severity} onValueChange={setSeverity}>
+                      <Select value={severity} onValueChange={(value) => setSeverity(value ?? "")}>
                         <SelectTrigger id="severity">
                           <SelectValue />
                         </SelectTrigger>
@@ -477,7 +477,10 @@ export default function NotificationsTest() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="template">Template</Label>
-                      <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                      <Select
+                        value={selectedTemplate}
+                        onValueChange={(value) => setSelectedTemplate(value ?? "")}
+                      >
                         <SelectTrigger id="template">
                           <SelectValue />
                         </SelectTrigger>

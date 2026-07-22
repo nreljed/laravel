@@ -1,10 +1,27 @@
-import { GripVertical, Plus, Trash2, Image, Type, Code, Hash, Minus, Layout } from "lucide-react";
+import {
+  GripVertical,
+  Plus,
+  Trash2,
+  Image,
+  Type,
+  Code,
+  Hash,
+  Minus,
+  Layout,
+  Upload,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Label } from "@/Components/ui/label";
+import { RichTextEditor, uploadImageToServer } from "@/Components/editor";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/Components/ui/select";
 
 interface ContentBlock {
@@ -19,7 +36,7 @@ interface ContentBlock {
 
 interface Props {
   blocks: ContentBlock[];
-  onChange: (blocks: ContentBlock[]) => void;
+  onChange: (_blocks: ContentBlock[]) => void;
 }
 
 const blockIcons: Record<string, React.ReactNode> = {
@@ -56,9 +73,7 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
   };
 
   const updateBlock = (index: number, field: string, value: unknown) => {
-    const updated = blocks.map((block, i) =>
-      i === index ? { ...block, [field]: value } : block,
-    );
+    const updated = blocks.map((block, i) => (i === index ? { ...block, [field]: value } : block));
     onChange(updated);
   };
 
@@ -70,8 +85,28 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
     const target = index + direction;
     if (target < 0 || target >= blocks.length) return;
     const updated = [...blocks];
-    [updated[index], updated[target]] = [updated[target], updated[index]];
+    const temp = updated[index];
+    updated[index] = updated[target]!;
+    updated[target] = temp!;
     onChange(updated);
+  };
+
+  const handleImageUpload = (index: number) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const url = await uploadImageToServer(file);
+        updateBlock(index, "media_url", url);
+        toast.success("Image uploaded.");
+      } catch {
+        toast.error("Upload failed.");
+      }
+    });
+    input.click();
   };
 
   return (
@@ -87,23 +122,32 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
               <span className="text-sm font-medium">{blockLabels[block.type] || block.type}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Select
-                value={block.type}
-                onValueChange={(v) => updateBlock(index, "type", v)}
-              >
+              <Select value={block.type} onValueChange={(v) => updateBlock(index, "type", v)}>
                 <SelectTrigger className="w-32 h-7 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(blockLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="icon-sm" onClick={() => moveBlock(index, -1)} disabled={index === 0}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => moveBlock(index, -1)}
+                disabled={index === 0}
+              >
                 <span className="text-xs">▲</span>
               </Button>
-              <Button variant="ghost" size="icon-sm" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => moveBlock(index, 1)}
+                disabled={index === blocks.length - 1}
+              >
                 <span className="text-xs">▼</span>
               </Button>
               <Button variant="ghost" size="icon-sm" onClick={() => removeBlock(index)}>
@@ -112,10 +156,19 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
             </div>
           </div>
 
-          {(block.type === "rich_text" || block.type === "code") && (
+          {block.type === "rich_text" && (
+            <RichTextEditor
+              compact
+              value={block.content || ""}
+              onChange={(html) => updateBlock(index, "content", html)}
+              placeholder="Write rich text content..."
+            />
+          )}
+
+          {block.type === "code" && (
             <Textarea
               rows={4}
-              placeholder={block.type === "code" ? "Enter code..." : "Enter content (HTML supported)..."}
+              placeholder="Enter code..."
               value={block.content || ""}
               onChange={(e) => updateBlock(index, "content", e.target.value)}
             />
@@ -131,11 +184,29 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
 
           {block.type === "image" && (
             <div className="space-y-2">
-              <Input
-                placeholder="Image URL..."
-                value={block.media_url || ""}
-                onChange={(e) => updateBlock(index, "media_url", e.target.value)}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Image URL..."
+                  value={block.media_url || ""}
+                  onChange={(e) => updateBlock(index, "media_url", e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleImageUpload(index)}
+                >
+                  <Upload className="mr-1 h-3.5 w-3.5" /> Upload
+                </Button>
+              </div>
+              {block.media_url && (
+                <img
+                  src={block.media_url}
+                  alt={block.media_alt || ""}
+                  className="h-32 w-auto rounded-md border object-cover"
+                />
+              )}
               <Input
                 placeholder="Alt text..."
                 value={block.media_alt || ""}
@@ -161,7 +232,9 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
           )}
 
           {block.type === "separator" && (
-            <p className="text-xs text-muted-foreground">Horizontal rule separator (no content needed)</p>
+            <p className="text-xs text-muted-foreground">
+              Horizontal rule separator (no content needed)
+            </p>
           )}
         </div>
       ))}
@@ -174,7 +247,9 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
           </SelectTrigger>
           <SelectContent>
             {Object.entries(blockLabels).map(([key, label]) => (
-              <SelectItem key={key} value={key}>{label}</SelectItem>
+              <SelectItem key={key} value={key}>
+                {label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

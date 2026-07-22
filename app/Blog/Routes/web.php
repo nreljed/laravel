@@ -9,11 +9,13 @@ Route::get('/dashboard', [PostController::class, 'dashboard'])->name('dashboard'
 Route::get('/', [PostController::class, 'index'])->name('index');
 Route::get('/create', [PostController::class, 'create'])->name('create');
 Route::post('/', [PostController::class, 'store'])->name('store');
-Route::get('/{post}/edit', [PostController::class, 'edit'])->name('edit');
-Route::put('/{post}', [PostController::class, 'update'])->name('update');
-Route::delete('/{post}', [PostController::class, 'destroy'])->name('destroy');
 Route::post('/upload-image', [PostController::class, 'uploadImage'])->name('upload-image');
 Route::delete('/delete-image', [PostController::class, 'deleteImage'])->name('delete-image');
+Route::post('/bulk/action', [PostController::class, 'bulkAction'])->name('bulk.action');
+Route::get('/{post}/edit', [PostController::class, 'edit'])->name('edit');
+Route::put('/{post}', [PostController::class, 'update'])->name('update');
+Route::put('/{post}/status', [PostController::class, 'updateStatus'])->name('update-status');
+Route::delete('/{post}', [PostController::class, 'destroy'])->name('destroy');
 
 // Categories
 Route::get('/categories', [PostCategoryController::class, 'index'])->name('categories.index');

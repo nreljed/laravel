@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Ai\Models\AiProvider;
+use App\Ai\Policies\AiProviderPolicy;
 use App\Blog\Models\Post;
 use App\Models\Notification;
 use App\Models\User;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Post::class, PostPolicy::class);
+        Gate::policy(AiProvider::class, AiProviderPolicy::class);
 
         Gate::before(function (User $user, string $ability) {
             if ($user->isAdmin()) {

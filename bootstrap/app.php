@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckMaintenanceMode;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\ConfigureSessionLifetime;
 use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -30,7 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'profile/avatar',
             'deploy/*',
-            'api/notifications/*',
+            'api/notifications/unread-count',
+            'api/notifications/recent',
+            'api/notifications/',
             'stripe/webhook',
         ]);
 
@@ -38,6 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
             'role' => CheckRole::class,
             'permission' => CheckPermission::class,
+            'maintenance' => CheckMaintenanceMode::class,
+            'session-lifetime' => ConfigureSessionLifetime::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

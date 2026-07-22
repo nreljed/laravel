@@ -114,7 +114,7 @@ export default function AdminUsersIndex() {
 
   const hasFilters = !!filters.search;
 
-  if (users.data.length === 0 && !hasFilters) {
+  if (!hasFilters && users.data.length === 0) {
     return (
       <AdminLayout title="Users">
         <Head title="Users" />
@@ -124,11 +124,11 @@ export default function AdminUsersIndex() {
               <h2 className="text-3xl font-bold tracking-tight text-foreground">Users</h2>
               <p className="text-muted-foreground">Manage user accounts</p>
             </div>
-            <Button asChild>
-              <Link href={route("dashboard.admin.users.create")}>
+            <Link href={route("dashboard.admin.users.create")}>
+              <Button>
                 <Plus className="mr-1 size-4" /> Add User
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
           <Empty>
             <EmptyHeader>
@@ -139,11 +139,11 @@ export default function AdminUsersIndex() {
               <EmptyDescription>Create your first user to get started.</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button asChild>
-                <Link href={route("dashboard.admin.users.create")}>
+              <Link href={route("dashboard.admin.users.create")}>
+                <Button>
                   <Plus className="mr-1 size-4" /> Create User
-                </Link>
-              </Button>
+                </Button>
+              </Link>
             </EmptyContent>
           </Empty>
         </div>
@@ -234,11 +234,11 @@ export default function AdminUsersIndex() {
             Search
           </Button>
         </form>
-        <Button asChild>
-          <Link href={route("dashboard.admin.users.create")}>
+        <Link href={route("dashboard.admin.users.create")}>
+          <Button>
             <Plus className="mr-1 size-4" /> Add User
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <Card>
@@ -296,17 +296,17 @@ export default function AdminUsersIndex() {
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-xs">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
+                      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" />}>
+                        <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem asChild>
-                          <Link href={route("dashboard.admin.users.edit", { user: user.id })}>
-                            <Pencil className="mr-2 size-4" />
-                            Edit
-                          </Link>
+                        <DropdownMenuItem
+                          render={
+                            <Link href={route("dashboard.admin.users.edit", { user: user.id })} />
+                          }
+                        >
+                          <Pencil className="mr-2 size-4" />
+                          Edit
                         </DropdownMenuItem>
 
                         {isAdmin && (

@@ -7,10 +7,9 @@ import { GeneralSection } from "@/Components/settings/sections/GeneralSection";
 import { RegistrationSection } from "@/Components/settings/sections/RegistrationSection";
 import { NotificationSection } from "@/Components/settings/sections/NotificationSection";
 import { SecuritySection } from "@/Components/settings/sections/SecuritySection";
-import { EmailSection } from "@/Components/settings/sections/EmailSection";
+import { SmtpSection } from "@/Components/settings/sections/SmtpSection";
 import { TemplateSimulationSection } from "@/Components/settings/sections/TemplateSimulationSection";
 import { MaintenanceSection } from "@/Components/settings/sections/MaintenanceSection";
-import { LocalizationSection } from "@/Components/settings/sections/LocalizationSection";
 import { FormattingSection } from "@/Components/settings/sections/FormattingSection";
 import { DateFormatSection } from "@/Components/settings/sections/DateFormatSection";
 import { toast } from "sonner";
@@ -20,10 +19,7 @@ interface AdminSettingsProps {
   roles?: { id: number; name: string; slug: string }[];
 }
 
-export default function AdminSettings({
-  settings = {},
-  roles = [],
-}: AdminSettingsProps) {
+export default function AdminSettings({ settings = {}, roles = [] }: AdminSettingsProps) {
   const flash = usePage().props.flash as Record<string, string> | undefined;
 
   const generalData = settings.general || {};
@@ -36,7 +32,6 @@ export default function AdminSettings({
     ...settings.security,
     ...settings.email,
     ...settings.maintenance,
-    ...settings.localization,
   };
 
   const [genData, setGenData] = React.useState(generalData);
@@ -46,7 +41,9 @@ export default function AdminSettings({
   const [genLoading, setGenLoading] = React.useState(false);
   const [fmtLoading, setFmtLoading] = React.useState(false);
 
-  if (flash?.status) toast.success(flash.status);
+  React.useEffect(() => {
+    if (flash?.status) toast.success(flash.status);
+  }, [flash?.status]);
 
   const handleGenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,12 +119,9 @@ export default function AdminSettings({
           <p className="text-muted-foreground">Manage your application configuration.</p>
         </div>
 
-        <SettingsNav
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-        />
+        <SettingsNav activeTab={activeTab} onTabChange={handleTabChange} />
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsContent value="general" className="mt-6 space-y-6">
             <GeneralSection
               data={genData}
@@ -144,7 +138,7 @@ export default function AdminSettings({
               loading={fmtLoading}
               onSubmit={handleFmtSubmit}
             />
-            <DateFormatSection asAccordion />
+            <DateFormatSection settings={flatSettings} asAccordion />
           </TabsContent>
 
           <TabsContent value="registration" className="mt-6">
@@ -160,16 +154,12 @@ export default function AdminSettings({
           </TabsContent>
 
           <TabsContent value="email" className="mt-6 space-y-6">
-            <EmailSection asAccordion />
+            <SmtpSection asAccordion />
             <TemplateSimulationSection asAccordion />
           </TabsContent>
 
           <TabsContent value="maintenance" className="mt-6">
             <MaintenanceSection settings={flatSettings} asAccordion />
-          </TabsContent>
-
-          <TabsContent value="localization" className="mt-6">
-            <LocalizationSection settings={flatSettings} asAccordion />
           </TabsContent>
         </Tabs>
       </div>

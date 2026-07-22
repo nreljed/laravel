@@ -1,5 +1,5 @@
-import * as React from "react";
-import { useDropzone, type FileRejection } from "react-dropzone";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   DndContext,
   closestCenter,
@@ -7,7 +7,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -15,10 +15,8 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
-import { Upload, Loader2, X, Ban, Check, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
-
+import { Upload, Loader2, Trash2, CheckSquare, Square, X, SquareCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
   AlertDialog,
@@ -30,857 +28,538 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/Components/ui/alert-dialog";
-import { Badge } from "@/Components/ui/badge";
-import { SortableImage } from "@/Components/ui/gallery-sortable-image";
+import { SortableImage } from "./gallery-sortable-image";
+import { useImageUpload } from "@/hooks/use-image-upload";
+import { GALLERY_MAX_SIZE, formatFileSize } from "@/lib/gallery-utils";
 import {
-  getImageUrl,
-  processImage,
-  createPreview,
-  formatFileSize,
-  GALLERY_MAX_SIZE,
-  DEFAULT_IMAGE_CONFIG,
-} from "@/lib/gallery-utils";
-
-export interface GalleryImage {
-  id?: number | string | null;
-  url?: string;
-  path?: string;
-  filepath?: string;
-  featured?: boolean;
-  url_raw?: string;
-  urlRaw?: string;
-  name?: string | null;
-  filename?: string | null;
-  attachment_id?: string | number | null;
-}
-
-interface PendingFile {
-  file: File;
-  preview: string | null;
-  progress: number;
-  id: string;
-  status: "pending" | "uploading" | "error";
-  errorMessage?: string;
-}
-
-export interface UploadResult {
-  url?: string;
-  path?: string;
-  filepath?: string;
-  attachment_id?: string | number;
-  id?: string | number;
-  filename?: string;
-}
+  type GalleryImage,
+  type GalleryImageDone,
+  type ServerGalleryImage,
+  isGalleryImageDone,
+  isGalleryImageUploading,
+  createGalleryImageFromFile,
+  imagesToServerFormat,
+  imagesFromServerFormat,
+} from "@/types/gallery";
 
 interface GalleryUploaderProps {
-  label?: string;
-  description?: string;
-  value?: GalleryImage[];
-  thumbnailUrl?: string;
-  onChange?: (_images: GalleryImage[]) => void;
-  onThumbnailChange?: (_url: string) => void;
-  disabled?: boolean;
+  images: ServerGalleryImage[];
+  onChange: (_images: ServerGalleryImage[]) => void;
+  uploadUrl: string;
+  deleteUrl: string;
   maxImages?: number;
-  imageConfig?: Partial<typeof DEFAULT_IMAGE_CONFIG>;
-  enableDrag?: boolean;
-  enableDragOverlay?: boolean;
-  enableDragHandle?: boolean;
-  enableFeatured?: boolean;
-  onUpload?: (
-    _file: File,
-    _onProgress: (_pct: number) => void,
-    _signal: AbortSignal,
-    _pendingId: string,
-  ) => Promise<UploadResult>;
-  onDelete?: (_image: GalleryImage) => Promise<void>;
-  onSetFeatured?: (_image: GalleryImage) => Promise<void>;
-  onReorder?: (_images: GalleryImage[]) => Promise<void>;
-}
-
-const UPLOAD_CONCURRENCY = 3;
-
-function markPendingStatus(
-  setter: React.Dispatch<React.SetStateAction<PendingFile[]>>,
-  id: string,
-  status: PendingFile["status"],
-) {
-  setter((prev) => prev.map((pf) => (pf.id === id ? { ...pf, status } : pf)));
-}
-
-function normalizeId(image: GalleryImage): string | number {
-  return image.id ?? image.url ?? crypto.randomUUID();
+  compress?: boolean;
 }
 
 export function GalleryUploader({
-  label = "Gallery",
-  description = "Add images & videos",
-  value = [],
-  thumbnailUrl,
+  images: serverImages,
   onChange,
-  onThumbnailChange,
-  disabled = false,
+  uploadUrl,
+  deleteUrl,
   maxImages = 20,
-  imageConfig,
-  enableDrag = true,
-  enableDragOverlay = false,
-  enableDragHandle = true,
-  enableFeatured = true,
-  onUpload,
-  onDelete,
-  onSetFeatured,
-  onReorder,
+  compress = true,
 }: GalleryUploaderProps) {
-  const [uploadedImages, setUploadedImages] = React.useState<GalleryImage[]>([]);
-  const [isUploading, setIsUploading] = React.useState(false);
-  const [pendingFiles, setPendingFiles] = React.useState<PendingFile[]>([]);
+  const [internalImages, setInternalImages] = useState<GalleryImage[]>(() =>
+    imagesFromServerFormat(serverImages),
+  );
+  const [failedImages, setFailedImages] = useState<Map<string, File>>(new Map());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [deleteConfirmImage, setDeleteConfirmImage] = useState<GalleryImage | null>(null);
+  const [deleteConfirmBulk, setDeleteConfirmBulk] = useState(false);
+  const mountedRef = useRef(true);
+  const { upload, remove, retry } = useImageUpload({ uploadUrl, deleteUrl, compress });
 
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [imageToDelete, setImageToDelete] = React.useState<GalleryImage | null>(null);
-  const [deletingImageKeys, setDeletingImageKeys] = React.useState<Set<string>>(new Set());
-  const [isSelecting, setIsSelecting] = React.useState(false);
-  const [selectedIds, setSelectedIds] = React.useState<Set<string | number | null>>(new Set());
-  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = React.useState(false);
-  const [bulkDeleteCount, setBulkDeleteCount] = React.useState(0);
-
-  const userHasSelectedFeaturedRef = React.useRef(false);
-  const processingRef = React.useRef<Map<string, File>>(new Map());
-  const cancelledIdsRef = React.useRef<Set<string>>(new Set());
-  const abortRef = React.useRef<AbortController>(new AbortController());
-  const accumulatedRef = React.useRef<GalleryImage[]>([]);
-  const [activeImage, setActiveImage] = React.useState<GalleryImage | null>(null);
-
-  React.useEffect(() => {
-    if (!value || !Array.isArray(value)) return;
-
-    let processed = [...value];
-
-    if (thumbnailUrl && !userHasSelectedFeaturedRef.current && enableFeatured) {
-      const normalizedThumbnail = thumbnailUrl;
-      processed = processed.map((img) => {
-        const url = img.url || "";
-        return url === normalizedThumbnail
-          ? { ...img, featured: true }
-          : { ...img, featured: false };
-      });
-    } else if (enableFeatured) {
-      const hasExplicitFeatured = processed.some((img) => img.featured === true);
-      if (!hasExplicitFeatured && processed.length > 0) {
-        processed = processed.map((img, i) =>
-          i === 0 ? { ...img, featured: true } : { ...img, featured: false },
-        );
-      }
-    } else {
-      processed = processed.map((img) => ({ ...img, featured: false }));
-    }
-
-    setUploadedImages(processed);
-  }, [value, thumbnailUrl, enableFeatured]);
-
-  React.useEffect(() => {
-    const errored = pendingFiles.filter((pf) => pf.status === "error");
-    if (errored.length === 0) return;
-
-    const timers = errored.map((pf) =>
-      setTimeout(() => {
-        setPendingFiles((prev) => prev.filter((p) => p.id !== pf.id));
-        if (pf.preview) URL.revokeObjectURL(pf.preview);
-      }, 4000),
-    );
-
+  useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      for (const t of timers) clearTimeout(t);
+      mountedRef.current = false;
     };
-  }, [pendingFiles]);
+  }, []);
 
-  React.useEffect(() => {
-    return () => {
-      for (const pf of pendingFiles) {
-        if (pf.preview) {
-          URL.revokeObjectURL(pf.preview);
-        }
+  const emitChange = useCallback(
+    (images: GalleryImage[]) => {
+      if (mountedRef.current) {
+        onChange(imagesToServerFormat(images));
       }
-    };
-  }, [pendingFiles]);
+    },
+    [onChange],
+  );
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: ((event: { pointerType?: string }) => {
-        if (event?.pointerType === "touch") {
-          return { delay: 250, tolerance: 5 };
-        }
-        return { distance: 8 };
-      }) as unknown as never,
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const uploadFile = React.useCallback(
-    async (
-      file: File,
-      onProgress: (_progress: number) => void,
-      signal: AbortSignal,
-      pendingId: string,
-    ) => {
-      const cacheKey = `${file.name}_${file.size}_${file.lastModified}`;
-      let processedFile = processingRef.current.get(cacheKey);
-      if (!processedFile) {
-        processedFile = await processImage(file, imageConfig);
-        if (signal?.aborted) throw new Error("Upload cancelled");
-        processingRef.current.set(cacheKey, processedFile);
-      }
+  const sortableIds = useMemo(() => internalImages.map((img) => img.id), [internalImages]);
 
-      if (onUpload) {
-        const serverData = await onUpload(processedFile, onProgress, signal, pendingId);
-        return serverData;
-      }
+  const updateImageProgress = useCallback((id: string, progress: number) => {
+    setInternalImages((prev) =>
+      prev.map((img) =>
+        img.id === id && isGalleryImageUploading(img) ? { ...img, progress } : img,
+      ),
+    );
+  }, []);
 
-      throw new Error("No upload handler provided");
+  const markImageDone = useCallback(
+    (id: string, result: GalleryImageDone) => {
+      setInternalImages((prev) => {
+        const updated = prev.map((img) =>
+          img.id === id
+            ? {
+                ...result,
+                id,
+                name: img.name,
+                size: img.size,
+                type: img.type,
+                preview: isGalleryImageUploading(img) ? img.preview : undefined,
+              }
+            : img,
+        );
+        emitChange(updated);
+        return updated;
+      });
     },
-    [onUpload, imageConfig],
+    [emitChange],
   );
 
-  const onDrop = React.useCallback(
-    async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-      for (const { file, errors } of fileRejections) {
-        const errorMessages = errors.map((e) => {
-          switch (e.code) {
-            case "file-too-large": {
-              return "File too large (max 50MB)";
+  const markImageError = useCallback((id: string, error: string, file: File) => {
+    setFailedImages((prev) => new Map(prev).set(id, file));
+    setInternalImages((prev) => {
+      const updated = prev.map((img) =>
+        img.id === id
+          ? {
+              ...img,
+              status: "error" as const,
+              error,
             }
-            case "file-invalid-type": {
-              return "Invalid file type";
-            }
-            default: {
-              return e.message;
-            }
-          }
-        });
-        toast.error(`${file.name}: ${errorMessages.join(", ")}`);
-      }
+          : img,
+      );
+      return updated;
+    });
+  }, []);
 
-      if (acceptedFiles.length === 0) return;
-
-      const remainingSlots = maxImages - accumulatedRef.current.length;
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      const remainingSlots = maxImages - internalImages.length;
       const filesToUpload = acceptedFiles.slice(0, remainingSlots);
 
-      if (acceptedFiles.length > remainingSlots) {
-        toast.warning(`Only ${remainingSlots} more file(s) can be added.`);
+      if (filesToUpload.length < acceptedFiles.length) {
+        toast.warning(`Only ${remainingSlots} more images allowed.`);
       }
 
-      if (filesToUpload.length === 0) return;
+      const newUploading = filesToUpload.map((f) => createGalleryImageFromFile(f));
+      if (mountedRef.current) {
+        setInternalImages((prev) => [...prev, ...newUploading]);
+      }
 
-      abortRef.current = new AbortController();
-      cancelledIdsRef.current = new Set();
-      accumulatedRef.current = [...uploadedImages];
+      const controller = new AbortController();
 
-      const newPendingFiles: PendingFile[] = filesToUpload.map((file) => ({
-        file,
-        preview: createPreview(file),
-        progress: 0,
-        id: crypto.randomUUID(),
-        status: "pending",
-      }));
+      const uploadPromises = filesToUpload.map(async (file, index) => {
+        const stableId = newUploading[index]!.id;
 
-      setIsUploading(true);
-      setPendingFiles((prev) => [...prev, ...newPendingFiles]);
+        try {
+          updateImageProgress(stableId, 10);
 
-      const signal = abortRef.current.signal;
-      let completedCount = 0;
+          const result = await upload(file, controller.signal);
 
-      async function worker() {
-        while (newPendingFiles.length > 0 && !signal.aborted) {
-          const pendingFile = newPendingFiles.shift();
-          if (!pendingFile || cancelledIdsRef.current.has(pendingFile.id)) continue;
+          updateImageProgress(stableId, 100);
 
-          markPendingStatus(setPendingFiles, pendingFile.id, "uploading");
-
-          try {
-            const serverData = await uploadFile(
-              pendingFile.file,
-              (progress: number) => {
-                setPendingFiles((prev) =>
-                  prev.map((pf) => (pf.id === pendingFile.id ? { ...pf, progress } : pf)),
-                );
-              },
-              signal,
-              pendingFile.id,
-            );
-
-            if (signal.aborted) break;
-
-            const newImage: GalleryImage = {
-              id: `upload_${Date.now()}_${completedCount}`,
-              url: serverData?.url,
-              path: serverData?.path,
-              name: pendingFile.file.name,
-            };
-
-            completedCount++;
-
-            setPendingFiles((prev) => prev.filter((pf) => pf.id !== pendingFile.id));
-
-            const currentAccumulated = accumulatedRef.current;
-            const hasFeatured = currentAccumulated.some((img) => img.featured === true);
-            const imageToAdd = hasFeatured ? newImage : { ...newImage, featured: true };
-
-            if (!hasFeatured && imageToAdd.url) {
-              userHasSelectedFeaturedRef.current = true;
-            }
-
-            accumulatedRef.current = [...currentAccumulated, imageToAdd];
-            setUploadedImages(accumulatedRef.current);
-            onChange?.(accumulatedRef.current);
-          } catch (error: unknown) {
-            if (error instanceof Error && error.message === "Upload cancelled") {
-              setPendingFiles((prev) => prev.filter((pf) => pf.id !== pendingFile.id));
-            } else {
-              setPendingFiles((prev) =>
-                prev.map((pf) =>
-                  pf.id === pendingFile.id
-                    ? {
-                        ...pf,
-                        status: "error",
-                        errorMessage: error instanceof Error ? error.message : "Upload failed",
-                      }
-                    : pf,
-                ),
-              );
-            }
+          if (mountedRef.current) {
+            markImageDone(stableId, {
+              id: stableId,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              status: "done",
+              url: result.url,
+              path: result.path,
+            });
           }
+          return result;
+        } catch (error) {
+          if (controller.signal.aborted) return null;
+          console.error(`Failed to upload ${file.name}:`, error);
+          toast.error(`Failed to upload ${file.name}`);
+          if (mountedRef.current) {
+            markImageError(
+              stableId,
+              error instanceof Error ? error.message : "Upload failed",
+              file,
+            );
+          }
+          return null;
         }
-      }
+      });
 
-      const workerCount = Math.min(UPLOAD_CONCURRENCY, filesToUpload.length);
-      const workers = Array.from({ length: workerCount }, () => worker());
+      await Promise.all(uploadPromises);
 
-      try {
-        await Promise.all(workers);
-      } finally {
-        setIsUploading(false);
-        if (completedCount > 0 && !signal.aborted) {
-          toast.success(`${completedCount} file(s) uploaded successfully`);
-        } else if (signal.aborted && completedCount > 0) {
-          toast.success(`${completedCount} file(s) uploaded`);
-        }
+      const successCount = filesToUpload.length - failedImages.size;
+      if (successCount > 0) {
+        toast.success(`${successCount} image(s) uploaded.`);
       }
     },
-    [maxImages, uploadedImages, onChange, uploadFile],
+    [
+      internalImages.length,
+      maxImages,
+      upload,
+      updateImageProgress,
+      markImageDone,
+      markImageError,
+      failedImages.size,
+    ],
   );
-
-  const cancelAll = React.useCallback(() => {
-    abortRef.current.abort();
-    setIsUploading(false);
-    toast.info("Upload cancelled");
-  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"],
-      "video/*": [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv"],
-    },
+    accept: { "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp"] },
     maxSize: GALLERY_MAX_SIZE,
-    disabled: isUploading || disabled || uploadedImages.length >= maxImages,
+    disabled: internalImages.length >= maxImages,
   });
 
-  const handleRemoveUploaded = React.useCallback(
-    async (imageToRemove: GalleryImage) => {
-      const imageUrl = imageToRemove.url || "";
-      const imageKey = imageToRemove.id + "" || imageUrl;
+  const confirmRemove = useCallback(
+    async (image: GalleryImage) => {
+      setDeleteConfirmImage(null);
 
-      setDeletingImageKeys((prev) => new Set(prev).add(imageKey));
-
-      try {
-        if (onDelete) {
-          await onDelete(imageToRemove);
+      if (isGalleryImageDone(image)) {
+        try {
+          await remove(image.path);
+        } catch {
+          // Best-effort delete
         }
-
-        const updatedImages = uploadedImages.filter((img) => img.url !== imageUrl);
-        setUploadedImages(updatedImages);
-        onChange?.(updatedImages);
-      } catch {
-        toast.error("Failed to remove file from server");
-      } finally {
-        setDeletingImageKeys((prev) => {
-          const next = new Set(prev);
-          next.delete(imageKey);
-          return next;
-        });
       }
+
+      if (isGalleryImageUploading(image) && image.preview) {
+        URL.revokeObjectURL(image.preview);
+      }
+
+      setFailedImages((prev) => {
+        const next = new Map(prev);
+        next.delete(image.id);
+        return next;
+      });
+
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(image.id);
+        return next;
+      });
+
+      setInternalImages((prev) => {
+        const updated = prev.filter((img) => img.id !== image.id);
+        emitChange(updated);
+        return updated;
+      });
+
+      toast.success("Image removed.");
     },
-    [uploadedImages, onChange, onDelete],
+    [remove, emitChange],
   );
 
-  const confirmDelete = React.useCallback((image: GalleryImage) => {
-    setImageToDelete(image);
-    setShowDeleteDialog(true);
+  const handleRemove = useCallback((image: GalleryImage) => {
+    setDeleteConfirmImage(image);
   }, []);
 
-  const handleConfirmDelete = React.useCallback(async () => {
-    if (!imageToDelete) return;
-    await handleRemoveUploaded(imageToDelete);
-    setImageToDelete(null);
-    setShowDeleteDialog(false);
-  }, [imageToDelete, handleRemoveUploaded]);
+  const handleRetry = useCallback(
+    async (image: GalleryImage) => {
+      const file = failedImages.get(image.id);
+      if (!file) return;
 
-  const handleCancelPending = React.useCallback((pendingFile: PendingFile) => {
-    cancelledIdsRef.current.add(pendingFile.id);
-    if (pendingFile.preview) {
-      URL.revokeObjectURL(pendingFile.preview);
-    }
-    setPendingFiles((prev) => prev.filter((pf) => pf.id !== pendingFile.id));
-  }, []);
+      setFailedImages((prev) => {
+        const next = new Map(prev);
+        next.delete(image.id);
+        return next;
+      });
 
-  const handleToggleSelect = React.useCallback((imageId: string | number | null) => {
+      if (mountedRef.current) {
+        setInternalImages((prev) =>
+          prev.map((img) =>
+            img.id === image.id
+              ? {
+                  id: img.id,
+                  name: img.name,
+                  size: img.size,
+                  type: img.type,
+                  status: "uploading" as const,
+                  progress: 0,
+                  preview: isGalleryImageUploading(img) ? img.preview : "",
+                }
+              : img,
+          ),
+        );
+      }
+
+      try {
+        updateImageProgress(image.id, 10);
+        const result = await retry(file);
+        updateImageProgress(image.id, 100);
+
+        if (mountedRef.current) {
+          markImageDone(image.id, {
+            id: image.id,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            status: "done",
+            url: result.url,
+            path: result.path,
+          });
+          toast.success(`${file.name} uploaded.`);
+        }
+      } catch (error) {
+        if (mountedRef.current) {
+          markImageError(image.id, error instanceof Error ? error.message : "Upload failed", file);
+          toast.error(`Failed to upload ${file.name}`);
+        }
+      }
+    },
+    [failedImages, retry, updateImageProgress, markImageDone, markImageError],
+  );
+
+  const handleSetFeatured = useCallback(
+    (image: GalleryImage) => {
+      setInternalImages((prev) => {
+        const idx = prev.findIndex((img) => img.id === image.id);
+        if (idx <= 0) return prev;
+
+        const moved = prev[idx]!;
+        const rest = prev.filter((img) => img.id !== image.id);
+        const updated = [moved, ...rest].map((img, i) => ({ ...img, order: i }));
+        emitChange(updated);
+        return updated;
+      });
+
+      toast.success("Cover image updated.");
+    },
+    [emitChange],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = internalImages.findIndex((img) => img.id === active.id);
+      const newIndex = internalImages.findIndex((img) => img.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reordered = arrayMove(internalImages, oldIndex, newIndex).map((img, i) => ({
+          ...img,
+          order: i,
+        }));
+        emitChange(reordered);
+      }
+    },
+    [internalImages, emitChange],
+  );
+
+  const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(imageId)) {
-        next.delete(imageId);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(imageId);
+        next.add(id);
       }
       return next;
     });
   }, []);
 
-  const handleSelectAll = React.useCallback(() => {
-    setSelectedIds((prev) => {
-      if (prev.size === uploadedImages.length) {
-        return new Set();
-      }
-      return new Set(uploadedImages.map((img) => normalizeId(img)));
-    });
-  }, [uploadedImages]);
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds(new Set(internalImages.map((img) => img.id)));
+  }, [internalImages]);
 
-  const handleBulkDelete = React.useCallback(() => {
-    const imagesToDelete = uploadedImages.filter((img) => selectedIds.has(normalizeId(img)));
-    if (imagesToDelete.length === 0) return;
-    setBulkDeleteCount(imagesToDelete.length);
-    setShowBulkDeleteDialog(true);
-  }, [uploadedImages, selectedIds]);
-
-  const handleConfirmBulkDelete = React.useCallback(async () => {
-    const imagesToDelete = uploadedImages.filter((img) => selectedIds.has(normalizeId(img)));
-    if (imagesToDelete.length === 0) return;
-
-    setIsSelecting(false);
+  const handleDeselectAll = useCallback(() => {
     setSelectedIds(new Set());
-    setShowBulkDeleteDialog(false);
-
-    for (const image of imagesToDelete) {
-      await handleRemoveUploaded(image);
-    }
-  }, [uploadedImages, selectedIds, handleRemoveUploaded]);
-
-  const handleSetFeatured = React.useCallback(
-    async (imageToFeature: GalleryImage) => {
-      const imageUrl = imageToFeature.url || "";
-
-      userHasSelectedFeaturedRef.current = true;
-
-      const newItems = uploadedImages.map((item) => {
-        const url = item.url || "";
-        return url === imageUrl ? { ...item, featured: true } : { ...item, featured: false };
-      });
-      setUploadedImages(newItems);
-      onChange?.(newItems);
-      if (imageUrl && onThumbnailChange) {
-        onThumbnailChange(imageUrl);
-      }
-      if (onSetFeatured) {
-        await onSetFeatured(imageToFeature);
-      }
-      toast.success("Cover image updated");
-    },
-    [onChange, onThumbnailChange, uploadedImages, onSetFeatured],
-  );
-
-  const handleDragStart = React.useCallback(
-    (event: { active: { id: string | number } }) => {
-      const image = uploadedImages.find((img) => normalizeId(img) === event.active.id);
-      setActiveImage(image ?? null);
-    },
-    [uploadedImages],
-  );
-
-  const handleDragEnd = React.useCallback(
-    async (event: { active: { id: string | number }; over: null | { id: string | number } }) => {
-      const { active, over } = event;
-
-      if (over && active.id !== over.id) {
-        const oldIndex = uploadedImages.findIndex((item) => normalizeId(item) === active.id);
-        const newIndex = uploadedImages.findIndex((item) => normalizeId(item) === over.id);
-
-        if (oldIndex !== -1 && newIndex !== -1) {
-          const newItems = arrayMove(uploadedImages, oldIndex, newIndex);
-          setUploadedImages(newItems);
-          onChange?.(newItems);
-          if (onReorder) {
-            await onReorder(newItems);
-          }
-        }
-      }
-
-      setActiveImage(null);
-    },
-    [onChange, uploadedImages, onReorder],
-  );
-
-  const handleDragCancel = React.useCallback(() => {
-    setActiveImage(null);
   }, []);
 
-  const imageIds = uploadedImages.map((img) => normalizeId(img));
+  const confirmBulkDelete = useCallback(async () => {
+    setDeleteConfirmBulk(false);
+    const toDelete = internalImages.filter((img) => selectedIds.has(img.id));
+    if (toDelete.length === 0) return;
 
-  const isLoading = pendingFiles.some((pf) => pf.status === "uploading");
-  const hasPending = pendingFiles.length > 0;
+    const serverDeletes = toDelete.filter(isGalleryImageDone);
+    await Promise.allSettled(serverDeletes.map((img) => remove(img.path)));
+
+    for (const img of toDelete) {
+      if (isGalleryImageUploading(img) && img.preview) {
+        URL.revokeObjectURL(img.preview);
+      }
+    }
+
+    setInternalImages((prev) => {
+      const updated = prev.filter((img) => !selectedIds.has(img.id));
+      emitChange(updated);
+      return updated;
+    });
+
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    toast.success(`${toDelete.length} image(s) removed.`);
+  }, [internalImages, selectedIds, remove, emitChange]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    setDeleteConfirmBulk(true);
+  }, [selectedIds.size]);
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  }, []);
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-
-      {isUploading && (
-        <div className="flex items-center justify-between px-3 py-2 bg-muted/50 rounded-lg">
+      {selectionMode && (
+        <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-2">
           <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm text-muted-foreground">
-              {hasPending
-                ? `Uploading ${pendingFiles.filter((p) => p.status === "uploading").length} of ${pendingFiles.length}...`
-                : "Processing..."}
-            </span>
-          </div>
-          {isLoading && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={cancelAll}
-              className="gap-1 text-destructive hover:text-destructive h-7 text-xs"
+              onClick={
+                selectedIds.size === internalImages.length ? handleDeselectAll : handleSelectAll
+              }
             >
-              <Ban className="size-3" />
-              Cancel all
-            </Button>
-          )}
-        </div>
-      )}
-
-      {uploadedImages.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {isSelecting
-                ? `${selectedIds.size}/${uploadedImages.length} selected`
-                : enableDrag
-                  ? "Drag to reorder"
-                  : ""}
-              {!isSelecting && enableDrag && enableFeatured ? " \u{2022} " : ""}
-              {!isSelecting && enableDrag && enableFeatured ? "Click star to set as cover" : ""}
-            </p>
-            <div className="flex items-center gap-1">
-              {isSelecting && (
+              {selectedIds.size === internalImages.length ? (
                 <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs gap-1"
-                    onClick={handleSelectAll}
-                  >
-                    <Check className="size-3" />
-                    {selectedIds.size === uploadedImages.length ? "Deselect all" : "Select all"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="h-7 text-xs gap-1"
-                    disabled={selectedIds.size === 0}
-                    onClick={handleBulkDelete}
-                  >
-                    <Trash2 className="size-3" />
-                    Delete ({selectedIds.size})
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      setIsSelecting(false);
-                      setSelectedIds(new Set());
-                    }}
-                  >
-                    Cancel
-                  </Button>
+                  <Square className="mr-1.5 size-4" />
+                  Deselect All
+                </>
+              ) : (
+                <>
+                  <SquareCheck className="mr-1.5 size-4" />
+                  Select All
                 </>
               )}
-              {!isSelecting && !isUploading && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setIsSelecting(true)}
-                >
-                  Select
-                </Button>
-              )}
-            </div>
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.size} of {internalImages.length} selected
+            </span>
           </div>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragCancel={handleDragCancel}
-            modifiers={[restrictToWindowEdges]}
-          >
-            <SortableContext items={imageIds} strategy={rectSortingStrategy} disabled={!enableDrag}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {uploadedImages.map((image) => (
-                  <SortableImage
-                    key={normalizeId(image)}
-                    image={{
-                      id: normalizeId(image),
-                      name: image.name ?? null,
-                      filename: image.filename ?? null,
-                      url: image.url,
-                      url_raw: image.url_raw,
-                      urlRaw: image.urlRaw,
-                    }}
-                    onRemove={handleRemoveUploaded}
-                    onSetFeatured={handleSetFeatured}
-                    isUploading={isUploading}
-                    isFeatured={image.featured === true}
-                    enableDragHandle={enableDragHandle}
-                    enableDrag={enableDrag}
-                    onConfirmDelete={confirmDelete}
-                    enableFeatured={enableFeatured}
-                    isDeleting={deletingImageKeys.has(image.id + "" || image.url || "")}
-                    selectionMode={isSelecting}
-                    isSelected={selectedIds.has(normalizeId(image))}
-                    onToggleSelect={handleToggleSelect}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-            {enableDragOverlay && (
-              <DragOverlay>
-                {activeImage ? (
-                  <div className="aspect-square rounded-lg border-2 border-primary bg-muted overflow-hidden shadow-lg">
-                    {getImageUrl(
-                      activeImage as { url?: string; url_raw?: string; urlRaw?: string },
-                    ) ? (
-                      <img
-                        src={getImageUrl(
-                          activeImage as { url?: string; url_raw?: string; urlRaw?: string },
-                        )}
-                        alt={activeImage.name || "Dragging image"}
-                        loading="lazy"
-                        className="size-full object-cover"
-                        draggable="false"
-                      />
-                    ) : (
-                      <div className="size-full flex items-center justify-center bg-muted">
-                        <span className="text-xs text-muted-foreground">No preview</span>
-                      </div>
-                    )}
-                    {activeImage.featured === true && (
-                      <div className="absolute top-2 left-2 z-10">
-                        <Badge
-                          variant="default"
-                          className="gap-1 bg-yellow-500 text-white border-yellow-400 hover:bg-yellow-600"
-                        >
-                          <Star className="size-3 fill-white text-white" />
-                          Cover
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-              </DragOverlay>
-            )}
-          </DndContext>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={selectedIds.size === 0}
+              onClick={handleBulkDelete}
+            >
+              <Trash2 className="mr-1.5 size-4" />
+              Delete ({selectedIds.size})
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={handleCancelSelection}>
+              <X className="mr-1.5 size-4" />
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
 
-      {hasPending && (
-        <div className="border rounded-lg divide-y">
-          {pendingFiles.map((pendingFile) => (
-            <div key={pendingFile.id} className="flex items-center gap-3 p-3 transition-all">
-              <div className="size-12 rounded overflow-hidden bg-muted flex-shrink-0">
-                {pendingFile.preview ? (
-                  <img
-                    src={pendingFile.preview}
-                    alt={pendingFile.file.name}
-                    loading="lazy"
-                    className="size-full object-cover"
-                    draggable="false"
-                  />
-                ) : (
-                  <div className="size-full flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">img</span>
-                  </div>
-                )}
-              </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {internalImages.map((image, index) => (
+              <SortableImage
+                key={image.id}
+                image={image}
+                onRemove={handleRemove}
+                onRetry={handleRetry}
+                onSetFeatured={handleSetFeatured}
+                isFeatured={index === 0}
+                enableDragHandle
+                enableDrag
+                enableFeatured
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(image.id)}
+                onToggleSelect={handleToggleSelect}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium truncate">{pendingFile.file.name}</p>
-                  <p className="text-xs text-muted-foreground flex-shrink-0">
-                    {formatFileSize(pendingFile.file.size)}
-                  </p>
-                </div>
-
-                {pendingFile.status === "error" ? (
-                  <p className="text-xs text-destructive">
-                    {pendingFile.errorMessage || "Upload failed"}
-                  </p>
-                ) : (
-                  <>
-                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-primary h-full transition-all duration-300 rounded-full"
-                        style={{ width: `${Math.round(pendingFile.progress || 0)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {pendingFile.status === "uploading"
-                        ? `Uploading... ${Math.round(pendingFile.progress || 0)}%`
-                        : "Waiting..."}
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleCancelPending(pendingFile)}
-                className="flex-shrink-0 rounded-full p-1 hover:bg-muted transition-colors"
-                title="Cancel"
-              >
-                <X className="size-4 text-muted-foreground" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!isUploading && uploadedImages.length < maxImages && (
+      {internalImages.length < maxImages && !selectionMode && (
         <div
           {...getRootProps()}
-          className={`
-            relative flex flex-col items-center justify-center gap-3 p-6
-            border-2 border-dashed rounded-lg cursor-pointer
-            transition-colors duration-200 ease-in-out
-            ${isDragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/50"}
-            ${disabled ? "opacity-50" : ""}
-          `}
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+            isDragActive
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/25 hover:border-primary/50"
+          }`}
         >
-          <input {...getInputProps()} className="sr-only" aria-hidden="true" tabIndex={-1} />
+          <input {...getInputProps()} />
+          <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {isDragActive ? "Drop images here..." : "Drag & drop images, or click to select"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {internalImages.length}/{maxImages} images · Max {formatFileSize(GALLERY_MAX_SIZE)} each
+          </p>
+        </div>
+      )}
 
-          <div className="flex items-center justify-center rounded-full border p-3">
-            <Upload className="size-5 text-muted-foreground" />
-          </div>
+      {internalImages.some(isGalleryImageUploading) && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Uploading...
+        </div>
+      )}
 
-          <div className="space-y-1 text-center">
-            <p className="text-sm font-medium">
-              {isDragActive ? "Drop the files here..." : "Click or drag images & videos here"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Images (JPG, PNG, GIF, WebP) &bull; Videos (MP4, WebM, MOV, AVI, MKV) &bull;{" "}
-              {uploadedImages.length}/{maxImages} files
-            </p>
-          </div>
-
-          <Button variant="outline" size="sm" type="button">
-            Browse files
+      {!selectionMode && internalImages.length > 1 && (
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" size="sm" onClick={() => setSelectionMode(true)}>
+            <CheckSquare className="mr-1.5 size-4" />
+            Select
           </Button>
         </div>
       )}
 
-      {uploadedImages.length >= maxImages && !isUploading && (
-        <p className="text-sm text-muted-foreground text-center">
-          Maximum {maxImages} files reached. Remove some to add more.
-        </p>
-      )}
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={!!deleteConfirmImage}
+        onOpenChange={(open) => !open && setDeleteConfirmImage(null)}
+      >
+        <AlertDialogContent size="sm">
           <AlertDialogHeader>
-            {imageToDelete?.featured === true ? (
-              <>
-                <AlertDialogTitle>Cannot Delete Cover Image</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This image is currently set as the cover. Please set another image as cover first
-                  before deleting this image.
-                </AlertDialogDescription>
-              </>
-            ) : (
-              <>
-                <AlertDialogTitle>Delete File</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this file? This action cannot be undone and the
-                  file will be permanently removed from the server.
-                </AlertDialogDescription>
-              </>
-            )}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {imageToDelete?.featured === true ? (
-              <AlertDialogAction
-                onClick={() => {
-                  const firstOther = uploadedImages.find(
-                    (img) => normalizeId(img) !== normalizeId(imageToDelete!),
-                  );
-                  if (firstOther) {
-                    handleSetFeatured(firstOther);
-                  }
-                  setImageToDelete(null);
-                  setShowDeleteDialog(false);
-                }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Set First Image as Cover
-              </AlertDialogAction>
-            ) : (
-              <AlertDialogAction
-                onClick={handleConfirmDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {bulkDeleteCount} {bulkDeleteCount === 1 ? "File" : "Files"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Remove image?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {bulkDeleteCount}{" "}
-              {bulkDeleteCount === 1 ? "file" : "files"}? This action cannot be undone and the{" "}
-              {bulkDeleteCount === 1 ? "file will" : "files will"} be permanently removed from the
-              server.
+              {deleteConfirmImage
+                ? `Are you sure you want to remove "${deleteConfirmImage.name}"? This action cannot be undone.`
+                : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirmBulkDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmImage) {
+                  confirmRemove(deleteConfirmImage);
+                }
+              }}
             >
-              Delete {bulkDeleteCount} {bulkDeleteCount === 1 ? "File" : "Files"}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteConfirmBulk}
+        onOpenChange={(open) => !open && setDeleteConfirmBulk(false)}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {selectedIds.size} image(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {selectedIds.size} selected image(s)? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmBulkDelete}>
+              Remove All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -888,5 +567,3 @@ export function GalleryUploader({
     </div>
   );
 }
-
-export default GalleryUploader;
