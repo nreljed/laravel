@@ -420,9 +420,8 @@ export default function MapSectionInner({
     isInitialized.current = true;
   }, [map, L, hasLocation, getCoordinates, createDrawMarker, mapData, doReverseGeocode, mapConfig]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync lock state with location presence
   React.useEffect(() => {
-    setIsLocked(hasLocation);
+    setIsLocked(hasLocation); // eslint-disable-line react-hooks/set-state-in-effect -- Sync lock state with location presence
   }, [hasLocation, setIsLocked]);
 
   React.useEffect(() => {
