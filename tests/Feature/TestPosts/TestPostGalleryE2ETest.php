@@ -14,8 +14,6 @@ class TestPostGalleryE2ETest extends TestCase
     use CreatesTestUsers;
     use RefreshDatabase;
 
-    private const IMAGE_DIR = 'D:\\WEB PROJECTS\\Archived projects\\myhome\\Source Demo Properties Images';
-
     private string $storagePath;
 
     protected function setUp(): void
@@ -26,17 +24,11 @@ class TestPostGalleryE2ETest extends TestCase
         ini_set('memory_limit', '256M');
     }
 
-    private function realImage(string $filename): UploadedFile
+    private function fakeImage(string $filename = 'test.jpg'): UploadedFile
     {
-        $path = self::IMAGE_DIR.'\\'.$filename;
-
-        return new UploadedFile(
-            $path,
-            $filename,
-            mime_content_type($path),
-            null,
-            true
-        );
+        return UploadedFile::fake()
+            ->image($filename, 800, 600)
+            ->size(100);
     }
 
     private function assertFileOnDisk(string $relativePath): void
@@ -53,7 +45,7 @@ class TestPostGalleryE2ETest extends TestCase
 
     public function test_upload_stores_in_test_posts_folder(): void
     {
-        $file = $this->realImage('sanibell-bv-w2Ey_vOI-H8-unsplash.jpg');
+        $file = $this->fakeImage('sanibell.jpg');
 
         $response = $this->actingAs($this->admin())->post(
             route('dashboard.test-posts.upload-image'),
@@ -74,15 +66,11 @@ class TestPostGalleryE2ETest extends TestCase
 
     public function test_full_gallery_upload_and_post_create(): void
     {
-        $imageFiles = [
-            'sanibell-bv-w2Ey_vOI-H8-unsplash.jpg',
-            'charkrit-t1LQYntvpCc-unsplash.jpg',
-            'douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg',
-        ];
+        $filenames = ['sanibell.jpg', 'charkrit.jpg', 'douglas.jpg'];
 
         $uploadedImages = [];
-        foreach ($imageFiles as $filename) {
-            $file = $this->realImage($filename);
+        foreach ($filenames as $filename) {
+            $file = $this->fakeImage($filename);
             $response = $this->actingAs($this->admin())->post(
                 route('dashboard.test-posts.upload-image'),
                 ['file' => $file],
@@ -143,7 +131,7 @@ class TestPostGalleryE2ETest extends TestCase
     {
         $uploaded = [];
         for ($i = 0; $i < 3; $i++) {
-            $file = $this->realImage('sanibell-bv-w2Ey_vOI-H8-unsplash.jpg');
+            $file = $this->fakeImage("order-{$i}.jpg");
             $response = $this->actingAs($this->admin())->post(
                 route('dashboard.test-posts.upload-image'),
                 ['file' => $file],
@@ -173,7 +161,7 @@ class TestPostGalleryE2ETest extends TestCase
 
     public function test_update_replaces_gallery_images(): void
     {
-        $file1 = $this->realImage('sanibell-bv-w2Ey_vOI-H8-unsplash.jpg');
+        $file1 = $this->fakeImage('update1.jpg');
         $upload1 = $this->actingAs($this->admin())->post(
             route('dashboard.test-posts.upload-image'),
             ['file' => $file1],
@@ -190,13 +178,13 @@ class TestPostGalleryE2ETest extends TestCase
         $post = TestPost::where('title', 'Update Gallery Test')->first();
         $this->assertCount(1, $post->gallery_images);
 
-        $file2 = $this->realImage('charkrit-t1LQYntvpCc-unsplash.jpg');
+        $file2 = $this->fakeImage('update2.jpg');
         $upload2 = $this->actingAs($this->admin())->post(
             route('dashboard.test-posts.upload-image'),
             ['file' => $file2],
         )->json();
 
-        $file3 = $this->realImage('douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg');
+        $file3 = $this->fakeImage('update3.jpg');
         $upload3 = $this->actingAs($this->admin())->post(
             route('dashboard.test-posts.upload-image'),
             ['file' => $file3],
@@ -221,7 +209,7 @@ class TestPostGalleryE2ETest extends TestCase
 
     public function test_delete_image_removes_from_storage(): void
     {
-        $file = $this->realImage('sanibell-bv-w2Ey_vOI-H8-unsplash.jpg');
+        $file = $this->fakeImage('delete-me.jpg');
         $upload = $this->actingAs($this->admin())->post(
             route('dashboard.test-posts.upload-image'),
             ['file' => $file],
