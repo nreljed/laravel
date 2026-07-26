@@ -3,6 +3,7 @@
 use App\Blog\Controllers\PostCategoryController;
 use App\Blog\Controllers\PostController;
 use App\Blog\Controllers\PostTagController;
+use App\Blog\Controllers\SeoGenerationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [PostController::class, 'dashboard'])->name('dashboard');
@@ -12,6 +13,11 @@ Route::post('/', [PostController::class, 'store'])->name('store');
 Route::post('/upload-image', [PostController::class, 'uploadImage'])->name('upload-image');
 Route::delete('/delete-image', [PostController::class, 'deleteImage'])->name('delete-image');
 Route::post('/bulk/action', [PostController::class, 'bulkAction'])->name('bulk.action');
+
+// SEO Generation
+Route::post('/seo/generate', [SeoGenerationController::class, 'generate'])->name('seo.generate');
+Route::post('/seo/bulk', [SeoGenerationController::class, 'bulk'])->name('seo.bulk');
+
 Route::get('/{post}/edit', [PostController::class, 'edit'])->name('edit');
 Route::put('/{post}', [PostController::class, 'update'])->name('update');
 Route::put('/{post}/status', [PostController::class, 'updateStatus'])->name('update-status');

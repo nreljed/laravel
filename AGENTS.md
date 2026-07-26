@@ -324,10 +324,14 @@ The `@typescript-eslint/strict-type-checked` preset requires type-aware linting 
 
 - Output dir: `C:\Users\nrelj\AppData\Local\Temp\opencode\playwright-mcp`
 - Config: `C:\Users\nrelj\.config\opencode\playwright-mcp.json`
+- Init script: `C:\Users\nrelj\.config\opencode\playwright-init.js` (forces dark mode)
 - `outputMaxSize`: 10MB (auto-evicts old files)
 - `saveSession: true` — session persists to output dir on disconnect
 - `imageResponses: "allow"` — images are returned to the client (not omitted)
 - `snapshotMode: "full"` — full accessibility snapshots
+- **Dark mode**: `initScript` sets `localStorage.theme = "dark"` before app loads. Playwright's `colorScheme: "dark"` in contextOptions is unreliable on Windows persistent contexts. The initScript is the authoritative dark mode enforcer.
+- **Session persistence**: `saveSession: true` saves cookies + localStorage to `outputDir`. On next connect, restores them. Theme preference persists across sessions via localStorage key `"theme"`.
+- **--no-sandbox**: Not used in our config. Chromium on Windows works fine with sandbox. If you see this message, it's from a previous config or environment variable (`PLAYWRIGHT_MCP_NO_SANDBOX`).
 - **Session cleanup**: Before first `navigate` call in a new browser session, always run:
   ```powershell
   Remove-Item -LiteralPath "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright-mcp" -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Path "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright-mcp" -Force | Out-Null

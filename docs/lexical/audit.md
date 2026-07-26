@@ -6,6 +6,20 @@
 
 ---
 
+## Reorganization (2026-07-26)
+
+The following structural changes were applied:
+
+1. **Moved `plugins/`** — 8 standalone plugins (DraggableBlock, SlashCommands, FindAndReplace, WordCount, TableOfContents, KeyboardShortcuts, CursorGuard, CodeBlockActions) moved from root to `plugins/` directory
+2. **Moved `block-picker-menu.tsx`** — from `components/` to `shared/` (used by both SlashCommandsPlugin and DraggableBlockPlugin)
+3. **Extracted `table/table-hover-utils.ts`** — pure utility functions from TableHoverActionsPlugin
+4. **Added `shared/DecoratorErrorBoundary.tsx`** — wraps DecoratorNode `decorate()` outputs
+5. **Added comment** to `html-loader.tsx` for `<th>` background-color stripping
+6. **Removed `components/code-highlight-plugin.tsx`** — dead code superseded by CodePrismExtension
+7. **Updated docs** — architecture.md, plugins.md, index.md reflect new structure
+
+---
+
 ## 1. Executive Summary
 
 The Lexical integration is **production-ready** — far beyond typical rich text editors. 42 source files, custom nodes, floating toolbars, table system, column layouts, image management, drag-and-drop, slash commands, find & replace, context menus, and more. All 6 identified bugs have been fixed, and the codebase follows official Lexical patterns consistently.

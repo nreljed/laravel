@@ -56,12 +56,17 @@ Features are self-contained domains registered via `FeatureRegistry`:
 
 ### Error Handling
 
-Inertia renders `Error.tsx` for all HTTP exceptions:
+Inertia renders `Error.tsx` for all HTTP exceptions. Rate-limiting responses (429) include the `Retry-After` header, which is passed as a `retryAfter` prop for a live countdown:
 
 ```php
 $exceptions->renderable(function (HttpException $e, Request $request) {
     if ($request->inertia()) {
-        return Inertia::render('Error', ['status' => $e->getStatusCode()])
+        $retryAfter = (int) ($e->getHeaders()['Retry-After'] ?? 0);
+
+        return Inertia::render('Error', [
+            'status' => $e->getStatusCode(),
+            'retryAfter' => $retryAfter > 0 ? $retryAfter : null,
+        ])
             ->toResponse($request)
             ->setStatusCode($e->getStatusCode());
     }

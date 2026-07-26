@@ -76,6 +76,8 @@ export default function ImageResizer({
     document.body.style.setProperty("-webkit-user-select", userSelect.current.value);
   };
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>, direction: number) => {
     if (!editor.isEditable()) return;
     const image = imageRef.current;
@@ -103,8 +105,11 @@ export default function ImageResizer({
     image.style.height = `${height}px`;
     image.style.width = `${width}px`;
 
-    document.addEventListener("pointermove", handlePointerMove);
-    document.addEventListener("pointerup", handlePointerUp);
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    document.addEventListener("pointermove", handlePointerMove, { signal: controller.signal });
+    document.addEventListener("pointerup", handlePointerUp, { signal: controller.signal });
   };
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -161,20 +166,18 @@ export default function ImageResizer({
     setEndCursor();
     onResizeEnd(width, height);
 
-    document.removeEventListener("pointermove", handlePointerMove);
-    document.removeEventListener("pointerup", handlePointerUp);
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
   };
 
   useEffect(() => {
+    const wasResizing = positioningRef.current.isResizing;
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      if (!positioningRef.current.isResizing) {
-        return;
+      if (wasResizing) {
+        setEndCursor();
       }
-
-      document.removeEventListener("pointermove", handlePointerMove);
-      document.removeEventListener("pointerup", handlePointerUp);
-      setEndCursor();
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -34,8 +34,13 @@ The `RichTextEditor` component is a self-contained rich text editor that wraps a
     ImagePlugin
     ColumnsPlugin
     LayoutControlsPlugin
-    CodeHighlightPlugin
     MarkdownShortcutPlugin
+    DraggableBlockPlugin
+    SlashCommandsPlugin
+    FindAndReplacePlugin
+    WordCountPlugin
+    TableOfContentsPlugin
+    KeyboardShortcutsPlugin
 ```
 
 ## Data Flow
@@ -117,11 +122,27 @@ The `hasLoaded` ref in `HtmlLoader` ensures initial load runs exactly once. The 
 
 ## Internal Plugins
 
-| Plugin                | Purpose                                         |
-| --------------------- | ----------------------------------------------- |
-| `HtmlLoader`          | Parses `value` HTML into Lexical nodes on mount |
-| `OnChangeEmitter`     | Converts state to HTML and calls `onChange`     |
-| `CodeHighlightPlugin` | Registers PrismJS syntax highlighting           |
+| Plugin                    | Purpose                                           |
+| ------------------------- | ------------------------------------------------- |
+| `HtmlLoader`              | Parses `value` HTML into Lexical nodes on mount   |
+| `OnChangeEmitter`         | Converts state to HTML and calls `onChange`       |
+| `CursorGuardPlugin`       | Prevents cursor from jumping outside content area |
+| `DraggableBlockPlugin`    | Drag handle for reordering blocks                 |
+| `SlashCommandsPlugin`     | `/` trigger, block-type picker                    |
+| `WordCountPlugin`         | Real-time word/character count                    |
+| `KeyboardShortcutsPlugin` | Global keyboard shortcuts (bold, italic, etc.)    |
+
+## Shared Components
+
+| Component                | Location                              | Purpose                                   |
+| ------------------------ | ------------------------------------- | ----------------------------------------- |
+| `ContextMenuWrapper`     | `components/context-menu-wrapper.tsx` | Right-click context menu                  |
+| `FloatingPlugins`        | `components/floating-plugins.tsx`     | Overlay/portal plugins                    |
+| `HtmlLoader`             | `components/html-loader.tsx`          | HTML → Lexical deserialization            |
+| `OnChangeEmitter`        | `components/on-change-emitter.tsx`    | Lexical → HTML serialization              |
+| `BlockOptions`           | `shared/block-options.tsx`            | Block option model (slash + context menu) |
+| `BlockPickerMenu`        | `shared/block-picker-menu.tsx`        | Slash command menu UI                     |
+| `DecoratorErrorBoundary` | `shared/DecoratorErrorBoundary.tsx`   | Error boundary for DecoratorNode outputs  |
 
 ## External Plugin Composition
 

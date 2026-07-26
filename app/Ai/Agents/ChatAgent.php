@@ -36,6 +36,8 @@ INSTRUCTIONS;
     {
         $this->forUser($user);
 
+        $this->injectProviderKey();
+
         $response = $this->prompt($message);
 
         $this->logUsage($user, $response);

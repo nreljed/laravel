@@ -30,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens(except: [
-            'profile/avatar',
+            'dashboard/account/avatar',
             'deploy/*',
             'api/notifications/unread-count',
             'api/notifications/recent',
@@ -53,7 +53,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->renderable(function (HttpException $e, Request $request) {
             if ($request->inertia()) {
-                return Inertia::render('Error', ['status' => $e->getStatusCode()])
+                $retryAfter = (int) ($e->getHeaders()['Retry-After'] ?? 0);
+
+                return Inertia::render('Error', [
+                    'status' => $e->getStatusCode(),
+                    'retryAfter' => $retryAfter > 0 ? $retryAfter : null,
+                ])
                     ->toResponse($request)
                     ->setStatusCode($e->getStatusCode());
             }

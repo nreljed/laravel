@@ -6,8 +6,8 @@ import {
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import type { TextNode } from "lexical";
 import { createPortal } from "react-dom";
-import { BlockOption, getBlockOptions } from "./shared/block-options";
-import { BlockPickerMenu } from "./components/block-picker-menu";
+import { BlockOption, getBlockOptions } from "../shared/block-options";
+import { BlockPickerMenu } from "../shared/block-picker-menu";
 
 export function SlashCommandsPlugin(): React.ReactNode {
   const [editor] = useLexicalComposerContext();

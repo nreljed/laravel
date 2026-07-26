@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Upload, Loader2, Trash2, ImageIcon, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/Components/ui/button";
-import axios from "axios";
+import { getCsrfToken } from "@/lib/gallery-utils";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -87,14 +87,16 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
     formData.append("logo", file);
 
     try {
-      const res = await axios.post(
-        route("dashboard.admin.settings.logo.upload") as string,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
+      const res = await fetch(route("dashboard.admin.settings.logo.upload") as string, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": getCsrfToken(),
         },
-      );
-      const url = res.data.url;
+      });
+      const data = await res.json();
+      const url = data.url;
       setPreview(url);
       onLogoChange(url);
       toast.success("Logo uploaded");
@@ -109,7 +111,14 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
   const handleRemove = async () => {
     setUploading(true);
     try {
-      await axios.delete(route("dashboard.admin.settings.logo.delete") as string);
+      await fetch(route("dashboard.admin.settings.logo.delete") as string, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": getCsrfToken(),
+        },
+      });
       setPreview(null);
       setDims(null);
       onLogoChange("");

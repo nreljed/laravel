@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getNodeByKey, $getRoot, type NodeKey } from "lexical";
 import { createPortal } from "react-dom";
-import { Plus, X, GripVertical } from "lucide-react";
+import { Plus, X, GripVertical, MonitorSmartphone, Smartphone, ScreenShare } from "lucide-react";
 import {
   draggable,
   dropTargetForElements,
@@ -10,9 +10,16 @@ import {
 import type { ElementDragPayload } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import DropIndicator from "@atlaskit/drag-and-drop-indicator/box";
 import { $isLayoutContainerNode } from "./LayoutContainerNode";
+import type { ResponsiveMode } from "./LayoutContainerNode";
 import { $isLayoutItemNode } from "./LayoutItemNode";
-import { $addColumnToLayout, $removeColumnFromLayout, $moveLayoutColumn } from "./ColumnsPlugin";
+import {
+  $addColumnToLayout,
+  $removeColumnFromLayout,
+  $moveLayoutColumn,
+  SET_LAYOUT_RESPONSIVE_MODE_COMMAND,
+} from "./ColumnsPlugin";
 import { useContainerPosition } from "../hooks/use-container-position";
+import { cn } from "@/lib/utils";
 
 type ColumnDragData = {
   columnIndex: number;
@@ -45,11 +52,7 @@ function getLayoutInfoFromDOM(
     if (domNode.getAttribute?.("data-lexical-layout-item") === "true") {
       itemDom = domNode;
     }
-    if (
-      !containerDom &&
-      domNode.classList?.contains("grid") &&
-      domNode.querySelector?.('[data-lexical-layout-item="true"]')
-    ) {
+    if (!containerDom && domNode.getAttribute?.("data-lexical-layout-container") === "true") {
       containerDom = domNode;
     }
     domNode = domNode.parentElement;
@@ -142,7 +145,17 @@ function LayoutControls({
   const dragHandleRef = useRef<HTMLButtonElement | null>(null);
   const [ready, setReady] = useState(false);
   const [dropState, setDropState] = useState<DropState | null>(null);
+  const [responsiveMode, setResponsiveMode] = useState<ResponsiveMode>("full");
   const dropCleanupRef = useRef<(() => void)[]>([]);
+
+  useEffect(() => {
+    editor.getEditorState().read(() => {
+      const container = $getNodeByKey(layoutInfo.layoutKey);
+      if ($isLayoutContainerNode(container)) {
+        setResponsiveMode(container.getResponsiveMode());
+      }
+    });
+  }, [editor, layoutInfo.layoutKey]);
 
   const computePositions = useCallback(() => {
     const itemDom = editor.getElementByKey(layoutInfo.itemKey);
@@ -293,13 +306,24 @@ function LayoutControls({
     });
   }, [editor, layoutInfo.layoutKey, layoutInfo.itemKey]);
 
+  const handleCycleResponsive = useCallback(() => {
+    const order: ResponsiveMode[] = ["full", "mobile-only", "none"];
+    const nextIndex = (order.indexOf(responsiveMode) + 1) % order.length;
+    const next = order[nextIndex] ?? "full";
+    editor.dispatchCommand(SET_LAYOUT_RESPONSIVE_MODE_COMMAND, {
+      nodeKey: layoutInfo.layoutKey,
+      mode: next,
+    });
+    setResponsiveMode(next);
+  }, [editor, layoutInfo.layoutKey, responsiveMode]);
+
   if (!ready) {
     return null;
   }
 
   return (
     <>
-      <div ref={groupRef} className="absolute z-[100] flex items-center gap-0.5">
+      <div ref={groupRef} className="absolute z-50 flex items-center gap-0.5">
         <button
           ref={dragHandleRef}
           type="button"
@@ -335,6 +359,36 @@ function LayoutControls({
         >
           <X className="h-3 w-3 text-muted-foreground" />
         </button>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex h-[18px] w-[18px] items-center justify-center rounded-sm border bg-background shadow-xs transition-colors",
+            responsiveMode !== "none"
+              ? "border-primary text-primary"
+              : "border-border text-muted-foreground hover:bg-accent",
+          )}
+          aria-label={`Responsive: ${responsiveMode}`}
+          title={
+            responsiveMode === "full"
+              ? "Stack on tablet + mobile"
+              : responsiveMode === "mobile-only"
+                ? "Stack on mobile only"
+                : "Never stack"
+          }
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCycleResponsive();
+          }}
+        >
+          {responsiveMode === "full" ? (
+            <MonitorSmartphone className="h-3 w-3" />
+          ) : responsiveMode === "mobile-only" ? (
+            <Smartphone className="h-3 w-3" />
+          ) : (
+            <ScreenShare className="h-3 w-3" />
+          )}
+        </button>
       </div>
       {dropState ? (
         <div
@@ -345,7 +399,7 @@ function LayoutControls({
             position: "absolute",
             top: dropState.top,
             width: 2,
-            zIndex: 120,
+            zIndex: 90,
           }}
         >
           <DropIndicator edge={dropState.edge} />

@@ -9,8 +9,6 @@ import {
   $isElementNode,
   $isRangeSelection,
   COMMAND_PRIORITY_HIGH,
-  COMMAND_PRIORITY_LOW,
-  CONTROLLED_TEXT_INSERTION_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
@@ -21,21 +19,6 @@ export default function CursorGuardPlugin() {
   const textInsertedRef = useRef(false);
 
   useEffect(() => {
-    const unregisterInsert = editor.registerCommand(
-      CONTROLLED_TEXT_INSERTION_COMMAND,
-      () => {
-        const selection = $getSelection();
-        if ($isRangeSelection(selection) && selection.isCollapsed()) {
-          const anchorCell = $getTableCellNodeFromLexicalNode(selection.anchor.getNode());
-          if (!anchorCell) {
-            textInsertedRef.current = true;
-          }
-        }
-        return false;
-      },
-      COMMAND_PRIORITY_LOW,
-    );
-
     const unregisterParagraph = editor.registerCommand(
       INSERT_PARAGRAPH_COMMAND,
       () => {
@@ -48,7 +31,7 @@ export default function CursorGuardPlugin() {
         }
         return false;
       },
-      COMMAND_PRIORITY_LOW,
+      COMMAND_PRIORITY_HIGH,
     );
 
     const unregisterSelectionChange = editor.registerCommand(
@@ -86,7 +69,6 @@ export default function CursorGuardPlugin() {
     );
 
     return () => {
-      unregisterInsert();
       unregisterParagraph();
       unregisterSelectionChange();
     };

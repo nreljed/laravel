@@ -1,4 +1,5 @@
-import { Head, useForm } from "@inertiajs/react";
+import * as React from "react";
+import { Head, useForm, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
 import { FileText, Image, FolderOpen, Tag } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -10,6 +11,7 @@ import { Label } from "@/Components/ui/label";
 import { TermsSelector } from "@/Components/shared/terms-selector";
 import PublishSection from "@/Components/shared/publish-section";
 import { FeaturedImageSelector } from "@/Components/shared/featured-image-selector";
+import { SeoPanel } from "@/Components/shared/seo/SeoPanel";
 
 interface Category {
   id: number;
@@ -30,6 +32,11 @@ interface Post {
   status: string;
   published_at: string | null;
   category_id: number | null;
+  meta_title: string;
+  meta_description: string;
+  og_image: string | null;
+  focus_keyword: string | null;
+  metadata: Record<string, unknown> | null;
   tags: Tag[];
 }
 
@@ -41,6 +48,7 @@ interface PostsFormProps {
 
 export default function PostsForm({ post, categories, tags }: PostsFormProps) {
   const isEditing = !!post;
+  const flash = usePage().props.flash as Record<string, string> | undefined;
 
   const form = useForm({
     title: post?.title || "",
@@ -51,7 +59,18 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
     publish_date: post?.published_at || "",
     category_id: post?.category_id ? Number(post.category_id) : (null as number | null),
     tag_ids: post?.tags?.map((t) => t.id) || ([] as number[]),
+    meta_title: post?.meta_title || "",
+    meta_description: post?.meta_description || "",
+    og_image: post?.og_image || "",
+    focus_keyword: post?.focus_keyword || "",
+    seo_metadata:
+      (post?.metadata as Record<string, unknown>)?.seo || (null as Record<string, unknown> | null),
   });
+
+  React.useEffect(() => {
+    if (flash?.status) toast.success(flash.status);
+    if (flash?.["flash.success"]) toast.success(String(flash["flash.success"]));
+  }, [flash]);
 
   const handleAddTag = async (name: string) => {
     const res = await fetch(route("dashboard.posts.tags.store").toString(), {
@@ -91,6 +110,24 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
     throw new Error(data.message || "Failed to create category");
   };
 
+  const handleSeoChange = React.useCallback(
+    (field: string, value: string) => {
+      if (field === "keyword") {
+        form.setData("focus_keyword", value);
+      } else {
+        form.setData(field as keyof typeof form.data, value);
+      }
+    },
+    [form.setData],
+  );
+
+  const handleSeoGenerated = React.useCallback(
+    (seoResponse: Record<string, unknown>) => {
+      form.setData("seo_metadata", seoResponse);
+    },
+    [form.setData],
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const options = {
@@ -114,7 +151,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <Card>
               <CardHeader className="border-b border-border">
                 <CardTitle className="flex items-center gap-2 text-foreground">
@@ -160,9 +197,21 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
                 </div>
               </CardContent>
             </Card>
+
+            <SeoPanel
+              title={form.data.title}
+              content={form.data.content}
+              metaTitle={form.data.meta_title}
+              metaDescription={form.data.meta_description}
+              ogImage={form.data.og_image}
+              keyword={form.data.focus_keyword}
+              savedSeoData={form.data.seo_metadata}
+              onChange={handleSeoChange}
+              onSeoGenerated={handleSeoGenerated}
+            />
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <PublishSection
               status={form.data.status}
               publishDate={form.data.publish_date}
@@ -184,13 +233,15 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
                 <FeaturedImageSelector
                   value={form.data.featured_image}
                   onChange={(url) => form.setData("featured_image", url)}
+                  uploadUrl={route("dashboard.media.upload")}
+                  deleteUrl={route("dashboard.media.destroy")}
                   label=""
                   description=""
                 />
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-visible">
               <CardHeader className="border-b border-border">
                 <CardTitle className="flex items-center gap-2 text-foreground">
                   <FolderOpen className="h-5 w-5 text-foreground" />
@@ -213,7 +264,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-visible">
               <CardHeader className="border-b border-border">
                 <CardTitle className="flex items-center gap-2 text-foreground">
                   <Tag className="h-5 w-5 text-foreground" />

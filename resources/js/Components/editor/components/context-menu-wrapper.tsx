@@ -1,10 +1,17 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   $getSelection,
   $isRangeSelection,
-  DELETE_WORD_COMMAND,
-  DELETE_LINE_COMMAND,
+  COMMAND_PRIORITY_LOW,
+  CAN_UNDO_COMMAND,
+  CAN_REDO_COMMAND,
+  UNDO_COMMAND,
+  REDO_COMMAND,
+  CUT_COMMAND,
+  COPY_COMMAND,
+  PASTE_COMMAND,
+  $getRoot,
   type LexicalNode,
 } from "lexical";
 import {
@@ -12,15 +19,21 @@ import {
   NodeContextMenuOption,
   NodeContextMenuSeparator,
 } from "@lexical/react/LexicalNodeContextMenuPlugin";
+import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
+import {
+  Scissors,
+  Copy,
+  ClipboardPaste,
+  Undo2,
+  Redo2,
+  Trash2,
+  Check,
+  Link2Off,
+  type LucideIcon,
+} from "lucide-react";
 import { $isLayoutContainerNode, type LayoutContainerNode } from "../layout/LayoutContainerNode";
 import { $isLayoutItemNode, type LayoutItemNode } from "../layout/LayoutItemNode";
 import { $addColumnToLayout, $removeColumnFromLayout } from "../layout/ColumnsPlugin";
-
-function $getSelectedText(): string {
-  const selection = $getSelection();
-  if (!$isRangeSelection(selection)) return "";
-  return selection.getTextContent();
-}
 
 function $deleteSelection(): void {
   const selection = $getSelection();
@@ -61,43 +74,133 @@ function $findLayoutContext(): { container: LayoutContainerNode; item: LayoutIte
   return { container: parent, item };
 }
 
+function $isCursorOnLink(): boolean {
+  const selection = $getSelection();
+  if (!$isRangeSelection(selection)) return false;
+  const node = selection.anchor.getNode();
+  return $isLinkNode(node) || $isLinkNode(node.getParent());
+}
+
+function MenuIcon({ Icon, size = 16 }: { Icon: LucideIcon; size?: number }) {
+  return <Icon size={size} className="shrink-0 opacity-70" />;
+}
+
 export function ContextMenuWrapper() {
   const [editor] = useLexicalComposerContext();
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  useEffect(() => {
+    const undoReg = editor.registerCommand(
+      CAN_UNDO_COMMAND,
+      (payload) => {
+        setCanUndo(payload);
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+    const redoReg = editor.registerCommand(
+      CAN_REDO_COMMAND,
+      (payload) => {
+        setCanRedo(payload);
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+    return () => {
+      undoReg();
+      redoReg();
+    };
+  }, [editor]);
+
   const items = useMemo(
     () => [
+      // --- Link context (playground pattern) ---
+      new NodeContextMenuOption("Remove Link", {
+        icon: <MenuIcon Icon={Link2Off} />,
+        $showOn: () => $isCursorOnLink(),
+        $onSelect: () => editor.dispatchCommand(TOGGLE_LINK_COMMAND, null),
+      }),
+      new NodeContextMenuSeparator({
+        $showOn: () => $isCursorOnLink(),
+      }),
+
+      // --- Clipboard (Lexical built-in commands) ---
       new NodeContextMenuOption("Cut", {
-        $showOn: () => $isRangeSelection($getSelection()),
-        $onSelect: async () => {
-          const text = editor.read($getSelectedText);
-          if (text) {
-            await navigator.clipboard.writeText(text);
-          }
-          editor.update($deleteSelection);
-        },
+        icon: <MenuIcon Icon={Scissors} />,
+        $onSelect: () => editor.dispatchCommand(CUT_COMMAND, null),
       }),
       new NodeContextMenuOption("Copy", {
-        $showOn: () => $isRangeSelection($getSelection()),
+        icon: <MenuIcon Icon={Copy} />,
+        $onSelect: () => editor.dispatchCommand(COPY_COMMAND, null),
+      }),
+      new NodeContextMenuOption("Paste", {
+        icon: <MenuIcon Icon={ClipboardPaste} />,
         $onSelect: async () => {
-          const text = editor.read($getSelectedText);
-          if (text) {
-            await navigator.clipboard.writeText(text);
+          try {
+            const clipboardItems = await navigator.clipboard.read();
+            const item = clipboardItems[0];
+            if (!item) return;
+            const data = new DataTransfer();
+            for (const type of item.types) {
+              const blob = await item.getType(type);
+              const dataString = await blob.text();
+              data.setData(type, dataString);
+            }
+            const event = new ClipboardEvent("paste", { clipboardData: data });
+            editor.dispatchCommand(PASTE_COMMAND, event);
+          } catch {
+            document.execCommand("paste");
           }
         },
       }),
-      new NodeContextMenuSeparator(),
-      new NodeContextMenuOption("Delete word", {
-        $showOn: () => $isRangeSelection($getSelection()),
-        $onSelect: () => {
-          editor.dispatchCommand(DELETE_WORD_COMMAND, true);
+      new NodeContextMenuOption("Paste as Plain Text", {
+        $showOn: () => {
+          const selection = $getSelection();
+          return $isRangeSelection(selection) || selection === null;
         },
-      }),
-      new NodeContextMenuOption("Delete line", {
-        $showOn: () => $isRangeSelection($getSelection()),
-        $onSelect: () => {
-          editor.dispatchCommand(DELETE_LINE_COMMAND, true);
+        $onSelect: async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            const data = new DataTransfer();
+            data.setData("text/plain", text);
+            const event = new ClipboardEvent("paste", { clipboardData: data });
+            editor.dispatchCommand(PASTE_COMMAND, event);
+          } catch {
+            // Clipboard read failed
+          }
         },
       }),
 
+      // --- History ---
+      new NodeContextMenuSeparator(),
+      new NodeContextMenuOption("Undo", {
+        icon: <MenuIcon Icon={Undo2} />,
+        disabled: !canUndo,
+        $onSelect: () => editor.dispatchCommand(UNDO_COMMAND, undefined),
+      }),
+      new NodeContextMenuOption("Redo", {
+        icon: <MenuIcon Icon={Redo2} />,
+        disabled: !canRedo,
+        $onSelect: () => editor.dispatchCommand(REDO_COMMAND, undefined),
+      }),
+
+      // --- Edit ---
+      new NodeContextMenuSeparator(),
+      new NodeContextMenuOption("Delete", {
+        icon: <MenuIcon Icon={Trash2} />,
+        $showOn: () => {
+          const selection = $getSelection();
+          return $isRangeSelection(selection) && !selection.isCollapsed();
+        },
+        $onSelect: () => editor.update($deleteSelection),
+      }),
+      new NodeContextMenuOption("Select All", {
+        icon: <MenuIcon Icon={Check} />,
+        $onSelect: () => editor.update(() => $getRoot().select()),
+      }),
+
+      // --- Layout context ---
       new NodeContextMenuSeparator({
         $showOn: (node: LexicalNode) => !!$findLayoutContainerFromNode(node),
       }),
@@ -144,13 +247,14 @@ export function ContextMenuWrapper() {
         },
       }),
     ],
-    [editor],
+    [editor, canUndo, canRedo],
   );
+
   return (
     <NodeContextMenuPlugin
       items={items}
-      className="z-50 min-w-32 overflow-hidden rounded-md bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
-      itemClassName="relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground w-full text-left"
+      className="z-50 min-w-48 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+      itemClassName="relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none w-full text-left focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
       separatorClassName="-mx-1 my-1 h-px bg-border"
     />
   );

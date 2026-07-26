@@ -7,8 +7,13 @@ The sticky toolbar at the top of the editor. Hidden when `RichTextEditor` is ren
 ## Layout
 
 ```
-[Undo] [Redo] | [Block Select] | [B] [I] [U] [S] [Code] | [Text Color] [Highlight] | [Align L/C/R/J] | [List] [Ordered] [Check] | [Link] [Image] | [Table] | [Columns]
+[Undo] [Redo] | [TOC] [Block ▾] | [B] [I] [U] [Code] [⋯ ▾] | [Color] [Highlight] | [Align ▾] | [Find] [Insert ▾]
 ```
+
+- **Block ▾** — Block format dropdown (headings, lists, quote, code)
+- **⋯ ▾** — Text format dropdown (strikethrough, subscript, case transforms, etc.)
+- **Align ▾** — Alignment + indent/outdent
+- **Insert ▾** — Insert link, image, table, columns
 
 Fixed position: `sticky top-16 z-20`, background `bg-background`, bottom border.
 
@@ -23,6 +28,12 @@ Tracked via `useToolbarState(editor)` hook — updates on every `SELECTION_CHANG
 | `isUnderline`     | `boolean`           | Underline format active                                                                               |
 | `isStrikethrough` | `boolean`           | Strikethrough format active                                                                           |
 | `isCode`          | `boolean`           | Inline code format active                                                                             |
+| `isSubscript`     | `boolean`           | Subscript format active                                                                               |
+| `isSuperscript`   | `boolean`           | Superscript format active                                                                             |
+| `isLowercase`     | `boolean`           | Lowercase text transform active                                                                       |
+| `isUppercase`     | `boolean`           | Uppercase text transform active                                                                       |
+| `isCapitalize`    | `boolean`           | Capitalize text transform active                                                                      |
+| `isHighlight`     | `boolean`           | Highlight format active                                                                               |
 | `blockType`       | `string`            | `"paragraph"` / `"h1"` / `"h2"` / `"h3"` / `"bullet"` / `"number"` / `"code"` / `"quote"` / `"check"` |
 | `elementFormat`   | `ElementFormatType` | `"left"` / `"center"` / `"right"` / `"justify"`                                                       |
 | `isLink`          | `boolean`           | Cursor is inside a `LinkNode`                                                                         |
@@ -32,32 +43,49 @@ Tracked via `useToolbarState(editor)` hook — updates on every `SELECTION_CHANG
 | `textColor`       | `string`            | Current text color (inline style)                                                                     |
 | `highlightColor`  | `string`            | Current highlight color (inline style)                                                                |
 
-## Block Format Select
+## Block Format Dropdown
 
-`BlockFormatSelect` — dropdown with `<Select>` from shadcn/ui.
+`BlockFormatDropdown` — dropdown menu with `<Toggle>` trigger + `<ChevronDown>`, matching `ElementFormatDropdown` pattern. Uses `$setBlocksType()` from `@lexical/selection` for block node replacement.
 
-| Value       | Node Created               | Icon         |
-| ----------- | -------------------------- | ------------ |
-| `paragraph` | `$createParagraphNode()`   | —            |
-| `h1`        | `$createHeadingNode("h1")` | `Heading1`   |
-| `h2`        | `$createHeadingNode("h2")` | `Heading2`   |
-| `h3`        | `$createHeadingNode("h3")` | `Heading3`   |
-| `quote`     | `$createQuoteNode()`       | `Quote`      |
-| `code`      | `$createCodeNode()`        | `CodeSquare` |
+| Value       | Node Created               | Icon          | Shortcut     |
+| ----------- | -------------------------- | ------------- | ------------ |
+| `paragraph` | `$createParagraphNode()`   | `Type`        | Ctrl+Alt+0   |
+| `h1`        | `$createHeadingNode("h1")` | `Heading1`    | Ctrl+Alt+1   |
+| `h2`        | `$createHeadingNode("h2")` | `Heading2`    | Ctrl+Alt+2   |
+| `h3`        | `$createHeadingNode("h3")` | `Heading3`    | Ctrl+Alt+3   |
+| `bullet`    | `INSERT_UNORDERED_LIST`    | `List`        | Ctrl+Shift+8 |
+| `number`    | `INSERT_ORDERED_LIST`      | `ListOrdered` | Ctrl+Shift+7 |
+| `check`     | `INSERT_CHECK_LIST`        | `ListChecks`  | Ctrl+Shift+9 |
+| `quote`     | `$createQuoteNode()`       | `Quote`       | Ctrl+Shift+Q |
+| `code`      | `$createCodeNode()`        | `CodeSquare`  | Ctrl+Alt+C   |
 
-All block formats replace the current block node via `parent.replace(node, true)`.
+Trigger shows current block icon + label + chevron (e.g. `H1 ▾`). Lists toggle off if already active.
 
 ## Inline Formatting
 
-Dispatches `FORMAT_TEXT_COMMAND` with the format type.
+Primary formats are top-level toolbar buttons. Secondary formats are in the **Text Format Dropdown** (`⋯`).
 
-| Button        | Format            | Command               |
-| ------------- | ----------------- | --------------------- |
-| Bold          | `"bold"`          | `FORMAT_TEXT_COMMAND` |
-| Italic        | `"italic"`        | `FORMAT_TEXT_COMMAND` |
-| Underline     | `"underline"`     | `FORMAT_TEXT_COMMAND` |
-| Strikethrough | `"strikethrough"` | `FORMAT_TEXT_COMMAND` |
-| Inline Code   | `"code"`          | `FORMAT_TEXT_COMMAND` |
+### Primary (toolbar buttons)
+
+| Button      | Format        | Command               |
+| ----------- | ------------- | --------------------- |
+| Bold        | `"bold"`      | `FORMAT_TEXT_COMMAND` |
+| Italic      | `"italic"`    | `FORMAT_TEXT_COMMAND` |
+| Underline   | `"underline"` | `FORMAT_TEXT_COMMAND` |
+| Inline Code | `"code"`      | `FORMAT_TEXT_COMMAND` |
+
+### Secondary (Text Format Dropdown)
+
+| Item             | Format            | Command               | Shortcut     |
+| ---------------- | ----------------- | --------------------- | ------------ |
+| Strikethrough    | `"strikethrough"` | `FORMAT_TEXT_COMMAND` | Ctrl+Shift+X |
+| Subscript        | `"subscript"`     | `FORMAT_TEXT_COMMAND` | Ctrl+,       |
+| Superscript      | `"superscript"`   | `FORMAT_TEXT_COMMAND` | Ctrl+.       |
+| Highlight        | `"highlight"`     | `FORMAT_TEXT_COMMAND` | —            |
+| Lowercase        | `"lowercase"`     | `FORMAT_TEXT_COMMAND` | Ctrl+Shift+1 |
+| Uppercase        | `"uppercase"`     | `FORMAT_TEXT_COMMAND` | Ctrl+Shift+2 |
+| Capitalize       | `"capitalize"`    | `FORMAT_TEXT_COMMAND` | Ctrl+Shift+3 |
+| Clear Formatting | —                 | clears format+style   | Ctrl+\       |
 
 ## Text & Highlight Colors
 
@@ -80,16 +108,6 @@ Dispatches `FORMAT_ELEMENT_COMMAND` with alignment value.
 | Align Center | `"center"`  |
 | Align Right  | `"right"`   |
 | Justify      | `"justify"` |
-
-## Lists
-
-| Button        | Command                         | Toggle Behavior                   |
-| ------------- | ------------------------------- | --------------------------------- |
-| Bullet List   | `INSERT_UNORDERED_LIST_COMMAND` | Toggles off if already `"bullet"` |
-| Numbered List | `INSERT_ORDERED_LIST_COMMAND`   | Toggles off if already `"number"` |
-| Check List    | `INSERT_CHECK_LIST_COMMAND`     | Always inserts (no toggle)        |
-
-Toggle lists dispatch `REMOVE_LIST_COMMAND` when the block is already the active list type.
 
 ## Links
 
@@ -133,4 +151,5 @@ Reusable component wrapping `Toggle` from shadcn/ui with `Tooltip`.
 ```typescript
 export { EditorToolbar } from "./editor-toolbar";
 export { ColorPicker, TEXT_COLORS, HIGHLIGHT_COLORS } from "./ColorPicker";
+export { TextFormatDropdown } from "./TextFormatDropdown";
 ```

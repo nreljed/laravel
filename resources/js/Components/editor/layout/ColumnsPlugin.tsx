@@ -21,6 +21,7 @@ import {
 import {
   $createLayoutContainerNode,
   $isLayoutContainerNode,
+  type ResponsiveMode,
   LayoutContainerNode,
 } from "./LayoutContainerNode";
 import { $createLayoutItemNode, $isLayoutItemNode, LayoutItemNode } from "./LayoutItemNode";
@@ -30,10 +31,26 @@ export const INSERT_LAYOUT_COMMAND: LexicalCommand<string> = createCommand<strin
 export type UpdateLayoutPayload = {
   nodeKey: NodeKey;
   template: string;
+  responsive?: boolean;
 };
 
 export const UPDATE_LAYOUT_COMMAND: LexicalCommand<UpdateLayoutPayload> =
   createCommand<UpdateLayoutPayload>();
+
+export type InsertLayoutPayload = {
+  template: string;
+  responsiveMode?: ResponsiveMode;
+};
+
+export const INSERT_LAYOUT_V2_COMMAND: LexicalCommand<InsertLayoutPayload> =
+  createCommand<InsertLayoutPayload>();
+
+export const TOGGLE_LAYOUT_RESPONSIVE_COMMAND: LexicalCommand<NodeKey> = createCommand<NodeKey>();
+
+export const SET_LAYOUT_RESPONSIVE_MODE_COMMAND: LexicalCommand<{
+  nodeKey: NodeKey;
+  mode: ResponsiveMode;
+}> = createCommand<{ nodeKey: NodeKey; mode: ResponsiveMode }>();
 
 function getItemsCountFromTemplate(template: string): number {
   return template.trim().split(/\s+/).length;
@@ -114,6 +131,65 @@ export default function ColumnsPlugin(): null {
             }
 
             containerNode.setTemplateColumns(payload.template);
+            if (payload.responsive !== undefined) {
+              containerNode.setResponsive(payload.responsive);
+            }
+          });
+
+          return true;
+        },
+        COMMAND_PRIORITY_EDITOR,
+      ),
+
+      editor.registerCommand(
+        INSERT_LAYOUT_V2_COMMAND,
+        (payload) => {
+          editor.update(() => {
+            const container = $createLayoutContainerNode(
+              payload.template,
+              payload.responsiveMode ?? "full",
+            );
+            const itemsCount = getItemsCountFromTemplate(payload.template);
+
+            for (let i = 0; i < itemsCount; i++) {
+              container.append($createLayoutItemNode().append($createParagraphNode()));
+            }
+
+            $insertNodeToNearestRoot(container);
+            container.selectStart();
+          });
+
+          return true;
+        },
+        COMMAND_PRIORITY_EDITOR,
+      ),
+
+      editor.registerCommand(
+        TOGGLE_LAYOUT_RESPONSIVE_COMMAND,
+        (nodeKey) => {
+          editor.update(() => {
+            const containerNode = $getNodeByKey(nodeKey);
+            if (!$isLayoutContainerNode(containerNode)) {
+              return;
+            }
+            const current = containerNode.getResponsiveMode();
+            containerNode.setResponsiveMode(current === "none" ? "full" : "none");
+          });
+
+          return true;
+        },
+        COMMAND_PRIORITY_EDITOR,
+      ),
+
+      editor.registerCommand(
+        SET_LAYOUT_RESPONSIVE_MODE_COMMAND,
+        (payload) => {
+          editor.update(() => {
+            const containerNode = $getNodeByKey(payload.nodeKey);
+            if (!$isLayoutContainerNode(containerNode)) {
+              return;
+            }
+            containerNode.setResponsiveMode(payload.mode);
           });
 
           return true;

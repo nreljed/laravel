@@ -14,8 +14,8 @@ import {
 } from "lexical";
 import { createPortal } from "react-dom";
 import { GripVertical, Plus } from "lucide-react";
-import { BlockOption, getBlockOptions } from "./shared/block-options";
-import { BlockPickerMenu } from "./components/block-picker-menu";
+import { BlockOption, getBlockOptions } from "../shared/block-options";
+import { BlockPickerMenu } from "../shared/block-picker-menu";
 
 const DRAGGABLE_BLOCK_MENU_CLASSNAME = "draggable-block-menu";
 

@@ -15,7 +15,10 @@ use App\Services\FormattingService;
 use App\Services\MailerConfigurator;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->configureRateLimiting();
+
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(AiProvider::class, AiProviderPolicy::class);
 
@@ -82,6 +87,21 @@ class AppServiceProvider extends ServiceProvider
             $notification = new CustomResetPassword($token);
 
             return $notification->toMail($notifiable);
+        });
+    }
+
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
+        RateLimiter::for('register', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
+        RateLimiter::for('auth', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
         });
     }
 }

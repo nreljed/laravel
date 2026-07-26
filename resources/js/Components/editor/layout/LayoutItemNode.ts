@@ -3,6 +3,7 @@ import {
   $isParagraphNode,
   addClassNamesToElement,
   type DOMConversionMap,
+  type DOMExportOutput,
   type EditorConfig,
   ElementNode,
   type LexicalNode,
@@ -55,6 +56,12 @@ export class LayoutItemNode extends ElementNode {
       addClassNamesToElement(dom, config.theme.layoutItem);
     }
     return dom;
+  }
+
+  exportDOM(): DOMExportOutput {
+    const element = document.createElement("div");
+    element.dataset.lexicalLayoutItem = "true";
+    return { element };
   }
 
   updateDOM(): boolean {

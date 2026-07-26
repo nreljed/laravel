@@ -1,0 +1,86 @@
+{
+  "table": {
+    "width": "369px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "layout": "fixed",
+    "borderCollapse": "collapse",
+    "display": "table"
+  },
+  "wrapper": {
+    "className": "overflow-x-auto mb-[5px] [&_table]:mt-0 [&_table]:mb-0",
+    "width": "708.328px",
+    "overflowX": "auto",
+    "overflowY": "auto"
+  },
+  "cellWidths": [
+    {
+      "tag": "TH",
+      "text": "Feature",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TH",
+      "text": "Editor",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TH",
+      "text": "Public View",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TH",
+      "text": "Status",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TD",
+      "text": "Rich Text",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TD",
+      "text": "Fully supported",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TD",
+      "text": "Renders with prose",
+      "width": "92px",
+      "padding": "6px 8px"
+    },
+    {
+      "tag": "TD",
+      "text": "Complete",
+      "width": "92px",
+      "padding": "6px 8px"
+    }
+  ],
+  "tableRect": {
+    "x": 521.5,
+    "y": 377,
+    "width": 369,
+    "height": 512,
+    "top": 377,
+    "right": 890.5,
+    "bottom": 889,
+    "left": 521.5
+  },
+  "containerRect": {
+    "x": 521.5,
+    "y": 377,
+    "width": 708.328125,
+    "height": 512,
+    "top": 377,
+    "right": 1229.828125,
+    "bottom": 889,
+    "left": 521.5
+  }
+}

@@ -1,5 +1,4 @@
 import "../css/app.css";
-import "./bootstrap";
 
 import { createInertiaApp, router } from "@inertiajs/react";
 import { createRoot } from "react-dom/client";

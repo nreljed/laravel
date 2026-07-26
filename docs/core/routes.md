@@ -40,6 +40,33 @@ Examples:
 php artisan route:list --path=posts
 ```
 
+## Auth Routes
+
+Uses named rate limiters from `AppServiceProvider::configureRateLimiting()`.
+
+| Method | URL                            | Middleware             | Limiter         | Purpose              |
+| ------ | ------------------------------ | ---------------------- | --------------- | -------------------- |
+| `GET`  | `/register`                    | `guest`, `maintenance` | —               | Registration form    |
+| `POST` | `/register`                    | `guest`, `maintenance` | `register`      | Create account       |
+| `GET`  | `/login`                       | `guest`, `maintenance` | —               | Login form           |
+| `POST` | `/login`                       | `guest`, `maintenance` | `login`         | Authenticate         |
+| `POST` | `/forgot-password`             | `guest`, `maintenance` | `auth`          | Send reset link      |
+| `POST` | `/reset-password`              | `guest`, `maintenance` | `auth`          | Reset password       |
+| `POST` | `/confirm-password`            | `auth`, `maintenance`  | `auth`          | Confirm password     |
+| `PUT`  | `/password`                    | `auth`, `maintenance`  | `auth`          | Update password      |
+| `POST` | `/logout`                      | `auth`, `maintenance`  | `auth`          | Destroy session      |
+| `GET`  | `/register/check-availability` | —                      | `throttle:10,1` | Username/email check |
+
+**Rate limiter details:**
+
+| Limiter    | Limit  | Key | Notes                                                    |
+| ---------- | ------ | --- | -------------------------------------------------------- |
+| `login`    | 30/min | IP  | Safety net; `LoginRequest` handles 5/min per username+IP |
+| `register` | 10/min | IP  | Prevents bulk registration abuse                         |
+| `auth`     | 30/min | IP  | General auth routes                                      |
+
+See [Architecture](architecture.md#rate-limiting) for the two-tier login throttle explanation.
+
 ## Notification Routes
 
 | Method   | URL                                         | Middleware               | Purpose                     |

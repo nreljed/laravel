@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/Components/ui/select";
-import { useFloatingPosition } from "./hooks/use-floating-position";
+import { useFloatingPosition } from "../hooks/use-floating-position";
 
 const LANGUAGES = [
   { label: "Plain Text", value: "plain" },
@@ -45,6 +45,9 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
   >([]);
   const [copiedKey, setCopiedKey] = useState<NodeKey | null>(null);
   const [activeKey, setActiveKey] = useState<NodeKey | null>(null);
+  const isHoveringToolbarRef = useRef(false);
+  const isSelectOpenRef = useRef(false);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const codeBlocksRef = useRef(codeBlocks);
   // eslint-disable-next-line react-hooks/refs
   codeBlocksRef.current = codeBlocks;
@@ -74,9 +77,41 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
 
   useEffect(() => {
     if (!activeKey) return;
+    const scrollHideTimeoutRef: { current: ReturnType<typeof setTimeout> | null } = {
+      current: null,
+    };
+
     const update = () => {
+      if (isSelectOpenRef.current) return;
       const el = editor.getElementByKey(activeKey);
-      if (el) positionAtRect(el.getBoundingClientRect(), { anchor: "top-left" });
+      if (!el) {
+        setActiveKey(null);
+        return;
+      }
+
+      const codeRect = el.getBoundingClientRect();
+      const scrollContainer = el.closest<HTMLElement>(".overflow-auto");
+      const containerRect = scrollContainer?.getBoundingClientRect();
+
+      const isVisible = containerRect
+        ? codeRect.bottom > containerRect.top && codeRect.top < containerRect.bottom
+        : codeRect.bottom > 0 && codeRect.top < window.innerHeight;
+
+      if (!isVisible) {
+        if (scrollHideTimeoutRef.current === null) {
+          scrollHideTimeoutRef.current = setTimeout(() => {
+            setActiveKey(null);
+            scrollHideTimeoutRef.current = null;
+          }, 300);
+        }
+        return;
+      }
+
+      if (scrollHideTimeoutRef.current !== null) {
+        clearTimeout(scrollHideTimeoutRef.current);
+        scrollHideTimeoutRef.current = null;
+      }
+      positionAtRect(codeRect, { anchor: "top-left" });
     };
     /* eslint-disable unicorn/prefer-observer-apis */
     window.addEventListener("scroll", update, { capture: true });
@@ -85,6 +120,9 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
     return () => {
       window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);
+      if (scrollHideTimeoutRef.current !== null) {
+        clearTimeout(scrollHideTimeoutRef.current);
+      }
     };
   }, [activeKey, editor, positionAtRect]);
 
@@ -121,10 +159,19 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
     if (!rootElement) return;
 
     const handleMouseOver = (e: MouseEvent) => {
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
       const target = e.target as HTMLElement;
       const codeBlockEl = target.closest<HTMLElement>("code");
       if (!codeBlockEl || !rootElement.contains(codeBlockEl)) {
-        setActiveKey(null);
+        dismissTimerRef.current = setTimeout(() => {
+          if (!isHoveringToolbarRef.current) {
+            setActiveKey(null);
+          }
+          dismissTimerRef.current = null;
+        }, 150);
         return;
       }
       for (const block of codeBlocksRef.current) {
@@ -138,12 +185,19 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
     };
 
     rootElement.addEventListener("mouseover", handleMouseOver);
-    return () => rootElement.removeEventListener("mouseover", handleMouseOver);
+    return () => {
+      rootElement.removeEventListener("mouseover", handleMouseOver);
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+      }
+    };
   }, [editor]);
 
   useEffect(() => {
     if (!activeKey) return;
     const handleMouseDown = (e: MouseEvent) => {
+      if (isHoveringToolbarRef.current) return;
+      if (isSelectOpenRef.current) return;
       const el = toolbarRef.current;
       if (!el) return;
       if (el.contains(e.target as Node)) return;
@@ -168,14 +222,27 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
   return createPortal(
     <div
       ref={toolbarRef}
-      className="pointer-events-auto fixed z-[100] flex items-center gap-1 rounded-md border bg-background/95 p-1 shadow-sm backdrop-blur-sm"
+      className="pointer-events-auto fixed z-30 flex items-center gap-1 rounded-md border bg-background/95 p-1 shadow-sm backdrop-blur-sm"
       style={{ display: activeBlock ? undefined : "none" }}
       contentEditable={false}
+      onPointerEnter={() => {
+        isHoveringToolbarRef.current = true;
+        if (dismissTimerRef.current) {
+          clearTimeout(dismissTimerRef.current);
+          dismissTimerRef.current = null;
+        }
+      }}
+      onPointerLeave={() => {
+        isHoveringToolbarRef.current = false;
+      }}
     >
       {activeBlock && (
         <>
           <Select
             value={activeBlock.language ?? "plain"}
+            onOpenChange={(open: boolean) => {
+              isSelectOpenRef.current = open;
+            }}
             onValueChange={(v) => {
               if (v) setLanguage(activeBlock.key, v);
             }}

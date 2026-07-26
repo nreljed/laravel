@@ -444,7 +444,7 @@ export default function NotificationsPage({
         ) : (
           <div className="space-y-2">
             {Object.entries(grouped).map(([dateGroup, items]) => (
-              <div key={dateGroup} className="rounded-lg border bg-card">
+              <div key={dateGroup} className="rounded-xl border bg-card">
                 <Accordion defaultValue={DEFAULT_OPEN_GROUPS.has(dateGroup) ? [dateGroup] : []}>
                   <AccordionItem value={dateGroup} className="border-0">
                     <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">

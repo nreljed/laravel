@@ -10,6 +10,7 @@ import type {
   Spread,
 } from "lexical";
 import { $applyNodeReplacement, DecoratorNode, $insertNodes } from "lexical";
+import { DecoratorErrorBoundary } from "../shared/DecoratorErrorBoundary";
 
 export type SerializedYouTubeNode = Spread<{ videoId: string }, SerializedLexicalNode>;
 
@@ -23,7 +24,7 @@ export class YouTubeNode extends DecoratorNode<React.ReactNode> {
   }
 
   static importJSON(json: SerializedYouTubeNode): YouTubeNode {
-    return $createYouTubeNode(json.videoId);
+    return new YouTubeNode().updateFromJSON(json);
   }
 
   static importDOM(): DOMConversionMap | null {
@@ -49,9 +50,15 @@ export class YouTubeNode extends DecoratorNode<React.ReactNode> {
 
   declare __videoId: string;
 
-  constructor(videoId: string, key?: NodeKey) {
+  constructor(videoId: string = "", key?: NodeKey) {
     super(key);
     this.__videoId = videoId;
+  }
+
+  updateFromJSON(json: SerializedYouTubeNode): this {
+    const self = super.updateFromJSON(json);
+    self.__videoId = json.videoId;
+    return self;
   }
 
   createDOM(_config: EditorConfig): HTMLElement {
@@ -88,15 +95,17 @@ export class YouTubeNode extends DecoratorNode<React.ReactNode> {
 
   decorate(): React.ReactNode {
     return (
-      <div className="my-4 aspect-video w-full overflow-hidden rounded-lg">
-        <iframe
-          src={`https://www.youtube.com/embed/${this.__videoId}`}
-          title="YouTube video"
-          className="h-full w-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
+      <DecoratorErrorBoundary>
+        <div className="my-4 aspect-video w-full overflow-hidden rounded-lg">
+          <iframe
+            src={`https://www.youtube.com/embed/${this.__videoId}`}
+            title="YouTube video"
+            className="h-full w-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </DecoratorErrorBoundary>
     );
   }
 

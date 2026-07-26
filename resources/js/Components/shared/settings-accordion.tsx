@@ -62,7 +62,7 @@ function SettingsAccordionItem({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card",
+        "rounded-xl border bg-card",
         isDestructive && "border-destructive/30 bg-destructive/5",
         className,
       )}

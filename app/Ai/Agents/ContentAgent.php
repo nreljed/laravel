@@ -62,10 +62,12 @@ INSTRUCTIONS;
             $fullPrompt .= "Context: {$context}\n";
         }
 
+        $this->injectProviderKey();
+
         $response = $this->prompt($fullPrompt);
 
-        $result = $response->json();
-        $meta = $result ?? $response->toArray();
+        $result = $response->toArray();
+        $meta = $result ?? [];
 
         $usage = method_exists($response, 'usage') ? $response->usage() : [];
 
@@ -94,10 +96,12 @@ INSTRUCTIONS;
         $prompt .= "Original content:\n{$content}\n\n";
         $prompt .= "Improvement instructions: {$instructions}\n";
 
+        $this->injectProviderKey();
+
         $response = $this->prompt($prompt);
 
-        $result = $response->json();
-        $meta = $result ?? $response->toArray();
+        $result = $response->toArray();
+        $meta = $result ?? [];
 
         $usage = method_exists($response, 'usage') ? $response->usage() : [];
 

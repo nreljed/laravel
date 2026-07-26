@@ -3,8 +3,11 @@
 @source "../../app/Blog/Resources/js/";
 
 @import "tw-animate-css";
+@import "prismjs/themes/prism-tomorrow.min.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant data-horizontal (&:is([data-orientation=horizontal] *));
+@custom-variant data-vertical (&:is([data-orientation=vertical] *));
 
 @theme {
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
@@ -168,15 +171,95 @@
 }
 
 /* Lexical editor: checklist checkbox styles */
-.lexical-check-list-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+.lexical-checklist-checked,
+.lexical-checklist-unchecked {
+  position: relative;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+  list-style-type: none;
+  outline: none;
+  display: block;
+  min-height: 1.5em;
 }
-.lexical-check-list-item input[type="checkbox"] {
-  margin-top: 0.25rem;
-  accent-color: var(--primary);
+
+.lexical-checklist-checked > *,
+.lexical-checklist-unchecked > * {
+  margin-left: 0.01em;
+}
+
+/* Unchecked checkbox: empty box */
+.lexical-checklist-unchecked::before {
+  content: "\200B" !important;
+  width: 0.9em !important;
+  height: 0.9em !important;
+  top: 50% !important;
+  left: 0 !important;
   cursor: pointer;
+  display: block !important;
+  background-size: cover;
+  position: absolute !important;
+  transform: translateY(-50%);
+  border: 1px solid var(--border) !important;
+  border-radius: 2px !important;
+}
+
+/* Checked checkbox: filled box */
+.lexical-checklist-checked::before {
+  content: "\200B" !important;
+  width: 0.9em !important;
+  height: 0.9em !important;
+  top: 50% !important;
+  left: 0 !important;
+  cursor: pointer;
+  display: block !important;
+  background-size: cover;
+  position: absolute !important;
+  transform: translateY(-50%);
+  border: 1px solid var(--primary) !important;
+  border-radius: 2px !important;
+  background-color: var(--primary) !important;
+  background-repeat: no-repeat;
+}
+
+/* Checkmark inside checked box */
+.lexical-checklist-checked::after {
+  content: "" !important;
+  cursor: pointer;
+  border-color: white !important;
+  border-style: solid !important;
+  position: absolute !important;
+  display: block !important;
+  top: 45% !important;
+  width: 0.2em !important;
+  left: 0.35em !important;
+  height: 0.4em !important;
+  transform: translateY(-50%) rotate(45deg);
+  border-width: 0 0.1em 0.1em 0 !important;
+}
+
+/* Strikethrough for checked items */
+.lexical-checklist-checked {
+  text-decoration: line-through;
+}
+
+/* Focus state for keyboard navigation */
+.lexical-checklist-unchecked:focus::before,
+.lexical-checklist-checked:focus::before {
+  box-shadow: 0 0 0 2px var(--ring) !important;
+  border-radius: 2px !important;
+}
+
+/* RTL support */
+.lexical-checklist-unchecked[dir="rtl"]::before,
+.lexical-checklist-checked[dir="rtl"]::before {
+  left: auto;
+  right: 0;
+}
+.lexical-checklist-checked[dir="rtl"]::after {
+  left: auto;
+  right: 0.35em;
 }
 
 /* Lexical editor: table styles */
@@ -212,17 +295,50 @@
 .dark [data-lexical-editor] table th {
   border-color: oklch(1 0 0 / 20%);
 }
-/* Public blog: responsive tables rendered from Lexical HTML */
+/* Public blog: responsive tables rendered from Lexical HTML.
+   TableNode.exportDOM() produces bare <table> without classes or <colgroup>
+   (createDOM adds them, exportDOM doesn't), so we must replicate the full
+   editor table styles here. Use table-layout: auto so columns size to their
+   content rather than forcing a rigid 75px width. */
 .prose table {
-  table-layout: fixed;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: auto;
   width: fit-content;
+  min-width: 0;
 }
 .prose table td,
 .prose table th {
-  width: 75px;
-  min-width: 75px;
-  max-width: 100%;
+  max-width: 250px;
+  vertical-align: top;
+  text-align: start;
+  padding: 6px 8px;
+  position: relative;
+  overflow: auto;
   word-break: break-word;
+}
+.prose table td > *,
+.prose table th > * {
+  overflow: inherit;
+}
+/* When colgroup cols exist (from Lexical), respect their explicit widths */
+.prose table colgroup col {
+  width: auto;
+}
+/* Scroll wrapper for responsive tables on mobile */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.5em 0;
+  max-width: 100%;
+}
+/* Table borders — th gets muted bg to match editor */
+.prose table th {
+  background-color: var(--muted);
+}
+.prose table td,
+.prose table th {
+  border: 1px solid var(--border);
 }
 /* Frozen row — first row sticks to top when scrolling (44px = below sticky toolbar at h-16) */
 /* Note: Lexical applies tableFrozenRow class to the wrapper div, not the table element */
@@ -290,6 +406,11 @@
 /* Frozen row + frozen column intersection cell */
 .table-frozen-row.table-frozen-col > table > tr:first-of-type > th:first-child {
   z-index: 3 !important;
+}
+/* Table cell children: inherit overflow so content scrolls with the cell (Firefox workaround) */
+.overflow-auto > table td > *,
+.overflow-auto > table th > * {
+  overflow: inherit;
 }
 /* Table cell selection — semi-transparent highlight visible in both light & dark */
 .lexical-table-cell-selected {
@@ -439,10 +560,7 @@
     inset -10px 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Prism theme for Lexical code blocks */
-@import "prismjs/themes/prism-tomorrow.min.css";
-
-/* Lexical editor content: link color in prose containers (dark mode override) */
+/* Lexical editor: link color in prose containers (dark mode override) */
 .dark .prose a {
   color: var(--link) !important;
   text-decoration: underline !important;
@@ -454,6 +572,97 @@
 }
 .dark .prose a:hover {
   text-decoration-color: var(--link) !important;
+}
+
+/* Lexical editor: code block line numbers (editor only — data-gutter set by @lexical/code-prism) */
+[data-lexical-editor] code[data-gutter]::before {
+  content: attr(data-gutter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
+  text-align: right;
+  color: var(--muted-foreground);
+  border-right: 1px solid var(--border);
+  padding: 1em 0.6em;
+  white-space: pre-wrap;
+  min-width: 2.5em;
+  opacity: 0.6;
+}
+
+/* Prose code block overrides: restore Prism theme for Lexical code blocks */
+.prose pre {
+  background-color: rgb(45, 45, 45) !important;
+  color: #ccc !important;
+  padding: 1em !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 1.5em 0 !important;
+  font-size: 0.875em !important;
+  line-height: 1.7 !important;
+}
+.prose pre code {
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  color: inherit !important;
+}
+.prose code:not(pre code) {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  padding: 0.2em 0.4em !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875em !important;
+}
+.dark .prose code:not(pre code) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Code block wrapper + copy button (frontend public pages) */
+.code-block-wrapper {
+  position: relative;
+}
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background-color 0.15s,
+    color 0.15s;
+  z-index: 10;
+}
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+.code-copy-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+.code-copy-btn.copied {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+/* Dark mode code block adjustments */
+.dark .prose pre {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* Dark mode: boost prose table border contrast for visibility */
+.dark .prose table td,
+.dark .prose table th {
+  border-color: oklch(1 0 0 / 20%);
 }
 
 /* Lexical editor content: ensure links inside editor also get the right color */
@@ -480,6 +689,48 @@
   max-width: 100%;
 }
 .dark [data-lexical-editor] [data-lexical-layout-item] {
+  border-color: oklch(1 0 0 / 20%);
+}
+/* Responsive modes: 3-tier control for column layouts */
+/* Tablet (≤1023px): "full" mode stacks */
+@media (max-width: 1023px) {
+  [data-lexical-editor] [data-lexical-layout-container][data-responsive-mode="full"],
+  .prose [data-lexical-layout-container][data-responsive-mode="full"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Mobile (≤639px): "full" and "mobile-only" stack */
+@media (max-width: 639px) {
+  [data-lexical-editor] [data-lexical-layout-container][data-responsive-mode="full"],
+  .prose [data-lexical-layout-container][data-responsive-mode="full"],
+  [data-lexical-editor] [data-lexical-layout-container][data-responsive-mode="mobile-only"],
+  .prose [data-lexical-layout-container][data-responsive-mode="mobile-only"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Backward compat: old content without data-responsive-mode stacks on mobile */
+@media (max-width: 639px) {
+  [data-lexical-editor] [data-lexical-layout-container]:not([data-responsive-mode]),
+  .prose [data-lexical-layout-container]:not([data-responsive-mode]) {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Public blog: layout columns rendered from Lexical HTML.
+   LayoutContainerNode.exportDOM() sets inline style="grid-template-columns: ..."
+   but adds no classes, so we target the data attributes. */
+.prose [data-lexical-layout-container] {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0;
+}
+.prose [data-lexical-layout-item] {
+  border: 1px dashed var(--border);
+  padding: 8px 16px;
+  min-height: 1.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.dark .prose [data-lexical-layout-item] {
   border-color: oklch(1 0 0 / 20%);
 }
 

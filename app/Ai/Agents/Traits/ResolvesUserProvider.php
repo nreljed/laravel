@@ -24,16 +24,13 @@ trait ResolvesUserProvider
     }
 
     /**
-     * Resolve provider configuration for the Laravel AI SDK.
+     * Resolve the config key for the Laravel AI SDK provider resolution.
      */
-    public function provider(): array
+    public function provider(): string
     {
         $resolved = $this->getResolvedProvider();
 
-        return [
-            'driver' => $resolved['driver'],
-            'key' => $resolved['key'],
-        ];
+        return $resolved['driver'];
     }
 
     /**
@@ -76,5 +73,16 @@ trait ResolvesUserProvider
         ];
 
         return $this->resolvedProvider;
+    }
+
+    /**
+     * Inject the BYOK API key into the AI config for the current provider.
+     * This is safe in PHP since each request runs in its own process.
+     */
+    protected function injectProviderKey(): void
+    {
+        $resolved = $this->getResolvedProvider();
+
+        config()->set("ai.providers.{$resolved['driver']}.key", $resolved['key']);
     }
 }

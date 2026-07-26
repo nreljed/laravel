@@ -155,23 +155,28 @@ export default function UserAccount() {
       const formData = new FormData();
       formData.append("avatar", file);
 
-      await new Promise<void>((resolve, reject) => {
-        router.post(route("dashboard.account.avatar.upload"), formData, {
-          preserveState: true,
-          onSuccess: (page: { props: Record<string, unknown> }) => {
-            const result = page.props;
-            const avatar = result.avatar as { url?: string } | undefined;
-            if (avatar?.url) {
-              setAvatarPreview(avatar.url);
-            }
-            router.reload({ only: ["auth"], replace: true });
-            resolve();
-          },
-          onError: (errors: Record<string, string>) => {
-            reject(new Error(errors.error || "Upload failed"));
-          },
-        });
+      const csrfToken =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
+      const response = await fetch(route("dashboard.account.avatar.upload"), {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": csrfToken,
+        },
+        body: formData,
       });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Upload failed");
+      }
+
+      if (result.avatar?.url) {
+        setAvatarPreview(result.avatar.url);
+      }
+      router.reload({ only: ["auth"], replace: true });
     } catch (error) {
       const msg = (error as Error).message || "Upload failed. Please try again.";
       setAvatarError(msg);
@@ -188,20 +193,28 @@ export default function UserAccount() {
     setUploading(true);
 
     try {
-      await new Promise<void>((resolve, reject) => {
-        router.delete(route("dashboard.account.avatar.destroy"), {
-          preserveState: true,
-          onSuccess: () => {
-            setAvatarPreview(null);
-            router.reload({ only: ["auth"], replace: true });
-            toast.success("Avatar removed successfully!");
-            resolve();
-          },
-          onError: (errors: Record<string, string>) => {
-            reject(new Error(errors.error || "Failed to remove avatar."));
-          },
-        });
+      const csrfToken =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
+      const response = await fetch(route("dashboard.account.avatar.destroy"), {
+        method: "DELETE",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": csrfToken,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to remove avatar.");
+      }
+
+      setAvatarPreview(null);
+      router.reload({ only: ["auth"], replace: true });
+      toast.success("Avatar removed successfully!");
     } catch (error) {
       toast.error((error as Error).message || "Failed to remove avatar.");
     } finally {

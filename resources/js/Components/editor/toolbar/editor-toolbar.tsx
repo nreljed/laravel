@@ -15,7 +15,6 @@ import {
   type LexicalEditor,
   type LexicalNode,
   $isElementNode,
-  $isTextNode,
 } from "lexical";
 import {
   INSERT_ORDERED_LIST_COMMAND,
@@ -28,12 +27,15 @@ import { $isLinkNode } from "@lexical/link";
 import { $findMatchingParent, mergeRegister } from "@lexical/utils";
 import { $createHeadingNode, $isHeadingNode, $createQuoteNode } from "@lexical/rich-text";
 import { $createCodeNode } from "@lexical/code";
-import { $patchStyleText, $getSelectionStyleValueForProperty } from "@lexical/selection";
+import {
+  $patchStyleText,
+  $getSelectionStyleValueForProperty,
+  $setBlocksType,
+} from "@lexical/selection";
 import {
   Bold,
   Italic,
   Underline,
-  Strikethrough,
   Code,
   List,
   ListOrdered,
@@ -42,34 +44,30 @@ import {
   Heading1,
   Heading2,
   Heading3,
-  Heading4,
-  Heading5,
-  Heading6,
   Quote,
   ListChecks,
   CodeSquare,
   Type,
   Highlighter,
-  Subscript as SubscriptIcon,
-  Superscript as SuperscriptIcon,
-  RemoveFormatting,
   Search,
+  ChevronDown,
 } from "lucide-react";
 import { ColorPicker, TEXT_COLORS, HIGHLIGHT_COLORS } from "./ColorPicker";
-import { TableOfContentsPlugin } from "../TableOfContentsPlugin";
+import { TableOfContentsPlugin } from "../plugins/TableOfContentsPlugin";
 import { ToggleGroup } from "@/Components/ui/toggle-group";
 import { Toggle } from "@/Components/ui/toggle";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/Components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
 import { Separator } from "@/Components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/Components/ui/tooltip";
 import { InsertMenu } from "./InsertMenu";
 import { ElementFormatDropdown } from "./ElementFormatDropdown";
+import { TextFormatDropdown } from "./TextFormatDropdown";
 
 interface ToolbarState {
   isBold: boolean;
@@ -79,6 +77,10 @@ interface ToolbarState {
   isCode: boolean;
   isSubscript: boolean;
   isSuperscript: boolean;
+  isLowercase: boolean;
+  isUppercase: boolean;
+  isCapitalize: boolean;
+  isHighlight: boolean;
   blockType: string;
   elementFormat: ElementFormatType;
   isLink: boolean;
@@ -115,6 +117,10 @@ function useToolbarState(editor: LexicalEditor): ToolbarState {
     isCode: false,
     isSubscript: false,
     isSuperscript: false,
+    isLowercase: false,
+    isUppercase: false,
+    isCapitalize: false,
+    isHighlight: false,
     blockType: "paragraph",
     elementFormat: "left",
     isLink: false,
@@ -155,6 +161,10 @@ function useToolbarState(editor: LexicalEditor): ToolbarState {
     const isCode = selection.hasFormat("code");
     const isSubscript = selection.hasFormat("subscript");
     const isSuperscript = selection.hasFormat("superscript");
+    const isLowercase = selection.hasFormat("lowercase");
+    const isUppercase = selection.hasFormat("uppercase");
+    const isCapitalize = selection.hasFormat("capitalize");
+    const isHighlight = selection.hasFormat("highlight");
 
     setState((prev) => ({
       isBold,
@@ -164,6 +174,10 @@ function useToolbarState(editor: LexicalEditor): ToolbarState {
       isCode,
       isSubscript,
       isSuperscript,
+      isLowercase,
+      isUppercase,
+      isCapitalize,
+      isHighlight,
       blockType,
       elementFormat,
       isLink,
@@ -212,7 +226,26 @@ function useToolbarState(editor: LexicalEditor): ToolbarState {
   return state;
 }
 
-function BlockFormatSelect({ blockType }: { blockType: string }) {
+type BlockOption = {
+  value: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  shortcut: string;
+};
+
+const BLOCK_OPTIONS: BlockOption[] = [
+  { value: "paragraph", label: "Normal", icon: Type, shortcut: "Ctrl+Alt+0" },
+  { value: "h1", label: "Heading 1", icon: Heading1, shortcut: "Ctrl+Alt+1" },
+  { value: "h2", label: "Heading 2", icon: Heading2, shortcut: "Ctrl+Alt+2" },
+  { value: "h3", label: "Heading 3", icon: Heading3, shortcut: "Ctrl+Alt+3" },
+  { value: "bullet", label: "Bullet List", icon: List, shortcut: "Ctrl+Shift+8" },
+  { value: "number", label: "Numbered List", icon: ListOrdered, shortcut: "Ctrl+Shift+7" },
+  { value: "check", label: "Check List", icon: ListChecks, shortcut: "Ctrl+Shift+9" },
+  { value: "quote", label: "Quote", icon: Quote, shortcut: "Ctrl+Shift+Q" },
+  { value: "code", label: "Code Block", icon: CodeSquare, shortcut: "Ctrl+Alt+C" },
+];
+
+function BlockFormatDropdown({ blockType }: { blockType: string }) {
   const [editor] = useLexicalComposerContext();
 
   const formatBlock = (value: string) => {
@@ -220,16 +253,9 @@ function BlockFormatSelect({ blockType }: { blockType: string }) {
       const selection = $getSelection();
       if (!$isRangeSelection(selection)) return;
 
-      const anchorNode = selection.anchor.getNode();
-      const parent =
-        anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow();
-
       switch (value) {
         case "paragraph": {
-          const node = $createParagraphNode();
-          // eslint-disable-next-line unicorn/no-unsafe-string-replacement
-          parent.replace(node, true);
-          node.select();
+          $setBlocksType(selection, () => $createParagraphNode());
           break;
         }
         case "h1":
@@ -238,24 +264,37 @@ function BlockFormatSelect({ blockType }: { blockType: string }) {
         case "h4":
         case "h5":
         case "h6": {
-          const heading = $createHeadingNode(value as "h1" | "h2" | "h3" | "h4" | "h5" | "h6");
-          // eslint-disable-next-line unicorn/no-unsafe-string-replacement
-          parent.replace(heading, true);
-          heading.select();
+          $setBlocksType(selection, () =>
+            $createHeadingNode(value as "h1" | "h2" | "h3" | "h4" | "h5" | "h6"),
+          );
           break;
         }
         case "quote": {
-          const quote = $createQuoteNode();
-          // eslint-disable-next-line unicorn/no-unsafe-string-replacement
-          parent.replace(quote, true);
-          quote.select();
+          $setBlocksType(selection, () => $createQuoteNode());
           break;
         }
         case "code": {
-          const codeNode = $createCodeNode();
-          // eslint-disable-next-line unicorn/no-unsafe-string-replacement
-          parent.replace(codeNode, true);
-          codeNode.select();
+          $setBlocksType(selection, () => $createCodeNode());
+          break;
+        }
+        case "bullet": {
+          if (blockType === "bullet") {
+            editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+          } else {
+            editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+          }
+          break;
+        }
+        case "number": {
+          if (blockType === "number") {
+            editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+          } else {
+            editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+          }
+          break;
+        }
+        case "check": {
+          editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
           break;
         }
         default: {
@@ -265,53 +304,42 @@ function BlockFormatSelect({ blockType }: { blockType: string }) {
     });
   };
 
-  const displayValue = (() => {
-    if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(blockType)) return blockType;
-    if (["bullet", "number"].includes(blockType)) return "paragraph";
-    return blockType;
-  })();
+  const currentOption = BLOCK_OPTIONS.find((opt) => opt.value === blockType) ?? BLOCK_OPTIONS[0]!;
+  const CurrentIcon = currentOption.icon;
 
   return (
-    <Select value={displayValue} onValueChange={(value) => formatBlock(value ?? "")}>
-      <SelectTrigger className="h-8 w-[130px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="paragraph">Normal</SelectItem>
-        <SelectItem value="h1">
-          <Heading1 className="mr-2 inline h-4 w-4" />
-          Heading 1
-        </SelectItem>
-        <SelectItem value="h2">
-          <Heading2 className="mr-2 inline h-4 w-4" />
-          Heading 2
-        </SelectItem>
-        <SelectItem value="h3">
-          <Heading3 className="mr-2 inline h-4 w-4" />
-          Heading 3
-        </SelectItem>
-        <SelectItem value="h4">
-          <Heading4 className="mr-2 inline h-4 w-4" />
-          Heading 4
-        </SelectItem>
-        <SelectItem value="h5">
-          <Heading5 className="mr-2 inline h-4 w-4" />
-          Heading 5
-        </SelectItem>
-        <SelectItem value="h6">
-          <Heading6 className="mr-2 inline h-4 w-4" />
-          Heading 6
-        </SelectItem>
-        <SelectItem value="quote">
-          <Quote className="mr-2 inline h-4 w-4" />
-          Blockquote
-        </SelectItem>
-        <SelectItem value="code">
-          <CodeSquare className="mr-2 inline h-4 w-4" />
-          Code Block
-        </SelectItem>
-      </SelectContent>
-    </Select>
+    <TooltipProvider>
+      <Tooltip>
+        <DropdownMenu>
+          <TooltipTrigger
+            render={
+              <DropdownMenuTrigger
+                render={
+                  <Toggle size="sm" variant="outline" aria-label="Block format" className="gap-1">
+                    <CurrentIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{currentOption.label}</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </Toggle>
+                }
+              />
+            }
+          />
+          <DropdownMenuContent className="w-52">
+            {BLOCK_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              return (
+                <DropdownMenuItem key={option.value} onClick={() => formatBlock(option.value)}>
+                  <Icon className="h-4 w-4" />
+                  {option.label}
+                  <DropdownMenuShortcut>{option.shortcut}</DropdownMenuShortcut>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <TooltipContent>Block Format</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -356,7 +384,6 @@ export function EditorToolbar() {
   const formatBold = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
   const formatItalic = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic");
   const formatUnderline = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline");
-  const formatStrikethrough = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "strikethrough");
   const formatCode = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "code");
 
   const formatTextColor = (color: string) => {
@@ -377,52 +404,15 @@ export function EditorToolbar() {
     });
   };
 
-  const formatBulletList = () => {
-    if (toolbar.blockType === "bullet") {
-      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
-    } else {
-      editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
-    }
-  };
-  const formatNumberedList = () => {
-    if (toolbar.blockType === "number") {
-      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
-    } else {
-      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
-    }
-  };
-  const formatCheckList = () => {
-    editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
-  };
-
   const formatUndo = () => editor.dispatchCommand(UNDO_COMMAND, undefined);
   const formatRedo = () => editor.dispatchCommand(REDO_COMMAND, undefined);
-
-  const formatSubscript = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "subscript");
-  const formatSuperscript = () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "superscript");
-
-  const formatClearFormatting = () => {
-    editor.update(() => {
-      const selection = $getSelection();
-      if (!$isRangeSelection(selection)) return;
-      const nodes = selection.getNodes();
-      for (const node of nodes) {
-        if (!$isTextNode(node)) {
-          continue;
-        }
-
-        node.setFormat(0);
-        node.setStyle("");
-      }
-    });
-  };
 
   return (
     <>
       <TooltipProvider>
-        <div className="sticky top-16 z-20 flex flex-wrap items-center gap-1.5 border-b bg-background px-2 py-1.5">
+        <div className="sticky top-16 z-40 flex items-center gap-1.5 border-b bg-background px-2 py-1.5 overflow-x-auto overflow-y-hidden scrollbar-thin">
           {/* Group: History */}
-          <ToggleGroup spacing={1}>
+          <ToggleGroup spacing={1} className="flex-shrink-0">
             <ToolbarButton
               label="Undo"
               icon={Undo2}
@@ -437,17 +427,29 @@ export function EditorToolbar() {
             />
           </ToggleGroup>
 
-          <Separator orientation="vertical" className="mx-1.5 h-6" />
+          <ToolbarButton
+            label="Find & Replace (Ctrl+F)"
+            icon={Search}
+            onClick={() => {
+              dispatchEvent(new CustomEvent("lexical-find-replace"));
+            }}
+          />
+
+          <Separator orientation="vertical" className="mx-1.5 h-6 flex-shrink-0" />
 
           {/* Group: Block Type & Navigation */}
-          <TableOfContentsPlugin />
+          <div className="flex-shrink-0">
+            <TableOfContentsPlugin />
+          </div>
 
-          <BlockFormatSelect blockType={toolbar.blockType} />
+          <div className="flex-shrink-0">
+            <BlockFormatDropdown blockType={toolbar.blockType} />
+          </div>
 
-          <Separator orientation="vertical" className="mx-1.5 h-6" />
+          <Separator orientation="vertical" className="mx-1.5 h-6 flex-shrink-0" />
 
           {/* Group: Inline Text Formatting */}
-          <ToggleGroup multiple spacing={1}>
+          <ToggleGroup multiple spacing={1} className="flex-shrink-0">
             <ToolbarButton
               label="Bold"
               icon={Bold}
@@ -467,41 +469,29 @@ export function EditorToolbar() {
               onClick={formatUnderline}
             />
             <ToolbarButton
-              label="Strikethrough"
-              icon={Strikethrough}
-              isActive={toolbar.isStrikethrough}
-              onClick={formatStrikethrough}
-            />
-            <ToolbarButton
               label="Inline Code"
               icon={Code}
               isActive={toolbar.isCode}
               onClick={formatCode}
             />
-            <ToolbarButton
-              label="Subscript"
-              icon={SubscriptIcon}
-              isActive={toolbar.isSubscript}
-              onClick={formatSubscript}
-            />
-            <ToolbarButton
-              label="Superscript"
-              icon={SuperscriptIcon}
-              isActive={toolbar.isSuperscript}
-              onClick={formatSuperscript}
-            />
           </ToggleGroup>
 
-          <ToolbarButton
-            label="Clear Formatting"
-            icon={RemoveFormatting}
-            onClick={formatClearFormatting}
-          />
+          <div className="flex-shrink-0">
+            <TextFormatDropdown
+              isStrikethrough={toolbar.isStrikethrough}
+              isSubscript={toolbar.isSubscript}
+              isSuperscript={toolbar.isSuperscript}
+              isLowercase={toolbar.isLowercase}
+              isUppercase={toolbar.isUppercase}
+              isCapitalize={toolbar.isCapitalize}
+              isHighlight={toolbar.isHighlight}
+            />
+          </div>
 
-          <Separator orientation="vertical" className="mx-1.5 h-6" />
+          <Separator orientation="vertical" className="mx-1.5 h-6 flex-shrink-0" />
 
           {/* Group: Colors */}
-          <ToggleGroup multiple spacing={1}>
+          <ToggleGroup multiple spacing={1} className="flex-shrink-0">
             <ColorPicker
               colors={TEXT_COLORS}
               currentColor={toolbar.textColor}
@@ -518,43 +508,19 @@ export function EditorToolbar() {
             />
           </ToggleGroup>
 
-          <Separator orientation="vertical" className="mx-1.5 h-6" />
+          <Separator orientation="vertical" className="mx-1.5 h-6 flex-shrink-0" />
 
           {/* Group: Alignment + Indentation */}
-          <ElementFormatDropdown elementFormat={toolbar.elementFormat} />
+          <div className="flex-shrink-0">
+            <ElementFormatDropdown elementFormat={toolbar.elementFormat} />
+          </div>
 
-          <Separator orientation="vertical" className="mx-1.5 h-6" />
-
-          {/* Group: Lists */}
-          <ToggleGroup multiple spacing={1}>
-            <ToolbarButton
-              label="Bullet List"
-              icon={List}
-              isActive={toolbar.blockType === "bullet"}
-              onClick={formatBulletList}
-            />
-            <ToolbarButton
-              label="Numbered List"
-              icon={ListOrdered}
-              isActive={toolbar.blockType === "number"}
-              onClick={formatNumberedList}
-            />
-            <ToolbarButton label="Check List" icon={ListChecks} onClick={formatCheckList} />
-          </ToggleGroup>
-
-          <Separator orientation="vertical" className="mx-1.5 h-6" />
+          <Separator orientation="vertical" className="mx-1.5 h-6 flex-shrink-0" />
 
           {/* Group: Utilities */}
-          <ToggleGroup spacing={1}>
-            <ToolbarButton
-              label="Find & Replace (Ctrl+F)"
-              icon={Search}
-              onClick={() => {
-                dispatchEvent(new CustomEvent("lexical-find-replace"));
-              }}
-            />
+          <div className="flex-shrink-0">
             <InsertMenu />
-          </ToggleGroup>
+          </div>
         </div>
       </TooltipProvider>
     </>

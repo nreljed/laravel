@@ -14,6 +14,7 @@ use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\EmailSettingsController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NotificationTestController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SettingsController;
@@ -88,6 +89,12 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::put('/ai-keys/{aiProvider}', [AiProviderController::class, 'update'])->name('dashboard.account.ai-keys.update');
         Route::delete('/ai-keys/{aiProvider}', [AiProviderController::class, 'destroy'])->name('dashboard.account.ai-keys.destroy');
         Route::post('/ai-keys/test', [AiProviderController::class, 'test'])->name('dashboard.account.ai-keys.test');
+    });
+
+    // Media uploads (auth + verified)
+    Route::prefix('/dashboard')->group(function () {
+        Route::post('/media', [MediaController::class, 'upload'])->name('dashboard.media.upload');
+        Route::delete('/media', [MediaController::class, 'destroy'])->name('dashboard.media.destroy');
     });
 });
 

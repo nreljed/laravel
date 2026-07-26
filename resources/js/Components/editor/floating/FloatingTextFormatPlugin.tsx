@@ -5,11 +5,11 @@ import {
   $isRangeSelection,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
-  mergeRegister,
   registerEventListener,
   SELECTION_CHANGE_COMMAND,
   type LexicalEditor,
 } from "lexical";
+import { mergeRegister } from "@lexical/utils";
 import { $isCodeNode } from "@lexical/code";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { autoUpdate, flip, inline, offset, shift, useFloating } from "@floating-ui/react";

@@ -43,6 +43,15 @@ resources/js/Components/editor/
   index.ts                              # Public barrel export
   rich-text-editor.tsx                  # Main component
   editor-theme.ts                       # Tailwind theme
+  plugins/
+    DraggableBlockPlugin.tsx            # Drag handle for reordering blocks
+    SlashCommandsPlugin.tsx             # Slash command picker
+    FindAndReplacePlugin.tsx            # Find & Replace dialog
+    WordCountPlugin.tsx                 # Real-time word/character count
+    TableOfContentsPlugin.tsx           # Heading traversal
+    KeyboardShortcutsPlugin.tsx         # Global keyboard shortcuts
+    CursorGuardPlugin.tsx               # Cursor position guard
+    CodeBlockActionsPlugin.tsx          # Code block copy/language/format
   toolbar/
     index.ts
     editor-toolbar.tsx                  # Sticky toolbar
@@ -71,6 +80,7 @@ resources/js/Components/editor/
     TableActionMenuPlugin.tsx           # Cell context menu (merge, color, align, etc.)
     TableHoverActionsPlugin.tsx         # Hover insert/sort/drag-reorder
     TableScrollShadowPlugin.tsx         # Scroll shadow CSS
+    table-hover-utils.ts               # Pure utility functions for hover actions
   layout/
     index.ts
     LayoutContainerNode.ts              # Grid container node
@@ -80,11 +90,18 @@ resources/js/Components/editor/
     LayoutControlsPlugin.tsx            # Floating grouped controls (drag + add + remove)
   components/
     context-menu-wrapper.tsx            # Right-click context menu (Cut/Copy/Delete + layout ops)
+    floating-plugins.tsx                # Overlay/portal plugins
+    html-loader.tsx                     # HTML → Lexical deserialization
+    on-change-emitter.tsx               # Lexical → HTML serialization
+  shared/
+    block-options.tsx                   # Block option model (slash + context menu)
+    block-picker-menu.tsx               # Slash command menu UI
+    DecoratorErrorBoundary.tsx          # Error boundary for DecoratorNode outputs
   hooks/
     use-container-position.ts           # Shared positioning hook for floating elements
 ```
 
-**Total**: 32 files, ~6,000 lines across 7 subdirectories.
+**Total**: 40 files, ~7,000 lines across 8 subdirectories.
 
 ## Consumer Entry Points
 
@@ -208,7 +225,7 @@ resources/js/Components/editor/
 | Metric             | Playground | Ours | Coverage |
 | ------------------ | ---------- | ---- | -------- |
 | Custom nodes       | 17         | 4    | 24%      |
-| Plugins/extensions | 48         | 22   | 46%      |
+| Plugins/extensions | 48         | 25   | 52%      |
 | Table features     | 16         | 14   | 88%      |
 | Text formatting    | 8          | 5    | 63%      |
 | Toolbar actions    | 20+        | 14   | 70%      |

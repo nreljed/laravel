@@ -129,11 +129,11 @@ export function MapDebugPanel({ data, zoom, defaultOpen = false, className }: Ma
   const hasData = data && (data.latitude !== null || data.longitude !== null);
 
   return (
-    <div className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}>
+    <div className={cn("rounded-xl border bg-card text-card-foreground shadow-sm", className)}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors rounded-t-lg"
+        className="flex w-full items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors rounded-t-xl"
       >
         <span className="flex items-center gap-2">
           <BugIcon className="size-4 text-muted-foreground" />

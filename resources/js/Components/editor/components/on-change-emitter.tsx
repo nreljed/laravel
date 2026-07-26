@@ -25,7 +25,7 @@ export function OnChangeEmitter({ onChange }: { onChange: (_html: string) => voi
           const html = $generateHtmlFromNodes(editor, null);
           onChangeRef.current(html);
         });
-      }, 300);
+      }, 100);
     });
   }, [editor]);
 

@@ -1,7 +1,9 @@
 import { Head, Link } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 
 interface ErrorPageProps {
   status: number;
+  retryAfter?: number | null;
 }
 
 const errorMessages: Record<
@@ -58,14 +60,34 @@ const errorMessages: Record<
   },
 };
 
-export default function ErrorPage({ status }: ErrorPageProps) {
+export default function ErrorPage({ status, retryAfter }: ErrorPageProps) {
   const error = errorMessages[status] ?? errorMessages[500];
+  const [remaining, setRemaining] = useState(retryAfter ?? 0);
+
+  useEffect(() => {
+    if (remaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryAfter]);
 
   if (!error) return null;
   const backUrl =
     typeof document !== "undefined" && document.referrer && document.referrer !== location.href
       ? document.referrer
       : "/";
+
+  const rateLimited = status === 429 && remaining > 0;
 
   return (
     <>
@@ -92,7 +114,11 @@ export default function ErrorPage({ status }: ErrorPageProps) {
               <span className="text-xl text-muted-foreground">{error.message}</span>
             </div>
 
-            <p className="mt-4 text-sm text-muted-foreground">{error.description}</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {rateLimited
+                ? `Please wait ${remaining} second${remaining !== 1 ? "s" : ""} before trying again.`
+                : error.description}
+            </p>
 
             <div className="mt-8 flex items-center gap-4">
               <a

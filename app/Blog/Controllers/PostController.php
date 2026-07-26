@@ -20,10 +20,11 @@ class PostController extends Controller
 
         $posts = Post::with('user', 'category', 'tags')
             ->latest()
-            ->get(['id', 'title', 'slug', 'excerpt', 'status', 'featured_image', 'published_at', 'category_id', 'user_id', 'created_at']);
+            ->get(['id', 'title', 'slug', 'excerpt', 'status', 'featured_image', 'published_at', 'category_id', 'user_id', 'created_at', 'meta_title']);
 
         return Inertia::render('Blog/Index', [
             'posts' => $posts,
+            'categories' => PostCategory::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -54,6 +55,18 @@ class PostController extends Controller
             'tag_ids.*' => 'exists:post_tags,id',
             'meta_title' => 'nullable|string|max:70',
             'meta_description' => 'nullable|string|max:160',
+            'og_image' => 'nullable|string|max:255',
+            'focus_keyword' => 'nullable|string|max:100',
+            'seo_metadata' => 'nullable|array',
+            'seo_metadata.seo_score' => 'nullable|integer|min:0|max:100',
+            'seo_metadata.primary_keyword' => 'nullable|string|max:100',
+            'seo_metadata.secondary_keywords' => 'nullable|array',
+            'seo_metadata.title_options' => 'nullable|array',
+            'seo_metadata.meta_description_options' => 'nullable|array',
+            'seo_metadata.recommendations' => 'nullable|array',
+            'seo_metadata.recommendations.*.field' => 'required|string',
+            'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
+            'seo_metadata.recommendations.*.message' => 'required|string',
             'content_blocks' => 'nullable|array',
             'content_blocks.*.type' => 'required|string|in:rich_text,image,gallery,embed,code,separator,heading',
             'content_blocks.*.content' => 'nullable|string',
@@ -68,7 +81,16 @@ class PostController extends Controller
 
         $tagIds = $validated['tag_ids'] ?? [];
         $contentBlocks = $validated['content_blocks'] ?? [];
-        unset($validated['tag_ids'], $validated['content_blocks']);
+        $seoMetadata = $validated['seo_metadata'] ?? null;
+        unset($validated['tag_ids'], $validated['content_blocks'], $validated['seo_metadata']);
+
+        if ($seoMetadata) {
+            $existingMetadata = $validated['metadata'] ?? [];
+            $validated['metadata'] = array_merge($existingMetadata, [
+                'seo' => $seoMetadata,
+                'seo_generated_at' => now()->toISOString(),
+            ]);
+        }
 
         $post = Post::create($validated);
 
@@ -113,6 +135,20 @@ class PostController extends Controller
             'category_id' => 'nullable|exists:post_categories,id',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:post_tags,id',
+            'meta_title' => 'nullable|string|max:70',
+            'meta_description' => 'nullable|string|max:160',
+            'og_image' => 'nullable|string|max:255',
+            'focus_keyword' => 'nullable|string|max:100',
+            'seo_metadata' => 'nullable|array',
+            'seo_metadata.seo_score' => 'nullable|integer|min:0|max:100',
+            'seo_metadata.primary_keyword' => 'nullable|string|max:100',
+            'seo_metadata.secondary_keywords' => 'nullable|array',
+            'seo_metadata.title_options' => 'nullable|array',
+            'seo_metadata.meta_description_options' => 'nullable|array',
+            'seo_metadata.recommendations' => 'nullable|array',
+            'seo_metadata.recommendations.*.field' => 'required|string',
+            'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
+            'seo_metadata.recommendations.*.message' => 'required|string',
             'content_blocks' => 'nullable|array',
             'content_blocks.*.id' => 'nullable|integer|exists:content_blocks,id',
             'content_blocks.*.type' => 'required|string|in:rich_text,image,gallery,embed,code,separator,heading',
@@ -127,7 +163,16 @@ class PostController extends Controller
 
         $tagIds = $validated['tag_ids'] ?? [];
         $newBlocks = $validated['content_blocks'] ?? [];
-        unset($validated['tag_ids'], $validated['content_blocks']);
+        $seoMetadata = $validated['seo_metadata'] ?? null;
+        unset($validated['tag_ids'], $validated['content_blocks'], $validated['seo_metadata']);
+
+        if ($seoMetadata) {
+            $existingMetadata = $post->metadata ?? [];
+            $validated['metadata'] = array_merge($existingMetadata, [
+                'seo' => $seoMetadata,
+                'seo_generated_at' => now()->toISOString(),
+            ]);
+        }
 
         $post->update($validated);
 

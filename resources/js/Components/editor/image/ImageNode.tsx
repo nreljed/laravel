@@ -11,6 +11,7 @@ import type {
 } from "lexical";
 import { $applyNodeReplacement, createCommand, DecoratorNode } from "lexical";
 import ImageComponent from "./ImageComponent";
+import { DecoratorErrorBoundary } from "../shared/DecoratorErrorBoundary";
 
 export const INSERT_IMAGE_COMMAND: LexicalCommand<ImagePayload> =
   createCommand("INSERT_IMAGE_COMMAND");
@@ -65,8 +66,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
   }
 
   static importJSON(json: SerializedImageNode): ImageNode {
-    const { src, altText, width, height, maxWidth } = json;
-    return $createImageNode({ src, altText, width, height, maxWidth });
+    return new ImageNode().updateFromJSON(json);
   }
 
   static importDOM(): DOMConversionMap | null {
@@ -85,8 +85,8 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
   declare __maxWidth: number;
 
   constructor(
-    src: string,
-    altText: string,
+    src: string = "",
+    altText: string = "",
     maxWidth: number = 100,
     width?: number | "inherit",
     height?: number | "inherit",
@@ -98,6 +98,16 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
     this.__width = width || "inherit";
     this.__height = height || "inherit";
     this.__maxWidth = maxWidth;
+  }
+
+  updateFromJSON(json: SerializedImageNode): this {
+    const self = super.updateFromJSON(json);
+    self.__src = json.src;
+    self.__altText = json.altText;
+    self.__width = json.width || "inherit";
+    self.__height = json.height || "inherit";
+    self.__maxWidth = json.maxWidth;
+    return self;
   }
 
   createDOM(_config: EditorConfig): HTMLElement {
@@ -117,14 +127,16 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
 
   decorate(): React.ReactNode {
     return (
-      <ImageComponent
-        src={this.__src}
-        altText={this.__altText}
-        width={this.__width}
-        height={this.__height}
-        maxWidth={this.__maxWidth}
-        nodeKey={this.__key}
-      />
+      <DecoratorErrorBoundary>
+        <ImageComponent
+          src={this.__src}
+          altText={this.__altText}
+          width={this.__width}
+          height={this.__height}
+          maxWidth={this.__maxWidth}
+          nodeKey={this.__key}
+        />
+      </DecoratorErrorBoundary>
     );
   }
 

@@ -17,10 +17,11 @@ export function SystemStatusCards({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <Card
+        size="sm"
         className={`border-l-4 ${notificationTableExists ? "border-l-green-500" : "border-l-amber-500"}`}
       >
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-1">
+        <CardContent className="space-y-1">
+          <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               DB Table
@@ -35,10 +36,11 @@ export function SystemStatusCards({
         </CardContent>
       </Card>
       <Card
+        size="sm"
         className={`border-l-4 ${emailConfigured ? "border-l-green-500" : "border-l-amber-500"}`}
       >
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-1">
+        <CardContent className="space-y-1">
+          <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Email
@@ -51,13 +53,13 @@ export function SystemStatusCards({
             {emailConfigured ? "Configured" : "Not Set Up"}
           </Badge>
           {emailConfigured && (
-            <p className="text-[10px] text-muted-foreground mt-1 truncate">{fromEmail}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{fromEmail}</p>
           )}
         </CardContent>
       </Card>
-      <Card className="border-l-4 border-l-blue-500">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-1">
+      <Card size="sm" className="border-l-4 border-l-blue-500">
+        <CardContent className="space-y-1">
+          <div className="flex items-center gap-2">
             <Bell className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Notifications
@@ -70,9 +72,9 @@ export function SystemStatusCards({
           </p>
         </CardContent>
       </Card>
-      <Card className="border-l-4 border-l-slate-500">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-1">
+      <Card size="sm" className="border-l-4 border-l-slate-500">
+        <CardContent className="space-y-1">
+          <div className="flex items-center gap-2">
             <BellRing className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Prefs

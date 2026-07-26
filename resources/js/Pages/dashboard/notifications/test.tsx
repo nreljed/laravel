@@ -567,7 +567,7 @@ export default function NotificationsTest() {
         )}
 
         {resultHistory.length > 1 && (
-          <div className="rounded-lg border bg-card">
+          <div className="rounded-xl border bg-card">
             <button
               type="button"
               onClick={() => setShowHistory(!showHistory)}

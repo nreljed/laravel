@@ -57,22 +57,22 @@ interface AiKeysSectionProps {
 const DEFAULT_SUPPORTED_PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: "OpenAI",
-    models: ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini", "o3-mini"],
+    models: ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5", "o4-mini"],
   },
   anthropic: {
     name: "Anthropic",
-    models: ["claude-opus-4", "claude-sonnet-4", "claude-haiku-4-5"],
+    models: ["claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5"],
   },
   gemini: {
     name: "Google Gemini",
-    models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
+    models: ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-pro"],
   },
   mistral: {
     name: "Mistral",
-    models: ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest"],
+    models: ["mistral-medium-latest", "mistral-small-latest", "mistral-large-latest"],
   },
   deepseek: { name: "DeepSeek", models: ["deepseek-chat", "deepseek-reasoner"] },
-  xai: { name: "xAI (Grok)", models: ["grok-3", "grok-3-mini"] },
+  xai: { name: "xAI (Grok)", models: ["grok-4.5", "grok-4.3", "grok-4.20-reasoning"] },
   ollama: { name: "Ollama (Local)", models: [] },
 };
 

@@ -8,10 +8,10 @@ import {
   $setSelection,
   $getNodeByKey,
   COMMAND_PRIORITY_CRITICAL,
-  mergeRegister,
   SELECTION_CHANGE_COMMAND,
   registerEventListener,
 } from "lexical";
+import { mergeRegister } from "@lexical/utils";
 import {
   $deleteTableColumnAtSelection,
   $deleteTableRowAtSelection,
@@ -623,8 +623,10 @@ function TableCellActionMenuContainer({
     }
 
     function positionMenu(cellDOM: HTMLElement) {
-      positionRelative(cellDOM.getBoundingClientRect(), { anchor: "top-right" });
       setIsVisible(true);
+      requestAnimationFrame(() => {
+        positionRelative(cellDOM.getBoundingClientRect(), { anchor: "top-right" });
+      });
     }
 
     if ($isRangeSelection(selection) && selection.isCollapsed()) {
@@ -740,7 +742,7 @@ function TableCellActionMenuContainer({
       style={{
         display: isVisible ? "flex" : "none",
         position: "absolute",
-        zIndex: 25,
+        zIndex: 30,
       }}
     >
       {tableCellNode != null && (

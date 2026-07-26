@@ -8,13 +8,13 @@ import {
   getDOMSelection,
   getDOMSelectionPoints,
   type LexicalEditor,
-  mergeRegister,
   registerEventListener,
   SELECTION_CHANGE_COMMAND,
   KEY_ESCAPE_COMMAND,
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
 } from "lexical";
+import { mergeRegister } from "@lexical/utils";
 import { $isLinkNode, TOGGLE_LINK_COMMAND, type LinkNode } from "@lexical/link";
 import { ExternalLink, Pencil, Trash2, Check, X, LinkIcon } from "lucide-react";
 import { createPortal } from "react-dom";

@@ -11,8 +11,20 @@ use Illuminate\Support\Str;
 
 class BlogContentSeeder extends Seeder
 {
+    private const string SOURCE_IMAGES_DIR = 'D:\WEB PROJECTS\Archived projects\myhome\Source Demo Properties Images';
+
+    private const array DEMO_IMAGES = [
+        'sanibell-bv-530lZQXMKGw-unsplash.jpg',
+        'sanibell-bv-w2Ey_vOI-H8-unsplash.jpg',
+        'douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg',
+        'charkrit-t1LQYntvpCc-unsplash.jpg',
+        'michiel-van-kaam-QhbtepGK5Yg-unsplash.jpg',
+    ];
+
     public function run(): void
     {
+        $this->copyDemoImages();
+
         $categories = [
             ['name' => 'Technology', 'slug' => 'technology', 'description' => 'Posts about technology and software development.', 'order' => 1],
             ['name' => 'Design', 'slug' => 'design', 'description' => 'Posts about UI/UX design, branding, and visual storytelling.', 'order' => 2],
@@ -52,10 +64,50 @@ class BlogContentSeeder extends Seeder
             'draft-post-coming-soon-features',
         ])->delete();
 
+        $img = fn (string $file, string $alt, int $w = 800, int $h = 600): string => '<span class="block my-4 rounded-md max-w-full" style="position: relative; display: inline-block;">'
+            .'<img src="/storage/posts/'.$file.'" alt="'.$alt.'" class="max-w-full rounded-md object-cover transition-shadow" width="'.$w.'" height="'.$h.'" />'
+            .'</span>';
+
+        $layout2 = fn (string $left, string $right): string => '<div style="grid-template-columns: 1fr 1fr;" data-lexical-layout-container="true">'
+            .'<div data-lexical-layout-item="true">'.$left.'</div>'
+            .'<div data-lexical-layout-item="true">'.$right.'</div>'
+            .'</div>';
+
+        $layout3 = fn (string $a, string $b, string $c): string => '<div style="grid-template-columns: 1fr 1fr 1fr;" data-lexical-layout-container="true">'
+            .'<div data-lexical-layout-item="true">'.$a.'</div>'
+            .'<div data-lexical-layout-item="true">'.$b.'</div>'
+            .'<div data-lexical-layout-item="true">'.$c.'</div>'
+            .'</div>';
+
+        $featuredImageUrl = '/storage/posts/sanibell-bv-530lZQXMKGw-unsplash.jpg';
+
+        $twoColContent = $layout2(
+            '<h3>Design First</h3>'
+            .'<p>Every project starts with understanding the user. Wireframes, prototypes, and design systems ensure consistency across every screen.</p>'
+            .$img('sanibell-bv-w2Ey_vOI-H8-unsplash.jpg', 'Modern interior design showcase', 800, 600),
+            '<h3>Built to Scale</h3>'
+            .'<p>Robust architecture with Laravel, Inertia.js, and React delivers a seamless experience that grows with your business.</p>'
+            .$img('douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg', 'Modern building architecture', 800, 600),
+        );
+
+        $threeColContent = $layout3(
+            '<h3>Speed</h3>'
+            .'<p>Vite-powered builds with hot module replacement for instant feedback during development.</p>'
+            .$img('charkrit-t1LQYntvpCc-unsplash.jpg', 'Fast modern workspace', 400, 300),
+            '<h3>Security</h3>'
+            .'<p>Sanctum authentication, CSRF protection, and role-based access control baked in from day one.</p>'
+            .$img('michiel-van-kaam-QhbtepGK5Yg-unsplash.jpg', 'Secure modern home', 400, 300),
+            '<h3>Polish</h3>'
+            .'<p>Shadcn/ui components, dark mode, and responsive design create a professional experience.</p>'
+            .$img('sanibell-bv-530lZQXMKGw-unsplash.jpg', 'Polished interior design', 400, 300),
+        );
+
+        $imagesDemoContent = $img('douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg', 'Editor image upload demonstration', 800, 600);
+
         $demoContent = <<<'HTML'
 <h1>Lexical Editor Feature Showcase</h1>
 
-<p>This post demonstrates every feature of the Lexical rich text editor integrated into Cost Breaker 360. Each section highlights a different capability, from basic formatting to advanced elements like tables and embedded media.</p>
+<p>This post demonstrates every feature of the Lexical rich text editor integrated into Cost Breaker 360. Each section highlights a different capability, from basic formatting to advanced elements like tables, column layouts, and embedded media.</p>
 
 <h2>Inline Text Formatting</h2>
 
@@ -84,6 +136,22 @@ class BlogContentSeeder extends Seeder
 <blockquote>Good design is as little design as possible. Less, but better — because it concentrates on the essential aspects, and the products are not burdened with non-essentials. Back to purity, back to simplicity. — Dieter Rams</blockquote>
 
 <p>Blockquotes are perfect for highlighting testimonials, pulling key insights from longer passages, or referencing external sources. The styling includes a left border and muted text color to visually separate quoted content.</p>
+
+<h2>Column Layouts</h2>
+
+<p>The editor supports multi-column layouts using CSS Grid. Columns can be resized by dragging the divider in the editor, and content flows naturally within each column.</p>
+
+<h3>Two-Column Layout</h3>
+
+<p>Two-column layouts are ideal for side-by-side comparisons or pairing text with images:</p>
+
+<!--TWO_COL-->
+
+<h3>Three-Column Layout</h3>
+
+<p>Three columns work well for feature grids or showcasing multiple items:</p>
+
+<!--THREE_COL-->
 
 <h2>Code Blocks</h2>
 
@@ -145,12 +213,13 @@ class MediaService
 <p>Checklists are great for tracking progress on tasks:</p>
 
 <ul class="m-0 p-0 list-outside list-disc [&>li]:mt-2 ml-6 relative !list-disc">
-  <li role="checkbox" tabindex="-1" aria-checked="true" value="1" class="list-none before:content-['☑'] before:mr-2 before:text-muted-foreground"><span data-lexical-text="true">Lexical editor setup with all plugins</span></li>
-  <li role="checkbox" tabindex="-1" aria-checked="true" value="2" class="list-none before:content-['☑'] before:mr-2 before:text-muted-foreground"><span data-lexical-text="true">Image upload with MediaService processing</span></li>
-  <li role="checkbox" tabindex="-1" aria-checked="true" value="3" class="list-none before:content-['☑'] before:mr-2 before:text-muted-foreground"><span data-lexical-text="true">Floating link editor for inline links</span></li>
-  <li role="checkbox" tabindex="-1" aria-checked="true" value="4" class="list-none before:content-['☑'] before:mr-2 before:text-muted-foreground"><span data-lexical-text="true">Table insertion and manipulation</span></li>
-  <li role="checkbox" tabindex="-1" aria-checked="false" value="5" class="list-none before:content-['☐'] before:mr-2 before:text-muted-foreground"><span data-lexical-text="true">Write comprehensive documentation</span></li>
-  <li role="checkbox" tabindex="-1" aria-checked="false" value="6" class="list-none before:content-['☐'] before:mr-2 before:text-muted-foreground"><span data-lexical-text="true">Add end-to-end tests</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="true" value="1" class="lexical-checklist-checked"><span data-lexical-text="true">Lexical editor setup with all plugins</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="true" value="2" class="lexical-checklist-checked"><span data-lexical-text="true">Image upload with MediaService processing</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="true" value="3" class="lexical-checklist-checked"><span data-lexical-text="true">Floating link editor for inline links</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="true" value="4" class="lexical-checklist-checked"><span data-lexical-text="true">Table insertion and manipulation</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="true" value="5" class="lexical-checklist-checked"><span data-lexical-text="true">Column layout support with CSS Grid</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="false" value="6" class="lexical-checklist-unchecked"><span data-lexical-text="true">Write comprehensive documentation</span></li>
+  <li role="checkbox" tabindex="-1" aria-checked="false" value="7" class="lexical-checklist-unchecked"><span data-lexical-text="true">Add end-to-end tests</span></li>
 </ul>
 
 <h2>Tables</h2>
@@ -189,6 +258,12 @@ class MediaService
     <td>Complete</td>
   </tr>
   <tr>
+    <td>Column Layouts</td>
+    <td>Grid-based columns</td>
+    <td>Responsive grid</td>
+    <td>Complete</td>
+  </tr>
+  <tr>
     <td>Links</td>
     <td>Floating editor</td>
     <td>Blue underline</td>
@@ -206,7 +281,7 @@ class MediaService
 
 <p>Images can be inserted via the toolbar button, pasted from clipboard, or drag-and-dropped into the editor. All images are automatically processed through the MediaService, which resizes them to a maximum of 1920px and converts them to WebP format.</p>
 
-<img src="https://placehold.co/800x400/1a1a2e/e0e0e0?text=Editor+Image+Upload+Demo" alt="Editor image upload demonstration" />
+<!--IMAGE_DEMO-->
 
 <p>The image above shows how uploaded images render within the editor. The MediaService handles optimization automatically, ensuring fast page loads without manual intervention.</p>
 
@@ -223,10 +298,16 @@ class MediaService
 
 <h2>Conclusion</h2>
 
-<p>This showcase demonstrates that the Lexical editor integration is <strong>complete and production-ready</strong>. Every toolbar feature — from basic text formatting to complex tables — works correctly both in the editor and on the public-facing blog.</p>
+<p>This showcase demonstrates that the Lexical editor integration is <strong>complete and production-ready</strong>. Every toolbar feature — from basic text formatting to complex tables and column layouts — works correctly both in the editor and on the public-facing blog.</p>
 
 <p>The combination of <a href="https://lexical.dev">Lexical</a> for content editing, <a href="https://ui.shadcn.com">Shadcn/ui</a> for design consistency, and <a href="https://laravel.com">Laravel</a> for backend reliability creates a powerful content management experience.</p>
 HTML;
+
+        $demoContent = str_replace(
+            ['<!--TWO_COL-->', '<!--THREE_COL-->', '<!--IMAGE_DEMO-->'],
+            [$twoColContent, $threeColContent, $imagesDemoContent],
+            $demoContent,
+        );
 
         $post = Post::firstOrCreate(
             ['slug' => 'editor-showcase-all-features-demo'],
@@ -234,12 +315,13 @@ HTML;
                 'user_id' => $admin->id,
                 'title' => 'Lexical Editor Feature Showcase (Demo)',
                 'content' => $demoContent,
-                'excerpt' => 'A comprehensive demonstration of every Lexical editor feature: bold, italic, links, lists, tables, code blocks, images, blockquotes, and more.',
+                'excerpt' => 'A comprehensive demonstration of every Lexical editor feature: formatting, links, lists, tables, column layouts, images, and more.',
                 'status' => 'published',
                 'published_at' => now()->subDays(3),
                 'category_id' => $createdCategories[0]->id,
+                'featured_image' => $featuredImageUrl,
                 'meta_title' => 'Lexical Editor Feature Showcase | Cost Breaker 360',
-                'meta_description' => 'See every Lexical editor feature in action: formatting, links, lists, tables, code blocks, and images.',
+                'meta_description' => 'See every Lexical editor feature in action: formatting, links, lists, tables, column layouts, and images.',
             ],
         );
 
@@ -273,5 +355,24 @@ HTML;
                 'category_id' => $createdCategories[4]->id,
             ],
         );
+    }
+
+    private function copyDemoImages(): void
+    {
+        $destDir = storage_path('app/public/posts');
+        if (! is_dir($destDir)) {
+            mkdir($destDir, 0755, true);
+        }
+
+        foreach (self::DEMO_IMAGES as $filename) {
+            $dest = $destDir.'/'.$filename;
+            if (file_exists($dest)) {
+                continue;
+            }
+            $source = self::SOURCE_IMAGES_DIR.'\\'.$filename;
+            if (file_exists($source)) {
+                copy($source, $dest);
+            }
+        }
     }
 }

@@ -1,23 +1,22 @@
-import { Head, Link, router } from "@inertiajs/react";
-import { Plus, FileText } from "lucide-react";
-import { useMemo, useCallback } from "react";
-import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Head, Link, router, usePage } from "@inertiajs/react";
+import { jsonHeaders } from "@/lib/gallery-utils";
 import { DataTable } from "@/Components/ui/data-table";
 import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header";
-import { Button } from "@/Components/ui/button";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Badge } from "@/Components/ui/badge";
+import { Button } from "@/Components/ui/button";
 import { ActionCell } from "@/Components/shared/action-cell";
-import { TermsBadge } from "@/Components/shared/terms-badge";
 import {
   Empty,
-  EmptyContent,
-  EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
 } from "@/Components/ui/empty";
+import { toast } from "sonner";
+import { useMemo, useState } from "react";
+import { FileText, Plus, Sparkles } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 
 interface Tag {
   id: number;
@@ -41,84 +40,119 @@ interface Post {
   user: { id: number; name: string } | null;
   category: Category | null;
   tags: Tag[];
+  meta_title?: string | null;
 }
 
-interface PostsIndexProps {
+interface BlogIndexProps {
   posts: Post[];
+  categories: Category[];
 }
 
-export default function PostsIndex({ posts }: PostsIndexProps) {
-  const handleBulkAction = useCallback((action: string, ids: number[]) => {
-    router.post(
-      route("dashboard.posts.bulk.action"),
-      { ids, action },
-      {
-        preserveScroll: true,
-        onSuccess: () => {
-          toast.success(`Bulk action completed.`);
-          router.reload({ only: ["posts"] });
-        },
-        onError: () => toast.error("Bulk action failed."),
-      },
-    );
-  }, []);
+export default function BlogIndex({ posts, categories }: BlogIndexProps) {
+  const flash = usePage().props.flash as Record<string, string> | undefined;
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
 
-  const bulkActions = useMemo(
-    () => [
-      {
-        label: "Publish",
-        value: "publish",
-        show: (statuses: string[]) => statuses.some((s) => s !== "published"),
-      },
-      {
-        label: "Draft",
-        value: "draft",
-        show: (statuses: string[]) => statuses.some((s) => s !== "draft"),
-      },
-      { label: "Delete", value: "delete", destructive: true },
-    ],
-    [],
-  );
+  useMemo(() => {
+    if (flash?.status) toast.success(flash.status);
+    if (flash?.["flash.success"]) toast.success(String(flash["flash.success"]));
+    if (flash?.["flash.error"]) toast.error(String(flash["flash.error"]));
+  }, [flash]);
 
-  const columns = useMemo(() => {
+  const statusVariant = (status: string) => {
+    switch (status) {
+      case "published": {
+        return "default" as const;
+      }
+      case "draft": {
+        return "secondary" as const;
+      }
+      case "archived": {
+        return "outline" as const;
+      }
+      default: {
+        return "secondary" as const;
+      }
+    }
+  };
+
+  const columns = useMemo<ColumnDef<Post>[]>(() => {
     const cols: ColumnDef<Post>[] = [
       {
-        id: "featured_image",
-        header: "Image",
-        cell: ({ row }) => (
-          <div className="size-10 shrink-0 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-            {row.original.featured_image ? (
-              <img
-                src={row.original.featured_image}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <FileText className="h-4 w-4 text-muted-foreground/50" />
-            )}
-          </div>
-        ),
+        id: "image",
+        header: () => null,
         enableSorting: false,
+        enableHiding: false,
+        size: 48,
+        cell: ({ row }) =>
+          row.original.featured_image ? (
+            <img
+              src={row.original.featured_image}
+              alt=""
+              className="h-10 w-10 rounded-md object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </div>
+          ),
       },
       {
         accessorKey: "title",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
         cell: ({ row }) => (
-          <Link
-            href={route("dashboard.posts.edit", row.original.id)}
-            className="font-medium hover:underline"
-          >
-            {row.original.title}
-          </Link>
+          <div className="flex flex-col min-w-0">
+            <Link
+              href={route("dashboard.posts.edit", row.original.id)}
+              className="font-medium hover:underline truncate"
+            >
+              {row.original.title}
+            </Link>
+            {row.original.excerpt && (
+              <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+                {row.original.excerpt}
+              </span>
+            )}
+          </div>
         ),
       },
       {
         accessorKey: "status",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "published" ? "default" : "secondary"}>
-            {row.original.status}
+          <Badge variant={statusVariant(row.original.status)}>{row.original.status}</Badge>
+        ),
+        filterFn: "equals",
+      },
+      {
+        id: "category",
+        accessorFn: (row) => row.category?.name ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.category?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "seo",
+        accessorFn: (row) => (row.meta_title ? "Set" : "Missing"),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="SEO" />,
+        cell: ({ row }) => (
+          <Badge variant={row.original.meta_title ? "default" : "secondary"} className="gap-1">
+            <Sparkles className="h-3 w-3" />
+            {row.original.meta_title ? "Set" : "Missing"}
           </Badge>
+        ),
+        filterFn: "equals",
+      },
+      {
+        id: "author",
+        accessorFn: (row) => row.user?.name ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Author" />,
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.user?.name ?? "Unknown"}
+          </span>
         ),
       },
       {
@@ -128,23 +162,11 @@ export default function PostsIndex({ posts }: PostsIndexProps) {
         cell: ({ row }) => {
           const date = row.original.published_at ?? row.original.created_at;
           return (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {new Date(date).toLocaleDateString()}
             </span>
           );
         },
-      },
-      {
-        id: "terms",
-        header: "Terms",
-        cell: ({ row }) => {
-          const terms = [
-            ...(row.original.category ? [row.original.category] : []),
-            ...row.original.tags,
-          ];
-          return <TermsBadge terms={terms} maxVisible={2} />;
-        },
-        enableSorting: false,
       },
       {
         id: "actions",
@@ -161,32 +183,101 @@ export default function PostsIndex({ posts }: PostsIndexProps) {
     return cols;
   }, []);
 
+  const filteredPosts = useMemo(() => {
+    if (!categoryFilter) return posts;
+    return posts.filter((p) => {
+      if (categoryFilter === "none") return !p.category;
+      return String(p.category_id) === categoryFilter;
+    });
+  }, [posts, categoryFilter]);
+
+  const handleBulkAction = async (action: string, ids: number[]) => {
+    if (action === "seo") {
+      try {
+        const res = await fetch(route("dashboard.posts.seo.bulk") as string, {
+          method: "POST",
+          headers: jsonHeaders(),
+          body: JSON.stringify({ post_ids: ids }),
+        });
+        const data = await res.json();
+        toast.success(data.message || "SEO generation started");
+      } catch {
+        toast.error("Failed to generate SEO metadata");
+      }
+      return;
+    }
+
+    router.post(route("dashboard.posts.bulk.action"), { ids, action }, { preserveScroll: true });
+  };
+
+  const statusOptions = [
+    { label: "Draft", value: "draft" },
+    { label: "Published", value: "published" },
+    { label: "Archived", value: "archived" },
+  ];
+
   return (
     <AuthenticatedLayout header="Posts">
       <Head title="Posts" />
-      <div className="space-y-6">
+
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Posts</h2>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Posts</h2>
+            <p className="text-muted-foreground">Manage your blog posts and SEO metadata.</p>
+          </div>
           <Link href={route("dashboard.posts.create")}>
             <Button>
-              <Plus className="mr-1 h-4 w-4" /> Add Post
+              <Plus className="mr-1 size-4" /> Add Post
             </Button>
           </Link>
         </div>
 
+        {categories.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Category:</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            >
+              <option value="">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={String(cat.id)}>
+                  {cat.name}
+                </option>
+              ))}
+              <option value="none">Uncategorized</option>
+            </select>
+          </div>
+        )}
+
         <DataTable
           columns={columns}
-          data={posts}
+          data={filteredPosts}
           searchKey="title"
           searchPlaceholder="Search posts..."
           filterKey="status"
-          filterTitle="Status"
-          filterOptions={[
-            { label: "Draft", value: "draft" },
-            { label: "Published", value: "published" },
-            { label: "Archived", value: "archived" },
+          filterTitle="All statuses"
+          filterOptions={statusOptions}
+          bulkActions={[
+            { label: "Publish", value: "publish" },
+            { label: "Move to Draft", value: "draft" },
+            {
+              label: "Generate SEO",
+              value: "seo",
+              show: (statuses) => statuses.some((s) => s !== "archived"),
+            },
+            {
+              label: "Delete",
+              value: "delete",
+              destructive: true,
+              confirmTitle: "Delete Posts",
+              confirmDescription:
+                "Are you sure you want to delete the selected posts? This action cannot be undone.",
+              confirmLabel: "Delete",
+            },
           ]}
-          bulkActions={bulkActions}
           onBulkAction={handleBulkAction}
           emptyState={
             <Empty>
@@ -197,13 +288,6 @@ export default function PostsIndex({ posts }: PostsIndexProps) {
                 <EmptyTitle>No posts yet</EmptyTitle>
                 <EmptyDescription>Get started by writing your first post.</EmptyDescription>
               </EmptyHeader>
-              <EmptyContent>
-                <Link href={route("dashboard.posts.create")}>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Write Your First Post
-                  </Button>
-                </Link>
-              </EmptyContent>
             </Empty>
           }
         />

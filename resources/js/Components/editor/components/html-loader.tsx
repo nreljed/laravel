@@ -5,24 +5,22 @@ import { $generateNodesFromDOM } from "@lexical/html";
 
 export function HtmlLoader({ html }: { html: string }) {
   const [editor] = useLexicalComposerContext();
-  const lastLoadedRef = useRef<string | null>(null);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (lastLoadedRef.current === html) return;
-    lastLoadedRef.current = html;
+    if (loadedRef.current) return;
     if (!html) return;
+
+    loadedRef.current = true;
 
     editor.update(() => {
       const root = $getRoot();
-      const children = root.getChildren();
-      const currentHtml = children.length === 0 && !html;
-
-      if (!currentHtml) {
-        root.clear();
-      }
+      root.clear();
 
       const parser = new DOMParser();
       const dom = parser.parseFromString(html, "text/html");
+      // Strip background-color from <th> elements to prevent stale header colors
+      // from persisting across re-renders (Laravel stores inline styles in DB).
       for (const th of dom.querySelectorAll("th")) {
         th.style.removeProperty("background-color");
       }

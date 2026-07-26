@@ -14,12 +14,11 @@ import {
   type TableMapType,
   TableNode,
 } from "@lexical/table";
-import { calculateZoomLevel } from "@lexical/utils";
+import { calculateZoomLevel, mergeRegister } from "@lexical/utils";
 import {
   $getNearestNodeFromDOMNode,
   isHTMLElement,
   type LexicalEditor,
-  mergeRegister,
   type NodeKey,
   registerEventListener,
   registerEventListeners,
@@ -52,8 +51,10 @@ function TableCellResizer({
 
   const pointerStartPosRef = useRef<PointerPosition | null>(null);
   const [pointerCurrentPos, updatePointerCurrentPos] = useState<PointerPosition | null>(null);
+  const pointerCurrentPosRef = useRef<PointerPosition | null>(null);
 
   const [activeCell, updateActiveCell] = useState<TableDOMCell | null>(null);
+  const activeCellRef = useRef<TableDOMCell | null>(null);
   const [draggingDirection, updateDraggingDirection] = useState<PointerDraggingDirection | null>(
     null,
   );
@@ -62,6 +63,17 @@ function TableCellResizer({
   );
 
   const pointerUpHandlerRef = useRef<((_event: PointerEvent) => void) | null>(null);
+
+  const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 });
+
+  // Keep refs in sync with state so pointerUpHandler always reads current values
+  useEffect(() => {
+    activeCellRef.current = activeCell;
+  }, [activeCell]);
+
+  useEffect(() => {
+    pointerCurrentPosRef.current = pointerCurrentPos;
+  }, [pointerCurrentPos]);
 
   useEffect(() => {
     return () => {
@@ -73,6 +85,22 @@ function TableCellResizer({
       pointerUpHandlerRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const handleScroll = () => {
+      setScrollOffset({ x: container.scrollLeft, y: container.scrollTop });
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+    };
+  }, [scrollContainerRef]);
 
   const resetState = useCallback(() => {
     updateActiveCell(null);
@@ -198,11 +226,15 @@ function TableCellResizer({
         throw new Error("Expected activeCell to be set when updating row height");
       }
 
+      if (!activeCell.elem.isConnected) {
+        return;
+      }
+
       editor.update(
         () => {
           const tableCellNode = $getNearestNodeFromDOMNode(activeCell.elem);
           if (!$isTableCellNode(tableCellNode)) {
-            throw new Error("Expected table cell node when updating row height");
+            return;
           }
 
           const tableNode = $getTableNodeFromLexicalNodeOrThrow(tableCellNode);
@@ -267,11 +299,16 @@ function TableCellResizer({
       if (!activeCell) {
         throw new Error("Expected activeCell to be set when updating column width");
       }
+
+      if (!activeCell.elem.isConnected) {
+        return;
+      }
+
       editor.update(
         () => {
           const tableCellNode = $getNearestNodeFromDOMNode(activeCell.elem);
           if (!$isTableCellNode(tableCellNode)) {
-            throw new Error("Expected table cell node when updating column width");
+            return;
           }
 
           const tableNode = $getTableNodeFromLexicalNodeOrThrow(tableCellNode);
@@ -324,7 +361,8 @@ function TableCellResizer({
           e.preventDefault();
           e.stopPropagation();
 
-          if (!activeCell) {
+          const currentCell = activeCellRef.current;
+          if (!currentCell) {
             return;
           }
 
@@ -353,8 +391,12 @@ function TableCellResizer({
   );
 
   const resizerStyles = useMemo(() => {
-    /* eslint-disable react-hooks/refs */
+    /* eslint-disable react-hooks/refs, react-hooks/exhaustive-deps */
     if (activeCell) {
+      if (!activeCell.elem.isConnected) {
+        return { bottom: null, left: null, right: null, top: null };
+      }
+
       const containerEl = scrollContainerRef.current;
       const containerRect = containerEl?.getBoundingClientRect();
       if (!containerRect) {
@@ -365,8 +407,13 @@ function TableCellResizer({
       const zoom = calculateZoomLevel(activeCell.elem);
       const zoneWidth = 16;
 
-      const relLeft = left - containerRect.left;
-      const relTop = top - containerRect.top;
+      // Position relative to the scroll origin (not the visible area) because the
+      // resizer is portaled inside the scrollable container and absolute positioning
+      // is relative to the container's content area, not its viewport edge.
+      const scrollLeft = containerEl?.scrollLeft ?? 0;
+      const scrollTop = containerEl?.scrollTop ?? 0;
+      const relLeft = left - containerRect.left + scrollLeft;
+      const relTop = top - containerRect.top + scrollTop;
 
       const styles: Record<string, React.CSSProperties> = {
         bottom: {
@@ -392,13 +439,13 @@ function TableCellResizer({
       if (draggingDirection && pointerCurrentPos && tableRect) {
         const dirStyle = styles[draggingDirection]!;
         if (isHeightChanging(draggingDirection)) {
-          dirStyle.left = `${tableRect.left - containerRect.left}px`;
-          dirStyle.top = `${pointerCurrentPos.y / zoom - containerRect.top}px`;
+          dirStyle.left = `${tableRect.left - containerRect.left + scrollLeft}px`;
+          dirStyle.top = `${pointerCurrentPos.y / zoom - containerRect.top + scrollTop}px`;
           dirStyle.height = "3px";
           dirStyle.width = `${tableRect.width}px`;
         } else {
-          dirStyle.top = `${tableRect.top - containerRect.top}px`;
-          dirStyle.left = `${pointerCurrentPos.x / zoom - containerRect.left}px`;
+          dirStyle.top = `${tableRect.top - containerRect.top + scrollTop}px`;
+          dirStyle.left = `${pointerCurrentPos.x / zoom - containerRect.left + scrollLeft}px`;
           dirStyle.width = "3px";
           dirStyle.height = `${tableRect.height}px`;
         }
@@ -413,7 +460,7 @@ function TableCellResizer({
         rightStyle.backgroundImage = `linear-gradient(90deg, transparent ${highlightStart}px, ${ACTIVE_RESIZER_COLOR} ${highlightStart}px, ${ACTIVE_RESIZER_COLOR} ${highlightStart + highlightWidth}px, transparent ${highlightStart + highlightWidth}px)`;
         rightStyle.mixBlendMode = "unset";
         if (tableRect) {
-          rightStyle.top = `${tableRect.top - containerRect.top}px`;
+          rightStyle.top = `${tableRect.top - containerRect.top + scrollTop}px`;
           rightStyle.height = `${tableRect.height}px`;
         }
       }
@@ -428,7 +475,14 @@ function TableCellResizer({
       top: null,
     };
     // eslint-enable react-hooks/refs
-  }, [activeCell, draggingDirection, hoveredDirection, pointerCurrentPos, scrollContainerRef]);
+  }, [
+    activeCell,
+    draggingDirection,
+    hoveredDirection,
+    pointerCurrentPos,
+    scrollContainerRef,
+    scrollOffset,
+  ]);
 
   const handlePointerEnter = useCallback(
     (direction: PointerDraggingDirection): React.PointerEventHandler<HTMLDivElement> =>

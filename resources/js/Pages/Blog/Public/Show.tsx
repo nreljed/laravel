@@ -1,7 +1,12 @@
 import { Head, Link, usePage } from "@inertiajs/react";
+import { useEffect } from "react";
+import { Pencil } from "lucide-react";
 import PublicLayout from "@/Layouts/PublicLayout";
 import { Badge } from "@/Components/ui/badge";
 import ContentBlockRenderer from "@/Components/blog/ContentBlockRenderer";
+import ProseContent from "@/Components/blog/ProseContent";
+import { useAuth } from "@/hooks/use-auth";
+import { highlightAllCodeBlocks } from "@/lib/prism-highlight";
 
 interface Author {
   id: number;
@@ -56,6 +61,12 @@ export default function BlogShow({ post }: BlogShowProps) {
   const appUrl = (pageProps.app_url as string) || "";
   const canonical = appUrl ? `${appUrl}/blog/${post.slug}` : undefined;
   const ogImageUrl = post.og_image || post.featured_image || undefined;
+  const { user, capabilities } = useAuth();
+  const canEdit = user && (user.id === post.user.id || capabilities.can["posts.edit"]);
+
+  useEffect(() => {
+    highlightAllCodeBlocks();
+  }, [post.content]);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -95,7 +106,16 @@ export default function BlogShow({ post }: BlogShowProps) {
       </Head>
 
       <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <header className="mb-8">
+        <header className="relative mb-8">
+          {canEdit && (
+            <Link
+              href={route("dashboard.posts.edit", post.id)}
+              className="absolute right-0 top-0 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <Pencil className="h-3 w-3" />
+              Edit
+            </Link>
+          )}
           {post.category && (
             <Link
               href={route("blog.index", { category: post.category.slug })}
@@ -149,12 +169,7 @@ export default function BlogShow({ post }: BlogShowProps) {
           <p className="mb-8 text-lg leading-relaxed text-muted-foreground">{post.excerpt}</p>
         )}
 
-        {post.content && (
-          <div
-            className="prose prose-neutral dark:prose-invert max-w-none mb-8"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-        )}
+        {post.content && <ProseContent html={post.content} />}
 
         {post.content_blocks.length > 0 && <ContentBlockRenderer blocks={post.content_blocks} />}
 

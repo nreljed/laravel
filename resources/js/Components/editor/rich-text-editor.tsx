@@ -1,44 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
-import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { AutoLinkPlugin, createLinkMatcherWithRegExp } from "@lexical/react/LexicalAutoLinkPlugin";
-import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
-import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
-import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
-import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { CharacterLimitPlugin } from "@lexical/react/LexicalCharacterLimitPlugin";
 import { LexicalAutoEmbedPlugin, AutoEmbedOption } from "@lexical/react/LexicalAutoEmbedPlugin";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
-import { OverflowNode } from "@lexical/overflow";
-import { YouTubeNode } from "./youtube";
-import { YouTubeEmbedConfig } from "./youtube/YouTubeNode";
-import { ImageNode, ImagePlugin } from "./image";
-import { LayoutContainerNode, LayoutItemNode, ColumnsPlugin, LayoutControlsPlugin } from "./layout";
+import { defineExtension, configExtension } from "lexical";
+import { RichTextExtension } from "@lexical/rich-text";
+import { HistoryExtension } from "@lexical/history";
+import { ListExtension, CheckListExtension } from "@lexical/list";
+import { LinkExtension, AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
+import { TableExtension } from "@lexical/table";
+import { CodePrismExtension } from "@lexical/code-prism";
+import { OverflowExtension } from "@lexical/overflow";
+import { HorizontalRuleExtension, AutoFocusExtension } from "@lexical/extension";
+import { DragonExtension } from "@lexical/dragon";
 import { TRANSFORMERS } from "@lexical/markdown";
 import { type ElementNode } from "lexical";
 import { cn } from "@/lib/utils";
 import { editorTheme } from "./editor-theme";
 import { EditorToolbar } from "./toolbar";
-import { KeyboardShortcutsPlugin } from "./KeyboardShortcutsPlugin";
-import { FindAndReplacePlugin } from "./FindAndReplacePlugin";
-import { CodeBlockActionsPlugin } from "./CodeBlockActionsPlugin";
-import { SlashCommandsPlugin } from "./SlashCommandsPlugin";
-import { WordCountPlugin } from "./WordCountPlugin";
-import DraggableBlockPlugin from "./DraggableBlockPlugin";
-import CursorGuardPlugin from "./CursorGuardPlugin";
+import { KeyboardShortcutsPlugin } from "./plugins/KeyboardShortcutsPlugin";
+import { FindAndReplacePlugin } from "./plugins/FindAndReplacePlugin";
+import { CodeBlockActionsPlugin } from "./plugins/CodeBlockActionsPlugin";
+import { SlashCommandsPlugin } from "./plugins/SlashCommandsPlugin";
+import { WordCountPlugin } from "./plugins/WordCountPlugin";
+import DraggableBlockPlugin from "./plugins/DraggableBlockPlugin";
+import CursorGuardPlugin from "./plugins/CursorGuardPlugin";
+import { ImageNode, ImagePlugin } from "./image";
+import { YouTubeNode, YouTubeEmbedConfig } from "./youtube/YouTubeNode";
+import { LayoutContainerNode, LayoutItemNode, ColumnsPlugin, LayoutControlsPlugin } from "./layout";
 
-import { CodeHighlightPlugin } from "./components/code-highlight-plugin";
 import { OnChangeEmitter } from "./components/on-change-emitter";
 import { HtmlLoader } from "./components/html-loader";
 import { FloatingPlugins } from "./components/floating-plugins";
@@ -70,32 +61,35 @@ const AUTOLINK_EXCLUDE_PARENTS = [
   (parent: ElementNode) => parent.getType() === "autolink",
 ];
 
-const initialConfig = {
+const editorExtension = defineExtension({
+  name: "[root]",
   namespace: "RichTextEditor",
-  theme: editorTheme,
-  nodes: [
-    HeadingNode,
-    QuoteNode,
-    ListNode,
-    ListItemNode,
-    LinkNode,
-    AutoLinkNode,
-    CodeNode,
-    CodeHighlightNode,
-    TableNode,
-    TableRowNode,
-    TableCellNode,
-    ImageNode,
-    YouTubeNode,
-    LayoutContainerNode,
-    LayoutItemNode,
-    HorizontalRuleNode,
-    OverflowNode,
+  nodes: () => [ImageNode, YouTubeNode, LayoutContainerNode, LayoutItemNode],
+  dependencies: [
+    RichTextExtension,
+    HistoryExtension,
+    ListExtension,
+    CheckListExtension,
+    configExtension(LinkExtension, { validateUrl, attributes: undefined }),
+    configExtension(AutoLinkExtension, {
+      matchers: AUTOLINK_MATCHERS,
+      excludeParents: AUTOLINK_EXCLUDE_PARENTS,
+    }),
+    configExtension(TableExtension, {
+      hasHorizontalScroll: true,
+      hasCellMerge: true,
+      hasCellBackgroundColor: true,
+      hasTabHandler: true,
+      hasNestedTables: false,
+    }),
+    CodePrismExtension,
+    OverflowExtension,
+    HorizontalRuleExtension,
+    configExtension(AutoFocusExtension, { defaultSelection: "rootStart", disabled: false }),
+    DragonExtension,
   ],
-  onError: (error: Error) => {
-    console.error("[Lexical]", error);
-  },
-};
+  theme: editorTheme,
+});
 
 export interface RichTextEditorProps {
   value: string;
@@ -140,8 +134,8 @@ export function RichTextEditor({
   const showDraggable = !isSmallWidthViewport && !compact;
 
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <div className={cn("relative rounded-lg border bg-background shadow-xs", className)}>
+    <LexicalExtensionComposer extension={editorExtension} contentEditable={null}>
+      <div className={cn("relative min-w-0 rounded-lg border bg-background shadow-xs", className)}>
         {!compact && <EditorToolbar />}
         <div
           ref={scrollContainerRef}
@@ -149,27 +143,22 @@ export function RichTextEditor({
           style={{ minHeight, maxHeight }}
         >
           <div ref={anchorCallbackRef} className={cn("relative", showDraggable && "pl-12")}>
-            <RichTextPlugin
-              contentEditable={
-                <ContentEditable
-                  className="outline-none"
-                  aria-placeholder={placeholder}
-                  aria-label="Rich text editor"
-                  role="textbox"
-                  aria-multiline="true"
-                  placeholder={
-                    <div
-                      className={cn(
-                        "pointer-events-none absolute top-3 text-muted-foreground select-none",
-                        showDraggable ? "left-[52px]" : "left-4",
-                      )}
-                    >
-                      {placeholder}
-                    </div>
-                  }
-                />
+            <ContentEditable
+              className="outline-none"
+              aria-placeholder={placeholder}
+              aria-label="Rich text editor"
+              role="textbox"
+              aria-multiline="true"
+              placeholder={
+                <div
+                  className={cn(
+                    "pointer-events-none absolute text-muted-foreground select-none",
+                    showDraggable ? "left-[52px] top-[3px]" : "left-4 top-3",
+                  )}
+                >
+                  {placeholder}
+                </div>
               }
-              ErrorBoundary={LexicalErrorBoundary}
             />
           </div>
           <FloatingPlugins scrollContainerRef={scrollContainerRef} />
@@ -182,20 +171,11 @@ export function RichTextEditor({
       </div>
       <HtmlLoader html={value} />
       <OnChangeEmitter onChange={onChange} />
-      <HistoryPlugin />
-      <ListPlugin />
-      <CheckListPlugin />
-      <LinkPlugin validateUrl={validateUrl} />
-      <AutoLinkPlugin matchers={AUTOLINK_MATCHERS} excludeParents={AUTOLINK_EXCLUDE_PARENTS} />
-      <TablePlugin hasHorizontalScroll hasCellMerge />
       <CursorGuardPlugin />
-      <AutoFocusPlugin defaultSelection="rootStart" />
       <ImagePlugin />
       <ColumnsPlugin />
       <LayoutControlsPlugin />
-      <CodeHighlightPlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-      <HorizontalRulePlugin />
       <LexicalAutoEmbedPlugin
         embedConfigs={[YouTubeEmbedConfig]}
         onOpenEmbedModalForConfig={() => {}}
@@ -226,6 +206,6 @@ export function RichTextEditor({
           )}
         />
       )}
-    </LexicalComposer>
+    </LexicalExtensionComposer>
   );
 }

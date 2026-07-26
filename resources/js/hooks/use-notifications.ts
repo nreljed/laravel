@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePage, router } from "@inertiajs/react";
-import axios from "axios";
+import { getCsrfToken, jsonHeaders } from "@/lib/gallery-utils";
 import type { Notification } from "@/lib/notifications";
 
 interface UseNotificationsResult {
@@ -121,9 +121,11 @@ export function useNotifications(): UseNotificationsResult {
       const gen = fetchGenRef.current;
       if (!background) setLoading(true);
       try {
-        const response = await axios.get(route("api.notifications.recent"));
+        const response = await fetch(route("api.notifications.recent") as string, {
+          headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": getCsrfToken() },
+        });
         if (gen !== fetchGenRef.current) return;
-        const data = response.data;
+        const data = await response.json();
         setRecentNotifications(data.notifications ?? []);
         const c = data.unread_count ?? 0;
         if (c > lastCountRef.current && isSoundEnabled()) {
@@ -149,10 +151,12 @@ export function useNotifications(): UseNotificationsResult {
     const gen = fetchGenRef.current;
 
     try {
-      const response = await axios.get(route("api.notifications.recent"));
+      const response = await fetch(route("api.notifications.recent") as string, {
+        headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": getCsrfToken() },
+      });
       if (gen !== fetchGenRef.current) return;
       consecutiveErrorsRef.current = 0;
-      const data = response.data;
+      const data = await response.json();
       const c = data.unread_count ?? 0;
       if (c > lastCountRef.current && isSoundEnabled()) {
         playNotificationSound();
@@ -222,8 +226,10 @@ export function useNotifications(): UseNotificationsResult {
       const skipLoading = initialCountRef.current === 0;
       if (!skipLoading) setLoading(true);
       try {
-        const response = await axios.get(route("api.notifications", { limit, offset }));
-        const data = response.data;
+        const response = await fetch(route("api.notifications", { limit, offset }) as string, {
+          headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": getCsrfToken() },
+        });
+        const data = await response.json();
         setAllNotifications(data.notifications ?? []);
         setUnreadCount(data.unread_count ?? 0);
         lastCountRef.current = data.unread_count ?? 0;
@@ -247,7 +253,11 @@ export function useNotifications(): UseNotificationsResult {
       setUnreadCount((prev) => Math.max(0, prev - 1));
       countEtagRef.current = null;
       try {
-        await axios.post(route("api.notifications.mark-read"), { id });
+        await fetch(route("api.notifications.mark-read") as string, {
+          method: "POST",
+          headers: jsonHeaders(),
+          body: JSON.stringify({ id }),
+        });
         triggerRefresh();
       } catch {
         await triggerRefresh();
@@ -264,7 +274,11 @@ export function useNotifications(): UseNotificationsResult {
     lastCountRef.current = 0;
     countEtagRef.current = null;
     try {
-      await axios.post(route("api.notifications.mark-all-read"), {});
+      await fetch(route("api.notifications.mark-all-read") as string, {
+        method: "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify({}),
+      });
       triggerRefresh();
     } catch {
       await triggerRefresh();
@@ -285,7 +299,10 @@ export function useNotifications(): UseNotificationsResult {
       }
       countEtagRef.current = null;
       try {
-        await axios.delete(route("api.notifications.destroy", { id }));
+        await fetch(route("api.notifications.destroy", { id }) as string, {
+          method: "DELETE",
+          headers: jsonHeaders(),
+        });
         triggerRefresh();
       } catch {
         await triggerRefresh();

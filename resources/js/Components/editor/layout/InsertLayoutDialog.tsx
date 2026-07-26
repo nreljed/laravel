@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { INSERT_LAYOUT_COMMAND } from "./ColumnsPlugin";
-import { Columns3 } from "lucide-react";
+import { INSERT_LAYOUT_V2_COMMAND } from "./ColumnsPlugin";
+import type { ResponsiveMode } from "./LayoutContainerNode";
+import { RESPONSIVE_MODE_LABELS } from "./LayoutContainerNode";
+import { Columns3, MonitorSmartphone, Smartphone, ScreenShare } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,33 +13,55 @@ import {
   DialogTitle,
 } from "@/Components/ui/dialog";
 import { Button } from "@/Components/ui/button";
+import { Label } from "@/Components/ui/label";
 import { cn } from "@/lib/utils";
 
 const LAYOUTS = [
   {
     label: "2 columns (equal width)",
     value: "1fr 1fr",
-    preview: "1fr 1fr",
   },
   {
     label: "2 columns (25% - 75%)",
     value: "1fr 3fr",
-    preview: "1fr 3fr",
   },
   {
     label: "3 columns (equal width)",
     value: "1fr 1fr 1fr",
-    preview: "1fr 1fr 1fr",
   },
   {
     label: "3 columns (25% - 50% - 25%)",
     value: "1fr 2fr 1fr",
-    preview: "1fr 2fr 1fr",
   },
   {
     label: "4 columns (equal width)",
     value: "1fr 1fr 1fr 1fr",
-    preview: "1fr 1fr 1fr 1fr",
+  },
+];
+
+const RESPONSIVE_OPTIONS: {
+  mode: ResponsiveMode;
+  label: string;
+  icon: typeof Smartphone;
+  description: string;
+}[] = [
+  {
+    mode: "full",
+    label: RESPONSIVE_MODE_LABELS["full"],
+    icon: MonitorSmartphone,
+    description: "Tablet + mobile",
+  },
+  {
+    mode: "mobile-only",
+    label: RESPONSIVE_MODE_LABELS["mobile-only"],
+    icon: Smartphone,
+    description: "Mobile only",
+  },
+  {
+    mode: "none",
+    label: RESPONSIVE_MODE_LABELS["none"],
+    icon: ScreenShare,
+    description: "Keep columns",
   },
 ];
 
@@ -61,9 +85,10 @@ interface InsertLayoutDialogProps {
 export function InsertLayoutDialog({ open, onOpenChange }: InsertLayoutDialogProps) {
   const [editor] = useLexicalComposerContext();
   const [selectedLayout, setSelectedLayout] = useState<string>(LAYOUTS[0]?.value ?? "1fr 1fr");
+  const [responsiveMode, setResponsiveMode] = useState<ResponsiveMode>("full");
 
   const handleInsert = () => {
-    editor.dispatchCommand(INSERT_LAYOUT_COMMAND, selectedLayout);
+    editor.dispatchCommand(INSERT_LAYOUT_V2_COMMAND, { template: selectedLayout, responsiveMode });
     onOpenChange(false);
   };
 
@@ -92,6 +117,30 @@ export function InsertLayoutDialog({ open, onOpenChange }: InsertLayoutDialogPro
               <LayoutPreview value={value} />
             </button>
           ))}
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Responsive behavior</Label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {RESPONSIVE_OPTIONS.map(({ mode, label, icon: Icon, description }) => (
+              <button
+                key={mode}
+                type="button"
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-md border p-2.5 text-xs transition-colors",
+                  responsiveMode === mode
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "hover:bg-muted/50",
+                )}
+                onClick={() => setResponsiveMode(mode)}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="font-medium leading-tight text-center">{label}</span>
+                <span className="text-[10px] text-muted-foreground leading-tight text-center">
+                  {description}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
