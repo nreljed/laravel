@@ -1,0 +1,10 @@
+name: Beta CI Validation
+
+on:
+  push:
+    branches: [beta]
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
