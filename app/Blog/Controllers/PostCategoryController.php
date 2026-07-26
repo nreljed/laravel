@@ -15,8 +15,8 @@ class PostCategoryController extends Controller
         $this->authorize('viewAny', Post::class);
 
         $categories = PostCategory::withCount('posts')
-            ->orderBy('order')
-            ->orderBy('name')
+            ->with('children')
+            ->ordered()
             ->get();
 
         return Inertia::render('Blog/Categories/Index', [
@@ -33,7 +33,13 @@ class PostCategoryController extends Controller
             'description' => 'nullable|string|max:500',
             'parent_id' => 'nullable|exists:post_categories,id',
             'order' => 'nullable|integer|min:0',
+            'meta_title' => 'nullable|string|max:70',
+            'meta_description' => 'nullable|string|max:160',
         ]);
+
+        if (! empty($validated['parent_id'])) {
+            $validated['depth'] = PostCategory::find($validated['parent_id'])->depth + 1;
+        }
 
         PostCategory::create($validated);
 
@@ -49,7 +55,13 @@ class PostCategoryController extends Controller
             'description' => 'nullable|string|max:500',
             'parent_id' => 'nullable|exists:post_categories,id',
             'order' => 'nullable|integer|min:0',
+            'meta_title' => 'nullable|string|max:70',
+            'meta_description' => 'nullable|string|max:160',
         ]);
+
+        if (isset($validated['parent_id']) && $validated['parent_id'] == $postCategory->id) {
+            return redirect()->back()->withErrors(['parent_id' => 'A category cannot be its own parent.']);
+        }
 
         $postCategory->update($validated);
 

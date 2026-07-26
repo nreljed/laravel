@@ -31,6 +31,7 @@ class PostTagController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:post_tags,name',
+            'description' => 'nullable|string|max:500',
         ]);
 
         $tag = PostTag::create($validated);
@@ -48,6 +49,7 @@ class PostTagController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:post_tags,name,'.$postTag->id,
+            'description' => 'nullable|string|max:500',
         ]);
 
         $postTag->update($validated);

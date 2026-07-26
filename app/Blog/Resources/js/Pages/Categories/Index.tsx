@@ -37,7 +37,10 @@ interface Category {
   slug: string;
   description: string | null;
   parent_id: number | null;
+  depth: number;
   order: number;
+  meta_title: string | null;
+  meta_description: string | null;
   posts_count: number;
 }
 
@@ -45,13 +48,22 @@ interface Props {
   categories: Category[];
 }
 
+const defaultForm = {
+  name: "",
+  description: "",
+  parent_id: "",
+  order: "0",
+  meta_title: "",
+  meta_description: "",
+};
+
 export default function PostCategoriesIndex({ categories }: Props) {
   const [editing, setEditing] = useState<Category | null>(null);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", parent_id: "", order: "0" });
+  const [form, setForm] = useState(defaultForm);
 
   const resetForm = () => {
-    setForm({ name: "", description: "", parent_id: "", order: "0" });
+    setForm(defaultForm);
     setEditing(null);
   };
 
@@ -62,6 +74,8 @@ export default function PostCategoriesIndex({ categories }: Props) {
       description: cat.description || "",
       parent_id: cat.parent_id ? String(cat.parent_id) : "",
       order: String(cat.order),
+      meta_title: cat.meta_title || "",
+      meta_description: cat.meta_description || "",
     });
     setOpen(true);
   };
@@ -92,6 +106,8 @@ export default function PostCategoriesIndex({ categories }: Props) {
     router.delete(route("dashboard.posts.categories.destroy", cat.id), { preserveScroll: true });
   };
 
+  const availableParents = categories.filter((c) => c.id !== editing?.id && c.depth < 2);
+
   return (
     <AuthenticatedLayout header="Post Categories">
       <Head title="Post Categories" />
@@ -111,7 +127,7 @@ export default function PostCategoriesIndex({ categories }: Props) {
                 <Plus className="mr-1 h-4 w-4" /> Add Category
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editing ? "Edit Category" : "Add Category"}</DialogTitle>
               </DialogHeader>
@@ -142,13 +158,14 @@ export default function PostCategoriesIndex({ categories }: Props) {
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   >
                     <option value="">None (top level)</option>
-                    {categories
-                      .filter((c) => c.id !== editing?.id)
-                      .map((cat) => (
-                        <option key={cat.id} value={String(cat.id)}>
-                          {cat.name}
-                        </option>
-                      ))}
+                    {availableParents.map((cat) => (
+                      <option key={cat.id} value={String(cat.id)}>
+                        {cat.depth > 0
+                          ? "\u{A0}\u{A0}".repeat(cat.depth) + "\u{251C}\u{2500} "
+                          : ""}
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="grid gap-2">
@@ -160,6 +177,30 @@ export default function PostCategoriesIndex({ categories }: Props) {
                     value={form.order}
                     onChange={(e) => setForm({ ...form, order: e.target.value })}
                   />
+                </div>
+                <div className="space-y-3 rounded-md border border-border p-3">
+                  <p className="text-sm font-medium text-muted-foreground">SEO</p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="cat-meta-title">Meta Title</Label>
+                    <Input
+                      id="cat-meta-title"
+                      maxLength={70}
+                      placeholder="Optional — defaults to category name"
+                      value={form.meta_title}
+                      onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="cat-meta-desc">Meta Description</Label>
+                    <Textarea
+                      id="cat-meta-desc"
+                      maxLength={160}
+                      rows={2}
+                      placeholder="Optional — defaults to category description"
+                      value={form.meta_description}
+                      onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <Button type="submit" className="w-full">
                   {editing ? "Update" : "Create"}
@@ -195,10 +236,18 @@ export default function PostCategoriesIndex({ categories }: Props) {
                   {categories.map((cat) => (
                     <TableRow key={cat.id}>
                       <TableCell>
-                        <span className="font-medium">{cat.name}</span>
-                        {cat.parent_id && (
+                        <span className="font-medium">
+                          {cat.depth > 0 && (
+                            <span className="text-muted-foreground">
+                              {"\u{A0}\u{A0}".repeat(cat.depth)}
+                              {"\u{251C}\u{2500} "}
+                            </span>
+                          )}
+                          {cat.name}
+                        </span>
+                        {cat.depth > 0 && (
                           <Badge variant="outline" className="ml-2 text-xs">
-                            Sub
+                            L{cat.depth}
                           </Badge>
                         )}
                         {cat.description && (

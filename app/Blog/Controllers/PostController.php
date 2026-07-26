@@ -26,6 +26,7 @@ class PostController extends Controller
             'posts' => $posts,
             'categories' => PostCategory::orderBy('name')->get(['id', 'name']),
         ]);
+
     }
 
     public function create()
@@ -34,7 +35,7 @@ class PostController extends Controller
 
         return Inertia::render('Blog/Form', [
             'post' => null,
-            'categories' => PostCategory::orderBy('name')->get(['id', 'name']),
+            'categories' => PostCategory::flatOptions(),
             'tags' => PostTag::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -116,7 +117,7 @@ class PostController extends Controller
 
         return Inertia::render('Blog/Form', [
             'post' => $post,
-            'categories' => PostCategory::orderBy('name')->get(['id', 'name']),
+            'categories' => PostCategory::flatOptions($post->category_id),
             'tags' => PostTag::orderBy('name')->get(['id', 'name']),
         ]);
     }

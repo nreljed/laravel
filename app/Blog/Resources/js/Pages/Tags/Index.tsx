@@ -4,21 +4,38 @@ import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
+import { Textarea } from "@/Components/ui/textarea";
 import { Label } from "@/Components/ui/label";
 import { Card, CardContent } from "@/Components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/Components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@/Components/ui/empty";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
+} from "@/Components/ui/empty";
 
 interface TagItem {
   id: number;
   name: string;
   slug: string;
+  description: string | null;
   posts_count: number;
 }
 
@@ -26,19 +43,21 @@ interface Props {
   tags: TagItem[];
 }
 
+const defaultForm = { name: "", description: "" };
+
 export default function PostTagsIndex({ tags }: Props) {
   const [editing, setEditing] = useState<TagItem | null>(null);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "" });
+  const [form, setForm] = useState(defaultForm);
 
   const resetForm = () => {
-    setForm({ name: "" });
+    setForm(defaultForm);
     setEditing(null);
   };
 
   const openEdit = (tag: TagItem) => {
     setEditing(tag);
-    setForm({ name: tag.name });
+    setForm({ name: tag.name, description: tag.description || "" });
     setOpen(true);
   };
 
@@ -47,12 +66,18 @@ export default function PostTagsIndex({ tags }: Props) {
     if (editing) {
       router.put(route("dashboard.posts.tags.update", editing.id), form, {
         preserveScroll: true,
-        onSuccess: () => { setOpen(false); resetForm(); },
+        onSuccess: () => {
+          setOpen(false);
+          resetForm();
+        },
       });
     } else {
       router.post(route("dashboard.posts.tags.store"), form, {
         preserveScroll: true,
-        onSuccess: () => { setOpen(false); resetForm(); },
+        onSuccess: () => {
+          setOpen(false);
+          resetForm();
+        },
       });
     }
   };
@@ -69,7 +94,13 @@ export default function PostTagsIndex({ tags }: Props) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Tags</h2>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+          <Dialog
+            open={open}
+            onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) resetForm();
+            }}
+          >
             <DialogTrigger>
               <Button onClick={() => resetForm()}>
                 <Plus className="mr-1 h-4 w-4" /> Add Tag
@@ -82,9 +113,26 @@ export default function PostTagsIndex({ tags }: Props) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="tag-name">Name</Label>
-                  <Input id="tag-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                  <Input
+                    id="tag-name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
                 </div>
-                <Button type="submit" className="w-full">{editing ? "Update" : "Create"}</Button>
+                <div className="grid gap-2">
+                  <Label htmlFor="tag-desc">Description</Label>
+                  <Textarea
+                    id="tag-desc"
+                    rows={2}
+                    placeholder="Optional — displayed on tag archive page"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  {editing ? "Update" : "Create"}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -93,7 +141,9 @@ export default function PostTagsIndex({ tags }: Props) {
         {tags.length === 0 ? (
           <Empty>
             <EmptyHeader>
-              <EmptyMedia variant="icon"><Tag /></EmptyMedia>
+              <EmptyMedia variant="icon">
+                <Tag />
+              </EmptyMedia>
               <EmptyTitle>No tags yet</EmptyTitle>
               <EmptyDescription>Create tags to organize your posts.</EmptyDescription>
             </EmptyHeader>
@@ -113,9 +163,16 @@ export default function PostTagsIndex({ tags }: Props) {
                 <TableBody>
                   {tags.map((tag) => (
                     <TableRow key={tag.id}>
-                      <TableCell className="font-medium">{tag.name}</TableCell>
+                      <TableCell>
+                        <span className="font-medium">{tag.name}</span>
+                        {tag.description && (
+                          <p className="text-xs text-muted-foreground">{tag.description}</p>
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{tag.slug}</TableCell>
-                      <TableCell><Badge variant="secondary">{tag.posts_count}</Badge></TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{tag.posts_count}</Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon-sm" onClick={() => openEdit(tag)}>

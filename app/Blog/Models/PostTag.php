@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class PostTag extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'description'];
 
     protected static function booted(): void
     {
