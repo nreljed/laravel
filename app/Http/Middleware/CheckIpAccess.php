@@ -11,6 +11,10 @@ class CheckIpAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->is('deploy/*')) {
+            return $next($request);
+        }
+
         if ($request->user() && $request->user()->hasRole('admin')) {
             return $next($request);
         }
