@@ -2,53 +2,64 @@ import { Building2 } from "lucide-react";
 
 interface BrandLogoProps {
   logo?: string | null;
+  favicon?: string | null;
   name?: string | null;
   size?: "sm" | "md" | "lg" | "xl";
   showName?: boolean;
 }
 
-export function BrandLogo({ logo, name, size = "lg", showName = false }: BrandLogoProps) {
-  const sizeConfig = {
-    sm: { container: "h-8 w-8", icon: "h-4 w-4", image: "h-8 w-8", text: "text-sm" },
-    md: { container: "h-10 w-10", icon: "h-5 w-5", image: "h-10 w-10", text: "text-base" },
-    lg: { container: "h-12 w-12", icon: "h-6 w-6", image: "h-12 w-12", text: "text-lg" },
-    xl: { container: "h-16 w-16", icon: "h-8 w-8", image: "h-16 w-16", text: "text-xl" },
-  };
+const SIZE_MAP = {
+  sm: { logoH: "h-8", favicon: "h-6 w-6", icon: "h-4 w-4", container: "h-8", text: "text-sm" },
+  md: { logoH: "h-10", favicon: "h-7 w-7", icon: "h-5 w-5", container: "h-10", text: "text-base" },
+  lg: { logoH: "h-12", favicon: "h-8 w-8", icon: "h-6 w-6", container: "h-12", text: "text-lg" },
+  xl: { logoH: "h-16", favicon: "h-10 w-10", icon: "h-8 w-8", container: "h-16", text: "text-xl" },
+} as const;
 
-  const config = sizeConfig[size] || sizeConfig.lg;
+export function BrandLogo({ logo, favicon, name, size = "lg", showName = false }: BrandLogoProps) {
+  const s = SIZE_MAP[size] || SIZE_MAP.lg;
 
-  const renderLogoIcon = () => {
+  const renderMark = () => {
     if (logo) {
       return (
         <img
           src={logo}
           alt={name || "App Logo"}
-          className={`${config.image} w-auto object-contain`}
-          style={{
-            maxHeight:
-              size === "xl" ? "64px" : size === "lg" ? "48px" : size === "md" ? "40px" : "32px",
-          }}
+          className={`${s.logoH} w-auto object-contain shrink-0`}
+        />
+      );
+    }
+
+    if (favicon) {
+      return (
+        <img
+          src={favicon}
+          alt={name || "App"}
+          className={`${s.favicon} object-contain rounded-sm shrink-0`}
         />
       );
     }
 
     return (
-      <div className={`flex items-center justify-center ${config.container} rounded-lg bg-primary`}>
-        <Building2 className={`${config.icon} text-primary-foreground`} />
+      <div
+        className={`flex items-center justify-center ${s.container} aspect-square rounded-lg bg-primary shrink-0`}
+      >
+        <Building2 className={`${s.icon} text-primary-foreground`} />
       </div>
     );
   };
 
   if (showName) {
     return (
-      <div className="flex flex-col items-center gap-2">
-        {renderLogoIcon()}
-        {name && <span className={`${config.text} font-semibold text-foreground`}>{name}</span>}
+      <div className="flex items-center gap-2.5">
+        {renderMark()}
+        {name && (
+          <span className={`${s.text} font-semibold text-foreground leading-tight`}>{name}</span>
+        )}
       </div>
     );
   }
 
-  return <div className="flex items-center justify-center">{renderLogoIcon()}</div>;
+  return <div className="flex items-center justify-center">{renderMark()}</div>;
 }
 
 export default BrandLogo;

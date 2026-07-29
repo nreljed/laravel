@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedValue(value), delay);
@@ -36,8 +36,15 @@ export function useFieldAvailability(field: "username" | "email") {
         const res = await fetch(`${route("register.availability")}?${params}`, {
           headers: { Accept: "application/json" },
         });
-        const data: { available: boolean } = await res.json();
+
         if (gen !== genRef.current) return;
+
+        if (!res.ok) {
+          setStatus("idle");
+          return;
+        }
+
+        const data: { available: boolean } = await res.json();
         lastChecked.current = debouncedValue;
         setStatus(data.available ? "available" : "taken");
       } catch {

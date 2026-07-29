@@ -6,9 +6,7 @@
  * Usage: php scripts/reset-users-data.php
  *
  * - Preserves admin users
- * - Deletes all other users (cascades to properties, bookings, posts, carts, etc.)
- * - Deletes orphaned orders (user_id set to null by CASCADE)
- * - Nullifies products.created_by
+ * - Deletes all other users (cascades to posts, audit_logs, etc.)
  * - Clears session table
  */
 
@@ -19,8 +17,6 @@ $kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\User;
-use App\Modules\Shop\Models\Order;
-use App\Modules\Shop\Models\Product;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -42,23 +38,10 @@ $nonAdminQuery = User::whereNotIn('id', $adminIds);
 $count = $nonAdminQuery->count();
 echo "Deleting {$count} non-admin user(s)...\n";
 
-// CASCADE handles: properties, bookings, posts, audit_logs,
-// notification_preferences, role_user, permission_user, carts
+// CASCADE handles: posts, audit_logs, notification_preferences, role_user, permission_user
 $nonAdminQuery->delete();
 
-// 3. Clean up orphaned orders (SET NULL user_ids)
-$orphanOrders = Order::whereNull('user_id')->orWhereNull('processed_by')->delete();
-echo "Deleted orphaned orders.\n";
-
-// 4. Nullify products.created_by for deleted users
-Product::whereNotNull('created_by')
-    ->whereNotIn('created_by', function ($q) {
-        $q->select('id')->from('users');
-    })
-    ->update(['created_by' => null]);
-echo "Cleaned up products.created_by.\n";
-
-// 5. Clear sessions
+// 3. Clear sessions
 if (Schema::hasTable('sessions')) {
     DB::table('sessions')->truncate();
     echo "Cleared sessions table.\n";

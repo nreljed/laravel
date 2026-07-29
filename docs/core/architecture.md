@@ -1,84 +1,86 @@
-# Core Architecture
+# Architecture
 
 ## Boot Process
 
 ```
 1. index.php → Laravel Application
 2. AppServiceProvider::boot()
-   ├── Gate::before() — permission fallback
-   ├── Policy registration (Property, Booking, Post, Product, Order)
-   └── Blade component namespace registration
+   ├── configureRateLimiting() — named rate limiters (login, register, auth)
+   ├── Gate::before() — admin bypasses all permissions
+   ├── Policy registration (PostPolicy)
+   ├── FeatureRegistry singleton binding
+   ├── Notification creating hook (populates title/message/link/severity)
+   └── Vite::prefetch(concurrency: 3)
 
-3. ModuleServiceProvider::boot()
-   ├── ModuleLoader::load()                    — discovers Module classes
-   ├── ModuleRegistry::bootEnabled()           — topological sort, calls boot()
-   ├── ModuleRegistry::registerRoutes()        — calls routes() on each module
-   ├── Migration discovery from migrationPaths()
-   ├── Gate::define() for each permission slug
-   └── RouteCollection::refreshNameLookups()
-
-4. HandleInertiaRequests::share()
-   ├── auth.user, impersonating
+3. HandleInertiaRequests::share()
+   ├── auth.user (full profile with roles, display options)
    ├── latestNotifications, notificationUnreadCount
-   ├── flash, userMode, canSwitchMode
-   ├── moduleNavItems (with groupLabel)
-   ├── userCapabilities (flat permission map)
-   ├── modules, moduleDebugData
-   ├── repeaterConfigs, profileFieldConfigs
-   ├── emailSettings, brand
-   └── booking_global_settings, ...
+   ├── flash (status, error, mail_debug)
+   ├── featureNavItems (dynamic sidebar from FeatureRegistry)
+   ├── userCapabilities (admin flag + granular permissions)
+   ├── formattingSettings, emailSettings, brand, seo
+   └── impersonating, impersonator
 ```
 
 ## Middleware Stack
 
-Applied in `kernel.php`:
+Configured in `bootstrap/app.php`:
 
-**Global:**
-- `CheckForMaintenanceMode`
-- `EncryptCookies`
-- `AddQueuedCookiesToResponse`
-- `StartSession`
-- `ShareErrorsFromSession`
-- `SubstituteBindings`
-- `ContentSecurityPolicy`
-- `ForceInertiaCacheHeaders`
+**Web group:**
 
-**Web Group:**
-- All global middleware
-- `VerifyCsrfToken`
+1. `ContentSecurityPolicy` — CSP headers (production only)
+2. `HandleInertiaRequests` — Inertia shared props
+3. `AddLinkHeadersForPreloadedAssets`
 
-**Module Routes (via `HasRoutes` trait):**
-- `web`, `auth`, `verified`, `permission:{slug}` (dashboard routes)
-- `web`, `auth`, `verified`, `admin`, `permission:{slug}` (admin routes)
-- `web` only (public guest routes)
+**Route aliases:**
+
+- `admin` → `AdminMiddleware` (403 if not admin)
+- `role` → `CheckRole` (accepts variadic role slugs)
+- `permission` → `CheckPermission` (checks `$user->hasPermission($slug)`)
+
+## Rate Limiting
+
+Named rate limiters defined in `AppServiceProvider::configureRateLimiting()`:
+
+| Limiter    | Limit  | Key | Purpose                                                   |
+| ---------- | ------ | --- | --------------------------------------------------------- |
+| `login`    | 30/min | IP  | Safety net — `LoginRequest` handles strict per-user limit |
+| `register` | 10/min | IP  | Registration abuse prevention                             |
+| `auth`     | 30/min | IP  | General auth routes (password reset, logout, etc.)        |
+
+**Login two-tier system:**
+
+1. Route-level `throttle:login` — IP-based, 30/min (generous safety net)
+2. `LoginRequest::ensureIsNotRateLimited()` — username+IP based, configurable via `max_login_attempts` setting (default 5/min), returns `ValidationException` with friendly "Please wait X seconds" message
+
+The route-level limiter fires first. If exceeded, `Error.tsx` renders with a live countdown from the `Retry-After` header. If not exceeded, `LoginRequest` handles the stricter per-user throttle with a form validation error.
 
 ## Service Providers
 
-| Provider | Registration |
-|----------|-------------|
-| `AppServiceProvider` | Policies, Blade components, Gate::before |
-| `ModuleServiceProvider` | ModuleRegistry, ModuleLoader (singletons), module boot |
-| `PermissionGateServiceProvider` | Permission-based Gate definitions |
-| `AuthServiceProvider` | Auth guards, Sanctum config |
+| Provider                        | Purpose                                     |
+| ------------------------------- | ------------------------------------------- |
+| `AppServiceProvider`            | Singletons, policies, gates, mail config    |
+| `PermissionGateServiceProvider` | Gate::define() for every permission slug    |
+| `BlogServiceProvider`           | Blog feature routes, permissions, nav items |
+| `TelescopeServiceProvider`      | Debug toolbar (conditional)                 |
 
-## Key Singletons
+## Directory Structure
 
-| Class | Registered In | Purpose |
-|-------|--------------|---------|
-| `ModuleRegistry` | `ModuleServiceProvider` | Central registry of all modules |
-| `ModuleLoader` | `ModuleServiceProvider` | File-system scanning for modules |
-| `SettingsService` | `AppServiceProvider` | DB-driven configuration |
-| `NotificationService` | `AppServiceProvider` | Multi-channel notification dispatch |
-| `DashboardService` | `AppServiceProvider` | Cached dashboard stats |
-| `FormattingService` | `AppServiceProvider` | Price/surface formatting |
-
-## Configuration
-
-| File | Purpose |
-|------|---------|
-| `.env` | Environment variables (DB, mail, app URL, deploy token) |
-| `config/app.php` | App name, URL, timezone, locale |
-| `config/sanctum.php` | SPA auth configuration |
-| `config/session.php` | Session driver (file, database) |
-| `config/mail.php` | Mail driver (SMTP, log, array) |
-| `config/booking-meta.php` | Booking field definitions (65+ fields) |
+```
+app/
+  Blog/                    # Self-contained feature
+  Console/Commands/        # Artisan commands
+  Enums/                   # AuditAction enum
+  Http/
+    Controllers/           # By domain (Admin/, Api/, Auth/)
+    Middleware/             # Inertia, Admin, Permission, Role, CSP
+    Requests/              # FormRequest classes by domain
+  Jobs/                    # SendEmail
+  Mail/                    # DynamicMailable
+  Models/                  # User, Notification, etc.
+  Notifications/           # Database notification classes
+  Policies/                # PostPolicy
+  Providers/               # Service providers
+  Services/                # Business logic
+  Traits/                  # Shared traits
+```

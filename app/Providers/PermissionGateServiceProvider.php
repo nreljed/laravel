@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Models\Permission;
 use App\Models\User;
-use App\Modules\ModuleRegistry;
+use App\Services\FeatureRegistry;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -43,14 +43,12 @@ class PermissionGateServiceProvider extends ServiceProvider
                 'manage-notifications',
             ];
 
-            $moduleSlugs = [];
+            $featureSlugs = [];
 
-            if ($this->app->resolved(ModuleRegistry::class)) {
-                $registry = $this->app->make(ModuleRegistry::class);
-                foreach ($registry->all() as $module) {
-                    foreach ($module->permissions() as $perm) {
-                        $moduleSlugs[] = $perm['slug'];
-                    }
+            if ($this->app->resolved(FeatureRegistry::class)) {
+                $registry = $this->app->make(FeatureRegistry::class);
+                foreach ($registry->permissions() as $perm) {
+                    $featureSlugs[] = $perm['slug'];
                 }
             }
 
@@ -60,7 +58,7 @@ class PermissionGateServiceProvider extends ServiceProvider
             } catch (\Throwable) {
             }
 
-            return array_unique(array_merge($corePermissions, $moduleSlugs, $dbSlugs));
+            return array_unique(array_merge($corePermissions, $featureSlugs, $dbSlugs));
         } catch (\Throwable) {
             return [];
         }

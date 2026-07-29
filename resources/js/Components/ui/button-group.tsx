@@ -1,6 +1,5 @@
 import * as React from "react";
 import { cva } from "class-variance-authority";
-import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/Components/ui/separator";
 
@@ -37,17 +36,11 @@ function ButtonGroup({
   );
 }
 
-function ButtonGroupText({
-  className,
-  asChild = false,
-  children,
-  ...props
-}: React.ComponentProps<"div"> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "div";
+function ButtonGroupText({ className, children, ...props }: React.ComponentProps<"div">) {
   const safeChildren = !children ? <></> : children;
 
   return (
-    <Comp
+    <div
       className={cn(
         "flex items-center gap-2 rounded-md border bg-muted px-4 text-sm font-medium shadow-xs [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
         className,
@@ -55,7 +48,7 @@ function ButtonGroupText({
       {...props}
     >
       {safeChildren}
-    </Comp>
+    </div>
   );
 }
 

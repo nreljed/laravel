@@ -1,14 +1,8 @@
 import { PageProps as InertiaPageProps } from "@inertiajs/core";
-import { AxiosInstance } from "axios";
 import { route as ziggyRoute } from "ziggy-js";
 import { PageProps as AppPageProps } from "./";
 
 declare global {
-  // eslint-disable-next-line no-unused-vars
-  interface Window {
-    axios: AxiosInstance;
-  }
-
   // eslint-disable-next-line no-unused-vars
   var route: typeof ziggyRoute;
 }

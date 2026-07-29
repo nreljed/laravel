@@ -26,20 +26,19 @@ Logs audit, calls `deleteAllUserData()`, deletes the user, sends deletion confir
 
 ### `deleteAllUserData(User $user)`
 
-1. Calls `ModuleRegistry::cleanupUserData($userId)` — iterates all modules calling `onUserDelete()` (cleans bookings, posts, orphaned orders, etc.)
+1. Calls `FeatureRegistry::cleanupUserData($userId)` — iterates all features calling cleanup hooks
 2. Deletes all API tokens
 3. Deletes all notifications (sent + received)
 4. Deletes notification preferences
 
 ## Email Categories
 
-| Method | Category |
-|--------|----------|
+| Method                             | Category           |
+| ---------------------------------- | ------------------ |
 | `sendPasswordChangeConfirmation()` | `password-changed` |
-| `sendEmailChangeNotification()` | `email-changed` |
-| `sendDeletionConfirmationEmail()` | `account-deleted` |
+| `sendEmailChangeNotification()`    | `email-changed`    |
+| `sendDeletionConfirmationEmail()`  | `account-deleted`  |
 
 ## Usage
 
-- Called by `ProfileController` for account editing (My Account page).
-- Called by `AccountController` for account management.
+- Called by `UserAccountController` for profile + account management.

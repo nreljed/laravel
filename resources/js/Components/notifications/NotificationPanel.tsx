@@ -6,7 +6,7 @@ import { Separator } from "@/Components/ui/separator";
 import { X, CheckCheck, Bell, BellOff, Eye } from "lucide-react";
 import { Link } from "@inertiajs/react";
 import { NotificationItem } from "@/Components/notifications/NotificationItem";
-import type { StructuredNotification } from "@/Components/notifications/NotificationItem";
+import type { StructuredNotification } from "@/lib/notifications";
 
 type Notification = StructuredNotification;
 
@@ -35,7 +35,7 @@ export function NotificationPanel({
 }: NotificationPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>{children}</SheetTrigger>
+      <SheetTrigger render={<span />}>{children}</SheetTrigger>
       <SheetContent
         side="right"
         className="w-[90vw] sm:max-w-md p-0 flex flex-col overflow-hidden"
@@ -89,7 +89,7 @@ export function NotificationPanel({
         )}
         <div className="shrink-0 border-t border-border px-3 py-2 flex items-center justify-between gap-2">
           <Link
-            href="/dashboard/notifications"
+            href={route("dashboard.notifications")}
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => onOpenChange(false)}
           >

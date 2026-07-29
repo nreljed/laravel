@@ -30,11 +30,6 @@ class AppNotification extends Notification
 
     public function toArray($notifiable): array
     {
-        return array_merge($this->data, [
-            'type' => $this->type,
-            'title' => $this->data['title'] ?? $this->type,
-            'severity' => $this->data['severity'] ?? 'info',
-            'module' => $this->data['module'] ?? 'core',
-        ]);
+        return $this->toDatabase($notifiable);
     }
 }

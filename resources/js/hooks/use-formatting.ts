@@ -129,7 +129,7 @@ function buildNumber(value: number | string, thousandsSep: string, decimalSep: s
 function buildPrice(value: number | string, options: FormattingOptions): string {
   const num = Number(value);
   const emptyText = options.empty_text ?? "";
-  if (Number.isNaN(num) || num === 0) {
+  if (num === 0 || Number.isNaN(num)) {
     return emptyText || "";
   }
   const currency = options.currency || "USD";
@@ -141,7 +141,7 @@ function buildPrice(value: number | string, options: FormattingOptions): string 
 
 function buildSurface(value: number | string, options: FormattingOptions): string {
   const num = Number(value);
-  if (Number.isNaN(num) || num === 0) return "";
+  if (num === 0 || Number.isNaN(num)) return "";
   const unit = options.unit || "sq_ft";
   const unitLabel = SURFACE_UNITS[unit] ?? unit;
   const formatted = buildNumber(value, options.thousands_sep || ",", options.decimal_sep || ".");

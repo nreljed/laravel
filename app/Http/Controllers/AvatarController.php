@@ -10,16 +10,45 @@ class AvatarController extends Controller
     public function upload(Request $request)
     {
         $validated = $request->validate([
-            'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:51200'],
+            'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
         ]);
 
         $user = $request->user();
         $file = $request->file('avatar');
 
-        $filename = $file->store('avatars');
+        if (! $file || ! $file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Avatar upload failed. Please try again.',
+            ], 422);
+        }
 
-        if ($user->avatar && $user->avatar !== $filename) {
+        // Delete old avatar from the avatars disk before storing new one
+        if ($user->avatar) {
             Storage::disk('avatars')->delete($user->avatar);
+        }
+
+        // Use file_get_contents + put() instead of store() to avoid
+        // Windows realpath() failure in SplFileInfo::getRealPath().
+        try {
+            $filename = $file->hashName();
+            $contents = file_get_contents($file->getPathname());
+
+            if ($contents === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Avatar upload failed. Please try again.',
+                ], 500);
+            }
+
+            Storage::disk('avatars')->put($filename, $contents);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Avatar storage failed. Please try again.',
+            ], 500);
         }
 
         $user->update(['avatar' => $filename]);

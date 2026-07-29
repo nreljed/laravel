@@ -1,8 +1,5 @@
 import {
-  Building2,
-  Calendar,
   FileText,
-  ShoppingCart,
   LayoutDashboard,
   BarChart3,
   Bell,
@@ -17,14 +14,10 @@ import {
   ScrollText,
   Beaker,
   FlaskConical,
-  CalendarCheck,
 } from "lucide-react";
 
-export const moduleIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Building2,
-  Calendar,
+export const featureIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   FileText,
-  ShoppingCart,
   LayoutDashboard,
   BarChart3,
   Bell,
@@ -39,5 +32,4 @@ export const moduleIcons: Record<string, React.ComponentType<{ className?: strin
   ScrollText,
   Beaker,
   FlaskConical,
-  CalendarCheck,
 };

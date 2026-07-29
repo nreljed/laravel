@@ -12,6 +12,7 @@ use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -83,19 +84,39 @@ class NotificationTestController extends Controller
     {
         $data = $request->validated();
 
-        $notification = new AppNotification($data['type'], [
-            'title' => $data['title'],
-            'message' => $data['message'],
-            'link' => $data['link'] ?? '',
-            'severity' => $data['severity'] ?? 'info',
-            'module' => $data['module'] ?? 'core',
-        ]);
-
+        $now = now();
+        $type = 'App\\Notifications\\AppNotification';
         $count = 0;
-        User::chunk(100, function ($users) use ($notification, &$count) {
+
+        User::chunk(100, function ($users) use ($data, $now, &$count) {
+            $rows = [];
             foreach ($users as $user) {
-                $user->notify($notification);
+                $payload = array_merge($data, [
+                    'type' => $data['type'],
+                    'title' => $data['title'],
+                    'severity' => $data['severity'] ?? 'info',
+                    'module' => $data['module'] ?? 'core',
+                    'link' => $data['link'] ?? '',
+                    'message' => $data['message'] ?? '',
+                ]);
+                $rows[] = [
+                    'id' => (string) Str::uuid(),
+                    'type' => $type,
+                    'notifiable_id' => $user->id,
+                    'notifiable_type' => get_class($user),
+                    'data' => json_encode($payload),
+                    'title' => $data['title'],
+                    'message' => $data['message'] ?? '',
+                    'link' => $data['link'] ?? '',
+                    'severity' => $data['severity'] ?? 'info',
+                    'module' => $data['module'] ?? 'core',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
                 $count++;
+            }
+            if (! empty($rows)) {
+                \DB::table('notifications')->insert($rows);
             }
         });
 

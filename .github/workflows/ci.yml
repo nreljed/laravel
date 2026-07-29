@@ -1,0 +1,91 @@
+name: CI Validation
+
+on:
+  workflow_call:
+    inputs:
+      skip-php-tests:
+        description: "Skip PHP tests and Pint"
+        type: boolean
+        default: false
+      skip-npm-tests:
+        description: "Skip npm lint, typecheck, format, test, and build"
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Create .env
+        run: cp .env.example .env
+
+      - name: Create SQLite database
+        run: touch database/database.sqlite
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: Install npm dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps
+
+      - name: ESLint
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run lint
+
+      - name: TypeScript check
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run typecheck
+
+      - name: Prettier check
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run format:check
+
+      - name: Frontend tests
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run test
+
+      - name: Build frontend assets
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run build
+
+      - name: PHP tests
+        if: ${{ !inputs.skip-php-tests }}
+        run: php artisan test --compact
+
+      - name: Laravel Pint
+        if: ${{ !inputs.skip-php-tests }}
+        run: vendor/bin/pint --test

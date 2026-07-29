@@ -59,7 +59,7 @@ export const profileSchema = z.object({
     .min(3, "Username must be at least 3 characters")
     .max(60, "Username must be under 60 characters")
     .regex(/^[a-zA-Z0-9_.-]+$/, "Only letters, numbers, underscores, hyphens and periods allowed"),
-  display_name_option: z.string().optional(),
+  display_name: z.string().optional(),
 });
 
 export const passwordSchema = z

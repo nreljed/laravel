@@ -19,17 +19,23 @@ composer.phar
 /.opencode
 /storage/temp/
 /PLAN.md
-/category-dialog.txt
-/console-log.txt
-/cookies.txt
-/cookies2.txt
-/headers1.txt
-/inspect_product.php
-/login_body.html
-/product-edit-page.txt
-/product-edit-snapshot.md
-/test_cartesian.php
-/verify_variations.php
-/vm_chunk_sample.txt
-/_fix_autoload.php
-/_schema_dump.php
+
+# Debug/temp files (root only)
+/*.txt
+/*.html
+/*.png
+/_*.php
+/table-inspect.json
+/sql/*.sql
+
+# LocalWP auto-generated
+/.envrc
+
+# Laravel Boost auto-generated files
+.cursorrules
+CLAUDE.md
+.github/copilot-instructions.md
+.ai/
+.ai/guidelines/
+.ai/skills/
+boost.json

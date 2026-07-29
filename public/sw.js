@@ -19,8 +19,8 @@ self.addEventListener('push', function (event) {
   var title = data.title || 'Cost Breaker 360';
   var options = {
     body: data.body || 'You have a new notification.',
-    icon: data.icon || '/build/assets/favicon.ico',
-    badge: data.badge || data.icon || '/build/assets/favicon.ico',
+    icon: data.icon || '/favicon.svg',
+    badge: data.badge || data.icon || '/favicon.svg',
     data: data.data || { url: '/dashboard' },
     vibrate: [200, 100, 200],
     tag: 'crm-notification-' + (data.data && data.data.notification_id ? data.data.notification_id : Date.now()),

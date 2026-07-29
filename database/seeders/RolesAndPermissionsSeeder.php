@@ -15,13 +15,21 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Manage Settings', 'slug' => 'manage-settings', 'description' => 'Change application settings'],
             ['name' => 'Manage Roles', 'slug' => 'manage-roles', 'description' => 'Assign and manage roles'],
             ['name' => 'View System Health', 'slug' => 'view-system-health', 'description' => 'View system diagnostics'],
-            ['name' => 'Manage Options', 'slug' => 'manage_options', 'description' => 'Module-level settings and system operations (admin only)'],
+            ['name' => 'Manage Options', 'slug' => 'manage_options', 'description' => 'Feature-level settings and system operations (admin only)'],
             ['name' => 'View Dashboard', 'slug' => 'view-dashboard', 'description' => 'Access the main dashboard'],
             ['name' => 'View Profile', 'slug' => 'view-profile', 'description' => 'View own profile'],
             ['name' => 'Edit Profile', 'slug' => 'edit-profile', 'description' => 'Edit own name, email, password'],
             ['name' => 'Delete Account', 'slug' => 'delete-account', 'description' => 'Delete own account'],
             ['name' => 'View Notifications', 'slug' => 'view-notifications', 'description' => 'View notifications'],
             ['name' => 'Manage Notifications', 'slug' => 'manage-notifications', 'description' => 'Mark read, delete notifications'],
+            ['name' => 'View Posts', 'slug' => 'posts.view', 'description' => 'View blog posts.'],
+            ['name' => 'Create Posts', 'slug' => 'posts.create', 'description' => 'Create new blog posts.'],
+            ['name' => 'Edit Posts', 'slug' => 'posts.edit', 'description' => 'Edit existing blog posts.'],
+            ['name' => 'Delete Posts', 'slug' => 'posts.delete', 'description' => 'Delete blog posts.'],
+            ['name' => 'View Tests', 'slug' => 'test-posts.view', 'description' => 'View tests.'],
+            ['name' => 'Create Tests', 'slug' => 'test-posts.create', 'description' => 'Create new tests.'],
+            ['name' => 'Edit Tests', 'slug' => 'test-posts.edit', 'description' => 'Edit existing tests.'],
+            ['name' => 'Delete Tests', 'slug' => 'test-posts.delete', 'description' => 'Delete tests.'],
         ];
 
         foreach ($permissions as $p) {
@@ -35,7 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $crmUserRole = Role::firstOrCreate(
             ['slug' => 'crm_user'],
-            ['name' => 'CRM User', 'description' => 'Standard user: modules + profile + notifications']
+            ['name' => 'CRM User', 'description' => 'Standard user: features + profile + notifications']
         );
 
         $adminRole->permissions()->sync(Permission::all()->pluck('id'));
@@ -48,7 +56,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete-account',
                 'view-notifications',
                 'manage-notifications',
-                'shop.view',
             ])->pluck('id')
         );
     }

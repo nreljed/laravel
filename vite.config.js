@@ -13,13 +13,8 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/js/app.tsx',
-                'resources/js/booking-widget.tsx',
             ],
-            refresh: [
-                ...(typeof globalThis !== 'undefined' && globalThis.process?.env?.APP_ENV !== 'production'
-                    ? [{ server: false, paths: ['app/Modules/Booking/Resources/js/**'] }]
-                    : []),
-            ],
+            refresh: [],
         }),
         react(),
         inertia(),
@@ -27,10 +22,8 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@modules-properties': path.resolve(__dirname, './app/Modules/Properties/Resources/js'),
-            '@modules-booking': path.resolve(__dirname, './app/Modules/Booking/Resources/js'),
-            '@modules-shop': path.resolve(__dirname, './app/Modules/Shop/Resources/js'),
-            '@modules-posts': path.resolve(__dirname, './app/Modules/Posts/Resources/js'),
+            '@blog': path.resolve(__dirname, './app/Blog/Resources/js'),
+            '@test-posts': path.resolve(__dirname, './app/TestPosts/Resources/js'),
         },
     },
     build: {
@@ -41,16 +34,13 @@ export default defineConfig({
                 manualChunks(id) {
                     if (id.includes('Components/ui/')) return 'ui-kit';
                     if (id.includes('node_modules/react')) return 'react-vendor';
-                    if (id.includes('node_modules/@radix-ui')) return 'ui-vendor';
+                    if (id.includes('node_modules/@base-ui')) return 'baseui-vendor';
                     if (id.includes('node_modules/lucide-react')) return 'icons-vendor';
                     if (id.includes('node_modules/@inertiajs')) return 'inertia-vendor';
-                    if (id.includes('node_modules/leaflet')) return 'leaflet-vendor';
                     if (id.includes('node_modules/@dnd-kit')) return 'dnd-vendor';
                     if (id.includes('node_modules/date-fns')) return 'date-vendor';
                     if (id.includes('node_modules/@zxcvbn-ts')) return 'zxcvbn-vendor';
                     if (id.includes('node_modules/react-phone-number-input') || id.includes('node_modules/libphonenumber-js')) return 'phone-vendor';
-                    if (id.includes('node_modules/react-hook-form')) return 'forms-vendor';
-                    if (id.includes('node_modules/@base-ui')) return 'baseui-vendor';
                 },
             },
         },

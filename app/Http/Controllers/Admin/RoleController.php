@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
-use App\Http\Requests\Role\StoreRoleRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Services\AuditService;
 use App\Services\PermissionCacheService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -120,7 +121,18 @@ class RoleController extends Controller
         ]);
 
         if ($request->has('permission_ids')) {
-            $role->permissions()->sync($request->permission_ids);
+            $oldIds = $role->permissions()->pluck('id')->toArray();
+            $newIds = $request->permission_ids ?? [];
+
+            $role->permissions()->sync($newIds);
+
+            $revokedIds = array_values(array_diff($oldIds, $newIds));
+            if (! empty($revokedIds)) {
+                AuditService::log(AuditAction::PermissionRevoked, $request->user()->id, [
+                    'role' => $role->slug,
+                    'permission_ids' => $revokedIds,
+                ]);
+            }
         }
 
         $cache->flushAll();
@@ -134,18 +146,27 @@ class RoleController extends Controller
             ->with('flash', ['success' => 'Role updated successfully.']);
     }
 
-    public function destroy(Role $role, PermissionCacheService $cache): RedirectResponse
+    public function destroy(Request $request, Role $role, PermissionCacheService $cache): RedirectResponse
     {
         if ($role->slug === 'admin') {
             return redirect()->route('dashboard.admin.roles.index')
                 ->with('flash', ['error' => 'The admin role cannot be deleted.']);
         }
 
+        $userIds = $role->users()->pluck('id')->toArray();
+        $permissionIds = $role->permissions()->pluck('id')->toArray();
+
         $role->users()->detach();
         $role->permissions()->detach();
         $role->delete();
 
         $cache->flushAll();
+
+        AuditService::log(AuditAction::RoleRevoked, $request->user()->id, [
+            'role' => $role->slug,
+            'target_user_ids' => $userIds,
+            'permission_ids' => $permissionIds,
+        ]);
 
         return redirect()->route('dashboard.admin.roles.index')
             ->with('flash', ['success' => 'Role deleted successfully.']);

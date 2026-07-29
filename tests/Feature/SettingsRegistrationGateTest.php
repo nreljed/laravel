@@ -52,7 +52,7 @@ class SettingsRegistrationGateTest extends TestCase
         $this->assertDatabaseMissing('users', ['email' => 'blocked@example.com']);
     }
 
-    public function test_registration_page_redirects_when_disabled(): void
+    public function test_registration_page_shows_closed_when_disabled(): void
     {
         if (! $this->canSetSetting()) {
             $this->markTestSkipped('Settings table not available.');
@@ -62,7 +62,7 @@ class SettingsRegistrationGateTest extends TestCase
         SettingsService::clearCache();
 
         $response = $this->get('/register');
-        $response->assertRedirect(route('login'));
+        $response->assertOk();
     }
 
     public function test_registration_page_loads_when_enabled(): void

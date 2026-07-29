@@ -11,7 +11,7 @@ class ListPermissions extends Command
 {
     protected $signature = 'permissions:list
         {--role= : Filter by role slug}
-        {--group= : Filter by group prefix (e.g. "properties")}
+        {--group= : Filter by group prefix (e.g. "posts")}
         {--format=table : Output format: table or json}';
 
     protected $description = 'List all permissions with role assignments';

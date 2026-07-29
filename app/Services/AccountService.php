@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
+use App\Ai\Models\AiProvider;
+use App\Ai\Models\AiUsageLog;
 use App\Enums\AuditAction;
 use App\Models\NotificationPreference;
 use App\Models\User;
-use App\Modules\ModuleRegistry;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -62,7 +63,7 @@ class AccountService
         }
 
         $user->update([
-            'password' => Hash::make($newPassword),
+            'password' => $newPassword,
         ]);
 
         AuditService::log(AuditAction::PasswordChange, $user->id);
@@ -74,19 +75,16 @@ class AccountService
 
     public function verifyPassword(User $user, string $password): array
     {
+        $verified = Hash::check($password, $user->password);
+
         return [
-            'success' => Hash::check($password, $user->password),
-            'verified' => Hash::check($password, $user->password),
+            'success' => $verified,
+            'verified' => $verified,
         ];
     }
 
     public function updatePersonalInfo(User $user, array $data): void
     {
-        if (isset($data['description'])) {
-            $data['bio'] = $data['description'];
-            unset($data['description']);
-        }
-
         $user->fill($data);
         $user->save();
 
@@ -145,20 +143,20 @@ class AccountService
     {
         AuditService::log(AuditAction::AccountDelete, $user->id);
 
-        $this->deleteAllUserData($user);
-
         $email = $user->email;
         $displayName = $user->display_name ?: $user->name;
 
-        $user->delete();
+        $this->deleteAllUserData($user);
 
         $this->sendDeletionConfirmationEmail($email, $displayName);
+
+        $user->delete();
     }
 
     public function deleteAllUserData(User $user): void
     {
         try {
-            ModuleRegistry::cleanupUserData($user->id);
+            app(FeatureRegistry::class)->cleanupUserData($user->id);
         } catch (\Throwable $e) {
             Log::warning('Module data cleanup failed for user '.$user->id.': '.$e->getMessage());
         }
@@ -174,6 +172,9 @@ class AccountService
         $user->notifications()->delete();
 
         NotificationPreference::where('user_id', $user->id)->delete();
+
+        AiProvider::where('user_id', $user->id)->delete();
+        AiUsageLog::where('user_id', $user->id)->delete();
     }
 
     protected function sendPasswordChangeConfirmation(User $user): void

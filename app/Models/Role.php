@@ -32,4 +32,9 @@ class Role extends Model
     {
         return $this->hasPermission($slug);
     }
+
+    protected static function newFactory(): RoleFactory
+    {
+        return RoleFactory::new();
+    }
 }

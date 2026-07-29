@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\NotificationPreference;
-use App\Modules\ModuleRegistry;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
 
@@ -12,18 +12,40 @@ class NotificationService
 {
     protected NotificationTypeRegistry $typeRegistry;
 
-    protected ModuleRegistry $moduleRegistry;
+    protected FeatureRegistry $featureRegistry;
 
     protected MailService $mailService;
 
+    private const UNREAD_CACHE_PREFIX = 'notif:unread:';
+
+    private const UNREAD_CACHE_TTL = 5;
+
     public function __construct(
         NotificationTypeRegistry $typeRegistry,
-        ModuleRegistry $moduleRegistry,
+        FeatureRegistry $featureRegistry,
         MailService $mailService,
     ) {
         $this->typeRegistry = $typeRegistry;
-        $this->moduleRegistry = $moduleRegistry;
+        $this->featureRegistry = $featureRegistry;
         $this->mailService = $mailService;
+    }
+
+    public function getCachedUnreadCount(int $userId, string $userType): int
+    {
+        $key = self::UNREAD_CACHE_PREFIX.$userId;
+
+        return (int) Cache::remember($key, self::UNREAD_CACHE_TTL, function () use ($userId, $userType) {
+            return \DB::table('notifications')
+                ->where('notifiable_id', $userId)
+                ->where('notifiable_type', $userType)
+                ->whereNull('read_at')
+                ->count();
+        });
+    }
+
+    public function invalidateUnreadCache(int $userId): void
+    {
+        Cache::forget(self::UNREAD_CACHE_PREFIX.$userId);
     }
 
     public function notifyViaPreferences($notifiable, string $type, Notification $notification, ?array $channels = null): void
@@ -38,7 +60,6 @@ class NotificationService
         $channels = $channels ?? ($typeConfig['default_channels'] ?? ['in_app']);
         $defaultEnabled = $typeConfig['default_enabled'] ?? true;
 
-        // Batch-load all preferences for this user + type in one query
         $prefs = NotificationPreference::where('user_id', $notifiable->id)
             ->where('type', $type)
             ->whereIn('channel', $channels)
@@ -61,6 +82,7 @@ class NotificationService
 
         if (! empty($allowedChannels)) {
             $notifiable->notify($notification);
+            $this->invalidateUnreadCache($notifiable->id);
         }
 
         if (in_array('email', $allowedChannels, true)) {

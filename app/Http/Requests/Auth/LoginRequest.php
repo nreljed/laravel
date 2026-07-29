@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Services\SettingsService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -65,13 +66,17 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        $maxAttempts = (int) SettingsService::get('max_login_attempts', 5);
+
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), $maxAttempts)) {
             return;
         }
 
         event(new Lockout($this));
 
+        $lockoutDuration = (int) SettingsService::get('lockout_duration', 5);
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = max($seconds, $lockoutDuration * 60);
 
         throw ValidationException::withMessages([
             'username' => trans('auth.throttle', [

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
 class AccountDeletionTest extends TestCase
 {
+    use CreatesTestUsers;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -19,38 +19,31 @@ class AccountDeletionTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    protected function createUser(): User
-    {
-        $user = User::factory()->create();
-        $role = Role::where('slug', 'crm_user')->first();
-        $user->roles()->attach($role);
-
-        return $user;
-    }
-
     public function test_profile_deletion_requires_current_password(): void
     {
-        $user = $this->createUser();
+        $user = $this->regularUser();
 
         $response = $this
             ->actingAs($user)
-            ->from('/dashboard/profile')
-            ->delete('/dashboard/profile', [
-                'password' => 'wrong-password',
+            ->from('/dashboard/account')
+            ->delete('/dashboard/account', [
+                'current_password' => 'wrong-password',
+                'confirmation' => 'delete my account',
             ]);
 
-        $response->assertSessionHasErrors('password');
+        $response->assertSessionHasErrors('current_password');
         $this->assertNotNull($user->fresh());
     }
 
     public function test_profile_deletion_works_with_correct_password(): void
     {
-        $user = $this->createUser();
+        $user = $this->regularUser();
 
         $response = $this
             ->actingAs($user)
-            ->delete('/dashboard/profile', [
-                'password' => 'password',
+            ->delete('/dashboard/account', [
+                'current_password' => 'password',
+                'confirmation' => 'delete my account',
             ]);
 
         $response->assertSessionHasNoErrors();
@@ -61,13 +54,12 @@ class AccountDeletionTest extends TestCase
 
     public function test_account_deletion_requires_current_password(): void
     {
-        $user = $this->createUser();
+        $user = $this->regularUser();
 
         $response = $this
             ->actingAs($user)
             ->from('/dashboard/account')
-            ->post('/dashboard/account/delete', [
-                'confirmation' => 'delete my account',
+            ->post('/dashboard/account/verify-delete-password', [
                 'current_password' => 'wrong-password',
             ]);
 
@@ -77,14 +69,14 @@ class AccountDeletionTest extends TestCase
 
     public function test_account_deletion_requires_confirmation_string(): void
     {
-        $user = $this->createUser();
+        $user = $this->regularUser();
 
         $response = $this
             ->actingAs($user)
             ->from('/dashboard/account')
-            ->post('/dashboard/account/delete', [
-                'confirmation' => 'wrong string',
+            ->delete('/dashboard/account', [
                 'current_password' => 'password',
+                'confirmation' => 'wrong string',
             ]);
 
         $response->assertSessionHasErrors('confirmation');
@@ -93,13 +85,13 @@ class AccountDeletionTest extends TestCase
 
     public function test_account_deletion_works_with_correct_password_and_confirmation(): void
     {
-        $user = $this->createUser();
+        $user = $this->regularUser();
 
         $response = $this
             ->actingAs($user)
-            ->post('/dashboard/account/delete', [
-                'confirmation' => 'delete my account',
+            ->delete('/dashboard/account', [
                 'current_password' => 'password',
+                'confirmation' => 'delete my account',
             ]);
 
         $response->assertSessionHasNoErrors();

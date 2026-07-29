@@ -1,13 +1,13 @@
 import * as React from "react";
-import { Link, useForm } from "@inertiajs/react";
+import { Link, useForm, usePage } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { PasswordInput } from "@/Components/ui/password-input";
+import { PasswordInput } from "@/Components/shared/password-input";
 import { Label } from "@/Components/ui/label";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Field, FieldError } from "@/Components/ui/field";
-import { ErrorMessage } from "@/Components/error-message";
+import { ErrorMessage } from "@/Components/shared/error-message";
 import { CheckCircle } from "lucide-react";
 import { Spinner } from "@/Components/ui/spinner";
 import { loginSchema } from "@/lib/schemas";
@@ -37,6 +37,9 @@ export default function Login({
   canResetPassword: boolean;
   errors?: Record<string, string>;
 }) {
+  const { props } = usePage();
+  const registration = (props.registration as { enabled?: boolean }) || {};
+  const registrationEnabled = registration.enabled !== false;
   const {
     data,
     setData,
@@ -150,10 +153,16 @@ export default function Login({
               Sign in
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link href={route("register")} className="text-primary hover:underline">
-                Sign up
-              </Link>
+              {registrationEnabled ? (
+                <>
+                  Don&apos;t have an account?{" "}
+                  <Link href={route("register")} className="text-primary hover:underline">
+                    Sign up
+                  </Link>
+                </>
+              ) : (
+                "Contact your administrator to get access."
+              )}
             </p>
           </CardFooter>
         </form>

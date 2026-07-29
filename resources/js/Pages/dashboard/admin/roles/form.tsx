@@ -120,11 +120,11 @@ export default function AdminRolesForm() {
       <Head title={isEditing ? `Edit: ${role!.name}` : "Create Role"} />
 
       <div className="mb-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={route("dashboard.admin.roles.index")}>
+        <Link href={route("dashboard.admin.roles.index")}>
+          <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-1 size-4" /> Back to Roles
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -208,7 +208,7 @@ export default function AdminRolesForm() {
                     {group.permissions.map((perm) => (
                       <label
                         key={perm.id}
-                        className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-accent transition-colors has-data-[state=checked]:border-primary"
+                        className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-accent transition-colors has-data-[checked]:border-primary"
                       >
                         <Checkbox
                           checked={data.permission_ids.includes(perm.id)}

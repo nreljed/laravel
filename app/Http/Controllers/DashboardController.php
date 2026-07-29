@@ -3,26 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
-use App\Services\DashboardService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(DashboardService $dashboard)
+    public function index(): Response
     {
-        return Inertia::render('dashboard/index', [
-            'stats' => $dashboard->getStats(),
-            'analytics' => $dashboard->getAnalytics(),
-        ]);
+        return Inertia::render('dashboard/index');
     }
 
-    public function stats()
+    public function stats(): Response
     {
         return Inertia::render('dashboard/stats');
     }
 
-    public function notifications(Request $request)
+    public function notifications(Request $request): Response
     {
         $user = $request->user();
 
@@ -39,11 +37,8 @@ class DashboardController extends Controller
         if ($typeFilter !== 'all') {
             $query->where(function ($q) use ($typeFilter) {
                 $typePatterns = [
-                    'booking' => ['booking.%', '%booking%'],
-                    'property' => ['property.%', '%property%'],
                     'account' => ['%user%', '%password%', '%email%', '%account%'],
                     'content' => ['post.%', '%content%'],
-                    'orders' => ['order.%', '%stock%', '%shop%'],
                 ];
 
                 $patterns = $typePatterns[$typeFilter] ?? ["{$typeFilter}%"];
@@ -67,12 +62,8 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function switchMode(Request $request)
+    public function switchMode(Request $request): RedirectResponse
     {
-        if (! $request->user()->hasPermission('bookings.view')) {
-            abort(403);
-        }
-
         $mode = $request->input('mode', 'host');
 
         if (! in_array($mode, ['host', 'guest'])) {

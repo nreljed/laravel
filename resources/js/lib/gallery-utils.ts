@@ -5,7 +5,19 @@ export const DEFAULT_IMAGE_CONFIG = {
   format: "image/webp",
 } as const;
 
-export const GALLERY_MAX_SIZE = 50 * 1024 * 1024;
+export const GALLERY_MAX_SIZE = 10 * 1024 * 1024;
+
+export function getCsrfToken(): string {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+}
+
+export function jsonHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+    "X-CSRF-TOKEN": getCsrfToken(),
+  };
+}
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -28,6 +40,31 @@ export function getImageUrl(image: ImageLike | null | undefined): string {
 export function createPreview(file: File | null | undefined): string | null {
   if (!file) return null;
   return URL.createObjectURL(file);
+}
+
+export interface FileMetadata {
+  name: string;
+  size: number;
+  type: string;
+  preview: string;
+}
+
+export function getFileMetadata(file: File): FileMetadata {
+  return {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    preview: URL.createObjectURL(file),
+  };
+}
+
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return "< 1s";
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
 }
 
 function resolveQuality(width: number, height: number, baseQuality: number): number {

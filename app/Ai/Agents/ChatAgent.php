@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Ai\Agents;
+
+use App\Ai\Agents\Traits\ResolvesUserProvider;
+use App\Ai\Concerns\LogsAiUsage;
+use App\Models\User;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Promptable;
+
+class ChatAgent implements Agent
+{
+    use LogsAiUsage, Promptable, ResolvesUserProvider;
+
+    /**
+     * System instructions for the chat assistant.
+     */
+    public function instructions(): string
+    {
+        return <<<'INSTRUCTIONS'
+You are a helpful AI assistant embedded in the Cost Breaker 360 dashboard.
+You help users with:
+- Cost management questions and analysis
+- Dashboard navigation and feature explanations
+- Data interpretation and reporting
+- General productivity and workflow advice
+
+Be concise, professional, and actionable. If you don't know something about the application, say so honestly rather than guessing.
+INSTRUCTIONS;
+    }
+
+    /**
+     * Send a chat message and get a text response.
+     */
+    public function chat(User $user, string $message, ?string $conversationId = null): string
+    {
+        $this->forUser($user);
+
+        $this->injectProviderKey();
+
+        $response = $this->prompt($message);
+
+        $this->logUsage($user, $response);
+
+        return (string) $response;
+    }
+
+    /**
+     * Log usage for a chat interaction.
+     */
+    protected function logUsage(User $user, object $response): void
+    {
+        $usage = method_exists($response, 'usage') ? $response->usage() : [];
+
+        $resolved = $this->getResolvedProvider();
+        $this->logAiUsage(
+            user: $user,
+            provider: $resolved['driver'],
+            model: $resolved['model'] ?? 'unknown',
+            inputTokens: $usage['input_tokens'] ?? 0,
+            outputTokens: $usage['output_tokens'] ?? 0,
+        );
+    }
+}

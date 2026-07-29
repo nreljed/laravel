@@ -35,13 +35,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/Components/ui/alert-dialog";
+import { AlertTriangle, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/Components/ui/checkbox";
 
 interface BulkAction {
   label: string;
   value: string;
   show?: (_statuses: string[]) => boolean;
   destructive?: boolean;
+  confirmTitle?: string;
+  confirmDescription?: string;
+  confirmLabel?: string;
 }
 
 interface DataTableProps<TData, TValue> {
@@ -75,11 +89,40 @@ export function DataTable<TData, TValue>({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [confirmAction, setConfirmAction] = React.useState<{
+    action: BulkAction;
+    ids: number[];
+  } | null>(null);
+
+  const tableColumns = React.useMemo<ColumnDef<TData, TValue>[]>(() => {
+    if (!bulkActions) return columns;
+    const selectCol: ColumnDef<TData, TValue> = {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          indeterminate={table.getIsSomePageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    };
+    return [selectCol, ...columns];
+  }, [columns, bulkActions]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
-    columns,
+    columns: tableColumns,
     state: {
       sorting,
       columnVisibility,
@@ -115,10 +158,8 @@ export function DataTable<TData, TValue>({
             {table.getFilteredSelectedRowModel().rows.length} selected
           </span>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Bulk Actions <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+              Bulk Actions <ChevronDown className="ml-1 h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               {bulkActions.map((action) => {
@@ -134,7 +175,11 @@ export function DataTable<TData, TValue>({
                         .getFilteredSelectedRowModel()
                         .rows.map((r) => (r.original as Record<string, unknown>).id as number)
                         .filter((id): id is number => id != null);
-                      onBulkAction(action.value, ids);
+                      if (action.destructive) {
+                        setConfirmAction({ action, ids });
+                      } else {
+                        onBulkAction(action.value, ids);
+                      }
                     }}
                   >
                     {action.label}
@@ -163,7 +208,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -173,7 +218,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={tableColumns.length} className="h-24 text-center">
                   {emptyState ?? "No results."}
                 </TableCell>
               </TableRow>
@@ -182,6 +227,41 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <DataTablePagination table={table} />
+      <AlertDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => {
+          if (!open) setConfirmAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-destructive" />
+              {confirmAction?.action.confirmTitle ?? "Confirm Action"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.action.confirmDescription ??
+                `Are you sure you want to ${confirmAction?.action.label.toLowerCase()} ${confirmAction?.ids.length} selected item(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!(confirmAction && onBulkAction)) {
+                  return;
+                }
+
+                onBulkAction(confirmAction.action.value, confirmAction.ids);
+                setConfirmAction(null);
+              }}
+            >
+              {confirmAction?.action.confirmLabel ?? confirmAction?.action.label}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

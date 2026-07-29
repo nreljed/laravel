@@ -7,10 +7,12 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
 class PermissionManagementTest extends TestCase
 {
+    use CreatesTestUsers;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -18,15 +20,6 @@ class PermissionManagementTest extends TestCase
         parent::setUp();
 
         $this->seed(RolesAndPermissionsSeeder::class);
-    }
-
-    protected function admin(): User
-    {
-        $user = User::factory()->create();
-        $role = Role::where('slug', 'admin')->first();
-        $user->roles()->attach($role);
-
-        return $user;
     }
 
     public function test_admin_can_list_permissions(): void

@@ -40,7 +40,7 @@ function PaginationLink({ className, isActive, size = "icon", ...props }: Pagina
     <a
       aria-current={isActive ? "page" : undefined}
       data-slot="pagination-link"
-      data-active={isActive}
+      data-active={isActive || undefined}
       className={cn(
         buttonVariants({
           variant: isActive ? "outline" : "ghost",

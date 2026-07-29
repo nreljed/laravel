@@ -13,7 +13,8 @@ class CreateAdmin extends Command
     protected $signature = 'app:create-admin
         {--email= : Admin email}
         {--password= : Admin password}
-        {--name= : Admin display name}';
+        {--name= : Admin display name}
+        {--username= : Admin username (defaults to name)}';
 
     protected $description = 'Create or update the first admin user';
 
@@ -28,6 +29,7 @@ class CreateAdmin extends Command
         $email = $this->option('email') ?: env('ADMIN_EMAIL', 'nstudio.webdesign@gmail.com');
         $password = $this->option('password') ?: env('ADMIN_PASSWORD');
         $name = $this->option('name') ?: env('ADMIN_NAME', 'Admin');
+        $username = $this->option('username') ?: $name;
 
         $existing = User::where('email', $email)->first();
         if ($existing && ! $password) {
@@ -49,11 +51,11 @@ class CreateAdmin extends Command
             return Command::FAILURE;
         }
 
-        $user = User::firstOrCreate(
+        $user = User::updateOrCreate(
             ['email' => $email],
             [
                 'name' => $name,
-                'username' => str($name)->slug('_')->toString(),
+                'username' => $username,
                 'password' => Hash::make($password),
                 'email_verified_at' => now(),
             ]

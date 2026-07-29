@@ -29,6 +29,22 @@ class DeployController extends Controller
             return response()->json(['error' => 'No content provided'], 400);
         }
 
+        if (! is_string($content)) {
+            return response()->json(['error' => 'Content must be a string'], 400);
+        }
+
+        $lineCount = substr_count($content, "\n") + 1;
+        if ($lineCount > 200) {
+            return response()->json(['error' => 'Content exceeds maximum allowed lines (200)'], 400);
+        }
+
+        $forbiddenKeys = ['APP_KEY', 'DEPLOY_TOKEN'];
+        foreach ($forbiddenKeys as $key) {
+            if (preg_match('/^'.preg_quote($key, '/').'\s*=/m', $content)) {
+                return response()->json(['error' => "Setting {$key} cannot be modified via this endpoint."], 403);
+            }
+        }
+
         $envPath = base_path('.env');
 
         if (File::exists($envPath)) {
@@ -58,11 +74,10 @@ class DeployController extends Controller
             'package:discover' => [[]],
             'app:create-admin' => [[
                 '--no-interaction' => true,
-                '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
-                '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
-                '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+                '--email' => env('ADMIN_EMAIL', ''),
+                '--password' => env('ADMIN_PASSWORD', ''),
+                '--name' => env('ADMIN_NAME', 'Admin'),
             ]],
-            'modules:sync-permissions' => [[]],
             'config:cache' => [[]],
             'route:cache' => [[]],
             'view:cache' => [[]],
@@ -147,49 +162,11 @@ class DeployController extends Controller
             $output[] = 'Restored .env';
         }
 
-        // Remove stale files — files on disk that are NOT in the zip.
-        $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
-        $protected = ['bootstrap/cache/'];
-        $rootLen = strlen(base_path()) + 1;
-        $staleCandidates = 0;
-        $staleRemoved = 0;
-        $staleList = [];
-        foreach ($staleDirs as $dir) {
-            $full = base_path($dir);
-            if (! is_dir($full)) {
-                continue;
-            }
-            $files = File::allFiles($full);
-            foreach ($files as $file) {
-                $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
-                $skip = false;
-                foreach ($protected as $p) {
-                    if (str_starts_with($rel, $p)) {
-                        $skip = true;
-                        break;
-                    }
-                }
-                if ($skip) {
-                    continue;
-                }
-                if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
-                    continue;
-                }
-                $staleCandidates++;
-                if (! isset($zipFiles[$rel])) {
-                    $staleRemoved++;
-                    $staleList[] = $rel;
-                }
-            }
-        }
-        $staleRatio = $staleCandidates > 0 ? $staleRemoved / $staleCandidates : 0;
-        if ($staleRatio > 0.10) {
-            $output[] = "Stale cleanup aborted ($staleRemoved/$staleCandidates = ".round($staleRatio * 100).'%)';
+        $stale = $this->removeStaleFiles($zipFiles);
+        if ($stale['aborted']) {
+            $output[] = "Stale cleanup aborted ($stale[candidates] = ".round($stale['ratio'] * 100).'%)';
         } else {
-            foreach ($staleList as $rel) {
-                File::delete(base_path($rel));
-            }
-            $output[] = "Removed $staleRemoved stale files";
+            $output[] = "Removed $stale[removed] stale files";
         }
 
         $commands = [
@@ -197,11 +174,10 @@ class DeployController extends Controller
             'migrate:fresh' => [['--force' => true, '--seed' => true]],
             'app:create-admin' => [[
                 '--no-interaction' => true,
-                '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
-                '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
-                '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+                '--email' => env('ADMIN_EMAIL', ''),
+                '--password' => env('ADMIN_PASSWORD', ''),
+                '--name' => env('ADMIN_NAME', 'Admin'),
             ]],
-            'modules:sync-permissions' => [[]],
             'config:cache' => [[]],
             'route:cache' => [[]],
             'view:cache' => [[]],
@@ -232,6 +208,57 @@ class DeployController extends Controller
                 File::delete($file);
             }
         }
+    }
+
+    private function removeStaleFiles(array $zipFiles): array
+    {
+        $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
+        $protected = ['bootstrap/cache/'];
+        $rootLen = strlen(base_path()) + 1;
+        $staleCandidates = 0;
+        $staleRemoved = 0;
+        $staleList = [];
+
+        foreach ($staleDirs as $dir) {
+            $full = base_path($dir);
+            if (! is_dir($full)) {
+                continue;
+            }
+            $files = File::allFiles($full);
+            foreach ($files as $file) {
+                $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
+                $skip = false;
+                foreach ($protected as $p) {
+                    if (str_starts_with($rel, $p)) {
+                        $skip = true;
+                        break;
+                    }
+                }
+                if ($skip) {
+                    continue;
+                }
+                if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
+                    continue;
+                }
+                $staleCandidates++;
+                if (! isset($zipFiles[$rel])) {
+                    $staleRemoved++;
+                    $staleList[] = $rel;
+                }
+            }
+        }
+
+        $staleRatio = $staleCandidates > 0 ? $staleRemoved / $staleCandidates : 0;
+
+        if ($staleRatio > 0.10) {
+            return ['aborted' => true, 'removed' => 0, 'candidates' => $staleCandidates, 'ratio' => $staleRatio];
+        }
+
+        foreach ($staleList as $rel) {
+            File::delete(base_path($rel));
+        }
+
+        return ['aborted' => false, 'removed' => $staleRemoved, 'candidates' => $staleCandidates, 'ratio' => $staleRatio];
     }
 
     private function wipeCache(): void
@@ -346,51 +373,11 @@ class DeployController extends Controller
             File::put($versionFile, $latestTag);
             $output[] = "New version: $latestTag";
 
-            // Remove stale files — files on disk that are NOT in the zip.
-            // Uses zip entries as the source of truth (no separate manifest needed).
-            $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
-            $protected = ['bootstrap/cache/'];
-            $rootLen = strlen(base_path()) + 1;
-            $staleCandidates = 0;
-            $staleRemoved = 0;
-            $staleList = [];
-            foreach ($staleDirs as $dir) {
-                $full = base_path($dir);
-                if (! is_dir($full)) {
-                    continue;
-                }
-                $files = File::allFiles($full);
-                foreach ($files as $file) {
-                    $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
-                    $skip = false;
-                    foreach ($protected as $p) {
-                        if (str_starts_with($rel, $p)) {
-                            $skip = true;
-                            break;
-                        }
-                    }
-                    if ($skip) {
-                        continue;
-                    }
-                    if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
-                        continue;
-                    }
-                    $staleCandidates++;
-                    if (! isset($zipFiles[$rel])) {
-                        $staleRemoved++;
-                        $staleList[] = $rel;
-                    }
-                }
-            }
-            // Safety: if >10% of source files look stale, something is wrong.
-            $staleRatio = $staleCandidates > 0 ? $staleRemoved / $staleCandidates : 0;
-            if ($staleRatio > 0.10) {
-                $output[] = "Stale cleanup aborted (ratio: $staleRatio)";
+            $stale = $this->removeStaleFiles($zipFiles);
+            if ($stale['aborted']) {
+                $output[] = "Stale cleanup aborted (ratio: $stale[ratio])";
             } else {
-                foreach ($staleList as $rel) {
-                    File::delete(base_path($rel));
-                }
-                $output[] = "Removed $staleRemoved stale files";
+                $output[] = "Removed $stale[removed] stale files";
             }
 
             $commands = [
@@ -398,11 +385,10 @@ class DeployController extends Controller
                 'migrate' => [['--force' => true]],
                 'app:create-admin' => [[
                     '--no-interaction' => true,
-                    '--email' => $request->header('X-Admin-Email', env('ADMIN_EMAIL', '')),
-                    '--password' => $request->header('X-Admin-Password', env('ADMIN_PASSWORD', '')),
-                    '--name' => $request->header('X-Admin-Name', env('ADMIN_NAME', 'Admin')),
+                    '--email' => env('ADMIN_EMAIL', ''),
+                    '--password' => env('ADMIN_PASSWORD', ''),
+                    '--name' => env('ADMIN_NAME', 'Admin'),
                 ]],
-                'modules:sync-permissions' => [[]],
                 'config:cache' => [[]],
                 'route:cache' => [[]],
                 'view:cache' => [[]],

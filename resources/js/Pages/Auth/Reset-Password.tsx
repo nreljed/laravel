@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useForm, router } from "@inertiajs/react";
 import { Button } from "@/Components/ui/button";
-import { PasswordInput } from "@/Components/ui/password-input";
+import { PasswordInput } from "@/Components/shared/password-input";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Spinner } from "@/Components/ui/spinner";
 import { resetPasswordSchema } from "@/lib/schemas";

@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckIpAccess;
+use App\Http\Middleware\CheckMaintenanceMode;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\ConfigureSessionLifetime;
 use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Http\Middleware\ModuleEnabled;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,25 +25,29 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            ConfigureSessionLifetime::class,
+            CheckIpAccess::class,
             ContentSecurityPolicy::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
-            'profile/avatar',
-            'booking/*',
-            'dashboard/bookings/guest/*',
-            'dashboard/bookings/ajax/*',
+            'dashboard/account/avatar',
             'deploy/*',
-            'api/notifications/*',
+            'api/notifications/unread-count',
+            'api/notifications/recent',
+            'api/notifications/',
+            'stripe/webhook',
         ]);
 
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'role' => CheckRole::class,
             'permission' => CheckPermission::class,
-            'module' => ModuleEnabled::class,
+            'maintenance' => CheckMaintenanceMode::class,
+            'session-lifetime' => ConfigureSessionLifetime::class,
+            'ip-access' => CheckIpAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -51,7 +57,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->renderable(function (HttpException $e, Request $request) {
             if ($request->inertia()) {
-                return Inertia::render('Error', ['status' => $e->getStatusCode()])
+                $retryAfter = (int) ($e->getHeaders()['Retry-After'] ?? 0);
+
+                return Inertia::render('Error', [
+                    'status' => $e->getStatusCode(),
+                    'retryAfter' => $retryAfter > 0 ? $retryAfter : null,
+                ])
                     ->toResponse($request)
                     ->setStatusCode($e->getStatusCode());
             }

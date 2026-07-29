@@ -9,23 +9,29 @@ class SettingsService
 {
     private const CACHE_KEY = 'app_settings';
 
+    private const GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting'];
+
     public static function get(string $key, mixed $default = null): mixed
     {
-        return Setting::get($key, $default);
+        return Cache::remember(self::CACHE_KEY.':'.$key, 3600, function () use ($key, $default) {
+            return Setting::get($key, $default);
+        });
     }
 
     public static function set(string $key, mixed $value): void
     {
         Setting::set($key, $value);
         Cache::forget(self::CACHE_KEY);
+        Cache::forget(self::CACHE_KEY.':'.$key);
     }
 
     public static function setMany(array $data): void
     {
         foreach ($data as $key => $value) {
             Setting::set($key, $value);
+            Cache::forget(self::CACHE_KEY.':'.$key);
         }
-        Cache::forget(self::CACHE_KEY);
+        self::clearCache();
     }
 
     public static function getGroup(string $group): array
@@ -95,7 +101,7 @@ class SettingsService
     {
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.'_grouped');
-        foreach (['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'localization', 'formatting', 'properties', 'booking', 'shop'] as $group) {
+        foreach (self::GROUPS as $group) {
             Cache::forget(self::CACHE_KEY."_{$group}");
         }
     }

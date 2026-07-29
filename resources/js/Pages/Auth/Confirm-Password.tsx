@@ -1,9 +1,9 @@
 import { useForm } from "@inertiajs/react";
 import { FormEventHandler } from "react";
 import { Button } from "@/Components/ui/button";
-import { PasswordInput } from "@/Components/ui/password-input";
+import { PasswordInput } from "@/Components/shared/password-input";
 import { Alert } from "@/Components/ui/alert";
-import { ErrorMessage } from "@/Components/error-message";
+import { ErrorMessage } from "@/Components/shared/error-message";
 import { Spinner } from "@/Components/ui/spinner";
 import { confirmPasswordSchema } from "@/lib/schemas";
 import { zodErrorsToMap } from "@/lib/utils";

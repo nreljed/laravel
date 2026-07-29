@@ -32,17 +32,9 @@ interface ActionCellProps {
   item: ActionItem;
   baseRoute: string;
   itemLabel: string;
-  nonce?: string;
-  extraParams?: Record<string, string>;
 }
 
-export function ActionCell({
-  item,
-  baseRoute,
-  itemLabel,
-  nonce: _nonce,
-  extraParams,
-}: ActionCellProps) {
+export function ActionCell({ item, baseRoute, itemLabel }: ActionCellProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -58,15 +50,15 @@ export function ActionCell({
   const handleStatusChange = (newStatus: string) => {
     router.put(
       `${baseRoute}/${item.id}/status`,
-      {
-        status: newStatus,
-        ...extraParams,
-      },
+      { status: newStatus },
       {
         preserveScroll: true,
         onSuccess: () => {
-          if (newStatus === "publish") toast.success(`${itemLabel} published!`);
-          else toast.success(`${itemLabel} moved to draft.`);
+          if (newStatus === "published") {
+            toast.success(`${itemLabel} published!`);
+          } else {
+            toast.success(`${itemLabel} moved to draft.`);
+          }
         },
         onError: () => toast.error(`Failed to update ${itemLabel.toLowerCase()} status.`),
       },
@@ -76,34 +68,33 @@ export function ActionCell({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" />}>
+          <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onCloseAutoFocus={(e: Event) => e.preventDefault()}>
-          <DropdownMenuItem asChild>
-            <Link href={`${baseRoute}/${item.id}/edit`} className="flex items-center w-full">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            render={
+              <Link href={`${baseRoute}/${item.id}/edit`} className="flex items-center w-full" />
+            }
+          >
+            <Pencil className="mr-2 size-4" />
+            Edit
           </DropdownMenuItem>
-          {(item.status === "draft" || item.status === "future") && (
+          {(["draft", "archived", "future"] as string[]).includes(item.status ?? "") && (
             <DropdownMenuItem onClick={() => setPublishOpen(true)}>
-              <Eye className="mr-2 h-4 w-4" />
+              <Eye className="mr-2 size-4" />
               Publish
             </DropdownMenuItem>
           )}
-          {["publish", "published", "future"].includes(item.status ?? "") && (
+          {item.status === "published" && (
             <DropdownMenuItem onClick={() => setDraftOpen(true)}>
-              <FileEdit className="mr-2 h-4 w-4" />
+              <FileEdit className="mr-2 size-4" />
               Make Draft
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="mr-2 size-4" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -113,11 +104,12 @@ export function ActionCell({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <AlertTriangle className="size-5 text-destructive" />
               Delete {itemLabel}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{item.title}"? This action cannot be undone.
+              Are you sure you want to delete &ldquo;{item.title}&rdquo;? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -136,11 +128,11 @@ export function ActionCell({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <FileEdit className="h-5 w-5" />
+              <FileEdit className="size-5" />
               Change to Draft
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to change "{item.title}" to draft?
+              Are you sure you want to change &ldquo;{item.title}&rdquo; to draft?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -156,16 +148,16 @@ export function ActionCell({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
+              <Eye className="size-5" />
               Publish {itemLabel}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to publish "{item.title}"?
+              Are you sure you want to publish &ldquo;{item.title}&rdquo;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleStatusChange("publish")}>
+            <AlertDialogAction onClick={() => handleStatusChange("published")}>
               Yes, Publish
             </AlertDialogAction>
           </AlertDialogFooter>

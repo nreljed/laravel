@@ -11,7 +11,6 @@ import {
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,6 +26,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/Components/ui/pagination";
+import { DateRangePicker } from "@/Components/shared/date-range-picker";
 import { Filter, ScrollText } from "lucide-react";
 import {
   Empty,
@@ -78,11 +78,6 @@ const actionLabels: Record<string, string> = {
   email_change: "Email Change",
   account_delete: "Account Delete",
   profile_update: "Profile Update",
-  booking_create: "Booking Created",
-  booking_update: "Booking Updated",
-  booking_cancel: "Booking Cancelled",
-  booking_delete: "Booking Deleted",
-  booking_guest_register: "Guest Registered",
   impersonation_start: "Impersonation Started",
   impersonation_stop: "Impersonation Stopped",
   role_assigned: "Role Assigned",
@@ -143,7 +138,7 @@ export default function AdminAuditLogsIndex() {
       <Head title="Audit Logs" />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <Select value={action} onValueChange={setAction}>
+        <Select value={action} onValueChange={(value) => setAction(value ?? "")}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All Actions" />
           </SelectTrigger>
@@ -157,7 +152,7 @@ export default function AdminAuditLogsIndex() {
           </SelectContent>
         </Select>
 
-        <Select value={userId} onValueChange={setUserId}>
+        <Select value={userId} onValueChange={(value) => setUserId(value ?? "")}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All Users" />
           </SelectTrigger>
@@ -171,19 +166,12 @@ export default function AdminAuditLogsIndex() {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="w-40"
-          placeholder="From"
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="w-40"
-          placeholder="To"
+        <DateRangePicker
+          value={{ from: dateFrom, to: dateTo }}
+          onChange={({ from, to }) => {
+            setDateFrom(from);
+            setDateTo(to);
+          }}
         />
 
         <Button variant="secondary" size="sm" onClick={applyFilters}>

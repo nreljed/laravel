@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Modules\ModuleRegistry;
-use Illuminate\Support\Facades\Cache;
-
 class FormattingService
 {
     protected array $currencySymbols = [
@@ -235,52 +232,5 @@ class FormattingService
         ];
 
         return $labels[$code] ?? $code;
-    }
-
-    public function getModuleMetaConfigs(): array
-    {
-        return Cache::remember('formatting.module_configs', 3600, function () {
-            if (! app()->resolved(ModuleRegistry::class)) {
-                return [];
-            }
-
-            return app(ModuleRegistry::class)->getAllMetaFormattingConfigs();
-        });
-    }
-
-    public function formatRepeaterData(array $data, string $moduleSlug, array $globalOptions = []): array
-    {
-        $configs = $this->getModuleMetaConfigs();
-        $config = $configs[$moduleSlug] ?? [];
-
-        $priceFields = $config['price_fields'] ?? [];
-        $surfaceFields = $config['surface_fields'] ?? [];
-
-        if (empty($priceFields) && empty($surfaceFields)) {
-            return $data;
-        }
-
-        $options = array_merge(app(SettingsService::class)->getFormattingOptions(), $globalOptions);
-
-        return array_map(function ($row) use ($priceFields, $surfaceFields, $options) {
-            foreach ($priceFields as $field) {
-                if (isset($row[$field]) && $row[$field] !== '' && $row[$field] !== null) {
-                    $row[$field.'_formatted'] = $this->formatPrice($row[$field], $options);
-                }
-            }
-
-            foreach ($surfaceFields as $field) {
-                if (isset($row[$field]) && $row[$field] !== '' && $row[$field] !== null) {
-                    $row[$field.'_formatted'] = $this->formatSurface($row[$field], $options);
-                }
-            }
-
-            return $row;
-        }, $data);
-    }
-
-    public function clearModuleConfigCache(): void
-    {
-        Cache::forget('formatting.module_configs');
     }
 }

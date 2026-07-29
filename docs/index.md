@@ -1,83 +1,62 @@
 # Cost Breaker 360 — Documentation
 
-> Laravel 13 + Inertia.js 3.4 + React 19 SaaS application
+> Laravel 13 + Inertia.js 3 + React 19 SaaS application
 
-## Core Architecture
+## Stack
 
-| Document | Description | Status |
-|----------|-------------|--------|
-| [Architecture Overview](core/architecture.md) | Laravel boot process, middleware stack, service providers | ✅ Current |
-| [Module System](core/modules.md) | Module discovery, lifecycle, permissions, nav items | ✅ Current |
-| [Route Architecture](core/routes.md) | Route registration, middleware, naming conventions | ✅ Current |
-| [Authentication](core/auth.md) | Breeze auth, login/register/password, email verification | ✅ Current |
-| [Authorization](core/authorization.md) | RBAC, permissions, policies, rate limiting | ✅ Current |
-| [Settings](core/settings.md) | DB-driven settings system | ✅ Current |
-| [Notifications](core/notifications.md) | Zero-infrastructure polling notification system | ✅ Current |
-| [Email/SMTP](core/email.md) | Multi-layered email system, templates, encryption | ✅ Current |
-| [Account Management](core/account.md) | Profile, email/password change, account deletion | ✅ Current |
-| [Formatting & Dashboard](core/formatting.md) | FormattingService, DashboardService, stats cache | ✅ Current |
+| Document                        | Description                                    |
+| ------------------------------- | ---------------------------------------------- |
+| [Laravel](stack/laravel.md)     | Laravel 13 architecture, patterns, conventions |
+| [Inertia.js](stack/inertia.md)  | Inertia.js 3 integration, forms, navigation    |
+| [React](stack/react.md)         | React 19 patterns, hooks, file structure       |
+| [shadcn/ui](stack/shadcn-ui.md) | Component library, config, conventions         |
 
-## Modules
+## Core
 
-| Module | Documents | Slug | Dependencies |
-|--------|-----------|------|-------------|
-| [Properties](modules/properties/index.md) | [Controllers](modules/properties/controllers.md) · [Services](modules/properties/services.md) · [Frontend](modules/properties/frontend.md) | `properties` | none |
-| [Booking](modules/booking/index.md) | [Architecture](modules/booking/architecture.md) · [Controllers](modules/booking/controllers.md) · [Services](modules/booking/services.md) · [Frontend](modules/booking/frontend.md) · [Settings](modules/booking/settings.md) · [Guest Portal](modules/booking/guest-portal.md) | `bookings` | `properties` |
-| [Shop](modules/shop/index.md) | [Controllers](modules/shop/controllers.md) · [Frontend](modules/shop/frontend.md) | `shop` | none |
-| [Posts](modules/posts/index.md) | [Controllers](modules/posts/controllers.md) · [Frontend](modules/posts/frontend.md) | `posts` | none |
+| Document                               | Description                                                  |
+| -------------------------------------- | ------------------------------------------------------------ |
+| [Architecture](core/architecture.md)   | Boot process, middleware, service providers                  |
+| [Features](core/features.md)           | Feature architecture, adding new features                    |
+| [Dashboard](core/dashboard.md)         | Dashboard pages, services, shared props                      |
+| [Routes](core/routes.md)               | Route structure, middleware, naming                          |
+| [Notifications](core/notifications.md) | Notification system — architecture, API, polling, components |
 
-## Frontend
+## Lexical Editor
 
-| Document | Description |
-|----------|-------------|
-| [Frontend Architecture](frontend/architecture.md) | Build tooling, module discovery, TS conventions |
-| [Navigation](frontend/navigation.md) | Sidebar, nav items, host/guest mode, icons |
-| [Shared Props](frontend/shared-props.md) | HandleInertiaRequests, userCapabilities, flash messages |
-| [Patterns](frontend/patterns.md) | useForm, useAuth, toast, theme, Ziggy routes |
-| [shadcn/ui](frontend/shadcn-ui.md) | UI component library integration |
-| [React](frontend/react.md) | React 19 patterns and conventions |
-| [Inertia](frontend/inertia.md) | Inertia.js v3 integration |
-
-## Infrastructure
-
-| Document | Description |
-|----------|-------------|
-| [Middleware](infrastructure/middleware.md) | Middleware inventory and configuration |
-| [Artisan Commands](infrastructure/commands.md) | Custom commands reference |
-
-## Database
-
-| Document | Description |
-|----------|-------------|
-| [Schema Reference](database/schema.md) | Table definitions, relationships, column types |
-| [Migration Conventions](database/migrations.md) | Naming, structure, module migrations |
-
-## Testing
-
-| Document | Description |
-|----------|-------------|
-| [Testing Infrastructure](testing/index.md) | PHPUnit setup, BootsModules trait, patterns |
+| Document                                | Description                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [Architecture](lexical/architecture.md) | Plugin composition, data flow, HTML serialization, component tree                                 |
+| [Custom Nodes](lexical/nodes.md)        | ImageNode, YouTubeNode, LayoutContainerNode, LayoutItemNode                                       |
+| [Toolbar](lexical/toolbar.md)           | EditorToolbar, block formatting, inline formatting, color picker, insert actions                  |
+| [Table](lexical/table.md)               | TableActionMenuPlugin, TableHoverActionsPlugin, TableCellResizerPlugin, column drag-reorder, sort |
+| [Image](lexical/image.md)               | ImageNode, upload pipeline, resize handles, insert/edit dialogs, floating toolbar                 |
+| [Layout](lexical/layout.md)             | LayoutContainerNode, LayoutItemNode, ColumnsPlugin, LayoutControlsPlugin, insert dialog           |
+| [Plugins](lexical/plugins.md)           | Full plugin inventory — Lexical built-ins and custom plugins                                      |
+| [Theme](lexical/theme.md)               | Tailwind CSS class mappings, dark mode, table cell styling                                        |
 
 ## Workflow
 
-| Document | Description |
-|----------|-------------|
-| [Setup Guide](workflow/setup.md) | Local development environment setup |
-| [Development](workflow/development.md) | Commands, conventions, type safety |
-| [CI Pipeline](workflow/ci.md) | GitHub Actions validation workflow |
-| [Release](workflow/release.md) | Versioning, changelog, release process |
-| [Deployment](workflow/deploy.md) | Server deploy, admin bootstrap, troubleshooting |
+| Document                               | Description                                   |
+| -------------------------------------- | --------------------------------------------- |
+| [Setup](workflow/setup.md)             | Local dev environment, LocalWP, install       |
+| [Development](workflow/development.md) | Daily workflow, conventions, git branching    |
+| [Deployment](workflow/deploy.md)       | CI/CD pipeline, GitHub Actions, server deploy |
+| [Testing](workflow/testing.md)         | PHPUnit, Vitest, ESLint, CI pipeline          |
 
-## Audits & Plans
+## Component Structure
 
-| Document | Description |
-|----------|-------------|
-| [Audit Index](auditing/index.md) | Master reference for all audits |
-| [Upgrade Plan](auditing/upgrade-plan.md) | 8-phase codebase improvement plan |
-| [CRM Migration Opportunities](auditing/crm-migration-opportunities.md) | Cross-project comparison |
-
-## Progress
-
-| Document | Description |
-|----------|-------------|
-| [Progress Summary](progress-summary.md) | Development progress log |
+```
+Components/
+  ui/           # shadcn/ui primitives (56 components)
+  shared/       # Reusable app components
+  layout/       # Layout components (sidebar, banners)
+  navigation/   # Nav components (nav-logo, nav-main, nav-user, command-search)
+  notifications/# Notification components
+  frontend/     # Public-facing components
+  account/      # Account page sections
+  profile/      # Profile page sections
+  settings/     # Settings page sections
+  editor/       # Lexical rich-text editor (32 files, 7 subdirectories)
+  blog/         # Blog-specific components
+  seo/          # SEO components
+```

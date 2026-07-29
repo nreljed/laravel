@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { LucideIcon } from "lucide-react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
@@ -6,8 +6,8 @@ import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Separator } from "@/Components/ui/separator";
 import { Badge } from "@/Components/ui/badge";
-import { SettingsAccordionItem } from "@/Components/settings-accordion";
-import { Bell, BellOff, Mail, Smartphone, Volume2, VolumeX } from "lucide-react";
+import { SettingsAccordionItem } from "@/Components/shared/settings-accordion";
+import { Bell, BellOff, Mail, Monitor, Volume2, VolumeX } from "lucide-react";
 
 interface NotificationTypeConfig {
   label: string;
@@ -23,16 +23,20 @@ type PrefValue = { in_app: boolean; email: boolean };
 interface NotificationPrefsSectionProps {
   notificationTypes: Record<string, Record<string, NotificationTypeConfig>>;
   preferences: Record<string, { in_app?: boolean; email?: boolean }>;
+  asAccordion?: boolean;
+  accordionDefaultOpen?: boolean;
 }
 
 const CHANNEL_ICONS: Record<string, LucideIcon> = {
-  in_app: Smartphone,
+  in_app: Monitor,
   email: Mail,
 };
 
 export function NotificationPrefsSection({
   notificationTypes,
   preferences: initialPrefs,
+  asAccordion: _asAccordion,
+  accordionDefaultOpen: _accordionDefaultOpen,
 }: NotificationPrefsSectionProps) {
   const [prefs, setPrefs] = useState<Record<string, PrefValue>>(() => {
     const result: Record<string, PrefValue> = {};
@@ -49,7 +53,7 @@ export function NotificationPrefsSection({
   });
   const [saving, setSaving] = useState(false);
 
-  const hasChanges = () => {
+  const hasChanges = useMemo(() => {
     for (const types of Object.values(notificationTypes)) {
       for (const [key, config] of Object.entries(types)) {
         const p = prefs[key];
@@ -60,7 +64,7 @@ export function NotificationPrefsSection({
       }
     }
     return false;
-  };
+  }, [prefs, notificationTypes, initialPrefs]);
 
   const toggleChannel = (typeKey: string, channel: "in_app" | "email", checked: boolean) => {
     setPrefs((prev) => ({
@@ -89,7 +93,7 @@ export function NotificationPrefsSection({
       }
     }
     router.post(
-      route("dashboard.account.notification-preferences"),
+      route("dashboard.account.notifications"),
       { preferences: flat },
       {
         preserveScroll: true,
@@ -217,7 +221,7 @@ export function NotificationPrefsSection({
         <Separator />
 
         <div className="flex justify-end">
-          <Button onClick={savePrefs} disabled={saving || !hasChanges()} size="sm">
+          <Button onClick={savePrefs} disabled={saving || !hasChanges} size="sm">
             {saving ? "Saving..." : "Save Preferences"}
           </Button>
         </div>

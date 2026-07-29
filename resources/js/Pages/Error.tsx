@@ -1,7 +1,9 @@
 import { Head, Link } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 
 interface ErrorPageProps {
   status: number;
+  retryAfter?: number | null;
 }
 
 const errorMessages: Record<
@@ -13,6 +15,12 @@ const errorMessages: Record<
     message: "Unauthorized",
     description: "You are not authorized to access this page.",
     icon: "M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z",
+  },
+  402: {
+    title: "Payment Required",
+    message: "Payment Required",
+    description: "Your subscription has expired or payment is required to continue.",
+    icon: "M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z",
   },
   403: {
     title: "Forbidden",
@@ -52,14 +60,34 @@ const errorMessages: Record<
   },
 };
 
-export default function ErrorPage({ status }: ErrorPageProps) {
+export default function ErrorPage({ status, retryAfter }: ErrorPageProps) {
   const error = errorMessages[status] ?? errorMessages[500];
+  const [remaining, setRemaining] = useState(retryAfter ?? 0);
+
+  useEffect(() => {
+    if (remaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryAfter]);
 
   if (!error) return null;
   const backUrl =
     typeof document !== "undefined" && document.referrer && document.referrer !== location.href
       ? document.referrer
       : "/";
+
+  const rateLimited = status === 429 && remaining > 0;
 
   return (
     <>
@@ -86,7 +114,11 @@ export default function ErrorPage({ status }: ErrorPageProps) {
               <span className="text-xl text-muted-foreground">{error.message}</span>
             </div>
 
-            <p className="mt-4 text-sm text-muted-foreground">{error.description}</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {rateLimited
+                ? `Please wait ${remaining} second${remaining !== 1 ? "s" : ""} before trying again.`
+                : error.description}
+            </p>
 
             <div className="mt-8 flex items-center gap-4">
               <a

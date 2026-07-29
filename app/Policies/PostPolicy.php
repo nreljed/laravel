@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
+use App\Blog\Models\Post;
 use App\Models\User;
-use App\Modules\Posts\Models\Post;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PostPolicy
@@ -17,7 +17,7 @@ class PostPolicy
 
     public function view(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id || $user->isAdmin();
+        return $user->hasPermission('posts.view') || $user->id === $post->user_id || $user->isAdmin();
     }
 
     public function create(User $user): bool

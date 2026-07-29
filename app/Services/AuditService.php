@@ -17,6 +17,8 @@ class AuditService
             'user_agent' => request()->userAgent() ?? '',
             'context' => ! empty($context) ? $context : null,
         ]);
+
+        Cache::forget('audit_stats');
     }
 
     public static function getLog(int $limit = 100, ?string $action = null, ?int $userId = null, ?string $fromDate = null, ?string $toDate = null): array

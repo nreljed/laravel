@@ -78,11 +78,11 @@ export default function AdminRolesIndex() {
         id: "actions",
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon-xs" asChild>
-              <Link href={route("dashboard.admin.roles.edit", { role: row.original.id })}>
+            <Link href={route("dashboard.admin.roles.edit", { role: row.original.id })}>
+              <Button variant="ghost" size="icon-xs">
                 <Pencil className="size-3.5" />
-              </Link>
-            </Button>
+              </Button>
+            </Link>
             {row.original.slug !== "admin" && (
               <Button
                 variant="ghost"
@@ -114,11 +114,11 @@ export default function AdminRolesIndex() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Roles</h2>
-          <Button asChild>
-            <Link href={route("dashboard.admin.roles.create")}>
+          <Link href={route("dashboard.admin.roles.create")}>
+            <Button>
               <Plus className="mr-1 size-4" /> Create Role
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
 
         <DataTable

@@ -1,63 +1,49 @@
-# Setup Guide
+# Setup
 
 ## Prerequisites
 
-- PHP 8.3+ (8.4 recommended)
-- Composer 2.x
+- PHP 8.3+
+- Composer
 - Node.js 22+
-- npm 10+
-- SQLite (local) or MySQL 8.0+ (production)
+- SQLite (local) or MySQL (prod)
 
-## Local Setup
+## Install
 
 ```bash
-# 1. Clone and install dependencies
 composer install
 npm install
-
-# 2. Environment
 cp .env.example .env
 php artisan key:generate
-
-# 3. Database (SQLite)
-touch database/database.sqlite
 php artisan migrate
-
-# 4. Seed roles, permissions, and demo data
-php artisan db:seed --class=RolesAndPermissionsSeeder
-php artisan modules:sync-permissions
-
-# 5. Create admin user
 php artisan app:create-admin
-
-# 6. Start development servers
-npm run dev
-php artisan serve
-```
-
-## Running Tests
-
-```bash
-php artisan test                       # All tests
-php artisan test --filter=Booking       # Module-specific
-php artisan test --stop-on-failure      # Stop on first failure
-```
-
-## Type Checking & Linting
-
-```bash
-npm run typecheck                      # TypeScript check only
-npm run build                          # Full build (typecheck + vite)
-vendor/bin/pint                        # PHP CS fixer
-```
-
-## After Schema Changes
-
-```bash
-php artisan migrate
-php artisan db:seed --class=RolesAndPermissionsSeeder
-php artisan modules:sync-permissions
-npm run typecheck
 npm run build
-php artisan test
 ```
+
+## Dev Server
+
+```bash
+php artisan serve        # Laravel
+npm run dev              # Vite HMR
+```
+
+## LocalWP
+
+This project runs via LocalWP (Local by Flywheel).
+
+- **URL**: `https://laravel.local/`
+- **Stack**: nginx, PHP 8.3, MySQL
+- **Build**: Production build served directly (`npm run build`)
+
+### Important
+
+- `public/hot` should **NOT** exist — it causes `ERR_CONNECTION_REFUSED` on Vite dev server
+- Always run `npm run build` after code changes
+
+## Environment Variables
+
+| Variable                   | Purpose                           |
+| -------------------------- | --------------------------------- |
+| `APP_URL`                  | `https://laravel.local/`          |
+| `DB_CONNECTION`            | `sqlite` (local) / `mysql` (prod) |
+| `MAIL_MAILER`              | `log` (local)                     |
+| `SANCTUM_STATEFUL_DOMAINS` | `laravel.local`                   |

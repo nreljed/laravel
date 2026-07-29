@@ -22,4 +22,9 @@ class Permission extends Model
     {
         return $this->belongsToMany(User::class);
     }
+
+    protected static function newFactory(): PermissionFactory
+    {
+        return PermissionFactory::new();
+    }
 }

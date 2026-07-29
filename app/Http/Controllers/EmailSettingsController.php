@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Email\SendTestEmailRequest;
 use App\Http\Requests\Email\UpdateEmailSettingsRequest;
-use App\Modules\ModuleRegistry;
 use App\Services\EmailSettingsService;
 use App\Services\EmailTemplateService;
+use App\Services\FeatureRegistry;
 use App\Services\MailService;
 use Illuminate\Http\Request;
 
@@ -18,18 +18,18 @@ class EmailSettingsController extends Controller
 
     protected EmailTemplateService $templateService;
 
-    protected ModuleRegistry $moduleRegistry;
+    protected FeatureRegistry $featureRegistry;
 
     public function __construct(
         EmailSettingsService $settingsService,
         MailService $mailService,
         EmailTemplateService $templateService,
-        ModuleRegistry $moduleRegistry
+        FeatureRegistry $featureRegistry
     ) {
         $this->settingsService = $settingsService;
         $this->mailService = $mailService;
         $this->templateService = $templateService;
-        $this->moduleRegistry = $moduleRegistry;
+        $this->featureRegistry = $featureRegistry;
     }
 
     /**
@@ -183,10 +183,18 @@ class EmailSettingsController extends Controller
         }
 
         $sampleData = $this->getSampleDataForTemplate($template);
+
+        // Fragment preview (for dialog) — no HTML/BODY wrapper
+        if ($request->query('fragment') === '1') {
+            $html = $this->templateService->renderPreview($template, $sampleData);
+
+            return response($html, 200)->header('Content-Type', 'text/html');
+        }
+
         $html = $this->templateService->renderWithLayout($template, $sampleData);
 
         if ($request->inertia()) {
-            return inertia()->render('dashboard/admin/settings', [
+            return inertia()->render('dashboard/admin/settings/email', [
                 'previewHtml' => $html,
             ]);
         }
@@ -211,11 +219,9 @@ class EmailSettingsController extends Controller
     {
         $templates = $this->getCoreTemplates();
 
-        foreach ($this->moduleRegistry->getBooted() as $module) {
-            $moduleTemplates = $module->getEmailTemplates();
-            if (! empty($moduleTemplates)) {
-                $templates = array_merge($templates, $moduleTemplates);
-            }
+        $featureTemplates = $this->featureRegistry->getAllEmailTemplates();
+        if (! empty($featureTemplates)) {
+            $templates = array_merge($templates, $featureTemplates);
         }
 
         return $templates;
@@ -280,7 +286,7 @@ class EmailSettingsController extends Controller
                 'sample_data' => [
                     'userName' => $user?->name ?? 'User',
                     'resetUrl' => route('password.request'),
-                    'expiry' => '24 hours',
+                    'expireMinutes' => 60,
                     'siteName' => config('app.name'),
                 ],
             ],
@@ -308,18 +314,6 @@ class EmailSettingsController extends Controller
                 'group' => 'Account',
                 'sample_data' => [
                     'userName' => $user?->name ?? 'User',
-                    'siteName' => config('app.name'),
-                ],
-            ],
-            'property-inquiry' => [
-                'label' => 'Property Inquiry',
-                'group' => 'Properties',
-                'sample_data' => [
-                    'inquiryName' => $user?->name ?? 'Guest',
-                    'inquiryEmail' => $user?->email ?? 'guest@example.com',
-                    'inquiryMessage' => 'I am interested in this property. Please contact me with more details.',
-                    'propertyTitle' => 'Sample Property',
-                    'propertyUrl' => route('dashboard'),
                     'siteName' => config('app.name'),
                 ],
             ],

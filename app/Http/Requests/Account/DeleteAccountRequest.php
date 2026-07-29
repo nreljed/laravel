@@ -11,6 +11,7 @@ class DeleteAccountRequest extends FormRequest
         return [
             'confirmation' => ['required', 'string', 'in:delete my account'],
             'current_password' => ['required', 'current_password'],
+            'feedback' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

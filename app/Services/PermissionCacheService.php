@@ -26,14 +26,26 @@ class PermissionCacheService
 
     public function getRolePermissionSlugs(int $roleId): array
     {
-        return Cache::remember(self::KEY_ROLE_PERMISSIONS.$roleId, self::CACHE_TTL, function () use ($roleId) {
+        $key = self::KEY_ROLE_PERMISSIONS.$roleId;
+
+        return Cache::remember($key, self::CACHE_TTL, function () use ($key, $roleId) {
+            $roleKeys = Cache::get('permissions:role_keys', []);
+            $roleKeys[$key] = true;
+            Cache::put('permissions:role_keys', array_keys($roleKeys), self::CACHE_TTL);
+
             return Role::find($roleId)?->permissions()->pluck('slug')->toArray() ?? [];
         });
     }
 
     public function getUserPermissionSlugs(int $userId): array
     {
-        return Cache::remember(self::KEY_USER_PERMISSIONS.$userId, self::CACHE_TTL, function () use ($userId) {
+        $key = self::KEY_USER_PERMISSIONS.$userId;
+
+        return Cache::remember($key, self::CACHE_TTL, function () use ($key, $userId) {
+            $userKeys = Cache::get('permissions:user_keys', []);
+            $userKeys[$key] = true;
+            Cache::put('permissions:user_keys', array_keys($userKeys), self::CACHE_TTL);
+
             $user = User::with('roles.permissions')->find($userId);
 
             if (! $user) {
@@ -73,14 +85,20 @@ class PermissionCacheService
 
     public function flushAll(): void
     {
-        $this->forgetAll();
+        Cache::forget(self::KEY_ALL_PERMISSIONS);
 
-        foreach (Role::pluck('id') as $id) {
-            $this->forgetRole($id);
+        // Clear all role permission caches
+        $roleKeys = Cache::get('permissions:role_keys', []);
+        foreach ($roleKeys as $key) {
+            Cache::forget($key);
         }
+        Cache::forget('permissions:role_keys');
 
-        foreach (User::pluck('id') as $id) {
-            $this->forgetUser($id);
+        // Clear all user permission caches
+        $userKeys = Cache::get('permissions:user_keys', []);
+        foreach ($userKeys as $key) {
+            Cache::forget($key);
         }
+        Cache::forget('permissions:user_keys');
     }
 }

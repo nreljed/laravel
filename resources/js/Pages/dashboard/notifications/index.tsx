@@ -10,9 +10,6 @@ import {
   X,
   Loader2,
   Search,
-  Calendar,
-  Home,
-  ShoppingCart,
   User,
   FileText,
 } from "lucide-react";
@@ -29,22 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationItem } from "@/Components/notifications/NotificationItem";
 import { NotificationDetailDialog } from "@/Components/notifications/NotificationDetailDialog";
-import type { Severity } from "@/Components/notifications/NotificationItem";
-
-interface StructuredNotification {
-  id: string;
-  type: string;
-  title?: string;
-  message?: string;
-  link?: string;
-  module?: string;
-  severity?: Severity;
-  is_read?: string;
-  data?: Record<string, string>;
-  read_at: string | null;
-  created_at: string;
-  created_at_relative?: string;
-}
+import type { StructuredNotification } from "@/lib/notifications";
 
 interface NotificationsPageProps {
   notifications: {
@@ -79,14 +61,6 @@ function getDateGroup(dateStr: string): string {
 function inferTypeGroup(type: string): string {
   const t = type.toLowerCase();
   if (
-    t.includes("booking") ||
-    t.includes("stay") ||
-    t.includes("checkin") ||
-    t.includes("checkout")
-  )
-    return "booking";
-  if (t.includes("property") || t.includes("home")) return "property";
-  if (
     t.includes("account") ||
     t.includes("user") ||
     t.includes("password") ||
@@ -97,25 +71,21 @@ function inferTypeGroup(type: string): string {
     return "account";
   if (t.includes("post") || t.includes("page") || t.includes("content") || t.includes("comment"))
     return "content";
-  if (
-    t.includes("order") ||
-    t.includes("cart") ||
-    t.includes("product") ||
-    t.includes("stock") ||
-    t.includes("shop")
-  )
-    return "orders";
-  if (t.includes("payment")) return "orders";
   return "other";
 }
 
+const READ_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "unread", label: "Unread" },
+  { value: "read", label: "Read" },
+];
+
+const DEFAULT_OPEN_GROUPS = new Set(["Today", "Yesterday"]);
+
 const TYPE_FILTERS = [
   { value: "all", label: "All", icon: Bell },
-  { value: "booking", label: "Booking", icon: Calendar },
-  { value: "property", label: "Property", icon: Home },
   { value: "account", label: "Account", icon: User },
   { value: "content", label: "Content", icon: FileText },
-  { value: "orders", label: "Orders", icon: ShoppingCart },
 ];
 
 export default function NotificationsPage({
@@ -134,7 +104,7 @@ export default function NotificationsPage({
   const [allNotifications, setAllNotifications] = useState(notifsData.data);
   const { current_page, last_page } = notifsData;
 
-  const isUnread = (n: StructuredNotification) => n.is_read === "0" || !n.read_at;
+  const isUnread = (n: StructuredNotification) => !n.is_read && !n.read_at;
 
   const filtered = useMemo(() => {
     const getDataValue = (n: StructuredNotification, ...keys: string[]) => {
@@ -229,7 +199,7 @@ export default function NotificationsPage({
       });
       setAllNotifications((prev) =>
         prev.map((n) =>
-          n.id === id ? { ...n, is_read: "1", read_at: new Date().toISOString() } : n,
+          n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n,
         ),
       );
       toast.success("Marked as read");
@@ -253,7 +223,7 @@ export default function NotificationsPage({
         );
       });
       setAllNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: "1", read_at: new Date().toISOString() })),
+        prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() })),
       );
       setSelectedIds(new Set());
       toast.success("All notifications marked as read");
@@ -299,7 +269,7 @@ export default function NotificationsPage({
       });
       setAllNotifications((prev) =>
         prev.map((n) =>
-          ids.includes(n.id) ? { ...n, is_read: "1", read_at: new Date().toISOString() } : n,
+          ids.includes(n.id) ? { ...n, is_read: true, read_at: new Date().toISOString() } : n,
         ),
       );
       toast.success("Selected notifications marked as read");
@@ -357,13 +327,6 @@ export default function NotificationsPage({
       },
     );
   };
-
-  const defaultOpenGroups = new Set(["Today", "Yesterday"]);
-  const READ_FILTERS = [
-    { value: "all", label: "All" },
-    { value: "unread", label: "Unread" },
-    { value: "read", label: "Read" },
-  ];
 
   const hasMore = current_page < last_page;
 
@@ -481,12 +444,8 @@ export default function NotificationsPage({
         ) : (
           <div className="space-y-2">
             {Object.entries(grouped).map(([dateGroup, items]) => (
-              <div key={dateGroup} className="rounded-lg border bg-card">
-                <Accordion
-                  type="single"
-                  collapsible
-                  defaultValue={defaultOpenGroups.has(dateGroup) ? dateGroup : undefined}
-                >
+              <div key={dateGroup} className="rounded-xl border bg-card">
+                <Accordion defaultValue={DEFAULT_OPEN_GROUPS.has(dateGroup) ? [dateGroup] : []}>
                   <AccordionItem value={dateGroup} className="border-0">
                     <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
