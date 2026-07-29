@@ -2,7 +2,17 @@ import { useState, useCallback, useEffect } from "react";
 import { Section } from "@/Components/shared/section";
 import { router, usePage } from "@inertiajs/react";
 import { toast } from "sonner";
-import { Eye, Send, FileText, Bug, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Eye,
+  Send,
+  FileText,
+  Bug,
+  CheckCircle2,
+  XCircle,
+  Monitor,
+  Tablet,
+  Smartphone,
+} from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
@@ -14,6 +24,8 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
+
 import { cn } from "@/lib/utils";
 
 interface EmailTemplate {
@@ -43,8 +55,10 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     Record<string, EmailTemplate> | undefined;
 
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogHtml, setDialogHtml] = useState<string | null>(null);
+  const [previewSize, setPreviewSize] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [testEmail, setTestEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [debugLog, setDebugLog] = useState<MailDebug[]>([]);
@@ -69,30 +83,25 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
 
   if (flash?.status && typeof flash.status === "string") toast.success(flash.status);
 
-  const handlePreview = useCallback(() => {
+  const handlePreview = useCallback(async () => {
     if (!selectedTemplate) return;
     setPreviewLoading(true);
-    router.get(
-      route("dashboard.admin.settings.email.template-preview", {
+    setDialogHtml(null);
+    try {
+      const url = route("dashboard.admin.settings.email.template-preview", {
         template: selectedTemplate,
-      } as Record<string, unknown>),
-      {},
-      {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: (page) => {
-          const html = (page.props as unknown as Record<string, unknown>).previewHtml as
-            string | undefined;
-          if (html) setPreviewHtml(html);
-          else toast.error("Failed to load template preview");
-          setPreviewLoading(false);
-        },
-        onError: () => {
-          toast.error("Failed to load template preview");
-          setPreviewLoading(false);
-        },
-      },
-    );
+        fragment: "1",
+      } as Record<string, unknown>);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to load preview");
+      const html = await response.text();
+      setDialogHtml(html);
+      setDialogOpen(true);
+    } catch {
+      toast.error("Failed to load template preview");
+    } finally {
+      setPreviewLoading(false);
+    }
   }, [selectedTemplate]);
 
   const handleSendTest = useCallback(() => {
@@ -218,19 +227,56 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
           </CardContent>
         </Card>
 
-        {previewHtml && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Preview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                className="rounded-md border bg-white p-4 dark:bg-gray-900 [&_img]:max-w-full"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
-            </CardContent>
-          </Card>
-        )}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent
+            className="max-w-[calc(100%-2rem)] sm:max-w-[90vw] sm:max-h-[90vh] overflow-y-auto"
+            showCloseButton
+          >
+            <DialogHeader className="pr-10">
+              <DialogTitle>
+                Preview:{" "}
+                {selectedTemplate
+                  ? (emailTemplates?.[selectedTemplate]?.label ?? selectedTemplate)
+                  : ""}
+              </DialogTitle>
+              <div className="flex items-center justify-center gap-1 rounded-md border p-0.5 w-fit mx-auto">
+                {(["desktop", "tablet", "mobile"] as const).map((size) => {
+                  const Icon =
+                    size === "desktop" ? Monitor : size === "tablet" ? Tablet : Smartphone;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setPreviewSize(size)}
+                      className={cn(
+                        "rounded px-2 py-1 text-xs font-medium transition-colors",
+                        previewSize === size
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                      aria-label={size.charAt(0).toUpperCase() + size.slice(1)}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                    </button>
+                  );
+                })}
+              </div>
+            </DialogHeader>
+            {dialogHtml && (
+              <div className="flex justify-center">
+                <div
+                  className={cn(
+                    "rounded-md border bg-white dark:bg-gray-900 [&_img]:max-w-full overflow-hidden",
+                    previewSize === "desktop" && "w-full",
+                    previewSize === "tablet" && "w-[600px]",
+                    previewSize === "mobile" && "w-[375px]",
+                  )}
+                  dangerouslySetInnerHTML={{ __html: dialogHtml }}
+                />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {debugLog.length > 0 && (
           <Card>

@@ -183,10 +183,18 @@ class EmailSettingsController extends Controller
         }
 
         $sampleData = $this->getSampleDataForTemplate($template);
+
+        // Fragment preview (for dialog) — no HTML/BODY wrapper
+        if ($request->query('fragment') === '1') {
+            $html = $this->templateService->renderPreview($template, $sampleData);
+
+            return response($html, 200)->header('Content-Type', 'text/html');
+        }
+
         $html = $this->templateService->renderWithLayout($template, $sampleData);
 
         if ($request->inertia()) {
-            return inertia()->render('dashboard/admin/settings', [
+            return inertia()->render('dashboard/admin/settings/email', [
                 'previewHtml' => $html,
             ]);
         }
@@ -278,7 +286,7 @@ class EmailSettingsController extends Controller
                 'sample_data' => [
                     'userName' => $user?->name ?? 'User',
                     'resetUrl' => route('password.request'),
-                    'expiry' => '24 hours',
+                    'expireMinutes' => 60,
                     'siteName' => config('app.name'),
                 ],
             ],

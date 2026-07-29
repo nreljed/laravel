@@ -136,7 +136,7 @@ export function SmtpSection({ asAccordion }: SmtpSectionProps) {
               <SelectContent>
                 <SelectItem value="tls">TLS</SelectItem>
                 <SelectItem value="ssl">SSL</SelectItem>
-                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="none">NONE</SelectItem>
               </SelectContent>
             </Select>
           </SectionField>
@@ -156,7 +156,7 @@ export function SmtpSection({ asAccordion }: SmtpSectionProps) {
 
           {data.smtp_auth && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SectionField label="Username" htmlFor="smtp_username">
+              <SectionField label="SMTP Username" htmlFor="smtp_username">
                 <Input
                   id="smtp_username"
                   value={data.smtp_username}
@@ -165,7 +165,7 @@ export function SmtpSection({ asAccordion }: SmtpSectionProps) {
                 />
               </SectionField>
               <SectionField
-                label="Password"
+                label="SMTP Password"
                 htmlFor="smtp_password"
                 description={
                   data.smtp_password === "********"
@@ -190,7 +190,11 @@ export function SmtpSection({ asAccordion }: SmtpSectionProps) {
       <div className="border-t border-border pt-4 mt-2">
         <h4 className="text-sm font-medium mb-3">Sender Information</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SectionField label="From Email" htmlFor="from_email" description="Sender email address">
+          <SectionField
+            label="SMTP From Email"
+            htmlFor="from_email"
+            description="Sender email address"
+          >
             <Input
               id="from_email"
               type="email"
@@ -199,7 +203,11 @@ export function SmtpSection({ asAccordion }: SmtpSectionProps) {
               placeholder="noreply@example.com"
             />
           </SectionField>
-          <SectionField label="From Name" htmlFor="from_name" description="Sender display name">
+          <SectionField
+            label="SMTP From Name"
+            htmlFor="from_name"
+            description="Sender display name"
+          >
             <Input
               id="from_name"
               value={data.from_name}

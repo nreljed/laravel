@@ -48,6 +48,21 @@ class EmailTemplateService
         return View::make($layoutView, $data)->render();
     }
 
+    public function renderPreview(string $template, array $data = []): string
+    {
+        $layoutView = 'email.layouts.preview';
+        $data = $this->injectGlobalData($data);
+
+        $templateView = 'email.templates.'.$template;
+        if (! View::exists($templateView)) {
+            $templateView = 'email.templates.default';
+        }
+
+        $data['body'] = View::make($templateView, $data)->render();
+
+        return View::make($layoutView, $data)->render();
+    }
+
     public function exists(string $template): bool
     {
         return View::exists('email.templates.'.$template);
