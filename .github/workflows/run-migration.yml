@@ -4,16 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "yes" to confirm running migrations on production'
+        description: 'Type "yes" to run php artisan migrate --force on production'
         required: true
         default: 'no'
 
 jobs:
   migrate:
-    if: github.event.inputs.confirm == 'yes'
     runs-on: ubuntu-latest
     steps:
+      - name: Validate confirmation
+        if: inputs.confirm != 'yes'
+        run: |
+          echo "::error::Confirmation required — set confirm to 'yes' to run migrations"
+          exit 1
+
       - name: Run php artisan migrate --force on production
+        if: inputs.confirm == 'yes'
         run: |
           curl -sf --max-time 120 \
             -X POST \
