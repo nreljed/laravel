@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class IpAccessRule extends Model
 {
@@ -37,6 +38,10 @@ class IpAccessRule extends Model
      */
     public static function getActiveRules(): array
     {
+        if (! Schema::hasTable('ip_access_rules')) {
+            return [];
+        }
+
         return Cache::remember(self::CACHE_KEY, 300, function () {
             return static::where('is_active', true)->get()->toArray();
         });
