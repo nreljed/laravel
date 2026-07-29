@@ -157,7 +157,7 @@ jobs:
           $items = @(
             "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
             "app", "bootstrap", "config", "database", "public", "resources", "routes",
-            "storage", "vendor", ".env", "deploy.php", "CHANGELOG.md"
+            "storage", "vendor", ".env", "deploy.php"
           )
           $fullPaths = $items | ForEach-Object { Join-Path $src $_ }
           Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal
