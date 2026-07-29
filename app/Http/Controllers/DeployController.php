@@ -106,6 +106,25 @@ class DeployController extends Controller
         return response()->json(['success' => true, 'output' => $output]);
     }
 
+    public function migrate(Request $request)
+    {
+        $this->verifyToken($request);
+        set_time_limit(120);
+
+        $output = [];
+
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+            $output[] = 'migrate: '.strtok(trim(Artisan::output()), "\n");
+
+            return response()->json(['status' => 'ok', 'output' => $output]);
+        } catch (\Throwable $e) {
+            $output[] = 'migrate: ERROR '.$e->getMessage();
+
+            return response()->json(['status' => 'error', 'output' => $output], 500);
+        }
+    }
+
     public function upload(Request $request)
     {
         $this->verifyToken($request);
@@ -123,7 +142,11 @@ class DeployController extends Controller
         $output = [];
         $result = $this->processUploadedZip($request, $output);
 
-        return response()->json(['status' => $result ? 'deployed' : 'error', 'output' => $output]);
+        if (! $result) {
+            return response()->json(['status' => 'error', 'output' => $output], 500);
+        }
+
+        return response()->json(['status' => 'deployed', 'output' => $output]);
     }
 
     private function processUploadedZip(Request $request, array &$output): bool
@@ -190,6 +213,11 @@ class DeployController extends Controller
                 $output[] = "$cmd: ".strtok(trim(Artisan::output()), "\n");
             } catch (\Throwable $e) {
                 $output[] = "$cmd: ERROR ".$e->getMessage();
+                if (in_array($cmd, ['migrate:fresh', 'migrate', 'config:cache'])) {
+                    $output[] = "Deploy aborted: $cmd failed";
+
+                    return false;
+                }
             }
         }
 
@@ -401,6 +429,9 @@ class DeployController extends Controller
                     $output[] = "$cmd: ".strtok(trim(Artisan::output()), "\n");
                 } catch (\Exception $e) {
                     $output[] = "$cmd: ERROR ".$e->getMessage();
+                    if (in_array($cmd, ['migrate', 'config:cache'])) {
+                        return response()->json(['status' => 'error', 'error' => "$cmd failed", 'output' => $output], 500);
+                    }
                 }
             }
 

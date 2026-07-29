@@ -1,0 +1,20 @@
+name: Run Pending Migrations (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm running migrations on production'
+        required: true
+        default: 'no'
+
+jobs:
+  migrate:
+    if: github.event.inputs.confirm == 'yes'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run php artisan migrate --force on production
+        run: |
+          curl -sf --max-time 120 \
+            -X POST \
+            "https://laravel.tunispromo.tn/deploy/migrate?token=${{ secrets.DEPLOY_TOKEN }}"
