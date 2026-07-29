@@ -7,6 +7,7 @@ use App\Ai\Requests\StoreAiProviderRequest;
 use App\Ai\Requests\TestAiProviderRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -42,7 +43,7 @@ class AiProviderController extends Controller
     /**
      * Store or update an AI provider key.
      */
-    public function store(StoreAiProviderRequest $request): JsonResponse
+    public function store(StoreAiProviderRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', AiProvider::class);
 
@@ -73,6 +74,10 @@ class AiProviderController extends Controller
             ]);
         }
 
+        if ($request->inertia()) {
+            return redirect()->back();
+        }
+
         return response()->json([
             'provider' => [
                 'id' => $provider->id,
@@ -88,7 +93,7 @@ class AiProviderController extends Controller
     /**
      * Update an AI provider's settings.
      */
-    public function update(Request $request, AiProvider $aiProvider): JsonResponse
+    public function update(Request $request, AiProvider $aiProvider): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $aiProvider);
 
@@ -98,6 +103,10 @@ class AiProviderController extends Controller
         ]);
 
         $aiProvider->update($validated);
+
+        if ($request->inertia()) {
+            return redirect()->back();
+        }
 
         return response()->json([
             'provider' => [
@@ -114,11 +123,15 @@ class AiProviderController extends Controller
     /**
      * Delete an AI provider key.
      */
-    public function destroy(Request $request, AiProvider $aiProvider): JsonResponse
+    public function destroy(Request $request, AiProvider $aiProvider): JsonResponse|RedirectResponse
     {
         $this->authorize('delete', $aiProvider);
 
         $aiProvider->delete();
+
+        if ($request->inertia()) {
+            return redirect()->back();
+        }
 
         return response()->json(['message' => 'AI provider key removed.']);
     }
@@ -129,10 +142,11 @@ class AiProviderController extends Controller
         $apiKey = $request->validated('api_key');
 
         $tempInstance = 'test_'.Str::random(16);
-        config(["ai.providers.{$tempInstance}" => [
+        config(["ai.providers.{$tempInstance}" => array_filter([
             'driver' => $providerName,
             'key' => $apiKey,
-        ]]);
+            'model' => $request->validated('preferred_model'),
+        ])]);
 
         try {
             $response = agent('You are a test assistant. Respond with exactly one word: ok')

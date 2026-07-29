@@ -16,7 +16,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->get('/dashboard/account');
+            ->get(route('dashboard.account.page.profile'));
 
         $response->assertOk();
     }
@@ -35,7 +35,7 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/dashboard/account');
+            ->assertRedirect(route('dashboard.account.page.profile'));
 
         $user->refresh();
 
@@ -58,7 +58,7 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/dashboard/account');
+            ->assertRedirect(route('dashboard.account.page.profile'));
 
         $this->assertNotNull($user->refresh()->email_verified_at);
     }

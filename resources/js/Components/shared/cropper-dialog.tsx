@@ -1,20 +1,25 @@
-import { useState, useCallback, useRef } from "react";
-import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from "react-image-crop";
+import * as React from "react";
+import { Cropper, CropperImage, CropperArea } from "./cropper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { Button } from "@/Components/ui/button";
 import { Slider } from "@/Components/ui/slider";
-import { ZoomIn, ZoomOut, RotateCcw, Loader2 } from "lucide-react";
-import "react-image-crop/dist/ReactCrop.css";
+import { ZoomIn, ZoomOut, RotateCcw, RotateCw, Maximize2, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const AVATAR_SIZE = 256;
 const AVATAR_QUALITY = 0.85;
+const MIN_CROP_PX = 60;
 
-function centerAspectCrop(mediaWidth: number, mediaHeight: number) {
-  return centerCrop(
-    makeAspectCrop({ unit: "%", width: 80 }, 1, mediaWidth, mediaHeight),
-    mediaWidth,
-    mediaHeight,
-  );
+function rotateSize(
+  width: number,
+  height: number,
+  rotation: number,
+): { width: number; height: number } {
+  const rotRad = (rotation * Math.PI) / 180;
+  return {
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+  };
 }
 
 interface CropperDialogProps {
@@ -24,59 +29,101 @@ interface CropperDialogProps {
   onSave: (_blob: Blob) => void;
 }
 
+interface CroppedAreaData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export function CropperDialog({ open, onOpenChange, imageSrc, onSave }: CropperDialogProps) {
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const [crop, setCrop] = useState<Crop>();
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [completedCrop, setCompletedCrop] = useState<Crop | null>(null);
+  const [crop, setCrop] = React.useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = React.useState(1);
+  const [rotation, setRotation] = React.useState(0);
+  const [saving, setSaving] = React.useState(false);
+  const [cropSizeBaseline, setCropSizeBaseline] = React.useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const [sizeOverride, setSizeOverride] = React.useState<{ width: number; height: number } | null>(
+    null,
+  );
+  const cropRef = React.useRef<null | {
+    croppedArea: CroppedAreaData;
+    croppedAreaPixels: CroppedAreaData;
+  }>(null);
 
-  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
-    imgRef.current = e.currentTarget;
-    setCrop(centerAspectCrop(width, height));
-  }, []);
+  const handleCropSizeBaselineChange = React.useCallback(
+    (baseline: { width: number; height: number }) => {
+      setCropSizeBaseline(baseline);
+    },
+    [],
+  );
 
-  const handleSave = useCallback(async () => {
-    if (!completedCrop || saving || !imgRef.current) return;
+  const handleCropComplete = React.useCallback(
+    (croppedArea: CroppedAreaData, croppedAreaPixels: CroppedAreaData) => {
+      cropRef.current = { croppedArea, croppedAreaPixels };
+    },
+    [],
+  );
+
+  const handleSave = React.useCallback(async () => {
+    if (saving || !cropRef.current) return;
     setSaving(true);
 
     try {
-      const image = imgRef.current;
+      const { croppedAreaPixels } = cropRef.current;
+      const img = new Image();
+      img.src = imageSrc;
+      await img.decode();
+
       const canvas = document.createElement("canvas");
       canvas.width = AVATAR_SIZE;
       canvas.height = AVATAR_SIZE;
-      const ctx = canvas.getContext("2d")!;
-
-      const scaleX = image.naturalWidth / image.width;
-      const scaleY = image.naturalHeight / image.height;
-      const cropX = completedCrop.x * scaleX;
-      const cropY = completedCrop.y * scaleY;
-      const cropW = completedCrop.width * scaleX;
-      const cropH = completedCrop.height * scaleY;
+      const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
       if (Math.abs(rotation) > 0.5) {
-        const rotRad = (rotation * Math.PI) / 180;
-        const bboxW = Math.abs(Math.cos(rotRad) * cropW) + Math.abs(Math.sin(rotRad) * cropH);
-        const bboxH = Math.abs(Math.sin(rotRad) * cropW) + Math.abs(Math.cos(rotRad) * cropH);
+        const bbox = rotateSize(img.naturalWidth, img.naturalHeight, rotation);
         const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = Math.ceil(bboxW);
-        tempCanvas.height = Math.ceil(bboxH);
-        const tempCtx = tempCanvas.getContext("2d")!;
-        tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
-        tempCtx.rotate(rotRad);
-        tempCtx.drawImage(image, cropX, cropY, cropW, cropH, -cropW / 2, -cropH / 2, cropW, cropH);
+        tempCanvas.width = Math.ceil(bbox.width);
+        tempCanvas.height = Math.ceil(bbox.height);
+        const tempCtx = tempCanvas.getContext("2d") as CanvasRenderingContext2D;
 
-        ctx.drawImage(tempCanvas, 0, 0, bboxW, bboxH, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+        tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
+        tempCtx.rotate((rotation * Math.PI) / 180);
+        tempCtx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+
+        ctx.drawImage(
+          tempCanvas,
+          croppedAreaPixels.x,
+          croppedAreaPixels.y,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height,
+          0,
+          0,
+          AVATAR_SIZE,
+          AVATAR_SIZE,
+        );
       } else {
-        ctx.drawImage(image, cropX, cropY, cropW, cropH, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+        ctx.drawImage(
+          img,
+          croppedAreaPixels.x,
+          croppedAreaPixels.y,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height,
+          0,
+          0,
+          AVATAR_SIZE,
+          AVATAR_SIZE,
+        );
       }
 
       canvas.toBlob(
-        (blob) => {
+        (blob: Blob | null) => {
           setSaving(false);
-          if (blob) onSave(blob);
+          if (blob) {
+            onSave(blob);
+          }
         },
         "image/webp",
         AVATAR_QUALITY,
@@ -84,24 +131,23 @@ export function CropperDialog({ open, onOpenChange, imageSrc, onSave }: CropperD
     } catch {
       setSaving(false);
     }
-  }, [completedCrop, rotation, saving, onSave]);
+  }, [imageSrc, rotation, saving, onSave]);
 
-  const handleReset = useCallback(() => {
+  const handleReset = React.useCallback(() => {
+    setCrop({ x: 0, y: 0 });
     setZoom(1);
     setRotation(0);
-    if (imgRef.current) {
-      const { width, height } = imgRef.current;
-      setCrop(centerAspectCrop(width, height));
-    }
+    setSizeOverride(null);
   }, []);
 
-  const handleDialogClose = useCallback(
+  const handleDialogClose = React.useCallback(
     (requestedOpen: boolean) => {
       if (!requestedOpen && !saving) {
+        setCrop({ x: 0, y: 0 });
         setZoom(1);
         setRotation(0);
-        setCrop(undefined);
-        setCompletedCrop(null);
+        setSizeOverride(null);
+        cropRef.current = null;
         onOpenChange(false);
       }
       if (requestedOpen) {
@@ -110,6 +156,10 @@ export function CropperDialog({ open, onOpenChange, imageSrc, onSave }: CropperD
     },
     [saving, onOpenChange],
   );
+
+  const maxSize = cropSizeBaseline?.width ?? 400;
+  const currentSize = sizeOverride?.width ?? maxSize;
+  const isResized = sizeOverride !== null;
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
@@ -120,26 +170,54 @@ export function CropperDialog({ open, onOpenChange, imageSrc, onSave }: CropperD
 
         <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-muted flex items-center justify-center">
           {imageSrc && (
-            <ReactCrop
+            <Cropper
+              key={imageSrc}
+              aspectRatio={1}
+              shape="circle"
               crop={crop}
-              onChange={(c) => setCrop(c)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={1}
-              circularCrop
-              className="max-h-[400px]"
+              zoom={zoom}
+              rotation={rotation}
+              minZoom={1}
+              maxZoom={3}
+              cropSizeOverride={sizeOverride}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onRotationChange={setRotation}
+              onCropComplete={handleCropComplete}
+              onCropSizeBaselineChange={handleCropSizeBaselineChange}
             >
-              <img
-                ref={imgRef}
-                src={imageSrc}
-                onLoad={onImageLoad}
-                alt="Crop preview"
-                style={{ transform: `scale(${zoom}) rotate(${rotation}deg)`, maxHeight: 400 }}
-              />
-            </ReactCrop>
+              <CropperImage src={imageSrc} alt="Crop preview" objectFit="contain" />
+              <CropperArea shape="circle" />
+            </Cropper>
           )}
         </div>
 
         <div className="space-y-3">
+          <div>
+            <span className="text-xs font-medium text-muted-foreground mb-2 block">Size</span>
+            <div className="flex items-center gap-3">
+              <Maximize2 className="w-4 h-4 shrink-0 text-muted-foreground" />
+              <Slider
+                value={[currentSize]}
+                onValueChange={(v) => {
+                  const val = (Array.isArray(v) ? v[0] : v) ?? 0;
+                  if (val >= maxSize) {
+                    setSizeOverride(null);
+                  } else {
+                    setSizeOverride({ width: val, height: val });
+                  }
+                }}
+                min={MIN_CROP_PX}
+                max={maxSize}
+                step={1}
+                className="flex-1"
+              />
+              <span className="w-12 text-xs text-muted-foreground text-right tabular-nums">
+                {Math.round(currentSize)}px
+              </span>
+            </div>
+          </div>
+
           <div>
             <span className="text-xs font-medium text-muted-foreground mb-2 block">Zoom</span>
             <div className="flex items-center gap-3">
@@ -171,6 +249,7 @@ export function CropperDialog({ open, onOpenChange, imageSrc, onSave }: CropperD
                 step={1}
                 className="flex-1"
               />
+              <RotateCw className="w-4 h-4 shrink-0 text-muted-foreground" />
               <span className="w-12 text-xs text-muted-foreground text-right tabular-nums">
                 {rotation}&deg;
               </span>
@@ -185,8 +264,10 @@ export function CropperDialog({ open, onOpenChange, imageSrc, onSave }: CropperD
           <Button
             variant="outline"
             onClick={handleReset}
-            disabled={saving || (zoom === 1 && rotation === 0)}
-            className={zoom !== 1 || rotation !== 0 ? "text-primary border-primary/50" : ""}
+            disabled={saving || (zoom === 1 && rotation === 0 && !isResized)}
+            className={cn(
+              zoom !== 1 || rotation !== 0 || isResized ? "text-primary border-primary/50" : "",
+            )}
           >
             <RotateCcw className="w-4 h-4 mr-1.5" />
             Reset

@@ -25,7 +25,7 @@ class UserAccountTest extends TestCase
             'last_name' => 'Doe',
         ]);
 
-        $response = $this->actingAs($user)->get(route('dashboard.account'));
+        $response = $this->actingAs($user)->get(route('dashboard.account.page.profile'));
 
         $response->assertOk();
     }

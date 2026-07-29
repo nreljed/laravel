@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckIpAccess;
 use App\Http\Middleware\CheckMaintenanceMode;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
@@ -24,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            ConfigureSessionLifetime::class,
+            CheckIpAccess::class,
             ContentSecurityPolicy::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -44,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'maintenance' => CheckMaintenanceMode::class,
             'session-lifetime' => ConfigureSessionLifetime::class,
+            'ip-access' => CheckIpAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

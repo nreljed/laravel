@@ -331,7 +331,7 @@ export default function NotificationsTest() {
                 My Notifications
               </Button>
             </Link>
-            <Link href={route("dashboard.admin.settings")}>
+            <Link href={route("dashboard.admin.settings.email")}>
               <Button variant="outline" size="sm">
                 <Settings className="mr-1.5 h-3.5 w-3.5" />
                 Email Settings

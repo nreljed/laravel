@@ -1,7 +1,7 @@
 import { Head, Link } from "@inertiajs/react";
 import PublicLayout from "@/Layouts/PublicLayout";
 import { MapPin, Calendar, ArrowLeft } from "lucide-react";
-import { Map, MapTileLayer, MapMarker, MapControls } from "@/Components/shared/map";
+import { Map, MapTileLayer, MapMarker, MapZoomControl } from "@/Components/shared/map";
 
 interface Author {
   id: number;
@@ -162,12 +162,19 @@ export default function TestPostsPublicShow({ testPost }: TestPostsShowProps) {
             <Map
               center={center}
               zoom={testPost.map_zoom || 15}
-              className="h-80 w-full"
+              minZoom={10}
+              maxZoom={18}
+              className="h-80 w-full cursor-default"
+              dragging={false}
               scrollWheelZoom={false}
+              doubleClickZoom={false}
+              touchZoom={false}
+              keyboard={false}
+              boxZoom={false}
             >
               <MapTileLayer />
               <MapMarker position={center} />
-              <MapControls watch={false} />
+              <MapZoomControl position="bottom-1 right-1" />
             </Map>
           </div>
         )}

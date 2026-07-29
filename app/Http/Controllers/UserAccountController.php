@@ -25,12 +25,59 @@ class UserAccountController extends Controller
 
     public function index()
     {
+        return redirect()->route('dashboard.account.page.profile');
+    }
+
+    public function profile()
+    {
         $user = request()->user();
 
-        $displayNameOptions = $user->getDisplayNameOptions();
+        return Inertia::render('dashboard/account/profile', [
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'name' => $user->name,
+                'display_name' => $user->display_name,
+                'display_name_options' => $user->getDisplayNameOptions(),
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'bio' => $user->bio,
+                'url' => $user->url,
+                'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at,
+                'contact_email' => $user->contact_email,
+                'phone_numbers' => $user->phone ?? [],
+                'social_media' => $user->social_links ?? [],
+                'avatar' => $user->avatar_url,
+                'user_registered' => $user->created_at,
+                'roles' => $user->roles->pluck('name')->toArray(),
+                'billing_address' => $user->billing_address,
+                'shipping_address' => $user->shipping_address,
+            ],
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail
+                && SettingsService::get('require_email_verification', '0') === '1',
+            'status' => session('status'),
+        ]);
+    }
 
-        $phoneNumbers = $user->phone ?? [];
-        $socialMedia = $user->social_links ?? [];
+    public function security()
+    {
+        $user = request()->user();
+
+        return Inertia::render('dashboard/account/security', [
+            'user' => [
+                'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at,
+            ],
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail
+                && SettingsService::get('require_email_verification', '0') === '1',
+            'status' => session('status'),
+        ]);
+    }
+
+    public function notifications()
+    {
+        $user = request()->user();
 
         try {
             $typeRegistry = app(NotificationTypeRegistry::class);
@@ -44,6 +91,17 @@ class UserAccountController extends Controller
             ->groupBy('type')
             ->map(fn ($items) => $items->pluck('enabled', 'channel')->toArray());
 
+        return Inertia::render('dashboard/account/notifications', [
+            'notificationTypes' => $notificationTypes,
+            'preferences' => $preferences,
+            'status' => session('status'),
+        ]);
+    }
+
+    public function integrations()
+    {
+        $user = request()->user();
+
         $aiProviders = $user->aiProviders()
             ->get()
             ->map(fn ($provider) => [
@@ -56,34 +114,16 @@ class UserAccountController extends Controller
                 'created_at' => $provider->created_at->toDateString(),
             ]);
 
-        return Inertia::render('dashboard/account/index', [
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'name' => $user->name,
-                'display_name' => $user->display_name,
-                'display_name_options' => $displayNameOptions,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'bio' => $user->bio,
-                'url' => $user->url,
-                'email' => $user->email,
-                'email_verified_at' => $user->email_verified_at,
-                'contact_email' => $user->contact_email,
-                'phone_numbers' => $phoneNumbers,
-                'social_media' => $socialMedia,
-                'avatar' => $user->avatar_url,
-                'user_registered' => $user->created_at,
-                'roles' => $user->roles->pluck('name')->toArray(),
-                'billing_address' => $user->billing_address,
-                'shipping_address' => $user->shipping_address,
-            ],
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail
-                && SettingsService::get('require_email_verification', '0') === '1',
-            'notificationTypes' => $notificationTypes,
-            'preferences' => $preferences,
+        return Inertia::render('dashboard/account/integrations', [
             'aiProviders' => $aiProviders,
             'supportedProviders' => AiProvider::supportedProviders(),
+            'status' => session('status'),
+        ]);
+    }
+
+    public function advanced()
+    {
+        return Inertia::render('dashboard/account/advanced', [
             'status' => session('status'),
         ]);
     }
@@ -101,7 +141,7 @@ class UserAccountController extends Controller
 
         $this->accountService->updatePersonalInfo($request->user(), $validated);
 
-        return redirect()->route('dashboard.account')->with('status', 'Profile updated successfully.');
+        return redirect()->route('dashboard.account.page.profile')->with('status', 'Profile updated successfully.');
     }
 
     public function updateContact(UpdateContactRequest $request)
@@ -112,7 +152,7 @@ class UserAccountController extends Controller
             $request->validated('social_media'),
         );
 
-        return redirect()->route('dashboard.account')->with('status', 'Contact info updated successfully.');
+        return redirect()->route('dashboard.account.page.profile')->with('status', 'Contact info updated successfully.');
     }
 
     public function updateEmail(UpdateEmailRequest $request)

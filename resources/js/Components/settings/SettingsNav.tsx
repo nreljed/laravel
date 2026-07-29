@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Globe, ShieldCheck, Bell, Lock, Mail, Wrench } from "lucide-react";
+import { Globe, ShieldCheck, Bell, Lock, Mail, Wrench, Network } from "lucide-react";
 
 interface SettingsNavItem {
   value: string;
@@ -19,6 +19,7 @@ const CORE_ITEMS: SettingsNavItem[] = [
   { value: "security", label: "Security", icon: Lock },
   { value: "email", label: "Email", icon: Mail },
   { value: "maintenance", label: "Maintenance", icon: Wrench },
+  { value: "ip-access", label: "IP Access", icon: Network },
 ];
 
 export function SettingsNav({ activeTab, onTabChange }: SettingsNavProps) {

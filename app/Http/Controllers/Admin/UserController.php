@@ -117,7 +117,16 @@ class UserController extends Controller
         }
 
         if ($request->has('role_id')) {
+            $oldRole = $user->roles()->first();
             $user->roles()->sync([$request->role_id]);
+
+            if ($oldRole && (int) $request->role_id !== $oldRole->id) {
+                AuditService::log(AuditAction::RoleRevoked, $request->user()->id, [
+                    'target_user_id' => $user->id,
+                    'role_id' => $oldRole->id,
+                    'role_slug' => $oldRole->slug,
+                ]);
+            }
         }
 
         AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [

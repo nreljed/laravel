@@ -1,10 +1,10 @@
 import { router } from "@inertiajs/react";
+import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 import {
   Brain,
   Plus,
-  Trash2,
-  TestTube2,
+  MoreHorizontal,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -12,7 +12,24 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
 import { SettingsAccordionItem } from "@/Components/shared/settings-accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/Components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +48,6 @@ import {
 } from "@/Components/ui/select";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
-import { Switch } from "@/Components/ui/switch";
 import { toast } from "sonner";
 
 interface AiProvider {
@@ -92,6 +108,8 @@ export default function AiKeysSection({
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [deleteProviderId, setDeleteProviderId] = useState<number | null>(null);
+
   const availableProviders = Object.entries(supportedProviders).filter(([key]) =>
     providers.every((p) => p.provider !== key),
   );
@@ -105,27 +123,31 @@ export default function AiKeysSection({
     setTestResult(null);
   }
 
-  function handleTest() {
+  async function handleTest() {
     if (!selectedProvider || !apiKey) return;
     setTesting(true);
     setTestResult(null);
 
-    router.post(
-      route("dashboard.account.ai-keys.test"),
-      { provider: selectedProvider, api_key: apiKey },
-      {
-        preserveState: true,
-        onFinish: () => setTesting(false),
-        onSuccess: () => {
-          setTestResult({ success: true, message: "Connection verified successfully." });
-        },
-        onError: (errs) => {
-          const msg =
-            errs.api_key ?? errs.provider ?? "Connection failed. Please check your API key.";
-          setTestResult({ success: false, message: msg });
-        },
-      },
-    );
+    try {
+      await axios.post(route("dashboard.account.ai-keys.test"), {
+        provider: selectedProvider,
+        api_key: apiKey,
+        preferred_model: preferredModel || undefined,
+      });
+      setTestResult({ success: true, message: "Connection verified successfully." });
+    } catch (error: unknown) {
+      const data = isAxiosError(error)
+        ? (error.response?.data as Record<string, string> | undefined)
+        : undefined;
+      const msg =
+        data?.api_key ??
+        data?.provider ??
+        data?.message ??
+        "Connection failed. Please check your API key.";
+      setTestResult({ success: false, message: msg });
+    } finally {
+      setTesting(false);
+    }
   }
 
   function handleSave() {
@@ -140,7 +162,6 @@ export default function AiKeysSection({
         preferred_model: preferredModel || undefined,
       },
       {
-        preserveState: true,
         onSuccess: () => {
           toast.success("AI provider key saved");
           setDialogOpen(false);
@@ -156,7 +177,6 @@ export default function AiKeysSection({
 
   function handleDelete(providerId: number) {
     router.delete(route("dashboard.account.ai-keys.destroy", providerId), {
-      preserveState: true,
       onSuccess: () => toast.success("Provider key removed"),
       onError: () => toast.error("Failed to remove provider key"),
     });
@@ -167,7 +187,6 @@ export default function AiKeysSection({
       route("dashboard.account.ai-keys.update", provider.id),
       { is_active: !provider.is_active },
       {
-        preserveState: true,
         onSuccess: () =>
           toast.success(provider.is_active ? "Provider disabled" : "Provider enabled"),
         onError: () => toast.error("Failed to update provider"),
@@ -310,11 +329,7 @@ export default function AiKeysSection({
           </Button>
           {selectedProvider && selectedProvider !== "ollama" && (
             <Button variant="outline" onClick={handleTest} disabled={!apiKey || testing}>
-              {testing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <TestTube2 className="mr-2 h-4 w-4" />
-              )}
+              {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Test
             </Button>
           )}
@@ -326,69 +341,73 @@ export default function AiKeysSection({
     </Dialog>
   );
 
+  const deleteProvider = providers.find((p) => p.id === deleteProviderId);
+
   const providersList =
     providers.length > 0 ? (
       <div className="space-y-3">
         {providers.map((provider) => {
           const config = supportedProviders[provider.provider];
           return (
-            <div
-              key={provider.id}
-              className="flex items-center justify-between p-3 border rounded-lg"
-            >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <Brain className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{provider.provider_name}</p>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {provider.masked_key}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {config && config.models.length > 0 ? (
-                      <Select
-                        value={provider.preferred_model ?? ""}
-                        onValueChange={(value) => handleUpdateModel(provider, value ?? "")}
-                      >
-                        <SelectTrigger className="h-7 w-auto text-xs max-w-[200px]">
-                          <SelectValue placeholder="Default model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {config.models.map((model) => (
-                            <SelectItem key={model} value={model}>
-                              {model}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : provider.preferred_model ? (
-                      <span className="text-xs text-muted-foreground">
-                        Model: {provider.preferred_model}
-                      </span>
-                    ) : null}
-                    <span className="text-xs text-muted-foreground">
-                      Added {provider.created_at}
-                    </span>
-                  </div>
+            <div key={provider.id} className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`inline-block h-2.5 w-2.5 rounded-full ring-1 ring-inset shrink-0 ${
+                      provider.is_active
+                        ? "bg-emerald-500 ring-emerald-500/30"
+                        : "bg-red-500 ring-red-500/30"
+                    }`}
+                  />
+                  <p className="text-sm font-medium truncate">{provider.provider_name}</p>
                 </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={<Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" />}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem onClick={() => handleToggleActive(provider)}>
+                      {provider.is_active ? "Disable" : "Enable"}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setDeleteProviderId(provider.id)}
+                    >
+                      Remove
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Switch
-                  checked={provider.is_active}
-                  onCheckedChange={() => handleToggleActive(provider)}
-                  aria-label={`Toggle ${provider.provider_name}`}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleDelete(provider.id)}
-                  title="Remove provider key"
+              <span className="block text-xs text-muted-foreground font-mono">
+                {provider.masked_key}
+              </span>
+              {config && config.models.length > 0 ? (
+                <Select
+                  value={provider.preferred_model ?? ""}
+                  onValueChange={(value) => handleUpdateModel(provider, value ?? "")}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
+                  <SelectTrigger className="h-8 text-xs w-full">
+                    <SelectValue placeholder="Default model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {config.models.map((model) => (
+                      <SelectItem key={model} value={model}>
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : provider.preferred_model ? (
+                <span className="block text-xs text-muted-foreground">
+                  Model: {provider.preferred_model}
+                </span>
+              ) : null}
+              <span className="block text-xs text-muted-foreground">
+                Added {provider.created_at}
+              </span>
             </div>
           );
         })}
@@ -400,22 +419,52 @@ export default function AiKeysSection({
     );
 
   return (
-    <SettingsAccordionItem
-      value="ai-provider-keys"
-      icon={Brain}
-      title="AI Provider Keys"
-      description="Add your own API keys to use AI features. Your keys are encrypted and never shared."
-      defaultOpen={false}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-muted-foreground">
-          {providers.length > 0
-            ? `${providers.length} provider${providers.length === 1 ? "" : "s"} configured`
-            : "No providers configured"}
-        </span>
-        {addProviderButton}
-      </div>
-      {providersList}
-    </SettingsAccordionItem>
+    <>
+      <AlertDialog
+        open={!!deleteProviderId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProviderId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Provider Key</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove the API key for{" "}
+              <strong>{deleteProvider?.provider_name}</strong>? This action cannot be undone and AI
+              features using this provider will stop working.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteProviderId) handleDelete(deleteProviderId);
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <SettingsAccordionItem
+        value="ai-provider-keys"
+        icon={Brain}
+        title="AI Provider Keys"
+        description="Add your own API keys to use AI features. Your keys are encrypted and never shared."
+        defaultOpen={false}
+      >
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+          <span className="text-sm text-muted-foreground">
+            {providers.length > 0
+              ? `${providers.length} provider${providers.length === 1 ? "" : "s"} configured`
+              : "No providers configured"}
+          </span>
+          {addProviderButton}
+        </div>
+        {providersList}
+      </SettingsAccordionItem>
+    </>
   );
 }

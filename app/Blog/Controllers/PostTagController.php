@@ -73,4 +73,35 @@ class PostTagController extends Controller
 
         return redirect()->route('dashboard.posts.tags.index')->with('flash', ['status' => 'Tag deleted.']);
     }
+
+    public function reorder(Request $request)
+    {
+        $this->authorize('create', Post::class);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:post_tags,id',
+        ]);
+
+        foreach ($validated['ids'] as $index => $id) {
+            PostTag::where('id', $id)->update(['order' => $index]);
+        }
+
+        return redirect()->back()->with('status', 'Tag order updated.');
+    }
+
+    public function bulk(Request $request)
+    {
+        $this->authorize('create', Post::class);
+
+        $validated = $request->validate([
+            'action' => 'required|string|in:delete',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:post_tags,id',
+        ]);
+
+        PostTag::whereIn('id', $validated['ids'])->delete();
+
+        return redirect()->back()->with('status', count($validated['ids']).' tags deleted.');
+    }
 }

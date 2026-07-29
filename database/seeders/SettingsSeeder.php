@@ -29,8 +29,12 @@ class SettingsSeeder extends Seeder
 
             // Security
             ['key' => 'password_min_length', 'value' => '8', 'group' => 'security'],
+            ['key' => 'password_require_uppercase', 'value' => '0', 'group' => 'security'],
+            ['key' => 'password_require_numbers', 'value' => '0', 'group' => 'security'],
+            ['key' => 'password_require_special', 'value' => '0', 'group' => 'security'],
             ['key' => 'session_lifetime', 'value' => '120', 'group' => 'security'],
             ['key' => 'max_login_attempts', 'value' => '5', 'group' => 'security'],
+            ['key' => 'lockout_duration', 'value' => '5', 'group' => 'security'],
 
             // Email
             ['key' => 'mail_driver', 'value' => config('mail.default', 'log'), 'group' => 'email'],
@@ -40,6 +44,7 @@ class SettingsSeeder extends Seeder
             // Maintenance
             ['key' => 'maintenance_mode', 'value' => '0', 'group' => 'maintenance'],
             ['key' => 'maintenance_message', 'value' => 'We are performing scheduled maintenance. Please check back soon.', 'group' => 'maintenance'],
+            ['key' => 'maintenance_ends_at', 'value' => '', 'group' => 'maintenance'],
 
             // Formatting (includes date/time)
             ['key' => 'default_currency', 'value' => 'USD', 'group' => 'formatting'],

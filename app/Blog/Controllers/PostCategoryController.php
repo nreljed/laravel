@@ -80,4 +80,45 @@ class PostCategoryController extends Controller
 
         return redirect()->back()->with('status', 'Category deleted.');
     }
+
+    public function reorder(Request $request)
+    {
+        $this->authorize('create', Post::class);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:post_categories,id',
+        ]);
+
+        foreach ($validated['ids'] as $index => $id) {
+            PostCategory::where('id', $id)->update(['order' => $index]);
+        }
+
+        return redirect()->back()->with('status', 'Category order updated.');
+    }
+
+    public function bulk(Request $request)
+    {
+        $this->authorize('create', Post::class);
+
+        $validated = $request->validate([
+            'action' => 'required|string|in:delete',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:post_categories,id',
+        ]);
+
+        $categories = PostCategory::whereIn('id', $validated['ids'])->get();
+
+        foreach ($categories as $category) {
+            if ($category->posts()->exists()) {
+                return redirect()->back()->withErrors([
+                    'bulk' => "Cannot delete \"{$category->name}\" — it has posts assigned.",
+                ]);
+            }
+        }
+
+        PostCategory::whereIn('id', $validated['ids'])->delete();
+
+        return redirect()->back()->with('status', count($validated['ids']).' categories deleted.');
+    }
 }

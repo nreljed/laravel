@@ -11,7 +11,6 @@ import {
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,6 +26,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/Components/ui/pagination";
+import { DateRangePicker } from "@/Components/shared/date-range-picker";
 import { Filter, ScrollText } from "lucide-react";
 import {
   Empty,
@@ -166,19 +166,12 @@ export default function AdminAuditLogsIndex() {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="w-40"
-          placeholder="From"
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="w-40"
-          placeholder="To"
+        <DateRangePicker
+          value={{ from: dateFrom, to: dateTo }}
+          onChange={({ from, to }) => {
+            setDateFrom(from);
+            setDateTo(to);
+          }}
         />
 
         <Button variant="secondary" size="sm" onClick={applyFilters}>

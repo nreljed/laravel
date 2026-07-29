@@ -10,18 +10,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/Components/ui/breadcrumb";
-
+import { AccountSettingsNav } from "@/Components/account/AccountSettingsNav";
 import { AccountInfoSection } from "@/Components/account/sections/AccountInfoSection";
 import { AvatarSection } from "@/Components/account/sections/AvatarSection";
 import { PersonalInfoSection } from "@/Components/account/sections/PersonalInfoSection";
 import { ContactInfoSection } from "@/Components/account/sections/ContactInfoSection";
-import { EmailSection } from "@/Components/account/sections/EmailSection";
-import { PasswordSection } from "@/Components/account/sections/PasswordSection";
-import { NotificationPrefsSection } from "@/Components/account/sections/NotificationPrefsSection";
-import AiKeysSection from "@/Components/account/sections/AiKeysSection";
-import { DangerZoneSection } from "@/Components/account/sections/DangerZoneSection";
 
-export default function UserAccount() {
+export default function Profile() {
   const { props } = usePage();
   const authUser = (props.auth as Record<string, unknown>)?.user as
     Record<string, unknown> | undefined;
@@ -224,8 +219,8 @@ export default function UserAccount() {
 
   if (isLoading) {
     return (
-      <AuthenticatedLayout header="Account" maxWidth="max-w-4xl">
-        <Head title="Account" />
+      <AuthenticatedLayout header="Account Settings" maxWidth="max-w-5xl">
+        <Head title="Profile" />
         <div className="space-y-6">
           <Breadcrumb>
             <BreadcrumbList>
@@ -236,7 +231,7 @@ export default function UserAccount() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Account</BreadcrumbPage>
+                <BreadcrumbPage>Profile</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -249,8 +244,8 @@ export default function UserAccount() {
   }
 
   return (
-    <AuthenticatedLayout header="Account" maxWidth="max-w-4xl">
-      <Head title="Account" />
+    <AuthenticatedLayout header="Account Settings" maxWidth="max-w-5xl">
+      <Head title="Profile" />
 
       <div className="space-y-6">
         <Breadcrumb>
@@ -262,96 +257,49 @@ export default function UserAccount() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Account</BreadcrumbPage>
+              <BreadcrumbPage>Account Settings</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="space-y-6">
-          <AccountInfoSection
-            user={user as Record<string, unknown>}
-            roles={roles}
-            asAccordion
-            accordionDefaultOpen={false}
-          />
+        <div className="flex flex-col md:flex-row gap-8">
+          <AccountSettingsNav />
+          <div className="flex-1 min-w-0 space-y-6">
+            <AccountInfoSection
+              user={user as Record<string, unknown>}
+              roles={roles}
+              asAccordion
+              accordionDefaultOpen={false}
+            />
 
-          <AvatarSection
-            currentAvatar={avatarPreview}
-            hasCustomAvatar={hasCustomAvatar}
-            onUpload={handleAvatarUpload}
-            onDelete={handleDeleteAvatar}
-            uploading={uploading}
-            error={avatarError}
-            userName={(user.display_name as string) || ""}
-            asAccordion
-            accordionDefaultOpen={false}
-          />
+            <AvatarSection
+              currentAvatar={avatarPreview}
+              hasCustomAvatar={hasCustomAvatar}
+              onUpload={handleAvatarUpload}
+              onDelete={handleDeleteAvatar}
+              uploading={uploading}
+              error={avatarError}
+              userName={(user.display_name as string) || ""}
+              asAccordion
+              accordionDefaultOpen={false}
+            />
 
-          <PersonalInfoSection
-            data={formData as Record<string, unknown>}
-            onChange={handleFieldChange}
-            errors={formErrors}
-            loading={false}
-            onSubmit={handleProfileSubmit}
-            asAccordion
-            accordionDefaultOpen={false}
-          />
+            <PersonalInfoSection
+              data={formData as Record<string, unknown>}
+              onChange={handleFieldChange}
+              errors={formErrors}
+              loading={false}
+              onSubmit={handleProfileSubmit}
+              asAccordion
+              accordionDefaultOpen={false}
+            />
 
-          <ContactInfoSection
-            data={user as Record<string, unknown>}
-            asAccordion
-            accordionDefaultOpen={false}
-          />
-
-          <EmailSection
-            email={user.user_email as string}
-            mustVerifyEmail={props.mustVerifyEmail as boolean}
-            asAccordion
-            accordionDefaultOpen={false}
-          />
-
-          <PasswordSection asAccordion accordionDefaultOpen={false} />
-
-          <NotificationPrefsSection
-            notificationTypes={
-              props.notificationTypes as Record<
-                string,
-                Record<
-                  string,
-                  {
-                    label: string;
-                    description: string;
-                    default_channels: string[];
-                    default_enabled: boolean;
-                    group: string;
-                  }
-                >
-              >
-            }
-            preferences={props.preferences as Record<string, { in_app?: boolean; email?: boolean }>}
-            asAccordion
-            accordionDefaultOpen={false}
-          />
-
-          <AiKeysSection
-            providers={
-              props.aiProviders as Array<{
-                id: number;
-                provider: string;
-                provider_name: string;
-                masked_key: string;
-                preferred_model: string | null;
-                is_active: boolean;
-                created_at: string;
-              }>
-            }
-            supportedProviders={
-              props.supportedProviders as
-                Record<string, { name: string; models: string[] }> | undefined
-            }
-          />
-
-          <DangerZoneSection asAccordion accordionDefaultOpen={false} />
+            <ContactInfoSection
+              data={user as Record<string, unknown>}
+              asAccordion
+              accordionDefaultOpen={false}
+            />
+          </div>
         </div>
       </div>
     </AuthenticatedLayout>

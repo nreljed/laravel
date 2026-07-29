@@ -63,7 +63,7 @@ class AuthorizationTest extends TestCase
     {
         $user = $this->createUserWithRole('admin');
 
-        $response = $this->actingAs($user)->get('/dashboard/admin/settings');
+        $response = $this->actingAs($user)->get('/dashboard/admin/settings/general');
 
         $response->assertStatus(200);
     }

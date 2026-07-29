@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('register/check-availability', [RegisteredUserController::class, 'checkAvailability'])
-    ->middleware('throttle:10,1')
+    ->middleware(['throttle:10,1', 'maintenance'])
     ->name('register.availability');
 
 Route::middleware(['guest', 'maintenance'])->group(function () {

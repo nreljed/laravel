@@ -32,10 +32,16 @@ class Setting extends Model
         'default_notification_channel' => 'notifications',
         'email_notifications_enabled' => 'notifications',
         'password_min_length' => 'security',
+        'password_require_uppercase' => 'security',
+        'password_require_numbers' => 'security',
+        'password_require_special' => 'security',
         'session_lifetime' => 'security',
         'max_login_attempts' => 'security',
+        'lockout_duration' => 'security',
         'maintenance_mode' => 'maintenance',
         'maintenance_message' => 'maintenance',
+        'maintenance_ends_at' => 'maintenance',
+        'maintenance_bypass_token' => 'maintenance',
     ];
 
     public static function get(string $key, mixed $default = null): mixed

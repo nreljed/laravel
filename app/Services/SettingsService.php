@@ -29,8 +29,9 @@ class SettingsService
     {
         foreach ($data as $key => $value) {
             Setting::set($key, $value);
+            Cache::forget(self::CACHE_KEY.':'.$key);
         }
-        Cache::forget(self::CACHE_KEY);
+        self::clearCache();
     }
 
     public static function getGroup(string $group): array

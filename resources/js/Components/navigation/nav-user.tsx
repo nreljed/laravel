@@ -12,7 +12,7 @@ import {
   UserRound,
   UserPlus,
   LayoutDashboard,
-  Settings,
+  CircleUserRound,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -170,18 +170,18 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
               </div>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             render={<Link href={route("dashboard")} className="flex w-full items-center" />}
           >
             <span className="flex items-center flex-1">Dashboard</span>
-            <LayoutDashboard className="h-4 w-4 ml-auto" />
+            <LayoutDashboard className="h-4 w-4 ml-auto text-muted-foreground" />
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
             render={<Link href={route("dashboard.account")} className="flex w-full items-center" />}
           >
             <span className="flex items-center flex-1">Account</span>
-            <Settings className="h-4 w-4 ml-auto" />
+            <CircleUserRound className="h-4 w-4 ml-auto text-muted-foreground" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <div className="flex items-center justify-between px-2 py-1.5">
@@ -240,9 +240,9 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
               >
                 <span className="flex items-center flex-1 gap-2">
                   {userMode === "guest" ? (
-                    <Hotel className="h-4 w-4" />
+                    <Hotel className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <UserRound className="h-4 w-4" />
+                    <UserRound className="h-4 w-4 text-muted-foreground" />
                   )}
                   Switch to {userMode === "guest" ? "Host" : "Guest"}
                 </span>
@@ -261,7 +261,7 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
             }}
           >
             <span className="flex items-center flex-1">Log out</span>
-            <LogOut className="h-4 w-4 ml-auto" />
+            <LogOut className="h-4 w-4 ml-auto text-muted-foreground" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

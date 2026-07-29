@@ -103,7 +103,7 @@ export function CommandSearch() {
         heading: "Administration",
         items: [
           { title: "Users", icon: Users, url: route("dashboard.admin.users.index") },
-          { title: "Settings", icon: Settings, url: route("dashboard.admin.settings") },
+          { title: "Settings", icon: Settings, url: route("dashboard.admin.settings.general") },
           { title: "System Health", icon: Activity, url: route("dashboard.admin.system-health") },
         ],
       });

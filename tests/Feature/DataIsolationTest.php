@@ -62,7 +62,7 @@ class DataIsolationTest extends TestCase
         $user1 = $this->createUserWithRole('crm_user');
         $user2 = $this->createUserWithRole('crm_user');
 
-        $response = $this->actingAs($user2)->get('/dashboard/account');
+        $response = $this->actingAs($user2)->get(route('dashboard.account.page.profile'));
         $response->assertStatus(200);
 
         $this->assertNotEquals($user1->id, $user2->id);
@@ -72,7 +72,7 @@ class DataIsolationTest extends TestCase
     {
         $user = $this->createUserWithRole('crm_user');
 
-        $response = $this->actingAs($user)->get('/dashboard/account');
+        $response = $this->actingAs($user)->get(route('dashboard.account.page.profile'));
 
         $response->assertStatus(200);
     }

@@ -4,6 +4,7 @@ use App\Ai\Controllers\AiProviderController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BulkUserController;
 use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\IpAccessRuleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SessionController;
@@ -17,11 +18,60 @@ use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NotificationTestController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserAccountController;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// ═══════════════════════════════════════════════════
+// MAINTENANCE — status check + bypass (outside maintenance middleware)
+// ═══════════════════════════════════════════════════
+Route::get('/maintenance/status', function () {
+    $maintenance = SettingsService::get('maintenance_mode', '0') === '1';
+    $endsAt = SettingsService::get('maintenance_ends_at', '');
+
+    return response()->json([
+        'maintenance' => $maintenance,
+        'endsAt' => $endsAt ?: null,
+    ])->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        ->header('Pragma', 'no-cache');
+})->name('maintenance.status');
+
+Route::get('/maintenance/bypass/{token}', function (string $token) {
+    $validToken = SettingsService::get('maintenance_bypass_token', '');
+
+    if ($validToken === '' || ! hash_equals($validToken, $token)) {
+        abort(404);
+    }
+
+    $cookie = Cookie::make(
+        'maintenance_bypass',
+        $token,
+        1440,
+        '/',
+        null,
+        true,
+        false,
+        'lax'
+    );
+
+    return redirect('/')->withCookie($cookie);
+})->name('maintenance.bypass');
+
+// ═══════════════════════════════════════════════════
+// MAINTENANCE RECOVERY — email-based lockout prevention
+// ═══════════════════════════════════════════════════
+Route::get('/maintenance/recovery', [RecoveryController::class, 'showRequestForm'])
+    ->name('maintenance.recovery');
+Route::post('/maintenance/recovery', [RecoveryController::class, 'requestToken'])
+    ->middleware('throttle:3,5')
+    ->name('maintenance.recovery.request-token');
+Route::get('/maintenance/recovery/{token}', [RecoveryController::class, 'claim'])
+    ->name('maintenance.recovery.claim');
 
 // ═══════════════════════════════════════════════════
 // FRONTEND (Public) Pages — no auth required
@@ -72,6 +122,15 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     // User account — consolidated profile + account management
     Route::prefix('/dashboard/account')->group(function () {
         Route::get('/', [UserAccountController::class, 'index'])->name('dashboard.account');
+
+        // Navigation pages
+        Route::get('/profile', [UserAccountController::class, 'profile'])->name('dashboard.account.page.profile');
+        Route::get('/security', [UserAccountController::class, 'security'])->name('dashboard.account.page.security');
+        Route::get('/notifications', [UserAccountController::class, 'notifications'])->name('dashboard.account.page.notifications');
+        Route::get('/integrations', [UserAccountController::class, 'integrations'])->name('dashboard.account.page.integrations');
+        Route::get('/advanced', [UserAccountController::class, 'advanced'])->name('dashboard.account.page.advanced');
+
+        // Form submission endpoints
         Route::patch('/profile', [UserAccountController::class, 'updateProfile'])->name('dashboard.account.profile');
         Route::patch('/contact', [UserAccountController::class, 'updateContact'])->name('dashboard.account.contact');
         Route::post('/email', [UserAccountController::class, 'updateEmail'])->name('dashboard.account.email');
@@ -102,9 +161,29 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
 // DASHBOARD ADMIN Pages — requires auth + admin
 // ═══════════════════════════════════════════════════
 Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
-    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
-    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
+
+    Route::prefix('/settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::put('/', [SettingsController::class, 'update'])->name('update');
+
+        Route::get('/general', [SettingsController::class, 'general'])->name('general');
+        Route::get('/registration', [SettingsController::class, 'registration'])->name('registration');
+        Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
+        Route::get('/security', [SettingsController::class, 'security'])->name('security');
+        Route::get('/email', [SettingsController::class, 'email'])->name('email');
+        Route::get('/maintenance', [SettingsController::class, 'maintenance'])->name('maintenance');
+        Route::get('/ip-access', [SettingsController::class, 'ipAccess'])->name('ip-access');
+
+        Route::put('/email', [EmailSettingsController::class, 'update'])->name('email.update');
+        Route::post('/email/test', [EmailSettingsController::class, 'sendTest'])->name('email.test');
+        Route::post('/email/template-test', [EmailSettingsController::class, 'sendTemplateTest'])->name('email.template-test');
+        Route::get('/email/template-preview/{template}', [EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
+        Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
+        Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
+        Route::post('/favicon', [SettingsController::class, 'uploadFavicon'])->name('favicon.upload');
+        Route::delete('/favicon', [SettingsController::class, 'deleteFavicon'])->name('favicon.delete');
+    });
 
     // User management
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -154,16 +233,11 @@ Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('da
     Route::post('/notifications/test/send-to-all', [NotificationTestController::class, 'sendToAll'])->name('notifications.test-send-all');
     Route::delete('/notifications/test/clear', [NotificationTestController::class, 'clearAll'])->name('notifications.test-clear');
 
-    Route::prefix('/settings')->name('settings.')->group(function () {
-        Route::put('/email', [EmailSettingsController::class, 'update'])->name('email.update');
-        Route::post('/email/test', [EmailSettingsController::class, 'sendTest'])->name('email.test');
-        Route::post('/email/template-test', [EmailSettingsController::class, 'sendTemplateTest'])->name('email.template-test');
-        Route::get('/email/template-preview/{template}', [EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
-        Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
-        Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
-        Route::post('/favicon', [SettingsController::class, 'uploadFavicon'])->name('favicon.upload');
-        Route::delete('/favicon', [SettingsController::class, 'deleteFavicon'])->name('favicon.delete');
-    });
+    // IP Access Rules
+    Route::get('/ip-rules', [IpAccessRuleController::class, 'index'])->name('ip-rules.index');
+    Route::post('/ip-rules', [IpAccessRuleController::class, 'store'])->name('ip-rules.store');
+    Route::put('/ip-rules/{ipAccessRule}', [IpAccessRuleController::class, 'update'])->name('ip-rules.update');
+    Route::delete('/ip-rules/{ipAccessRule}', [IpAccessRuleController::class, 'destroy'])->name('ip-rules.destroy');
 });
 
 // ═══════════════════════════════════════════════════

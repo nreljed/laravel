@@ -74,7 +74,9 @@ class LoginRequest extends FormRequest
 
         event(new Lockout($this));
 
+        $lockoutDuration = (int) SettingsService::get('lockout_duration', 5);
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = max($seconds, $lockoutDuration * 60);
 
         throw ValidationException::withMessages([
             'username' => trans('auth.throttle', [

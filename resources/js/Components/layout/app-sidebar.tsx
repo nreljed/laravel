@@ -62,7 +62,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: safeRoute("dashboard.admin.permissions.index"),
       icon: ShieldCheck,
     },
-    { title: "Settings", url: safeRoute("dashboard.admin.settings"), icon: Settings },
+    { title: "Settings", url: safeRoute("dashboard.admin.settings.general"), icon: Settings },
     { title: "Audit Logs", url: safeRoute("dashboard.admin.audit-logs.index"), icon: ScrollText },
     { title: "System Health", url: safeRoute("dashboard.admin.system-health"), icon: Activity },
   ];

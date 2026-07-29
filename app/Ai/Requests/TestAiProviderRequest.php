@@ -17,6 +17,7 @@ class TestAiProviderRequest extends FormRequest
         return [
             'provider' => ['required', 'string', 'in:'.implode(',', array_keys(AiProvider::supportedProviders()))],
             'api_key' => ['required', 'string', 'min:10'],
+            'preferred_model' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

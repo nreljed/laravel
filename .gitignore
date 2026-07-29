@@ -25,7 +25,11 @@ composer.phar
 /*.html
 /*.png
 /_*.php
+/table-inspect.json
 /sql/*.sql
+
+# LocalWP auto-generated
+/.envrc
 
 # Laravel Boost auto-generated files
 .cursorrules

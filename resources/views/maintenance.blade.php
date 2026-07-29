@@ -16,70 +16,43 @@
             justify-content: center;
             padding: 2rem;
         }
-        .container {
-            max-width: 520px;
-            text-align: center;
-        }
+        .container { max-width: 520px; text-align: center; }
         .icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 2rem;
-            background: #e2e8f0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 80px; height: 80px; margin: 0 auto 2rem;
+            background: #e2e8f0; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
         }
-        .icon svg {
-            width: 40px;
-            height: 40px;
-            color: #64748b;
+        .icon svg { width: 40px; height: 40px; color: #64748b; }
+        h1 { font-size: 1.875rem; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: -0.025em; }
+        .message { font-size: 1.125rem; color: #64748b; line-height: 1.6; margin-bottom: 2rem; }
+        .countdown {
+            display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;
         }
-        h1 {
-            font-size: 1.875rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            letter-spacing: -0.025em;
+        .countdown-unit {
+            display: flex; flex-direction: column; align-items: center;
         }
-        .message {
-            font-size: 1.125rem;
-            color: #64748b;
-            line-height: 1.6;
-            margin-bottom: 2rem;
+        .countdown-value {
+            font-size: 2rem; font-weight: 700; color: #1e293b;
+            font-variant-numeric: tabular-nums; min-width: 3rem;
         }
-        .meta {
-            font-size: 0.875rem;
-            color: #94a3b8;
+        .countdown-label {
+            font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;
+            letter-spacing: 0.05em; margin-top: 0.25rem;
         }
-        .progress {
-            width: 100%;
-            height: 4px;
-            background: #e2e8f0;
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 1.5rem;
-        }
-        .progress-bar {
-            height: 100%;
-            background: #3b82f6;
-            border-radius: 2px;
-            animation: progress 60s linear infinite;
-        }
-        @keyframes progress {
-            0% { width: 0%; }
-            100% { width: 100%; }
-        }
+        .countdown-separator { font-size: 2rem; font-weight: 700; color: #cbd5e1; padding-top: 0; }
+        .no-end-time { font-size: 1rem; color: #64748b; margin-bottom: 2rem; }
+        .meta { font-size: 0.875rem; color: #94a3b8; }
         @media (prefers-color-scheme: dark) {
             body { background: #0f172a; color: #e2e8f0; }
             .icon { background: #1e293b; }
             .icon svg { color: #94a3b8; }
             .message { color: #94a3b8; }
+            .countdown-value { color: #e2e8f0; }
+            .countdown-separator { color: #475569; }
+            .no-end-time { color: #94a3b8; }
             .meta { color: #64748b; }
-            .progress { background: #1e293b; }
-            .progress-bar { background: #60a5fa; }
         }
     </style>
-    <meta http-equiv="refresh" content="60">
 </head>
 <body>
     <div class="container">
@@ -93,11 +66,74 @@
 
         <p class="message">{{ $message }}</p>
 
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
+        @if(!empty($endsAt))
+            <div class="countdown" id="countdown">
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="cd-hours">--</span>
+                    <span class="countdown-label">Hours</span>
+                </div>
+                <span class="countdown-separator">:</span>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="cd-minutes">--</span>
+                    <span class="countdown-label">Minutes</span>
+                </div>
+                <span class="countdown-separator">:</span>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="cd-seconds">--</span>
+                    <span class="countdown-label">Seconds</span>
+                </div>
+            </div>
+        @else
+            <p class="no-end-time">Please check back later.</p>
+        @endif
 
-        <p class="meta">This page will refresh automatically in 60 seconds.</p>
+        <p class="meta" id="meta-text">
+            @if(!empty($endsAt))
+                This page will refresh automatically when maintenance is complete.
+            @else
+                This page will refresh periodically.
+            @endif
+        </p>
     </div>
+
+    @if(!empty($endsAt))
+    <script>
+        (function() {
+            var endsAt = new Date({!! json_encode($endsAt) !!}).getTime();
+            var hoursEl = document.getElementById('cd-hours');
+            var minutesEl = document.getElementById('cd-minutes');
+            var secondsEl = document.getElementById('cd-seconds');
+            var metaText = document.getElementById('meta-text');
+
+            function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+            function tick() {
+                var now = Date.now();
+                var diff = Math.max(0, Math.floor((endsAt - now) / 1000));
+
+                if (diff <= 0) {
+                    metaText.textContent = 'Maintenance is complete. Refreshing...';
+                    hoursEl.textContent = '00';
+                    minutesEl.textContent = '00';
+                    secondsEl.textContent = '00';
+                    setTimeout(function() { location.reload(); }, 2000);
+                    return;
+                }
+
+                var h = Math.floor(diff / 3600);
+                var m = Math.floor((diff % 3600) / 60);
+                var s = diff % 60;
+
+                hoursEl.textContent = pad(h);
+                minutesEl.textContent = pad(m);
+                secondsEl.textContent = pad(s);
+
+                setTimeout(tick, 1000);
+            }
+
+            tick();
+        })();
+    </script>
+    @endif
 </body>
 </html>

@@ -23,7 +23,7 @@ export function AccountInfoSection({
       asAccordion={asAccordion}
       accordionDefaultOpen={accordionDefaultOpen}
     >
-      <div className="space-y-4">
+      <div className="space-y-1">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground min-w-[120px]">User ID:</p>
           <p className="font-medium text-foreground">{String(user?.id ?? "-")}</p>
