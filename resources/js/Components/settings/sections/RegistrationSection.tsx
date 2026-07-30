@@ -25,11 +25,12 @@ export function RegistrationSection({
   asAccordion,
 }: RegistrationSectionProps) {
   const [data, setData] = useState(() => {
-    const storedRole = settings.default_role ?? "crm_user";
-    const validRole = roles.some((r) => r.slug === storedRole) ? storedRole : "crm_user";
+    const firstRole = roles[0]?.slug ?? "";
+    const storedRole = settings.default_role ?? firstRole;
+    const validRole = roles.some((r) => r.slug === storedRole) ? storedRole : firstRole;
     return {
       enable_registration: settings.enable_registration ?? "0",
-      default_role: validRole,
+      default_role: validRole || "",
       require_email_verification: settings.require_email_verification ?? "0",
     };
   });
@@ -88,27 +89,27 @@ export function RegistrationSection({
         htmlFor="default_role"
         description="The role assigned to every new user upon registration. Admin roles are excluded — they can only be created through the backend."
       >
-        <Select
-          value={data.default_role}
-          onValueChange={(v) => setData((p) => ({ ...p, default_role: v ?? "" }))}
-        >
-          <SelectTrigger id="default_role" className="w-full">
-            <SelectValue placeholder="Select a role..." />
-          </SelectTrigger>
-          <SelectContent>
-            {roles.length === 0 ? (
-              <SelectItem value="crm_user" disabled>
-                No roles available
-              </SelectItem>
-            ) : (
-              roles.map((role) => (
+        {roles.length === 0 ? (
+          <p className="text-sm text-amber-500">
+            No non-admin roles exist. Create one in the Roles section first.
+          </p>
+        ) : (
+          <Select
+            value={data.default_role || undefined}
+            onValueChange={(v) => setData((p) => ({ ...p, default_role: v ?? "" }))}
+          >
+            <SelectTrigger id="default_role" className="w-full">
+              <SelectValue placeholder="Select a role..." />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map((role) => (
                 <SelectItem key={role.slug} value={role.slug}>
                   {role.name}
                 </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </SectionField>
 
       <SectionField

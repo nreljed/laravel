@@ -9,6 +9,8 @@ class UpdateSettingsRequest extends FormRequest
 {
     public function rules(): array
     {
+        $enableRegistration = $this->input('enable_registration');
+
         return [
             'app_name' => 'nullable|string|max:255',
             'app_logo' => 'nullable|string|max:500',
@@ -18,7 +20,7 @@ class UpdateSettingsRequest extends FormRequest
             'timezone' => 'nullable|string|max:100',
             'enable_registration' => 'nullable|in:0,1',
             'default_role' => [
-                'nullable',
+                $enableRegistration === '1' ? 'required' : 'nullable',
                 'string',
                 'max:50',
                 Rule::exists('roles', 'slug')->where(fn ($q) => $q->where('slug', '!=', 'admin')),
