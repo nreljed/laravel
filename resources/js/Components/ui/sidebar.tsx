@@ -97,12 +97,14 @@ function SidebarProvider({
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
+        event.key !== SIDEBAR_KEYBOARD_SHORTCUT ||
+        (!event.metaKey && !event.ctrlKey)
       ) {
-        event.preventDefault()
-        toggleSidebar()
+        return
       }
+
+      event.preventDefault()
+      toggleSidebar()
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -510,11 +512,12 @@ function SidebarMenuButton({
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
+  const sidebarMenuButtonClassName = cn(sidebarMenuButtonVariants({ variant, size }), className)
   const comp = useRender({
     defaultTagName: "button",
     props: mergeProps<"button">(
       {
-        className: cn(sidebarMenuButtonVariants({ variant, size }), className),
+        className: sidebarMenuButtonClassName,
       },
       props
     ),
