@@ -78,9 +78,8 @@ jobs:
             "https://laravel.tunispromo.tn/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}"; then
             echo "Deployed via /deploy/upload"
           elif curl -sf --max-time 300 \
-            -F "file=@deploy.zip;filename=deploy.zip" \
             "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"; then
-            echo "Deployed via /deploy/check (legacy)"
+            echo "Deployed via /deploy/check (GitHub API)"
           else
             echo "Deploy failed. Release created at:"
             echo "https://github.com/nreljed/laravel/releases/tag/$VER"
