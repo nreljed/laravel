@@ -1,10 +1,10 @@
-import * as React from "react"
+import * as React from "react";
 import type {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
   VisibilityState,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 import {
   flexRender,
   getCoreRowModel,
@@ -14,7 +14,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -23,16 +23,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/Components/ui/table"
-import { DataTablePagination } from "@/Components/ui/data-table-pagination"
-import { DataTableToolbar } from "@/Components/ui/data-table-toolbar"
-import { Button } from "@/Components/ui/button"
+} from "@/Components/ui/table";
+import { DataTablePagination } from "@/Components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/Components/ui/data-table-toolbar";
+import { Button } from "@/Components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/Components/ui/dropdown-menu"
+} from "@/Components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,32 +42,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/Components/ui/alert-dialog"
-import { AlertTriangleIcon, ChevronDownIcon } from "lucide-react"
-import { Checkbox } from "@/Components/ui/checkbox"
+} from "@/Components/ui/alert-dialog";
+import { AlertTriangleIcon, ChevronDownIcon } from "lucide-react";
+import { Checkbox } from "@/Components/ui/checkbox";
 
 interface BulkAction {
-  label: string
-  value: string
-  show?: (_statuses: string[]) => boolean
-  destructive?: boolean
-  confirmTitle?: string
-  confirmDescription?: string
-  confirmLabel?: string
+  label: string;
+  value: string;
+  show?: (_statuses: string[]) => boolean;
+  destructive?: boolean;
+  confirmTitle?: string;
+  confirmDescription?: string;
+  confirmLabel?: string;
 }
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  searchKey?: string
-  searchPlaceholder?: string
-  filterOptions?: { label: string; value: string }[]
-  filterKey?: string
-  filterTitle?: string
-  pageSize?: number
-  bulkActions?: BulkAction[]
-  onBulkAction?: (_action: string, _ids: number[]) => void
-  emptyState?: React.ReactNode
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  searchKey?: string;
+  searchPlaceholder?: string;
+  filterOptions?: { label: string; value: string }[];
+  filterKey?: string;
+  filterTitle?: string;
+  pageSize?: number;
+  bulkActions?: BulkAction[];
+  onBulkAction?: (_action: string, _ids: number[]) => void;
+  emptyState?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -83,17 +83,17 @@ export function DataTable<TData, TValue>({
   onBulkAction,
   emptyState,
 }: DataTableProps<TData, TValue>) {
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [confirmAction, setConfirmAction] = React.useState<{
-    action: BulkAction
-    ids: number[]
-  } | null>(null)
+    action: BulkAction;
+    ids: number[];
+  } | null>(null);
 
   const tableColumns = React.useMemo<ColumnDef<TData, TValue>[]>(() => {
-    if (!bulkActions) return columns
+    if (!bulkActions) return columns;
     const selectCol: ColumnDef<TData, TValue> = {
       id: "select",
       header: ({ table }) => (
@@ -113,9 +113,9 @@ export function DataTable<TData, TValue>({
       ),
       enableSorting: false,
       enableHiding: false,
-    }
-    return [selectCol, ...columns]
-  }, [columns, bulkActions])
+    };
+    return [selectCol, ...columns];
+  }, [columns, bulkActions]);
 
   const table = useReactTable({
     data,
@@ -137,7 +137,7 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
+  });
 
   return (
     <div data-slot="data-table" className="space-y-4">
@@ -162,8 +162,8 @@ export function DataTable<TData, TValue>({
               {bulkActions.map((action) => {
                 const selectedStatuses = table
                   .getFilteredSelectedRowModel()
-                  .rows.map((r) => (r.original as { status?: string }).status ?? "")
-                if (action.show && !action.show(selectedStatuses)) return null
+                  .rows.map((r) => (r.original as { status?: string }).status ?? "");
+                if (action.show && !action.show(selectedStatuses)) return null;
                 return (
                   <DropdownMenuItem
                     key={action.value}
@@ -171,17 +171,17 @@ export function DataTable<TData, TValue>({
                       const ids = table
                         .getFilteredSelectedRowModel()
                         .rows.map((r) => (r.original as Record<string, unknown>).id as number)
-                        .filter((id): id is number => id != null)
+                        .filter((id): id is number => id != null);
                       if (action.destructive) {
-                        setConfirmAction({ action, ids })
+                        setConfirmAction({ action, ids });
                       } else {
-                        onBulkAction(action.value, ids)
+                        onBulkAction(action.value, ids);
                       }
                     }}
                   >
                     {action.label}
                   </DropdownMenuItem>
-                )
+                );
               })}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -227,7 +227,7 @@ export function DataTable<TData, TValue>({
       <AlertDialog
         open={!!confirmAction}
         onOpenChange={(open) => {
-          if (!open) setConfirmAction(null)
+          if (!open) setConfirmAction(null);
         }}
       >
         <AlertDialogContent>
@@ -246,9 +246,9 @@ export function DataTable<TData, TValue>({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                if (!(confirmAction && onBulkAction)) return
-                onBulkAction(confirmAction.action.value, confirmAction.ids)
-                setConfirmAction(null)
+                if (!(confirmAction && onBulkAction)) return;
+                onBulkAction(confirmAction.action.value, confirmAction.ids);
+                setConfirmAction(null);
               }}
             >
               {confirmAction?.action.confirmLabel ?? confirmAction?.action.label}
@@ -257,5 +257,5 @@ export function DataTable<TData, TValue>({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
