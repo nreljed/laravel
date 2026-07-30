@@ -125,6 +125,34 @@ class DeployController extends Controller
         }
     }
 
+    public function createAdmin(Request $request)
+    {
+        $this->verifyToken($request);
+        set_time_limit(60);
+
+        $password = $request->input('password');
+        if (! $password || strlen($password) < 8) {
+            return response()->json(['error' => 'Password must be at least 8 characters'], 400);
+        }
+
+        $email = $request->input('email', env('ADMIN_EMAIL', 'nstudio.webdesign@gmail.com'));
+        $name = $request->input('name', env('ADMIN_NAME', 'Studio Admin'));
+
+        try {
+            Artisan::call('app:create-admin', [
+                '--no-interaction' => true,
+                '--email' => $email,
+                '--password' => $password,
+                '--name' => $name,
+            ]);
+            $line = strtok(trim(Artisan::output()), "\n");
+
+            return response()->json(['status' => 'ok', 'message' => $line]);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function upload(Request $request)
     {
         $this->verifyToken($request);

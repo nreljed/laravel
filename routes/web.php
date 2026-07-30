@@ -252,6 +252,7 @@ Route::post('/deploy/upload', [DeployController::class, 'upload'])->middleware('
 Route::post('/deploy/cache-clear', [DeployController::class, 'cacheClear'])->middleware('throttle:5,60');
 Route::post('/deploy/check', [DeployController::class, 'check'])->middleware('throttle:5,60');
 Route::post('/deploy/migrate', [DeployController::class, 'migrate'])->middleware('throttle:5,60');
+Route::post('/deploy/create-admin', [DeployController::class, 'createAdmin'])->middleware('throttle:5,60');
 
 // ═══════════════════════════════════════════════════
 // CSP Report Endpoint — receives violation reports
