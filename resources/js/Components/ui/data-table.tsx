@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import type {
   ColumnDef,
@@ -45,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/Components/ui/alert-dialog";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangleIcon, ChevronDownIcon } from "lucide-react";
 import { Checkbox } from "@/Components/ui/checkbox";
 
 interface BulkAction {
@@ -119,7 +117,7 @@ export function DataTable<TData, TValue>({
     return [selectCol, ...columns];
   }, [columns, bulkActions]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns non-memoizable functions
   const table = useReactTable({
     data,
     columns: tableColumns,
@@ -143,7 +141,7 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="space-y-4">
+    <div data-slot="data-table" className="space-y-4">
       <DataTableToolbar
         table={table}
         searchKey={searchKey}
@@ -159,7 +157,7 @@ export function DataTable<TData, TValue>({
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
-              Bulk Actions <ChevronDown className="ml-1 h-3 w-3" />
+              Bulk Actions <ChevronDownIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               {bulkActions.map((action) => {
@@ -236,7 +234,7 @@ export function DataTable<TData, TValue>({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="size-5 text-destructive" />
+              <AlertTriangleIcon className="size-5 text-destructive" />
               {confirmAction?.action.confirmTitle ?? "Confirm Action"}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -249,10 +247,7 @@ export function DataTable<TData, TValue>({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                if (!(confirmAction && onBulkAction)) {
-                  return;
-                }
-
+                if (!(confirmAction && onBulkAction)) return;
                 onBulkAction(confirmAction.action.value, confirmAction.ids);
                 setConfirmAction(null);
               }}

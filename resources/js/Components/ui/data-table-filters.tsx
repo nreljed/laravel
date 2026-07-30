@@ -1,7 +1,8 @@
-"use client";
-
+import { CheckIcon } from "lucide-react";
 import type { Column } from "@tanstack/react-table";
+
 import { cn } from "@/lib/utils";
+import { Button } from "@/Components/ui/button";
 
 interface DataTableFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
@@ -17,14 +18,15 @@ export function DataTableFilter<TData, TValue>({
   const selectedValues = new Set(column?.getFilterValue() as string[]);
 
   return (
-    <div className="p-1">
+    <div data-slot="data-table-filters" className="p-1">
       {options.map((option) => {
         const isSelected = selectedValues.has(option.value);
         return (
-          <button
+          <Button
             key={option.value}
+            variant="ghost"
             className={cn(
-              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground",
+              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-normal justify-start",
               isSelected && "bg-accent",
             )}
             onClick={() => {
@@ -40,30 +42,19 @@ export function DataTableFilter<TData, TValue>({
           >
             <span
               className={cn(
-                "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:hidden",
+                "flex size-4 shrink-0 items-center justify-center rounded-sm border border-primary",
+                isSelected ? "bg-primary text-primary-foreground" : "opacity-50",
               )}
             >
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 10 10"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="1.5,5 4,7.5 8.5,2" />
-              </svg>
+              {isSelected && <CheckIcon className="size-3" />}
             </span>
-            <span className="flex-1">{option.label}</span>
+            <span className="flex-1 text-left">{option.label}</span>
             {facetedValues?.get(option.value) && (
-              <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+              <span className="ml-auto flex size-4 items-center justify-center font-mono text-xs">
                 {facetedValues.get(option.value)}
               </span>
             )}
-          </button>
+          </Button>
         );
       })}
     </div>

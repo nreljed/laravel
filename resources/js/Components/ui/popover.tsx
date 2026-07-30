@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 
@@ -62,9 +64,9 @@ function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
   );
 }
 
-function PopoverDescription({ className, ...props }: React.ComponentProps<"p">) {
+function PopoverDescription({ className, ...props }: PopoverPrimitive.Description.Props) {
   return (
-    <p
+    <PopoverPrimitive.Description
       data-slot="popover-description"
       className={cn("text-muted-foreground", className)}
       {...props}
@@ -72,4 +74,4 @@ function PopoverDescription({ className, ...props }: React.ComponentProps<"p">) 
   );
 }
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverDescription };
+export { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger };
