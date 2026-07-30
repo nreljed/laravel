@@ -37,11 +37,28 @@ class SettingsController extends Controller
 
     public function registration(): Response
     {
+        $roles = Schema::hasTable('roles')
+            ? Role::where('slug', '!=', 'admin')->select('id', 'name', 'slug')->orderBy('name')->get()
+            : collect();
+
+        $settings = Schema::hasTable('settings')
+            ? SettingsService::getGroup('registration')
+            : [];
+
+        $firstAvailableRole = $roles->first()?->slug;
+
+        $defaultRoleSlug = $settings['default_role'] ?? null;
+        if (! $defaultRoleSlug || ! $roles->contains('slug', $defaultRoleSlug)) {
+            $defaultRoleSlug = $firstAvailableRole;
+            if ($defaultRoleSlug && Schema::hasTable('settings')) {
+                SettingsService::set('default_role', $defaultRoleSlug);
+                $settings['default_role'] = $defaultRoleSlug;
+            }
+        }
+
         return $this->renderPage('dashboard/admin/settings/registration', [
-            'settings' => Schema::hasTable('settings') ? SettingsService::getGroup('registration') : new \stdClass,
-            'roles' => Schema::hasTable('roles')
-                ? Role::where('slug', '!=', 'admin')->select('id', 'name', 'slug')->orderBy('name')->get()
-                : [],
+            'settings' => $settings,
+            'roles' => $roles,
         ]);
     }
 
