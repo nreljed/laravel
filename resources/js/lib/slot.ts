@@ -60,7 +60,7 @@ const SlotComponent = React.forwardRef<HTMLElement, SlotProps>(function Slot(pro
   const mergedProps = mergeProps(slotProps, childProps);
 
   return React.cloneElement(
-    child as React.ReactElement<any>,
+    child as React.ReactElement<Record<string, unknown>>,
     mergedProps as Record<string, unknown>,
   );
 });
