@@ -158,7 +158,7 @@ export function IpAccessSection({ ipRules, asAccordion }: IpAccessSectionProps) 
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                         rule.type === "block"
                           ? "bg-destructive/10 text-destructive"
-                          : "bg-green-500/10 text-green-700 dark:text-green-400"
+                          : "bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-400"
                       }`}
                     >
                       {rule.type}

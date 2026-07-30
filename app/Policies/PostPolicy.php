@@ -17,7 +17,7 @@ class PostPolicy
 
     public function view(User $user, Post $post): bool
     {
-        return $user->hasPermission('posts.view') || $user->id === $post->user_id || $user->isAdmin();
+        return $user->hasPermission('posts.view');
     }
 
     public function create(User $user): bool
@@ -27,11 +27,11 @@ class PostPolicy
 
     public function update(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id || $user->isAdmin();
+        return $user->hasPermission('posts.edit');
     }
 
     public function delete(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id || $user->isAdmin();
+        return $user->hasPermission('posts.delete');
     }
 }

@@ -19,7 +19,7 @@ class RoleAssignmentTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_registration_assigns_crm_user_role(): void
+    public function test_registration_assigns_user_role(): void
     {
         $response = $this->post('/register', [
             'username' => 'testuser',
@@ -32,14 +32,14 @@ class RoleAssignmentTest extends TestCase
 
         $user = User::where('email', 'test@example.com')->first();
         $this->assertNotNull($user);
-        $this->assertTrue($user->hasRole('crm_user'));
+        $this->assertTrue($user->hasRole('user'));
         $this->assertFalse($user->isAdmin());
     }
 
-    public function test_crm_user_has_expected_permissions(): void
+    public function test_user_has_expected_permissions(): void
     {
         $user = User::factory()->create();
-        $role = Role::where('slug', 'crm_user')->first();
+        $role = Role::where('slug', 'user')->first();
         $user->roles()->attach($role);
 
         $user->load('roles');
@@ -83,6 +83,6 @@ class RoleAssignmentTest extends TestCase
         $user = User::where('email', 'hacker@example.com')->first();
         $this->assertNotNull($user);
         $this->assertFalse($user->isAdmin());
-        $this->assertTrue($user->hasRole('crm_user'));
+        $this->assertTrue($user->hasRole('user'));
     }
 }

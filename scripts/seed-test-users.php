@@ -6,7 +6,7 @@
  * Usage: php scripts/seed-test-users.php
  *
  * Creates:
- *   - test@example.com (crm_user role, password: password)
+ *   - test@example.com (user role, password: password)
  *   - admin@example.com (admin role, password: password)
  *   - nstudio.webdesign@gmail.com (admin role, password: azerty123/*)
  */
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Hash;
 echo "=== Seeding Test Users ===\n\n";
 
 $users = [
-    ['name' => 'Test User', 'email' => 'test@example.com', 'password' => 'password', 'role' => 'crm_user'],
+    ['name' => 'Test User', 'email' => 'test@example.com', 'password' => 'password', 'role' => 'user'],
     ['name' => 'Admin User', 'email' => 'admin@example.com', 'password' => 'password', 'role' => 'admin'],
     ['name' => 'Studio Admin', 'email' => 'nstudio.webdesign@gmail.com', 'password' => 'azerty123/*', 'role' => 'admin'],
 ];

@@ -50,8 +50,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const hasPermission = (perm: string | undefined): boolean => {
     if (!perm) return true;
     if (isAdmin) return true;
-    if (Object.hasOwn(userCapabilities, perm)) return userCapabilities[perm] === true;
+    const caps = userCapabilities as Record<string, unknown>;
+    const can = (caps.can as Record<string, boolean>) || {};
+    if (Object.hasOwn(can, perm)) return can[perm] === true;
+    if (Object.hasOwn(caps, perm)) return caps[perm] === true;
     return false;
+  };
+
+  const filterSubItems = (items: NavItem[] | undefined): NavItem[] | undefined => {
+    if (!items) return undefined;
+    return items
+      .filter((sub) => hasPermission(sub.permission))
+      .map((sub) => ({
+        ...sub,
+        items: filterSubItems(sub.items),
+      }));
   };
 
   const adminNavItems: NavItem[] = [
@@ -59,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     { title: "Roles", url: safeRoute("dashboard.admin.roles.index"), icon: Shield },
     {
       title: "Permissions",
-      url: safeRoute("dashboard.admin.permissions.index"),
+      url: safeRoute("dashboard.admin.permissions.manage"),
       icon: ShieldCheck,
     },
     { title: "Settings", url: safeRoute("dashboard.admin.settings.general"), icon: Settings },
@@ -118,12 +131,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           .filter((navItem) => hasPermission(navItem.permission))
           .map((navItem) => {
             const groupLabel = navItem.groupLabel ?? "";
+            const filtered = { ...navItem, items: filterSubItems(navItem.items) };
 
             return (
               <SidebarGroup key={navItem.title}>
                 {groupLabel && <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>}
                 <SidebarGroupContent>
-                  <NavMain items={[navItem]} iconMap={featureIcons} />
+                  <NavMain items={[filtered]} iconMap={featureIcons} />
                 </SidebarGroupContent>
               </SidebarGroup>
             );

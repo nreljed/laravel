@@ -275,7 +275,7 @@ function StatusDot({ ok }: { ok: boolean }) {
   return (
     <span
       className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${
-        ok ? "bg-emerald-500" : "bg-red-500"
+        ok ? "bg-emerald-500 dark:bg-emerald-400" : "bg-red-500 dark:bg-red-400"
       }`}
     />
   );
@@ -284,13 +284,13 @@ function StatusDot({ ok }: { ok: boolean }) {
 function SeverityIcon({ severity }: { severity: string }) {
   switch (severity) {
     case "critical": {
-      return <XCircle className="h-4 w-4 shrink-0 text-red-500" />;
+      return <XCircle className="h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />;
     }
     case "high": {
-      return <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />;
+      return <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400" />;
     }
     default: {
-      return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />;
+      return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400" />;
     }
   }
 }
@@ -353,11 +353,11 @@ function CollapsibleSection({
 
   const borderColor =
     status === "good"
-      ? "border-emerald-500/30"
+      ? "border-emerald-500/30 dark:border-emerald-400/30"
       : status === "warning"
-        ? "border-amber-500/30"
+        ? "border-amber-500/30 dark:border-amber-400/30"
         : status === "critical"
-          ? "border-red-500/30"
+          ? "border-red-500/30 dark:border-red-400/30"
           : "border-border/50";
 
   const badgeVariant =
@@ -571,19 +571,19 @@ export default function SystemHealth(props: SystemHealthProps) {
           <Card
             className={
               !hasIssues
-                ? "border-emerald-500/30"
+                ? "border-emerald-500/30 dark:border-emerald-400/30"
                 : criticalCount > 0
-                  ? "border-red-500/30"
-                  : "border-amber-500/30"
+                  ? "border-red-500/30 dark:border-red-400/30"
+                  : "border-amber-500/30 dark:border-amber-400/30"
             }
           >
             <CardContent className="flex items-center gap-3 p-4">
               {!hasIssues ? (
-                <CheckCircle2 className="h-8 w-8 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="h-8 w-8 shrink-0 text-emerald-500 dark:text-emerald-400" />
               ) : criticalCount > 0 ? (
-                <XCircle className="h-8 w-8 shrink-0 text-red-500" />
+                <XCircle className="h-8 w-8 shrink-0 text-red-500 dark:text-red-400" />
               ) : (
-                <AlertTriangle className="h-8 w-8 shrink-0 text-amber-500" />
+                <AlertTriangle className="h-8 w-8 shrink-0 text-amber-500 dark:text-amber-400" />
               )}
               <div>
                 <p className="text-2xl font-bold">{!hasIssues ? "Good" : totalIssues}</p>
@@ -628,11 +628,17 @@ export default function SystemHealth(props: SystemHealthProps) {
 
         {/* ── Version Comparison ── */}
         {props.deployed_version.exists && (
-          <Card className={isUpToDate ? "border-emerald-500/30" : "border-amber-500/30"}>
+          <Card
+            className={
+              isUpToDate
+                ? "border-emerald-500/30 dark:border-emerald-400/30"
+                : "border-amber-500/30 dark:border-amber-400/30"
+            }
+          >
             <CardContent className="flex items-center justify-between gap-4 p-4">
               <div className="flex items-center gap-3 min-w-0">
                 <GitCompareArrows
-                  className={`h-6 w-6 shrink-0 ${isUpToDate ? "text-emerald-500" : "text-amber-500"}`}
+                  className={`h-6 w-6 shrink-0 ${isUpToDate ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"}`}
                 />
                 <div className="min-w-0">
                   <p className="text-sm font-medium">
@@ -652,7 +658,8 @@ export default function SystemHealth(props: SystemHealthProps) {
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Latest release: <span className="text-amber-500">Unreachable</span>
+                      Latest release:{" "}
+                      <span className="text-amber-500 dark:text-amber-400">Unreachable</span>
                     </p>
                   )}
                 </div>
@@ -666,13 +673,19 @@ export default function SystemHealth(props: SystemHealthProps) {
 
         {/* ── Recommendations ── */}
         {hasIssues && (
-          <Card className={criticalCount > 0 ? "border-red-500/30" : "border-amber-500/30"}>
+          <Card
+            className={
+              criticalCount > 0
+                ? "border-red-500/30 dark:border-red-400/30"
+                : "border-amber-500/30 dark:border-amber-400/30"
+            }
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 {criticalCount > 0 ? (
-                  <XCircle className="h-5 w-5 text-red-500" />
+                  <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400" />
                 )}
                 Recommendations
               </CardTitle>
@@ -683,9 +696,9 @@ export default function SystemHealth(props: SystemHealthProps) {
                   key={i}
                   className={`rounded-lg border p-3 ${
                     rec.severity === "critical"
-                      ? "border-red-500/30 bg-red-500/5"
+                      ? "border-red-500/30 bg-red-500/5 dark:border-red-400/30 dark:bg-red-400/10"
                       : rec.severity === "high"
-                        ? "border-amber-500/30 bg-amber-500/5"
+                        ? "border-amber-500/30 bg-amber-500/5 dark:border-amber-400/30 dark:bg-amber-400/10"
                         : "border-border/50 bg-muted/30"
                   }`}
                 >
@@ -712,7 +725,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Application */}
           <CollapsibleSection
             title="Application"
-            icon={<Globe className="h-4 w-4 text-sky-500" />}
+            icon={<Globe className="h-4 w-4 text-sky-500 dark:text-sky-400" />}
             status={
               props.laravel.debug && props.laravel.environment === "production"
                 ? "critical"
@@ -757,7 +770,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* PHP Configuration */}
           <CollapsibleSection
             title="PHP Configuration"
-            icon={<Cpu className="h-4 w-4 text-sky-500" />}
+            icon={<Cpu className="h-4 w-4 text-sky-500 dark:text-sky-400" />}
             status={props.php.memory_limit_ok && props.php.version_ok ? "good" : "warning"}
           >
             <div className="space-y-1">
@@ -793,7 +806,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* OPcache */}
           <CollapsibleSection
             title="OPcache"
-            icon={<Activity className="h-4 w-4 text-purple-500" />}
+            icon={<Activity className="h-4 w-4 text-purple-500 dark:text-purple-400" />}
             status={
               props.opcache.enabled ? "good" : props.opcache.extension_loaded ? "warning" : "info"
             }
@@ -841,7 +854,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* PHP Extensions */}
           <CollapsibleSection
             title="PHP Extensions"
-            icon={<Plug className="h-4 w-4 text-emerald-500" />}
+            icon={<Plug className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />}
             status={all_extensions_loaded ? "good" : "critical"}
           >
             <div className="space-y-4">
@@ -853,9 +866,9 @@ export default function SystemHealth(props: SystemHealthProps) {
                   {props.extensions.map((ext) => (
                     <div key={ext.name} className="flex items-center gap-2 py-1 text-sm">
                       {ext.loaded ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
                       ) : (
-                        <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+                        <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500 dark:text-red-400" />
                       )}
                       <span className={ext.required ? "font-medium" : "text-muted-foreground"}>
                         {ext.name}
@@ -900,7 +913,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Database */}
           <CollapsibleSection
             title="Database"
-            icon={<Database className="h-4 w-4 text-cyan-500" />}
+            icon={<Database className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />}
             status={props.database.version_ok ? "good" : "critical"}
           >
             <div className="space-y-1">
@@ -922,7 +935,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Server & OS */}
           <CollapsibleSection
             title="Server & OS"
-            icon={<Server className="h-4 w-4 text-purple-500" />}
+            icon={<Server className="h-4 w-4 text-purple-500 dark:text-purple-400" />}
             status={props.server.is_https_ok ? "good" : "warning"}
           >
             <div className="space-y-1">
@@ -948,7 +961,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Environment */}
           <CollapsibleSection
             title="Environment"
-            icon={<Settings className="h-4 w-4 text-cyan-500" />}
+            icon={<Settings className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />}
             status="info"
           >
             <div className="space-y-1">
@@ -967,7 +980,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Storage / Cache */}
           <CollapsibleSection
             title="Storage & Cache"
-            icon={<FolderOpen className="h-4 w-4 text-rose-500" />}
+            icon={<FolderOpen className="h-4 w-4 text-rose-500 dark:text-rose-400" />}
             status={props.storage.dirs.every((d) => d.writable_ok) ? "good" : "critical"}
           >
             <div className="space-y-1">
@@ -997,7 +1010,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Build Cache */}
           <CollapsibleSection
             title="Build Cache (Vite)"
-            icon={<Layers className="h-4 w-4 text-sky-500" />}
+            icon={<Layers className="h-4 w-4 text-sky-500 dark:text-sky-400" />}
             status={props.build.exists ? "good" : "critical"}
           >
             <div className="space-y-1">
@@ -1011,7 +1024,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                   <InfoRow label="Last Built" value={props.build.modified_at ?? "?"} />
                   <InfoRow label="Age" value={props.build.age ?? "?"} />
                   {props.build.age_hours !== undefined && props.build.age_hours > 24 && (
-                    <p className="text-[10px] text-amber-500 mt-1">
+                    <p className="text-[10px] text-amber-500 dark:text-amber-400 mt-1">
                       Build is over 24 hours old. Run{" "}
                       <code className="text-[10px]">npm run build</code> after code changes.
                     </p>
@@ -1024,7 +1037,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Services Config */}
           <CollapsibleSection
             title="Services Configuration"
-            icon={<Settings className="h-4 w-4 text-cyan-500" />}
+            icon={<Settings className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />}
             status={
               props.queue.driver !== "sync" || props.cache.driver !== "file" ? "good" : "info"
             }
@@ -1065,7 +1078,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Logging */}
           <CollapsibleSection
             title="Logging"
-            icon={<FileText className="h-4 w-4 text-rose-500" />}
+            icon={<FileText className="h-4 w-4 text-rose-500 dark:text-rose-400" />}
             status="info"
           >
             <div className="space-y-1">
@@ -1099,7 +1112,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {props.schedule.length > 0 && (
             <CollapsibleSection
               title="Scheduled Commands"
-              icon={<Timer className="h-4 w-4 text-amber-500" />}
+              icon={<Timer className="h-4 w-4 text-amber-500 dark:text-amber-400" />}
               status="info"
             >
               <div className="space-y-1">
@@ -1133,7 +1146,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {/* Statistics */}
           <CollapsibleSection
             title="Statistics"
-            icon={<Users className="h-4 w-4 text-cyan-500" />}
+            icon={<Users className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />}
             status="info"
           >
             <div className="space-y-1">
@@ -1159,7 +1172,7 @@ export default function SystemHealth(props: SystemHealthProps) {
           {props.debug_access_url && (
             <CollapsibleSection
               title="Diagnostics"
-              icon={<Bug className="h-4 w-4 text-rose-500" />}
+              icon={<Bug className="h-4 w-4 text-rose-500 dark:text-rose-400" />}
               status="info"
             >
               <div className="space-y-1">

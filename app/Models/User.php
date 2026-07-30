@@ -184,7 +184,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'phone' => 'array',
+            'phone' => 'string',
             'social_links' => 'array',
             'billing_address' => 'array',
             'shipping_address' => 'array',

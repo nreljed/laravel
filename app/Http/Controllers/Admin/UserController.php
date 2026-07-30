@@ -18,17 +18,12 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $users = User::with('roles')
-            ->when($request->search, fn ($q, $search) => $q->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('username', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            }))
             ->latest()
-            ->paginate(20)
-            ->through(fn ($user) => [
+            ->get()
+            ->map(fn ($user) => [
                 'id' => $user->id,
                 'username' => $user->username,
                 'name' => $user->name,
@@ -43,7 +38,6 @@ class UserController extends Controller
         return Inertia::render('dashboard/admin/users/index', [
             'users' => $users,
             'roles' => $roles,
-            'filters' => $request->only(['search']),
         ]);
     }
 

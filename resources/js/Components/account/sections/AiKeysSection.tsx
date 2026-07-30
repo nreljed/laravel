@@ -355,8 +355,8 @@ export default function AiKeysSection({
                   <span
                     className={`inline-block h-2.5 w-2.5 rounded-full ring-1 ring-inset shrink-0 ${
                       provider.is_active
-                        ? "bg-emerald-500 ring-emerald-500/30"
-                        : "bg-red-500 ring-red-500/30"
+                        ? "bg-emerald-500 ring-emerald-500/30 dark:bg-emerald-400 dark:ring-emerald-400/30"
+                        : "bg-red-500 ring-red-500/30 dark:bg-red-400 dark:ring-red-400/30"
                     }`}
                   />
                   <p className="text-sm font-medium truncate">{provider.provider_name}</p>
@@ -441,7 +441,7 @@ export default function AiKeysSection({
               onClick={() => {
                 if (deleteProviderId) handleDelete(deleteProviderId);
               }}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
             </AlertDialogAction>

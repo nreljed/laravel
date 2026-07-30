@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\User\BulkActionRequest;
 use App\Http\Requests\User\BulkDeleteRequest;
 use App\Models\User;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Password;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BulkUserController extends Controller
@@ -26,6 +29,36 @@ class BulkUserController extends Controller
 
         return redirect()->back()
             ->with('flash', ['success' => "{$count} user(s) deleted successfully."]);
+    }
+
+    public function verifyEmail(BulkActionRequest $request): RedirectResponse
+    {
+        $count = User::whereIn('id', $request->ids)
+            ->whereNull('email_verified_at')
+            ->get()
+            ->each(function ($user) {
+                $user->markEmailAsVerified();
+                event(new Verified($user));
+            })
+            ->count();
+
+        return redirect()->back()
+            ->with('flash', ['success' => "{$count} user(s) email verified."]);
+    }
+
+    public function sendPasswordReset(BulkActionRequest $request): RedirectResponse
+    {
+        $sent = 0;
+
+        foreach ($request->ids as $id) {
+            $user = User::find($id);
+            if ($user && Password::sendResetLink(['email' => $user->email]) === Password::RESET_LINK_SENT) {
+                $sent++;
+            }
+        }
+
+        return redirect()->back()
+            ->with('flash', ['success' => "Password reset link sent to {$sent} user(s)."]);
     }
 
     public function export(): StreamedResponse

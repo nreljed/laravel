@@ -3,96 +3,64 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StorePermissionRequest;
-use App\Http\Requests\Admin\UpdatePermissionRequest;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Services\PermissionCacheService;
-use Illuminate\Http\RedirectResponse;
+use App\Services\PermissionGroups;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PermissionController extends Controller
 {
-    public function index(Request $request): Response
+    public function manage(): Response
     {
-        $permissions = Permission::orderBy('slug')
+        $roles = Role::orderBy('name')
             ->get()
-            ->map(fn ($p) => [
-                'id' => $p->id,
-                'name' => $p->name,
-                'slug' => $p->slug,
-                'description' => $p->description,
-                'guard_name' => $p->guard_name,
-                'roles_count' => $p->roles()->count(),
-                'created_at' => $p->created_at->toISOString(),
+            ->map(fn (Role $role) => [
+                'slug' => $role->slug,
+                'name' => $role->name,
+                'capabilities' => $role->permissions()->pluck('slug')->toArray(),
             ]);
 
-        return Inertia::render('dashboard/admin/permissions/index', [
-            'permissions' => $permissions,
+        $permissionGroups = PermissionGroups::groups();
+
+        return Inertia::render('dashboard/admin/permissions/manage', [
+            'roles' => $roles,
+            'groups' => $permissionGroups,
         ]);
     }
 
-    public function create(): Response
+    public function toggle(Request $request, PermissionCacheService $cache): JsonResponse
     {
-        return Inertia::render('dashboard/admin/permissions/form', [
-            'permission' => null,
+        $validated = $request->validate([
+            'role' => 'required|string|exists:roles,slug',
+            'capability' => 'required|string|exists:permissions,slug',
+            'grant' => 'required|boolean',
         ]);
-    }
 
-    public function store(StorePermissionRequest $request, PermissionCacheService $cache): RedirectResponse
-    {
-        Permission::create([
-            'name' => $request->name,
-            'slug' => $request->slug,
-            'description' => $request->description,
-            'guard_name' => $request->guard_name ?? 'web',
-        ]);
+        $role = Role::where('slug', $validated['role'])->firstOrFail();
+
+        if ($role->slug === 'admin') {
+            return response()->json([
+                'error' => 'The Admin role is locked and cannot be modified.',
+            ], 400);
+        }
+
+        $permission = Permission::where('slug', $validated['capability'])->firstOrFail();
+
+        if ($validated['grant']) {
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        } else {
+            $role->permissions()->detach($permission->id);
+        }
 
         $cache->flushAll();
 
-        return redirect()->route('dashboard.admin.permissions.index')
-            ->with('flash', ['success' => 'Permission created successfully.']);
-    }
-
-    public function edit(Permission $permission): Response
-    {
-        return Inertia::render('dashboard/admin/permissions/form', [
-            'permission' => [
-                'id' => $permission->id,
-                'name' => $permission->name,
-                'slug' => $permission->slug,
-                'description' => $permission->description,
-                'guard_name' => $permission->guard_name,
-            ],
+        return response()->json([
+            'success' => true,
+            'message' => ($validated['grant'] ? 'Granted' : 'Revoked').' '.$validated['capability'].' for '.$role->slug,
         ]);
-    }
-
-    public function update(UpdatePermissionRequest $request, Permission $permission, PermissionCacheService $cache): RedirectResponse
-    {
-
-        $permission->update([
-            'name' => $request->name,
-            'slug' => $request->slug,
-            'description' => $request->description,
-            'guard_name' => $request->guard_name ?? 'web',
-        ]);
-
-        $cache->flushAll();
-
-        return redirect()->route('dashboard.admin.permissions.index')
-            ->with('flash', ['success' => 'Permission updated successfully.']);
-    }
-
-    public function destroy(Permission $permission, PermissionCacheService $cache): RedirectResponse
-    {
-        $permission->roles()->detach();
-        $permission->users()->detach();
-        $permission->delete();
-
-        $cache->flushAll();
-
-        return redirect()->route('dashboard.admin.permissions.index')
-            ->with('flash', ['success' => 'Permission deleted successfully.']);
     }
 }

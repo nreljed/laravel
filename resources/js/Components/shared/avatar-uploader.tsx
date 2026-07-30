@@ -315,7 +315,7 @@ export function AvatarUploader({
       )}
 
       {showSuccess && (
-        <Alert className="max-w-xs py-2 px-3 border-green-500/50 bg-green-500/10">
+        <Alert className="max-w-xs py-2 px-3 border-green-500/50 bg-green-500/10 dark:border-green-400/50 dark:bg-green-400/10">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
           <AlertDescription className="text-xs text-green-700 dark:text-green-400">
             Avatar uploaded successfully!

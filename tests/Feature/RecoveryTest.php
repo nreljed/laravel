@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\SettingsService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -78,7 +79,7 @@ class RecoveryTest extends TestCase
     {
         $recoveryToken = RecoveryToken::generate();
 
-        $response = $this->get("/maintenance/recovery/{$recoveryToken->token}");
+        $response = $this->get('/maintenance/recovery/'.$recoveryToken->getPlaintext());
         $response->assertRedirect('/login');
         $response->assertCookie('maintenance_bypass');
 
@@ -91,7 +92,7 @@ class RecoveryTest extends TestCase
         $recoveryToken = RecoveryToken::generate();
         $recoveryToken->markUsed();
 
-        $response = $this->get("/maintenance/recovery/{$recoveryToken->token}");
+        $response = $this->get('/maintenance/recovery/'.$recoveryToken->getPlaintext());
         $response->assertRedirect('/login');
         $response->assertSessionHasErrors('email');
     }
@@ -99,12 +100,12 @@ class RecoveryTest extends TestCase
     public function test_claim_expired_token_is_rejected(): void
     {
         $recoveryToken = RecoveryToken::create([
-            'token' => str_repeat('a', 64),
+            'token_hash' => Hash::make(str_repeat('a', 64)),
             'used' => false,
             'expires_at' => now()->subHour(),
         ]);
 
-        $response = $this->get('/maintenance/recovery/'.$recoveryToken->token);
+        $response = $this->get('/maintenance/recovery/'.str_repeat('a', 64));
         $response->assertRedirect('/login');
         $response->assertSessionHasErrors('email');
     }

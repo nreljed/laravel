@@ -305,14 +305,16 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       {entry.success ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                       ) : (
-                        <XCircle className="h-3.5 w-3.5 text-red-600" />
+                        <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
                       )}
                       <span
                         className={cn(
                           "font-semibold",
-                          entry.success ? "text-green-700" : "text-red-700",
+                          entry.success
+                            ? "text-green-700 dark:text-green-300"
+                            : "text-red-700 dark:text-red-300",
                         )}
                       >
                         {entry.success ? "Delivered" : "Failed"}

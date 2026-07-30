@@ -6,7 +6,8 @@ import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/Components/ui/field";
-import { ArrowLeft, Save } from "lucide-react";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
+import { ArrowLeft, Lock, Save, ShieldAlert } from "lucide-react";
 import { FormEventHandler } from "react";
 
 interface Permission {
@@ -46,6 +47,7 @@ export default function AdminRolesForm() {
   const { props } = usePage();
   const { role, permissionGroups } = props as unknown as PageProps;
   const isEditing = !!role?.id;
+  const isAdminRole = role?.slug === "admin";
 
   const initialPermissionIds = permissionGroups
     .flatMap((g) => g.permissions)
@@ -95,24 +97,10 @@ export default function AdminRolesForm() {
   const submit: FormEventHandler = (e) => {
     e.preventDefault();
     if (isEditing) {
-      put(route("dashboard.admin.roles.update", { role: role!.id }), {
-        onSuccess: () => {},
-      });
+      put(route("dashboard.admin.roles.update", { role: role!.id }));
     } else {
-      post(route("dashboard.admin.roles.store"), {
-        onSuccess: () => {},
-      });
+      post(route("dashboard.admin.roles.store"));
     }
-  };
-
-  const groupLabel = (group: string) => {
-    const labels: Record<string, string> = {
-      manage: "Administration",
-      view: "View",
-      edit: "Edit",
-      delete: "Delete",
-    };
-    return labels[group] ?? group.charAt(0).toUpperCase() + group.slice(1);
   };
 
   return (
@@ -126,6 +114,17 @@ export default function AdminRolesForm() {
           </Button>
         </Link>
       </div>
+
+      {isAdminRole && (
+        <Alert className="mb-6 border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+          <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="text-amber-700 dark:text-amber-300 ml-2">
+            The <strong>Admin</strong> role permissions are locked to prevent accidental
+            self-lockout. To change admin permissions, edit individual permissions or use the
+            Permissions Manager.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">
@@ -173,8 +172,13 @@ export default function AdminRolesForm() {
                 </Field>
 
                 <div className="pt-2">
-                  <Button type="submit" disabled={processing} className="w-full">
-                    <Save className="mr-1 size-4" /> {isEditing ? "Save Role" : "Create Role"}
+                  <Button type="submit" disabled={processing || isAdminRole} className="w-full">
+                    {isAdminRole ? (
+                      <Lock className="mr-1 size-4" />
+                    ) : (
+                      <Save className="mr-1 size-4" />
+                    )}
+                    {isAdminRole ? "Admin Locked" : isEditing ? "Save Role" : "Create Role"}
                   </Button>
                 </div>
               </FieldGroup>
@@ -190,17 +194,17 @@ export default function AdminRolesForm() {
               <Card key={group.group}>
                 <CardHeader className="py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base capitalize">
-                      {groupLabel(group.group)}
-                    </CardTitle>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleGroup(group.permissions, allAssigned)}
-                    >
-                      {allAssigned ? "Deselect All" : "Select All"}
-                    </Button>
+                    <CardTitle className="text-base">{group.group}</CardTitle>
+                    {!isAdminRole && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleGroup(group.permissions, allAssigned)}
+                      >
+                        {allAssigned ? "Deselect All" : "Select All"}
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -210,18 +214,34 @@ export default function AdminRolesForm() {
                         key={perm.id}
                         className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-accent transition-colors has-data-[checked]:border-primary"
                       >
-                        <Checkbox
-                          checked={data.permission_ids.includes(perm.id)}
-                          onCheckedChange={() => togglePermission(perm.id)}
-                        />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium leading-none">{perm.name}</span>
-                          {perm.description && (
-                            <span className="text-xs text-muted-foreground">
-                              {perm.description}
-                            </span>
-                          )}
-                        </div>
+                        {isAdminRole ? (
+                          <div className="flex items-center gap-3 w-full">
+                            <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-medium leading-none">{perm.name}</span>
+                              {perm.description && (
+                                <span className="text-xs text-muted-foreground">
+                                  {perm.description}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Checkbox
+                              checked={data.permission_ids.includes(perm.id)}
+                              onCheckedChange={() => togglePermission(perm.id)}
+                            />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-medium leading-none">{perm.name}</span>
+                              {perm.description && (
+                                <span className="text-xs text-muted-foreground">
+                                  {perm.description}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </label>
                     ))}
                   </div>

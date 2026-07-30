@@ -46,7 +46,7 @@ class CreateAdmin extends Command
 
         $role = Role::where('slug', 'admin')->first();
         if (! $role) {
-            $this->error('Admin role not found. Run php artisan db:seed --class=RolesAndPermissionsSeeder first.');
+            $this->error('admin role not found. Run php artisan db:seed --class=RolesAndPermissionsSeeder first.');
 
             return Command::FAILURE;
         }

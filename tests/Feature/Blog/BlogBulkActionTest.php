@@ -152,7 +152,7 @@ class BlogBulkActionTest extends TestCase
         $this->assertDatabaseHas('posts', ['id' => $otherPost->id]);
     }
 
-    public function test_regular_user_without_posts_edit_cannot_bulk_update_status(): void
+    public function test_regular_user_without_posts_delete_cannot_bulk_action(): void
     {
         $user = $this->regularUser();
         $post = PostFactory::new()->create(['user_id' => $user->id]);
@@ -162,8 +162,7 @@ class BlogBulkActionTest extends TestCase
             'action' => 'publish',
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('flash.error', 'You are not authorized to update the selected posts.');
+        $response->assertStatus(403);
     }
 
     public function test_bulk_action_with_empty_ids_returns_error(): void

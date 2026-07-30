@@ -154,27 +154,41 @@ class HandleInertiaRequests extends Middleware
 
     private function getUserCapabilities($user): array
     {
-        $caps = [
-            'isAdmin' => $user->isAdmin(),
-            'can' => [
-                'manageUsers' => $user->can('manage-users'),
-                'manageSettings' => $user->can('manage-settings'),
-                'manageRoles' => $user->can('manage-roles'),
-                'viewSystemHealth' => $user->can('view-system-health'),
-                'viewDashboard' => $user->can('view-dashboard'),
-                'viewProfile' => $user->can('view-profile'),
-                'editProfile' => $user->can('edit-profile'),
-                'deleteAccount' => $user->can('delete-account'),
-                'viewNotifications' => $user->can('view-notifications'),
-                'manageNotifications' => $user->can('manage-notifications'),
-                'postsView' => $user->can('posts.view'),
-                'postsCreate' => $user->can('posts.create'),
-                'postsEdit' => $user->can('posts.edit'),
-                'postsDelete' => $user->can('posts.delete'),
-            ],
-        ];
+        $permissions = [];
 
-        return $caps;
+        try {
+            $slugs = collect(app(FeatureRegistry::class)->permissions())
+                ->pluck('slug')
+                ->toArray();
+        } catch (\Throwable) {
+            $slugs = [];
+        }
+
+        $allSlugs = array_unique(array_merge(
+            $slugs,
+            [
+                'manage-users',
+                'manage-settings',
+                'manage-roles',
+                'view-system-health',
+                'view-dashboard',
+                'view-profile',
+                'edit-profile',
+                'delete-account',
+                'view-notifications',
+                'manage-notifications',
+            ]
+        ));
+
+        foreach ($allSlugs as $slug) {
+            $key = lcfirst(str_replace(' ', '', ucwords(str_replace(['-', '.'], ' ', $slug))));
+            $permissions[$key] = $user->can($slug);
+        }
+
+        return [
+            'isAdmin' => $user->isAdmin(),
+            'can' => $permissions,
+        ];
     }
 
     protected function getActiveCurrencies(): array
@@ -207,7 +221,7 @@ class HandleInertiaRequests extends Middleware
 
         $displayNameOptions = $user->getDisplayNameOptions();
 
-        $phoneData = $user->phone ?? [];
+        $phoneData = $user->phone ? [['value' => $user->phone]] : [];
         $socialData = $user->social_links ?? [];
 
         return [

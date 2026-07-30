@@ -66,11 +66,11 @@ class BlogServiceProvider extends ServiceProvider
                 'permission' => 'posts.view',
                 'groupLabel' => 'Content',
                 'items' => [
-                    ['title' => 'Dashboard', 'url' => route('dashboard.posts.dashboard', [], false)],
-                    ['title' => 'All Posts', 'url' => route('dashboard.posts.index', [], false)],
-                    ['title' => 'Add Post', 'url' => route('dashboard.posts.create', [], false)],
-                    ['title' => 'Categories', 'url' => route('dashboard.posts.categories.index', [], false)],
-                    ['title' => 'Tags', 'url' => route('dashboard.posts.tags.index', [], false)],
+                    ['title' => 'Dashboard', 'url' => route('dashboard.posts.dashboard', [], false), 'permission' => 'posts.view'],
+                    ['title' => 'All Posts', 'url' => route('dashboard.posts.index', [], false), 'permission' => 'posts.view'],
+                    ['title' => 'Add Post', 'url' => route('dashboard.posts.create', [], false), 'permission' => 'posts.create'],
+                    ['title' => 'Categories', 'url' => route('dashboard.posts.categories.index', [], false), 'permission' => 'manage-categories'],
+                    ['title' => 'Tags', 'url' => route('dashboard.posts.tags.index', [], false), 'permission' => 'manage-tags'],
                 ],
             ],
         ];
