@@ -322,22 +322,28 @@ The `@typescript-eslint/strict-type-checked` preset requires type-aware linting 
 
 ## Playwright MCP
 
-- Output dir: `C:\Users\nrelj\AppData\Local\Temp\opencode\playwright-mcp`
-- Config: `C:\Users\nrelj\.config\opencode\playwright-mcp.json`
-- Init script: `C:\Users\nrelj\.config\opencode\playwright-init.js` (forces dark mode)
-- `outputMaxSize`: 10MB (auto-evicts old files)
-- `saveSession: true` — session persists to output dir on disconnect
-- `imageResponses: "allow"` — images are returned to the client (not omitted)
-- `snapshotMode: "full"` — full accessibility snapshots
-- **Dark mode**: `initScript` sets `localStorage.theme = "dark"` before app loads. Playwright's `colorScheme: "dark"` in contextOptions is unreliable on Windows persistent contexts. The initScript is the authoritative dark mode enforcer.
-- **Session persistence**: `saveSession: true` saves cookies + localStorage to `outputDir`. On next connect, restores them. Theme preference persists across sessions via localStorage key `"theme"`.
-- **--no-sandbox**: Not used in our config. Chromium on Windows works fine with sandbox. If you see this message, it's from a previous config or environment variable (`PLAYWRIGHT_MCP_NO_SANDBOX`).
-- **Session cleanup**: Before first `navigate` call in a new browser session, always run:
-  ```powershell
-  Remove-Item -LiteralPath "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright-mcp" -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Path "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright-mcp" -Force | Out-Null
-  ```
+Playwright MCP is configured in `~/.config/opencode/opencode.jsonc` (NOT a separate `playwright-mcp.json`).
+
+- **User data dir**: `C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\profile-crm-dashboard` — persistent browser profile (cookies, cache, localStorage survive restarts via `--user-data-dir` + `--save-session`)
+- **Output dir**: `C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\output` — screenshots, logs, session state files
+- **Session persistence**: `--save-session` saves cookies + localStorage on MCP server shutdown (opencode exit or reconnect). The `--user-data-dir` also persists browser profile data across sessions. Sessions survive opencode restarts automatically — **do not delete the output dir unless you want a fresh session**.
+- **Dark mode**: Set via `browser_evaluate` (`localStorage.setItem("theme", "dark")`) before navigating. The `colorScheme: "dark"` context option is unreliable on Windows persistent contexts. Theme persists across sessions automatically via localStorage key `"theme"` (saved by `--save-session`).
+
+### Session-Cleanup (only when explicitly requested)
+
+When you need a completely fresh browser (new login, reset state), run:
+
+```powershell
+Remove-Item -LiteralPath "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright" -Recurse -Force -ErrorAction SilentlyContinue; $null = New-Item -ItemType Directory -Path "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\profile-crm-dashboard" -Force; $null = New-Item -ItemType Directory -Path "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\output" -Force
+```
+
+**Do NOT run this for normal use** — it destroys all saved sessions and you'll have to re-login.
+
+### Rules
+
 - Never save screenshots or logs to the project root — always use `outputDir`
 - `.gitignore` has `/*.png` as safety net, but output should never land in root
+- `--no-sandbox`: Not used in our config. Chromium on Windows works fine with sandbox. If you see this message, it's from a previous config or environment variable (`PLAYWRIGHT_MCP_NO_SANDBOX`).
 
 ## Commands
 

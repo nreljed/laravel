@@ -162,6 +162,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
 // ═══════════════════════════════════════════════════
 Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
     Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
+    Route::post('/system-health/refresh', [AdminController::class, 'refreshSystemHealth'])->name('system-health.refresh');
 
     Route::prefix('/settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');

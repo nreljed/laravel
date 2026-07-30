@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class SystemHealthService
 {
@@ -20,6 +22,7 @@ class SystemHealthService
                 'url' => config('app.url'),
                 'timezone' => config('app.timezone'),
                 'locale' => config('app.locale'),
+                'name' => config('app.name'),
             ],
             'opcache' => $this->getOpcacheInfo(),
             'extensions' => $this->getExtensionsInfo(),
@@ -31,19 +34,13 @@ class SystemHealthService
             })(),
             'database' => $this->getDatabaseInfo(),
             'server' => $this->getServerInfo(),
-            'environment' => [
-                'type' => app()->environment(),
-                'detected' => match (true) {
-                    str_contains(request()->server('SERVER_SOFTWARE', ''), 'Herd') => 'Herd',
-                    str_contains(request()->server('SERVER_SOFTWARE', ''), 'Valet') => 'Valet',
-                    str_contains(request()->server('SERVER_SOFTWARE', ''), 'Laragon') => 'Laragon',
-                    default => 'Unknown',
-                },
-            ],
+            'os' => $this->getOsInfo(),
+            'environment' => $this->detectEnvironment(),
             'recommendations' => $this->getRecommendations(),
             'cache' => [
                 'driver' => config('cache.default'),
                 'ttl' => config('cache.ttl', 3600),
+                'stores' => array_keys(config('cache.stores', [])),
             ],
             'queue' => [
                 'driver' => config('queue.default'),
@@ -51,18 +48,29 @@ class SystemHealthService
             ],
             'mail' => [
                 'driver' => config('mail.default'),
+                'from_address' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'mailers' => config('mail.mailers.'.config('mail.default'), []),
             ],
             'session' => [
                 'driver' => config('session.driver'),
+                'lifetime' => config('session.lifetime'),
+                'secure' => config('session.secure'),
+                'same_site' => config('session.same_site'),
             ],
             'filesystem' => [
                 'default' => config('filesystems.default'),
                 'disks' => array_keys(config('filesystems.disks', [])),
             ],
-            'features' => app()->bound(FeatureRegistry::class)
-                ? app(FeatureRegistry::class)->getAll()
+            'modules' => app()->bound(FeatureRegistry::class)
+                ? collect(app(FeatureRegistry::class)->getAll())->map(fn ($m) => [
+                    'name' => $m['name'],
+                    'slug' => $m['slug'],
+                    'enabled' => $m['enabled'] ?? true,
+                    'version' => $m['version'] ?? null,
+                ])->values()->toArray()
                 : [],
-            'cron' => $this->getScheduledCommands(),
+            'schedule' => $this->getScheduleInfo(),
             'logs' => $this->getLogInfo(),
             'users' => [
                 'total' => User::count(),
@@ -71,6 +79,11 @@ class SystemHealthService
                 'admin' => User::whereHas('roles', fn ($q) => $q->where('slug', 'admin'))->count(),
             ],
             'build' => $this->getBuildInfo(),
+            'storage' => $this->getStorageInfo(),
+            'deployed_version' => $this->getDeployedVersion(),
+            'latest_version' => $this->getLatestVersion(),
+            'laravel_cache' => $this->getLaravelCacheStatus(),
+            'debug_access_url' => $this->getDebugAccessUrl(),
         ];
     }
 
@@ -91,7 +104,25 @@ class SystemHealthService
             'max_input_vars' => ini_get('max_input_vars'),
             'upload_max_filesize' => ini_get('upload_max_filesize'),
             'post_max_size' => ini_get('post_max_size'),
+            'display_errors' => ini_get('display_errors'),
+            'error_reporting' => error_reporting(),
             'ini_path' => php_ini_loaded_file() ?: 'N/A',
+            'scanned_ini_dirs' => php_ini_scanned_files() ?: '(none)',
+            'loaded_extensions_count' => count(get_loaded_extensions()),
+            'precision' => ini_get('precision'),
+            'default_charset' => ini_get('default_charset'),
+        ];
+    }
+
+    public function getOsInfo(): array
+    {
+        return [
+            'os' => PHP_OS,
+            'os_family' => PHP_OS_FAMILY,
+            'arch' => php_uname('m'),
+            'hostname' => gethostname(),
+            'kernel' => php_uname('r'),
+            'full' => php_uname(),
         ];
     }
 
@@ -104,6 +135,7 @@ class SystemHealthService
         if ($loaded) {
             $keys = [
                 'opcache.enable',
+                'opcache.enable_cli',
                 'opcache.memory_consumption',
                 'opcache.interned_strings_buffer',
                 'opcache.max_accelerated_files',
@@ -116,7 +148,10 @@ class SystemHealthService
                 'opcache.jit_buffer_size',
             ];
             foreach ($keys as $key) {
-                $config[str_replace('opcache.', '', $key)] = ini_get($key);
+                $val = ini_get($key);
+                if ($val !== false) {
+                    $config[str_replace('opcache.', '', $key)] = $val;
+                }
             }
         }
 
@@ -139,6 +174,10 @@ class SystemHealthService
                     'used_memory' => $this->formatBytes((int) $usedMemory),
                     'free_memory' => $this->formatBytes((int) $freeMemory),
                     'wasted_memory' => $this->formatBytes((int) $wastedMemory),
+                    'used_memory_raw' => $usedMemory,
+                    'free_memory_raw' => $freeMemory,
+                    'wasted_memory_raw' => $wastedMemory,
+                    'total_memory_raw' => $totalMemory,
                     'cached_files' => $stats['num_cached_scripts'] ?? 0,
                     'max_cached_files' => $stats['max_cached_keys'] ?? 0,
                     'hits' => $hits,
@@ -171,22 +210,49 @@ class SystemHealthService
             'xml',
             'zip',
             'bcmath',
-            'intl',
             'openssl',
             'fileinfo',
             'dom',
             'json',
             'tokenizer',
             'ctype',
-            'redis',
-            'imagick',
         ];
 
-        return array_map(fn (string $ext) => [
-            'name' => $ext,
-            'loaded' => extension_loaded($ext),
-            'required' => true,
-        ], $required);
+        $optional = [
+            'redis',
+            'memcached',
+            'xdebug',
+            'pcov',
+            'sockets',
+            'ldap',
+            'soap',
+            'xsl',
+            'exif',
+            'apcu',
+            'imagick',
+            'intl',
+        ];
+
+        $extensions = [];
+        foreach ($required as $ext) {
+            $extensions[] = [
+                'name' => $ext,
+                'loaded' => extension_loaded($ext),
+                'required' => true,
+            ];
+        }
+        foreach ($optional as $ext) {
+            $loaded = extension_loaded($ext);
+            if ($loaded || in_array($ext, ['redis', 'xdebug', 'sockets', 'imagick'], true)) {
+                $extensions[] = [
+                    'name' => $ext,
+                    'loaded' => $loaded,
+                    'required' => false,
+                ];
+            }
+        }
+
+        return $extensions;
     }
 
     public function getDatabaseInfo(): array
@@ -197,8 +263,13 @@ class SystemHealthService
 
         $version = 'N/A';
         try {
-            $result = DB::select('SELECT VERSION()');
-            $version = $result[0]->{'VERSION()'} ?? $result[0]->version ?? 'N/A';
+            if ($driver === 'sqlite') {
+                $result = DB::select('SELECT sqlite_version() AS version');
+                $version = $result[0]->version ?? 'N/A';
+            } else {
+                $result = DB::select('SELECT VERSION()');
+                $version = $result[0]->{'VERSION()'} ?? $result[0]->version ?? 'N/A';
+            }
         } catch (\Exception) {
         }
 
@@ -208,12 +279,24 @@ class SystemHealthService
         } catch (\Exception) {
         }
 
+        $tableCount = 0;
+        try {
+            if ($driver === 'mysql') {
+                $tableCount = DB::select('SELECT COUNT(*) AS cnt FROM information_schema.tables WHERE table_schema = ?', [$name])[0]->cnt ?? 0;
+            } elseif ($driver === 'sqlite') {
+                $tableCount = DB::select("SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type='table'")[0]->cnt ?? 0;
+            }
+        } catch (\Exception) {
+        }
+
         return [
             'connection' => $connection,
             'driver' => $driver,
             'name' => $name,
             'version' => $version,
+            'version_ok' => $driver === 'sqlite' || version_compare($version, '5.7.0', '>='),
             'size' => $size,
+            'table_count' => $tableCount,
             'charset' => config('database.connections.'.$connection.'.charset', 'utf8mb4'),
             'collation' => config('database.connections.'.$connection.'.collation', 'utf8mb4_unicode_ci'),
         ];
@@ -225,11 +308,62 @@ class SystemHealthService
             'software' => request()->server('SERVER_SOFTWARE', 'N/A'),
             'is_https' => (! empty(request()->server('HTTPS')) && request()->server('HTTPS') !== 'off')
                 || (int) (request()->server('SERVER_PORT', 80)) === 443,
+            'is_https_ok' => (! empty(request()->server('HTTPS')) && request()->server('HTTPS') !== 'off')
+                || (int) (request()->server('SERVER_PORT', 80)) === 443,
             'document_root' => request()->server('DOCUMENT_ROOT', 'N/A'),
             'server_ip' => request()->server('SERVER_ADDR')
                 ?? (gethostbyname(gethostname()) ?: 'N/A'),
             'server_protocol' => request()->server('SERVER_PROTOCOL', 'N/A'),
             'http_host' => request()->server('HTTP_HOST', 'N/A'),
+            'server_name' => request()->server('SERVER_NAME', 'N/A'),
+            'remote_addr' => request()->server('REMOTE_ADDR', 'N/A'),
+        ];
+    }
+
+    public function detectEnvironment(): array
+    {
+        $iniPath = php_ini_loaded_file();
+        $serverSoft = request()->server('SERVER_SOFTWARE', '');
+        $type = 'production';
+        $detected = null;
+
+        if (str_contains($serverSoft, 'Herd') || str_contains($iniPath ?: '', 'Herd')) {
+            $type = 'local';
+            $detected = 'Herd';
+        } elseif (str_contains($serverSoft, 'Valet') || str_contains($iniPath ?: '', 'Valet')) {
+            $type = 'local';
+            $detected = 'Valet';
+        } elseif (str_contains($serverSoft, 'Laragon') || str_contains($iniPath ?: '', 'laragon')) {
+            $type = 'local';
+            $detected = 'Laragon';
+        } elseif ($iniPath && str_contains(strtolower($iniPath), 'local\\run')) {
+            $type = 'local';
+            $detected = 'LocalWP';
+        } elseif (app()->environment('local')) {
+            $type = 'local';
+            $detected = 'Unknown';
+        }
+
+        if ($detected === null) {
+            if (str_contains($serverSoft, 'Apache')) {
+                $detected = 'Apache';
+            } elseif (str_contains($serverSoft, 'LiteSpeed')) {
+                $detected = 'LiteSpeed';
+            } elseif (str_contains($serverSoft, 'nginx')) {
+                $detected = 'Nginx';
+            } elseif (str_contains($serverSoft, 'IIS')) {
+                $detected = 'IIS';
+            } else {
+                $detected = 'Unknown';
+            }
+        }
+
+        return [
+            'type' => $type,
+            'detected' => $detected,
+            'ini_path' => $iniPath ?: 'N/A',
+            'is_local' => $type === 'local',
+            'is_production' => $type === 'production',
         ];
     }
 
@@ -246,7 +380,7 @@ class SystemHealthService
                 'severity' => 'critical',
                 'title' => 'PHP version outdated',
                 'message' => 'PHP '.$phpInfo['version'].' is below the minimum 8.2.0.',
-                'fix' => 'Upgrade PHP to 8.2 or higher.',
+                'fix' => 'Upgrade PHP to 8.2 or higher via your hosting control panel.',
             ];
         }
 
@@ -256,12 +390,12 @@ class SystemHealthService
                 'title' => 'Low PHP memory limit',
                 'message' => 'Memory limit is '.$phpInfo['memory_limit']
                     .' ('.$phpInfo['memory_limit_mb'].'M). Minimum 128M recommended.',
-                'fix' => 'Set memory_limit to at least 128M in php.ini.',
+                'fix' => 'Set memory_limit = 256M in php.ini.',
             ];
         }
 
         foreach ($extensions as $ext) {
-            if (! $ext['loaded']) {
+            if ($ext['required'] && ! $ext['loaded']) {
                 $recommendations[] = [
                     'severity' => 'critical',
                     'title' => 'Missing PHP extension: '.$ext['name'],
@@ -318,6 +452,49 @@ class SystemHealthService
             ];
         }
 
+        $deployed = $this->getDeployedVersion();
+        $latest = $this->getLatestVersion();
+        if ($deployed['exists'] && $latest['found'] && $deployed['version'] !== $latest['version']) {
+            $recommendations[] = [
+                'severity' => 'info',
+                'title' => 'New version available',
+                'message' => 'Deployed version '.$deployed['version']
+                    .' is behind latest release '.$latest['version'].'.',
+                'fix' => 'Run the deploy pipeline to update to the latest version.',
+            ];
+        }
+
+        $configCached = app()->configurationIsCached();
+        if (! $configCached && $isProduction) {
+            $recommendations[] = [
+                'severity' => 'info',
+                'title' => 'Config not cached',
+                'message' => 'Configuration is not cached in production.',
+                'fix' => 'Run php artisan config:cache on deployment.',
+            ];
+        }
+
+        if (! app()->routesAreCached() && $isProduction) {
+            $recommendations[] = [
+                'severity' => 'info',
+                'title' => 'Routes not cached',
+                'message' => 'Routes are not cached in production.',
+                'fix' => 'Run php artisan route:cache on deployment.',
+            ];
+        }
+
+        $storageInfo = $this->getStorageInfo();
+        foreach ($storageInfo['dirs'] as $dir) {
+            if (! $dir['writable']) {
+                $recommendations[] = [
+                    'severity' => 'critical',
+                    'title' => 'Directory not writable: '.$dir['path'],
+                    'message' => $dir['path'].' is not writable by the web server.',
+                    'fix' => 'Run: chmod -R 775 '.$dir['path'],
+                ];
+            }
+        }
+
         return $recommendations;
     }
 
@@ -371,31 +548,39 @@ class SystemHealthService
             return $this->formatBytes($bytes);
         }
 
-        $result = DB::select(
-            'SELECT ROUND(CAST(page_count * page_size AS REAL), 0) AS size_bytes
-             FROM pragma_page_count, pragma_page_size'
-        );
+        try {
+            $result = DB::select(
+                'SELECT ROUND(CAST(page_count * page_size AS REAL), 0) AS size_bytes
+                 FROM pragma_page_count, pragma_page_size'
+            );
 
-        $bytes = (int) ($result[0]->size_bytes ?? 0);
+            $bytes = (int) ($result[0]->size_bytes ?? 0);
 
-        return $bytes > 0 ? $this->formatBytes($bytes) : 'N/A';
+            return $bytes > 0 ? $this->formatBytes($bytes) : 'N/A';
+        } catch (\Exception) {
+            return 'N/A';
+        }
     }
 
     protected function getMysqlSize(string $database): string
     {
-        $result = DB::select(
-            'SELECT ROUND(SUM(data_length + index_length), 0) AS size_bytes
-             FROM information_schema.tables
-             WHERE table_schema = ?',
-            [$database]
-        );
+        try {
+            $result = DB::select(
+                'SELECT ROUND(SUM(data_length + index_length), 0) AS size_bytes
+                 FROM information_schema.tables
+                 WHERE table_schema = ?',
+                [$database]
+            );
 
-        $bytes = (int) ($result[0]->size_bytes ?? 0);
+            $bytes = (int) ($result[0]->size_bytes ?? 0);
 
-        return $bytes > 0 ? $this->formatBytes($bytes) : 'N/A';
+            return $bytes > 0 ? $this->formatBytes($bytes) : 'N/A';
+        } catch (\Exception) {
+            return 'N/A';
+        }
     }
 
-    protected function getScheduledCommands(): array
+    protected function getScheduleInfo(): array
     {
         $commands = Artisan::all();
         $appNamespace = 'App\\';
@@ -431,11 +616,120 @@ class SystemHealthService
                 ?? storage_path('logs/laravel.log');
         }
 
+        $size = null;
+        $recentErrors = 0;
+        if ($path && file_exists($path)) {
+            $size = $this->formatBytes(filesize($path));
+            try {
+                $lines = file($path);
+                if ($lines) {
+                    $recentLines = array_slice($lines, -500);
+                    $recentErrors = count(preg_grep('/\.(ERROR|CRITICAL|ALERT|EMERGENCY)\b/', $recentLines));
+                }
+            } catch (\Exception) {
+            }
+        }
+
+        $logFiles = [];
+        $logDir = storage_path('logs');
+        if (is_dir($logDir)) {
+            $files = glob($logDir.'/*.log');
+            $totalSize = 0;
+            foreach ($files as $file) {
+                $fs = filesize($file);
+                $totalSize += $fs;
+                $logFiles[] = [
+                    'name' => basename($file),
+                    'size' => $this->formatBytes($fs),
+                    'modified' => date('Y-m-d H:i:s', filemtime($file)),
+                ];
+            }
+            usort($logFiles, fn ($a, $b) => strcmp($a['name'], $b['name']));
+        }
+
         return [
             'channel' => $channel,
             'level' => $level,
+            'driver' => $driver,
             'path' => $path,
+            'size' => $size,
+            'recent_errors' => $recentErrors,
+            'files' => $logFiles,
         ];
+    }
+
+    protected function getDebugAccessUrl(): ?string
+    {
+        $appKey = config('app.key');
+        if (! $appKey) {
+            return null;
+        }
+        $key = substr(hash('sha256', $appKey.'debug-access'), 0, 16);
+
+        return url('/debug.php?key='.$key);
+    }
+
+    protected function getDeployedVersion(): array
+    {
+        $versionFile = base_path('.deployed-version');
+        if (! file_exists($versionFile)) {
+            return ['exists' => false];
+        }
+        $version = trim(file_get_contents($versionFile));
+
+        return [
+            'exists' => true,
+            'version' => $version,
+            'file_path' => $versionFile,
+        ];
+    }
+
+    protected function getLatestVersion(): array
+    {
+        $cacheKey = 'system_health_latest_version';
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () {
+            $repo = 'nreljed/laravel';
+            $token = null;
+
+            try {
+                $envPath = base_path('.env');
+                if (file_exists($envPath)) {
+                    foreach (file($envPath) as $line) {
+                        if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {
+                            $token = trim(substr(trim($line), strlen('GITHUB_TOKEN=')));
+                            $token = trim($token, '"\'');
+                        }
+                    }
+                }
+
+                $headers = ['Accept' => 'application/vnd.github+json'];
+                if ($token) {
+                    $headers['Authorization'] = 'Bearer '.$token;
+                }
+
+                $response = Http::withHeaders($headers)
+                    ->timeout(5)
+                    ->get("https://api.github.com/repos/{$repo}/releases/latest");
+
+                if ($response->successful()) {
+                    $data = $response->json();
+
+                    return [
+                        'found' => true,
+                        'version' => $data['tag_name'] ?? 'unknown',
+                        'url' => $data['html_url'] ?? null,
+                        'published_at' => $data['published_at'] ?? null,
+                        'name' => $data['name'] ?? null,
+                        'body' => $data['body'] ?? null,
+                    ];
+                }
+
+                return ['found' => false, 'error' => 'HTTP '.$response->status()];
+            } catch (\Exception $e) {
+                return ['found' => false, 'error' => $e->getMessage()];
+            }
+        });
     }
 
     protected function getBuildInfo(): array
@@ -453,6 +747,69 @@ class SystemHealthService
             'modified_at' => date('Y-m-d H:i:s', $modified),
             'modified_timestamp' => $modified,
             'age' => now()->diffInDays(now()->setTimestamp($modified)).' days',
+            'age_hours' => round((time() - $modified) / 3600, 1),
+        ];
+    }
+
+    protected function getStorageInfo(): array
+    {
+        $dirs = [
+            ['name' => 'storage/app', 'path' => storage_path('app')],
+            ['name' => 'storage/framework/cache', 'path' => storage_path('framework/cache')],
+            ['name' => 'storage/framework/sessions', 'path' => storage_path('framework/sessions')],
+            ['name' => 'storage/framework/views', 'path' => storage_path('framework/views')],
+            ['name' => 'storage/logs', 'path' => storage_path('logs')],
+            ['name' => 'bootstrap/cache', 'path' => base_path('bootstrap/cache')],
+            ['name' => 'public/build', 'path' => public_path('build')],
+        ];
+
+        $results = [];
+        $totalSize = 0;
+        foreach ($dirs as $dir) {
+            $exists = is_dir($dir['path']);
+            $writable = $exists && is_writable($dir['path']);
+            $size = 0;
+            $fileCount = 0;
+
+            if ($exists) {
+                try {
+                    $rii = new \RecursiveIteratorIterator(
+                        new \RecursiveDirectoryIterator($dir['path'], \RecursiveDirectoryIterator::SKIP_DOTS)
+                    );
+                    foreach ($rii as $file) {
+                        $fileCount++;
+                        $size += $file->getSize();
+                    }
+                } catch (\Exception) {
+                }
+                $totalSize += $size;
+            }
+
+            $results[] = [
+                'name' => $dir['name'],
+                'exists' => $exists,
+                'writable' => $writable,
+                'writable_ok' => $writable,
+                'file_count' => $fileCount,
+                'size' => $size > 0 ? $this->formatBytes($size) : '0 B',
+            ];
+        }
+
+        return [
+            'dirs' => $results,
+            'total_size' => $totalSize > 0 ? $this->formatBytes($totalSize) : '0 B',
+        ];
+    }
+
+    protected function getLaravelCacheStatus(): array
+    {
+        return [
+            'config_cached' => app()->configurationIsCached(),
+            'routes_cached' => app()->routesAreCached(),
+            'events_cached' => app()->eventsAreCached(),
+            'config_cache_path' => app()->getCachedConfigPath(),
+            'routes_cache_path' => app()->getCachedRoutesPath(),
+            'is_down_for_maintenance' => app()->isDownForMaintenance(),
         ];
     }
 }
