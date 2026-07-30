@@ -155,7 +155,14 @@ class DeployController extends Controller
         $envPath = base_path('.env');
         $backupEnv = File::exists($envPath) ? File::get($envPath) : '';
 
+        $storageDir = storage_path('app/deploy');
+        File::ensureDirectoryExists($storageDir);
         $zipFile = $file->storeAs('deploy', 'deploy-uploaded.zip');
+        if ($zipFile === false) {
+            $output[] = 'ERROR: Failed to store uploaded file';
+
+            return false;
+        }
         $zipPath = storage_path("app/$zipFile");
         $output[] = 'Received '.round(filesize($zipPath) / 1048576, 1).' MB';
 
