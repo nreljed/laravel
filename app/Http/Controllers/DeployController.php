@@ -199,6 +199,8 @@ class DeployController extends Controller
             $output[] = "Removed $stale[removed] stale files";
         }
 
+        $this->cleanStaleMigrations($zipFiles, $output);
+
         $commands = [
             'package:discover' => [[]],
             'migrate:fresh' => [['--force' => true, '--seed' => true]],
@@ -294,6 +296,27 @@ class DeployController extends Controller
         }
 
         return ['aborted' => false, 'removed' => $staleRemoved, 'candidates' => $staleCandidates, 'ratio' => $staleRatio];
+    }
+
+    private function cleanStaleMigrations(array $zipFiles, array &$output): void
+    {
+        $migrationsDir = database_path('migrations');
+        if (! is_dir($migrationsDir)) {
+            return;
+        }
+
+        $removed = 0;
+        foreach (File::files($migrationsDir) as $file) {
+            $rel = 'database/migrations/'.$file->getFilename();
+            if (! isset($zipFiles[$rel])) {
+                File::delete($file->getPathname());
+                $removed++;
+            }
+        }
+
+        if ($removed > 0) {
+            $output[] = "Cleaned $removed stale migration files";
+        }
     }
 
     private function wipeCache(): void
@@ -414,6 +437,8 @@ class DeployController extends Controller
             } else {
                 $output[] = "Removed $stale[removed] stale files";
             }
+
+            $this->cleanStaleMigrations($zipFiles, $output);
 
             $commands = [
                 'package:discover' => [[]],
