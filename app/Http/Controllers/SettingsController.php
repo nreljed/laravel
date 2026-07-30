@@ -109,6 +109,8 @@ class SettingsController extends Controller
 
     public function update(UpdateSettingsRequest $request): Response|RedirectResponse
     {
+        $this->authorize('manage-settings');
+
         if (! Schema::hasTable('settings')) {
             return redirect()->back()->with('status', 'Settings table not yet migrated.');
         }
@@ -132,6 +134,8 @@ class SettingsController extends Controller
 
     public function uploadLogo(UploadLogoRequest $request): JsonResponse
     {
+        $this->authorize('manage-settings');
+
         $file = $request->file('logo');
 
         $filename = $file->store('logos');
@@ -156,6 +160,8 @@ class SettingsController extends Controller
 
     public function deleteLogo(): JsonResponse
     {
+        $this->authorize('manage-settings');
+
         $oldLogo = SettingsService::get('app_logo', '');
         if ($oldLogo) {
             $oldPath = str_replace(Storage::disk('logos')->url(''), '', $oldLogo);
@@ -175,6 +181,8 @@ class SettingsController extends Controller
 
     public function uploadFavicon(UploadFaviconRequest $request): JsonResponse
     {
+        $this->authorize('manage-settings');
+
         $file = $request->file('favicon');
 
         $filename = $file->store('favicons');
@@ -199,6 +207,8 @@ class SettingsController extends Controller
 
     public function deleteFavicon(): JsonResponse
     {
+        $this->authorize('manage-settings');
+
         $oldFavicon = SettingsService::get('app_favicon', '');
         if ($oldFavicon) {
             $oldPath = str_replace(Storage::disk('favicons')->url(''), '', $oldFavicon);

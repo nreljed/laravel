@@ -116,7 +116,9 @@ export default function AdminUserSessions() {
                         )}
                         <span className="text-sm">{info.device}</span>
                         {session.is_current && (
-                          <Badge className="bg-green-600 text-[10px] px-1.5">Current</Badge>
+                          <Badge variant="success" className="text-[10px] px-1.5">
+                            Current
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
@@ -173,7 +175,7 @@ export default function AdminUserSessions() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRevoke}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Revoke Session
             </AlertDialogAction>

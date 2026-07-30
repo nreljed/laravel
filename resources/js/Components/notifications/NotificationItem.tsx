@@ -33,13 +33,41 @@ type TypeIconConfig = {
 };
 
 const typeConfig: Record<string, TypeIconConfig> = {
-  "post.published": { icon: FileText, color: "text-green-500", label: "Published" },
-  "post.scheduled": { icon: Clock, color: "text-purple-500", label: "Scheduled" },
-  "user.registered": { icon: UserPlus, color: "text-green-500", label: "New User" },
-  "password.changed": { icon: ShieldCheck, color: "text-blue-500", label: "Password Changed" },
-  "password.reset": { icon: KeyRound, color: "text-orange-500", label: "Password Reset" },
-  "email.changed": { icon: Mail, color: "text-amber-500", label: "Email Changed" },
-  "account.deleted": { icon: Trash2, color: "text-red-500", label: "Account Deleted" },
+  "post.published": {
+    icon: FileText,
+    color: "text-green-500 dark:text-green-400",
+    label: "Published",
+  },
+  "post.scheduled": {
+    icon: Clock,
+    color: "text-purple-500 dark:text-purple-400",
+    label: "Scheduled",
+  },
+  "user.registered": {
+    icon: UserPlus,
+    color: "text-green-500 dark:text-green-400",
+    label: "New User",
+  },
+  "password.changed": {
+    icon: ShieldCheck,
+    color: "text-blue-500 dark:text-blue-400",
+    label: "Password Changed",
+  },
+  "password.reset": {
+    icon: KeyRound,
+    color: "text-orange-500 dark:text-orange-400",
+    label: "Password Reset",
+  },
+  "email.changed": {
+    icon: Mail,
+    color: "text-amber-500 dark:text-amber-400",
+    label: "Email Changed",
+  },
+  "account.deleted": {
+    icon: Trash2,
+    color: "text-red-500 dark:text-red-400",
+    label: "Account Deleted",
+  },
 };
 
 function getTypeIcon(type: string) {
@@ -51,11 +79,11 @@ function getTypeIcon(type: string) {
 const severityConfig: Record<Severity, { dot: string; icon: React.ReactNode }> = {
   info: { dot: "bg-primary", icon: null },
   warning: {
-    dot: "bg-amber-500",
+    dot: "bg-amber-500 dark:bg-amber-400",
     icon: <AlertTriangle className="h-3 w-3 text-amber-500 dark:text-amber-400" />,
   },
   urgent: {
-    dot: "bg-orange-500",
+    dot: "bg-orange-500 dark:bg-orange-400",
     icon: <AlertCircle className="h-3 w-3 text-orange-500 dark:text-orange-400" />,
   },
   critical: { dot: "bg-destructive", icon: <AlertTriangle className="h-3 w-3 text-destructive" /> },

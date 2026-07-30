@@ -66,7 +66,9 @@ const SortableImage = React.memo(function SortableImage({
         ? { ...attributes, ...listeners }
         : {})}
       className={`group relative aspect-square rounded-lg overflow-hidden bg-muted select-none touch-none ${
-        isFeatured ? "border-3 border-yellow-500" : "border-2 border-transparent"
+        isFeatured
+          ? "border-3 border-yellow-500 dark:border-yellow-400"
+          : "border-2 border-transparent"
       } ${
         isDragging
           ? "ring-2 ring-primary shadow-lg cursor-grabbing"
@@ -161,10 +163,7 @@ const SortableImage = React.memo(function SortableImage({
 
       {enableFeatured && isFeatured && !selectionMode && (
         <div className="absolute top-2 left-2 z-30">
-          <Badge
-            variant="default"
-            className="gap-1 bg-yellow-500 text-white border-yellow-400 hover:bg-yellow-600"
-          >
+          <Badge variant="warning" className="gap-1">
             <Star className="size-3 fill-white text-white" />
             Cover
           </Badge>

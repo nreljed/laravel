@@ -32,7 +32,7 @@ class AdminUserManagementTest extends TestCase
 
     public function test_admin_can_create_user_with_role(): void
     {
-        $crmRole = Role::where('slug', 'crm_user')->first();
+        $crmRole = Role::where('slug', 'user')->first();
 
         $response = $this->actingAs($this->admin())->post('/dashboard/admin/users', [
             'username' => 'janedoe',
@@ -46,7 +46,7 @@ class AdminUserManagementTest extends TestCase
 
         $user = User::where('email', 'jane@example.com')->first();
         $this->assertNotNull($user);
-        $this->assertTrue($user->hasRole('crm_user'));
+        $this->assertTrue($user->hasRole('user'));
     }
 
     public function test_admin_can_edit_user(): void

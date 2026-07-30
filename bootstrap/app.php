@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/notifications/recent',
             'api/notifications/',
             'stripe/webhook',
+            'csp-report',
         ]);
 
         $middleware->alias([

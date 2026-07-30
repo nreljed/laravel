@@ -211,18 +211,16 @@ Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('da
 
     // Bulk operations
     Route::post('/users/bulk/delete', [BulkUserController::class, 'delete'])->name('users.bulk.delete');
+    Route::post('/users/bulk/verify-email', [BulkUserController::class, 'verifyEmail'])->name('users.bulk.verify-email');
+    Route::post('/users/bulk/send-reset', [BulkUserController::class, 'sendPasswordReset'])->name('users.bulk.send-reset');
     Route::get('/users/export', [BulkUserController::class, 'export'])->name('users.export');
 
     // Audit logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     // Permission management
-    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
-    Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
-    Route::post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');
-    Route::get('/permissions/{permission}/edit', [PermissionController::class, 'edit'])->name('permissions.edit');
-    Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
-    Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
+    Route::get('/permissions', [PermissionController::class, 'manage'])->name('permissions.manage');
+    Route::post('/permissions', [PermissionController::class, 'toggle'])->name('permissions.toggle');
 
     // Developer tools
     Route::get('/developer/style-guide', function () {

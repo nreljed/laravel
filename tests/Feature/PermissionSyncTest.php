@@ -25,11 +25,11 @@ class PermissionSyncTest extends TestCase
         $this->assertContains('manage_options', $slugs);
     }
 
-    public function test_crm_user_role_does_not_have_admin_permissions(): void
+    public function test_user_role_does_not_have_admin_permissions(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $crmRole = Role::where('slug', 'crm_user')->first();
+        $crmRole = Role::where('slug', 'user')->first();
         $this->assertNotNull($crmRole);
 
         $crmRole->load('permissions');
@@ -56,7 +56,7 @@ class PermissionSyncTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $adminRole = Role::where('slug', 'admin')->first();
-        $crmRole = Role::where('slug', 'crm_user')->first();
+        $crmRole = Role::where('slug', 'user')->first();
 
         $this->assertTrue(
             $adminRole->permissions()->where('slug', 'manage_options')->exists()

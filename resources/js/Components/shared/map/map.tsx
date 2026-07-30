@@ -1202,7 +1202,13 @@ function MapDrawMarker({ ...props }) {
             iconAnchor: [16, 32],
             popupAnchor: [0, -32],
             html: renderToString(
-              <MapPinIcon className="size-8 text-blue-600 fill-blue-100 filter drop-shadow-lg" />,
+              <MapPinIcon
+                className="size-8 filter drop-shadow-lg"
+                style={{
+                  color: "var(--map-marker-color,#2563eb)",
+                  fill: "var(--map-marker-fill,#dbeafe)",
+                }}
+              />,
             ),
           }),
           ...props,

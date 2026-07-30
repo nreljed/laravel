@@ -6,10 +6,10 @@ use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
-use App\Models\Permission;
 use App\Models\Role;
 use App\Services\AuditService;
 use App\Services\PermissionCacheService;
+use App\Services\PermissionGroups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,20 +38,7 @@ class RoleController extends Controller
 
     public function create(): Response
     {
-        $permissionGroups = Permission::orderBy('name')
-            ->get()
-            ->groupBy(fn ($p) => explode('.', $p->slug)[0] ?? 'general')
-            ->map(fn ($group, $key) => [
-                'group' => $key,
-                'permissions' => $group->map(fn ($p) => [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'slug' => $p->slug,
-                    'description' => $p->description,
-                    'assigned' => false,
-                ]),
-            ])
-            ->values();
+        $permissionGroups = PermissionGroups::enrichWithDb(PermissionGroups::groups());
 
         return Inertia::render('dashboard/admin/roles/form', [
             'role' => null,
@@ -86,20 +73,10 @@ class RoleController extends Controller
     {
         $role->load('permissions');
 
-        $allPermissions = Permission::orderBy('name')
-            ->get()
-            ->groupBy(fn ($p) => explode('.', $p->slug)[0] ?? 'general')
-            ->map(fn ($group, $key) => [
-                'group' => $key,
-                'permissions' => $group->map(fn ($p) => [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'slug' => $p->slug,
-                    'description' => $p->description,
-                    'assigned' => $role->permissions->contains('id', $p->id),
-                ]),
-            ])
-            ->values();
+        $permissionGroups = PermissionGroups::enrichWithDb(
+            PermissionGroups::groups(),
+            $role->permissions->pluck('slug')->toArray()
+        );
 
         return Inertia::render('dashboard/admin/roles/form', [
             'role' => [
@@ -108,19 +85,23 @@ class RoleController extends Controller
                 'slug' => $role->slug,
                 'description' => $role->description,
             ],
-            'permissionGroups' => $allPermissions,
+            'permissionGroups' => $permissionGroups,
         ]);
     }
 
     public function update(UpdateRoleRequest $request, Role $role, PermissionCacheService $cache): RedirectResponse
     {
-
         $role->update([
             'name' => $request->name,
             'description' => $request->description,
         ]);
 
         if ($request->has('permission_ids')) {
+            if ($role->slug === 'admin') {
+                return redirect()->route('dashboard.admin.roles.index')
+                    ->with('flash', ['error' => 'The Admin role permissions cannot be modified.']);
+            }
+
             $oldIds = $role->permissions()->pluck('id')->toArray();
             $newIds = $request->permission_ids ?? [];
 
@@ -150,7 +131,7 @@ class RoleController extends Controller
     {
         if ($role->slug === 'admin') {
             return redirect()->route('dashboard.admin.roles.index')
-                ->with('flash', ['error' => 'The admin role cannot be deleted.']);
+                ->with('flash', ['error' => 'The Admin role cannot be deleted.']);
         }
 
         $userIds = $role->users()->pluck('id')->toArray();

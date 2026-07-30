@@ -163,7 +163,9 @@ export default function AdminUsersForm() {
                           className={cn(
                             "pe-9",
                             !isEditing && usernameStatus === "taken" && "border-destructive",
-                            !isEditing && usernameStatus === "available" && "border-green-500",
+                            !isEditing &&
+                              usernameStatus === "available" &&
+                              "border-green-500 dark:border-green-400",
                           )}
                           aria-invalid={usernameStatus === "taken" ? "true" : undefined}
                         />
@@ -176,7 +178,7 @@ export default function AdminUsersForm() {
                               <X className="size-4 text-destructive" />
                             )}
                             {usernameStatus === "available" && (
-                              <Check className="size-4 text-green-500" />
+                              <Check className="size-4 text-green-500 dark:text-green-400" />
                             )}
                           </span>
                         )}
@@ -224,7 +226,9 @@ export default function AdminUsersForm() {
                           className={cn(
                             "pe-9",
                             !isEditing && emailStatus === "taken" && "border-destructive",
-                            !isEditing && emailStatus === "available" && "border-green-500",
+                            !isEditing &&
+                              emailStatus === "available" &&
+                              "border-green-500 dark:border-green-400",
                           )}
                           aria-invalid={emailStatus === "taken" ? "true" : undefined}
                         />
@@ -235,7 +239,7 @@ export default function AdminUsersForm() {
                             )}
                             {emailStatus === "taken" && <X className="size-4 text-destructive" />}
                             {emailStatus === "available" && (
-                              <Check className="size-4 text-green-500" />
+                              <Check className="size-4 text-green-500 dark:text-green-400" />
                             )}
                           </span>
                         )}
@@ -323,7 +327,7 @@ export default function AdminUsersForm() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Email verified</span>
                     {user.email_verified_at ? (
-                      <Badge className="bg-green-600 flex items-center gap-1">
+                      <Badge variant="success" className="flex items-center gap-1">
                         <Check className="size-3" /> Verified
                       </Badge>
                     ) : (

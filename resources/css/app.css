@@ -61,6 +61,10 @@
   --cell-bg-blue: oklch(0.95 0.03 255);
   --cell-bg-purple: oklch(0.95 0.04 300);
   --cell-bg-teal: oklch(0.95 0.04 185);
+
+  /* Map marker colors */
+  --map-marker-color: #2563eb;
+  --map-marker-fill: #dbeafe;
 }
 
 .dark {
@@ -76,6 +80,10 @@
   --cell-bg-blue: oklch(0.27 0.05 255);
   --cell-bg-purple: oklch(0.27 0.06 300);
   --cell-bg-teal: oklch(0.27 0.06 185);
+
+  /* Map marker colors */
+  --map-marker-color: #60a5fa;
+  --map-marker-fill: #1e3a5f;
 }
 
 .dark {

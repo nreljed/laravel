@@ -39,7 +39,7 @@ class RecoveryController extends Controller
 
     public function claim(string $token)
     {
-        $recoveryToken = RecoveryToken::where('token', $token)->first();
+        $recoveryToken = RecoveryToken::findByToken($token);
 
         if (! $recoveryToken || ! $recoveryToken->isValid()) {
             return redirect('/login')->withErrors([

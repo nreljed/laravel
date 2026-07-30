@@ -50,7 +50,7 @@ function SerpPreview({
         >
           {displayTitle}
           {titleTruncated && (
-            <span className="ml-1 text-xs text-red-500">
+            <span className="ml-1 text-xs text-red-500 dark:text-red-400">
               ({displayTitle.length}/{maxTitleWidth})
             </span>
           )}
@@ -65,7 +65,7 @@ function SerpPreview({
         >
           {displayDescription}
           {descTruncated && (
-            <span className="ml-1 text-xs text-orange-500">
+            <span className="ml-1 text-xs text-orange-500 dark:text-orange-400">
               ({displayDescription.length}/{maxDescWidth})
             </span>
           )}

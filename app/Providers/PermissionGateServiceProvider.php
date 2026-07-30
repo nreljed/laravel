@@ -29,36 +29,21 @@ class PermissionGateServiceProvider extends ServiceProvider
     protected function getAllPermissionSlugs(): array
     {
         try {
-            $corePermissions = [
-                'manage-users',
-                'manage-settings',
-                'manage-roles',
-                'view-system-health',
-                'manage_options',
-                'view-dashboard',
-                'view-profile',
-                'edit-profile',
-                'delete-account',
-                'view-notifications',
-                'manage-notifications',
-            ];
-
-            $featureSlugs = [];
+            $slugs = [];
 
             if ($this->app->resolved(FeatureRegistry::class)) {
                 $registry = $this->app->make(FeatureRegistry::class);
                 foreach ($registry->permissions() as $perm) {
-                    $featureSlugs[] = $perm['slug'];
+                    $slugs[] = $perm['slug'];
                 }
             }
 
-            $dbSlugs = [];
             try {
-                $dbSlugs = Permission::pluck('slug')->toArray();
+                $slugs = array_merge($slugs, Permission::pluck('slug')->toArray());
             } catch (\Throwable) {
             }
 
-            return array_unique(array_merge($corePermissions, $featureSlugs, $dbSlugs));
+            return array_unique($slugs);
         } catch (\Throwable) {
             return [];
         }

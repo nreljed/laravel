@@ -13,9 +13,13 @@ class RecoveryMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public string $plaintextToken;
+
     public function __construct(
         public RecoveryToken $token,
-    ) {}
+    ) {
+        $this->plaintextToken = $token->getPlaintext();
+    }
 
     public function envelope(): Envelope
     {
@@ -26,7 +30,7 @@ class RecoveryMail extends Mailable
 
     public function content(): Content
     {
-        $url = route('maintenance.recovery.claim', $this->token->token);
+        $url = route('maintenance.recovery.claim', $this->plaintextToken);
 
         return new Content(
             htmlString: $this->buildHtml($url),

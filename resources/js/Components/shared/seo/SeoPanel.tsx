@@ -48,9 +48,9 @@ const severityIcon = {
 } as const;
 
 const severityColor = {
-  critical: "text-red-500",
-  warning: "text-yellow-500",
-  info: "text-blue-500",
+  critical: "text-red-500 dark:text-red-400",
+  warning: "text-yellow-500 dark:text-yellow-400",
+  info: "text-blue-500 dark:text-blue-400",
 } as const;
 
 function SeoPanel({
@@ -211,7 +211,7 @@ function SeoPanel({
             <FieldLabel>
               Meta Title
               <span
-                className={`ml-2 text-xs tabular-nums ${titleLength > TITLE_MAX ? "text-red-500" : "text-muted-foreground"}`}
+                className={`ml-2 text-xs tabular-nums ${titleLength > TITLE_MAX ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}
               >
                 {titleLength}/{TITLE_MAX}
               </span>

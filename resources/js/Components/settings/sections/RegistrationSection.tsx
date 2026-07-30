@@ -90,7 +90,7 @@ export function RegistrationSection({
         description="The role assigned to every new user upon registration. Admin roles are excluded — they can only be created through the backend."
       >
         {roles.length === 0 ? (
-          <p className="text-sm text-amber-500">
+          <p className="text-sm text-amber-500 dark:text-amber-400">
             No non-admin roles exist. Create one in the Roles section first.
           </p>
         ) : (

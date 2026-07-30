@@ -64,9 +64,9 @@ async function getZxcvbn(): Promise<ZxcvbnFn> {
 
 export function getPasswordStrengthColor(score: number): string {
   if (score <= 1) return "bg-destructive";
-  if (score === 2) return "bg-amber-500";
-  if (score === 3) return "bg-lime-500";
-  return "bg-green-500";
+  if (score === 2) return "bg-amber-500 dark:bg-amber-400";
+  if (score === 3) return "bg-lime-500 dark:bg-lime-400";
+  return "bg-green-500 dark:bg-green-400";
 }
 
 export function getPasswordStrengthTextColor(score: number): string {
@@ -296,7 +296,7 @@ export function PasswordInput({
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <div className="flex items-center text-green-500 cursor-default">
+                    <div className="flex items-center text-green-500 dark:text-green-400 cursor-default">
                       <Check className="h-4 w-4" />
                     </div>
                   }
@@ -323,30 +323,56 @@ export function PasswordInput({
                   <div className="space-y-1">
                     <p className="font-medium mb-1">Password recommendations:</p>
                     <div
-                      className={cn(meetsMinLength ? "text-green-500" : "text-muted-foreground")}
+                      className={cn(
+                        meetsMinLength
+                          ? "text-green-500 dark:text-green-400"
+                          : "text-muted-foreground",
+                      )}
                     >
                       {meetsMinLength ? "✓" : "○"} At least {minLength} chars
                     </div>
                     <div
-                      className={cn(meetsUppercase ? "text-green-500" : "text-muted-foreground")}
+                      className={cn(
+                        meetsUppercase
+                          ? "text-green-500 dark:text-green-400"
+                          : "text-muted-foreground",
+                      )}
                     >
                       {meetsUppercase ? "✓" : "○"} Uppercase (recommended)
                     </div>
                     <div
-                      className={cn(meetsLowercase ? "text-green-500" : "text-muted-foreground")}
+                      className={cn(
+                        meetsLowercase
+                          ? "text-green-500 dark:text-green-400"
+                          : "text-muted-foreground",
+                      )}
                     >
                       {meetsLowercase ? "✓" : "○"} Lowercase (recommended)
                     </div>
-                    <div className={cn(meetsNumber ? "text-green-500" : "text-muted-foreground")}>
+                    <div
+                      className={cn(
+                        meetsNumber
+                          ? "text-green-500 dark:text-green-400"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {meetsNumber ? "✓" : "○"} Number (recommended)
                     </div>
-                    <div className={cn(meetsSpecial ? "text-green-500" : "text-muted-foreground")}>
+                    <div
+                      className={cn(
+                        meetsSpecial
+                          ? "text-green-500 dark:text-green-400"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {meetsSpecial ? "✓" : "○"} Special (recommended)
                     </div>
                     {disableSameAsCurrent && currentPassword.length > 0 && (
                       <div
                         className={cn(
-                          !isSameAsCurrent ? "text-green-500" : "text-muted-foreground",
+                          !isSameAsCurrent
+                            ? "text-green-500 dark:text-green-400"
+                            : "text-muted-foreground",
                         )}
                       >
                         {!isSameAsCurrent ? "✓" : "○"} Different from current
@@ -409,7 +435,7 @@ export function PasswordInput({
             {confirmLabel} {required && <span className="text-destructive">*</span>}
           </FieldLabel>
           {passwordsMatch && confirmPassword.length > 0 && (
-            <span className="text-sm text-green-600">Match!</span>
+            <span className="text-sm text-green-600 dark:text-green-400">Match!</span>
           )}
           {passwordsDoNotMatch && <span className="text-sm text-destructive">Don't match</span>}
         </div>
@@ -426,7 +452,7 @@ export function PasswordInput({
             className={cn(
               "pe-9",
               passwordsDoNotMatch && "border-destructive",
-              passwordsMatch && "border-green-500",
+              passwordsMatch && "border-green-500 dark:border-green-400",
             )}
           />
           <InputGroupAddon align="inline-end" className="right-1 gap-1">
@@ -434,7 +460,7 @@ export function PasswordInput({
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <div className="flex items-center text-green-500">
+                    <div className="flex items-center text-green-500 dark:text-green-400">
                       <Check className="h-4 w-4" />
                     </div>
                   }

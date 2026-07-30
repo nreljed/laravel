@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('recovery_tokens', function (Blueprint $table) {
             $table->id();
-            $table->string('token', 64)->unique();
+            $table->string('token_hash', 255)->index();
             $table->boolean('used')->default(false);
             $table->timestamp('expires_at');
             $table->timestamps();

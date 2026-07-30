@@ -548,7 +548,7 @@ export default function NotificationsTest() {
 
         {result && (
           <div
-            className={`flex items-start gap-3 rounded-lg border p-4 text-sm ${result.ok ? "border-green-500/20 bg-green-500/5 text-green-700 dark:text-green-400" : "border-red-500/20 bg-red-500/5 text-red-700 dark:text-red-400"}`}
+            className={`flex items-start gap-3 rounded-lg border p-4 text-sm ${result.ok ? "border-green-500/20 bg-green-500/5 text-green-700 dark:border-green-400/20 dark:bg-green-400/10 dark:text-green-400" : "border-red-500/20 bg-red-500/5 text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-400"}`}
           >
             <div className="mt-0.5 shrink-0">
               {result.ok ? (

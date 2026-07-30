@@ -2,7 +2,6 @@
 
 namespace App\Blog\Controllers;
 
-use App\Blog\Models\Post;
 use App\Blog\Models\PostCategory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -12,7 +11,7 @@ class PostCategoryController extends Controller
 {
     public function index()
     {
-        $this->authorize('viewAny', Post::class);
+        $this->authorize('manage-categories');
 
         $categories = PostCategory::withCount('posts')
             ->with('children')
@@ -26,7 +25,7 @@ class PostCategoryController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('create', Post::class);
+        $this->authorize('manage-categories');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -48,7 +47,7 @@ class PostCategoryController extends Controller
 
     public function update(Request $request, PostCategory $postCategory)
     {
-        $this->authorize('create', Post::class);
+        $this->authorize('manage-categories');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -70,7 +69,7 @@ class PostCategoryController extends Controller
 
     public function destroy(PostCategory $postCategory)
     {
-        $this->authorize('create', Post::class);
+        $this->authorize('manage-categories');
 
         if ($postCategory->posts()->exists()) {
             return redirect()->back()->withErrors(['delete' => 'Cannot delete category with posts.']);
@@ -83,7 +82,7 @@ class PostCategoryController extends Controller
 
     public function reorder(Request $request)
     {
-        $this->authorize('create', Post::class);
+        $this->authorize('manage-categories');
 
         $validated = $request->validate([
             'ids' => 'required|array',
@@ -99,7 +98,7 @@ class PostCategoryController extends Controller
 
     public function bulk(Request $request)
     {
-        $this->authorize('create', Post::class);
+        $this->authorize('manage-categories');
 
         $validated = $request->validate([
             'action' => 'required|string|in:delete',

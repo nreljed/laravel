@@ -1,45 +1,18 @@
 <?php
 
-use App\Models\Permission;
 use App\Models\Role;
-use App\Services\FeatureRegistry;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Role::where('slug', 'user')->update([
-            'slug' => 'crm_user',
-            'name' => 'CRM User',
-            'description' => 'Standard user: modules + profile + notifications',
-        ]);
-
-        // Ensure crm_user role gets all module permissions
-        if (app()->resolved(FeatureRegistry::class)) {
-            $registry = app(FeatureRegistry::class);
-            $crmUser = Role::where('slug', 'crm_user')->first();
-            if ($crmUser) {
-                $moduleSlugs = [];
-                foreach ($registry->permissions() as $perm) {
-                    $moduleSlugs[] = $perm['slug'];
-                }
-                $modulePerms = Permission::whereIn('slug', $moduleSlugs)->pluck('id');
-                $existingIds = $crmUser->permissions()->pluck('permissions.id')->toArray();
-                $newIds = $modulePerms->diff($existingIds)->values()->toArray();
-                if (! empty($newIds)) {
-                    $crmUser->permissions()->attach($newIds);
-                }
-            }
-        }
+        // Previously renamed user → crm_user; now reverted to user
+        // This migration is kept for history; the current naming is 'user'
     }
 
     public function down(): void
     {
-        Role::where('slug', 'crm_user')->update([
-            'slug' => 'user',
-            'name' => 'User',
-            'description' => 'Basic access: dashboard, profile, notifications',
-        ]);
+        // No-op: role naming is now 'user', down() mirrors no-op up()
     }
 };

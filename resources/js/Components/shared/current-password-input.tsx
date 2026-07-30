@@ -79,7 +79,11 @@ export function CurrentPasswordInput({
           disabled={disabled}
           aria-invalid={hasError ? "true" : undefined}
           aria-describedby={hasError ? `${id}-error` : undefined}
-          className={hasError ? "border-red-500 focus:border-red-500 pr-10" : "pr-10"}
+          className={
+            hasError
+              ? "border-red-500 focus:border-red-500 dark:border-red-400 dark:focus:border-red-400 pr-10"
+              : "pr-10"
+          }
           autoComplete="off"
         />
         <button

@@ -17,10 +17,28 @@ trait CreatesTestUsers
         return $user;
     }
 
+    protected function editor(): User
+    {
+        $user = User::factory()->create();
+        $role = Role::where('slug', 'editor')->first();
+        $user->roles()->attach($role);
+
+        return $user;
+    }
+
+    protected function contributor(): User
+    {
+        $user = User::factory()->create();
+        $role = Role::where('slug', 'author')->first();
+        $user->roles()->attach($role);
+
+        return $user;
+    }
+
     protected function regularUser(): User
     {
         $user = User::factory()->create();
-        $role = Role::where('slug', 'crm_user')->first();
+        $role = Role::where('slug', 'user')->first();
         $user->roles()->attach($role);
 
         return $user;

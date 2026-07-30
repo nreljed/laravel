@@ -40,13 +40,13 @@ class RegisteredUserController extends Controller
             'password' => $request->password,
         ]);
 
-        $defaultRoleSlug = SettingsService::get('default_role');
+        $defaultRoleSlug = SettingsService::get('default_role', 'user');
         $userRole = Role::where('slug', $defaultRoleSlug)
             ->where('slug', '!=', 'admin')
             ->first();
 
         if (! $userRole) {
-            $userRole = Role::where('slug', '!=', 'admin')->orderBy('name')->first();
+            $userRole = Role::where('slug', 'user')->first();
         }
 
         if ($userRole) {
