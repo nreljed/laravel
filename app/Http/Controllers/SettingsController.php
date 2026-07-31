@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AuditAction;
 use App\Http\Requests\UpdateSettingsRequest;
 use App\Http\Requests\UploadFaviconRequest;
 use App\Http\Requests\UploadLogoRequest;
 use App\Models\IpAccessRule;
 use App\Models\Role;
+use App\Services\AuditService;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +40,7 @@ class SettingsController extends Controller
     public function registration(): Response
     {
         $roles = Schema::hasTable('roles')
-            ? Role::where('slug', '!=', 'admin')->select('id', 'name', 'slug')->orderBy('name')->get()
+            ? Role::where('slug', '!=', 'admin')->select('id', 'name', 'slug')->orderBy('sort_order')->get()
             : collect();
 
         $settings = Schema::hasTable('settings')
@@ -128,6 +130,10 @@ class SettingsController extends Controller
 
         SettingsService::setMany($validated);
         SettingsService::clearCache();
+
+        AuditService::log(AuditAction::SettingsChanged, $request->user()->id, [
+            'changed_keys' => array_keys($validated),
+        ]);
 
         return redirect()->back()->with('status', 'Settings saved successfully.');
     }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Head, useForm, usePage } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { FileText, Image, FolderOpen, Tag } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -68,8 +68,9 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
   });
 
   React.useEffect(() => {
-    if (flash?.status) toast.success(flash.status);
-    if (flash?.["flash.success"]) toast.success(String(flash["flash.success"]));
+    if (flash?.status) toast.add({ title: flash.status, type: "success" });
+    if (flash?.["flash.success"])
+      toast.add({ title: String(flash["flash.success"]), type: "success" });
   }, [flash]);
 
   const handleAddTag = async (name: string) => {
@@ -133,9 +134,9 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
     const options = {
       preserveScroll: true,
       onSuccess: () => {
-        toast.success(isEditing ? "Post updated." : "Post created.");
+        toast.add({ title: isEditing ? "Post updated." : "Post created.", type: "success" });
       },
-      onError: () => toast.error("Failed to save post."),
+      onError: () => toast.add({ title: "Failed to save post.", type: "error" }),
     };
 
     if (isEditing) {

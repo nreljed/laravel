@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { Head, router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import {
   Bell,
   BellOff,
@@ -202,9 +202,9 @@ export default function NotificationsPage({
           n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n,
         ),
       );
-      toast.success("Marked as read");
+      toast.add({ title: "Marked as read", type: "success" });
     } catch {
-      toast.error("Failed to mark as read");
+      toast.add({ title: "Failed to mark as read", type: "error" });
     }
   };
 
@@ -226,9 +226,9 @@ export default function NotificationsPage({
         prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() })),
       );
       setSelectedIds(new Set());
-      toast.success("All notifications marked as read");
+      toast.add({ title: "All notifications marked as read", type: "success" });
     } catch {
-      toast.error("Failed to mark all as read");
+      toast.add({ title: "Failed to mark all as read", type: "error" });
     }
   };
 
@@ -244,9 +244,9 @@ export default function NotificationsPage({
       });
       setAllNotifications((prev) => prev.filter((n) => n.id !== id));
       setSelectedIds(new Set());
-      toast.success("Notification deleted");
+      toast.add({ title: "Notification deleted", type: "success" });
     } catch {
-      toast.error("Failed to delete notification");
+      toast.add({ title: "Failed to delete notification", type: "error" });
     }
   };
 
@@ -272,9 +272,9 @@ export default function NotificationsPage({
           ids.includes(n.id) ? { ...n, is_read: true, read_at: new Date().toISOString() } : n,
         ),
       );
-      toast.success("Selected notifications marked as read");
+      toast.add({ title: "Selected notifications marked as read", type: "success" });
     } catch {
-      toast.error("Failed to mark selected as read");
+      toast.add({ title: "Failed to mark selected as read", type: "error" });
     }
   };
 
@@ -296,9 +296,9 @@ export default function NotificationsPage({
         );
       });
       setAllNotifications((prev) => prev.filter((n) => !ids.includes(n.id)));
-      toast.success("Selected notifications deleted");
+      toast.add({ title: "Selected notifications deleted", type: "success" });
     } catch {
-      toast.error("Failed to delete selected notifications");
+      toast.add({ title: "Failed to delete selected notifications", type: "error" });
     }
   };
 

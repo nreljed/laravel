@@ -35,10 +35,34 @@ class FeatureRegistry
 
     public function getAllDashboardData(): array
     {
-        return array_merge(
-            $this->blog->getDashboardData(),
-            $this->testPosts->getDashboardData(),
-        );
+        $data = [];
+
+        foreach ([$this->blog, $this->testPosts] as $provider) {
+            if (! method_exists($provider, 'getDashboardData')) {
+                continue;
+            }
+
+            $featureData = $provider->getDashboardData();
+
+            if (! empty($featureData)) {
+                $data[$provider->slug()] = $featureData;
+            }
+        }
+
+        return $data;
+    }
+
+    public function getAllAnalyticsSeries(): array
+    {
+        $series = [];
+
+        foreach ([$this->blog, $this->testPosts] as $provider) {
+            if (method_exists($provider, 'getAnalyticsSeries')) {
+                $series = array_merge($series, $provider->getAnalyticsSeries());
+            }
+        }
+
+        return $series;
     }
 
     public function getAllNotificationTypes(): array

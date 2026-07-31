@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('schedule:publish')->everyMinute();
 Schedule::command('notifications:purge', ['--days' => 90])->daily();
+Schedule::command('app:prune-audit-logs')->daily();

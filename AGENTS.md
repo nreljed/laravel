@@ -17,22 +17,22 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 
 ## Tech Stack
 
-| Layer         | Technology                    | Version                |
-| ------------- | ----------------------------- | ---------------------- |
-| Backend       | Laravel                       | 13.x (PHP 8.4+)        |
-| Frontend      | React                         | 19.2                   |
-| SPA Bridge    | Inertia.js                    | 3.6                    |
-| Build         | Vite                          | 8.x                    |
-| Language      | TypeScript                    | 6.x                    |
-| Styling       | Tailwind CSS                  | 4.x                    |
-| UI Kit        | shadcn/ui                     | new-york, neutral base |
-| Icons         | Lucide React                  | latest                 |
-| Auth          | Laravel Breeze + Sanctum      | session-based          |
-| Database      | SQLite (local) / MySQL (prod) | —                      |
-| Notifications | Laravel Notifications         | database channel       |
-| Routing (JS)  | Ziggy                         | 2.6                    |
-| AI SDK        | Laravel AI                    | 0.9                    |
-| AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8              |
+| Layer         | Technology                    | Version                           |
+| ------------- | ----------------------------- | --------------------------------- |
+| Backend       | Laravel                       | 13.x (PHP 8.4+)                   |
+| Frontend      | React                         | 19.2                              |
+| SPA Bridge    | Inertia.js                    | 3.6                               |
+| Build         | Vite                          | 8.x                               |
+| Language      | TypeScript                    | 6.x                               |
+| Styling       | Tailwind CSS                  | 4.x                               |
+| UI Kit        | shadcn/ui                     | base-vega (Base UI), neutral base |
+| Icons         | Lucide React                  | latest                            |
+| Auth          | Laravel Breeze + Sanctum      | session-based                     |
+| Database      | SQLite (local) / MySQL (prod) | —                                 |
+| Notifications | Laravel Notifications         | database channel                  |
+| Routing (JS)  | Ziggy                         | 2.6                               |
+| AI SDK        | Laravel AI                    | 0.9                               |
+| AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8                         |
 
 ## Code Style
 
@@ -43,7 +43,7 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 - Inertia `useForm` for all form state
 - `useAuth` hook from `@/hooks/use-auth` for auth state
 - `next-themes` `<ThemeProvider>` for dark mode
-- `toast()` from `sonner` for flash messages
+- `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
 - `asChild` / `Slot` pattern is standard for component composition
 

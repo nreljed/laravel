@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { LucideIcon } from "lucide-react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Separator } from "@/Components/ui/separator";
@@ -98,11 +98,11 @@ export function NotificationPrefsSection({
       {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success("Notification preferences updated.");
+          toast.add({ title: "Notification preferences updated.", type: "success" });
           setSaving(false);
         },
         onError: () => {
-          toast.error("Failed to update notification preferences.");
+          toast.add({ title: "Failed to update notification preferences.", type: "error" });
           setSaving(false);
         },
       },

@@ -13,7 +13,7 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { uploadImageToServer, deleteImageFromServer } from "./ImagePlugin";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Upload } from "lucide-react";
 
 interface EditImageDialogProps {
@@ -68,7 +68,7 @@ export function EditImageDialog({ open, onOpenChange, nodeKey }: EditImageDialog
         }
       }
     } catch {
-      toast.error("Failed to upload image");
+      toast.add({ title: "Failed to upload image", type: "error" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

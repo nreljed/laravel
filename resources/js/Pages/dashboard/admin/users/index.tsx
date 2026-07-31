@@ -64,11 +64,13 @@ export default function AdminUsersIndex() {
   const [confirmAction, setConfirmAction] = useState<{ type: ConfirmAction; user: User } | null>(
     null,
   );
+  const [notifyDelete, setNotifyDelete] = useState(false);
 
   const executeAction = () => {
     if (!confirmAction) return;
     const { type, user } = confirmAction;
     setConfirmAction(null);
+    setNotifyDelete(false);
 
     switch (type) {
       case "impersonate": {
@@ -84,7 +86,9 @@ export default function AdminUsersIndex() {
         break;
       }
       case "delete": {
-        router.delete(route("dashboard.admin.users.destroy", { user: user.id }));
+        router.delete(route("dashboard.admin.users.destroy", { user: user.id }), {
+          data: { notify_user: notifyDelete },
+        });
         break;
       }
     }
@@ -139,16 +143,19 @@ export default function AdminUsersIndex() {
         ),
       },
       {
+        id: "avatar",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Avatar" />,
+        cell: ({ row }) => (
+          <Avatar className="size-8">
+            <AvatarFallback>{getUserInitials(row.original.name)}</AvatarFallback>
+          </Avatar>
+        ),
+        enableSorting: false,
+      },
+      {
         accessorKey: "name",
         header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-3">
-            <Avatar className="size-8">
-              <AvatarFallback>{getUserInitials(row.original.name)}</AvatarFallback>
-            </Avatar>
-            <span className="font-medium">{row.original.name}</span>
-          </div>
-        ),
+        cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
       },
       {
         accessorKey: "username",
@@ -347,6 +354,25 @@ export default function AdminUsersIndex() {
             <AlertDialogTitle>{dialogConfig?.title}</AlertDialogTitle>
             <AlertDialogDescription>{dialogConfig?.description}</AlertDialogDescription>
           </AlertDialogHeader>
+          {confirmAction?.type === "delete" && (
+            <div className="flex items-start gap-3 px-2">
+              <input
+                id="notify_delete"
+                type="checkbox"
+                className="mt-0.5 size-4 accent-foreground"
+                checked={notifyDelete}
+                onChange={(e) => setNotifyDelete(e.target.checked)}
+              />
+              <label
+                htmlFor="notify_delete"
+                className="text-sm text-muted-foreground leading-snug cursor-pointer"
+              >
+                <span className="font-medium text-foreground">Notify user via email</span>
+                <br />
+                Send a notification email to inform them their account has been deleted.
+              </label>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

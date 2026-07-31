@@ -1,5 +1,4 @@
 import { router } from "@inertiajs/react";
-import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 import {
   Brain,
@@ -48,7 +47,7 @@ import {
 } from "@/Components/ui/select";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 
 interface AiProvider {
   id: number;
@@ -129,22 +128,34 @@ export default function AiKeysSection({
     setTestResult(null);
 
     try {
-      await axios.post(route("dashboard.account.ai-keys.test"), {
-        provider: selectedProvider,
-        api_key: apiKey,
-        preferred_model: preferredModel || undefined,
+      const response = await fetch(route("dashboard.account.ai-keys.test"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          provider: selectedProvider,
+          api_key: apiKey,
+          preferred_model: preferredModel || undefined,
+        }),
       });
-      setTestResult({ success: true, message: "Connection verified successfully." });
-    } catch (error: unknown) {
-      const data = isAxiosError(error)
-        ? (error.response?.data as Record<string, string> | undefined)
-        : undefined;
-      const msg =
-        data?.api_key ??
-        data?.provider ??
-        data?.message ??
-        "Connection failed. Please check your API key.";
-      setTestResult({ success: false, message: msg });
+
+      if (!response.ok) {
+        let data: Record<string, string> = {};
+        try {
+          data = await response.json();
+        } catch {
+          /* ignore parse errors */
+        }
+        const msg =
+          data?.api_key ??
+          data?.provider ??
+          data?.message ??
+          "Connection failed. Please check your API key.";
+        setTestResult({ success: false, message: msg });
+      } else {
+        setTestResult({ success: true, message: "Connection verified successfully." });
+      }
+    } catch {
+      setTestResult({ success: false, message: "Connection failed. Please check your API key." });
     } finally {
       setTesting(false);
     }
@@ -163,12 +174,12 @@ export default function AiKeysSection({
       },
       {
         onSuccess: () => {
-          toast.success("AI provider key saved");
+          toast.add({ title: "AI provider key saved", type: "success" });
           setDialogOpen(false);
           resetDialog();
         },
         onError: () => {
-          toast.error("Failed to save provider key");
+          toast.add({ title: "Failed to save provider key", type: "error" });
         },
         onFinish: () => setSaving(false),
       },
@@ -177,8 +188,8 @@ export default function AiKeysSection({
 
   function handleDelete(providerId: number) {
     router.delete(route("dashboard.account.ai-keys.destroy", providerId), {
-      onSuccess: () => toast.success("Provider key removed"),
-      onError: () => toast.error("Failed to remove provider key"),
+      onSuccess: () => toast.add({ title: "Provider key removed", type: "success" }),
+      onError: () => toast.add({ title: "Failed to remove provider key", type: "error" }),
     });
   }
 
@@ -188,8 +199,11 @@ export default function AiKeysSection({
       { is_active: !provider.is_active },
       {
         onSuccess: () =>
-          toast.success(provider.is_active ? "Provider disabled" : "Provider enabled"),
-        onError: () => toast.error("Failed to update provider"),
+          toast.add({
+            title: provider.is_active ? "Provider disabled" : "Provider enabled",
+            type: "success",
+          }),
+        onError: () => toast.add({ title: "Failed to update provider", type: "error" }),
       },
     );
   }
@@ -200,8 +214,8 @@ export default function AiKeysSection({
       { preferred_model: model || null },
       {
         preserveState: true,
-        onSuccess: () => toast.success("Model preference updated"),
-        onError: () => toast.error("Failed to update model preference"),
+        onSuccess: () => toast.add({ title: "Model preference updated", type: "success" }),
+        onError: () => toast.add({ title: "Failed to update model preference", type: "error" }),
       },
     );
   }

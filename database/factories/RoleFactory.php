@@ -19,6 +19,7 @@ class RoleFactory extends Factory
             'slug' => Str::slug($name),
             'description' => fake()->sentence(),
             'guard_name' => 'web',
+            'sort_order' => fake()->numberBetween(0, 10),
         ];
     }
 }

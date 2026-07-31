@@ -96,13 +96,15 @@ router.reload({ only: ['notifications'] });
 
 ### Flash Messages
 
-`app.tsx` listens for navigate events and shows toasts:
+`app.tsx` listens for navigate events and shows toasts via the Base UI toast manager:
 
 ```typescript
+import { toast } from "@/Components/ui/toast";
+
 router.on("navigate", () => {
   const flash = page.props?.flash;
-  if (flash.status) toast.success(String(flash.status));
-  if (flash.error) toast.error(String(flash.error));
+  if (flash.status) toast.add({ title: String(flash.status), type: "success" });
+  if (flash.error) toast.add({ title: String(flash.error), type: "error" });
 });
 ```
 

@@ -32,7 +32,7 @@ class RoleAssignmentTest extends TestCase
 
         $user = User::where('email', 'test@example.com')->first();
         $this->assertNotNull($user);
-        $this->assertTrue($user->hasRole('user'));
+        $this->assertTrue($user->hasRole('editor'));
         $this->assertFalse($user->isAdmin());
     }
 
@@ -83,6 +83,6 @@ class RoleAssignmentTest extends TestCase
         $user = User::where('email', 'hacker@example.com')->first();
         $this->assertNotNull($user);
         $this->assertFalse($user->isAdmin());
-        $this->assertTrue($user->hasRole('user'));
+        $this->assertTrue($user->hasRole('editor'));
     }
 }

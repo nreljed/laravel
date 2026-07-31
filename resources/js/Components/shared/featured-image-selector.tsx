@@ -2,7 +2,7 @@ import * as React from "react";
 import { X, Image as ImageIcon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Progress } from "@/Components/ui/progress";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { useImageUpload } from "@/hooks/use-image-upload";
 
 interface FeaturedImageSelectorProps {
@@ -57,7 +57,7 @@ const FeaturedImageSelector = ({
       }
     }
 
-    toast.info("Featured image removed");
+    toast.add({ title: "Featured image removed", type: "info" });
   };
 
   const handleFileSelect = async (files: File[]) => {
@@ -66,7 +66,7 @@ const FeaturedImageSelector = ({
     const file = files[0]!;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.add({ title: "Please select an image file", type: "error" });
       return;
     }
 
@@ -78,10 +78,10 @@ const FeaturedImageSelector = ({
       setProgress(100);
       setPreview(result.url);
       onChange(result.url);
-      toast.success("Featured image uploaded");
+      toast.add({ title: "Featured image uploaded", type: "success" });
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : "Upload failed");
-      toast.error("Upload failed");
+      toast.add({ title: "Upload failed", type: "error" });
     } finally {
       setProgress(0);
     }

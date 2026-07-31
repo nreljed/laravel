@@ -11,6 +11,7 @@ import {
   CommandSeparator,
 } from "@/Components/ui/command";
 import { Button } from "@/Components/ui/button";
+import { Kbd } from "@/Components/ui/kbd";
 import { Search, LayoutDashboard, BarChart3, Bell, Users, Settings, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { featureIcons } from "@/lib/icons";
@@ -135,9 +136,9 @@ export function CommandSearch() {
       >
         <Search className="size-4 sm:mr-2" />
         <span className="hidden sm:inline-flex text-muted-foreground">Search...</span>
-        <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+        <Kbd className="absolute right-1.5 top-1.5 hidden font-mono text-[10px] sm:inline-flex">
           <span className="text-xs">⌘</span>K
-        </kbd>
+        </Kbd>
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>

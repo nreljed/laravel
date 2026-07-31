@@ -201,7 +201,7 @@ Uses `@atlaskit/pragmatic-drag-and-drop` for column reordering within a layout:
 
 1. **Drag source**: The grip handle button registers as a `draggable()` element with payload `{ columnIndex, layoutKey, type: "layout-column" }`
 2. **Drop targets**: Each `LayoutItemNode` DOM element registers as a `dropTargetForElements()` — detects left/right half of the column to determine insertion point
-3. **Drop indicator**: `@atlaskit/drag-and-drop-indicator/box` renders a vertical line at the drop position during drag
+3. **Drop indicator**: `DropIndicator` from `../shared/drop-indicator` renders a vertical line at the drop position during drag
 4. **On drop**: Calls `$moveLayoutColumn(container, fromIndex, toIndex)` to reorder the Lexical tree and update the grid template
 
 ### Edge Cases

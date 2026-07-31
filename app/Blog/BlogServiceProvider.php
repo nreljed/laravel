@@ -91,6 +91,36 @@ class BlogServiceProvider extends ServiceProvider
         ];
     }
 
+    public function getAnalyticsSeries(): array
+    {
+        if (! Schema::hasTable('posts')) {
+            return [];
+        }
+
+        $start = now()->subDays(29)->startOfDay();
+
+        $counts = Post::query()
+            ->where('created_at', '>=', $start)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->pluck('count', 'date');
+
+        $data = collect(range(0, 29))
+            ->map(fn (int $offset) => [
+                'date' => now()->subDays(29 - $offset)->toDateString(),
+                'count' => (int) ($counts[now()->subDays(29 - $offset)->toDateString()] ?? 0),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'posts' => [
+                'label' => 'New Posts',
+                'data' => $data,
+            ],
+        ];
+    }
+
     public function getSharedData(): array
     {
         return [];

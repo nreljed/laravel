@@ -9,7 +9,7 @@ class SettingsService
 {
     private const CACHE_KEY = 'app_settings';
 
-    private const GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting'];
+    private const GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting', 'audit_logs'];
 
     public static function get(string $key, mixed $default = null): mixed
     {

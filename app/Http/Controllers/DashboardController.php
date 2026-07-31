@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use App\Services\DashboardService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,12 @@ class DashboardController extends Controller
 
     public function stats(): Response
     {
-        return Inertia::render('dashboard/stats');
+        $dashboard = app(DashboardService::class);
+
+        return Inertia::render('dashboard/stats', [
+            'stats' => $dashboard->getStats(),
+            'analytics' => Inertia::defer(fn () => $dashboard->getAnalytics()),
+        ]);
     }
 
     public function notifications(Request $request): Response

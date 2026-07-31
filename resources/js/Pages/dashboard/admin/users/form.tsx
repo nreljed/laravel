@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -39,11 +39,12 @@ interface UserData {
 interface PageProps {
   user?: UserData;
   roles: Role[];
+  defaultRoleId?: number;
 }
 
 export default function AdminUsersForm() {
   const { props } = usePage();
-  const { user, roles } = props as unknown as PageProps;
+  const { user, roles, defaultRoleId } = props as unknown as PageProps;
   const isEditing = !!user?.id;
 
   const { data, setData, post, put, processing, errors } = useForm({
@@ -52,7 +53,7 @@ export default function AdminUsersForm() {
     email: user?.email ?? "",
     password: "",
     password_confirmation: "",
-    role_id: String(user?.role_id ?? ""),
+    role_id: String(user?.role_id ?? defaultRoleId ?? ""),
     send_email: !isEditing,
   });
 
@@ -88,24 +89,20 @@ export default function AdminUsersForm() {
     const timer = field === "username" ? usernameTimer : emailTimer;
 
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
+    timer.current = setTimeout(async () => {
       if (value === lastChecked.current) return;
       setStatus("checking");
 
-      router.get(
-        route("register.availability"),
-        { field, value },
-        {
-          preserveState: true,
-          preserveScroll: true,
-          onSuccess: (page: { props: Record<string, unknown> }) => {
-            const data = page.props;
-            lastChecked.current = value;
-            setStatus(data.available ? "available" : "taken");
-          },
-          onError: () => setStatus("idle"),
-        },
-      );
+      try {
+        const r = await fetch(
+          `${route("register.availability")}?${new URLSearchParams({ field, value })}`,
+        );
+        const data = await r.json();
+        lastChecked.current = value;
+        setStatus(data.available ? "available" : "taken");
+      } catch {
+        setStatus("idle");
+      }
     }, 400);
   };
 
@@ -257,7 +254,11 @@ export default function AdminUsersForm() {
                         onValueChange={(v) => setData("role_id", v ?? "")}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a role" />
+                          <SelectValue placeholder="Select a role">
+                            {(value: string | null) =>
+                              roles.find((r) => String(r.id) === value)?.name ?? "Select a role"
+                            }
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {roles.map((role) => (

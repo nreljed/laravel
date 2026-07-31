@@ -7,7 +7,7 @@ import {
   DROP_COMMAND,
   DRAGSTART_COMMAND,
 } from "lexical";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { $createImageNode, INSERT_IMAGE_COMMAND, ImageNode, type ImagePayload } from "./ImageNode";
 
 export async function uploadImageToServer(file: File): Promise<{ url: string; path: string }> {
@@ -82,7 +82,7 @@ export function ImagePlugin(): null {
           const { url } = await uploadImageToServer(file);
           insertImage({ src: url, altText: file.name });
         } catch {
-          toast.error(`Failed to upload ${file.name}`);
+          toast.add({ title: `Failed to upload ${file.name}`, type: "error" });
         }
       }
     },
@@ -101,9 +101,10 @@ export function ImagePlugin(): null {
   }, [editor, insertImage]);
 
   useEffect(() => {
-    return editor.registerCommand<ClipboardEvent>(
+    return editor.registerCommand(
       PASTE_COMMAND,
       (event) => {
+        if (!(event instanceof ClipboardEvent)) return false;
         const files = event.clipboardData ? extractImageFiles(event.clipboardData) : [];
         if (files.length > 0) {
           event.preventDefault();

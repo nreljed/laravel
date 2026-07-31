@@ -16,6 +16,8 @@ interface DateTimePickerProps {
   placeholder?: string;
 }
 
+const DEFAULT_MIN_DATE = new Date();
+
 interface TimeState {
   hours: string;
   minutes: string;
@@ -25,7 +27,7 @@ function DateTimePicker({
   value,
   onChange,
   disabled,
-  minDate = new Date(),
+  minDate = DEFAULT_MIN_DATE,
   placeholder = "Select date and time",
 }: DateTimePickerProps) {
   const { timeFormat } = useFormatDate();

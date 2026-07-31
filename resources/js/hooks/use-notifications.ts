@@ -340,6 +340,7 @@ export function useNotifications(): UseNotificationsResult {
   }, [pollCount, startPolling, stopPolling]);
 
   // Track user interaction for adaptive intervals
+  /* eslint-disable @eslint-react/web-api-no-leaked-event-listener -- global listeners are paired with removeEventListener in the cleanup below */
   useEffect(() => {
     lastInteractionRef.current = Date.now();
     const handleInteraction = () => {
@@ -356,12 +357,14 @@ export function useNotifications(): UseNotificationsResult {
       removeEventListener("touchstart", handleInteraction);
     };
   }, []);
+  /* eslint-enable @eslint-react/web-api-no-leaked-event-listener */
 
   // BroadcastChannel for cross-tab sync
   useEffect(() => {
     try {
       const bc = new BroadcastChannel(CHANNEL_NAME);
       channelRef.current = bc;
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- channel is closed in the cleanup below, removing all listeners
       bc.addEventListener("message", (event) => {
         if (event.data?.type !== "unread") {
           return;

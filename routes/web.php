@@ -217,6 +217,7 @@ Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('da
 
     // Audit logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
 
     // Permission management
     Route::get('/permissions', [PermissionController::class, 'manage'])->name('permissions.manage');

@@ -1515,6 +1515,7 @@ function CropperImage(props: CropperImageProps): React.JSX.Element {
         if ("requestIdleCallback" in globalThis) {
           requestIdleCallback(callback as IdleRequestCallback);
         } else {
+          // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- fire-and-forget idle flush; observer teardown below
           setTimeout(callback, 16);
         }
       });
@@ -1643,6 +1644,7 @@ function CropperVideo(props: CropperVideoProps) {
         if ("requestIdleCallback" in globalThis) {
           requestIdleCallback(callback as IdleRequestCallback);
         } else {
+          // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- fire-and-forget idle flush; observer teardown below
           setTimeout(callback, 16);
         }
       });

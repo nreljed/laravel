@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
@@ -45,12 +45,12 @@ export function RegistrationSection({
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
-        toast.success("Registration settings saved.");
+        toast.add({ title: "Registration settings saved.", type: "success" });
         setLoading(false);
       },
       onError: (errs) => {
         setErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setLoading(false);
       },
     });
@@ -99,7 +99,11 @@ export function RegistrationSection({
             onValueChange={(v) => setData((p) => ({ ...p, default_role: v ?? "" }))}
           >
             <SelectTrigger id="default_role" className="w-full">
-              <SelectValue placeholder="Select a role..." />
+              <SelectValue placeholder="Select a role...">
+                {(value: string | null) =>
+                  roles.find((r) => r.slug === value)?.name ?? "Select a role..."
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {roles.map((role) => (

@@ -10,7 +10,7 @@ import {
 import { AdminSettingsNav } from "@/Components/settings/AdminSettingsNav";
 import { IpAccessSection } from "@/Components/settings/sections/IpAccessSection";
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 
 interface IpAccessProps {
   ipRules?: {
@@ -26,7 +26,7 @@ export default function IpAccessSettings({ ipRules = [] }: IpAccessProps) {
   const flash = usePage().props.flash as Record<string, string> | undefined;
 
   useEffect(() => {
-    if (flash?.status) toast.success(flash.status);
+    if (flash?.status) toast.add({ title: flash.status, type: "success" });
   }, [flash?.status]);
 
   return (

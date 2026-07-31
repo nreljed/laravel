@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link, Head, router, usePage } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Loader2 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
@@ -98,7 +98,7 @@ export default function Profile() {
   const isLoading = formData === null;
 
   useEffect(() => {
-    if (status) toast.success(status);
+    if (status) toast.add({ title: status, type: "success" });
   }, [status]);
 
   const handleFieldChange = useCallback((field: string, value: string) => {
@@ -124,11 +124,11 @@ export default function Profile() {
           const pg = page as { props: Record<string, unknown> };
           const freshUser = pg.props.user as Record<string, unknown> | undefined;
           if (freshUser) setFormData(buildFormData(freshUser));
-          toast.success("Profile updated successfully!");
+          toast.add({ title: "Profile updated successfully!", type: "success" });
         },
         onError: (errors) => {
           setFormErrors(errors as Record<string, string>);
-          toast.error("Failed to update profile.");
+          toast.add({ title: "Failed to update profile.", type: "error" });
         },
       });
     },
@@ -175,7 +175,7 @@ export default function Profile() {
     } catch (error) {
       const msg = (error as Error).message || "Upload failed. Please try again.";
       setAvatarError(msg);
-      toast.error(msg);
+      toast.add({ title: msg, type: "error" });
     } finally {
       if (currentUploadIdRef.current === uploadId) {
         currentUploadIdRef.current = null;
@@ -209,9 +209,9 @@ export default function Profile() {
 
       setAvatarPreview(null);
       router.reload({ only: ["auth"], replace: true });
-      toast.success("Avatar removed successfully!");
+      toast.add({ title: "Avatar removed successfully!", type: "success" });
     } catch (error) {
-      toast.error((error as Error).message || "Failed to remove avatar.");
+      toast.add({ title: (error as Error).message || "Failed to remove avatar.", type: "error" });
     } finally {
       setUploading(false);
     }

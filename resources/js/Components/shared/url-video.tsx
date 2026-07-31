@@ -88,6 +88,7 @@ export function UrlVideo({
       if (!ytFallback && ytMatch && ytMatch[1]) {
         currentVideoId.current = ytMatch[1];
         const img = new Image();
+        // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- detached Image is garbage collected with its listener
         img.addEventListener("error", () => {
           if (currentVideoId.current === ytMatch[1]) {
             setYtFallback(true);

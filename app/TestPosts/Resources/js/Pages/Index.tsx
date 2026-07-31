@@ -1,7 +1,7 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { Plus, FileText } from "lucide-react";
 import { useMemo, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import type { ColumnDef } from "@tanstack/react-table";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { DataTable } from "@/Components/ui/data-table";
@@ -42,10 +42,10 @@ export default function TestPostsIndex({ testPosts }: TestPostsIndexProps) {
       {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Bulk action completed.`);
+          toast.add({ title: `Bulk action completed.`, type: "success" });
           router.reload({ only: ["testPosts"] });
         },
-        onError: () => toast.error("Bulk action failed."),
+        onError: () => toast.add({ title: "Bulk action failed.", type: "error" }),
       },
     );
   }, []);

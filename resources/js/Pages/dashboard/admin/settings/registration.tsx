@@ -10,7 +10,7 @@ import {
 import { AdminSettingsNav } from "@/Components/settings/AdminSettingsNav";
 import { RegistrationSection } from "@/Components/settings/sections/RegistrationSection";
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 
 interface RegistrationProps {
   settings?: Record<string, string>;
@@ -21,7 +21,7 @@ export default function RegistrationSettings({ settings = {}, roles = [] }: Regi
   const flash = usePage().props.flash as Record<string, string> | undefined;
 
   useEffect(() => {
-    if (flash?.status) toast.success(flash.status);
+    if (flash?.status) toast.add({ title: flash.status, type: "success" });
   }, [flash?.status]);
 
   return (

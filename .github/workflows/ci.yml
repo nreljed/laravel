@@ -60,7 +60,7 @@ jobs:
 
       - name: Install npm dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: ESLint
         if: ${{ !inputs.skip-npm-tests }}

@@ -16,7 +16,7 @@ class PermissionController extends Controller
 {
     public function manage(): Response
     {
-        $roles = Role::orderBy('name')
+        $roles = Role::orderBy('sort_order')
             ->get()
             ->map(fn (Role $role) => [
                 'slug' => $role->slug,

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AuditAction;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -54,6 +56,10 @@ class AvatarController extends Controller
         $user->update(['avatar' => $filename]);
         $user->refresh();
 
+        AuditService::log(AuditAction::ProfileUpdate, $user->id, [
+            'changed_fields' => ['avatar'],
+        ]);
+
         $avatarUrl = $user->avatar_url;
         $cacheBust = $avatarUrl ? time() : time();
         $urlWithBuster = $avatarUrl ? $avatarUrl.'?v='.$cacheBust : null;
@@ -78,6 +84,10 @@ class AvatarController extends Controller
         if ($user->avatar) {
             Storage::disk('avatars')->delete($user->avatar);
             $user->update(['avatar' => null]);
+
+            AuditService::log(AuditAction::ProfileUpdate, $user->id, [
+                'changed_fields' => ['avatar'],
+            ]);
         }
 
         return response()->json([

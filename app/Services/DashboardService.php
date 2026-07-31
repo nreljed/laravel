@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 class DashboardService
@@ -23,7 +24,7 @@ class DashboardService
                 ],
             ];
 
-            if (app()->resolved(FeatureRegistry::class)) {
+            try {
                 $registry = app(FeatureRegistry::class);
                 $moduleData = $registry->getAllDashboardData();
 
@@ -48,6 +49,8 @@ class DashboardService
                         ];
                     }
                 }
+            } catch (\Throwable) {
+                // Feature registry unavailable — core stats only.
             }
 
             return $stats;
@@ -57,7 +60,20 @@ class DashboardService
     public function getAnalytics(): array
     {
         return Cache::remember('dashboard.analytics', 300, function () {
-            return $this->emptyAnalytics();
+            $series = [
+                'users' => [
+                    'label' => 'New Users',
+                    'data' => $this->dailyCountSeries(User::query(), 'created_at'),
+                ],
+            ];
+
+            try {
+                $series = array_merge($series, app(FeatureRegistry::class)->getAllAnalyticsSeries());
+            } catch (\Throwable) {
+                // Feature registry unavailable — core series only.
+            }
+
+            return $series;
         });
     }
 
@@ -67,14 +83,23 @@ class DashboardService
         Cache::forget('dashboard.analytics');
     }
 
-    private function emptyAnalytics(): array
+    private function dailyCountSeries(Builder $query, string $column, int $days = 30): array
     {
-        return [
-            'kpis' => [],
-            'revenue_over_time' => [],
-            'total_revenue' => 0.0,
-            'total_customers' => 0,
-        ];
+        $start = now()->subDays($days - 1)->startOfDay();
+
+        $counts = $query
+            ->where($column, '>=', $start)
+            ->selectRaw("DATE({$column}) as date, COUNT(*) as count")
+            ->groupBy('date')
+            ->pluck('count', 'date');
+
+        return collect(range(0, $days - 1))
+            ->map(fn (int $offset) => [
+                'date' => now()->subDays($days - 1 - $offset)->toDateString(),
+                'count' => (int) ($counts[now()->subDays($days - 1 - $offset)->toDateString()] ?? 0),
+            ])
+            ->values()
+            ->all();
     }
 
     private function pctChange(float|int $previous, float|int $current): float

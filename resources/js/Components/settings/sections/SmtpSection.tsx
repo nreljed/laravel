@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router, usePage } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
@@ -58,12 +58,12 @@ export function SmtpSection({ asAccordion }: SmtpSectionProps) {
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
-        toast.success("SMTP settings saved.");
+        toast.add({ title: "SMTP settings saved.", type: "success" });
         setLoading(false);
       },
       onError: (errs) => {
         setErrors(errs);
-        toast.error("Failed to save SMTP settings.");
+        toast.add({ title: "Failed to save SMTP settings.", type: "error" });
         setLoading(false);
       },
     });

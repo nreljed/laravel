@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Section } from "@/Components/shared/section";
 import { router, usePage } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import {
   Eye,
   Send,
@@ -81,7 +81,8 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     }
   }, [flash?.mail_debug]);
 
-  if (flash?.status && typeof flash.status === "string") toast.success(flash.status);
+  if (flash?.status && typeof flash.status === "string")
+    toast.add({ title: flash.status, type: "success" });
 
   const handlePreview = useCallback(async () => {
     if (!selectedTemplate) return;
@@ -98,7 +99,7 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
       setDialogHtml(html);
       setDialogOpen(true);
     } catch {
-      toast.error("Failed to load template preview");
+      toast.add({ title: "Failed to load template preview", type: "error" });
     } finally {
       setPreviewLoading(false);
     }

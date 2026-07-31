@@ -13,7 +13,7 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { ImagePlus, Upload, LinkIcon } from "lucide-react";
 
 interface ImageInsertDialogProps {
@@ -46,7 +46,7 @@ export function ImageInsertDialog({ open, onOpenChange }: ImageInsertDialogProps
       editor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
       resetAndClose();
     } catch {
-      toast.error("Failed to upload image");
+      toast.add({ title: "Failed to upload image", type: "error" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

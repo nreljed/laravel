@@ -238,6 +238,7 @@ function MapLayers({ defaultTileLayer, defaultLayerGroups = [], ...props }) {
         defaultTileLayer && tileLayers.some((layer) => layer.name === defaultTileLayer)
           ? defaultTileLayer
           : tileLayers[0].name;
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot derived default state sync
       setTimeout(() => setSelectedTileLayer(validDefaultValue), 0);
     }
     if (
@@ -251,7 +252,7 @@ function MapLayers({ defaultTileLayer, defaultLayerGroups = [], ...props }) {
     }
   }, [tileLayers, defaultTileLayer, selectedTileLayer, layerGroups, defaultLayerGroups]);
   return (
-    <MapLayersContext.Provider
+    <MapLayersContext
       value={{
         registerTileLayer,
         tileLayers,
@@ -1121,7 +1122,7 @@ function MapDrawControl({
 
   const { children, ...buttonGroupProps } = props;
   return (
-    <MapDrawContext.Provider
+    <MapDrawContext
       value={{
         featureGroup: featureGroupInstance,
         activeMode,
@@ -1145,7 +1146,7 @@ function MapDrawControl({
           {children}
         </ButtonGroup>
       </MapControlContainer>
-    </MapDrawContext.Provider>
+    </MapDrawContext>
   );
 }
 function MapDrawShapeButton({ drawMode, createDrawTool, className, children, ...props }) {

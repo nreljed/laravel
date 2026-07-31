@@ -20,6 +20,7 @@ function Calendar({
 }) {
   const defaultClassNames = getDefaultClassNames();
 
+  /* eslint-disable @eslint-react/no-nested-component-definitions -- react-day-picker's components API requires inline render components */
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -140,6 +141,7 @@ function Calendar({
       {...props}
     />
   );
+  /* eslint-enable @eslint-react/no-nested-component-definitions -- react-day-picker's components API requires inline render components */
 }
 
 function CalendarDayButton({

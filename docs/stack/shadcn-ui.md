@@ -4,14 +4,14 @@
 
 | Field           | Value                      |
 | --------------- | -------------------------- |
-| Style           | `new-york`                 |
+| Style           | `base-vega` (Base UI)      |
 | Base color      | `neutral`                  |
 | CSS variables   | `true`                     |
 | Tailwind config | Empty (Tailwind v4 native) |
 | Icon library    | `lucide`                   |
 | RSC             | `false`                    |
 
-## Component Inventory (56)
+## Component Inventory (65)
 
 ### Layout
 
@@ -23,23 +23,31 @@
 
 ### Forms
 
-`button`, `button-group`, `checkbox`, `combobox`, `field`, `input`, `input-group`, `input-otp`, `label`, `radio-group`, `select`, `slider`, `switch`, `textarea`, `toggle`, `toggle-group`
+`button`, `button-group`, `checkbox`, `combobox`, `field`, `input`, `input-group`, `input-otp`, `label`, `native-select`, `radio-group`, `select`, `slider`, `switch`, `textarea`, `toggle`, `toggle-group`
 
 ### Data Display
 
-`badge`, `data-table`, `data-table-column-header`, `data-table-filters`, `data-table-pagination`, `data-table-toolbar`, `table`
+`badge`, `chart`, `data-table`, `data-table-column-header`, `data-table-filters`, `data-table-pagination`, `data-table-toolbar`, `kbd`, `table`
 
 ### Feedback
 
-`alert`, `alert-dialog`, `dialog`, `drawer`, `empty`, `hover-card`, `popover`, `progress`, `skeleton`, `spinner`
+`alert`, `alert-dialog`, `dialog`, `drawer`, `empty`, `hover-card`, `popover`, `progress`, `skeleton`, `spinner`, `toast`
 
 ### Media
 
 `avatar`, `calendar`, `carousel`, `scroll-area`, `sheet`
 
+### Chat
+
+`attachment`, `bubble`, `item`, `message`, `message-scroller`
+
+### Map
+
+`direction`, `marker`
+
 ### Overlays
 
-`sonner`, `tooltip`
+`tooltip`
 
 ## Custom Components
 
@@ -55,14 +63,14 @@ Extended from shadcn patterns:
 
 | Package                    | Purpose             |
 | -------------------------- | ------------------- |
-| `radix-ui`                 | Headless primitives |
+| `@base-ui/react`           | Headless primitives |
+| `@shadcn/react`            | Base components     |
 | `class-variance-authority` | Component variants  |
 | `clsx`                     | Conditional classes |
 | `tailwind-merge`           | Class deduplication |
 | `tw-animate-css`           | Animation utilities |
 | `cmdk`                     | Command palette     |
 | `vaul`                     | Drawer component    |
-| `sonner`                   | Toast notifications |
 | `embla-carousel-react`     | Carousel            |
 | `react-day-picker`         | Calendar            |
 | `input-otp`                | OTP input           |

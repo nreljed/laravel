@@ -8,7 +8,6 @@ import {
   dropTargetForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { ElementDragPayload } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import DropIndicator from "@atlaskit/drag-and-drop-indicator/box";
 import { $isLayoutContainerNode } from "./LayoutContainerNode";
 import type { ResponsiveMode } from "./LayoutContainerNode";
 import { $isLayoutItemNode } from "./LayoutItemNode";
@@ -19,6 +18,7 @@ import {
   SET_LAYOUT_RESPONSIVE_MODE_COMMAND,
 } from "./ColumnsPlugin";
 import { useContainerPosition } from "../hooks/use-container-position";
+import { DropIndicator } from "../shared/drop-indicator";
 import { cn } from "@/lib/utils";
 
 type ColumnDragData = {

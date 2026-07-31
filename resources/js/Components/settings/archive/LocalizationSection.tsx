@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Languages } from "lucide-react";
@@ -27,12 +27,12 @@ export function LocalizationSection({ settings, asAccordion }: LocalizationSecti
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
-        toast.success("Localization settings saved.");
+        toast.add({ title: "Localization settings saved.", type: "success" });
         setLoading(false);
       },
       onError: (errs) => {
         setErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setLoading(false);
       },
     });

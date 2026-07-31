@@ -24,7 +24,7 @@ import { reverseGeocode, TUNISIA_BOUNDS, TUNISIA_CENTER } from "@/lib/geocoding"
 import type { AddressData } from "@/lib/geocoding";
 import { getCountryBounds } from "@/lib/country-bounds";
 import { AlertTriangleIcon, BugIcon, MapPin } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 
 interface MapOptions {
   countryCode?: string;
@@ -333,9 +333,11 @@ export default function MapSectionInner({
       const lat = coords[1] ?? 0;
 
       if (!mapConfig.isWithinBounds(lat, lng)) {
-        toast.error(
-          "This location is outside the allowed area. Please select a location within the configured bounds.",
-        );
+        toast.add({
+          title:
+            "This location is outside the allowed area. Please select a location within the configured bounds.",
+          type: "error",
+        });
         return;
       }
 
@@ -369,9 +371,11 @@ export default function MapSectionInner({
 
       if (!mapConfig.isWithinBounds(lat, lng)) {
         setGpsBannerVisible(true);
-        toast.error(
-          "Your current location is outside the allowed area. Location tracking is restricted to the configured bounds.",
-        );
+        toast.add({
+          title:
+            "Your current location is outside the allowed area. Location tracking is restricted to the configured bounds.",
+          type: "error",
+        });
         return;
       }
 
@@ -415,6 +419,7 @@ export default function MapSectionInner({
       const [lat, lng] = getCoordinates();
       createDrawMarker(lat, lng);
       map.setView([lat, lng], mapConfig.markerZoom);
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot reverse geocode after map init
       setTimeout(() => doReverseGeocode(lat, lng), 0);
     }
     isInitialized.current = true;
@@ -441,6 +446,7 @@ export default function MapSectionInner({
           </div>
         `;
         layer.bindPopup(popupContent, { offset: [0, -5], closeButton: true });
+        // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot popup open after creation
         setTimeout(() => layer.openPopup(), 100);
       }
     };
@@ -536,9 +542,11 @@ export default function MapSectionInner({
           setIsLocked(true);
           setTimeout(() => map?.setView([lat, lng], mapConfig.markerZoom), 0);
         } else {
-          toast.error(
-            "This location is outside the allowed area. Please place the marker within the configured bounds.",
-          );
+          toast.add({
+            title:
+              "This location is outside the allowed area. Please place the marker within the configured bounds.",
+            type: "error",
+          });
           layers.clearLayers();
           onMapDataChange?.("");
           onLatitudeChange(null);

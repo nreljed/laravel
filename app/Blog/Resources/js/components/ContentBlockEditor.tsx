@@ -10,7 +10,7 @@ import {
   Layout,
   Upload,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
@@ -101,9 +101,9 @@ export default function ContentBlockEditor({ blocks, onChange }: Props) {
       try {
         const url = await uploadImageToServer(file);
         updateBlock(index, "media_url", url);
-        toast.success("Image uploaded.");
+        toast.add({ title: "Image uploaded.", type: "success" });
       } catch {
-        toast.error("Upload failed.");
+        toast.add({ title: "Upload failed.", type: "error" });
       }
     });
     input.click();

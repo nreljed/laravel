@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\AuditLog;
+use App\Services\SettingsService;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
+use Illuminate\Console\Command;
+
+#[Signature('app:prune-audit-logs {--days= : Override the retention days from settings}')]
+#[Description('Delete audit log entries older than the configured retention period')]
+class PruneAuditLogs extends Command
+{
+    public function handle(): void
+    {
+        $days = (int) ($this->option('days') ?: SettingsService::get('audit_logs.retention_days', 90));
+
+        if ($days < 1) {
+            $this->warn('Retention days must be at least 1. Skipping.');
+
+            return;
+        }
+
+        $cutoff = now()->subDays($days);
+        $deleted = AuditLog::where('created_at', '<', $cutoff)->delete();
+
+        $this->info("Deleted {$deleted} audit log entr".($deleted === 1 ? 'y' : 'ies')." older than {$days} days.");
+    }
+}

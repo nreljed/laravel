@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { Label } from "@/Components/ui/label";
@@ -71,7 +71,7 @@ export function EmailSection({
       {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success("Email updated successfully!");
+          toast.add({ title: "Email updated successfully!", type: "success" });
           setSuccess("Email updated successfully!");
           setEmail("");
           setCurrentPassword("");
@@ -81,7 +81,7 @@ export function EmailSection({
           const e = errs as Record<string, string>;
           setErrors(e);
           const msg = e.email || e.current_password || "Failed to update email";
-          toast.error(msg);
+          toast.add({ title: msg, type: "error" });
           setLoading(false);
         },
       },

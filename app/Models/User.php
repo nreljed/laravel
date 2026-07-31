@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Ai\Models\AiProvider;
 use App\Ai\Models\AiUsageLog;
+use App\Notifications\ResetPassword;
 use App\Services\PermissionCacheService;
 use App\Traits\UserDataTrait;
 use Database\Factories\UserFactory;
@@ -20,6 +21,11 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmailContract
 {
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPassword($token));
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasConversations, HasFactory, MustVerifyEmail, Notifiable, UserDataTrait;
 

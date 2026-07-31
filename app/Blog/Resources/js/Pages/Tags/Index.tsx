@@ -2,7 +2,7 @@ import { Head, router, useForm, usePage } from "@inertiajs/react";
 import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { DataTable } from "@/Components/ui/data-table";
 import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header";
@@ -57,7 +57,7 @@ export default function PostTagsIndex() {
     router.delete(route("dashboard.posts.tags.destroy", tag.id), {
       preserveScroll: true,
       only: [],
-      onSuccess: () => toast.success("Tag deleted."),
+      onSuccess: () => toast.add({ title: "Tag deleted.", type: "success" }),
     });
   }, []);
 
@@ -68,7 +68,11 @@ export default function PostTagsIndex() {
       {
         preserveScroll: true,
         only: [],
-        onSuccess: () => toast.success(`${ids.length} tag${ids.length === 1 ? "" : "s"} deleted.`),
+        onSuccess: () =>
+          toast.add({
+            title: `${ids.length} tag${ids.length === 1 ? "" : "s"} deleted.`,
+            type: "success",
+          }),
       },
     );
   }, []);
@@ -225,7 +229,7 @@ function EditTagForm({ tag, onSuccess }: { tag: TagItem; onSuccess: () => void }
       only: [],
       onSuccess: () => {
         onSuccess();
-        toast.success("Tag updated.");
+        toast.add({ title: "Tag updated.", type: "success" });
       },
     });
   };
@@ -273,7 +277,7 @@ function NewTagForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess: () => {
         reset();
         onSuccess();
-        toast.success("Tag created.");
+        toast.add({ title: "Tag created.", type: "success" });
       },
     });
   };

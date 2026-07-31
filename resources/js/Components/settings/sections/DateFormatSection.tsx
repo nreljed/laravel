@@ -20,7 +20,7 @@ import {
   ComboboxValue,
 } from "@/Components/ui/combobox";
 import { CalendarDays } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 
 interface FormatOption {
   value: string;
@@ -164,11 +164,14 @@ function DateFormatSection({ settings, asAccordion }: DateFormatSectionProps) {
         preserveState: true,
         replace: true,
         onSuccess: () => {
-          toast.success("Date & time settings saved!");
+          toast.add({ title: "Date & time settings saved!", type: "success" });
         },
         onError: (errs) => {
           setErrors(errs as Record<string, string>);
-          toast.error(Object.values(errs as Record<string, string>)[0] || "Failed to save");
+          toast.add({
+            title: Object.values(errs as Record<string, string>)[0] || "Failed to save",
+            type: "error",
+          });
         },
         onFinish: () => setLoading(false),
       },

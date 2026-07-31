@@ -11,7 +11,7 @@ class Role extends Model
     /** @use HasFactory<RoleFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'guard_name'];
+    protected $fillable = ['name', 'slug', 'description', 'guard_name', 'sort_order'];
 
     public function permissions()
     {

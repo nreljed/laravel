@@ -12,8 +12,7 @@ import {
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 import { Shield, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
-import { toast } from "sonner";
-import axios from "axios";
+import { toast } from "@/Components/ui/toast";
 
 interface RoleData {
   slug: string;
@@ -72,14 +71,15 @@ export default function PermissionsManager() {
       }));
 
       try {
-        const response = await axios.post(route("dashboard.admin.permissions.toggle"), {
-          role: roleSlug,
-          capability,
-          grant: newValue,
+        const response = await fetch(route("dashboard.admin.permissions.toggle"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ role: roleSlug, capability, grant: newValue }),
         });
+        const data = await response.json();
 
-        if (response.data.success) {
-          toast.success(response.data.message);
+        if (data.success) {
+          toast.add({ title: data.message, type: "success" });
         } else {
           setLocalOverrides((prev) => {
             const next = { ...prev };
@@ -90,7 +90,7 @@ export default function PermissionsManager() {
             }
             return next;
           });
-          toast.error(response.data.error ?? "Failed to update permission");
+          toast.add({ title: data.error ?? "Failed to update permission", type: "error" });
         }
       } catch {
         setLocalOverrides((prev) => {
@@ -102,7 +102,7 @@ export default function PermissionsManager() {
           }
           return next;
         });
-        toast.error("Network error. Please try again.");
+        toast.add({ title: "Network error. Please try again.", type: "error" });
       } finally {
         setSaving((prev) => {
           const next = { ...prev };
