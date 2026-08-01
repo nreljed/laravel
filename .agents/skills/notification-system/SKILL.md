@@ -12,6 +12,7 @@ metadata:
 
 - **Channel**: Database (not mail, not broadcast)
 - **Service**: `App\Services\NotificationService` — cached unread count, preference-aware dispatch
+- **Registry**: `App\Services\NotificationTypeRegistry` — type configs aggregated from feature providers via `FeatureRegistry::getAllNotificationTypes()`
 - **Polling**: Adaptive (10s → 30s → 60s) via `use-notifications.ts`
 - **UI**: `NotificationBell.tsx` + `NotificationPanel.tsx`
 
@@ -34,6 +35,8 @@ $service->purge($retentionDays = 90);
 ```
 
 ### Notification Types (via FeatureServiceProvider)
+
+Feature service providers implement `getNotificationTypes()`. `NotificationTypeRegistry` (via `FeatureRegistry::getAllNotificationTypes()`) aggregates them — providers: `BlogServiceProvider`, `TestPostsServiceProvider`.
 
 ```php
 // In BlogServiceProvider::getNotificationTypes()
@@ -66,9 +69,11 @@ NotificationPreference::where('user_id', $userId)
 
 ### use-notifications.ts
 
-- Axios-based (not Inertia useHttp — standalone HTTP)
-- Adaptive intervals: 10s (active) → 30s (idle) → 60s (background)
-- Endpoints: `GET /api/notifications`, `POST /api/notifications/{id}/read`, `DELETE /api/notifications/{id}`
+- Native `fetch()` (not axios, not Inertia `useHttp`) — standalone HTTP with `X-Requested-With` + `X-CSRF-TOKEN` headers from `@/lib/gallery-utils`
+- Adaptive intervals: 10s (active) → 30s (idle) → 60s (standby), with exponential backoff up to 5 min after 3 consecutive errors
+- Idle thresholds: 2 min → 30s polling, 5 min → 60s polling
+- Endpoints (Ziggy names): `GET api.notifications` (list, limit/offset), `GET api.notifications.recent`, `POST api.notifications.mark-read`, `POST api.notifications.mark-all-read`, `DELETE api.notifications.destroy`
+- Extras: `BroadcastChannel` ("app-notifications") cross-tab sync, notification sound, desktop `Notification` on hidden tab, visibility-based pause/resume, refresh on `router.on("finish")`
 
 ### NotificationBell.tsx
 

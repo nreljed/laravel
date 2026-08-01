@@ -63,7 +63,9 @@ class BlogCrudTest extends TestCase
 
 ```php
 $this->admin()                    // Creates admin user with admin role
-$this->regularUser()              // Creates user with crm_user role
+$this->editor()                   // Creates user with editor role
+$this->contributor()              // Creates user with author role
+$this->regularUser()              // Creates user with user role
 $this->createUserWithRole('slug') // Creates user with specific role
 $this->seedRolesAndPermissions()  // Seeds roles and permissions
 ```
@@ -117,10 +119,31 @@ PostFactory::new()->future()->create();          // Scheduled
 ## Running Tests
 
 ```bash
-php artisan test --compact                              # All tests
+php artisan test --compact                              # All tests (serial)
+php artisan test --parallel --compact                   # All tests, parallel via paratest (~34-44s)
 php artisan test --compact tests/Feature/Blog/          # Specific file
 php artisan test --compact --filter=testName            # By name
+npm run test                                            # Vitest frontend tests
+npm run check:ci                                        # Full CI pipeline
 ```
+
+## Performance Tests
+
+Query-count helpers live on `tests/TestCase.php` and use `DB::listen`:
+
+```php
+$queries = $this->captureQueryCount(function () {
+    $service->getStats();   // cached → 0 queries on repeat call
+});
+
+$this->assertQueryCount(0, function () {
+    $this->get('/dashboard');
+});
+```
+
+- `tests/Feature/Performance/DatabasePerformanceTest.php` — cache TTLs (DashboardService stats, SettingsService groups/keys), N+1 guards (query count constant across 1 vs 5 posts via `PostFactory::new()`)
+- `tests/Feature/Performance/DatabaseIndexTest.php` — asserts indexes exist (posts composite `status+published_at`, explicit `user_id`, notifications unread meta, settings key unique, audit_logs action/user_id)
+- SQLite does NOT auto-index foreign keys — new FKs need explicit index migrations
 
 ## Naming Convention
 

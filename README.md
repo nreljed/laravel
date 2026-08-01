@@ -89,7 +89,9 @@ Login uses an application-level `RateLimiter` (per-user + IP, resets on success,
 ## Roles
 
 - **admin** — Full access. Created via scripts only (cannot register as admin).
-- **crm_user** — Default role for new registrations. Configurable in Settings > Registration.
+- **editor** — Default role for new registrations. Configurable in Settings > Registration.
+- **author** — Content creation (no delete).
+- **user** — Own profile + dashboard + notifications.
 
 ## Host/Guest Mode
 

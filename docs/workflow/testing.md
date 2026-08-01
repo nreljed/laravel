@@ -71,7 +71,7 @@ tests/
 
 ```php
 $this->admin()                    // Creates admin user with admin role
-$this->regularUser()              // Creates user with crm_user role
+$this->regularUser()              // Creates user with user role
 $this->createUserWithRole('slug') // Creates user with specific role
 $this->seedRolesAndPermissions()  // Seeds roles and permissions
 ```
