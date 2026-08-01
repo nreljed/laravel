@@ -27,7 +27,7 @@ From `@lexical/react`, `@lexical/list`, `@lexical/link`, `@lexical/code`, `@lexi
 
 - Drag handle for reordering blocks
 - Uses `@atlaskit/pragmatic-drag-and-drop` for block reorder
-- Drop indicator via `@atlaskit/drag-and-drop-indicator/box`
+- Drop indicator rendered via an inline `bg-primary` element
 - Portals to `document.body`
 
 ### SlashCommandsPlugin

@@ -8,6 +8,7 @@ use App\Blog\Models\PostCategory;
 use App\Blog\Models\PostTag;
 use App\Blog\Requests\BulkActionRequest;
 use App\Http\Controllers\Controller;
+use App\Services\HtmlSanitizer;
 use App\Services\MediaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -79,6 +80,7 @@ class PostController extends Controller
 
         $validated['user_id'] = $request->user()->id;
         $validated = $this->applyPostScheduleStatus($validated);
+        $validated = $this->sanitizePostContent($validated);
 
         $tagIds = $validated['tag_ids'] ?? [];
         $contentBlocks = $validated['content_blocks'] ?? [];
@@ -101,7 +103,7 @@ class PostController extends Controller
 
         if (! empty($contentBlocks)) {
             foreach ($contentBlocks as $block) {
-                $post->contentBlocks()->create($block);
+                $post->contentBlocks()->create($this->sanitizeBlock($block));
             }
         }
 
@@ -161,6 +163,7 @@ class PostController extends Controller
         ]);
 
         $validated = $this->applyPostScheduleStatus($validated);
+        $validated = $this->sanitizePostContent($validated);
 
         $tagIds = $validated['tag_ids'] ?? [];
         $newBlocks = $validated['content_blocks'] ?? [];
@@ -233,12 +236,14 @@ class PostController extends Controller
                 'published_at' => null,
             ])),
             'delete' => $posts->each->delete(),
+            default => null,
         };
 
         $label = match ($action) {
             'publish' => 'updated to published',
             'draft' => 'updated to draft',
             'delete' => 'deleted successfully',
+            default => 'updated',
         };
 
         return redirect()->route('dashboard.posts.index')
@@ -318,6 +323,8 @@ class PostController extends Controller
         $post->contentBlocks()->whereNotIn('id', $incomingIds)->delete();
 
         foreach ($newBlocks as $order => $block) {
+            $block = $this->sanitizeBlock($block);
+
             if (! empty($block['id'])) {
                 ContentBlock::where('id', $block['id'])->where('post_id', $post->id)
                     ->update([
@@ -339,6 +346,33 @@ class PostController extends Controller
                 ]);
             }
         }
+    }
+
+    protected function sanitizePostContent(array $validated): array
+    {
+        $validated['content'] = HtmlSanitizer::sanitize($validated['content'] ?? null);
+        $validated['excerpt'] = HtmlSanitizer::sanitizeText($validated['excerpt'] ?? null);
+        $validated['featured_image'] = HtmlSanitizer::sanitizeImageUrl($validated['featured_image'] ?? null);
+        $validated['og_image'] = HtmlSanitizer::sanitizeImageUrl($validated['og_image'] ?? null);
+
+        return $validated;
+    }
+
+    protected function sanitizeBlock(array $block): array
+    {
+        $type = $block['type'] ?? null;
+
+        $block['content'] = match ($type) {
+            'rich_text', 'code', 'heading' => HtmlSanitizer::sanitize($block['content'] ?? null),
+            'embed' => HtmlSanitizer::sanitizeUrl($block['content'] ?? null),
+            default => $block['content'] ?? null,
+        };
+
+        if (isset($block['media_url'])) {
+            $block['media_url'] = HtmlSanitizer::sanitizeImageUrl($block['media_url']);
+        }
+
+        return $block;
     }
 
     public function dashboard()

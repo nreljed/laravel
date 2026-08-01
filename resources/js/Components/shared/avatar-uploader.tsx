@@ -9,7 +9,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/Components/ui/avatar";
@@ -98,7 +98,7 @@ export function AvatarUploader({
       setCropImageSrc(dataUrl);
       setCropDialogOpen(true);
     } catch (error_) {
-      toast.error((error_ as Error).message || "Failed to process image");
+      toast.add({ title: (error_ as Error).message || "Failed to process image", type: "error" });
     }
   };
 
@@ -119,7 +119,7 @@ export function AvatarUploader({
       }
     } catch {
       setPreview(currentAvatar ?? null);
-      toast.error("Upload failed");
+      toast.add({ title: "Upload failed", type: "error" });
     } finally {
       URL.revokeObjectURL(previewUrl);
       if (uploadIdRef.current === thisUploadId) {

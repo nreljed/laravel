@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
@@ -34,12 +34,12 @@ export function NotificationSection({ settings, asAccordion }: NotificationSecti
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
-        toast.success("Notification settings saved.");
+        toast.add({ title: "Notification settings saved.", type: "success" });
         setLoading(false);
       },
       onError: (errs) => {
         setErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setLoading(false);
       },
     });

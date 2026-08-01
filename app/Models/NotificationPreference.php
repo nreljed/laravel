@@ -9,6 +9,7 @@ class NotificationPreference extends Model
 {
     protected $fillable = ['user_id', 'type', 'channel', 'enabled'];
 
+    #[\Override]
     protected function casts(): array
     {
         return [

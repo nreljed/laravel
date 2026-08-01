@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload, Loader2, Trash2, ImageIcon, Info } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Button } from "@/Components/ui/button";
 import { getCsrfToken } from "@/lib/gallery-utils";
 
@@ -49,11 +49,11 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
     if (!file) return;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error("Invalid file type. Use JPG, PNG, GIF, WebP, or SVG.");
+      toast.add({ title: "Invalid file type. Use JPG, PNG, GIF, WebP, or SVG.", type: "error" });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error("File too large. Maximum 10MB.");
+      toast.add({ title: "File too large. Maximum 10MB.", type: "error" });
       return;
     }
 
@@ -62,20 +62,22 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
       try {
         const { width, height } = await getImageDimensions(file);
         if (width < MIN_DIM || height < MIN_DIM) {
-          toast.error(
-            `Image too small. Minimum ${MIN_DIM}x${MIN_DIM}px (got ${width}x${height}px).`,
-          );
+          toast.add({
+            title: `Image too small. Minimum ${MIN_DIM}x${MIN_DIM}px (got ${width}x${height}px).`,
+            type: "error",
+          });
           return;
         }
         if (width > MAX_DIM || height > MAX_DIM) {
-          toast.error(
-            `Image too large. Maximum ${MAX_DIM}x${MAX_DIM}px (got ${width}x${height}px).`,
-          );
+          toast.add({
+            title: `Image too large. Maximum ${MAX_DIM}x${MAX_DIM}px (got ${width}x${height}px).`,
+            type: "error",
+          });
           return;
         }
         setDims({ width, height });
       } catch {
-        toast.error("Could not read image dimensions.");
+        toast.add({ title: "Could not read image dimensions.", type: "error" });
         return;
       }
     } else {
@@ -99,9 +101,9 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
       const url = data.url;
       setPreview(url);
       onLogoChange(url);
-      toast.success("Logo uploaded");
+      toast.add({ title: "Logo uploaded", type: "success" });
     } catch {
-      toast.error("Upload failed");
+      toast.add({ title: "Upload failed", type: "error" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -122,9 +124,9 @@ export function LogoUploader({ currentLogo, onLogoChange, disabled }: LogoUpload
       setPreview(null);
       setDims(null);
       onLogoChange("");
-      toast.success("Logo removed");
+      toast.add({ title: "Logo removed", type: "success" });
     } catch {
-      toast.error("Failed to remove logo");
+      toast.add({ title: "Failed to remove logo", type: "error" });
     } finally {
       setUploading(false);
     }

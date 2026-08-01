@@ -20,7 +20,7 @@ class SettingsSeeder extends Seeder
 
             // Registration
             ['key' => 'enable_registration', 'value' => '1', 'group' => 'registration'],
-            ['key' => 'default_role', 'value' => 'user', 'group' => 'registration'],
+            ['key' => 'default_role', 'value' => 'editor', 'group' => 'registration'],
             ['key' => 'require_email_verification', 'value' => '0', 'group' => 'registration'],
 
             // Notifications
@@ -57,6 +57,10 @@ class SettingsSeeder extends Seeder
             ['key' => 'time_format', 'value' => 'H:i', 'group' => 'formatting'],
             ['key' => 'start_of_week', 'value' => '0', 'group' => 'formatting'],
             ['key' => 'timezone', 'value' => 'UTC', 'group' => 'formatting'],
+
+            // Audit Logs
+            ['key' => 'audit_logs.retention_days', 'value' => '90', 'group' => 'audit_logs'],
+            ['key' => 'audit_logs.default_per_page', 'value' => '50', 'group' => 'audit_logs'],
         ];
 
         foreach ($settings as $s) {

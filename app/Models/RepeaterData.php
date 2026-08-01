@@ -16,6 +16,7 @@ class RepeaterData extends Model
         'data',
     ];
 
+    #[\Override]
     protected function casts(): array
     {
         return [

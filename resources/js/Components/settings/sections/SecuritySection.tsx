@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
@@ -33,12 +33,12 @@ export function SecuritySection({ settings, asAccordion }: SecuritySectionProps)
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
-        toast.success("Security settings saved.");
+        toast.add({ title: "Security settings saved.", type: "success" });
         setLoading(false);
       },
       onError: (errs) => {
         setErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setLoading(false);
       },
     });

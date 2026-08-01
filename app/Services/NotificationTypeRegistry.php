@@ -4,14 +4,9 @@ namespace App\Services;
 
 class NotificationTypeRegistry
 {
-    protected FeatureRegistry $registry;
-
     protected ?array $types = null;
 
-    public function __construct(FeatureRegistry $registry)
-    {
-        $this->registry = $registry;
-    }
+    public function __construct(protected FeatureRegistry $registry) {}
 
     public function all(): array
     {

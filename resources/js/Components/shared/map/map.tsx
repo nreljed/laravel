@@ -14,14 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import { PlaceAutocomplete } from "./place-autocomplete";
-import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet.fullscreen/dist/Control.FullScreen.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet/dist/leaflet.css";
+import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 import L from "leaflet";
 import leafletFullscreen from "leaflet.fullscreen";
-import * as LeafletDraw from "leaflet-draw";
+import "@geoman-io/leaflet-geoman-free";
 
 if (L.Control && !L.Control.FullScreen) {
   L.Control.FullScreen = leafletFullscreen.default || leafletFullscreen;
@@ -36,7 +36,6 @@ import {
   MinusIcon,
   NavigationIcon,
   PenLineIcon,
-  PentagonIcon,
   PlusIcon,
   SquareIcon,
   Trash2Icon,
@@ -90,7 +89,7 @@ function createLazyComponent(factory) {
   return Component;
 }
 const LeafletMarkerClusterGroup = createLazyComponent(async () => {
-  const mod = await import("react-leaflet-markercluster");
+  const mod = await import("react-leaflet-cluster");
   return { default: mod.default };
 });
 const Map = React.forwardRef(
@@ -238,6 +237,7 @@ function MapLayers({ defaultTileLayer, defaultLayerGroups = [], ...props }) {
         defaultTileLayer && tileLayers.some((layer) => layer.name === defaultTileLayer)
           ? defaultTileLayer
           : tileLayers[0].name;
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot derived default state sync
       setTimeout(() => setSelectedTileLayer(validDefaultValue), 0);
     }
     if (
@@ -251,7 +251,7 @@ function MapLayers({ defaultTileLayer, defaultLayerGroups = [], ...props }) {
     }
   }, [tileLayers, defaultTileLayer, selectedTileLayer, layerGroups, defaultLayerGroups]);
   return (
-    <MapLayersContext.Provider
+    <MapLayersContext
       value={{
         registerTileLayer,
         tileLayers,
@@ -915,13 +915,15 @@ function MapDrawControl({
   editable = true,
   ...props
 }) {
-  const { L, LeafletDraw } = useLeaflet();
+  const { L } = useLeaflet();
   const map = useMap();
   const featureGroupRef = useRef(null);
   const editControlRef = useRef(null);
   const deleteControlRef = useRef(null);
   const handleDrawCreatedRef = useRef(null);
   const handleDrawEditedOrDeletedRef = useRef(null);
+  const snapshotRef = useRef(null);
+  const snapshotActiveRef = useRef(false);
   const [activeMode, setActiveMode] = useState(null);
   const [layersCount, setLayersCount] = useState(0);
   const [hasOnlyMarkers, setHasOnlyMarkers] = useState(false);
@@ -959,35 +961,18 @@ function MapDrawControl({
     },
     [L],
   );
-  function setLayerDraggable(layer, enabled) {
-    if (!layer) return;
-    if (layer.dragging) {
-      if (enabled && layer.dragging.enable) layer.dragging.enable();
-      else if (!enabled && layer.dragging.disable) layer.dragging.disable();
-    }
-    if (layer.options && layer.options.draggable !== undefined) layer.options.draggable = enabled;
-  }
-  const updateLayersDraggableState = React.useCallback((enabled) => {
-    if (!featureGroupRef.current) return;
-    featureGroupRef.current.eachLayer((layer) => {
-      setLayerDraggable(layer, enabled);
-    });
-  }, []);
-  function handleDrawCreated(event) {
+  function handleDrawCreated(layer) {
     if (!L || !featureGroupRef.current) return;
-    const { layer } = event;
     featureGroupRef.current.clearLayers();
     featureGroupRef.current.addLayer(layer);
     syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
-    setLayerDraggable(layer, false);
     onLayersChange?.(featureGroupRef.current);
     setActiveMode(null);
   }
-  function handleDrawEditedOrDeleted(event) {
+  function handleDrawEditedOrDeleted() {
     if (!featureGroupRef.current) return;
-    if (event?.layers) syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
+    syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
     onLayersChange?.(featureGroupRef.current);
-    setActiveMode(null);
   }
   useEffect(() => {
     handleDrawCreatedRef.current = handleDrawCreated;
@@ -1002,34 +987,21 @@ function MapDrawControl({
     setActiveMode(null);
   }
   useEffect(() => {
-    if (!L || !LeafletDraw || !map) return;
-    const createdHandler = (e) => handleDrawCreatedRef.current(e);
-    const editedHandler = (e) => handleDrawEditedOrDeletedRef.current(e);
-    map.on(L.Draw.Event.CREATED, createdHandler);
-    map.on(L.Draw.Event.EDITED, editedHandler);
-    map.on(L.Draw.Event.DELETED, editedHandler);
+    if (!map) return;
+    const createdHandler = (e) => handleDrawCreatedRef.current(e.layer);
+    const editedHandler = () => handleDrawEditedOrDeletedRef.current();
+    const dragHandler = () => handleDrawEditedOrDeletedRef.current();
+    map.on("pm:create", createdHandler);
+    map.on("pm:edit", editedHandler);
+    map.on("pm:remove", editedHandler);
+    map.on("pm:dragend", dragHandler);
     return () => {
-      map.off(L.Draw.Event.CREATED, createdHandler);
-      map.off(L.Draw.Event.EDITED, editedHandler);
-      map.off(L.Draw.Event.DELETED, editedHandler);
+      map.off("pm:create", createdHandler);
+      map.off("pm:edit", editedHandler);
+      map.off("pm:remove", editedHandler);
+      map.off("pm:dragend", dragHandler);
     };
-  }, [L, LeafletDraw, map, onLayersChange]);
-
-  useEffect(() => {
-    if (!featureGroupRef.current) return;
-    const group = featureGroupRef.current;
-    const setDraggableState = (enabled) => {
-      group.eachLayer((layer) => {
-        if (layer && layer.dragging) {
-          if (enabled && layer.dragging.enable) layer.dragging.enable();
-          else if (!enabled && layer.dragging.disable) layer.dragging.disable();
-        }
-        if (layer.options && layer.options.draggable !== undefined)
-          layer.options.draggable = enabled;
-      });
-    };
-    setDraggableState(editable && activeMode === "edit");
-  }, [editable, activeMode]);
+  }, [map]);
 
   useEffect(() => {
     if (editable || activeMode === null) {
@@ -1043,41 +1015,34 @@ function MapDrawControl({
   }, [editable, activeMode]);
 
   useEffect(() => {
-    if (!L || !featureGroupRef.current) return;
-    const group = featureGroupRef.current;
-    const notifyChange = () => {
-      syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
-      onLayersChange?.(group);
-    };
-    const setupLayerListeners = (layer) => {
-      setLayerDraggable(layer, activeMode === "edit");
-      layer.on("dragend edit", notifyChange);
-    };
-    const cleanupLayerListeners = (layer) => {
-      layer.off("dragend edit", notifyChange);
-    };
-    group.eachLayer(setupLayerListeners);
-    const handleLayerAdd = (e) => {
-      setupLayerListeners(e.layer);
-      syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
-    };
-    const handleLayerRemove = (e) => {
-      cleanupLayerListeners(e.layer);
-      syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
-    };
-    group.on("layeradd", handleLayerAdd);
-    group.on("layerremove", handleLayerRemove);
-    return () => {
-      group.eachLayer(cleanupLayerListeners);
-      group.off("layeradd", handleLayerAdd);
-      group.off("layerremove", handleLayerRemove);
-    };
-  }, [L, onLayersChange, activeMode, syncFeatureGroupState]);
+    if (activeMode === "edit" && featureGroupRef.current && !snapshotActiveRef.current) {
+      snapshotRef.current = featureGroupRef.current.toGeoJSON();
+      snapshotActiveRef.current = true;
+    }
+    if (activeMode !== "edit") snapshotActiveRef.current = false;
+  }, [activeMode]);
 
-  useEffect(() => {
-    if (!featureGroupRef.current) return;
-    updateLayersDraggableState(activeMode === "edit");
-  }, [activeMode, updateLayersDraggableState]);
+  function undoChanges() {
+    if (!L || !featureGroupRef.current || !snapshotRef.current) return;
+    const group = featureGroupRef.current;
+    group.clearLayers();
+    L.geoJSON(snapshotRef.current, {
+      pointToLayer: (feature, latlng) => {
+        const marker = L.marker(latlng, {
+          icon: markerIcon || L.Icon.Default.prototype,
+          draggable: true,
+        });
+        if (marker.dragging) marker.dragging.disable();
+        return marker;
+      },
+      onEachFeature: (feature, layer) => {
+        group.addLayer(layer);
+      },
+    });
+    syncFeatureGroupState({ removeDuplicates: true, enforceSingle: true });
+    onLayersChange?.(group);
+    setActiveMode(null);
+  }
 
   const isInitialized = useRef(false);
   useEffect(() => {
@@ -1121,7 +1086,7 @@ function MapDrawControl({
 
   const { children, ...buttonGroupProps } = props;
   return (
-    <MapDrawContext.Provider
+    <MapDrawContext
       value={{
         featureGroup: featureGroupInstance,
         activeMode,
@@ -1131,6 +1096,7 @@ function MapDrawControl({
         layersCount,
         hasOnlyMarkers,
         clearLayers,
+        undoChanges,
         editable,
       }}
     >
@@ -1145,42 +1111,40 @@ function MapDrawControl({
           {children}
         </ButtonGroup>
       </MapControlContainer>
-    </MapDrawContext.Provider>
+    </MapDrawContext>
   );
 }
-function MapDrawShapeButton({ drawMode, createDrawTool, className, children, ...props }) {
+function MapDrawShapeButton({ shape, options, className, children, ...props }) {
   const drawContext = useMapDrawContext();
   if (!drawContext) throw new Error("MapDrawShapeButton must be used within MapDrawControl");
-  const { L } = useLeaflet();
   const map = useMap();
-  const controlRef = useRef(null);
-  const { activeMode, setActiveMode, layersCount, editable } = drawContext;
-  const isActive = activeMode === drawMode;
+  const optionsRef = useRef(options);
   useEffect(() => {
-    if (!L || !isActive) {
-      controlRef.current?.disable?.();
-      controlRef.current = null;
+    optionsRef.current = options;
+  }, [options]);
+  const { activeMode, setActiveMode, layersCount, editable } = drawContext;
+  const isActive = activeMode === shape;
+  useEffect(() => {
+    if (!map || !isActive) {
+      map.pm?.disableDraw?.();
       return;
     }
     if (!editable) return;
-    const control = createDrawTool(L, map);
-    control.enable();
-    controlRef.current = control;
+    map.pm.enableDraw(shape, { snappable: false, ...optionsRef.current });
     return () => {
-      control.disable?.();
-      controlRef.current = null;
+      map.pm.disableDraw();
     };
-  }, [L, map, isActive, createDrawTool, editable]);
+  }, [map, isActive, shape, editable]);
   function handleClick() {
     if (!editable) return;
-    setActiveMode(isActive ? null : drawMode);
+    setActiveMode(isActive ? null : shape);
   }
   return (
     <Button
       type="button"
       size="icon-sm"
-      aria-label={`Draw ${drawMode}`}
-      title={`Draw ${drawMode}`}
+      aria-label={`Draw ${shape}`}
+      title={`Draw ${shape}`}
       className={cn("border", className)}
       variant={isActive ? "default" : "secondary"}
       disabled={!editable || activeMode === "edit" || activeMode === "delete" || layersCount >= 1}
@@ -1192,28 +1156,11 @@ function MapDrawShapeButton({ drawMode, createDrawTool, className, children, ...
   );
 }
 function MapDrawMarker({ ...props }) {
+  const markerIcon = useMapPinIcon();
   return (
     <MapDrawShapeButton
-      drawMode="marker"
-      createDrawTool={(L, map) =>
-        new L.Draw.Marker(map, {
-          icon: L.divIcon({
-            className: "",
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32],
-            html: renderToString(
-              <MapPinIcon
-                className="size-8 filter drop-shadow-lg"
-                style={{
-                  color: "var(--map-marker-color,#2563eb)",
-                  fill: "var(--map-marker-fill,#dbeafe)",
-                }}
-              />,
-            ),
-          }),
-          ...props,
-        })
-      }
+      shape="Marker"
+      options={{ markerStyle: markerIcon ? { icon: markerIcon } : undefined, ...props }}
     >
       <MapPinIcon />
     </MapDrawShapeButton>
@@ -1221,23 +1168,13 @@ function MapDrawMarker({ ...props }) {
 }
 function MapDrawPolyline({
   showLength = false,
-  drawError = { color: "var(--color-destructive)" },
   shapeOptions = { color: "var(--color-primary)", opacity: 1, weight: 2 },
   ...props
 }) {
-  const mapDrawHandleIcon = useMapDrawHandleIcon();
   return (
     <MapDrawShapeButton
-      drawMode="polyline"
-      createDrawTool={(L, map) =>
-        new L.Draw.Polyline(map, {
-          ...(mapDrawHandleIcon && { icon: mapDrawHandleIcon, touchIcon: mapDrawHandleIcon }),
-          showLength,
-          drawError,
-          shapeOptions,
-          ...props,
-        })
-      }
+      shape="Line"
+      options={{ pathOptions: shapeOptions, showMeasurements: showLength, ...props }}
     >
       <WaypointsIcon />
     </MapDrawShapeButton>
@@ -1250,8 +1187,8 @@ function MapDrawCircle({
 }) {
   return (
     <MapDrawShapeButton
-      drawMode="circle"
-      createDrawTool={(L, map) => new L.Draw.Circle(map, { showRadius, shapeOptions, ...props })}
+      shape="Circle"
+      options={{ pathOptions: shapeOptions, showMeasurements: showRadius, ...props }}
     >
       <CircleIcon />
     </MapDrawShapeButton>
@@ -1264,32 +1201,10 @@ function MapDrawRectangle({
 }) {
   return (
     <MapDrawShapeButton
-      drawMode="rectangle"
-      createDrawTool={(L, map) => new L.Draw.Rectangle(map, { showArea, shapeOptions, ...props })}
+      shape="Rectangle"
+      options={{ pathOptions: shapeOptions, showMeasurements: showArea, ...props }}
     >
       <SquareIcon />
-    </MapDrawShapeButton>
-  );
-}
-function MapDrawPolygon({
-  drawError = { color: "var(--color-destructive)" },
-  shapeOptions = { color: "var(--color-primary)", opacity: 1, weight: 2 },
-  ...props
-}) {
-  const mapDrawHandleIcon = useMapDrawHandleIcon();
-  return (
-    <MapDrawShapeButton
-      drawMode="polygon"
-      createDrawTool={(L, map) =>
-        new L.Draw.Polygon(map, {
-          ...(mapDrawHandleIcon && { icon: mapDrawHandleIcon, touchIcon: mapDrawHandleIcon }),
-          drawError,
-          shapeOptions,
-          ...props,
-        })
-      }
-    >
-      <PentagonIcon />
     </MapDrawShapeButton>
   );
 }
@@ -1316,7 +1231,7 @@ function MapDrawActionButton({
       controlRef.current = null;
       return;
     }
-    const control = createDrawTool(L, map, featureGroup);
+    const control = createDrawTool(map, featureGroup);
     control.enable?.();
     controlRef.current = control;
     return () => {
@@ -1345,73 +1260,19 @@ function MapDrawActionButton({
     </Button>
   );
 }
-function MapDrawEdit({ selectedPathOptions = { dashArray: "5, 5" }, ...props }) {
-  const { L } = useLeaflet();
-  const mapDrawHandleIcon = useMapDrawHandleIcon();
+function MapDrawEdit({ ...props }) {
   const drawContext = useMapDrawContext();
   if (!drawContext) throw new Error("MapDrawEdit must be used within MapDrawControl");
-  useEffect(() => {
-    if (!L || !mapDrawHandleIcon) return;
-    try {
-      if (L.Edit?.Marker) {
-        const originalRemoveHooks = L.Edit.Marker.prototype.removeHooks;
-        /* eslint-disable unicorn/no-this-outside-of-class -- Leaflet prototype method override */
-        // eslint-disable-next-line react-hooks/immutability -- Modifying Leaflet API, not React state
-        L.Edit.Marker.prototype.removeHooks = function () {
-          if (this._marker) {
-            if (!this._marker.dragging)
-              this._marker.dragging = { disable: () => {}, enable: () => {} };
-            if (!this._marker.draggable) this._marker.draggable = this._marker.dragging;
-          }
-          try {
-            if (originalRemoveHooks) Reflect.apply(originalRemoveHooks, this, arguments);
-          } catch (error) {
-            console.warn("Leaflet Draw removeHooks caught crash:", error);
-          }
-        };
-        /* eslint-enable unicorn/no-this-outside-of-class */
-        L.Edit.Marker.mergeOptions({
-          selectedPathOptions: {
-            dashArray: "5, 5",
-            fill: false,
-            fillColor: "transparent",
-            fillOpacity: 0,
-            color: "transparent",
-            weight: 0,
-            opacity: 0,
-          },
-        });
-      }
-    } catch (error) {
-      console.warn("Leaflet Draw mergeOptions/patch failed safely:", error);
-    }
-    L.Edit.PolyVerticesEdit.mergeOptions({
-      icon: mapDrawHandleIcon,
-      touchIcon: mapDrawHandleIcon,
-      drawError: { color: "var(--color-destructive)" },
-    });
-    L.Edit.SimpleShape.mergeOptions({
-      moveIcon: mapDrawHandleIcon,
-      resizeIcon: mapDrawHandleIcon,
-      touchMoveIcon: mapDrawHandleIcon,
-      touchResizeIcon: mapDrawHandleIcon,
-    });
-    L.drawLocal.edit.handlers.edit.tooltip = {
-      text: "Drag the marker or handles to edit location.",
-      subtext: "",
-    };
-    L.drawLocal.edit.handlers.remove.tooltip = { text: "Click on a shape to remove." };
-  }, [L, mapDrawHandleIcon]);
   const { featureGroup, hasOnlyMarkers } = drawContext;
-  const createEditTool = (L2, map, group) => {
+  const createEditTool = (map, group) => {
     const activeFeatureGroup = group || featureGroup;
     if (!activeFeatureGroup || hasOnlyMarkers)
       return { enable: () => {}, disable: () => {}, save: () => {} };
-    return new L2.EditToolbar.Edit(map, {
-      featureGroup: activeFeatureGroup,
-      selectedPathOptions,
-      ...props,
-    });
+    return {
+      enable: () => activeFeatureGroup.pm.enable({ ...props }),
+      disable: () => activeFeatureGroup.pm.disable(),
+      save: () => activeFeatureGroup.pm.disable(),
+    };
   };
   return (
     <MapDrawActionButton
@@ -1447,16 +1308,13 @@ function MapDrawDelete({ className, ...props }) {
 function MapDrawUndo({ className, ...props }) {
   const drawContext = useMapDrawContext();
   if (!drawContext) throw new Error("MapDrawUndo must be used within MapDrawControl");
-  const { activeMode, setActiveMode, editControlRef, deleteControlRef, layersCount, editable } =
-    drawContext;
+  const { activeMode, layersCount, editable, undoChanges } = drawContext;
   const isInEditMode = activeMode === "edit";
   const isInDeleteMode = activeMode === "delete";
   const isActive = editable && (isInEditMode || isInDeleteMode) && layersCount > 0;
   function handleUndo() {
     if (!editable) return;
-    if (isInEditMode) editControlRef.current?.revertLayers();
-    else if (isInDeleteMode) deleteControlRef.current?.revertLayers();
-    setActiveMode(null);
+    undoChanges();
   }
   return (
     <Button
@@ -1491,17 +1349,26 @@ function MapControlContainer({ className, ...props }) {
     />
   );
 }
-function useMapDrawHandleIcon() {
+function useMapPinIcon() {
   const { L } = useLeaflet();
   if (!L) return null;
   return L.divIcon({
     className: "",
-    iconAnchor: [8, 8],
-    html: renderToString(<CircleIcon className="fill-primary stroke-primary size-4" />),
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    html: renderToString(
+      <MapPinIcon
+        className="size-8 filter drop-shadow-lg"
+        style={{
+          color: "var(--map-marker-color,#2563eb)",
+          fill: "var(--map-marker-fill,#dbeafe)",
+        }}
+      />,
+    ),
   });
 }
 function useLeaflet() {
-  return { L, LeafletDraw };
+  return { L };
 }
 function useDebounceLoadingState(delay = 200) {
   const [isLoading, setIsLoading] = useState(false);
@@ -1537,7 +1404,6 @@ export {
   MapDrawDelete,
   MapDrawEdit,
   MapDrawMarker,
-  MapDrawPolygon,
   MapDrawPolyline,
   MapDrawRectangle,
   MapDrawUndo,

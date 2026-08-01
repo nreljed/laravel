@@ -12,6 +12,7 @@ class Notification extends DatabaseNotification
         'read_at', 'created_at', 'updated_at',
     ];
 
+    #[\Override]
     protected function casts(): array
     {
         return [

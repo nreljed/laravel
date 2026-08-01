@@ -9,11 +9,12 @@ use Illuminate\Notifications\Messages\MailMessage;
 class VerifyEmail extends BaseVerifyEmail
 {
     public function __construct(
-        private ?string $preGeneratedUrl = null,
+        private readonly ?string $preGeneratedUrl = null,
     ) {
         //
     }
 
+    #[\Override]
     public function toMail($notifiable): MailMessage
     {
         $verificationUrl = $this->preGeneratedUrl ?? $this->verificationUrl($notifiable);

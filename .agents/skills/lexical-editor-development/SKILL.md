@@ -313,7 +313,7 @@ Theme is in `editor-theme.ts`. Use Tailwind CSS classes. Structure follows Lexic
 - Type guards use `$is*Node()` pattern
 - Node mutations use `getWritable()` (not direct `__` property access)
 - Node reads use `getLatest()` (not direct `__` property access)
-- Image upload uses backend routes: `POST blog/posts/upload-image` and `DELETE blog/posts/image`
+- Image upload uses backend routes: `POST blog/posts/upload-image` and `DELETE blog/posts/delete-image` (route names `upload-image` / `delete-image`, permission-gated `posts.create` / `posts.edit`)
 - Floating UI via `@floating-ui/react` — use `useFloating` hook for positioned elements
 - Drag and drop via `@atlaskit/pragmatic-drag-and-drop`
 - Code highlighting via `prismjs` (via `CodePrismExtension`)

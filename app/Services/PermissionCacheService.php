@@ -9,19 +9,17 @@ use Illuminate\Support\Facades\Cache;
 
 class PermissionCacheService
 {
-    private const CACHE_TTL = 3600;
+    private const int CACHE_TTL = 3600;
 
-    private const KEY_ALL_PERMISSIONS = 'permissions:all';
+    private const string KEY_ALL_PERMISSIONS = 'permissions:all';
 
-    private const KEY_ROLE_PERMISSIONS = 'permissions:role:';
+    private const string KEY_ROLE_PERMISSIONS = 'permissions:role:';
 
-    private const KEY_USER_PERMISSIONS = 'permissions:user:';
+    private const string KEY_USER_PERMISSIONS = 'permissions:user:';
 
     public function getAllPermissions(): array
     {
-        return Cache::remember(self::KEY_ALL_PERMISSIONS, self::CACHE_TTL, function () {
-            return Permission::pluck('slug', 'id')->toArray();
-        });
+        return Cache::remember(self::KEY_ALL_PERMISSIONS, self::CACHE_TTL, fn () => Permission::pluck('slug', 'id')->toArray());
     }
 
     public function getRolePermissionSlugs(int $roleId): array

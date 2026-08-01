@@ -91,6 +91,7 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
         const hasChildren = item.items && item.items.length > 0;
         const isItemActive = isActive(item);
         const parentActive = isParentActive(item);
+        // eslint-disable-next-line @eslint-react/static-components -- icons are stable references from the iconMap, not created during render
         const IconComponent = resolveIcon(item.icon);
 
         if (hasChildren) {
@@ -103,6 +104,7 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
               <SidebarMenuItem>
                 <CollapsibleTrigger render={<div />}>
                   <SidebarMenuButton isActive={isItemActive} tooltip={item.title}>
+                    {/* eslint-disable-next-line @eslint-react/static-components -- stable icon reference */}
                     {IconComponent && <IconComponent className="size-4 shrink-0" />}
                     <span className="flex-1 truncate group-data-[collapsible=icon]:hidden">
                       {item.title}
@@ -123,7 +125,7 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton
-                          render={<Link href={subItem.url ?? "#"} />}
+                          render={<Link href={subItem.url ?? "#"} prefetch />}
                           isActive={currentUrl === normalizeUrl(subItem.url)}
                         >
                           <span>{subItem.title}</span>
@@ -140,10 +142,11 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
         return (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
-              render={<Link href={item.url} />}
+              render={<Link href={item.url} prefetch />}
               isActive={isItemActive}
               tooltip={item.title}
             >
+              {/* eslint-disable-next-line @eslint-react/static-components -- stable icon reference */}
               {IconComponent && <IconComponent className="size-4 shrink-0" />}
               <span className="flex-1 truncate group-data-[collapsible=icon]:hidden">
                 {item.title}

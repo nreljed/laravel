@@ -7,15 +7,13 @@ use Illuminate\Support\Facades\Cache;
 
 class SettingsService
 {
-    private const CACHE_KEY = 'app_settings';
+    private const string CACHE_KEY = 'app_settings';
 
-    private const GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting'];
+    private const array GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting', 'audit_logs'];
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        return Cache::remember(self::CACHE_KEY.':'.$key, 3600, function () use ($key, $default) {
-            return Setting::get($key, $default);
-        });
+        return Cache::remember(self::CACHE_KEY.':'.$key, 3600, fn () => Setting::get($key, $default));
     }
 
     public static function set(string $key, mixed $value): void
@@ -36,21 +34,17 @@ class SettingsService
 
     public static function getGroup(string $group): array
     {
-        return Cache::remember(self::CACHE_KEY."_{$group}", 3600, function () use ($group) {
-            return Setting::where('group', $group)
-                ->pluck('value', 'key')
-                ->toArray();
-        });
+        return Cache::remember(self::CACHE_KEY."_{$group}", 3600, fn () => Setting::where('group', $group)
+            ->pluck('value', 'key')
+            ->toArray());
     }
 
     public static function getAllGrouped(): array
     {
-        return Cache::remember(self::CACHE_KEY.'_grouped', 3600, function () {
-            return Setting::all()
-                ->groupBy('group')
-                ->map(fn ($items) => $items->pluck('value', 'key')->toArray())
-                ->toArray();
-        });
+        return Cache::remember(self::CACHE_KEY.'_grouped', 3600, fn () => Setting::all()
+            ->groupBy('group')
+            ->map(fn ($items) => $items->pluck('value', 'key')->toArray())
+            ->toArray());
     }
 
     public static function getFormattingDefaults(): array

@@ -74,9 +74,9 @@ class DeployController extends Controller
             'package:discover' => [[]],
             'app:create-admin' => [[
                 '--no-interaction' => true,
-                '--email' => env('ADMIN_EMAIL', ''),
-                '--password' => env('ADMIN_PASSWORD', ''),
-                '--name' => env('ADMIN_NAME', 'Admin'),
+                '--email' => config('admin.email', ''),
+                '--password' => config('admin.password', ''),
+                '--name' => config('admin.name', 'Admin'),
             ]],
             'config:cache' => [[]],
             'route:cache' => [[]],
@@ -135,8 +135,8 @@ class DeployController extends Controller
             return response()->json(['error' => 'Password must be at least 8 characters'], 400);
         }
 
-        $email = $request->input('email', env('ADMIN_EMAIL', 'nstudio.webdesign@gmail.com'));
-        $name = $request->input('name', env('ADMIN_NAME', 'Studio Admin'));
+        $email = $request->input('email', config('admin.email', 'nstudio.webdesign@gmail.com'));
+        $name = $request->input('name', config('admin.name', 'Studio Admin'));
 
         try {
             Artisan::call('app:create-admin', [
@@ -234,9 +234,9 @@ class DeployController extends Controller
             'migrate:fresh' => [['--force' => true, '--seed' => true]],
             'app:create-admin' => [[
                 '--no-interaction' => true,
-                '--email' => env('ADMIN_EMAIL', ''),
-                '--password' => env('ADMIN_PASSWORD', ''),
-                '--name' => env('ADMIN_NAME', 'Admin'),
+                '--email' => config('admin.email', ''),
+                '--password' => config('admin.password', ''),
+                '--name' => config('admin.name', 'Admin'),
             ]],
             'config:cache' => [[]],
             'route:cache' => [[]],
@@ -292,13 +292,7 @@ class DeployController extends Controller
             $files = File::allFiles($full);
             foreach ($files as $file) {
                 $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
-                $skip = false;
-                foreach ($protected as $p) {
-                    if (str_starts_with($rel, $p)) {
-                        $skip = true;
-                        break;
-                    }
-                }
+                $skip = array_any($protected, fn ($p) => str_starts_with($rel, $p));
                 if ($skip) {
                     continue;
                 }
@@ -393,7 +387,7 @@ class DeployController extends Controller
         if (File::exists($lockFile) && (time() - File::lastModified($lockFile)) < 600) {
             return response()->json(['status' => 'locked']);
         }
-        File::put($lockFile, getmypid());
+        File::put($lockFile, (string) getmypid());
 
         try {
             $releases = $this->githubApi("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
@@ -473,9 +467,9 @@ class DeployController extends Controller
                 'migrate' => [['--force' => true]],
                 'app:create-admin' => [[
                     '--no-interaction' => true,
-                    '--email' => env('ADMIN_EMAIL', ''),
-                    '--password' => env('ADMIN_PASSWORD', ''),
-                    '--name' => env('ADMIN_NAME', 'Admin'),
+                    '--email' => config('admin.email', ''),
+                    '--password' => config('admin.password', ''),
+                    '--name' => config('admin.name', 'Admin'),
                 ]],
                 'config:cache' => [[]],
                 'route:cache' => [[]],

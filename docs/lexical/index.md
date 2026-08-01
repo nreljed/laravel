@@ -17,24 +17,24 @@ Server-rendered rich text editor powered by Lexical 0.48 with Tailwind CSS, shad
 
 ## Package Versions
 
-| Package                             | Version    | Purpose                                                      |
-| ----------------------------------- | ---------- | ------------------------------------------------------------ |
-| `lexical`                           | `^0.48.0`  | Core runtime                                                 |
-| `@lexical/react`                    | `^0.48.0`  | React bindings, plugins                                      |
-| `@lexical/table`                    | `^0.48.0`  | Table nodes, commands, utilities                             |
-| `@lexical/list`                     | `^0.48.0`  | List nodes, insert/remove                                    |
-| `@lexical/rich-text`                | `^0.48.0`  | `HeadingNode`, `QuoteNode`                                   |
-| `@lexical/code`                     | `^0.48.0`  | `CodeNode`, `CodeHighlightNode`                              |
-| `@lexical/link`                     | `^0.48.0`  | `LinkNode`, `AutoLinkNode`                                   |
-| `@lexical/html`                     | `^0.48.0`  | HTML serialization/deserialization                           |
-| `@lexical/history`                  | `^0.48.0`  | Undo/redo                                                    |
-| `@lexical/markdown`                 | `^0.48.0`  | Markdown shortcuts                                           |
-| `@lexical/selection`                | `^0.48.0`  | Inline style patching                                        |
-| `@lexical/utils`                    | `^0.48.0`  | `$findMatchingParent`, `mergeRegister`, `calculateZoomLevel` |
-| `@lexical/extension`                | `^0.48.0`  | `INSERT_HORIZONTAL_RULE_COMMAND`, `HorizontalRuleNode`       |
-| `@floating-ui/react`                | `^0.27.20` | Floating element positioning                                 |
-| `@atlaskit/pragmatic-drag-and-drop` | `^2.0.1`   | Column drag-reorder                                          |
-| `@atlaskit/drag-and-drop-indicator` | `^0.12.0`  | Drop indicator visual                                        |
+| Package                                                    | Version    | Purpose                                                      |
+| ---------------------------------------------------------- | ---------- | ------------------------------------------------------------ |
+| `lexical`                                                  | `^0.48.0`  | Core runtime                                                 |
+| `@lexical/react`                                           | `^0.48.0`  | React bindings, plugins                                      |
+| `@lexical/table`                                           | `^0.48.0`  | Table nodes, commands, utilities                             |
+| `@lexical/list`                                            | `^0.48.0`  | List nodes, insert/remove                                    |
+| `@lexical/rich-text`                                       | `^0.48.0`  | `HeadingNode`, `QuoteNode`                                   |
+| `@lexical/code`                                            | `^0.48.0`  | `CodeNode`, `CodeHighlightNode`                              |
+| `@lexical/link`                                            | `^0.48.0`  | `LinkNode`, `AutoLinkNode`                                   |
+| `@lexical/html`                                            | `^0.48.0`  | HTML serialization/deserialization                           |
+| `@lexical/history`                                         | `^0.48.0`  | Undo/redo                                                    |
+| `@lexical/markdown`                                        | `^0.48.0`  | Markdown shortcuts                                           |
+| `@lexical/selection`                                       | `^0.48.0`  | Inline style patching                                        |
+| `@lexical/utils`                                           | `^0.48.0`  | `$findMatchingParent`, `mergeRegister`, `calculateZoomLevel` |
+| `@lexical/extension`                                       | `^0.48.0`  | `INSERT_HORIZONTAL_RULE_COMMAND`, `HorizontalRuleNode`       |
+| `@floating-ui/react`                                       | `^0.27.20` | Floating element positioning                                 |
+| `@atlaskit/pragmatic-drag-and-drop`                        | `^2.0.1`   | Column drag-reorder                                          |
+| `resources/js/Components/editor/shared/drop-indicator.tsx` | —          | Local drop indicator visual                                  |
 
 ## File Tree
 

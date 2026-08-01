@@ -20,7 +20,7 @@ class RoleController extends Controller
     public function index(): Response
     {
         $roles = Role::withCount('users', 'permissions')
-            ->orderBy('name')
+            ->orderBy('sort_order')
             ->get()
             ->map(fn ($role) => [
                 'id' => $role->id,

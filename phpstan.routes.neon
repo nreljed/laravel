@@ -1,0 +1,10 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - routes
+
+    level: 5
+
+    tmpDir: storage/phpstan-routes

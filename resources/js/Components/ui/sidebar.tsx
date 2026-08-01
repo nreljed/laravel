@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
@@ -101,6 +99,7 @@ function SidebarProvider({
       toggleSidebar();
     };
 
+    // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- paired removeEventListener in the cleanup below
     addEventListener("keydown", handleKeyDown);
     return () => removeEventListener("keydown", handleKeyDown);
   }, [toggleSidebar]);
@@ -123,7 +122,7 @@ function SidebarProvider({
   );
 
   return (
-    <SidebarContext.Provider value={contextValue}>
+    <SidebarContext value={contextValue}>
       <div
         data-slot="sidebar-wrapper"
         style={
@@ -141,7 +140,7 @@ function SidebarProvider({
       >
         {children}
       </div>
-    </SidebarContext.Provider>
+    </SidebarContext>
   );
 }
 

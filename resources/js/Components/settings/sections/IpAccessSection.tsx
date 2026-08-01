@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
@@ -48,12 +48,12 @@ export function IpAccessSection({ ipRules, asAccordion }: IpAccessSectionProps) 
           if (props.ipRules) setRules(props.ipRules);
           setNewIp("");
           setNewDescription("");
-          toast.success("IP rule added.");
+          toast.add({ title: "IP rule added.", type: "success" });
           setLoading(false);
         },
         onError: (errs) => {
           const msg = Object.values(errs).flat().join(", ");
-          toast.error(msg || "Failed to add rule.");
+          toast.add({ title: msg || "Failed to add rule.", type: "error" });
           setLoading(false);
         },
       },
@@ -84,7 +84,7 @@ export function IpAccessSection({ ipRules, asAccordion }: IpAccessSectionProps) 
       onSuccess: (page) => {
         const props = page.props as { ipRules?: IpRule[] };
         if (props.ipRules) setRules(props.ipRules);
-        toast.success("IP rule deleted.");
+        toast.add({ title: "IP rule deleted.", type: "success" });
       },
     });
   };

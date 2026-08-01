@@ -113,6 +113,7 @@ export function FindAndReplacePlugin() {
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot focus after mount
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -130,6 +131,7 @@ export function FindAndReplacePlugin() {
     };
     const handleCustomEvent = () => setOpen(true);
     const cleanupKeydown = registerEventListener(document, "keydown", handleKeyDown);
+    // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- paired removeEventListener in the cleanup below
     addEventListener("lexical-find-replace", handleCustomEvent);
     return () => {
       cleanupKeydown();

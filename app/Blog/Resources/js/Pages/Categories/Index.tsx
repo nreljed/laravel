@@ -31,7 +31,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -421,7 +421,7 @@ export default function PostCategoriesIndex({ categories }: Props) {
           setSelectedIds(new Set());
           setSelectedCategory(null);
           setSheetOpen(false);
-          toast.success("Categories deleted.");
+          toast.add({ title: "Categories deleted.", type: "success" });
         },
       },
     );
@@ -435,7 +435,7 @@ export default function PostCategoriesIndex({ categories }: Props) {
       onSuccess: () => {
         setSelectedCategory(null);
         setSheetOpen(false);
-        toast.success("Category deleted.");
+        toast.add({ title: "Category deleted.", type: "success" });
       },
     });
   }, []);
@@ -667,7 +667,7 @@ function CategoryDetailPanel({
       only: [],
       onSuccess: () => {
         setEditing(false);
-        toast.success("Category updated.");
+        toast.add({ title: "Category updated.", type: "success" });
       },
     });
   };
@@ -871,7 +871,7 @@ function NewCategoryForm({
       onSuccess: () => {
         reset();
         onSuccess();
-        toast.success("Category created.");
+        toast.add({ title: "Category created.", type: "success" });
       },
     });
   };

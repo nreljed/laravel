@@ -38,7 +38,7 @@ function Drawer({
   );
 
   return (
-    <DrawerContext.Provider value={contextValue}>
+    <DrawerContext value={contextValue}>
       <DrawerPrimitive.Root
         data-slot="drawer"
         modal={modal}
@@ -46,7 +46,7 @@ function Drawer({
         swipeDirection={swipeDirection}
         {...props}
       />
-    </DrawerContext.Provider>
+    </DrawerContext>
   );
 }
 

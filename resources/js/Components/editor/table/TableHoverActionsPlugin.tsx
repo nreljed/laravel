@@ -2,7 +2,6 @@ import {
   draggable,
   dropTargetForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import DropIndicator from "@atlaskit/drag-and-drop-indicator/box";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalEditable } from "@lexical/react/useLexicalEditable";
 import {
@@ -35,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import { useContainerPosition } from "../hooks/use-container-position";
+import { DropIndicator } from "../shared/drop-indicator";
 import {
   TOP_BUTTON_OVERHANG,
   getCellSelector,
@@ -97,6 +97,7 @@ function TableHoverActions({
       }, 0);
     };
 
+    // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- paired removeEventListener in the cleanup below
     window.addEventListener("scroll", onScroll, {
       capture: true,
       passive: true,

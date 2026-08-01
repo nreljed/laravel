@@ -12,7 +12,7 @@ import { AdminSettingsNav } from "@/Components/settings/AdminSettingsNav";
 import { GeneralSection } from "@/Components/settings/sections/GeneralSection";
 import { FormattingSection } from "@/Components/settings/sections/FormattingSection";
 import { DateFormatSection } from "@/Components/settings/sections/DateFormatSection";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 
 interface GeneralProps {
   settings?: Record<string, string>;
@@ -29,7 +29,7 @@ export default function GeneralSettings({ settings = {} }: GeneralProps) {
   const [fmtLoading, setFmtLoading] = useState(false);
 
   useEffect(() => {
-    if (flash?.status) toast.success(flash.status);
+    if (flash?.status) toast.add({ title: flash.status, type: "success" });
   }, [flash?.status]);
 
   const handleGenSubmit = (e: React.FormEvent) => {
@@ -44,12 +44,12 @@ export default function GeneralSettings({ settings = {} }: GeneralProps) {
       onSuccess: (page: unknown) => {
         const pg = page as { props?: { settings?: Record<string, string> } };
         if (pg.props?.settings) setGenData(pg.props.settings);
-        toast.success("General settings saved.");
+        toast.add({ title: "General settings saved.", type: "success" });
         setGenLoading(false);
       },
       onError: (errs) => {
         setGenErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setGenLoading(false);
       },
     });
@@ -67,12 +67,12 @@ export default function GeneralSettings({ settings = {} }: GeneralProps) {
       onSuccess: (page: unknown) => {
         const pg = page as { props?: { settings?: Record<string, string> } };
         if (pg.props?.settings) setFmtData(pg.props.settings);
-        toast.success("Formatting settings saved.");
+        toast.add({ title: "Formatting settings saved.", type: "success" });
         setFmtLoading(false);
       },
       onError: (errs) => {
         setFmtErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setFmtLoading(false);
       },
     });

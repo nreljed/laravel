@@ -60,7 +60,7 @@ jobs:
 
       - name: Install npm dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: ESLint
         if: ${{ !inputs.skip-npm-tests }}
@@ -84,7 +84,7 @@ jobs:
 
       - name: PHP tests
         if: ${{ !inputs.skip-php-tests }}
-        run: php artisan test --compact
+        run: php artisan test --parallel --compact
 
       - name: Laravel Pint
         if: ${{ !inputs.skip-php-tests }}

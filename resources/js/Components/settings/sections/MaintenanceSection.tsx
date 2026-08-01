@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router, usePage } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section, SectionField } from "@/Components/shared/section";
 import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
@@ -52,12 +52,12 @@ export function MaintenanceSection({ settings, asAccordion }: MaintenanceSection
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
-        toast.success("Maintenance settings saved.");
+        toast.add({ title: "Maintenance settings saved.", type: "success" });
         setLoading(false);
       },
       onError: (errs) => {
         setErrors(errs);
-        toast.error("Failed to save.");
+        toast.add({ title: "Failed to save.", type: "error" });
         setLoading(false);
       },
     });
@@ -139,7 +139,7 @@ export function MaintenanceSection({ settings, asAccordion }: MaintenanceSection
                 const url = appUrl ? `${appUrl}/maintenance/recovery` : "/maintenance/recovery";
                 await navigator.clipboard.writeText(url);
                 setCopied(true);
-                toast.success("Recovery URL copied to clipboard.");
+                toast.add({ title: "Recovery URL copied to clipboard.", type: "success" });
                 setTimeout(() => setCopied(false), 2000);
               }}
               className="shrink-0 inline-flex items-center justify-center rounded-md text-sm font-medium h-9 w-9 border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"

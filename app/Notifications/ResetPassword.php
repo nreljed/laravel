@@ -8,6 +8,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 
 class ResetPassword extends BaseResetPassword
 {
+    #[\Override]
     public function toMail($notifiable): MailMessage
     {
         $resetUrl = $this->resetUrl($notifiable);

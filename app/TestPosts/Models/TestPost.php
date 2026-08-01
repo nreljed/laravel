@@ -5,9 +5,30 @@ namespace App\TestPosts\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $title
+ * @property string $slug
+ * @property string|null $content
+ * @property string|null $excerpt
+ * @property string|null $featured_image
+ * @property array<int, array{url?: string}>|null $gallery_images
+ * @property string $status
+ * @property Carbon|null $published_at
+ * @property array|null $metadata
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property array{lat?: float, lng?: float, address?: string}|null $address
+ * @property int|null $map_zoom
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ */
 class TestPost extends Model
 {
     protected $table = 'test_posts';
@@ -29,6 +50,7 @@ class TestPost extends Model
         'map_zoom',
     ];
 
+    #[\Override]
     protected function casts(): array
     {
         return [
@@ -42,6 +64,7 @@ class TestPost extends Model
         ];
     }
 
+    #[\Override]
     protected static function booted(): void
     {
         static::creating(function (TestPost $testPost) {
@@ -57,12 +80,9 @@ class TestPost extends Model
             if (is_string($oldGallery)) {
                 $oldGallery = json_decode($oldGallery, true) ?? [];
             }
-            if (is_string($newGallery)) {
-                $newGallery = json_decode($newGallery, true) ?? [];
-            }
 
-            $oldGallery = $oldGallery ?? [];
-            $newGallery = $newGallery ?? [];
+            $oldGallery ??= [];
+            $newGallery ??= [];
 
             $oldUrls = array_map(fn (array $img) => $img['url'] ?? '', $oldGallery);
             $newUrls = array_map(fn (array $img) => $img['url'] ?? '', $newGallery);
@@ -170,6 +190,6 @@ class TestPost extends Model
             }
         }
 
-        return array_values(array_unique(array_filter($paths)));
+        return array_values(array_unique($paths));
     }
 }

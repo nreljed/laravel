@@ -17,7 +17,7 @@ class RecoveryToken extends Model
 
     private ?string $plaintextToken = null;
 
-    public static function generate(): static
+    public static function generate(): self
     {
         $plaintext = Str::random(64);
 
@@ -37,7 +37,7 @@ class RecoveryToken extends Model
         return $this->plaintextToken;
     }
 
-    public static function findByToken(string $plaintext): ?static
+    public static function findByToken(string $plaintext): ?self
     {
         return static::where('used', false)
             ->where('expires_at', '>', now())

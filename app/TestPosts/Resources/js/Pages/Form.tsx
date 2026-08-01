@@ -1,5 +1,5 @@
 import { Head, useForm } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { FileText, Image } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -51,9 +51,9 @@ export default function TestPostsForm({ testPost }: TestPostsFormProps) {
     const options = {
       preserveScroll: true,
       onSuccess: () => {
-        toast.success(isEditing ? "Test updated." : "Test created.");
+        toast.add({ title: isEditing ? "Test updated." : "Test created.", type: "success" });
       },
-      onError: () => toast.error("Failed to save test."),
+      onError: () => toast.add({ title: "Failed to save test.", type: "error" }),
     };
 
     if (isEditing) {

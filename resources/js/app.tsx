@@ -4,8 +4,7 @@ import { createInertiaApp, router } from "@inertiajs/react";
 import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/Components/ui/tooltip";
-import { Toaster } from "@/Components/ui/sonner";
-import { toast } from "sonner";
+import { Toaster, toast } from "@/Components/ui/toast";
 
 import "@/Components/ui/sidebar";
 
@@ -22,8 +21,8 @@ function InertiaFlashListener() {
           { props?: { flash?: Record<string, unknown> } } | undefined);
       if (!page) return;
       const flash: Record<string, unknown> = page.props?.flash ?? {};
-      if (flash.status) toast.success(String(flash.status));
-      if (flash.error) toast.error(String(flash.error));
+      if (flash.status) toast.add({ title: String(flash.status), type: "success" });
+      if (flash.error) toast.add({ title: String(flash.error), type: "error" });
     };
     showFlash();
     return router.on("navigate", () => showFlash());
@@ -118,7 +117,7 @@ createInertiaApp({
         <TooltipProvider>
           <App {...props} />
           <InertiaFlashListener />
-          <Toaster position="top-right" />
+          <Toaster />
         </TooltipProvider>
       </ThemeProvider>,
     );

@@ -17,22 +17,22 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 
 ## Tech Stack
 
-| Layer         | Technology                    | Version                |
-| ------------- | ----------------------------- | ---------------------- |
-| Backend       | Laravel                       | 13.x (PHP 8.4+)        |
-| Frontend      | React                         | 19.2                   |
-| SPA Bridge    | Inertia.js                    | 3.6                    |
-| Build         | Vite                          | 8.x                    |
-| Language      | TypeScript                    | 6.x                    |
-| Styling       | Tailwind CSS                  | 4.x                    |
-| UI Kit        | shadcn/ui                     | new-york, neutral base |
-| Icons         | Lucide React                  | latest                 |
-| Auth          | Laravel Breeze + Sanctum      | session-based          |
-| Database      | SQLite (local) / MySQL (prod) | —                      |
-| Notifications | Laravel Notifications         | database channel       |
-| Routing (JS)  | Ziggy                         | 2.6                    |
-| AI SDK        | Laravel AI                    | 0.9                    |
-| AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8              |
+| Layer         | Technology                    | Version                           |
+| ------------- | ----------------------------- | --------------------------------- |
+| Backend       | Laravel                       | 13.x (PHP 8.4+)                   |
+| Frontend      | React                         | 19.2                              |
+| SPA Bridge    | Inertia.js                    | 3.6                               |
+| Build         | Vite                          | 8.x                               |
+| Language      | TypeScript                    | 6.x                               |
+| Styling       | Tailwind CSS                  | 4.x                               |
+| UI Kit        | shadcn/ui                     | base-vega (Base UI), neutral base |
+| Icons         | Lucide React                  | latest                            |
+| Auth          | Laravel Breeze + Sanctum      | session-based                     |
+| Database      | SQLite (local) / MySQL (prod) | —                                 |
+| Notifications | Laravel Notifications         | database channel                  |
+| Routing (JS)  | Ziggy                         | 2.6                               |
+| AI SDK        | Laravel AI                    | 0.9                               |
+| AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8                         |
 
 ## Code Style
 
@@ -43,7 +43,7 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 - Inertia `useForm` for all form state
 - `useAuth` hook from `@/hooks/use-auth` for auth state
 - `next-themes` `<ThemeProvider>` for dark mode
-- `toast()` from `sonner` for flash messages
+- `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
 - `asChild` / `Slot` pattern is standard for component composition
 
@@ -130,7 +130,7 @@ resources/js/
     ThemeSwitcher.tsx
   hooks/
     use-auth.ts                  # user, isAdmin, getUserInitials
-    use-notifications.ts         # Axios-based polling (10s/30s/60s adaptive)
+    use-notifications.ts         # Native fetch() polling (10s/30s/60s adaptive)
   Layouts/                       # AuthenticatedLayout, AdminLayout, GuestLayout, PublicLayout
   Pages/
     Auth/                        # Login, Register, Forgot/Reset Password, Verify Email
@@ -294,11 +294,11 @@ Tracking: https://github.com/typescript-eslint/typescript-eslint/issues/4904
 
 **Action**: Continue using Inertia `useForm` and `router.post()` with callbacks.
 
-### useHttp vs axios for Notification Polling
+### useHttp vs fetch for Notification Polling
 
-Inertia v3's `useHttp` hook is a form-centric API (validation, precognition, processing state). The notification polling system (`use-notifications.ts`) makes standalone GET/POST/DELETE requests that don't fit the form model. `axios` is the correct choice here as a lightweight HTTP client.
+Inertia v3's `useHttp` hook is a form-centric API (validation, precognition, processing state). The notification polling system (`use-notifications.ts`) makes standalone GET/POST/DELETE requests that don't fit the form model. It uses **native `fetch()`** with `X-Requested-With` + `X-CSRF-TOKEN` headers (helpers from `@/lib/gallery-utils`).
 
-**Action**: Keep axios for notification polling and any standalone HTTP requests.
+**Action**: Keep native `fetch()` for notification polling and any standalone HTTP requests.
 
 ### SettingsService Static Methods
 
@@ -358,6 +358,7 @@ npm run check:ci         # Full CI pipeline (lint + typecheck + format + test + 
 vendor/bin/pint          # Laravel Pint (PSR-12)
 php artisan test         # PHPUnit
 php artisan test --compact  # PHPUnit (compact output)
+php artisan test --parallel --compact  # PHPUnit (parallel, via paratest)
 php artisan migrate      # Run migrations
 php artisan permissions:list          # List all permissions
 php artisan app:create-admin           # Bootstrap/update admin user
@@ -433,25 +434,61 @@ Then run typecheck + build + phpunit and deliver results. Do not wait for user a
 ```
 tests/
   Concerns/
-    CreatesTestUsers.php          # Shared trait: admin(), regularUser(), createUserWithRole(), seedRolesAndPermissions()
+    CreatesTestUsers.php          # Shared trait: admin(), editor(), contributor(), regularUser(), createUserWithRole(), seedRolesAndPermissions()
   Feature/
     Ai/
       AiProviderCrudTest.php      # Provider CRUD + validation (6 tests)
       AiProviderTestConnectionTest.php  # Connection test validation (4 tests)
+    Admin/
+      UserManagementTest.php      # Admin user CRUD (10 tests)
+      UserCreationTest.php        # Default role assignment, audit logging (13 tests)
+      RoleCreationTest.php        # Role CRUD + admin role protection (6 tests)
+      ImpersonationTest.php       # Impersonation flows + edge cases (7 tests)
+      BulkOperationsTest.php      # Bulk user actions (6 tests)
+    Auth/
+      AuthenticationTest.php, RegistrationTest.php, RateLimitingTest.php, PasswordUpdateTest.php, PasswordResetTest.php, PasswordConfirmationTest.php, EmailVerificationTest.php
     Blog/
       BlogCrudTest.php            # Post CRUD lifecycle (7 tests)
       BlogPermissionsTest.php     # Role-based access (6 tests)
       BlogCategoryTest.php        # Category CRUD (5 tests)
       BlogTagTest.php             # Tag CRUD (5 tests)
       BlogPublicTest.php          # Public blog routes (5 tests)
+      BlogSeoTest.php, BlogBulkActionTest.php
+    Console/
+      CreateAdminCommandTest.php  # Admin bootstrap incl. email_verified_at (5 tests)
+      CleanupOrphanMediaCommandTest.php  # Orphan media cleanup (3 tests)
+      ListPermissionsCommandTest.php     # Permission listing + --role filter (5 tests)
+      NotificationPurgeCommandTest.php   # Notification purge (2 tests)
+      PruneAuditLogsCommandTest.php      # Audit pruning incl. --days (3 tests)
+      PublishScheduledContentCommandTest.php  # Scheduled publishing (3 tests)
     Deploy/
-      DeployEndpointTest.php      # Token auth, verification, upload (6 tests)
-    FeatureRegistryTest.php       # Singleton, nav items, permissions (5 tests)
+      DeployEndpointTest.php      # Token auth, verification, upload, cache-clear pipeline (11 tests)
+    Jobs/
+      SendEmailTest.php           # Mailable dispatch + retry (3 tests)
+      GenerateSeoForPostTest.php  # SEO generation incl. missing provider (4 tests)
+    Maintenance/
+      MaintenanceModeTest.php     # 503 Blade + bypass flows (19 tests)
+    Media/
+      MediaUploadTest.php         # Upload/destroy, traversal safety (9 tests)
     Notifications/
       NotificationPollTest.php    # Poll endpoints, auth, filters (8 tests)
       NotificationServiceTest.php # Cached count, purge (3 tests)
+    Performance/
+      DatabaseIndexTest.php       # Index presence assertions (6 tests)
+      DatabasePerformanceTest.php # Cache TTL + N+1 guard (6 tests)
     Public/
       PublicPagesTest.php         # Welcome, about, services, contact (4 tests)
+    Security/
+      XssSanitizationTest.php     # HTML sanitizer allowlists (7 tests)
+      MediaPathTraversalTest.php  # Path traversal guards (4 tests)
+      ContentSecurityPolicyTest.php      # CSP headers (4 tests)
+      ConfigureSessionLifetimeTest.php   # DB-driven session timeout (3 tests)
+      MaintenanceBypassTest.php, IpAccessControlTest.php, PasswordComplexityTest.php
+    TestPosts/
+      TestPostCrudTest.php        # CRUD, title, slug (7 tests)
+      TestPostFeaturedImageTest.php, TestPostImageUploadTest.php, TestPostGalleryE2ETest.php, TestPostBulkActionTest.php
+    DataIsolationTest.php         # HTTP-level data isolation checks
+    FeatureRegistryTest.php       # Singleton, nav items, permissions (5 tests)
 ```
 
 ### Factories
@@ -472,11 +509,13 @@ tests/
 - **AI tests**: Validation-only (no API mocking — tests auth, required fields, invalid providers)
 - **Deploy tests**: Token via POST body (`['token' => $this->token]`), unauthenticated returns 403 (not 401)
 - **Notification tests**: Unauthenticated requests return 401 JSON (not redirect) due to JSON exception handler
+- **Performance**: `$this->captureQueryCount(callable)` / `$this->assertQueryCount(int, callable)` helpers on `tests/TestCase.php` for cache-hit and N+1 assertions; `Cache::flush()` in `setUp()` to avoid cross-test pollution
 
 ### Running Tests
 
 ```bash
 php artisan test --compact                           # All tests (compact output)
+php artisan test --parallel --compact                # All tests, parallel via paratest
 php artisan test --compact tests/Feature/Blog/       # All blog tests
 php artisan test --compact --filter=testName         # Specific test
 npm run test                                         # Vitest frontend tests

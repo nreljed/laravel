@@ -34,10 +34,12 @@ Custom Role/Permission models (not Spatie's default). Uses `slug` as identifier,
 
 ## Default Roles
 
-| Role     | Slug       | Permissions                                                                                          |
-| -------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| Admin    | `admin`    | All permissions                                                                                      |
-| CRM User | `crm_user` | view-dashboard, view-profile, edit-profile, delete-account, view-notifications, manage-notifications |
+| Role   | Slug     | Permissions                                                                                          |
+| ------ | -------- | ---------------------------------------------------------------------------------------------------- |
+| Admin  | `admin`  | All permissions                                                                                      |
+| Editor | `editor` | user + posts CRUD, manage-categories, manage-tags, manage-email-settings, test-posts CRUD            |
+| Author | `author` | user + posts.view, posts.create, posts.edit                                                          |
+| User   | `user`   | view-dashboard, view-profile, edit-profile, delete-account, view-notifications, manage-notifications |
 
 ## Middleware
 

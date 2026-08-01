@@ -9,12 +9,7 @@ use Illuminate\Support\Facades\Mail;
 
 class MailService
 {
-    protected EmailTemplateService $templateService;
-
-    public function __construct(EmailTemplateService $templateService)
-    {
-        $this->templateService = $templateService;
-    }
+    public function __construct(protected EmailTemplateService $templateService) {}
 
     /**
      * Send email asynchronously via the queue.

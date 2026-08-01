@@ -26,9 +26,9 @@ class CreateAdmin extends Command
             return Command::FAILURE;
         }
 
-        $email = $this->option('email') ?: env('ADMIN_EMAIL', 'nstudio.webdesign@gmail.com');
-        $password = $this->option('password') ?: env('ADMIN_PASSWORD');
-        $name = $this->option('name') ?: env('ADMIN_NAME', 'Admin');
+        $email = $this->option('email') ?: config('admin.email');
+        $password = $this->option('password') ?: config('admin.password');
+        $name = $this->option('name') ?: config('admin.name');
         $username = $this->option('username') ?: $name;
 
         $existing = User::where('email', $email)->first();
@@ -57,9 +57,10 @@ class CreateAdmin extends Command
                 'name' => $name,
                 'username' => $username,
                 'password' => Hash::make($password),
-                'email_verified_at' => now(),
             ]
         );
+
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $user->roles()->syncWithoutDetaching([$role->id]);
 

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section } from "@/Components/shared/section";
 import { Repeater } from "@/Components/shared/repeater";
 import { Building2, Phone } from "lucide-react";
@@ -63,12 +63,15 @@ export function AdditionalInfoSection({
         preserveState: true,
         replace: true,
         onSuccess: () => {
-          toast.success("Additional info updated successfully!");
+          toast.add({ title: "Additional info updated successfully!", type: "success" });
           setLoading(false);
         },
         onError: (errs: Record<string, string>) => {
           setErrors(errs);
-          toast.error(errs?.error || errs?.message || "Failed to update additional info.");
+          toast.add({
+            title: errs?.error || errs?.message || "Failed to update additional info.",
+            type: "error",
+          });
           setLoading(false);
         },
         onFinish: () => setLoading(false),

@@ -13,7 +13,7 @@ import {
   EmptyDescription,
   EmptyMedia,
 } from "@/Components/ui/empty";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { useMemo, useState } from "react";
 import { FileText, Plus, Sparkles } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -53,9 +53,10 @@ export default function BlogIndex({ posts, categories }: BlogIndexProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>("");
 
   useMemo(() => {
-    if (flash?.status) toast.success(flash.status);
-    if (flash?.["flash.success"]) toast.success(String(flash["flash.success"]));
-    if (flash?.["flash.error"]) toast.error(String(flash["flash.error"]));
+    if (flash?.status) toast.add({ title: flash.status, type: "success" });
+    if (flash?.["flash.success"])
+      toast.add({ title: String(flash["flash.success"]), type: "success" });
+    if (flash?.["flash.error"]) toast.add({ title: String(flash["flash.error"]), type: "error" });
   }, [flash]);
 
   const statusVariant = (status: string) => {
@@ -200,9 +201,9 @@ export default function BlogIndex({ posts, categories }: BlogIndexProps) {
           body: JSON.stringify({ post_ids: ids }),
         });
         const data = await res.json();
-        toast.success(data.message || "SEO generation started");
+        toast.add({ title: data.message || "SEO generation started", type: "success" });
       } catch {
-        toast.error("Failed to generate SEO metadata");
+        toast.add({ title: "Failed to generate SEO metadata", type: "error" });
       }
       return;
     }

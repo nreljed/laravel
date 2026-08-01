@@ -1,11 +1,13 @@
 import globals from "globals";
-import pluginReact from "eslint-plugin-react";
-import pluginReactHooks from "eslint-plugin-react-hooks";
+import eslintReact from "@eslint-react/eslint-plugin";
 import pluginImport from "eslint-plugin-import-x";
 import pluginUnicorn from "eslint-plugin-unicorn";
+import pluginReactHooks from "eslint-plugin-react-hooks";
 import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import configPrettier from "eslint-config-prettier";
+
+const reactRecommended = eslintReact.configs["recommended-typescript"];
 
 export default [
   {
@@ -84,21 +86,26 @@ export default [
         ...globals.browser,
       },
     },
+    ...reactRecommended,
     plugins: {
-      react: pluginReact,
+      ...reactRecommended.plugins,
       "react-hooks": pluginReactHooks,
     },
-    settings: {
-      react: {
-        version: "19.0",
-      },
-    },
     rules: {
-      ...pluginReact.configs.recommended.rules,
+      ...reactRecommended.rules,
       ...pluginReactHooks.configs.recommended.rules,
-      "react/react-in-jsx-scope": "off",
-      "react/prop-types": "off",
-      "react/no-unescaped-entities": "off",
+      "@eslint-react/exhaustive-deps": "off",
+      "@eslint-react/rules-of-hooks": "off",
+      "@eslint-react/set-state-in-effect": "off",
+      "@eslint-react/use-memo": "off",
+      "@eslint-react/no-array-index-key": "off",
+      "@eslint-react/no-use-context": "off",
+      "@eslint-react/naming-convention-ref-name": "off",
+      "@eslint-react/use-state": "off",
+      "@eslint-react/no-forward-ref": "off",
+      "@eslint-react/dom-no-dangerously-set-innerhtml": "off",
+      "@eslint-react/no-clone-element": "off",
+      "@eslint-react/no-unnecessary-use-prefix": "off",
       "no-unused-vars": ["warn", { varsIgnorePattern: "^_", argsIgnorePattern: "^_" }],
     },
   },

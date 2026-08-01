@@ -9,6 +9,7 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
+use Laravel\Ai\Responses\StructuredAgentResponse;
 
 class SeoAgent implements Agent, HasStructuredOutput
 {
@@ -68,18 +69,15 @@ INSTRUCTIONS;
 
         $response = $this->prompt($prompt);
 
-        $result = $response->toArray();
-        $meta = $result ?? [];
-
-        $usage = method_exists($response, 'usage') ? $response->usage() : [];
+        $meta = $response instanceof StructuredAgentResponse ? $response->toArray() : [];
 
         $resolved = $this->getResolvedProvider();
         $this->logAiUsage(
             user: $user,
             provider: $resolved['driver'],
             model: $resolved['model'] ?? 'unknown',
-            inputTokens: $usage['input_tokens'] ?? 0,
-            outputTokens: $usage['output_tokens'] ?? 0,
+            inputTokens: $response->usage->promptTokens,
+            outputTokens: $response->usage->completionTokens,
         );
 
         return $meta;

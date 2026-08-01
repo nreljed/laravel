@@ -9,7 +9,7 @@ trait ResolvesUserProvider
 {
     protected ?User $user = null;
 
-    /** @var array{driver: string, key: string, model: string}|null Cached provider data. */
+    /** @var array{driver: string, key: string, model: string|null}|null Cached provider data. */
     protected ?array $resolvedProvider = null;
 
     /**
@@ -44,7 +44,7 @@ trait ResolvesUserProvider
     /**
      * Get the full resolved provider data (cached after first query).
      *
-     * @return array{driver: string, key: string, model: string}
+     * @return array{driver: string, key: string, model: string|null}
      */
     public function getResolvedProvider(): array
     {

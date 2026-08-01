@@ -56,6 +56,7 @@ Route::get('/maintenance/bypass/{token}', function (string $token) {
         null,
         true,
         false,
+        false,
         'lax'
     );
 
@@ -77,12 +78,10 @@ Route::get('/maintenance/recovery/{token}', [RecoveryController::class, 'claim']
 // FRONTEND (Public) Pages — no auth required
 // ═══════════════════════════════════════════════════
 Route::middleware('maintenance')->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('public/welcome', [
-            'canLogin' => Route::has('login'),
-            'canRegister' => Route::has('register'),
-        ]);
-    })->name('home');
+    Route::get('/', fn () => Inertia::render('public/welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+    ]))->name('home');
 
     Route::get('/about', [PublicController::class, 'about'])->name('about');
     Route::get('/services', [PublicController::class, 'services'])->name('services');
@@ -217,15 +216,14 @@ Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('da
 
     // Audit logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
 
     // Permission management
     Route::get('/permissions', [PermissionController::class, 'manage'])->name('permissions.manage');
     Route::post('/permissions', [PermissionController::class, 'toggle'])->name('permissions.toggle');
 
     // Developer tools
-    Route::get('/developer/style-guide', function () {
-        return Inertia::render('dashboard/developer/style-guide');
-    })->name('developer.style-guide');
+    Route::get('/developer/style-guide', fn () => Inertia::render('dashboard/developer/style-guide'))->name('developer.style-guide');
 
     Route::get('/notifications/test', [NotificationTestController::class, 'index'])->name('notifications.test');
     Route::post('/notifications/test', [NotificationTestController::class, 'sendTest'])->name('notifications.test-send');
@@ -257,7 +255,7 @@ Route::post('/deploy/create-admin', [DeployController::class, 'createAdmin'])->m
 // CSP Report Endpoint — receives violation reports
 // ═══════════════════════════════════════════════════
 Route::post('/csp-report', function (Request $request) {
-    report(new Exception('CSP Violation: '.$request->safe()->input('csp-report.effective-directive', 'unknown')));
+    report(new Exception('CSP Violation: '.$request->input('csp-report.effective-directive', 'unknown')));
 
     return response()->json(['status' => 'ok']);
 })->middleware('throttle:30,1')->name('csp.report');

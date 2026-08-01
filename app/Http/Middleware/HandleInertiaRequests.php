@@ -19,11 +19,13 @@ class HandleInertiaRequests extends Middleware
 
     protected $rootView = 'app';
 
+    #[\Override]
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
+    #[\Override]
     public function share(Request $request): array
     {
         return [
@@ -78,7 +80,7 @@ class HandleInertiaRequests extends Middleware
             'notificationUnreadCount' => fn () => $request->user()
                 ? app(NotificationService::class)->getCachedUnreadCount(
                     $request->user()->id,
-                    get_class($request->user())
+                    $request->user()::class
                 )
                 : 0,
             'userCapabilities' => fn () => $request->user()
@@ -95,10 +97,10 @@ class HandleInertiaRequests extends Middleware
                     return [];
                 }
             },
-            'featureNavItems' => fn () => $this->getFeatureNavItems(),
-            'featureData' => fn () => $this->getFeatureSharedData(),
-            'emailSettings' => fn () => $this->getEmailSettings(),
-            'emailTemplates' => fn () => $this->getEmailTemplates(),
+            'featureNavItems' => $this->getFeatureNavItems(...),
+            'featureData' => $this->getFeatureSharedData(...),
+            'emailSettings' => $this->getEmailSettings(...),
+            'emailTemplates' => $this->getEmailTemplates(...),
             'brand' => [
                 'logo' => fn () => self::safeSetting('app_logo', ''),
                 'favicon' => fn () => self::safeSetting('app_favicon', ''),
@@ -114,13 +116,13 @@ class HandleInertiaRequests extends Middleware
                 'enabled' => fn () => self::safeSetting('enable_registration', '1') === '1',
                 'require_email_verification' => fn () => self::safeSetting('require_email_verification', '0') === '1',
             ],
-            'wishlistIds' => fn () => collect(),
+            'wishlistIds' => collect(...),
             'wishlistResult' => fn () => null,
             'impersonating' => fn () => $request->session()->get('impersonating', false),
             'impersonator' => fn () => $request->session()->has('impersonator_id')
                 ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name', 'email'])
                 : null,
-            'activeCurrencies' => fn () => $this->getActiveCurrencies(),
+            'activeCurrencies' => $this->getActiveCurrencies(...),
             'selectedCurrency' => fn () => session('selected_currency', 'EUR'),
         ];
     }
@@ -129,7 +131,7 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(FeatureRegistry::class)->getAllNavItems();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return [];
         }
     }
@@ -138,7 +140,7 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(FeatureRegistry::class)->getAllSharedData();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return [];
         }
     }
@@ -147,7 +149,7 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(EmailSettingsService::class)->forFrontend();
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return [];
         }
     }
@@ -200,7 +202,7 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(EmailSettingsController::class)->getTemplates();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return [];
         }
     }
@@ -217,7 +219,7 @@ class HandleInertiaRequests extends Middleware
     private function buildAuthUser($user): array
     {
         $primaryRole = $user->roles->first();
-        $roleSlug = $primaryRole?->slug ?? '';
+        $roleSlug = $primaryRole->slug ?? '';
 
         $displayNameOptions = $user->getDisplayNameOptions();
 

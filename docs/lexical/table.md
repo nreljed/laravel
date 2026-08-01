@@ -245,7 +245,7 @@ Powered by `@atlaskit/pragmatic-drag-and-drop`:
 1. **Drag source**: `draggable({ element: dragHandleRef })` — registers the drag handle
 2. **Drop targets**: Each cell in the header row gets `dropTargetForElements({})` — registers as a valid drop zone
 3. **Drag data**: `{ columnIndex, tableKey, type: "table-column" }`
-4. **Drop indicator**: `DropIndicator` from `@atlaskit/drag-and-drop-indicator/box` — blue line at drop position
+4. **Drop indicator**: `DropIndicator` from `../shared/drop-indicator` — brand-colored line at drop position
 5. **Execute**: `$moveTableColumn(tableNode, startIndex, finishIndex)` on drop
 
 ### Sort Implementation

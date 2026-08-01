@@ -53,7 +53,7 @@ class GenerateSeoForPost implements ShouldQueue
                     'seo_generated_at' => now()->toISOString(),
                 ]),
             ]);
-        } catch (MissingAiProviderException $e) {
+        } catch (MissingAiProviderException) {
             Log::warning("[GenerateSeoForPost] No AI provider for user {$this->userId}, skipping post {$this->post->id}");
         } catch (\Throwable $e) {
             Log::error("[GenerateSeoForPost] Failed for post {$this->post->id}: {$e->getMessage()}");

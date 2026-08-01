@@ -1,3 +1,12 @@
+const isDev = import.meta.env.DEV;
+
+function debugLog(...args: unknown[]): void {
+  if (!isDev) {
+    return;
+  }
+  debugLog(...args);
+}
+
 export interface OverpassStreetMatch {
   street: string;
   osmId: number;
@@ -202,7 +211,7 @@ function pickBestPhotonFeature(
       }
     }
 
-    console.log(
+    debugLog(
       `[Photon] Candidate: type=${featType}, name=${props.name || "(unnamed)"}, typePref=${typePref}, score=${score}${extent ? ", hasExtent" : ""}${featLat != null ? `, dist=${Math.round(haversineDistance(queryLat, queryLng, featLat, featLng))}m` : ""}`,
     );
 
@@ -212,7 +221,7 @@ function pickBestPhotonFeature(
     }
   }
 
-  console.log(
+  debugLog(
     `[Photon] Selected: type=${best.properties.type}, name=${best.properties.name || "(unnamed)"}, score=${bestScore}`,
   );
   return { feature: best, score: bestScore };
@@ -229,7 +238,7 @@ async function reverseViaPhoton(
   url.searchParams.set("limit", "5");
   url.searchParams.set("lang", "fr");
 
-  console.log(`[Photon] GET ${url.href}`);
+  debugLog(`[Photon] GET ${url.href}`);
   const t0 = performance.now();
 
   const response = await fetch(url.href, { signal });
@@ -242,7 +251,7 @@ async function reverseViaPhoton(
   const ms = Math.round(performance.now() - t0);
   const features: PhotonFeature[] = data.features;
 
-  console.log(`[Photon] Response ${response.status} (${ms}ms) — ${features?.length ?? 0} features`);
+  debugLog(`[Photon] Response ${response.status} (${ms}ms) — ${features?.length ?? 0} features`);
 
   if (!features || features.length === 0) {
     console.warn("[Photon] No features found");
@@ -276,7 +285,7 @@ async function reverseViaPhoton(
     ? Math.round(haversineDistance(lat, lng, featCoords[1], featCoords[0]))
     : null;
 
-  console.log(`[Photon] Parsed:`, {
+  debugLog(`[Photon] Parsed:`, {
     housenumber,
     street,
     name,
@@ -345,7 +354,7 @@ async function reverseViaOverpass(
 
   const t0 = performance.now();
 
-  console.log(`[Overpass] GET ${url.href}`);
+  debugLog(`[Overpass] GET ${url.href}`);
 
   const response = await fetch(url.href, { signal });
 
@@ -357,9 +366,7 @@ async function reverseViaOverpass(
 
   const ms = Math.round(performance.now() - t0);
   const data: OverpassResponse = await response.json();
-  console.log(
-    `[Overpass] Response ${response.status} (${ms}ms) — ${data.elements?.length ?? 0} ways`,
-  );
+  debugLog(`[Overpass] Response ${response.status} (${ms}ms) — ${data.elements?.length ?? 0} ways`);
 
   if (!data.elements || data.elements.length === 0) {
     console.warn("[Overpass] No highway ways found near point");
@@ -397,13 +404,13 @@ async function reverseViaOverpass(
         ? "medium"
         : "low";
 
-  console.log(
+  debugLog(
     `[Overpass] Best match: ${best.name} (highway=${best.highway}, perpDist=${best.perpDist.toFixed(1)}m, confidence=${confidence})`,
   );
 
   if (scored.length > 1) {
     for (const [i, s] of scored.slice(1).entries()) {
-      console.log(`[Overpass]   #${i + 2}: ${s.name} (perpDist=${s.perpDist.toFixed(1)}m)`);
+      debugLog(`[Overpass]   #${i + 2}: ${s.name} (perpDist=${s.perpDist.toFixed(1)}m)`);
     }
   }
 
@@ -427,7 +434,7 @@ async function reverseViaNominatim(
   url.searchParams.set("lon", String(lng));
   url.searchParams.set("addressdetails", "1");
 
-  console.log(`[Nominatim] GET ${url.href}`);
+  debugLog(`[Nominatim] GET ${url.href}`);
   const t0 = performance.now();
 
   const response = await fetch(url.href, {
@@ -445,7 +452,7 @@ async function reverseViaNominatim(
   const data: NominatimResponse = await response.json();
   const ms = Math.round(performance.now() - t0);
 
-  console.log(
+  debugLog(
     `[Nominatim] Response ${response.status} (${ms}ms)`,
     data.display_name ? `— ${data.display_name}` : "",
   );
@@ -484,7 +491,7 @@ async function reverseViaNominatim(
       ? Math.round(haversineDistance(lat, lng, respLat, respLng))
       : null;
 
-  console.log(`[Nominatim] Parsed:`, {
+  debugLog(`[Nominatim] Parsed:`, {
     housenumber,
     street,
     name,
@@ -562,7 +569,7 @@ export async function reverseGeocode(
     const photon = photonResult.status === "fulfilled" ? photonResult.value : null;
 
     if (overpass?.confidence === "high" || overpass?.confidence === "medium") {
-      console.log(
+      debugLog(
         `[Geocode] Overpass matched street: ${overpass.street} (${overpass.perpDist.toFixed(1)}m, ${overpass.confidence})`,
       );
 

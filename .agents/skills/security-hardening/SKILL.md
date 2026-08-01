@@ -15,27 +15,36 @@ metadata:
 | `AdminMiddleware`          | 403 if not admin role              |
 | `CheckPermission`          | 403 if user lacks permission slug  |
 | `CheckRole`                | 403 if user lacks role slug        |
+| `CheckIpAccess`            | IP-based access control            |
 | `ContentSecurityPolicy`    | CSP headers (production only)      |
 | `CheckMaintenanceMode`     | 503 Blade template (admins bypass) |
 | `ConfigureSessionLifetime` | DB-driven session timeout          |
+
+Order in `bootstrap/app.php` (web group append): `ConfigureSessionLifetime` → `CheckIpAccess` → `ContentSecurityPolicy` → `HandleInertiaRequests` → `AddLinkHeadersForPreloadedAssets`.
 
 ## Content Security Policy
 
 ```php
 // app/Http/Middleware/ContentSecurityPolicy.php
-// Only applies in production
-// Directives: default-src, script-src, style-src, font-src, img-src, connect-src, etc.
+// Only applies in production — nonce-based, not 'unsafe-inline'
+// Generates a per-request nonce and applies it via Vite::useCspNonce($nonce)
+// Directives: default-src, script-src, style-src, font-src, img-src, connect-src, worker-src, frame-src, object-src, base-uri, form-action, report-uri
 ```
 
 Policy includes:
 
 - `default-src 'self'`
-- `script-src 'self' 'unsafe-inline'`
-- `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`
+- `script-src 'self' 'nonce-{nonce}'` (nonce supplied to Vite)
+- `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net`
+- `font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net data:`
 - `img-src 'self' data: blob: https:`
-- `connect-src 'self' wss://` (WebSocket for HMR)
+- `connect-src 'self' {wss|ws}://appUrl` (WebSocket variant of `APP_URL`)
+- `worker-src 'self' blob:`
 - `frame-src 'none'`
 - `object-src 'none'`
+- `base-uri 'self'`
+- `form-action 'self'`
+- `report-uri /csp-report`
 
 ## Rate Limiting
 
@@ -114,7 +123,7 @@ Narrow patterns only:
 ## Key Rules
 
 - Never expose secrets or keys in logs
-- CSP only in production (dev needs inline scripts)
+- CSP uses a per-request nonce (`Vite::useCspNonce`) and only applies in production
 - CSRF exemptions are narrow patterns, not blanket
 - Token-protected deploy endpoints (not session auth)
 - All auth routes are rate-limited

@@ -38,7 +38,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/notifications/unread-count',
             'api/notifications/recent',
             'api/notifications/',
-            'stripe/webhook',
             'csp-report',
         ]);
 

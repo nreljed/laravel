@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload, Loader2, Trash2, ImageIcon, Info } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Button } from "@/Components/ui/button";
 import { getCsrfToken } from "@/lib/gallery-utils";
 
@@ -53,11 +53,11 @@ export function FaviconUploader({
 
     const ext = "." + file.name.split(".").pop()?.toLowerCase();
     if (!ALLOWED_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.has(ext)) {
-      toast.error("Invalid file type. Use ICO, PNG, or SVG.");
+      toast.add({ title: "Invalid file type. Use ICO, PNG, or SVG.", type: "error" });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error("File too large. Maximum 5MB.");
+      toast.add({ title: "File too large. Maximum 5MB.", type: "error" });
       return;
     }
 
@@ -66,16 +66,19 @@ export function FaviconUploader({
       try {
         const { width, height } = await getImageDimensions(file);
         if (width !== height) {
-          toast.error(`Favicon must be square (got ${width}x${height}px).`);
+          toast.add({ title: `Favicon must be square (got ${width}x${height}px).`, type: "error" });
           return;
         }
         if (width < 16 || height < 16) {
-          toast.error(`Image too small. Minimum 16x16px (got ${width}x${height}px).`);
+          toast.add({
+            title: `Image too small. Minimum 16x16px (got ${width}x${height}px).`,
+            type: "error",
+          });
           return;
         }
         setDims({ width, height });
       } catch {
-        toast.error("Could not read image dimensions.");
+        toast.add({ title: "Could not read image dimensions.", type: "error" });
         return;
       }
     } else {
@@ -99,9 +102,9 @@ export function FaviconUploader({
       const url = data.url;
       setPreview(url);
       onFaviconChange(url);
-      toast.success("Favicon uploaded");
+      toast.add({ title: "Favicon uploaded", type: "success" });
     } catch {
-      toast.error("Upload failed");
+      toast.add({ title: "Upload failed", type: "error" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -122,9 +125,9 @@ export function FaviconUploader({
       setPreview(null);
       setDims(null);
       onFaviconChange("");
-      toast.success("Favicon removed");
+      toast.add({ title: "Favicon removed", type: "success" });
     } catch {
-      toast.error("Failed to remove favicon");
+      toast.add({ title: "Failed to remove favicon", type: "error" });
     } finally {
       setUploading(false);
     }

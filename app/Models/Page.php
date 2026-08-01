@@ -8,6 +8,7 @@ class Page extends Model
 {
     protected $fillable = ['slug', 'title', 'content', 'is_published'];
 
+    #[\Override]
     protected function casts(): array
     {
         return [

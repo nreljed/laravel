@@ -32,15 +32,15 @@ function Bar({ ...props }: React.ComponentProps<typeof Dialog.Root>) { ... }
 
 ### Hooks
 
-| Hook                   | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `useAuth()`            | Current user, admin status, initials                 |
-| `useNotifications()`   | Axios-based adaptive polling (10s/30s/60s intervals) |
-| `useDarkMode()`        | Theme detection                                      |
-| `useFormatting()`      | Price/surface formatting                             |
-| `useCurrency()`        | Currency selection                                   |
-| `useTabState()`        | Persistent tab state                                 |
-| `useFieldValidation()` | Field-level validation                               |
+| Hook                   | Purpose                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `useAuth()`            | Current user, admin status, initials                    |
+| `useNotifications()`   | Native fetch() adaptive polling (10s/30s/60s intervals) |
+| `useDarkMode()`        | Theme detection                                         |
+| `useFormatting()`      | Price/surface formatting                                |
+| `useCurrency()`        | Currency selection                                      |
+| `useTabState()`        | Persistent tab state                                    |
+| `useFieldValidation()` | Field-level validation                                  |
 
 ## State Management
 

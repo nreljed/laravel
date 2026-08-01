@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Button } from "@/Components/ui/button";
 import {
   AlertDialog,
@@ -42,8 +42,9 @@ export function ActionCell({ item, baseRoute, itemLabel }: ActionCellProps) {
   const handleDelete = () => {
     router.delete(`${baseRoute}/${item.id}`, {
       preserveScroll: true,
-      onSuccess: () => toast.success(`${itemLabel} deleted successfully.`),
-      onError: () => toast.error(`Failed to delete ${itemLabel.toLowerCase()}.`),
+      onSuccess: () => toast.add({ title: `${itemLabel} deleted successfully.`, type: "success" }),
+      onError: () =>
+        toast.add({ title: `Failed to delete ${itemLabel.toLowerCase()}.`, type: "error" }),
     });
   };
 
@@ -55,12 +56,16 @@ export function ActionCell({ item, baseRoute, itemLabel }: ActionCellProps) {
         preserveScroll: true,
         onSuccess: () => {
           if (newStatus === "published") {
-            toast.success(`${itemLabel} published!`);
+            toast.add({ title: `${itemLabel} published!`, type: "success" });
           } else {
-            toast.success(`${itemLabel} moved to draft.`);
+            toast.add({ title: `${itemLabel} moved to draft.`, type: "success" });
           }
         },
-        onError: () => toast.error(`Failed to update ${itemLabel.toLowerCase()} status.`),
+        onError: () =>
+          toast.add({
+            title: `Failed to update ${itemLabel.toLowerCase()} status.`,
+            type: "error",
+          }),
       },
     );
   };

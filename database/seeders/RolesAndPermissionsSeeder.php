@@ -43,7 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // ─── user: own profile + dashboard + notifications ───
         $userRole = Role::firstOrCreate(
             ['slug' => 'user'],
-            ['name' => 'User', 'description' => 'Can manage own account and profile']
+            ['name' => 'User', 'description' => 'Can manage own account and profile', 'sort_order' => 3]
         );
         $userRole->permissions()->sync(
             Permission::whereIn('slug', [
@@ -59,7 +59,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // ─── author: user + content creation (no delete) ───
         $authorRole = Role::firstOrCreate(
             ['slug' => 'author'],
-            ['name' => 'Author', 'description' => 'Can add content and manage own account']
+            ['name' => 'Author', 'description' => 'Can add content and manage own account', 'sort_order' => 2]
         );
         $authorRole->permissions()->sync(
             Permission::whereIn('slug', [
@@ -78,7 +78,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // ─── editor: app management (no admin pages) ───
         $editorRole = Role::firstOrCreate(
             ['slug' => 'editor'],
-            ['name' => 'Editor', 'description' => 'Can manage the application without admin privileges']
+            ['name' => 'Editor', 'description' => 'Can manage the application without admin privileges', 'sort_order' => 1]
         );
         $editorRole->permissions()->sync(
             Permission::whereIn('slug', [
@@ -105,7 +105,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // ─── admin: everything ───
         $adminRole = Role::firstOrCreate(
             ['slug' => 'admin'],
-            ['name' => 'Admin', 'description' => 'Full access to everything including admin panel']
+            ['name' => 'Admin', 'description' => 'Full access to everything including admin panel', 'sort_order' => 0]
         );
         $adminRole->permissions()->sync(Permission::all()->pluck('id'));
     }

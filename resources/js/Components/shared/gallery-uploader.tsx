@@ -15,7 +15,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Upload, Loader2, Trash2, CheckSquare, Square, X, SquareCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
@@ -145,7 +145,7 @@ export function GalleryUploader({
       const filesToUpload = acceptedFiles.slice(0, remainingSlots);
 
       if (filesToUpload.length < acceptedFiles.length) {
-        toast.warning(`Only ${remainingSlots} more images allowed.`);
+        toast.add({ title: `Only ${remainingSlots} more images allowed.`, type: "warning" });
       }
 
       const newUploading = filesToUpload.map((f) => createGalleryImageFromFile(f));
@@ -180,7 +180,7 @@ export function GalleryUploader({
         } catch (error) {
           if (controller.signal.aborted) return null;
           console.error(`Failed to upload ${file.name}:`, error);
-          toast.error(`Failed to upload ${file.name}`);
+          toast.add({ title: `Failed to upload ${file.name}`, type: "error" });
           if (mountedRef.current) {
             markImageError(
               stableId,
@@ -196,7 +196,7 @@ export function GalleryUploader({
 
       const successCount = filesToUpload.length - failedImages.size;
       if (successCount > 0) {
-        toast.success(`${successCount} image(s) uploaded.`);
+        toast.add({ title: `${successCount} image(s) uploaded.`, type: "success" });
       }
     },
     [
@@ -251,7 +251,7 @@ export function GalleryUploader({
         return updated;
       });
 
-      toast.success("Image removed.");
+      toast.add({ title: "Image removed.", type: "success" });
     },
     [remove, emitChange],
   );
@@ -304,12 +304,12 @@ export function GalleryUploader({
             url: result.url,
             path: result.path,
           });
-          toast.success(`${file.name} uploaded.`);
+          toast.add({ title: `${file.name} uploaded.`, type: "success" });
         }
       } catch (error) {
         if (mountedRef.current) {
           markImageError(image.id, error instanceof Error ? error.message : "Upload failed", file);
-          toast.error(`Failed to upload ${file.name}`);
+          toast.add({ title: `Failed to upload ${file.name}`, type: "error" });
         }
       }
     },
@@ -329,7 +329,7 @@ export function GalleryUploader({
         return updated;
       });
 
-      toast.success("Cover image updated.");
+      toast.add({ title: "Cover image updated.", type: "success" });
     },
     [emitChange],
   );
@@ -395,7 +395,7 @@ export function GalleryUploader({
 
     setSelectedIds(new Set());
     setSelectionMode(false);
-    toast.success(`${toDelete.length} image(s) removed.`);
+    toast.add({ title: `${toDelete.length} image(s) removed.`, type: "success" });
   }, [internalImages, selectedIds, remove, emitChange]);
 
   const handleBulkDelete = useCallback(() => {

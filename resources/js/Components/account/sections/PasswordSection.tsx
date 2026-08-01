@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { toast } from "sonner";
+import { toast } from "@/Components/ui/toast";
 import { Section } from "@/Components/shared/section";
 import { Shield } from "lucide-react";
 import { CurrentPasswordInput } from "@/Components/shared/current-password-input";
@@ -39,7 +39,7 @@ export function PasswordSection({
       {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success("Password updated successfully!");
+          toast.add({ title: "Password updated successfully!", type: "success" });
           setSuccess("Password updated successfully");
           setCurrentPassword("");
           setNewPassword("");
@@ -53,7 +53,7 @@ export function PasswordSection({
           if (e.current_password) mapped.current_password = [e.current_password];
           setErrors(mapped);
           const msg = e.password || e.current_password || "Failed to update password";
-          toast.error(msg);
+          toast.add({ title: msg, type: "error" });
           setLoading(false);
         },
       },

@@ -29,7 +29,10 @@ class ImpersonationController extends Controller
 
         AuditService::log(AuditAction::ImpersonationStart, $currentUser->id, [
             'target_user_id' => $user->id,
+            'target_name' => $user->name,
             'target_email' => $user->email,
+            'target_username' => $user->username,
+            'target_display_name' => $user->display_name,
         ]);
 
         Auth::login($user);

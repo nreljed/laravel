@@ -3,13 +3,40 @@
 namespace App\Blog\Models;
 
 use App\Models\User;
+use App\Services\HtmlSanitizer;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $title
+ * @property string $slug
+ * @property string|null $content
+ * @property string|null $excerpt
+ * @property string|null $featured_image
+ * @property string $status
+ * @property Carbon|null $published_at
+ * @property array|null $metadata
+ * @property int|null $category_id
+ * @property string|null $meta_title
+ * @property string|null $meta_description
+ * @property string|null $og_image
+ * @property string|null $focus_keyword
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ * @property-read self|null $category
+ * @property-read Collection<int, PostTag> $tags
+ * @property-read Collection<int, ContentBlock> $contentBlocks
+ */
 class Post extends Model
 {
     protected $table = 'posts';
@@ -20,6 +47,7 @@ class Post extends Model
         'meta_title', 'meta_description', 'og_image', 'focus_keyword',
     ];
 
+    #[\Override]
     protected function casts(): array
     {
         return [
@@ -28,6 +56,21 @@ class Post extends Model
         ];
     }
 
+    protected function content(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => HtmlSanitizer::sanitize($value),
+        );
+    }
+
+    protected function excerpt(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => HtmlSanitizer::sanitizeText($value),
+        );
+    }
+
+    #[\Override]
     protected static function booted(): void
     {
         static::creating(function (Post $post) {
@@ -84,7 +127,13 @@ class Post extends Model
             return null;
         }
 
-        return $url;
+        $path = $url;
+
+        if (str_contains(str_replace('\\', '/', $path), '../')) {
+            return null;
+        }
+
+        return $path;
     }
 
     public function user(): BelongsTo
