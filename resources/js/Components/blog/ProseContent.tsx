@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
+import { sanitizeLexicalTables } from "@/lib/sanitize-lexical-tables";
 
 interface ProseContentProps {
   html: string;
@@ -64,9 +65,10 @@ export default function ProseContent({ html }: ProseContentProps) {
 
     wrapTables(containerRef.current);
     attachCopyButtons(containerRef.current);
+    sanitizeLexicalTables(containerRef.current);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     init();
   }, [html, init]);
 

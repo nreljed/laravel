@@ -1,3 +1,5 @@
+import { sanitizeLexicalTables } from "@/lib/sanitize-lexical-tables";
+
 interface ContentBlock {
   id?: number;
   type: string;
@@ -17,6 +19,11 @@ function renderBlock(block: ContentBlock) {
     case "rich_text": {
       return (
         <div
+          ref={(node) => {
+            if (node) {
+              sanitizeLexicalTables(node);
+            }
+          }}
           className="prose prose-neutral dark:prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: block.content || "" }}
         />

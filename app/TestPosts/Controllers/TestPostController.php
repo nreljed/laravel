@@ -3,6 +3,7 @@
 namespace App\TestPosts\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Services\HtmlSanitizer;
 use App\Services\MediaService;
 use App\TestPosts\Models\TestPost;
 use App\TestPosts\Requests\BulkActionRequest;
@@ -56,6 +57,7 @@ class TestPostController extends Controller
         ]);
 
         $validated['user_id'] = $request->user()->id;
+        $validated = $this->sanitizeTestPostContent($validated);
 
         if (($validated['status'] ?? 'draft') === 'published') {
             $validated['published_at'] = now();
@@ -102,6 +104,8 @@ class TestPostController extends Controller
             'address' => 'nullable|array',
             'map_zoom' => 'nullable|integer|between:1,22',
         ]);
+
+        $validated = $this->sanitizeTestPostContent($validated);
 
         if (($validated['status'] ?? 'draft') === 'published') {
             $validated['published_at'] = $testPost->published_at ?? now();
@@ -190,12 +194,14 @@ class TestPostController extends Controller
                 'published_at' => null,
             ])),
             'delete' => $testPosts->each->delete(),
+            default => null,
         };
 
         $label = match ($action) {
             'publish' => 'updated to published',
             'draft' => 'updated to draft',
             'delete' => 'deleted successfully',
+            default => 'updated',
         };
 
         return redirect()->route('dashboard.test-posts.index')
@@ -236,5 +242,23 @@ class TestPostController extends Controller
                 ->take(5)
                 ->get(['id', 'title', 'status', 'user_id', 'created_at']),
         ]);
+    }
+
+    protected function sanitizeTestPostContent(array $validated): array
+    {
+        $validated['content'] = HtmlSanitizer::sanitize($validated['content'] ?? null);
+        $validated['excerpt'] = HtmlSanitizer::sanitizeText($validated['excerpt'] ?? null);
+        $validated['featured_image'] = HtmlSanitizer::sanitizeImageUrl($validated['featured_image'] ?? null);
+
+        if (! empty($validated['gallery_images'])) {
+            foreach ($validated['gallery_images'] as $key => $image) {
+                $validated['gallery_images'][$key]['url'] = HtmlSanitizer::sanitizeImageUrl($image['url'] ?? null);
+                $validated['gallery_images'][$key]['alt'] = $image['alt'] ?? null;
+                $validated['gallery_images'][$key]['caption'] = HtmlSanitizer::sanitizeText($image['caption'] ?? null);
+                $validated['gallery_images'][$key]['order'] = $image['order'] ?? null;
+            }
+        }
+
+        return $validated;
     }
 }

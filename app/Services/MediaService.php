@@ -52,7 +52,30 @@ class MediaService
 
     public function delete(string $path): void
     {
+        if (! $this->isSafePath($path)) {
+            return;
+        }
+
         Storage::disk('public')->delete($path);
+    }
+
+    /**
+     * Reject path traversal and absolute paths so callers can never delete
+     * files outside the configured disk root.
+     */
+    protected function isSafePath(string $path): bool
+    {
+        $path = str_replace('\\', '/', trim($path));
+
+        if ($path === '' || str_starts_with($path, '/')) {
+            return false;
+        }
+
+        if (preg_match('#(^|/)\.\.(/|$)#', $path) === 1) {
+            return false;
+        }
+
+        return true;
     }
 
     private function processImage(UploadedFile $file, string $folder): array
