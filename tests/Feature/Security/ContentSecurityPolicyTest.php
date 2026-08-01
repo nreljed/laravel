@@ -44,7 +44,12 @@ class ContentSecurityPolicyTest extends TestCase
 
         $csp = $response->headers->get('Content-Security-Policy');
         $this->assertStringContainsString('connect-src ', $csp);
-        $this->assertStringContainsString('wss://', $csp);
+
+        $appUrl = config('app.url');
+        $expectedWs = str_starts_with($appUrl, 'https://')
+            ? str_replace('https://', 'wss://', $appUrl)
+            : str_replace('http://', 'ws://', $appUrl);
+        $this->assertStringContainsString($expectedWs, $csp);
     }
 
     public function test_csp_header_is_absent_outside_production(): void
