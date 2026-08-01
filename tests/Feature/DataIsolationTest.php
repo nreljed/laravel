@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\NotificationPreference;
+use App\Models\Permission;
+use App\Models\Role;
+use Database\Factories\TestPostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -21,90 +23,119 @@ class DataIsolationTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_user_can_only_see_own_notification_preferences(): void
+    public function test_notification_preferences_update_is_scoped_to_own_user(): void
+    {
+        $user1 = $this->createUserWithRole('user');
+        $user2 = $this->createUserWithRole('user');
+
+        $this->actingAs($user1)->post(route('dashboard.account.notifications'), [
+            'preferences' => [
+                ['type' => 'blog', 'channel' => 'in_app', 'enabled' => true],
+            ],
+        ])->assertRedirect();
+
+        $this->actingAs($user2)->post(route('dashboard.account.notifications'), [
+            'preferences' => [
+                ['type' => 'blog', 'channel' => 'in_app', 'enabled' => false],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('notification_preferences', [
+            'user_id' => $user1->id,
+            'type' => 'blog',
+            'channel' => 'in_app',
+            'enabled' => true,
+        ]);
+        $this->assertDatabaseHas('notification_preferences', [
+            'user_id' => $user2->id,
+            'type' => 'blog',
+            'channel' => 'in_app',
+            'enabled' => false,
+        ]);
+    }
+
+    public function test_account_notifications_page_does_not_leak_other_users_preferences(): void
     {
         $user1 = $this->createUserWithRole('user');
         $user2 = $this->createUserWithRole('user');
 
         NotificationPreference::create([
             'user_id' => $user1->id,
+            'type' => 'blog',
             'channel' => 'in_app',
             'enabled' => true,
         ]);
 
-        $prefs = NotificationPreference::where('user_id', $user2->id)->get();
-        $this->assertCount(0, $prefs);
-
-        $prefsUser1 = NotificationPreference::where('user_id', $user1->id)->get();
-        $this->assertCount(1, $prefsUser1);
-    }
-
-    public function test_user_cannot_update_another_users_notification_preferences(): void
-    {
-        $user1 = $this->createUserWithRole('user');
-        $user2 = $this->createUserWithRole('user');
-
-        $pref = NotificationPreference::create([
-            'user_id' => $user1->id,
-            'channel' => 'in_app',
-            'enabled' => false,
-        ]);
-
-        $affected = NotificationPreference::where('user_id', $user1->id)
-            ->where('id', $pref->id)
-            ->update(['enabled' => true]);
-
-        $this->assertEquals(1, $affected);
-    }
-
-    public function test_user_profile_is_scoped_to_own_user(): void
-    {
-        $user1 = $this->createUserWithRole('user');
-        $user2 = $this->createUserWithRole('user');
-
-        $response = $this->actingAs($user2)->get(route('dashboard.account.page.profile'));
-        $response->assertStatus(200);
-
-        $this->assertNotEquals($user1->id, $user2->id);
-    }
-
-    public function test_account_page_shows_only_own_data(): void
-    {
-        $user = $this->createUserWithRole('user');
-
-        $response = $this->actingAs($user)->get(route('dashboard.account.page.profile'));
+        $response = $this->actingAs($user2)->get(route('dashboard.account.page.notifications'));
 
         $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page->where('preferences', []));
     }
 
-    public function test_notifications_scoped_to_own_user(): void
+    public function test_non_owner_cannot_update_another_users_test_post(): void
     {
-        $user1 = $this->createUserWithRole('user');
-        $user2 = $this->createUserWithRole('user');
+        $role = $this->createTestEditorRole();
+        $editor = $this->createUserWithRole($role->slug);
+        $otherUser = $this->regularUser();
 
-        $user1->notifications()->create([
-            'id' => (string) Str::uuid(),
-            'type' => 'App\Notifications\Test',
-            'data' => ['message' => 'User1 notification'],
+        $ownPost = TestPostFactory::new()->create(['user_id' => $editor->id]);
+        $otherPost = TestPostFactory::new()->create(['user_id' => $otherUser->id]);
+
+        $response = $this->actingAs($editor)->put(route('dashboard.test-posts.update', $otherPost), [
+            'title' => 'Hijacked Title',
+            'content' => 'Hijacked content',
+            'status' => 'published',
         ]);
 
-        $this->assertEquals(0, $user2->notifications()->count());
-        $this->assertEquals(1, $user1->notifications()->count());
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('test_posts', [
+            'id' => $otherPost->id,
+            'title' => $otherPost->title,
+        ]);
+
+        $response = $this->actingAs($editor)->put(route('dashboard.test-posts.update', $ownPost), [
+            'title' => 'Own Title',
+            'content' => 'Own content',
+            'status' => 'published',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('test_posts', [
+            'id' => $ownPost->id,
+            'title' => 'Own Title',
+        ]);
     }
 
-    public function test_notification_controller_scopes_to_own_user(): void
+    public function test_non_owner_cannot_delete_another_users_test_post(): void
     {
-        $user1 = $this->createUserWithRole('user');
-        $user2 = $this->createUserWithRole('user');
+        $role = $this->createTestEditorRole();
+        $editor = $this->createUserWithRole($role->slug);
+        $otherUser = $this->regularUser();
 
-        $user1->notifications()->create([
-            'id' => (string) Str::uuid(),
-            'type' => 'App\Notifications\Test',
-            'data' => ['message' => 'User1 notification'],
-        ]);
+        $ownPost = TestPostFactory::new()->create(['user_id' => $editor->id]);
+        $otherPost = TestPostFactory::new()->create(['user_id' => $otherUser->id]);
 
-        $this->actingAs($user2);
+        $response = $this->actingAs($editor)->delete(route('dashboard.test-posts.destroy', $otherPost));
 
-        $this->assertEquals(0, $user2->unreadNotifications()->count());
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('test_posts', ['id' => $otherPost->id]);
+
+        $response = $this->actingAs($editor)->delete(route('dashboard.test-posts.destroy', $ownPost));
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('test_posts', ['id' => $ownPost->id]);
+    }
+
+    private function createTestEditorRole(): Role
+    {
+        $role = Role::firstOrCreate(
+            ['slug' => 'test_editor'],
+            ['name' => 'Test Editor', 'description' => 'Can manage test posts']
+        );
+        $role->permissions()->sync(
+            Permission::whereIn('slug', ['test-posts.view', 'test-posts.create', 'test-posts.edit', 'test-posts.delete'])->pluck('id')
+        );
+
+        return $role;
     }
 }

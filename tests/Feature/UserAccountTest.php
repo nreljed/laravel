@@ -110,6 +110,21 @@ class UserAccountTest extends TestCase
         $response->assertSessionHasErrors('bio');
     }
 
+    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->patch(route('dashboard.account.profile'), [
+            'display_name' => 'Test User',
+            'first_name' => 'Test',
+            'last_name' => 'User',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
     // ── Email Update ──────────────────────────────────────────────
 
     public function test_email_can_be_updated(): void

@@ -73,4 +73,47 @@ class ImpersonationTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_admin_cannot_impersonate_themselves(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)
+            ->post(route('dashboard.admin.impersonate.start', ['user' => $admin->id]));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.error', 'You cannot impersonate yourself.');
+    }
+
+    public function test_impersonating_non_existent_user_returns_404(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)
+            ->post(route('dashboard.admin.impersonate.start', ['user' => 999999]));
+
+        $response->assertStatus(404);
+    }
+
+    public function test_non_admin_cannot_impersonate_admin(): void
+    {
+        $admin = $this->admin();
+        $user = $this->regularUser();
+
+        $response = $this->actingAs($user)
+            ->post(route('dashboard.admin.impersonate.start', ['user' => $admin->id]));
+
+        $response->assertStatus(403);
+    }
+
+    public function test_stop_without_impersonating_returns_error(): void
+    {
+        $user = $this->regularUser();
+
+        $response = $this->actingAs($user)
+            ->post(route('dashboard.admin.impersonate.stop'));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.error', 'Not currently impersonating.');
+    }
 }

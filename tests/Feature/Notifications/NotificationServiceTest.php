@@ -29,7 +29,7 @@ class NotificationServiceTest extends TestCase
         $this->createNotificationsFor($user, 3);
 
         $service = app(NotificationService::class);
-        $count = $service->getCachedUnreadCount($user->id, get_class($user));
+        $count = $service->getCachedUnreadCount($user->id, $user::class);
 
         $this->assertEquals(3, $count);
     }
@@ -42,14 +42,14 @@ class NotificationServiceTest extends TestCase
 
         $service = app(NotificationService::class);
 
-        $countBefore = $service->getCachedUnreadCount($user->id, get_class($user));
+        $countBefore = $service->getCachedUnreadCount($user->id, $user::class);
         $this->assertEquals(3, $countBefore);
 
         $service->invalidateUnreadCache($user->id);
 
         $this->createNotificationsFor($user, 1);
 
-        $countAfter = $service->getCachedUnreadCount($user->id, get_class($user));
+        $countAfter = $service->getCachedUnreadCount($user->id, $user::class);
         $this->assertEquals(4, $countAfter);
     }
 
@@ -64,7 +64,7 @@ class NotificationServiceTest extends TestCase
             'id' => $oldId,
             'type' => 'App\Notifications\TestNotification',
             'notifiable_id' => $user->id,
-            'notifiable_type' => get_class($user),
+            'notifiable_type' => $user::class,
             'data' => json_encode(['title' => 'Old notification', 'message' => 'Old']),
             'created_at' => now()->subDays(100),
         ]);
