@@ -84,7 +84,7 @@ jobs:
 
       - name: PHP tests
         if: ${{ !inputs.skip-php-tests }}
-        run: php artisan test --compact
+        run: php artisan test --parallel --compact
 
       - name: Laravel Pint
         if: ${{ !inputs.skip-php-tests }}

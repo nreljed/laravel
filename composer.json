@@ -9,28 +9,30 @@
   ],
   "license": "MIT",
   "require": {
-    "php": "^8.3",
+    "php": "^8.4",
     "inertiajs/inertia-laravel": "^3.1",
     "intervention/image-laravel": "^4.0",
-    "laravel/ai": "*",
+    "laravel/ai": "^0.9",
     "laravel/framework": "^13.8",
     "laravel/sanctum": "^4.3",
     "laravel/tinker": "^3.0",
     "minishlink/web-push": "^10.1",
-    "stripe/stripe-php": "*",
     "tightenco/ziggy": "^2.6"
   },
   "require-dev": {
+    "brianium/paratest": "*",
     "fakerphp/faker": "^1.23",
+    "larastan/larastan": "^3.10",
     "laravel/boost": "^2.4",
-    "laravel/breeze": "*",
+    "laravel/breeze": "^2.4",
     "laravel/pail": "^1.2.5",
     "laravel/pao": "^1.0.6",
     "laravel/pint": "^1.27",
     "laravel/telescope": "^5.20",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.6",
-    "phpunit/phpunit": "^13.2"
+    "phpunit/phpunit": "^13.2",
+    "rector/rector": "^2.5"
   },
   "autoload": {
     "psr-4": {
@@ -61,6 +63,9 @@
       "@php artisan config:clear --ansi @no_additional_args",
       "@php artisan test"
     ],
+    "phpstan": "vendor/bin/phpstan analyse --no-progress",
+    "rector": "vendor/bin/rector process",
+    "rector:test": "vendor/bin/rector process --dry-run",
     "post-autoload-dump": [
       "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
       "@php artisan package:discover --ansi"
@@ -90,7 +95,6 @@
     "preferred-install": "dist",
     "sort-packages": true,
     "allow-plugins": {
-      "pestphp/pest-plugin": true,
       "php-http/discovery": true
     }
   },

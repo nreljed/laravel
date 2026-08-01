@@ -18,6 +18,7 @@ composer.phar
 /.playwright-mcp
 /.opencode
 /storage/temp/
+/storage/phpstan/
 /PLAN.md
 
 # Debug/temp files (root only)
