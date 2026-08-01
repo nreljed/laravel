@@ -7,6 +7,7 @@ use App\Ai\Concerns\LogsAiUsage;
 use App\Models\User;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Promptable;
+use Laravel\Ai\Responses\AgentResponse;
 
 class ChatAgent implements Agent
 {
@@ -48,17 +49,15 @@ INSTRUCTIONS;
     /**
      * Log usage for a chat interaction.
      */
-    protected function logUsage(User $user, object $response): void
+    protected function logUsage(User $user, AgentResponse $response): void
     {
-        $usage = method_exists($response, 'usage') ? $response->usage() : [];
-
         $resolved = $this->getResolvedProvider();
         $this->logAiUsage(
             user: $user,
             provider: $resolved['driver'],
             model: $resolved['model'] ?? 'unknown',
-            inputTokens: $usage['input_tokens'] ?? 0,
-            outputTokens: $usage['output_tokens'] ?? 0,
+            inputTokens: $response->usage->promptTokens,
+            outputTokens: $response->usage->completionTokens,
         );
     }
 }

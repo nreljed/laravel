@@ -24,17 +24,19 @@ class AiProviderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $supported = AiProvider::supportedProviders();
+
         $providers = $request->user()
             ->aiProviders()
             ->get()
             ->map(fn ($provider) => [
                 'id' => $provider->id,
                 'provider' => $provider->provider,
-                'provider_name' => AiProvider::supportedProviders()[$provider->provider]['name'] ?? $provider->provider,
+                'provider_name' => isset($supported[$provider->provider]) ? $supported[$provider->provider]['name'] : $provider->provider,
                 'masked_key' => $provider->getMaskedKey(),
                 'preferred_model' => $provider->preferred_model,
                 'is_active' => $provider->is_active,
-                'created_at' => $provider->created_at->toDateString(),
+                'created_at' => $provider->created_at?->toDateString(),
             ]);
 
         return response()->json(['providers' => $providers]);

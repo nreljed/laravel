@@ -32,6 +32,7 @@ class AiUsageLog extends Model
         'created_at',
     ];
 
+    #[\Override]
     protected function casts(): array
     {
         return [
