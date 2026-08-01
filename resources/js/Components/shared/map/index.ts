@@ -9,7 +9,6 @@ export {
   MapDrawDelete,
   MapDrawEdit,
   MapDrawMarker,
-  MapDrawPolygon,
   MapDrawPolyline,
   MapDrawRectangle,
   MapDrawUndo,

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Input } from "@/Components/ui/input";
+import { Button } from "@/Components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -56,6 +57,8 @@ const DAYS_OF_WEEK: FormatOption[] = [
   { value: "5", label: "Friday" },
   { value: "6", label: "Saturday" },
 ];
+
+const TIMEZONES: string[] = Intl.supportedValuesOf?.("timeZone") ?? [];
 
 function formatWithOptions(date: Date, format: string): string {
   const map: Record<string, string> = {
@@ -310,19 +313,23 @@ function DateFormatSection({ settings, asAccordion }: DateFormatSectionProps) {
           <Combobox
             value={timezone}
             onValueChange={(val) => setTimezone(typeof val === "string" ? val : "UTC")}
+            items={TIMEZONES}
+            itemToStringValue={(tz) => tz}
           >
-            <ComboboxTrigger>
+            <ComboboxTrigger
+              render={<Button variant="outline" className="w-full justify-between font-normal" />}
+            >
               <ComboboxValue placeholder="Select timezone" />
             </ComboboxTrigger>
             <ComboboxContent>
-              <ComboboxInput placeholder="Search timezone..." />
+              <ComboboxInput showTrigger={false} placeholder="Search timezone..." />
               <ComboboxEmpty>No timezone found.</ComboboxEmpty>
               <ComboboxList>
-                {Intl.supportedValuesOf?.("timeZone")?.map((tz: string) => (
+                {(tz: string) => (
                   <ComboboxItem key={tz} value={tz}>
                     {tz}
                   </ComboboxItem>
-                ))}
+                )}
               </ComboboxList>
             </ComboboxContent>
           </Combobox>

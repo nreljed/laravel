@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check:ci": "npm run lint && npm run typecheck && npm run format:check && npm run test && php vendor/bin/pint && php artisan test"
+    "check:ci": "npm run lint && npm run typecheck && npm run format:check && npm run test && php vendor/bin/pint && php vendor/bin/phpstan analyse --no-progress --memory-limit=1G && php vendor/bin/rector process --dry-run && php artisan test --parallel --compact"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -46,6 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
     "@vitejs/plugin-react": "^6.0.5",
+    "esbuild": "^0.28.1",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
@@ -71,6 +72,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@floating-ui/react": "^0.27.20",
+    "@geoman-io/leaflet-geoman-free": "^2.20.0",
     "@lexical/code": "^0.49.0",
     "@lexical/code-prism": "^0.49.0",
     "@lexical/extension": "^0.49.0",
@@ -97,10 +99,8 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
-    "esbuild": "^0.28.1",
     "input-otp": "^1.4.2",
     "leaflet": "^1.9.4",
-    "leaflet-draw": "^1.0.4",
     "leaflet.fullscreen": "^5.3.3",
     "lexical": "^0.49.0",
     "lucide-react": "^1.28.0",
@@ -109,9 +109,9 @@
     "react": "^19.0.0",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.0.0",
-    "react-dropzone": "^19.1.1",
+    "react-dropzone": "^19.2.0",
     "react-leaflet": "^5.0.0",
-    "react-leaflet-markercluster": "^5.0.0-rc.0",
+    "react-leaflet-cluster": "^4.1.3",
     "react-phone-number-input": "^3.4.17",
     "react-resizable-panels": "^4.11.2",
     "recharts": "^3.10.1",

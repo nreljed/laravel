@@ -9,7 +9,6 @@ import {
   MapTileLayer,
   MapDrawControl,
   MapDrawMarker,
-  MapDrawPolygon,
   MapDrawEdit,
   MapDrawDelete,
   MapDrawUndo,
@@ -451,9 +450,9 @@ export default function MapSectionInner({
       }
     };
 
-    map.on(L.Draw.Event.CREATED, handleCreated);
+    map.on("pm:create", handleCreated);
     return () => {
-      map.off(L.Draw.Event.CREATED, handleCreated);
+      map.off("pm:create", handleCreated);
     };
   }, [map, L]);
 
@@ -710,7 +709,6 @@ export default function MapSectionInner({
                 markerIcon={getMarkerIcon()}
               >
                 <MapDrawMarker />
-                <MapDrawPolygon />
                 <MapDrawEdit />
                 <MapDrawDelete />
                 <MapDrawUndo />
