@@ -21,6 +21,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmailContract
 {
+    #[\Override]
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
         $this->notify(new ResetPassword($token));
@@ -54,26 +55,31 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     protected $appends = ['avatar_url'];
 
+    /** @return MorphMany<Notification, $this> */
     public function notifications(): MorphMany
     {
         return $this->morphMany(Notification::class, 'notifiable')->latest();
     }
 
+    /** @return BelongsToMany<Role, $this> */
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
     }
 
+    /** @return BelongsToMany<Permission, $this> */
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class);
     }
 
+    /** @return HasMany<AiProvider, $this> */
     public function aiProviders(): HasMany
     {
         return $this->hasMany(AiProvider::class);
     }
 
+    /** @return HasMany<AiUsageLog, $this> */
     public function aiUsageLogs(): HasMany
     {
         return $this->hasMany(AiUsageLog::class);
@@ -98,6 +104,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasPermission($slug);
     }
 
+    #[\Override]
     public function canAny($abilities, $arguments = []): bool
     {
         if (is_iterable($abilities)) {
@@ -124,6 +131,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         );
     }
 
+    #[\Override]
     public function hasVerifiedEmail(): bool
     {
         if (Setting::get('require_email_verification', '0') === '1') {
@@ -174,6 +182,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this;
     }
 
+    #[\Override]
     protected static function boot(): void
     {
         parent::boot();
@@ -185,7 +194,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
         });
     }
 
-    public function casts(): array
+    #[\Override]
+    protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',

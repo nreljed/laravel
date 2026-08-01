@@ -5,9 +5,28 @@ namespace App\Blog\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property int|null $parent_id
+ * @property int $order
+ * @property int $depth
+ * @property string|null $meta_title
+ * @property string|null $meta_description
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, self> $children
+ * @property-read self|null $parent
+ * @property-read Collection<int, Post> $posts
+ * @property-read int $posts_count
+ */
 class PostCategory extends Model
 {
     protected $fillable = [
@@ -20,6 +39,7 @@ class PostCategory extends Model
         'depth' => 'integer',
     ];
 
+    #[\Override]
     protected static function booted(): void
     {
         static::creating(function (PostCategory $category) {
@@ -38,7 +58,7 @@ class PostCategory extends Model
         return $this->hasMany(self::class, 'parent_id');
     }
 
-    public function parent()
+    public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
     }

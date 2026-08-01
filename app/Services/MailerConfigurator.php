@@ -6,12 +6,7 @@ use Illuminate\Support\Facades\Config;
 
 class MailerConfigurator
 {
-    protected EmailSettingsService $settingsService;
-
-    public function __construct(EmailSettingsService $settingsService)
-    {
-        $this->settingsService = $settingsService;
-    }
+    public function __construct(protected EmailSettingsService $settingsService) {}
 
     /**
      * Dynamically configure Laravel mail config from stored settings.

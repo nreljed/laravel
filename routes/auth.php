@@ -56,9 +56,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('verification.send');
 
-    Route::get('email/verified', function () {
-        return Inertia::render('auth/email-verified');
-    })->name('verification.verified');
+    Route::get('email/verified', fn () => Inertia::render('auth/email-verified'))->name('verification.verified');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');

@@ -22,7 +22,7 @@ class NotificationPollController extends Controller
     public function unreadCount(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $userType = get_class($request->user());
+        $userType = $request->user()::class;
 
         $count = $this->notificationService->getCachedUnreadCount($userId, $userType);
 
@@ -35,7 +35,7 @@ class NotificationPollController extends Controller
     {
         $user = $request->user();
         $userId = $user->id;
-        $userType = get_class($user);
+        $userType = $user::class;
 
         $notifications = Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', $userType)
@@ -56,7 +56,7 @@ class NotificationPollController extends Controller
     {
         $user = $request->user();
         $userId = $user->id;
-        $userType = get_class($user);
+        $userType = $user::class;
         $limit = min((int) $request->input('limit', 20), 100);
         $offset = max((int) $request->input('offset', 0), 0);
         $type = $request->input('type', '');
@@ -85,7 +85,7 @@ class NotificationPollController extends Controller
     public function markRead(MarkReadRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $userType = get_class($request->user());
+        $userType = $request->user()::class;
 
         $updated = Notification::where('notifiable_id', $userId)
             ->where('notifiable_type', $userType)
@@ -106,7 +106,7 @@ class NotificationPollController extends Controller
         $userId = $request->user()->id;
 
         Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', get_class($request->user()))
+            ->where('notifiable_type', $request->user()::class)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
@@ -120,7 +120,7 @@ class NotificationPollController extends Controller
         $userId = $request->user()->id;
 
         $deleted = Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', get_class($request->user()))
+            ->where('notifiable_type', $request->user()::class)
             ->where('id', $id)
             ->delete();
 
@@ -138,7 +138,7 @@ class NotificationPollController extends Controller
         $userId = $request->user()->id;
 
         Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', get_class($request->user()))
+            ->where('notifiable_type', $request->user()::class)
             ->whereIn('id', $request->ids)
             ->update(['read_at' => now()]);
 
@@ -152,7 +152,7 @@ class NotificationPollController extends Controller
         $userId = $request->user()->id;
 
         Notification::where('notifiable_id', $userId)
-            ->where('notifiable_type', get_class($request->user()))
+            ->where('notifiable_type', $request->user()::class)
             ->whereIn('id', $request->ids)
             ->delete();
 

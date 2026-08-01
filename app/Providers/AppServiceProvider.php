@@ -25,6 +25,7 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    #[\Override]
     public function register(): void
     {
         $this->app->singleton(FormattingService::class);
@@ -51,13 +52,11 @@ class AppServiceProvider extends ServiceProvider
 
         Notification::creating(function (Notification $notification) {
             $data = $notification->data;
-            if (is_array($data)) {
-                $notification->title ??= $data['title'] ?? $data['type'] ?? '';
-                $notification->message ??= $data['message'] ?? $data['body'] ?? '';
-                $notification->link ??= $data['link'] ?? $data['url'] ?? '';
-                $notification->severity ??= $data['severity'] ?? 'info';
-                $notification->module ??= $data['module'] ?? 'core';
-            }
+            $notification->title ??= $data['title'] ?? $data['type'] ?? '';
+            $notification->message ??= $data['message'] ?? $data['body'] ?? '';
+            $notification->link ??= $data['link'] ?? $data['url'] ?? '';
+            $notification->severity ??= $data['severity'] ?? 'info';
+            $notification->module ??= $data['module'] ?? 'core';
         });
     }
 
@@ -92,16 +91,10 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureRateLimiting(): void
     {
-        RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(30)->by($request->ip());
-        });
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
 
-        RateLimiter::for('register', function (Request $request) {
-            return Limit::perMinute(10)->by($request->ip());
-        });
+        RateLimiter::for('register', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
 
-        RateLimiter::for('auth', function (Request $request) {
-            return Limit::perMinute(30)->by($request->ip());
-        });
+        RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
     }
 }

@@ -10,37 +10,21 @@ use Illuminate\Support\Facades\Notification as NotificationFacade;
 
 class NotificationService
 {
-    protected NotificationTypeRegistry $typeRegistry;
+    private const string UNREAD_CACHE_PREFIX = 'notif:unread:';
 
-    protected FeatureRegistry $featureRegistry;
+    private const int UNREAD_CACHE_TTL = 5;
 
-    protected MailService $mailService;
-
-    private const UNREAD_CACHE_PREFIX = 'notif:unread:';
-
-    private const UNREAD_CACHE_TTL = 5;
-
-    public function __construct(
-        NotificationTypeRegistry $typeRegistry,
-        FeatureRegistry $featureRegistry,
-        MailService $mailService,
-    ) {
-        $this->typeRegistry = $typeRegistry;
-        $this->featureRegistry = $featureRegistry;
-        $this->mailService = $mailService;
-    }
+    public function __construct(protected NotificationTypeRegistry $typeRegistry, protected FeatureRegistry $featureRegistry, protected MailService $mailService) {}
 
     public function getCachedUnreadCount(int $userId, string $userType): int
     {
         $key = self::UNREAD_CACHE_PREFIX.$userId;
 
-        return (int) Cache::remember($key, self::UNREAD_CACHE_TTL, function () use ($userId, $userType) {
-            return \DB::table('notifications')
-                ->where('notifiable_id', $userId)
-                ->where('notifiable_type', $userType)
-                ->whereNull('read_at')
-                ->count();
-        });
+        return (int) Cache::remember($key, self::UNREAD_CACHE_TTL, fn () => \DB::table('notifications')
+            ->where('notifiable_id', $userId)
+            ->where('notifiable_type', $userType)
+            ->whereNull('read_at')
+            ->count());
     }
 
     public function invalidateUnreadCache(int $userId): void
@@ -57,7 +41,7 @@ class NotificationService
             return;
         }
 
-        $channels = $channels ?? ($typeConfig['default_channels'] ?? ['in_app']);
+        $channels ??= $typeConfig['default_channels'] ?? ['in_app'];
         $defaultEnabled = $typeConfig['default_enabled'] ?? true;
 
         $prefs = NotificationPreference::where('user_id', $notifiable->id)

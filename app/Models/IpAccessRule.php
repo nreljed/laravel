@@ -14,19 +14,19 @@ class IpAccessRule extends Model
         'is_active' => 'boolean',
     ];
 
-    private const CACHE_KEY = 'ip_access_rules';
+    private const string CACHE_KEY = 'ip_access_rules';
 
     public static function isIpAllowed(string $ip): bool
     {
         $rules = static::getActiveRules();
 
         $blocklisted = collect($rules)->where('type', 'block')->pluck('ip_address')->toArray();
-        if (static::ipMatchesAny($ip, $blocklisted)) {
+        if (self::ipMatchesAny($ip, $blocklisted)) {
             return false;
         }
 
         $allowlisted = collect($rules)->where('type', 'allow')->pluck('ip_address')->toArray();
-        if (count($allowlisted) > 0 && ! static::ipMatchesAny($ip, $allowlisted)) {
+        if (count($allowlisted) > 0 && ! self::ipMatchesAny($ip, $allowlisted)) {
             return false;
         }
 
@@ -42,9 +42,7 @@ class IpAccessRule extends Model
             return [];
         }
 
-        return Cache::remember(self::CACHE_KEY, 300, function () {
-            return static::where('is_active', true)->get()->toArray();
-        });
+        return Cache::remember(self::CACHE_KEY, 300, fn () => static::where('is_active', true)->get()->toArray());
     }
 
     public static function clearCache(): void
@@ -52,6 +50,7 @@ class IpAccessRule extends Model
         Cache::forget(self::CACHE_KEY);
     }
 
+    #[\Override]
     protected static function boot(): void
     {
         parent::boot();

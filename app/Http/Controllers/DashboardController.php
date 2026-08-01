@@ -56,7 +56,7 @@ class DashboardController extends Controller
 
         $notifications = $query->latest()->paginate(20);
         $unreadCount = Notification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', get_class($user))
+            ->where('notifiable_type', $user::class)
             ->whereNull('read_at')
             ->count();
 

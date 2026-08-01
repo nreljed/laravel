@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RepeaterData;
+use App\Models\User;
 
 class RepeaterService
 {
@@ -179,7 +180,7 @@ class RepeaterService
         $modelType = $repeater['model'] ?? null;
 
         $record = RepeaterData::firstOrNew([
-            'model_type' => $modelType ?? ($repeater ? get_class($repeater) : 'App\\Models\\User'),
+            'model_type' => $modelType ?? User::class,
             'model_id' => $modelId,
             'field_key' => $fieldKey,
         ]);

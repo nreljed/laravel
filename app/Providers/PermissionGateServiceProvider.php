@@ -20,9 +20,7 @@ class PermissionGateServiceProvider extends ServiceProvider
         $permissions = $this->getAllPermissionSlugs();
 
         foreach ($permissions as $slug) {
-            Gate::define($slug, function (User $user) use ($slug) {
-                return $user->hasPermission($slug);
-            });
+            Gate::define($slug, fn (User $user) => $user->hasPermission($slug));
         }
     }
 

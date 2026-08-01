@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Crypt;
 
 class EmailSettingsService
 {
-    private const CACHE_KEY = 'email_settings';
+    private const string CACHE_KEY = 'email_settings';
 
     /**
      * Default email settings.

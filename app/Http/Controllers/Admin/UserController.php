@@ -28,13 +28,13 @@ class UserController extends Controller
         $users = User::with('roles')
             ->latest()
             ->get()
-            ->map(fn ($user) => [
+            ->map(fn (User $user) => [
                 'id' => $user->id,
                 'username' => $user->username,
                 'name' => $user->name,
                 'email' => $user->email,
                 'email_verified_at' => $user->email_verified_at?->toISOString(),
-                'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
+                'roles' => $user->roles->map(fn (Role $r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
                 'created_at' => $user->created_at->toISOString(),
             ]);
 
@@ -194,7 +194,7 @@ class UserController extends Controller
 
         $user->delete();
 
-        if (isset($email)) {
+        if (isset($email, $displayName)) {
             try {
                 app(MailService::class)->sendNow(
                     $email,

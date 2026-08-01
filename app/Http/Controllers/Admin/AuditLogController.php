@@ -191,7 +191,8 @@ class AuditLogController extends Controller
             fputcsv($handle, [
                 'ID', 'Date', 'Time', 'Severity', 'Actor', 'Actor Email', 'Actor Roles', 'Action',
                 'Target Name', 'Target Email', 'Target Roles', 'IP Address', 'User Agent', 'Context',
-            ]);
+            ],
+                escape: '\\');
 
             $query->chunk(200, function ($logs) use ($handle) {
                 $targetIds = collect($logs)
@@ -222,7 +223,9 @@ class AuditLogController extends Controller
                         }
                     }
 
-                    $actorRoles = $log->user?->roles->pluck('slug')->implode(', ') ?? '';
+                    $actorRoles = $log->user !== null
+                        ? $log->user->roles->pluck('slug')->implode(', ')
+                        : '';
                     $actionEnum = AuditAction::tryFrom($log->action);
 
                     fputcsv($handle, [
@@ -230,8 +233,8 @@ class AuditLogController extends Controller
                         $log->created_at->toDateString(),
                         $log->created_at->toTimeString('minute'),
                         $actionEnum?->severity() ?? 'info',
-                        $log->user?->name ?? 'System',
-                        $log->user?->email ?? '',
+                        $log->user->name ?? 'System',
+                        $log->user->email ?? '',
                         $actorRoles,
                         $log->action,
                         $targetName ?? '',
@@ -240,7 +243,8 @@ class AuditLogController extends Controller
                         $log->ip ?? '',
                         $log->user_agent ?? '',
                         $log->context ? json_encode($log->context) : '',
-                    ]);
+                    ],
+                        escape: '\\');
                 }
             });
 
@@ -252,7 +256,7 @@ class AuditLogController extends Controller
 
     private function describe(AuditLog $log, ?array $target): string
     {
-        $actor = $log->user?->name ?? 'System';
+        $actor = $log->user->name ?? 'System';
         $action = $log->action;
         $ctx = $log->context ?? [];
         $targetName = $target['name'] ?? null;

@@ -40,7 +40,7 @@ class CheckMaintenanceMode
             return response()->view('maintenance', [
                 'message' => $message,
                 'endsAt' => $endsAt,
-            ], 503)->header('Retry-After', $retryAfter);
+            ], 503)->header('Retry-After', (string) $retryAfter);
         }
 
         return $next($request);

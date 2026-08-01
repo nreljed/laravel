@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\Console\Command\Command;
 
 class SystemHealthService
 {
@@ -587,7 +588,11 @@ class SystemHealthService
         $scheduled = [];
 
         foreach ($commands as $name => $command) {
-            $class = get_class($command);
+            if (! $command instanceof Command) {
+                continue;
+            }
+
+            $class = $command::class;
             if (str_starts_with($class, $appNamespace)) {
                 $scheduled[] = [
                     'name' => $name,

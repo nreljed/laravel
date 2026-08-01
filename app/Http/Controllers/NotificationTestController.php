@@ -75,7 +75,7 @@ class NotificationTestController extends Controller
         }
 
         return response()->json([
-            'id' => $notification->id ?? uniqid(),
+            'id' => $notification->id ?: uniqid(),
             'emailQueued' => $emailQueued,
         ]);
     }
@@ -85,10 +85,10 @@ class NotificationTestController extends Controller
         $data = $request->validated();
 
         $now = now();
-        $type = 'App\\Notifications\\AppNotification';
+        $type = AppNotification::class;
         $count = 0;
 
-        User::chunk(100, function ($users) use ($data, $now, &$count) {
+        User::chunk(100, function ($users) use ($data, $now, $type, &$count) {
             $rows = [];
             foreach ($users as $user) {
                 $payload = array_merge($data, [
@@ -103,7 +103,7 @@ class NotificationTestController extends Controller
                     'id' => (string) Str::uuid(),
                     'type' => $type,
                     'notifiable_id' => $user->id,
-                    'notifiable_type' => get_class($user),
+                    'notifiable_type' => $user::class,
                     'data' => json_encode($payload),
                     'title' => $data['title'],
                     'message' => $data['message'] ?? '',

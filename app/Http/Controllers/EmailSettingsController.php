@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Email\SendTestEmailRequest;
 use App\Http\Requests\Email\UpdateEmailSettingsRequest;
+use App\Models\User;
 use App\Services\EmailSettingsService;
 use App\Services\EmailTemplateService;
 use App\Services\FeatureRegistry;
@@ -12,25 +13,7 @@ use Illuminate\Http\Request;
 
 class EmailSettingsController extends Controller
 {
-    protected EmailSettingsService $settingsService;
-
-    protected MailService $mailService;
-
-    protected EmailTemplateService $templateService;
-
-    protected FeatureRegistry $featureRegistry;
-
-    public function __construct(
-        EmailSettingsService $settingsService,
-        MailService $mailService,
-        EmailTemplateService $templateService,
-        FeatureRegistry $featureRegistry
-    ) {
-        $this->settingsService = $settingsService;
-        $this->mailService = $mailService;
-        $this->templateService = $templateService;
-        $this->featureRegistry = $featureRegistry;
-    }
+    public function __construct(protected EmailSettingsService $settingsService, protected MailService $mailService, protected EmailTemplateService $templateService, protected FeatureRegistry $featureRegistry) {}
 
     /**
      * Update SMTP/email settings.
@@ -236,8 +219,8 @@ class EmailSettingsController extends Controller
                 'label' => 'Simple Test Email (SMTP Check)',
                 'group' => 'System',
                 'sample_data' => [
-                    'recipientName' => $user?->name ?? 'User',
-                    'recipientEmail' => $user?->email ?? 'user@example.com',
+                    'recipientName' => $this->recipientName($user),
+                    'recipientEmail' => $this->recipientEmail($user),
                     'siteName' => config('app.name'),
                 ],
             ],
@@ -254,8 +237,8 @@ class EmailSettingsController extends Controller
                 'label' => 'New User Welcome',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
-                    'userEmail' => $user?->email ?? 'user@example.com',
+                    'userName' => $this->recipientName($user),
+                    'userEmail' => $this->recipientEmail($user),
                     'loginUrl' => route('login'),
                     'siteName' => config('app.name'),
                 ],
@@ -264,9 +247,9 @@ class EmailSettingsController extends Controller
                 'label' => 'New User (Admin Notification)',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
-                    'userLogin' => $user?->name ?? 'johndoe',
-                    'userEmail' => $user?->email ?? 'user@example.com',
+                    'userName' => $this->recipientName($user),
+                    'userLogin' => $this->recipientName($user, 'johndoe'),
+                    'userEmail' => $this->recipientEmail($user),
                     'profileUrl' => route('dashboard.admin.users.index'),
                     'siteName' => config('app.name'),
                 ],
@@ -275,7 +258,7 @@ class EmailSettingsController extends Controller
                 'label' => 'Password Changed',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
+                    'userName' => $this->recipientName($user),
                     'resetUrl' => route('password.request'),
                     'siteName' => config('app.name'),
                 ],
@@ -284,7 +267,7 @@ class EmailSettingsController extends Controller
                 'label' => 'Password Reset Request',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
+                    'userName' => $this->recipientName($user),
                     'resetUrl' => route('password.request'),
                     'expireMinutes' => 60,
                     'siteName' => config('app.name'),
@@ -294,7 +277,7 @@ class EmailSettingsController extends Controller
                 'label' => 'Email Verification',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
+                    'userName' => $this->recipientName($user),
                     'verificationUrl' => route('verification.notice'),
                     'siteName' => config('app.name'),
                 ],
@@ -303,7 +286,7 @@ class EmailSettingsController extends Controller
                 'label' => 'Email Changed',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
+                    'userName' => $this->recipientName($user),
                     'oldEmail' => 'old@example.com',
                     'newEmail' => 'new@example.com',
                     'siteName' => config('app.name'),
@@ -313,10 +296,20 @@ class EmailSettingsController extends Controller
                 'label' => 'Account Deleted',
                 'group' => 'Account',
                 'sample_data' => [
-                    'userName' => $user?->name ?? 'User',
+                    'userName' => $this->recipientName($user),
                     'siteName' => config('app.name'),
                 ],
             ],
         ];
+    }
+
+    protected function recipientName(?User $user, string $fallback = 'User'): string
+    {
+        return $user->name ?? $fallback;
+    }
+
+    protected function recipientEmail(?User $user): string
+    {
+        return $user->email ?? 'user@example.com';
     }
 }

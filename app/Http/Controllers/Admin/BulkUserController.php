@@ -71,7 +71,7 @@ class BulkUserController extends Controller
         $callback = function () {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['ID', 'Username', 'Name', 'Email', 'Roles', 'Verified', 'Created At']);
+            fputcsv($handle, ['ID', 'Username', 'Name', 'Email', 'Roles', 'Verified', 'Created At'], escape: '\\');
 
             User::with('roles')->chunk(100, function ($users) use ($handle) {
                 foreach ($users as $user) {
@@ -83,7 +83,8 @@ class BulkUserController extends Controller
                         $user->roles->pluck('slug')->implode(', '),
                         $user->hasVerifiedEmail() ? 'Yes' : 'No',
                         $user->created_at->toDateTimeString(),
-                    ]);
+                    ],
+                        escape: '\\');
                 }
             });
 

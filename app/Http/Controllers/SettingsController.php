@@ -104,7 +104,7 @@ class SettingsController extends Controller
         return Inertia::render($page, $extra);
     }
 
-    public function edit(): Response
+    public function edit(): RedirectResponse
     {
         return $this->index();
     }

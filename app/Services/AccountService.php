@@ -93,12 +93,10 @@ class AccountService
         ]);
     }
 
-    public function updateContactInfo(User $user, array $phoneNumbers, ?array $socialMedia): void
+    public function updateContactInfo(User $user, ?array $phoneNumbers, ?array $socialMedia): void
     {
         if ($phoneNumbers !== null) {
-            $filtered = array_filter($phoneNumbers, function ($item) {
-                return ! empty($item['label']) || ! empty($item['phone']);
-            });
+            $filtered = array_filter($phoneNumbers, fn ($item) => ! empty($item['label']) || ! empty($item['phone']));
             $processed = array_map(function ($item) {
                 if (! empty($item['label']) && $item['label'] === 'Other' && ! empty($item['label_custom'])) {
                     $item['label'] = $item['label_custom'];
@@ -111,9 +109,7 @@ class AccountService
         }
 
         if ($socialMedia !== null) {
-            $filtered = array_filter($socialMedia, function ($item) {
-                return ! empty($item['social_title']) && ! empty($item['social_value']);
-            });
+            $filtered = array_filter($socialMedia, fn ($item) => ! empty($item['social_title']) && ! empty($item['social_value']));
             $processed = array_map(function ($item) {
                 if (! empty($item['social_value'])) {
                     $url = trim($item['social_value']);
@@ -129,7 +125,7 @@ class AccountService
 
                 return $item;
             }, $filtered);
-            $user->social_links = json_encode(array_values($processed));
+            $user->social_links = array_values($processed);
         }
 
         $user->save();
@@ -167,12 +163,10 @@ class AccountService
             Log::warning('Module data cleanup failed for user '.$user->id.': '.$e->getMessage());
         }
 
-        if (method_exists($user, 'tokens')) {
-            try {
-                $user->tokens()->delete();
-            } catch (\Throwable $e) {
-                Log::warning('Token cleanup failed for user '.$user->id.': '.$e->getMessage());
-            }
+        try {
+            $user->tokens()->delete();
+        } catch (\Throwable $e) {
+            Log::warning('Token cleanup failed for user '.$user->id.': '.$e->getMessage());
         }
 
         $user->notifications()->delete();

@@ -8,7 +8,7 @@ class Setting extends Model
 {
     protected $fillable = ['key', 'value', 'group'];
 
-    private const KEY_GROUP_MAP = [
+    private const array KEY_GROUP_MAP = [
         'app_name' => 'general',
         'app_description' => 'general',
         'app_url' => 'general',

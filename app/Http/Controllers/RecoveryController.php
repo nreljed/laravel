@@ -57,6 +57,7 @@ class RecoveryController extends Controller
             null,
             true,
             false,
+            false,
             'lax'
         );
 

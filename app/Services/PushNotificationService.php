@@ -9,11 +9,11 @@ use Minishlink\WebPush\WebPush;
 
 class PushNotificationService
 {
-    private const VAPID_PUBLIC_KEY = 'push_vapid_public_key';
+    private const string VAPID_PUBLIC_KEY = 'push_vapid_public_key';
 
-    private const VAPID_PRIVATE_KEY = 'push_vapid_private_key';
+    private const string VAPID_PRIVATE_KEY = 'push_vapid_private_key';
 
-    private const SUBJECT = 'push_vapid_subject';
+    private const string SUBJECT = 'push_vapid_subject';
 
     private static ?WebPush $webPush = null;
 

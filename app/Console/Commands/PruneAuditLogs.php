@@ -14,7 +14,9 @@ class PruneAuditLogs extends Command
 {
     public function handle(): void
     {
-        $days = (int) ($this->option('days') ?: SettingsService::get('audit_logs.retention_days', 90));
+        $days = $this->option('days') !== null
+            ? (int) $this->option('days')
+            : (int) SettingsService::get('audit_logs.retention_days', 90);
 
         if ($days < 1) {
             $this->warn('Retention days must be at least 1. Skipping.');

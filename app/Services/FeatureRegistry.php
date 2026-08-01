@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Blog\BlogServiceProvider;
 use App\TestPosts\TestPostsServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
 class FeatureRegistry
 {
@@ -13,8 +14,25 @@ class FeatureRegistry
 
     public function __construct()
     {
-        $this->blog = app()->getProvider(BlogServiceProvider::class);
-        $this->testPosts = app()->getProvider(TestPostsServiceProvider::class);
+        $this->blog = $this->getProviderOrFail(BlogServiceProvider::class);
+        $this->testPosts = $this->getProviderOrFail(TestPostsServiceProvider::class);
+    }
+
+    /**
+     * @template T of \Illuminate\Support\ServiceProvider
+     *
+     * @param  class-string<T>  $class
+     * @return T
+     */
+    protected function getProviderOrFail(string $class): ServiceProvider
+    {
+        $provider = app()->getProvider($class);
+
+        if ($provider === null) {
+            throw new \RuntimeException("Service provider [{$class}] is not registered.");
+        }
+
+        return $provider;
     }
 
     public function getAllNavItems(): array
@@ -38,10 +56,6 @@ class FeatureRegistry
         $data = [];
 
         foreach ([$this->blog, $this->testPosts] as $provider) {
-            if (! method_exists($provider, 'getDashboardData')) {
-                continue;
-            }
-
             $featureData = $provider->getDashboardData();
 
             if (! empty($featureData)) {
