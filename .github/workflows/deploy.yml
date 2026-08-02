@@ -37,7 +37,7 @@ jobs:
       - name: Generate release notes
         run: |
           npm install -g git-cliff
-          git-cliff --unreleased -o release-notes.md 2>/dev/null || echo "No changes for v${{ steps.version.outputs.version }}" > release-notes.md
+          git-cliff --unreleased --strip header -o release-notes.md 2>/dev/null || echo "No changes for v${{ steps.version.outputs.version }}" > release-notes.md
           git-cliff -o CHANGELOG.md 2>/dev/null || true
 
       - name: Download deploy.zip artifact
