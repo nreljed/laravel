@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Deploy;
 
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Filesystem\Filesystem;
@@ -12,6 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Nreljed\DashboardCore\Models\User;
 use Tests\TestCase;
 
 class DeployEndpointTest extends TestCase

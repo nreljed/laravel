@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Performance;
 
-use App\Services\DashboardService;
-use App\Services\SettingsService;
-use Database\Factories\PostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Services\DashboardService;
+use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

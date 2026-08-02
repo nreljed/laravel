@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

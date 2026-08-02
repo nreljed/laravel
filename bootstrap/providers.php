@@ -1,19 +1,21 @@
 <?php
 
-use App\Ai\AiServiceProvider;
-use App\Blog\BlogServiceProvider;
 use App\Providers\AppServiceProvider;
-use App\Providers\PermissionGateServiceProvider;
 use App\Providers\TelescopeServiceProvider;
 use App\TestPosts\TestPostsServiceProvider;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
+use Nreljed\DashboardCore\Ai\AiServiceProvider;
+use Nreljed\DashboardCore\Blog\BlogServiceProvider;
+use Nreljed\DashboardCore\DashboardCoreServiceProvider;
+use Nreljed\DashboardCore\Providers\PermissionGateServiceProvider;
 
 return array_filter([
-    AppServiceProvider::class,
+    DashboardCoreServiceProvider::class,
     AiServiceProvider::class,
     BlogServiceProvider::class,
-    TestPostsServiceProvider::class,
     PermissionGateServiceProvider::class,
+    AppServiceProvider::class,
+    TestPostsServiceProvider::class,
     class_exists(TelescopeApplicationServiceProvider::class)
         ? TelescopeServiceProvider::class
         : null,

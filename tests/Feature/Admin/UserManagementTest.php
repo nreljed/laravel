@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\Role;
-use App\Models\Setting;
-use App\Models\User;
-use App\Notifications\ResetPassword;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Nreljed\DashboardCore\Models\Role;
+use Nreljed\DashboardCore\Models\Setting;
+use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Notifications\ResetPassword;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

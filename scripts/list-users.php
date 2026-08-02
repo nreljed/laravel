@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
+use Nreljed\DashboardCore\Models\User;
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';

@@ -8,8 +8,18 @@
     "framework"
   ],
   "license": "MIT",
+  "repositories": [
+    {
+      "type": "path",
+      "url": "packages/dashboard-core",
+      "options": {
+        "symlink": false
+      }
+    }
+  ],
   "require": {
     "php": "^8.4",
+    "nreljed/dashboard-core": "@dev",
     "inertiajs/inertia-laravel": "^3.1",
     "intervention/image-laravel": "^4.0",
     "laravel/ai": "^0.9",

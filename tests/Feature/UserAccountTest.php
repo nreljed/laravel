@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Ai\Models\AiProvider;
-use App\Models\NotificationPreference;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\DashboardCore\Ai\Models\AiProvider;
+use Nreljed\DashboardCore\Models\NotificationPreference;
+use Nreljed\DashboardCore\Models\User;
 use Tests\TestCase;
 
 class UserAccountTest extends TestCase

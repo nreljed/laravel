@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use App\TestPosts\Models\TestPost;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Nreljed\DashboardCore\Models\User;
 
 class TestPostFactory extends Factory
 {

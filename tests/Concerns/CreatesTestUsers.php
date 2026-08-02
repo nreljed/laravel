@@ -2,9 +2,9 @@
 
 namespace Tests\Concerns;
 
-use App\Models\Role;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Nreljed\DashboardCore\Models\Role;
+use Nreljed\DashboardCore\Models\User;
 
 trait CreatesTestUsers
 {

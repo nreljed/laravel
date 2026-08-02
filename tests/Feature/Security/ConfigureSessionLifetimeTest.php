@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Security;
 
-use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\TestCase;
 
 class ConfigureSessionLifetimeTest extends TestCase

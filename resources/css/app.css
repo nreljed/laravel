@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../";
-@source "../../app/Blog/Resources/js/";
+@source "../../packages/dashboard-core/resources/js/";
+@source "../../packages/dashboard-core/src/Blog/Resources/js/";
 
 @import "tw-animate-css";
 @import "prismjs/themes/prism-tomorrow.min.css";

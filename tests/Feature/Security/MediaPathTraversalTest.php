@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Security;
 
-use App\Services\MediaService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\DashboardCore\Services\MediaService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

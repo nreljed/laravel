@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Jobs;
 
-use App\Jobs\SendEmail;
-use App\Mail\DynamicMailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Nreljed\DashboardCore\Jobs\SendEmail;
+use Nreljed\DashboardCore\Mail\DynamicMailable;
 use Tests\TestCase;
 
 class SendEmailTest extends TestCase

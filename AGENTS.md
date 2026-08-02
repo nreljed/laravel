@@ -45,77 +45,97 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 - `next-themes` `<ThemeProvider>` for dark mode
 - `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
+- Aliases `@`, `@dashboard`, `@dashboard-blog` all resolve into `packages/dashboard-core` (CORE); `@test-posts` → `app/TestPosts/Resources/js` — see `vite.config.js`, `tsconfig.json`, `vitest.config.js`
 - `asChild` / `Slot` pattern is standard for component composition
 
 ## Architecture
 
 ```
 app/
-  Ai/                              # Self-contained AI feature (BYOK)
-    AiServiceProvider.php          # Routes, policies, registration
-    Agents/                        # SeoAgent, ChatAgent, ContentAgent
-    Concerns/                      # HasAiProvider, LogsAiUsage
-    Controllers/                   # AiProviderController
-    Exceptions/                    # MissingAiProviderException
-    Models/                        # AiProvider, AiUsageLog
-    Policies/                      # AiProviderPolicy
-    Requests/                      # StoreAiProviderRequest, TestAiProviderRequest
-    Routes/                        # web.php (auth+verified)
-    Services/                      # AiService
-  Blog/                          # Self-contained blog feature
-    BlogServiceProvider.php      # Routes, permissions, nav items
-    Controllers/                 # Post, PostCategory, PostTag, BlogPublic
-    Models/                      # Post, PostCategory, PostTag, ContentBlock
-    Routes/                      # web.php (admin + public)
-    Resources/js/Pages/          # Index, Form, Dashboard, Categories, Tags, Public
-    database/migrations/
-  Console/Commands/              # CreateAdmin, CreateRole, ListPermissions, etc.
-  Enums/                         # AuditAction
   Http/
     Controllers/
-      Admin/                     # User, Role, Permission, AuditLog, Session, Bulk, Impersonation
-      Api/                       # NotificationPollController (JSON)
-      Auth/                      # Login, Register, Password, Email verification
-      AdminController.php        # Settings, System Health
-      AvatarController.php
-      DashboardController.php    # Index, Stats, Notifications, SwitchMode
-      DeployController.php       # CI/CD endpoints (check, cacheClear, upload)
-      EmailSettingsController.php
-      NotificationTestController.php
-      UserAccountController.php  # Consolidated profile + account management
-      PublicController.php       # About, Services, Contact
-      SettingsController.php     # Edit, update, logo upload
-    Middleware/
-      HandleInertiaRequests.php  # Shared props: auth, notifications, flash, features, brand
-      AdminMiddleware.php        # 403 if not admin
-      CheckPermission.php       # user.permission:slug
-      CheckRole.php             # user.role:slug
-      CheckMaintenanceMode.php  # 503 Blade template (admins bypass)
-      ConfigureSessionLifetime.php  # DB-driven session timeout
-      ContentSecurityPolicy.php  # CSP headers (production only)
-    Requests/                    # FormRequest classes by domain
-      UpdateContactRequest.php   # Contact page validation (DB-driven rules)
-  Jobs/
-    SendEmail.php               # Mailable dispatch with retry (tries=3, backoff)
-  Mail/                          # DynamicMailable
-  Models/                        # User, Notification, etc.
-  Notifications/                 # Database notification classes
-  Policies/                      # PostPolicy, AiProviderPolicy
-  Providers/                     # AppServiceProvider, PermissionGateServiceProvider, TelescopeServiceProvider
-  Rules/
-    MinPasswordLength.php        # Reads password_min_length from DB
-  Services/
-    AccountService.php           # deleteAccount()
-    AiService.php               # Centralized AI provider resolution + usage logging
-    DashboardService.php         # Stats + analytics cache (5-min TTL via Cache::remember)
-    EmailSettingsService.php
-    FeatureRegistry.php          # Singleton — delegates to feature service providers (use app())
-    FormattingService.php        # Price/surface formatting
-    NotificationService.php      # Cached unread count, preference-aware dispatch, purge
-    SettingsService.php          # DB-driven app config (Cache::remember groups, 5-min TTL)
-  Traits/
-    RelativeTime.php             # Shared relative time formatting
-resources/js/
+      Controller.php              # Base controller
+      DeployController.php        # CI/CD endpoints (check, cacheClear, upload)
+      PublicController.php        # About, Services, Contact
+  Models/
+    Page.php
+  Policies/
+    TestPostPolicy.php
+  Providers/
+    AppServiceProvider.php
+    TelescopeServiceProvider.php
+  TestPosts/                      # Self-contained test feature
+packages/dashboard-core/           # CORE package (nreljed/dashboard-core — Composer path repo)
+  DashboardCoreServiceProvider.php # Boot: routes, permissions, nav items, shared props
+  src/
+    Ai/                            # Self-contained AI feature (BYOK)
+      Agents/                      # SeoAgent, ChatAgent, ContentAgent
+      Concerns/                    # HasAiProvider, LogsAiUsage
+      Controllers/                 # AiProviderController
+      Exceptions/                  # MissingAiProviderException
+      Models/                      # AiProvider, AiUsageLog
+      Policies/                    # AiProviderPolicy
+      Requests/                    # StoreAiProviderRequest, TestAiProviderRequest
+      Routes/                      # web.php (auth+verified)
+      Services/                    # AiService
+    Blog/                          # Self-contained blog feature
+      Controllers/                 # Post, PostCategory, PostTag, BlogPublic
+      Models/                      # Post, PostCategory, PostTag, ContentBlock
+      Requests/
+      Resources/js/Pages/          # Index, Form, Dashboard, Categories, Tags, Public
+      Routes/                      # web.php (admin + public)
+      database/migrations/
+    Console/Commands/              # CreateAdmin, CreateRole, ListPermissions, PublishScheduledContent, PurgeNotifications, PruneAuditLogs, CleanupOrphanMedia
+    Database/                      # Factories, seeders, migrations
+    Enums/                         # AuditAction
+    Http/
+      Controllers/
+        Admin/                     # User, Role, Permission, AuditLog, Session, Bulk, Impersonation
+        Api/                       # NotificationPollController (JSON)
+        Auth/                      # Login, Register, Password, Email verification
+        AdminController.php        # Settings, System Health
+        AvatarController.php
+        DashboardController.php    # Index, Stats, Notifications, SwitchMode
+        EmailSettingsController.php
+        NotificationTestController.php
+        UserAccountController.php  # Consolidated profile + account management
+        SettingsController.php     # Edit, update, logo upload
+      Middleware/
+        HandleInertiaRequests.php  # Shared props: auth, notifications, flash, features, brand
+        AdminMiddleware.php        # 403 if not admin
+        CheckPermission.php       # user.permission:slug
+        CheckRole.php             # user.role:slug
+        CheckMaintenanceMode.php  # 503 Blade template (admins bypass)
+        ConfigureSessionLifetime.php  # DB-driven session timeout
+        ContentSecurityPolicy.php  # CSP headers (production only)
+      Requests/                    # FormRequest classes by domain
+        UpdateContactRequest.php   # Contact page validation (DB-driven rules)
+    Jobs/
+      SendEmail.php               # Mailable dispatch with retry (tries=3, backoff)
+    Mail/                          # DynamicMailable
+    Models/                        # User, Notification, etc.
+    Notifications/                 # Database notification classes
+    Policies/                      # PostPolicy, AiProviderPolicy
+    Providers/                     # PermissionGateServiceProvider
+    Rules/
+      MinPasswordLength.php        # Reads password_min_length from DB
+    Services/
+      AccountService.php           # deleteAccount()
+      AiService.php               # Centralized AI provider resolution + usage logging
+      DashboardService.php         # Stats + analytics cache (5-min TTL via Cache::remember)
+      EmailSettingsService.php
+      FeatureRegistry.php          # Singleton — delegates to feature service providers (use app())
+      FormattingService.php        # Price/surface formatting
+      NotificationService.php      # Cached unread count, preference-aware dispatch, purge
+      SettingsService.php          # DB-driven app config (Cache::remember groups, 5-min TTL)
+    Traits/
+      RelativeTime.php             # Shared relative time formatting
+resources/js/                   # APP shell (master) — entry + public pages only
+  app.tsx                       # Entry — pageMap = registerDashboard() + local ./Pages glob + @test-posts
+  test-setup.ts                 # Vitest setup
+  Layouts/StoreLayout.tsx       # Future store layout
+  Pages/Public/                 # welcome, about, services, contact
+packages/dashboard-core/resources/js/   # CORE frontend (via @dashboard / @ aliases)
   Components/
     ui/                          # shadcn/ui components (40+)
     shared/                      # FeaturedImageSelector, TermsSelector, GalleryUploader
@@ -135,7 +155,7 @@ resources/js/
   Pages/
     Auth/                        # Login, Register, Forgot/Reset Password, Verify Email
     dashboard/                   # index, stats, profile, account, notifications, admin
-    Public/                      # welcome, about, services, contact
+    Blog/Public/                 # Public blog index + show
     Error.tsx                    # Handles 401/403/404/419/429/500/503
   lib/
     utils.ts                     # cn() helper
@@ -143,9 +163,11 @@ resources/js/
     notifications.ts             # Severity type, normalizeType, getSeverity, getTypeLabel
     schemas/                     # Zod schemas
   types/                         # TypeScript type definitions
+  dashboard.ts                   # registerDashboard() — CORE + Blog feature page globs
 routes/
-  web.php                        # Dashboard, admin, public, deploy routes
-  auth.php                       # Breeze auth routes + profile
+  web.php                        # Public, deploy, csp-report routes (APP-only)
+  channels.php
+  console.php
 ```
 
 ## Feature Architecture
@@ -154,7 +176,7 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 ### How It Works
 
-1. **`FeatureRegistry`** (`app/Services/FeatureRegistry.php`) — singleton, delegates to feature service providers
+1. **`FeatureRegistry`** (`packages/dashboard-core/src/Services/FeatureRegistry.php`) — singleton, delegates to feature service providers
 2. **Feature Service Providers** (e.g., `BlogServiceProvider`) — register routes, permissions, nav items
 3. **`HandleInertiaRequests`** calls `FeatureRegistry::getAllNavItems()` and `getAllSharedData()` to share props
 
@@ -166,11 +188,11 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 ### Adding a New Feature
 
-1. Create `app/{Name}/` with Controllers/, Models/, Routes/, Resources/js/Pages/
+1. Create `packages/dashboard-core/src/{Name}/` with Controllers/, Models/, Routes/, Resources/js/Pages/
 2. Create `{Name}ServiceProvider.php` — register routes, permissions, nav items in `boot()`
-3. Register in `bootstrap/providers.php`
-4. Add permission slugs to `database/seeders/RolesAndPermissionsSeeder.php`
-5. Register the service provider in `FeatureRegistry`
+3. Register the service provider in `config('core.features')`
+4. Declare feature permissions in `{Name}ServiceProvider::permissions()`; grant them to roles via `config/roles.php` (package config catalog, per-app overridable)
+5. Reinstall the package (`composer reinstall nreljed/dashboard-core`) so vendor mirrors the new code
 
 ## Routes
 
@@ -190,7 +212,7 @@ Pure **Bring Your Own Key** model — zero platform AI cost. Users manage their 
 ### Architecture
 
 ```
-app/Ai/
+packages/dashboard-core/src/Ai/
   AiServiceProvider.php       # Routes, policies, registration
   Agents/
     SeoAgent.php               # SEO metadata generation (structured output)
@@ -261,6 +283,7 @@ class SeoAgent implements Agent, HasStructuredOutput
 - **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`, `notificationUnreadCount`, `flash`, `featureNavItems`, `userCapabilities`, `emailSettings`, `brand`, `impersonating`
 - **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`
 - **Feature authorization**: Route middleware `permission:feature.view`, controller `$this->authorize()`, or FormRequest `authorize()`
+- **Roles & permissions (config catalog)**: Custom slug-based RBAC, package-owned (`Nreljed\DashboardCore\Models\Role`/`Permission` — NOT Spatie). Core permission catalog + default roles live in `packages/dashboard-core/config/roles.php`; roles are `'*'`/slug-mapped, per-app overridable via a published `config/roles.php`. Gates auto-register from `FeatureRegistry::permissions()` + `permissions` table (`PermissionGateServiceProvider`). Seeder: `Nreljed\DashboardCore\Database\Seeders\RolesAndPermissionsSeeder` (idempotent, config-driven). Slug convention: kebab for global (`manage-users`), dot for features (`posts.view`) — never snake_case.
 - **Rate limiting**: Login (5 attempts/60s), auth routes (5/min IP-based), admin (60/min)
 - **Validation**: `$request->validate()` or FormRequest classes
 - **Error handling**: Inertia renders `Error.tsx` for all HTTP exceptions

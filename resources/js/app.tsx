@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/Components/ui/tooltip";
 import { Toaster, toast } from "@/Components/ui/toast";
+import { registerDashboard } from "@dashboard/dashboard";
 
 import "@/Components/ui/sidebar";
 
@@ -37,11 +38,11 @@ type PageMap = Record<string, ImportFn | { default: React.ComponentType<unknown>
 
 const pages = import.meta.glob("./Pages/**/*.tsx") as Record<string, ImportFn>;
 
-const postsPages = import.meta.glob("@blog/Pages/**/*.tsx") as Record<string, ImportFn>;
-
 const testPostsPages = import.meta.glob("@test-posts/Pages/**/*.tsx") as Record<string, ImportFn>;
 
-const pageMap: PageMap = {};
+const pageMap: PageMap = {
+  ...registerDashboard(),
+};
 
 for (const [path, importFn] of Object.entries(pages)) {
   const match = path.match(/\.\/Pages\/(.+)\.tsx$/);
@@ -55,7 +56,6 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
   const normalized = fullPath.replaceAll("\\", "/");
 
   const fsMarkers: Record<string, string> = {
-    Blog: "app/Blog/Resources/js/Pages/",
     TestPosts: "app/TestPosts/Resources/js/Pages/",
   };
   const fsMarker = fsMarkers[moduleName];
@@ -68,7 +68,6 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
   }
 
   const aliasPrefixMap: Record<string, string> = {
-    Blog: "@blog",
     TestPosts: "@test-posts",
   };
   const alias = aliasPrefixMap[moduleName];
@@ -82,13 +81,6 @@ function extractComponentPath(fullPath: string, moduleName: string): string | nu
   }
 
   return null;
-}
-
-for (const [path, importFn] of Object.entries(postsPages)) {
-  const componentPath = extractComponentPath(path, "Blog");
-  if (componentPath) {
-    pageMap[`Blog/${componentPath}`.toLowerCase()] = importFn;
-  }
 }
 
 for (const [path, importFn] of Object.entries(testPostsPages)) {

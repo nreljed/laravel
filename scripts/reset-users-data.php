@@ -16,10 +16,10 @@ $app = require __DIR__.'/../bootstrap/app.php';
 $kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Nreljed\DashboardCore\Models\User;
 
 echo "=== User Data Reset ===\n\n";
 

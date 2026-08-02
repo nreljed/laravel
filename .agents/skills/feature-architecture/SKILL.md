@@ -109,9 +109,12 @@ public function getAllNavItems(): array
 
 ### 3. Permissions Seeder
 
+Feature permissions are declared in `{Name}ServiceProvider::permissions()` and are picked up automatically by `FeatureRegistry::permissions()`, the `PermissionGateServiceProvider`, and the shared seeder — **no seeder edits needed**.
+
 ```php
-// database/seeders/RolesAndPermissionsSeeder.php
-// Add permission slugs to the $permissions array
+// packages/dashboard-core/src/Database/Seeders/RolesAndPermissionsSeeder.php
+// Syncs permissions from config('roles.permissions') + FeatureRegistry::permissions(),
+// then syncs roles to config('roles.roles'). Idempotent.
 ```
 
 ## Required Methods
@@ -131,11 +134,11 @@ public function getAllNavItems(): array
 
 ## Adding a New Feature
 
-1. Create `app/{Name}/` directory structure
+1. Create `packages/dashboard-core/src/{Name}/` directory structure
 2. Create `{Name}ServiceProvider.php` with all required methods
-3. Register in `bootstrap/providers.php`
-4. Add permission slugs to `RolesAndPermissionsSeeder`
-5. Register in `FeatureRegistry` constructor + all `getAll*()` methods
+3. Register the provider in `config/core.php` (`features`)
+4. Declare feature permissions in `permissions()`; grant them to roles via `config/roles.php`
+5. Register in `FeatureRegistry` (auto-discovered from `config('core.features')`)
 6. Run: `php artisan db:seed --class=RolesAndPermissionsSeeder`
 
 ## Key Rules

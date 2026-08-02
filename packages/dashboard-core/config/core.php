@@ -1,0 +1,53 @@
+<?php
+
+use Nreljed\DashboardCore\Blog\BlogServiceProvider;
+use Nreljed\DashboardCore\Blog\Models\Post;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Load Migrations
+    |--------------------------------------------------------------------------
+    |
+    | Whether the package should load its own migrations. Disable this if the
+    | consuming application already ships equivalent migrations for the same
+    | tables (e.g. an app that migrated from a monolith where the core tables
+    | were created by the application's own migration files).
+    |
+    */
+
+    'load_migrations' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feature Service Providers
+    |--------------------------------------------------------------------------
+    |
+    | The self-contained feature providers discovered by the FeatureRegistry.
+    | Each entry must be a registered service provider implementing the shared
+    | feature contract (slug(), getNavItems(), getSharedData(), permissions(),
+    | and the optional getDashboardData()/getAnalyticsSeries() hooks).
+    |
+    */
+
+    'features' => [
+        BlogServiceProvider::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Orphan Media Targets
+    |--------------------------------------------------------------------------
+    |
+    | Folder => model class pairs scanned by the core:cleanup-orphan-media
+    | command. Each model class must expose a getReferencedPaths() method that
+    | returns the storage paths it references.
+    |
+    */
+
+    'orphan_media' => [
+        'posts' => Post::class,
+    ],
+
+];

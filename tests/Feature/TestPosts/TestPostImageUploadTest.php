@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\TestPosts;
 
-use App\Models\Permission;
-use App\Models\User;
 use App\TestPosts\Models\TestPost;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\DashboardCore\Models\Permission;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Console;
 
-use Database\Factories\PostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Database\Factories\PostFactory;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

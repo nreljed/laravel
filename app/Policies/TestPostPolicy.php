@@ -2,9 +2,9 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\TestPosts\Models\TestPost;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Nreljed\DashboardCore\Models\User;
 
 class TestPostPolicy
 {

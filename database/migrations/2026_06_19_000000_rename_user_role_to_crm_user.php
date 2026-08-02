@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Role;
 use Illuminate\Database\Migrations\Migration;
+use Nreljed\DashboardCore\Models\Role;
 
 return new class extends Migration
 {

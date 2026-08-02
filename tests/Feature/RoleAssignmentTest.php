@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Models\Permission;
+use Nreljed\DashboardCore\Models\Role;
+use Nreljed\DashboardCore\Models\User;
 use Tests\TestCase;
 
 class RoleAssignmentTest extends TestCase
@@ -30,7 +30,7 @@ class RoleAssignmentTest extends TestCase
         $adminRole->load('permissions');
         $slugs = $adminRole->permissions->pluck('slug')->toArray();
 
-        $this->assertContains('manage_options', $slugs);
+        $this->assertContains('manage-options', $slugs);
     }
 
     public function test_user_role_does_not_have_admin_permissions(): void
@@ -42,7 +42,7 @@ class RoleAssignmentTest extends TestCase
         $slugs = $crmRole->permissions->pluck('slug')->toArray();
 
         $this->assertNotContains('manage_users', $slugs);
-        $this->assertNotContains('manage_options', $slugs);
+        $this->assertNotContains('manage-options', $slugs);
         $this->assertNotContains('manage-settings', $slugs);
         $this->assertNotContains('manage-roles', $slugs);
         $this->assertNotContains('view-system-health', $slugs);
@@ -50,7 +50,7 @@ class RoleAssignmentTest extends TestCase
 
     public function test_manage_options_permission_exists_in_database(): void
     {
-        $perm = Permission::where('slug', 'manage_options')->first();
+        $perm = Permission::where('slug', 'manage-options')->first();
         $this->assertNotNull($perm);
         $this->assertEquals('Manage Options', $perm->name);
     }
@@ -61,11 +61,11 @@ class RoleAssignmentTest extends TestCase
         $crmRole = Role::where('slug', 'user')->first();
 
         $this->assertTrue(
-            $adminRole->permissions()->where('slug', 'manage_options')->exists()
+            $adminRole->permissions()->where('slug', 'manage-options')->exists()
         );
 
         $this->assertFalse(
-            $crmRole->permissions()->where('slug', 'manage_options')->exists()
+            $crmRole->permissions()->where('slug', 'manage-options')->exists()
         );
     }
 
@@ -102,7 +102,7 @@ class RoleAssignmentTest extends TestCase
         $this->assertFalse($user->hasPermission('manage-users'));
         $this->assertFalse($user->hasPermission('manage-settings'));
         $this->assertFalse($user->hasPermission('manage-roles'));
-        $this->assertFalse($user->hasPermission('manage_options'));
+        $this->assertFalse($user->hasPermission('manage-options'));
         $this->assertFalse($user->hasPermission('view-system-health'));
     }
 
@@ -118,7 +118,7 @@ class RoleAssignmentTest extends TestCase
         $this->assertTrue($user->hasPermission('manage-users'));
         $this->assertTrue($user->hasPermission('manage-settings'));
         $this->assertTrue($user->hasPermission('manage-roles'));
-        $this->assertTrue($user->hasPermission('manage_options'));
+        $this->assertTrue($user->hasPermission('manage-options'));
         $this->assertTrue($user->hasPermission('view-system-health'));
         $this->assertTrue($user->hasPermission('view-dashboard'));
     }

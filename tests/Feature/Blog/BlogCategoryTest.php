@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Blog;
 
-use App\Blog\Models\PostCategory;
-use Database\Factories\PostCategoryFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Blog\Models\PostCategory;
+use Nreljed\DashboardCore\Database\Factories\PostCategoryFactory;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

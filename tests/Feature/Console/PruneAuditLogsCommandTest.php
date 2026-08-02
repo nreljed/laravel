@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Console;
 
-use App\Models\AuditLog;
-use App\Models\Setting;
-use App\Models\User;
-use App\Services\SettingsService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Models\AuditLog;
+use Nreljed\DashboardCore\Models\Setting;
+use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dc2e66ba10a4b32e8489cbf203c25383",
+    "content-hash": "f661f659aabe04a007c80629df6bbe33",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3179,6 +3179,61 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.8.0"
             },
             "time": "2026-07-04T14:30:18+00:00"
+        },
+        {
+            "name": "nreljed/dashboard-core",
+            "version": "dev-beta",
+            "dist": {
+                "type": "path",
+                "url": "packages/dashboard-core",
+                "reference": "4471116d5e74a1879dafd4c989ce6d0b01516b7a"
+            },
+            "require": {
+                "inertiajs/inertia-laravel": "^3.0",
+                "intervention/image-laravel": "^4.0",
+                "laravel/ai": "^0.9",
+                "laravel/framework": "^13.0",
+                "laravel/sanctum": "^4.0",
+                "minishlink/web-push": "^10.0",
+                "php": "^8.4",
+                "tightenco/ziggy": "^2.6"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "nunomaduro/collision": "^8.6",
+                "phpunit/phpunit": "^13.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Nreljed\\DashboardCore\\DashboardCoreServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Nreljed\\DashboardCore\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Nreljed\\DashboardCore\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "Nreljed"
+                }
+            ],
+            "description": "Shared dashboard core for the Cost Breaker 360 product family (master app, Shop, Booking).",
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
         },
         {
             "name": "nunomaduro/termwind",
@@ -10668,7 +10723,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "nreljed/dashboard-core": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

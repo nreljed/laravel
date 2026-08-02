@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Security;
 
-use App\Models\IpAccessRule;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Models\IpAccessRule;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
