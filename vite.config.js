@@ -22,7 +22,9 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@blog': path.resolve(__dirname, './app/Blog/Resources/js'),
+            '@dashboard': path.resolve(__dirname, './packages/dashboard-core/resources/js'),
+            '@dashboard-blog': path.resolve(__dirname, './packages/dashboard-core/src/Blog/Resources/js'),
+            '@': path.resolve(__dirname, './packages/dashboard-core/resources/js'),
             '@test-posts': path.resolve(__dirname, './app/TestPosts/Resources/js'),
         },
     },

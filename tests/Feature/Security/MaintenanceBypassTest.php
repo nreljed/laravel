@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Security;
 
-use App\Models\Setting;
-use App\Services\SettingsService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Nreljed\DashboardCore\Models\Setting;
+use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

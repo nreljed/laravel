@@ -3,13 +3,13 @@
 namespace App\TestPosts\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Services\HtmlSanitizer;
-use App\Services\MediaService;
 use App\TestPosts\Models\TestPost;
 use App\TestPosts\Requests\BulkActionRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Nreljed\DashboardCore\Services\HtmlSanitizer;
+use Nreljed\DashboardCore\Services\MediaService;
 
 class TestPostController extends Controller
 {

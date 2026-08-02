@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Blog\Models\Post;
-use App\Blog\Models\PostCategory;
-use App\Blog\Models\PostTag;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Blog\Models\PostCategory;
+use Nreljed\DashboardCore\Blog\Models\PostTag;
+use Nreljed\DashboardCore\Models\User;
 
 class BlogContentSeeder extends Seeder
 {

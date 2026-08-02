@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Security;
 
-use App\Blog\Models\Post;
-use App\Services\HtmlSanitizer;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Services\HtmlSanitizer;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

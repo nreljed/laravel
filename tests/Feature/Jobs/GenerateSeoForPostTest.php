@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Jobs;
 
-use App\Ai\Agents\SeoAgent;
-use App\Ai\Exceptions\MissingAiProviderException;
-use App\Jobs\GenerateSeoForPost;
-use Database\Factories\PostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Ai\Agents\SeoAgent;
+use Nreljed\DashboardCore\Ai\Exceptions\MissingAiProviderException;
+use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Jobs\GenerateSeoForPost;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

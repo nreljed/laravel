@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\Role;
-use App\Models\User;
-use App\Notifications\WelcomeNewUser;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Nreljed\DashboardCore\Models\Role;
+use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Notifications\WelcomeNewUser;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

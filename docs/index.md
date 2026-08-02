@@ -21,6 +21,13 @@
 | [Routes](core/routes.md)               | Route structure, middleware, naming                          |
 | [Notifications](core/notifications.md) | Notification system — architecture, API, polling, components |
 
+## Package Architecture
+
+| Document                                                                      | Description                                                        |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Shared Core Package](core-dashboard-package.md)                              | Master plan: monorepo → `nreljed/dashboard-core` for Shop/Booking  |
+| [Phase 0 — Classification & Reconciliation](core-dashboard-package-phase0.md) | Core/App classification, migration diff, User parity, npm-dep scan |
+
 ## Lexical Editor
 
 | Document                                | Description                                                                                       |

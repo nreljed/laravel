@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\Setting;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Nreljed\DashboardCore\Models\Setting;
+use Nreljed\DashboardCore\Models\User;
 use Tests\TestCase;
 
 class RateLimitingTest extends TestCase

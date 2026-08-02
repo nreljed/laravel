@@ -15,11 +15,18 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["./resources/js/*"],
-      "@blog": ["./app/Blog/Resources/js"],
-      "@blog/*": ["./app/Blog/Resources/js/*"],
+      "@dashboard/*": ["./packages/dashboard-core/resources/js/*"],
+      "@dashboard-blog/*": ["./packages/dashboard-core/src/Blog/Resources/js/*"],
+      "@/*": ["./packages/dashboard-core/resources/js/*"],
       "ziggy-js": ["./vendor/tightenco/ziggy"]
     }
   },
-  "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx", "resources/js/**/*.d.ts"]
+  "include": [
+    "resources/js/**/*.ts",
+    "resources/js/**/*.tsx",
+    "resources/js/**/*.d.ts",
+    "packages/dashboard-core/resources/js/**/*.ts",
+    "packages/dashboard-core/resources/js/**/*.tsx",
+    "packages/dashboard-core/resources/js/**/*.d.ts"
+  ]
 }

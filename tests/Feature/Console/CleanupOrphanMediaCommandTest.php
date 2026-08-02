@@ -33,7 +33,7 @@ class CleanupOrphanMediaCommandTest extends TestCase
         Storage::disk('public')->put('test-posts/kept.webp', 'content');
         Storage::disk('public')->put('test-posts/orphan.webp', 'content');
 
-        $this->artisan('app:cleanup-orphan-media')
+        $this->artisan('core:cleanup-orphan-media')
             ->expectsOutputToContain('Deleted 1 orphan file(s).')
             ->assertSuccessful();
 
@@ -45,7 +45,7 @@ class CleanupOrphanMediaCommandTest extends TestCase
     {
         Storage::disk('public')->put('test-posts/orphan.webp', 'content');
 
-        $this->artisan('app:cleanup-orphan-media', ['--dry-run' => true])
+        $this->artisan('core:cleanup-orphan-media', ['--dry-run' => true])
             ->expectsOutputToContain('Would delete 1 orphan file(s).')
             ->assertSuccessful();
 
@@ -63,7 +63,7 @@ class CleanupOrphanMediaCommandTest extends TestCase
 
         Storage::disk('public')->put('test-posts/kept.webp', 'content');
 
-        $this->artisan('app:cleanup-orphan-media')
+        $this->artisan('core:cleanup-orphan-media')
             ->expectsOutputToContain('No orphans found in test-posts/')
             ->expectsOutputToContain('Deleted 0 orphan file(s).')
             ->assertSuccessful();

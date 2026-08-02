@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\RecoveryController;
-use App\Models\RecoveryToken;
-use App\Models\Setting;
-use App\Services\SettingsService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Nreljed\DashboardCore\Http\Controllers\RecoveryController;
+use Nreljed\DashboardCore\Models\RecoveryToken;
+use Nreljed\DashboardCore\Models\Setting;
+use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

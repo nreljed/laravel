@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Ai;
 
-use App\Ai\Models\AiProvider;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Nreljed\DashboardCore\Ai\Models\AiProvider;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

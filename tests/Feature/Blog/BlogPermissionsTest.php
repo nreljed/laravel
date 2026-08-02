@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Blog;
 
-use App\Models\Permission;
-use App\Models\User;
-use Database\Factories\PostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Models\Permission;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

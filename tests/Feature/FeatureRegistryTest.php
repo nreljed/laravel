@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Services\FeatureRegistry;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Tests\TestCase;
 
 class FeatureRegistryTest extends TestCase
