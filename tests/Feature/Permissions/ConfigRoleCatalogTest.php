@@ -39,17 +39,72 @@ class ConfigRoleCatalogTest extends TestCase
         $editor = Role::where('slug', 'editor')->first();
         $this->assertSame(1, $editor->sort_order);
         $this->assertTrue($editor->hasPermission('posts.delete'));
-        $this->assertTrue($editor->hasPermission('manage-email-settings'));
+        $this->assertTrue($editor->hasPermission('manage-categories'));
+        $this->assertTrue($editor->hasPermission('manage-tags'));
         $this->assertTrue($editor->hasPermission('test-posts.delete'));
         $this->assertFalse($editor->hasPermission('manage-users'));
+        $this->assertFalse($editor->hasPermission('manage-email-settings'));
 
         $author = Role::where('slug', 'author')->first();
         $this->assertTrue($author->hasPermission('posts.edit'));
-        $this->assertFalse($author->hasPermission('posts.delete'));
+        $this->assertTrue($author->hasPermission('posts.delete'));
+        $this->assertTrue($author->hasPermission('test-posts.delete'));
+        $this->assertFalse($author->hasPermission('manage-categories'));
+        $this->assertFalse($author->hasPermission('manage-tags'));
 
         $user = Role::where('slug', 'user')->first();
         $this->assertTrue($user->hasPermission('edit-profile'));
         $this->assertFalse($user->hasPermission('posts.view'));
+    }
+
+    public function test_editor_role_grants_every_non_admin_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $editor = Role::where('slug', 'editor')->first();
+        $adminOnly = [
+            'manage-users',
+            'manage-settings',
+            'manage-roles',
+            'view-system-health',
+            'manage-options',
+            'manage-audit-logs',
+            'manage-email-settings',
+        ];
+
+        foreach (Permission::pluck('slug') as $slug) {
+            $this->assertSame(
+                ! in_array($slug, $adminOnly, true),
+                $editor->hasPermission($slug),
+                "Editor permission mismatch for [{$slug}].",
+            );
+        }
+    }
+
+    public function test_author_role_grants_every_non_admin_permission_except_term_management(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $author = Role::where('slug', 'author')->first();
+        $excluded = [
+            'manage-users',
+            'manage-settings',
+            'manage-roles',
+            'view-system-health',
+            'manage-options',
+            'manage-audit-logs',
+            'manage-email-settings',
+            'manage-categories',
+            'manage-tags',
+        ];
+
+        foreach (Permission::pluck('slug') as $slug) {
+            $this->assertSame(
+                ! in_array($slug, $excluded, true),
+                $author->hasPermission($slug),
+                "Author permission mismatch for [{$slug}].",
+            );
+        }
     }
 
     public function test_seeder_is_idempotent(): void
@@ -108,5 +163,12 @@ class ConfigRoleCatalogTest extends TestCase
 
         $admin = Role::where('slug', 'admin')->first();
         $this->assertTrue($admin->hasPermission('manage-reports'));
+
+        // Editor and author inherit newly added non-admin permissions automatically.
+        $editor = Role::where('slug', 'editor')->first();
+        $this->assertTrue($editor->hasPermission('manage-reports'));
+
+        $author = Role::where('slug', 'author')->first();
+        $this->assertTrue($author->hasPermission('manage-reports'));
     }
 }

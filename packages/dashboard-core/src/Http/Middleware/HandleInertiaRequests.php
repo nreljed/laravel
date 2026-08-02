@@ -156,35 +156,24 @@ class HandleInertiaRequests extends Middleware
 
     private function getUserCapabilities($user): array
     {
-        $permissions = [];
+        $slugs = [];
 
         try {
-            $slugs = collect(app(FeatureRegistry::class)->permissions())
-                ->pluck('slug')
-                ->toArray();
+            $slugs = array_merge($slugs, collect(config('roles.permissions', []))->pluck('slug')->all());
         } catch (\Throwable) {
-            $slugs = [];
         }
 
-        $allSlugs = array_unique(array_merge(
-            $slugs,
-            [
-                'manage-users',
-                'manage-settings',
-                'manage-roles',
-                'view-system-health',
-                'view-dashboard',
-                'view-profile',
-                'edit-profile',
-                'delete-account',
-                'view-notifications',
-                'manage-notifications',
-            ]
-        ));
+        try {
+            $slugs = array_merge($slugs, collect(app(FeatureRegistry::class)->permissions())->pluck('slug')->all());
+        } catch (\Throwable) {
+        }
+
+        $allSlugs = array_values(array_unique($slugs));
+
+        $permissions = [];
 
         foreach ($allSlugs as $slug) {
-            $key = lcfirst(str_replace(' ', '', ucwords(str_replace(['-', '.'], ' ', $slug))));
-            $permissions[$key] = $user->can($slug);
+            $permissions[$slug] = $user->can($slug);
         }
 
         return [

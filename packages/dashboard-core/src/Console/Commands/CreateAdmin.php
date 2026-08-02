@@ -29,7 +29,7 @@ class CreateAdmin extends Command
         $email = $this->option('email') ?: config('admin.email');
         $password = $this->option('password') ?: config('admin.password');
         $name = $this->option('name') ?: config('admin.name');
-        $username = $this->option('username') ?: $name;
+        $username = $this->option('username') ?: config('admin.username') ?: $name;
 
         $existing = User::where('email', $email)->first();
         if ($existing && ! $password) {

@@ -6,9 +6,10 @@
  * Usage: php scripts/seed-test-users.php
  *
  * Creates:
- *   - test@example.com (user role, password: password)
- *   - admin@example.com (admin role, password: password)
- *   - nstudio.webdesign@gmail.com (admin role, password: azerty123/*)
+ *   - nreljed@gmail.tn (user role, username: user, password: azerty123/*)
+ *   - nreljed@outlook.com (editor role, username: editor, password: azerty123/*)
+ *   - neosavedme@gmail.com (author role, username: author, password: azerty123/*)
+ *   - nstudio.webdesign@gmail.com (admin role, username: nstudio, password: azerty123/*)
  */
 
 require __DIR__.'/../vendor/autoload.php';
@@ -25,9 +26,10 @@ use Nreljed\DashboardCore\Models\User;
 echo "=== Seeding Test Users ===\n\n";
 
 $users = [
-    ['name' => 'Test User', 'email' => 'test@example.com', 'password' => 'password', 'role' => 'user'],
-    ['name' => 'Admin User', 'email' => 'admin@example.com', 'password' => 'password', 'role' => 'admin'],
-    ['name' => 'Studio Admin', 'email' => 'nstudio.webdesign@gmail.com', 'password' => 'azerty123/*', 'role' => 'admin'],
+    ['name' => 'User Test', 'username' => 'user', 'email' => 'nreljed@gmail.tn', 'password' => 'azerty123/*', 'role' => 'user'],
+    ['name' => 'Editor User', 'username' => 'editor', 'email' => 'nreljed@outlook.com', 'password' => 'azerty123/*', 'role' => 'editor'],
+    ['name' => 'Author User', 'username' => 'author', 'email' => 'neosavedme@gmail.com', 'password' => 'azerty123/*', 'role' => 'author'],
+    ['name' => 'nstudio webdesign', 'username' => 'nstudio', 'email' => 'nstudio.webdesign@gmail.com', 'password' => 'azerty123/*', 'role' => 'admin'],
 ];
 
 foreach ($users as $data) {
@@ -42,7 +44,7 @@ foreach ($users as $data) {
         ['email' => $data['email']],
         [
             'name' => $data['name'],
-            'username' => $data['name'],
+            'username' => $data['username'] ?? $data['name'],
             'password' => Hash::make($data['password']),
             'email_verified_at' => now(),
         ]

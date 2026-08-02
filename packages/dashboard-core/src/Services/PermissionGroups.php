@@ -22,6 +22,8 @@ class PermissionGroups
                 ['slug' => 'posts.create', 'name' => 'Create Posts', 'description' => 'Create new blog posts'],
                 ['slug' => 'posts.edit', 'name' => 'Edit Posts', 'description' => 'Edit existing blog posts'],
                 ['slug' => 'posts.delete', 'name' => 'Delete Posts', 'description' => 'Delete blog posts'],
+                ['slug' => 'manage-categories', 'name' => 'Manage Categories', 'description' => 'Create, edit, and delete post categories'],
+                ['slug' => 'manage-tags', 'name' => 'Manage Tags', 'description' => 'Create, edit, and delete post tags'],
             ],
             'Testing' => [
                 ['slug' => 'test-posts.view', 'name' => 'View Tests', 'description' => 'View tests'],
@@ -36,8 +38,6 @@ class PermissionGroups
                 ['slug' => 'view-system-health', 'name' => 'View System Health', 'description' => 'View system health status'],
                 ['slug' => 'manage-audit-logs', 'name' => 'Manage Audit Logs', 'description' => 'View system audit logs'],
                 ['slug' => 'manage-email-settings', 'name' => 'Manage Email Settings', 'description' => 'Configure email settings'],
-                ['slug' => 'manage-categories', 'name' => 'Manage Categories', 'description' => 'Manage post categories'],
-                ['slug' => 'manage-tags', 'name' => 'Manage Tags', 'description' => 'Manage post tags'],
             ],
         ];
     }

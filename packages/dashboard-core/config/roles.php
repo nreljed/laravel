@@ -53,6 +53,11 @@ return [
     | Roles = config catalog, per-app. Each role maps to the permission slugs it
     | grants. Use '*' to grant every registered permission (admin).
     |
+    | A role may combine '*' with '!' prefixed exclusions to express "everything
+    | except ..." (e.g. editor = every permission except admin-only ones). This
+    | keeps roles future-proof: permissions added later are picked up
+    | automatically unless explicitly excluded.
+    |
     | Consuming applications publish this file (php artisan vendor:publish
     | --tag=core-config) and override the "roles" array wholesale to define
     | their own catalog. Permission slugs reference the shared catalog above
@@ -78,43 +83,35 @@ return [
 
         'author' => [
             'name' => 'Author',
-            'description' => 'Can add content and manage own account',
+            'description' => 'Can add content and manage own account. May select existing categories and tags but cannot create, edit, or delete them.',
             'sort_order' => 2,
             'permissions' => [
-                'view-dashboard',
-                'view-profile',
-                'edit-profile',
-                'delete-account',
-                'view-notifications',
-                'manage-notifications',
-                'posts.view',
-                'posts.create',
-                'posts.edit',
+                '*',
+                '!manage-users',
+                '!manage-settings',
+                '!manage-roles',
+                '!view-system-health',
+                '!manage-options',
+                '!manage-audit-logs',
+                '!manage-email-settings',
+                '!manage-categories',
+                '!manage-tags',
             ],
         ],
 
         'editor' => [
             'name' => 'Editor',
-            'description' => 'Can manage the application without admin privileges',
+            'description' => 'Every permission except the admin panel (users, settings, roles, system health, audit logs, email settings).',
             'sort_order' => 1,
             'permissions' => [
-                'view-dashboard',
-                'view-profile',
-                'edit-profile',
-                'delete-account',
-                'view-notifications',
-                'manage-notifications',
-                'posts.view',
-                'posts.create',
-                'posts.edit',
-                'posts.delete',
-                'manage-categories',
-                'manage-tags',
-                'manage-email-settings',
-                'test-posts.view',
-                'test-posts.create',
-                'test-posts.edit',
-                'test-posts.delete',
+                '*',
+                '!manage-users',
+                '!manage-settings',
+                '!manage-roles',
+                '!view-system-health',
+                '!manage-options',
+                '!manage-audit-logs',
+                '!manage-email-settings',
             ],
         ],
 

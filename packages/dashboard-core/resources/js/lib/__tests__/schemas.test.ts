@@ -30,7 +30,7 @@ describe("loginSchema", () => {
 describe("registrationSchema", () => {
   it("accepts valid registration", () => {
     const result = registrationSchema.safeParse({
-      username: "john_doe",
+      username: "john.doe",
       email: "john@example.com",
       password: "password123",
       password_confirmation: "password123",
@@ -50,7 +50,7 @@ describe("registrationSchema", () => {
 
   it("rejects invalid email", () => {
     const result = registrationSchema.safeParse({
-      username: "john_doe",
+      username: "john.doe",
       email: "not-an-email",
       password: "password123",
       password_confirmation: "password123",
@@ -60,7 +60,7 @@ describe("registrationSchema", () => {
 
   it("rejects mismatched passwords", () => {
     const result = registrationSchema.safeParse({
-      username: "john_doe",
+      username: "john.doe",
       email: "john@example.com",
       password: "password123",
       password_confirmation: "different",
@@ -70,7 +70,7 @@ describe("registrationSchema", () => {
 
   it("rejects short password", () => {
     const result = registrationSchema.safeParse({
-      username: "john_doe",
+      username: "john.doe",
       email: "john@example.com",
       password: "short",
       password_confirmation: "short",
@@ -138,13 +138,13 @@ describe("profileSchema", () => {
   it("accepts valid profile", () => {
     const result = profileSchema.safeParse({
       name: "John Doe",
-      username: "john_doe",
+      username: "john.doe",
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects empty name", () => {
-    const result = profileSchema.safeParse({ name: "", username: "john_doe" });
+    const result = profileSchema.safeParse({ name: "", username: "john.doe" });
     expect(result.success).toBe(false);
   });
 

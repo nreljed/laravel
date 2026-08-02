@@ -12,6 +12,7 @@ import { TermsSelector } from "@/Components/shared/terms-selector";
 import PublishSection from "@/Components/shared/publish-section";
 import { FeaturedImageSelector } from "@/Components/shared/featured-image-selector";
 import { SeoPanel } from "@/Components/shared/seo/SeoPanel";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Category {
   id: number;
@@ -49,6 +50,9 @@ interface PostsFormProps {
 export default function PostsForm({ post, categories, tags }: PostsFormProps) {
   const isEditing = !!post;
   const flash = usePage().props.flash as Record<string, string> | undefined;
+  const { capabilities } = useAuth();
+  const canAddCategories = !!capabilities.can["manage-categories"];
+  const canAddTags = !!capabilities.can["manage-tags"];
 
   const form = useForm({
     title: post?.title || "",
@@ -260,7 +264,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
                   onAddTerm={handleAddCategory}
                   taxonomyName="Category"
                   placeholder="Select category..."
-                  canAdd
+                  canAdd={canAddCategories}
                 />
               </CardContent>
             </Card>
@@ -281,7 +285,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
                   onAddTerm={handleAddTag}
                   taxonomyName="Tag"
                   placeholder="Select tags..."
-                  canAdd
+                  canAdd={canAddTags}
                 />
               </CardContent>
             </Card>
