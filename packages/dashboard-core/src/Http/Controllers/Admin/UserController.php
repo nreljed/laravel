@@ -50,7 +50,7 @@ class UserController extends Controller
     {
         $roles = Role::orderBy('sort_order')->get(['id', 'name', 'slug']);
 
-        $defaultRoleSlug = SettingsService::get('default_role', 'editor');
+        $defaultRoleSlug = SettingsService::get('default_role', config('roles.default_role', 'editor'));
         $defaultRole = Role::where('slug', $defaultRoleSlug)
             ->where('slug', '!=', 'admin')
             ->first() ?? Role::where('slug', 'editor')->first();
@@ -72,7 +72,7 @@ class UserController extends Controller
 
         $roleId = $request->role_id;
         if (! $roleId) {
-            $defaultRoleSlug = SettingsService::get('default_role', 'editor');
+            $defaultRoleSlug = SettingsService::get('default_role', config('roles.default_role', 'editor'));
             $defaultRole = Role::where('slug', $defaultRoleSlug)
                 ->where('slug', '!=', 'admin')
                 ->first() ?? Role::where('slug', 'editor')->first();

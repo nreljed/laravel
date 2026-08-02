@@ -29,6 +29,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/core.php', 'core');
+        $this->mergeConfigFrom(__DIR__.'/../config/roles.php', 'roles');
 
         $this->app->singleton(FormattingService::class);
         $this->app->singleton(FeatureRegistry::class);
@@ -71,6 +72,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/core.php' => config_path('core.php'),
+                __DIR__.'/../config/roles.php' => config_path('roles.php'),
             ], 'core-config');
 
             $this->publishes([

@@ -190,8 +190,8 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 1. Create `packages/dashboard-core/src/{Name}/` with Controllers/, Models/, Routes/, Resources/js/Pages/
 2. Create `{Name}ServiceProvider.php` — register routes, permissions, nav items in `boot()`
-3. Register the service provider in `FeatureRegistry`
-4. Add permission slugs to `database/seeders/RolesAndPermissionsSeeder.php`
+3. Register the service provider in `config('core.features')`
+4. Declare feature permissions in `{Name}ServiceProvider::permissions()`; grant them to roles via `config/roles.php` (package config catalog, per-app overridable)
 5. Reinstall the package (`composer reinstall nreljed/dashboard-core`) so vendor mirrors the new code
 
 ## Routes
@@ -283,6 +283,7 @@ class SeoAgent implements Agent, HasStructuredOutput
 - **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`, `notificationUnreadCount`, `flash`, `featureNavItems`, `userCapabilities`, `emailSettings`, `brand`, `impersonating`
 - **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`
 - **Feature authorization**: Route middleware `permission:feature.view`, controller `$this->authorize()`, or FormRequest `authorize()`
+- **Roles & permissions (config catalog)**: Custom slug-based RBAC, package-owned (`Nreljed\DashboardCore\Models\Role`/`Permission` — NOT Spatie). Core permission catalog + default roles live in `packages/dashboard-core/config/roles.php`; roles are `'*'`/slug-mapped, per-app overridable via a published `config/roles.php`. Gates auto-register from `FeatureRegistry::permissions()` + `permissions` table (`PermissionGateServiceProvider`). Seeder: `Nreljed\DashboardCore\Database\Seeders\RolesAndPermissionsSeeder` (idempotent, config-driven). Slug convention: kebab for global (`manage-users`), dot for features (`posts.view`) — never snake_case.
 - **Rate limiting**: Login (5 attempts/60s), auth routes (5/min IP-based), admin (60/min)
 - **Validation**: `$request->validate()` or FormRequest classes
 - **Error handling**: Inertia renders `Error.tsx` for all HTTP exceptions

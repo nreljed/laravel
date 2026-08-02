@@ -106,9 +106,9 @@ public function onUserDelete(int $userId): void;
 | #   | Divergence                                                | Mechanism                                                                         |
 | --- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | 1   | Roles differ                                              | `config/roles.php` catalog, per-app override                                      |
-| 2   | `default_role` differs                                    | config-driven settings seed                                                       |
+| 2   | `default_role` differs                                    | `config('roles.default_role')` fallback + DB settings seed                        |
 | 3   | Settings keys differ                                      | config-driven settings seed                                                       |
-| 4   | Feature permissions                                       | `FeatureRegistry::permissions()` + `permissions:sync` command                     |
+| 4   | Feature permissions                                       | `FeatureRegistry::permissions()` + shared `RolesAndPermissionsSeeder`             |
 | 5   | Rich dashboards                                           | Page override (D8) + `getDashboardData()`                                         |
 | 6   | Blog editor divergence                                    | Consumers gain Lexical; schema compat verified in Phase 0 ⚠️                      |
 | 7   | Blog migration deltas                                     | Per-migration diff + `hasColumn` guards; adopt master's 8 ⚠️                      |

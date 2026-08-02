@@ -36,7 +36,7 @@ class ListPermissionsCommandTest extends TestCase
     {
         $this->artisan('permissions:list', ['--role' => 'admin'])
             ->expectsOutputToContain('Permissions for role:')
-            ->expectsOutputToContain('manage_options')
+            ->expectsOutputToContain('manage-options')
             ->assertSuccessful();
     }
 
