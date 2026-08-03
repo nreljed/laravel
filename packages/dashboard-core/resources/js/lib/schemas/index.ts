@@ -12,8 +12,8 @@ export const registrationSchema = z
       .min(3, "Username must be at least 3 characters")
       .max(60, "Username must be less than 60 characters")
       .regex(
-        /^[a-zA-Z0-9_.-]+$/,
-        "Only letters, numbers, underscores, hyphens and periods allowed",
+        /^[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*$/,
+        "Only letters, numbers and periods allowed (no spaces or other symbols)",
       ),
     email: z.string().min(1, "Email is required").email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
@@ -58,7 +58,10 @@ export const profileSchema = z.object({
     .string()
     .min(3, "Username must be at least 3 characters")
     .max(60, "Username must be under 60 characters")
-    .regex(/^[a-zA-Z0-9_.-]+$/, "Only letters, numbers, underscores, hyphens and periods allowed"),
+    .regex(
+      /^[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*$/,
+      "Only letters, numbers and periods allowed (no spaces or other symbols)",
+    ),
   display_name: z.string().optional(),
 });
 

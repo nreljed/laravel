@@ -1,5 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ErrorPageProps {
   status: number;
@@ -62,6 +63,7 @@ const errorMessages: Record<
 
 export default function ErrorPage({ status, retryAfter }: ErrorPageProps) {
   const error = errorMessages[status] ?? errorMessages[500];
+  const { isLoggedIn } = useAuth();
   const [remaining, setRemaining] = useState(retryAfter ?? 0);
 
   useEffect(() => {
@@ -121,18 +123,28 @@ export default function ErrorPage({ status, retryAfter }: ErrorPageProps) {
             </p>
 
             <div className="mt-8 flex items-center gap-4">
+              {isLoggedIn && (
+                <a
+                  href={route("dashboard")}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                  Go to Dashboard
+                </a>
+              )}
               <a
                 href={backUrl}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
               >
                 &larr; Go Back
               </a>
-              <Link
-                href="/"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-              >
-                Home
-              </Link>
+              {!isLoggedIn && (
+                <Link
+                  href="/"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
+                  Home
+                </Link>
+              )}
             </div>
           </div>
         </div>

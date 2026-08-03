@@ -48,6 +48,10 @@ class LoginRequest extends FormRequest
 
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
+        if ($fieldType === 'username') {
+            $login = Str::lower($login);
+        }
+
         if (! Auth::attempt([$fieldType => $login, 'password' => $credentials['password']], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 

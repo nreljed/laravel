@@ -255,10 +255,7 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-            onSelect={(event) => {
-              event.preventDefault();
-              setShowLogoutDialog(true);
-            }}
+            onClick={() => setShowLogoutDialog(true)}
           >
             <span className="flex items-center flex-1">Log out</span>
             <LogOut className="h-4 w-4 ml-auto text-muted-foreground" />

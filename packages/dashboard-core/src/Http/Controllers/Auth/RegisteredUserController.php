@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Nreljed\DashboardCore\Http\Controllers\Controller;
@@ -73,7 +74,13 @@ class RegisteredUserController extends Controller
             return response()->json(['available' => true]);
         }
 
-        $exists = User::where($field, $value)->exists();
+        if ($field === 'username') {
+            $value = Str::lower(trim((string) $value));
+        }
+
+        $exists = $field === 'username'
+            ? User::whereRaw('LOWER(username) = ?', [$value])->exists()
+            : User::where('email', $value)->exists();
 
         return response()->json(['available' => ! $exists]);
     }

@@ -43,15 +43,20 @@ export function CommandSearch() {
   const pageProps = usePage().props;
   const featureNavItems = pageProps.featureNavItems as FeatureNavItem[] | undefined;
   const userCapabilities = useMemo(
-    () => (pageProps.userCapabilities as Record<string, boolean>) || {},
+    () =>
+      (pageProps.userCapabilities as {
+        isAdmin?: boolean;
+        can?: Record<string, boolean>;
+      }) || {},
     [pageProps.userCapabilities],
   );
 
   const navigationItems: NavMenuGroup[] = React.useMemo(() => {
+    const can = userCapabilities.can || {};
     const hasPermissionInner = (perm: string | undefined): boolean => {
       if (!perm) return true;
       if (isAdmin) return true;
-      if (Object.hasOwn(userCapabilities, perm)) return userCapabilities[perm] === true;
+      if (Object.hasOwn(can, perm)) return can[perm] === true;
       return false;
     };
 

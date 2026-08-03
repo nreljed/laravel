@@ -3186,7 +3186,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/dashboard-core",
-                "reference": "4471116d5e74a1879dafd4c989ce6d0b01516b7a"
+                "reference": "adad1ce30ce95c2ba8e66739c20e2660378a1824"
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",

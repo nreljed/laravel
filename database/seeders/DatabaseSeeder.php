@@ -14,39 +14,40 @@ class DatabaseSeeder extends Seeder
         $this->call(RolesAndPermissionsSeeder::class);
         $this->call(BlogContentSeeder::class);
 
-        // Admin
-        $admin = User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-        ]);
-        $admin->roles()->attach(Role::where('slug', 'admin')->first()->id);
-
         // Editor
         User::factory()->create([
+            'username' => 'editor',
             'name' => 'Editor User',
-            'email' => 'editor@example.com',
+            'email' => 'nreljed@outlook.com',
+            'password' => Hash::make('azerty123/*'),
         ])->roles()->attach(
             Role::where('slug', 'editor')->first()->id
         );
 
         // Author
         User::factory()->create([
+            'username' => 'author',
             'name' => 'Author User',
-            'email' => 'author@example.com',
+            'email' => 'neosavedme@gmail.com',
+            'password' => Hash::make('azerty123/*'),
         ])->roles()->attach(
             Role::where('slug', 'author')->first()->id
         );
 
         // User
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'username' => 'user',
+            'name' => 'User Test',
+            'email' => 'nreljed@gmail.tn',
+            'password' => Hash::make('azerty123/*'),
         ])->roles()->attach(
             Role::where('slug', 'user')->first()->id
         );
 
+        // Admin
         User::factory()->create([
-            'name' => 'Studio Admin',
+            'username' => 'nstudio',
+            'name' => 'nstudio webdesign',
             'email' => 'nstudio.webdesign@gmail.com',
             'password' => Hash::make('azerty123/*'),
         ])->roles()->attach(

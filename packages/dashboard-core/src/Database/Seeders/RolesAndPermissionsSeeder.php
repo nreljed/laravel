@@ -47,12 +47,30 @@ class RolesAndPermissionsSeeder extends Seeder
         }
     }
 
-    protected function resolvePermissionIds(array|string $slugs): array
+    protected function resolvePermissionIds(array|string $permissions): array
     {
-        if ($slugs === '*') {
-            return Permission::pluck('id')->all();
+        $entries = is_array($permissions) ? $permissions : [$permissions];
+
+        $excludedSlugs = [];
+
+        foreach ($entries as $entry) {
+            if (is_string($entry) && str_starts_with($entry, '!')) {
+                $excludedSlugs[] = substr($entry, 1);
+            }
         }
 
-        return Permission::whereIn('slug', $slugs)->pluck('id')->all();
+        if (in_array('*', $entries, true)) {
+            $ids = Permission::pluck('id')->all();
+        } else {
+            $slugs = array_values(array_filter($entries, fn ($entry) => $entry !== '*' && ! str_starts_with((string) $entry, '!')));
+            $ids = Permission::whereIn('slug', $slugs)->pluck('id')->all();
+        }
+
+        if ($excludedSlugs !== []) {
+            $excludedIds = Permission::whereIn('slug', $excludedSlugs)->pluck('id')->all();
+            $ids = array_values(array_diff($ids, $excludedIds));
+        }
+
+        return array_values(array_unique($ids));
     }
 }
