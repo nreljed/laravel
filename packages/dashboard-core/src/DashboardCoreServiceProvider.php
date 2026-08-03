@@ -15,10 +15,12 @@ use Nreljed\DashboardCore\Ai\Models\AiProvider;
 use Nreljed\DashboardCore\Ai\Policies\AiProviderPolicy;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Models\Notification;
+use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\User;
 use Nreljed\DashboardCore\Notifications\ResetPassword as CustomResetPassword;
 use Nreljed\DashboardCore\Notifications\VerifyEmail as CustomVerifyEmail;
 use Nreljed\DashboardCore\Policies\PostPolicy;
+use Nreljed\DashboardCore\Policies\RolePolicy;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\FormattingService;
 use Nreljed\DashboardCore\Services\MailerConfigurator;
@@ -50,6 +52,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
 
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(AiProvider::class, AiProviderPolicy::class);
+        Gate::policy(Role::class, RolePolicy::class);
 
         Gate::before(function (User $user, string $ability) {
             if ($user->isAdmin()) {

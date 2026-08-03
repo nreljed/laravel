@@ -25,24 +25,32 @@ return [
     | feature provider's permissions() method and are merged automatically by
     | the seeder -- do not list feature permissions here.
     |
+    | Each entry carries an optional "group" key used by the UI to bucket
+    | permissions (General, Blog, Administration). Entries without a group fall
+    | back to "Administration". Feature providers may set "group" on their own
+    | permissions; if absent it defaults to the provider's name().
+    |
     */
 
     'permissions' => [
-        ['name' => 'Manage Users', 'slug' => 'manage-users', 'description' => 'Create, edit, delete users'],
-        ['name' => 'Manage Settings', 'slug' => 'manage-settings', 'description' => 'Change application settings'],
-        ['name' => 'Manage Roles', 'slug' => 'manage-roles', 'description' => 'Assign and manage roles'],
-        ['name' => 'View System Health', 'slug' => 'view-system-health', 'description' => 'View system diagnostics'],
-        ['name' => 'Manage Options', 'slug' => 'manage-options', 'description' => 'Feature-level settings and system operations (admin only)'],
-        ['name' => 'Manage Audit Logs', 'slug' => 'manage-audit-logs', 'description' => 'View system audit logs'],
-        ['name' => 'View Dashboard', 'slug' => 'view-dashboard', 'description' => 'Access the main dashboard'],
-        ['name' => 'View Profile', 'slug' => 'view-profile', 'description' => 'View own profile'],
-        ['name' => 'Edit Profile', 'slug' => 'edit-profile', 'description' => 'Edit own name, email, password'],
-        ['name' => 'Delete Account', 'slug' => 'delete-account', 'description' => 'Delete own account'],
-        ['name' => 'View Notifications', 'slug' => 'view-notifications', 'description' => 'View notifications'],
-        ['name' => 'Manage Notifications', 'slug' => 'manage-notifications', 'description' => 'Mark read, delete notifications'],
-        ['name' => 'Manage Categories', 'slug' => 'manage-categories', 'description' => 'Manage post categories'],
-        ['name' => 'Manage Tags', 'slug' => 'manage-tags', 'description' => 'Manage post tags'],
-        ['name' => 'Manage Email Settings', 'slug' => 'manage-email-settings', 'description' => 'Configure email settings'],
+        ['name' => 'View Dashboard', 'slug' => 'view-dashboard', 'description' => 'Access the main dashboard', 'group' => 'General'],
+        ['name' => 'View Profile', 'slug' => 'view-profile', 'description' => 'View own profile', 'group' => 'General'],
+        ['name' => 'Edit Profile', 'slug' => 'edit-profile', 'description' => 'Edit own name, email, password', 'group' => 'General'],
+        ['name' => 'Delete Account', 'slug' => 'delete-account', 'description' => 'Delete own account', 'group' => 'General'],
+        ['name' => 'View Notifications', 'slug' => 'view-notifications', 'description' => 'View notifications', 'group' => 'General'],
+        ['name' => 'Manage Notifications', 'slug' => 'manage-notifications', 'description' => 'Mark read, delete notifications', 'group' => 'General'],
+        ['name' => 'Manage Categories', 'slug' => 'manage-categories', 'description' => 'Manage post categories', 'group' => 'Blog'],
+        ['name' => 'Manage Tags', 'slug' => 'manage-tags', 'description' => 'Manage post tags', 'group' => 'Blog'],
+        ['name' => 'Manage Users', 'slug' => 'manage-users', 'description' => 'Create, edit, delete users', 'group' => 'Administration'],
+        ['name' => 'Impersonate Users', 'slug' => 'impersonate-users', 'description' => 'Sign in as another user to troubleshoot', 'group' => 'Administration'],
+        ['name' => 'Assign Roles', 'slug' => 'assign-roles', 'description' => 'Assign and remove roles on users', 'group' => 'Administration'],
+        ['name' => 'Manage Settings', 'slug' => 'manage-settings', 'description' => 'Change application settings', 'group' => 'Administration'],
+        ['name' => 'Manage Roles', 'slug' => 'manage-roles', 'description' => 'Create, edit, delete roles and permissions', 'group' => 'Administration'],
+        ['name' => 'View System Health', 'slug' => 'view-system-health', 'description' => 'View system diagnostics', 'group' => 'Administration'],
+        ['name' => 'Manage Options', 'slug' => 'manage-options', 'description' => 'Feature-level settings and system operations (admin only)', 'group' => 'Administration'],
+        ['name' => 'Manage Audit Logs', 'slug' => 'manage-audit-logs', 'description' => 'View system audit logs', 'group' => 'Administration'],
+        ['name' => 'Export Audit Logs', 'slug' => 'export-audit-logs', 'description' => 'Export audit log data as CSV', 'group' => 'Administration'],
+        ['name' => 'Manage Email Settings', 'slug' => 'manage-email-settings', 'description' => 'Configure email settings', 'group' => 'Administration'],
     ],
 
     /*
@@ -93,11 +101,14 @@ return [
                 '*',
                 '!posts.manage',
                 '!manage-users',
+                '!impersonate-users',
+                '!assign-roles',
                 '!manage-settings',
                 '!manage-roles',
                 '!view-system-health',
                 '!manage-options',
                 '!manage-audit-logs',
+                '!export-audit-logs',
                 '!manage-email-settings',
                 '!manage-categories',
                 '!manage-tags',
@@ -111,11 +122,14 @@ return [
             'permissions' => [
                 '*',
                 '!manage-users',
+                '!impersonate-users',
+                '!assign-roles',
                 '!manage-settings',
                 '!manage-roles',
                 '!view-system-health',
                 '!manage-options',
                 '!manage-audit-logs',
+                '!export-audit-logs',
                 '!manage-email-settings',
             ],
         ],

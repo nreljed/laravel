@@ -70,11 +70,14 @@ class ConfigRoleCatalogTest extends TestCase
         $editor = Role::where('slug', 'editor')->first();
         $adminOnly = [
             'manage-users',
+            'impersonate-users',
+            'assign-roles',
             'manage-settings',
             'manage-roles',
             'view-system-health',
             'manage-options',
             'manage-audit-logs',
+            'export-audit-logs',
             'manage-email-settings',
         ];
 
@@ -95,11 +98,14 @@ class ConfigRoleCatalogTest extends TestCase
         $excluded = [
             'posts.manage',
             'manage-users',
+            'impersonate-users',
+            'assign-roles',
             'manage-settings',
             'manage-roles',
             'view-system-health',
             'manage-options',
             'manage-audit-logs',
+            'export-audit-logs',
             'manage-email-settings',
             'manage-categories',
             'manage-tags',

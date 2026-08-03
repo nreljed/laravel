@@ -97,4 +97,13 @@ class RoleCreationTest extends TestCase
         $role = Role::where('slug', 'moderator')->first();
         $this->assertCount(2, $role->permissions);
     }
+
+    public function test_create_role_command_uses_kebab_case_slug(): void
+    {
+        $this->artisan('roles:create', [
+            'name' => 'Customer Support',
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('roles', ['slug' => 'customer-support']);
+    }
 }

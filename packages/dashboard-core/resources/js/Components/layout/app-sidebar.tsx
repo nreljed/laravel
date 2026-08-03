@@ -68,17 +68,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   const adminNavItems: NavItem[] = [
-    { title: "Users", url: safeRoute("dashboard.admin.users.index"), icon: Users },
-    { title: "Roles", url: safeRoute("dashboard.admin.roles.index"), icon: Shield },
+    {
+      title: "Users",
+      url: safeRoute("dashboard.admin.users.index"),
+      icon: Users,
+      permission: "manage-users",
+    },
+    {
+      title: "Roles",
+      url: safeRoute("dashboard.admin.roles.index"),
+      icon: Shield,
+      permission: "manage-roles",
+    },
     {
       title: "Permissions",
       url: safeRoute("dashboard.admin.permissions.manage"),
       icon: ShieldCheck,
+      permission: "manage-roles",
     },
-    { title: "Settings", url: safeRoute("dashboard.admin.settings.general"), icon: Settings },
-    { title: "Audit Logs", url: safeRoute("dashboard.admin.audit-logs.index"), icon: ScrollText },
-    { title: "System Health", url: safeRoute("dashboard.admin.system-health"), icon: Activity },
+    {
+      title: "Settings",
+      url: safeRoute("dashboard.admin.settings.general"),
+      icon: Settings,
+      permission: "manage-settings",
+    },
+    {
+      title: "Audit Logs",
+      url: safeRoute("dashboard.admin.audit-logs.index"),
+      icon: ScrollText,
+      permission: "manage-audit-logs",
+    },
+    {
+      title: "System Health",
+      url: safeRoute("dashboard.admin.system-health"),
+      icon: Activity,
+      permission: "view-system-health",
+    },
   ];
+
+  const visibleAdminItems = adminNavItems.filter((item) => hasPermission(item.permission));
 
   const devNavItems: NavItem[] = [
     {
@@ -143,11 +171,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             );
           })}
 
-        {isAdmin && (
+        {visibleAdminItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
-              <NavMain items={adminNavItems} />
+              <NavMain items={visibleAdminItems} />
             </SidebarGroupContent>
           </SidebarGroup>
         )}

@@ -21,6 +21,11 @@ enum AuditAction: string
     case RoleRevoked = 'role_revoked';
     case PermissionAssigned = 'permission_assigned';
     case PermissionRevoked = 'permission_revoked';
+    case RoleCreated = 'role_created';
+    case RoleUpdated = 'role_updated';
+    case RoleDeleted = 'role_deleted';
+    case RoleDuplicated = 'role_duplicated';
+    case RolePermissionChanged = 'role_permission_changed';
 
     public function severity(): string
     {
@@ -28,6 +33,7 @@ enum AuditAction: string
             self::AccountDelete,
             self::ImpersonationStart,
             self::RoleRevoked,
+            self::RoleDeleted,
             self::PermissionRevoked => 'critical',
 
             self::PasswordChange,
@@ -36,6 +42,10 @@ enum AuditAction: string
             self::EmailChange,
             self::EmailVerified,
             self::RoleAssigned,
+            self::RoleCreated,
+            self::RoleUpdated,
+            self::RoleDuplicated,
+            self::RolePermissionChanged,
             self::PermissionAssigned,
             self::SettingsChanged,
             self::ProfileUpdate,

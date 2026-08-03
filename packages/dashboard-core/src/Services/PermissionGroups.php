@@ -6,40 +6,56 @@ use Nreljed\DashboardCore\Models\Permission;
 
 class PermissionGroups
 {
+    /**
+     * Curated order in which groups should be displayed.
+     *
+     * @var list<string>
+     */
+    private const array GROUP_ORDER = ['General', 'Blog', 'Testing', 'Administration'];
+
+    /**
+     * Build permission groups from the core config catalog and registered
+     * feature providers so the UI can never drift from the source of truth.
+     *
+     * @return array<string, list<array{slug: string, name: string, description: string}>>
+     */
     public static function groups(): array
     {
-        return [
-            'General' => [
-                ['slug' => 'view-dashboard', 'name' => 'View Dashboard', 'description' => 'Access the main dashboard'],
-                ['slug' => 'view-profile', 'name' => 'View Profile', 'description' => 'View own profile'],
-                ['slug' => 'edit-profile', 'name' => 'Edit Profile', 'description' => 'Edit own name, email, password'],
-                ['slug' => 'delete-account', 'name' => 'Delete Account', 'description' => 'Delete own account'],
-                ['slug' => 'view-notifications', 'name' => 'View Notifications', 'description' => 'View notifications'],
-                ['slug' => 'manage-notifications', 'name' => 'Manage Notifications', 'description' => 'Mark read, delete notifications'],
-            ],
-            'Blog' => [
-                ['slug' => 'posts.view', 'name' => 'View Posts', 'description' => 'View blog posts'],
-                ['slug' => 'posts.create', 'name' => 'Create Posts', 'description' => 'Create new blog posts'],
-                ['slug' => 'posts.edit', 'name' => 'Edit Posts', 'description' => 'Edit existing blog posts'],
-                ['slug' => 'posts.delete', 'name' => 'Delete Posts', 'description' => 'Delete blog posts'],
-                ['slug' => 'manage-categories', 'name' => 'Manage Categories', 'description' => 'Create, edit, and delete post categories'],
-                ['slug' => 'manage-tags', 'name' => 'Manage Tags', 'description' => 'Create, edit, and delete post tags'],
-            ],
-            'Testing' => [
-                ['slug' => 'test-posts.view', 'name' => 'View Tests', 'description' => 'View tests'],
-                ['slug' => 'test-posts.create', 'name' => 'Create Tests', 'description' => 'Create new tests'],
-                ['slug' => 'test-posts.edit', 'name' => 'Edit Tests', 'description' => 'Edit existing tests'],
-                ['slug' => 'test-posts.delete', 'name' => 'Delete Tests', 'description' => 'Delete tests'],
-            ],
-            'Administration' => [
-                ['slug' => 'manage-users', 'name' => 'Manage Users', 'description' => 'Create, edit, delete users'],
-                ['slug' => 'manage-settings', 'name' => 'Manage Settings', 'description' => 'Change application settings'],
-                ['slug' => 'manage-roles', 'name' => 'Manage Roles', 'description' => 'Assign and manage roles'],
-                ['slug' => 'view-system-health', 'name' => 'View System Health', 'description' => 'View system health status'],
-                ['slug' => 'manage-audit-logs', 'name' => 'Manage Audit Logs', 'description' => 'View system audit logs'],
-                ['slug' => 'manage-email-settings', 'name' => 'Manage Email Settings', 'description' => 'Configure email settings'],
-            ],
-        ];
+        $groups = [];
+
+        foreach (config('roles.permissions', []) as $permission) {
+            $groups[$permission['group'] ?? 'Administration'][] = [
+                'slug' => $permission['slug'],
+                'name' => $permission['name'],
+                'description' => $permission['description'],
+            ];
+        }
+
+        foreach (app(FeatureRegistry::class)->permissions() as $permission) {
+            if (! is_array($permission)) {
+                continue;
+            }
+
+            $groups[$permission['group'] ?? 'Administration'][] = [
+                'slug' => $permission['slug'],
+                'name' => $permission['name'],
+                'description' => $permission['description'] ?? '',
+            ];
+        }
+
+        $ordered = [];
+        foreach (self::GROUP_ORDER as $groupName) {
+            if (isset($groups[$groupName])) {
+                $ordered[$groupName] = $groups[$groupName];
+                unset($groups[$groupName]);
+            }
+        }
+
+        foreach ($groups as $groupName => $permissions) {
+            $ordered[$groupName] = $permissions;
+        }
+
+        return $ordered;
     }
 
     public static function allSlugs(): array

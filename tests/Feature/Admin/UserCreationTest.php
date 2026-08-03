@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\User;
 use Nreljed\DashboardCore\Notifications\WelcomeNewUser;
@@ -68,7 +69,7 @@ class UserCreationTest extends TestCase
                 'name' => 'Editor User',
                 'email' => 'editor@example.com',
                 'password' => 'SecurePass123!',
-                'role_id' => $role->id,
+                'role_ids' => [$role->id],
             ]);
 
         $response->assertRedirect();
@@ -76,6 +77,29 @@ class UserCreationTest extends TestCase
 
         $user = User::where('email', 'editor@example.com')->first();
         $this->assertTrue($user->hasRole('editor'));
+    }
+
+    public function test_admin_can_create_user_with_multiple_roles(): void
+    {
+        $editor = Role::where('slug', 'editor')->first();
+        $author = Role::where('slug', 'author')->first();
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('dashboard.admin.users.store'), [
+                'username' => 'multirole',
+                'name' => 'Multi Role',
+                'email' => 'multirole@example.com',
+                'password' => 'SecurePass123!',
+                'role_ids' => [$editor->id, $author->id],
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success');
+
+        $user = User::where('email', 'multirole@example.com')->first();
+        $this->assertTrue($user->hasRole('editor'));
+        $this->assertTrue($user->hasRole('author'));
+        $this->assertCount(2, $user->roles);
     }
 
     public function test_admin_can_create_user_with_role_and_send_email(): void
@@ -90,7 +114,7 @@ class UserCreationTest extends TestCase
                 'name' => 'Notified User',
                 'email' => 'notified@example.com',
                 'password' => 'SecurePass123!',
-                'role_id' => $role->id,
+                'role_ids' => [$role->id],
                 'send_email' => true,
             ]);
 
@@ -178,7 +202,7 @@ class UserCreationTest extends TestCase
                 'name' => 'Audit User',
                 'email' => 'audit@example.com',
                 'password' => 'SecurePass123!',
-                'role_id' => $role->id,
+                'role_ids' => [$role->id],
             ]);
 
         $user = User::where('email', 'audit@example.com')->first();
@@ -187,6 +211,29 @@ class UserCreationTest extends TestCase
             'action' => 'role_assigned',
             'user_id' => $admin->id,
         ]);
+    }
+
+    public function test_user_manager_without_assign_roles_gets_default_role(): void
+    {
+        $user = $this->createUserWithRole('user');
+        $user->roles()->first()->permissions()->attach(
+            Permission::where('slug', 'manage-users')->first()
+        );
+
+        $response = $this->actingAs($user)
+            ->post(route('dashboard.admin.users.store'), [
+                'username' => 'delegated',
+                'name' => 'Delegated',
+                'email' => 'delegated@example.com',
+                'password' => 'SecurePass123!',
+                'role_ids' => [Role::where('slug', 'admin')->first()->id],
+            ]);
+
+        $response->assertRedirect();
+
+        $created = User::where('email', 'delegated@example.com')->first();
+        $this->assertFalse($created->hasRole('admin'));
+        $this->assertTrue($created->hasRole('editor'));
     }
 
     public function test_audit_log_when_default_role_assigned(): void

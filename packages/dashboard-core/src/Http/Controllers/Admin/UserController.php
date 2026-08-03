@@ -70,16 +70,8 @@ class UserController extends Controller
             'password' => $request->password,
         ]);
 
-        $roleId = $request->role_id;
-        if (! $roleId) {
-            $defaultRoleSlug = SettingsService::get('default_role', config('roles.default_role', 'editor'));
-            $defaultRole = Role::where('slug', $defaultRoleSlug)
-                ->where('slug', '!=', 'admin')
-                ->first() ?? Role::where('slug', 'editor')->first();
-            $roleId = $defaultRole?->id;
-        }
-
-        $roleSlug = $roleId ? Role::find($roleId)?->slug : null;
+        $roleIds = $this->resolveRoleIds($request);
+        $roleSlugs = Role::whereIn('id', $roleIds)->pluck('slug')->all();
 
         AuditService::log(AuditAction::AccountCreated, $request->user()->id, [
             'target_user_id' => $user->id,
@@ -87,18 +79,18 @@ class UserController extends Controller
             'target_email' => $user->email,
             'target_username' => $user->username,
             'target_display_name' => $user->display_name,
-            'role_id' => $roleId,
-            'role_slug' => $roleSlug,
+            'role_ids' => $roleIds,
+            'role_slugs' => $roleSlugs,
             'notified' => $request->boolean('send_email'),
         ]);
 
-        if ($roleId) {
-            $user->roles()->sync([$roleId]);
+        if ($roleIds !== []) {
+            $user->roles()->sync($roleIds);
 
             AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
                 'target_user_id' => $user->id,
-                'role_id' => $roleId,
-                'role_slug' => $roleSlug,
+                'role_ids' => $roleIds,
+                'role_slugs' => $roleSlugs,
             ]);
         }
 
@@ -127,7 +119,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'email_verified_at' => $user->email_verified_at?->toISOString(),
-                'role_id' => $user->roles->first()?->id,
+                'role_ids' => $user->roles->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             ],
             'roles' => $roles,
         ]);
@@ -145,28 +137,57 @@ class UserController extends Controller
             $user->update(['password' => $request->password]);
         }
 
-        if ($request->has('role_id')) {
-            $oldRole = $user->roles()->first();
-            $user->roles()->sync([$request->role_id]);
+        if ($request->user()->can('assign-roles') && $request->has('role_ids')) {
+            $oldIds = $user->roles()->pluck('id')->map(fn ($id) => (int) $id)->toArray();
+            $newIds = array_values(array_unique(array_map('intval', $request->input('role_ids', []))));
 
-            if ($oldRole && (int) $request->role_id !== $oldRole->id) {
-                AuditService::log(AuditAction::RoleRevoked, $request->user()->id, [
-                    'target_user_id' => $user->id,
-                    'role_id' => $oldRole->id,
-                    'role_slug' => $oldRole->slug,
-                ]);
+            $addedIds = array_values(array_diff($newIds, $oldIds));
+            $removedIds = array_values(array_diff($oldIds, $newIds));
+
+            if ($addedIds !== [] || $removedIds !== []) {
+                $user->roles()->sync($newIds);
+
+                if ($addedIds !== []) {
+                    AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
+                        'target_user_id' => $user->id,
+                        'role_ids' => $addedIds,
+                        'role_slugs' => Role::whereIn('id', $addedIds)->pluck('slug')->all(),
+                    ]);
+                }
+
+                if ($removedIds !== []) {
+                    AuditService::log(AuditAction::RoleRevoked, $request->user()->id, [
+                        'target_user_id' => $user->id,
+                        'role_ids' => $removedIds,
+                        'role_slugs' => Role::whereIn('id', $removedIds)->pluck('slug')->all(),
+                    ]);
+                }
             }
-
-            $newRole = Role::find($request->role_id);
-            AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
-                'target_user_id' => $user->id,
-                'role_id' => $request->role_id,
-                'role_slug' => $newRole?->slug,
-            ]);
         }
 
         return redirect()->route('dashboard.admin.users.index')
             ->with('flash', ['success' => 'User updated successfully.']);
+    }
+
+    /**
+     * Resolve the role ids to assign on creation. Users with the
+     * "assign-roles" permission may set roles explicitly; otherwise the
+     * default registration role is applied.
+     *
+     * @return list<int>
+     */
+    protected function resolveRoleIds(Request $request): array
+    {
+        if ($request->user()->can('assign-roles') && $request->filled('role_ids')) {
+            return array_values(array_unique(array_map('intval', $request->input('role_ids', []))));
+        }
+
+        $defaultRoleSlug = SettingsService::get('default_role', config('roles.default_role', 'editor'));
+        $defaultRole = Role::where('slug', $defaultRoleSlug)
+            ->where('slug', '!=', 'admin')
+            ->first() ?? Role::where('slug', 'editor')->first();
+
+        return $defaultRole ? [$defaultRole->id] : [];
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

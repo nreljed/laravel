@@ -342,6 +342,7 @@ The `@typescript-eslint/strict-type-checked` preset requires type-aware linting 
 - Always run `npm run build` after code changes
 - CSP middleware only applies in production
 - Site: `https://laravel.local/`
+- **Seed users**: All seeded role users (editor/author/user/admin in `DatabaseSeeder`) share the same password `azerty123/*` — never forget this. Admin: `nstudio.webdesign@gmail.com` (username `nstudio`).
 
 ## Playwright MCP
 

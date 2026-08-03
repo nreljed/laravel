@@ -140,84 +140,99 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
 });
 
 // ═══════════════════════════════════════════════════
-// DASHBOARD ADMIN Pages — requires auth + admin
+// DASHBOARD ADMIN Pages — requires auth + permission
 // ═══════════════════════════════════════════════════
-Route::middleware(['auth', 'admin', 'maintenance', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
-    Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
-    Route::post('/system-health/refresh', [AdminController::class, 'refreshSystemHealth'])->name('system-health.refresh');
+Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {
+    // System health
+    Route::middleware('permission:view-system-health')->group(function () {
+        Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
+        Route::post('/system-health/refresh', [AdminController::class, 'refreshSystemHealth'])->name('system-health.refresh');
+    });
 
-    Route::prefix('/settings')->name('settings.')->group(function () {
-        Route::get('/', [SettingsController::class, 'index'])->name('index');
-        Route::put('/', [SettingsController::class, 'update'])->name('update');
+    // Settings (general, registration, notifications, security, branding, IP rules)
+    Route::middleware('permission:manage-settings')->group(function () {
+        Route::prefix('/settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingsController::class, 'index'])->name('index');
+            Route::put('/', [SettingsController::class, 'update'])->name('update');
 
-        Route::get('/general', [SettingsController::class, 'general'])->name('general');
-        Route::get('/registration', [SettingsController::class, 'registration'])->name('registration');
-        Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
-        Route::get('/security', [SettingsController::class, 'security'])->name('security');
+            Route::get('/general', [SettingsController::class, 'general'])->name('general');
+            Route::get('/registration', [SettingsController::class, 'registration'])->name('registration');
+            Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
+            Route::get('/security', [SettingsController::class, 'security'])->name('security');
+            Route::get('/maintenance', [SettingsController::class, 'maintenance'])->name('maintenance');
+            Route::get('/ip-access', [SettingsController::class, 'ipAccess'])->name('ip-access');
+
+            Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
+            Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
+            Route::post('/favicon', [SettingsController::class, 'uploadFavicon'])->name('favicon.upload');
+            Route::delete('/favicon', [SettingsController::class, 'deleteFavicon'])->name('favicon.delete');
+        });
+
+        Route::get('/ip-rules', [IpAccessRuleController::class, 'index'])->name('ip-rules.index');
+        Route::post('/ip-rules', [IpAccessRuleController::class, 'store'])->name('ip-rules.store');
+        Route::put('/ip-rules/{ipAccessRule}', [IpAccessRuleController::class, 'update'])->name('ip-rules.update');
+        Route::delete('/ip-rules/{ipAccessRule}', [IpAccessRuleController::class, 'destroy'])->name('ip-rules.destroy');
+    });
+
+    // Email settings (dedicated permission)
+    Route::middleware('permission:manage-email-settings')->prefix('/settings')->name('settings.')->group(function () {
         Route::get('/email', [SettingsController::class, 'email'])->name('email');
-        Route::get('/maintenance', [SettingsController::class, 'maintenance'])->name('maintenance');
-        Route::get('/ip-access', [SettingsController::class, 'ipAccess'])->name('ip-access');
-
         Route::put('/email', [EmailSettingsController::class, 'update'])->name('email.update');
         Route::post('/email/test', [EmailSettingsController::class, 'sendTest'])->name('email.test');
         Route::post('/email/template-test', [EmailSettingsController::class, 'sendTemplateTest'])->name('email.template-test');
         Route::get('/email/template-preview/{template}', [EmailSettingsController::class, 'previewTemplate'])->name('email.template-preview');
-        Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
-        Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');
-        Route::post('/favicon', [SettingsController::class, 'uploadFavicon'])->name('favicon.upload');
-        Route::delete('/favicon', [SettingsController::class, 'deleteFavicon'])->name('favicon.delete');
     });
 
     // User management
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-    Route::post('/users/{user}/verify-email', [UserController::class, 'verifyEmail'])->name('users.verify-email');
-    Route::post('/users/{user}/send-reset-link', [UserController::class, 'sendPasswordReset'])->name('users.send-reset-link');
-    Route::get('/users/{user}/sessions', [SessionController::class, 'index'])->name('users.sessions');
-    Route::delete('/users/{user}/sessions/{session}', [SessionController::class, 'destroy'])->name('users.sessions.destroy');
+    Route::middleware('permission:manage-users')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{user}/verify-email', [UserController::class, 'verifyEmail'])->name('users.verify-email');
+        Route::post('/users/{user}/send-reset-link', [UserController::class, 'sendPasswordReset'])->name('users.send-reset-link');
+        Route::get('/users/{user}/sessions', [SessionController::class, 'index'])->name('users.sessions');
+        Route::delete('/users/{user}/sessions/{session}', [SessionController::class, 'destroy'])->name('users.sessions.destroy');
+        Route::post('/users/bulk/delete', [BulkUserController::class, 'delete'])->name('users.bulk.delete');
+        Route::post('/users/bulk/verify-email', [BulkUserController::class, 'verifyEmail'])->name('users.bulk.verify-email');
+        Route::post('/users/bulk/send-reset', [BulkUserController::class, 'sendPasswordReset'])->name('users.bulk.send-reset');
+        Route::get('/users/export', [BulkUserController::class, 'export'])->name('users.export');
+    });
 
-    // Role management
-    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
-    Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
-    Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
-    Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
-    Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
-    Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    // Role + permission management
+    Route::middleware('permission:manage-roles')->group(function () {
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        Route::post('/roles/{role}/duplicate', [RoleController::class, 'duplicate'])->name('roles.duplicate');
 
-    // Impersonation start
-    Route::post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
+        Route::get('/permissions', [PermissionController::class, 'manage'])->name('permissions.manage');
+        Route::post('/permissions', [PermissionController::class, 'toggle'])->name('permissions.toggle');
+    });
 
-    // Bulk operations
-    Route::post('/users/bulk/delete', [BulkUserController::class, 'delete'])->name('users.bulk.delete');
-    Route::post('/users/bulk/verify-email', [BulkUserController::class, 'verifyEmail'])->name('users.bulk.verify-email');
-    Route::post('/users/bulk/send-reset', [BulkUserController::class, 'sendPasswordReset'])->name('users.bulk.send-reset');
-    Route::get('/users/export', [BulkUserController::class, 'export'])->name('users.export');
+    // Impersonation start (separate permission)
+    Route::middleware('permission:impersonate-users')->post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
 
     // Audit logs
-    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
-    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
+    Route::middleware('permission:manage-audit-logs')->group(function () {
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->middleware('permission:export-audit-logs')->name('audit-logs.export');
+    });
 
-    // Permission management
-    Route::get('/permissions', [PermissionController::class, 'manage'])->name('permissions.manage');
-    Route::post('/permissions', [PermissionController::class, 'toggle'])->name('permissions.toggle');
+    // Developer tools (admin only)
+    Route::middleware('admin')->group(function () {
+        Route::get('/developer/style-guide', fn () => Inertia::render('dashboard/developer/style-guide'))->name('developer.style-guide');
 
-    // Developer tools
-    Route::get('/developer/style-guide', fn () => Inertia::render('dashboard/developer/style-guide'))->name('developer.style-guide');
-
-    Route::get('/notifications/test', [NotificationTestController::class, 'index'])->name('notifications.test');
-    Route::post('/notifications/test', [NotificationTestController::class, 'sendTest'])->name('notifications.test-send');
-    Route::post('/notifications/test/send-to-all', [NotificationTestController::class, 'sendToAll'])->name('notifications.test-send-all');
-    Route::delete('/notifications/test/clear', [NotificationTestController::class, 'clearAll'])->name('notifications.test-clear');
-
-    // IP Access Rules
-    Route::get('/ip-rules', [IpAccessRuleController::class, 'index'])->name('ip-rules.index');
-    Route::post('/ip-rules', [IpAccessRuleController::class, 'store'])->name('ip-rules.store');
-    Route::put('/ip-rules/{ipAccessRule}', [IpAccessRuleController::class, 'update'])->name('ip-rules.update');
-    Route::delete('/ip-rules/{ipAccessRule}', [IpAccessRuleController::class, 'destroy'])->name('ip-rules.destroy');
+        Route::get('/notifications/test', [NotificationTestController::class, 'index'])->name('notifications.test');
+        Route::post('/notifications/test', [NotificationTestController::class, 'sendTest'])->name('notifications.test-send');
+        Route::post('/notifications/test/send-to-all', [NotificationTestController::class, 'sendToAll'])->name('notifications.test-send-all');
+        Route::delete('/notifications/test/clear', [NotificationTestController::class, 'clearAll'])->name('notifications.test-clear');
+    });
 });
 
 // ═══════════════════════════════════════════════════

@@ -4,7 +4,10 @@ namespace Tests\Feature\Admin;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\Setting;
 use Nreljed\DashboardCore\Models\User;
@@ -114,13 +117,77 @@ class UserManagementTest extends TestCase
                 'username' => $target->username,
                 'name' => $target->name,
                 'email' => $target->email,
-                'role_id' => $role->id,
+                'role_ids' => [$role->id],
             ]);
 
         $response->assertRedirect();
 
         $target->refresh();
         $this->assertTrue($target->hasRole('editor'));
+    }
+
+    public function test_admin_can_update_user_with_multiple_roles(): void
+    {
+        $target = User::factory()->create();
+        $editor = Role::where('slug', 'editor')->first();
+        $author = Role::where('slug', 'author')->first();
+
+        $response = $this->actingAs($this->admin())
+            ->put(route('dashboard.admin.users.update', $target), [
+                'username' => $target->username,
+                'name' => $target->name,
+                'email' => $target->email,
+                'role_ids' => [$editor->id, $author->id],
+            ]);
+
+        $response->assertRedirect();
+
+        $target->refresh();
+        $this->assertTrue($target->hasRole('editor'));
+        $this->assertTrue($target->hasRole('author'));
+        $this->assertCount(2, $target->roles);
+    }
+
+    public function test_admin_can_remove_all_roles_from_user(): void
+    {
+        $editor = Role::where('slug', 'editor')->first();
+        $target = User::factory()->create();
+        $target->roles()->attach($editor);
+
+        $response = $this->actingAs($this->admin())
+            ->put(route('dashboard.admin.users.update', $target), [
+                'username' => $target->username,
+                'name' => $target->name,
+                'email' => $target->email,
+                'role_ids' => [],
+            ]);
+
+        $response->assertRedirect();
+
+        $target->refresh();
+        $this->assertCount(0, $target->roles);
+    }
+
+    public function test_user_without_assign_roles_permission_cannot_change_roles(): void
+    {
+        $user = $this->createUserWithRole('user');
+        $user->roles()->first()->permissions()->attach(Permission::where('slug', 'manage-users')->first());
+
+        $editor = Role::where('slug', 'editor')->first();
+        $target = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->put(route('dashboard.admin.users.update', $target), [
+                'username' => $target->username,
+                'name' => $target->name,
+                'email' => $target->email,
+                'role_ids' => [$editor->id],
+            ]);
+
+        $response->assertRedirect();
+
+        $target->refresh();
+        $this->assertCount(0, $target->roles);
     }
 
     public function test_admin_can_update_user_password(): void
@@ -221,6 +288,27 @@ class UserManagementTest extends TestCase
         $response->assertSessionHas('flash.success');
 
         $this->assertDatabaseMissing('users', ['id' => $target->id]);
+    }
+
+    public function test_admin_delete_revokes_target_user_sessions(): void
+    {
+        $target = User::factory()->create();
+
+        DB::table('sessions')->insert([
+            'id' => Str::random(40),
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Test Agent',
+            'payload' => 'test-payload',
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->delete(route('dashboard.admin.users.destroy', $target));
+
+        $response->assertRedirect(route('dashboard.admin.users.index'));
+        $this->assertDatabaseMissing('users', ['id' => $target->id]);
+        $this->assertDatabaseMissing('sessions', ['user_id' => $target->id]);
     }
 
     public function test_admin_cannot_delete_self(): void

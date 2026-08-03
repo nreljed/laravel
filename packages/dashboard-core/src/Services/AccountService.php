@@ -2,6 +2,7 @@
 
 namespace Nreljed\DashboardCore\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -182,8 +183,33 @@ class AccountService
 
         NotificationPreference::where('user_id', $user->id)->delete();
 
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
         AiProvider::where('user_id', $user->id)->delete();
         AiUsageLog::where('user_id', $user->id)->delete();
+
+        try {
+            $this->deleteUserConversations($user->id);
+        } catch (\Throwable $e) {
+            Log::warning('Conversation cleanup failed for user '.$user->id.': '.$e->getMessage());
+        }
+    }
+
+    protected function deleteUserConversations(int $userId): void
+    {
+        $conversationsTable = config('ai.conversations.tables.conversations', 'agent_conversations');
+        $messagesTable = config('ai.conversations.tables.messages', 'agent_conversation_messages');
+
+        $conversationIds = DB::table($conversationsTable)
+            ->where('user_id', $userId)
+            ->pluck('id');
+
+        if ($conversationIds->isNotEmpty()) {
+            DB::table($messagesTable)->whereIn('conversation_id', $conversationIds)->delete();
+        }
+
+        DB::table($messagesTable)->where('user_id', $userId)->delete();
+        DB::table($conversationsTable)->where('user_id', $userId)->delete();
     }
 
     protected function sendPasswordChangeConfirmation(User $user): void

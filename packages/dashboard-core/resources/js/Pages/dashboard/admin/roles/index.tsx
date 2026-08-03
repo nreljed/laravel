@@ -5,6 +5,13 @@ import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header"
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -21,7 +28,7 @@ import {
   EmptyDescription,
   EmptyMedia,
 } from "@/Components/ui/empty";
-import { Pencil, Plus, Shield, Trash2 } from "lucide-react";
+import { Pencil, Plus, Shield, Trash2, MoreHorizontal, Copy, Crown } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -32,11 +39,26 @@ interface Role {
   description: string | null;
   users_count: number;
   permissions_count: number;
+  is_system: boolean;
+  is_default: boolean;
+  updated_at: string | null;
 }
 
 export default function AdminRolesIndex() {
   const { roles } = usePage().props as unknown as { roles: Role[] };
   const [deleteRole, setDeleteRole] = useState<Role | null>(null);
+
+  const deleteDisabledReason = (role: Role): string | null => {
+    if (role.is_system) return "System roles are managed by config and cannot be deleted";
+    if (role.is_default) return "The default registration role cannot be deleted";
+    if (role.users_count > 0)
+      return `Reassign or remove ${role.users_count} user(s) before deleting`;
+    return null;
+  };
+
+  const handleDuplicate = (role: Role) => {
+    router.post(route("dashboard.admin.roles.duplicate", { role: role.id }));
+  };
 
   const columns = useMemo(() => {
     const cols: ColumnDef<Role>[] = [
@@ -45,8 +67,18 @@ export default function AdminRolesIndex() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <Shield className="size-4 text-muted-foreground" />
+            <Shield className="size-4 text-muted-foreground shrink-0" />
             <span className="font-medium">{row.original.name}</span>
+            {row.original.is_default && (
+              <Badge variant="secondary" className="gap-1">
+                <Crown className="size-3" /> Default
+              </Badge>
+            )}
+            {row.original.is_system && (
+              <Badge variant="outline" className="text-muted-foreground">
+                System
+              </Badge>
+            )}
           </div>
         ),
       },
@@ -61,7 +93,12 @@ export default function AdminRolesIndex() {
         accessorKey: "description",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">{row.original.description ?? "—"}</span>
+          <span
+            className="text-muted-foreground text-sm max-w-[260px] truncate inline-block align-middle"
+            title={row.original.description ?? undefined}
+          >
+            {row.original.description ?? "—"}
+          </span>
         ),
       },
       {
@@ -75,26 +112,56 @@ export default function AdminRolesIndex() {
         cell: ({ row }) => <Badge variant="outline">{row.original.permissions_count}</Badge>,
       },
       {
-        id: "actions",
+        accessorKey: "updated_at",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
         cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <Link href={route("dashboard.admin.roles.edit", { role: row.original.id })}>
-              <Button variant="ghost" size="icon-xs">
-                <Pencil className="size-3.5" />
-              </Button>
-            </Link>
-            {row.original.slug !== "admin" && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="text-destructive"
-                onClick={() => setDeleteRole(row.original)}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            )}
-          </div>
+          <span className="text-muted-foreground text-sm">
+            {row.original.updated_at ? new Date(row.original.updated_at).toLocaleDateString() : "—"}
+          </span>
         ),
+        enableSorting: false,
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const role = row.original;
+          const reason = deleteDisabledReason(role);
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" />}>
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  render={<Link href={route("dashboard.admin.roles.edit", { role: role.id })} />}
+                >
+                  <Pencil className="mr-2 size-4" />
+                  Edit
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => handleDuplicate(role)}>
+                  <Copy className="mr-2 size-4" />
+                  Duplicate
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  className={reason === null ? "text-destructive" : undefined}
+                  disabled={reason !== null}
+                  title={reason ?? undefined}
+                  onClick={() => {
+                    if (reason === null) setDeleteRole(role);
+                  }}
+                >
+                  <Trash2 className="mr-2 size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
         enableSorting: false,
       },
     ];

@@ -26,7 +26,13 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         foreach ($catalog as $permission) {
-            Permission::firstOrCreate(['slug' => $permission['slug']], $permission);
+            Permission::updateOrCreate(
+                ['slug' => $permission['slug']],
+                [
+                    'name' => $permission['name'],
+                    'description' => $permission['description'] ?? null,
+                ],
+            );
         }
     }
 

@@ -50,10 +50,10 @@ class TestPostsServiceProvider extends ServiceProvider
     public function permissions(): array
     {
         return [
-            ['slug' => 'test-posts.view', 'name' => 'View Tests', 'description' => 'View tests.'],
-            ['slug' => 'test-posts.create', 'name' => 'Create Tests', 'description' => 'Create new tests.'],
-            ['slug' => 'test-posts.edit', 'name' => 'Edit Tests', 'description' => 'Edit existing tests.'],
-            ['slug' => 'test-posts.delete', 'name' => 'Delete Tests', 'description' => 'Delete tests.'],
+            ['slug' => 'test-posts.view', 'name' => 'View Tests', 'description' => 'View tests.', 'group' => 'Testing'],
+            ['slug' => 'test-posts.create', 'name' => 'Create Tests', 'description' => 'Create new tests.', 'group' => 'Testing'],
+            ['slug' => 'test-posts.edit', 'name' => 'Edit Tests', 'description' => 'Edit existing tests.', 'group' => 'Testing'],
+            ['slug' => 'test-posts.delete', 'name' => 'Delete Tests', 'description' => 'Delete tests.', 'group' => 'Testing'],
         ];
     }
 

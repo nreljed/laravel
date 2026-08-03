@@ -115,10 +115,25 @@ class FeatureRegistry
 
     public function permissions(): array
     {
-        return array_merge(...array_map(
-            fn (ServiceProvider $provider) => method_exists($provider, 'permissions') ? $provider->permissions() : [],
-            array_values($this->providers),
-        ));
+        $permissions = [];
+
+        foreach ($this->providers as $provider) {
+            if (! method_exists($provider, 'permissions')) {
+                continue;
+            }
+
+            $group = method_exists($provider, 'name') ? $provider->name() : null;
+
+            foreach ($provider->permissions() as $permission) {
+                if (is_array($permission) && ! isset($permission['group']) && $group !== null) {
+                    $permission['group'] = $group;
+                }
+
+                $permissions[] = $permission;
+            }
+        }
+
+        return $permissions;
     }
 
     public function getAll(): array
