@@ -142,7 +142,7 @@ class UsernameValidationTest extends TestCase
                 'email' => $user->email,
             ]);
 
-        $response->assertSessionHasNoErrors('username');
+        $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('users', ['username' => 'gooduser']);
     }
 

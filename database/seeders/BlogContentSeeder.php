@@ -492,88 +492,88 @@ Route::middleware(['auth', 'verified'])
     });
 CODE;
 
-        $content = <<<'HTML'
-<h1>Building a Modern Blog with Laravel 13 and React 19</h1>
-
-<p>In this tutorial you will learn how to scaffold a feature-based blog exactly like the one powering this site — from routing and models to the Lexical editor.</p>
-
-<blockquote>This guide assumes you have Laravel 13, PHP 8.4, and Node 22 installed. The full source for this blog lives in <code>packages/dashboard-core/src/Blog</code>.</blockquote>
-
-<h2>What You Will Build</h2>
-
-<ul>
-  <li>A self-contained <code>Blog</code> feature with its own routes, controllers, and models</li>
-  <li>Nested category hierarchies with depth tracking</li>
-  <li>A rich text editor powered by Lexical</li>
-  <li>Public-facing pages rendered with Inertia.js</li>
-</ul>
-
-<h2>Step 1: The Post Model</h2>
-
-<p>Every feature keeps its own models under <code>src/{Feature}/Models</code>. Here is the <code>Post</code> model:</p>
-
-<!--MODEL_CODE-->
-
-<h2>Step 2: Feature Routes</h2>
-
-<p>Routes are registered by the feature's service provider, keeping the main <code>routes/web.php</code> free of feature noise:</p>
-
-<!--ROUTE_CODE-->
-
-<h2>Step 3: Inserting a Remote Image</h2>
-
-<p>Images can be referenced by URL without uploading. The editor preserves remote sources as-is:</p>
-
-<!--REMOTE_IMAGE-->
-
-<h2>Step 4: Rendering with Prose</h2>
-
-<p>On the public page, the stored HTML is rendered inside a <code>.prose</code> container so headings, lists, and tables inherit the blog typography. Column layouts keep their grid behavior thanks to the <code>data-lexical-layout-container</code> marker.</p>
-
-<table>
-  <thead>
-    <tr>
-      <th scope="col">Concern</th>
-      <th scope="col">Where it lives</th>
-      <th scope="col">Why</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Models</td>
-      <td>src/Blog/Models</td>
-      <td>Keeps feature entities self-contained</td>
-    </tr>
-    <tr>
-      <td>Controllers</td>
-      <td>src/Blog/Controllers</td>
-      <td>HTTP glue specific to the feature</td>
-    </tr>
-    <tr>
-      <td>Routes</td>
-      <td>src/Blog/Routes</td>
-      <td>Registered by BlogServiceProvider</td>
-    </tr>
-    <tr>
-      <td>Pages</td>
-      <td>src/Blog/Resources/js/Pages</td>
-      <td>Inertia + React, colocated with the feature</td>
-    </tr>
-  </tbody>
-</table>
-
-<h2>Summary</h2>
-
-<p>You now have a complete, feature-based blog. The pattern scales: each new feature follows the same shape — <strong>Models, Controllers, Routes, and Resources</strong> — and is registered exactly once in the feature registry.</p>
-
-<ol>
-  <li>Create the feature folder</li>
-  <li>Add a service provider</li>
-  <li>Register routes and permissions</li>
-  <li>Build the Inertia pages</li>
-  <li>Wire it into the feature registry</li>
-</ol>
-HTML;
+        $content = <<<'HTML_WRAP'
+        <h1>Building a Modern Blog with Laravel 13 and React 19</h1>
+        
+        <p>In this tutorial you will learn how to scaffold a feature-based blog exactly like the one powering this site — from routing and models to the Lexical editor.</p>
+        
+        <blockquote>This guide assumes you have Laravel 13, PHP 8.4, and Node 22 installed. The full source for this blog lives in <code>packages/dashboard-core/src/Blog</code>.</blockquote>
+        
+        <h2>What You Will Build</h2>
+        
+        <ul>
+          <li>A self-contained <code>Blog</code> feature with its own routes, controllers, and models</li>
+          <li>Nested category hierarchies with depth tracking</li>
+          <li>A rich text editor powered by Lexical</li>
+          <li>Public-facing pages rendered with Inertia.js</li>
+        </ul>
+        
+        <h2>Step 1: The Post Model</h2>
+        
+        <p>Every feature keeps its own models under <code>src/{Feature}/Models</code>. Here is the <code>Post</code> model:</p>
+        
+        <!--MODEL_CODE-->
+        
+        <h2>Step 2: Feature Routes</h2>
+        
+        <p>Routes are registered by the feature's service provider, keeping the main <code>routes/web.php</code> free of feature noise:</p>
+        
+        <!--ROUTE_CODE-->
+        
+        <h2>Step 3: Inserting a Remote Image</h2>
+        
+        <p>Images can be referenced by URL without uploading. The editor preserves remote sources as-is:</p>
+        
+        <!--REMOTE_IMAGE-->
+        
+        <h2>Step 4: Rendering with Prose</h2>
+        
+        <p>On the public page, the stored HTML is rendered inside a <code>.prose</code> container so headings, lists, and tables inherit the blog typography. Column layouts keep their grid behavior thanks to the <code>data-lexical-layout-container</code> marker.</p>
+        
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Concern</th>
+              <th scope="col">Where it lives</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Models</td>
+              <td>src/Blog/Models</td>
+              <td>Keeps feature entities self-contained</td>
+            </tr>
+            <tr>
+              <td>Controllers</td>
+              <td>src/Blog/Controllers</td>
+              <td>HTTP glue specific to the feature</td>
+            </tr>
+            <tr>
+              <td>Routes</td>
+              <td>src/Blog/Routes</td>
+              <td>Registered by BlogServiceProvider</td>
+            </tr>
+            <tr>
+              <td>Pages</td>
+              <td>src/Blog/Resources/js/Pages</td>
+              <td>Inertia + React, colocated with the feature</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <h2>Summary</h2>
+        
+        <p>You now have a complete, feature-based blog. The pattern scales: each new feature follows the same shape — <strong>Models, Controllers, Routes, and Resources</strong> — and is registered exactly once in the feature registry.</p>
+        
+        <ol>
+          <li>Create the feature folder</li>
+          <li>Add a service provider</li>
+          <li>Register routes and permissions</li>
+          <li>Build the Inertia pages</li>
+          <li>Wire it into the feature registry</li>
+        </ol>
+        HTML_WRAP;
 
         $content = str_replace(
             ['<!--MODEL_CODE-->', '<!--ROUTE_CODE-->', '<!--REMOTE_IMAGE-->'],
