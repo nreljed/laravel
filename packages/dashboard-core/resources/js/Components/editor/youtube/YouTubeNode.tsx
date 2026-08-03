@@ -126,7 +126,8 @@ export class YouTubeNode extends DecoratorNode<React.ReactNode> {
   }
 }
 
-const YOUTUBE_URL_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+const YOUTUBE_URL_REGEX =
+  /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtube-nocookie\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 
 export function $createYouTubeNode(videoId: string): YouTubeNode {
   return $applyNodeReplacement(new YouTubeNode(videoId));

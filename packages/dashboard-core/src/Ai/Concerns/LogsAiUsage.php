@@ -9,7 +9,7 @@ use Nreljed\DashboardCore\Models\User;
  * Trait for best-effort AI usage logging.
  *
  * Use this in any class that calls AI providers to automatically log token usage.
- * Failures are silently caught â€” logging should never block AI operations.
+ * Failures are silently caught — logging should never block AI operations.
  */
 trait LogsAiUsage
 {
@@ -35,7 +35,7 @@ trait LogsAiUsage
                 costCents: $costCents,
             );
         } catch (\Throwable) {
-            // Usage logging is best-effort â€” failures don't block requests
+            // Usage logging is best-effort — failures don't block requests
         }
     }
 }

@@ -5,7 +5,9 @@ namespace Tests\Feature\Blog;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Database\Factories\PostCategoryFactory;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -22,7 +24,7 @@ class BlogCrudTest extends TestCase
 
     public function test_post_index_requires_permission(): void
     {
-        $user = $this->regularUser();
+        $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get(route('dashboard.posts.index'));
 
@@ -68,6 +70,22 @@ class BlogCrudTest extends TestCase
             'title' => 'Updated Post Title',
             'status' => 'published',
         ]);
+    }
+
+    public function test_edit_page_includes_posts_assigned_category(): void
+    {
+        $category = PostCategoryFactory::new()->create(['name' => 'Technology']);
+        $post = PostFactory::new()->create(['category_id' => $category->id]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.posts.edit', $post));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Blog/Form', false)
+            ->where('post.category_id', $category->id)
+            ->has('categories', 1)
+            ->where('categories.0.id', $category->id));
     }
 
     public function test_admin_can_delete_post(): void
@@ -272,5 +290,61 @@ class BlogCrudTest extends TestCase
         $this->assertDatabaseHas('posts', [
             'title' => 'Null Content Post',
         ]);
+    }
+
+    public function test_post_stores_remote_image_url_in_content(): void
+    {
+        $html = '<p>See below.</p><img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee" alt="Remote image" width="800" height="600" />';
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.store'), [
+            'title' => 'Remote Image Test',
+            'content' => $html,
+            'status' => 'published',
+        ]);
+
+        $response->assertRedirect();
+
+        $post = Post::where('title', 'Remote Image Test')->first();
+        $this->assertStringContainsString('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee', $post->content);
+        $this->assertStringContainsString('alt="Remote image"', $post->content);
+    }
+
+    public function test_post_stores_storage_image_in_content(): void
+    {
+        $html = '<p>Local upload.</p><img src="/storage/posts/abc123.webp" alt="Uploaded" width="400" height="300" />';
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.store'), [
+            'title' => 'Storage Image Test',
+            'content' => $html,
+            'status' => 'published',
+        ]);
+
+        $response->assertRedirect();
+
+        $post = Post::where('title', 'Storage Image Test')->first();
+        $this->assertStringContainsString('/storage/posts/abc123.webp', $post->content);
+        $this->assertStringContainsString('alt="Uploaded"', $post->content);
+    }
+
+    public function test_post_update_preserves_image_urls(): void
+    {
+        $post = PostFactory::new()->create([
+            'content' => '<img src="https://example.com/hero.jpg" alt="Hero" />',
+        ]);
+
+        $newContent = '<img src="https://example.com/hero.jpg" alt="Hero" /><p>Updated body.</p>';
+
+        $response = $this->actingAs($this->admin())
+            ->put(route('dashboard.posts.update', $post), [
+                'title' => $post->title,
+                'content' => $newContent,
+                'status' => $post->status,
+            ]);
+
+        $response->assertRedirect();
+
+        $post->refresh();
+        $this->assertStringContainsString('https://example.com/hero.jpg', $post->content);
+        $this->assertStringContainsString('Updated body.', $post->content);
     }
 }

@@ -43,14 +43,14 @@ class DashboardService
                             continue;
                         }
                         $stats[$slug.'_'.$key] = [
-                            'label' => $data['label'].' â€” '.ucfirst(str_replace('_', ' ', $key)),
+                            'label' => $data['label'].' — '.ucfirst(str_replace('_', ' ', $key)),
                             'icon' => $data['icon'] ?? 'FileText',
                             'value' => $value,
                         ];
                     }
                 }
             } catch (\Throwable) {
-                // Feature registry unavailable â€” core stats only.
+                // Feature registry unavailable — core stats only.
             }
 
             return $stats;
@@ -70,7 +70,7 @@ class DashboardService
             try {
                 $series = array_merge($series, app(FeatureRegistry::class)->getAllAnalyticsSeries());
             } catch (\Throwable) {
-                // Feature registry unavailable â€” core series only.
+                // Feature registry unavailable — core series only.
             }
 
             return $series;

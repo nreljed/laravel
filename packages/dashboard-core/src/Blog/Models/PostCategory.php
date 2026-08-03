@@ -100,18 +100,42 @@ class PostCategory extends Model
 
     public function refreshDepth(): void
     {
+        $depth = $this->calculateDepth();
+
+        if ($this->depth === $depth) {
+            return;
+        }
+
+        static::withoutEvents(fn () => $this->update(['depth' => $depth]));
+
+        $this->refreshChildrenDepths();
+    }
+
+    public function refreshChildrenDepths(): void
+    {
+        foreach ($this->children as $child) {
+            $child->refreshDepth();
+        }
+    }
+
+    protected function calculateDepth(): int
+    {
         $depth = 0;
         $parentId = $this->parent_id;
+        $visited = [$this->id];
 
         while ($parentId) {
+            if (in_array($parentId, $visited, true)) {
+                break;
+            }
+
+            $visited[] = $parentId;
             $depth++;
             $parent = static::find($parentId);
             $parentId = $parent?->parent_id;
         }
 
-        if ($this->depth !== $depth) {
-            static::withoutEvents(fn () => $this->update(['depth' => $depth]));
-        }
+        return $depth;
     }
 
     public function toTree(): Collection
@@ -142,7 +166,7 @@ class PostCategory extends Model
         return $query->get()
             ->map(fn (PostCategory $cat) => [
                 'id' => $cat->id,
-                'name' => str_repeat('â€” ', $cat->depth).$cat->name,
+                'name' => str_repeat('— ', $cat->depth).$cat->name,
                 'depth' => $cat->depth,
             ])
             ->toArray();
@@ -163,5 +187,20 @@ class PostCategory extends Model
         }
 
         return $breadcrumbs;
+    }
+
+    public function getDescendantIds(): array
+    {
+        $ids = [];
+        $walk = function (self $category) use (&$walk, &$ids) {
+            foreach ($category->children as $child) {
+                $ids[] = $child->id;
+                $walk($child);
+            }
+        };
+
+        $walk($this);
+
+        return $ids;
     }
 }

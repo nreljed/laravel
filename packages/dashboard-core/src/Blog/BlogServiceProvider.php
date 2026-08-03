@@ -53,6 +53,7 @@ class BlogServiceProvider extends ServiceProvider
             ['slug' => 'posts.create', 'name' => 'Create Posts', 'description' => 'Create new blog posts.'],
             ['slug' => 'posts.edit', 'name' => 'Edit Posts', 'description' => 'Edit existing blog posts.'],
             ['slug' => 'posts.delete', 'name' => 'Delete Posts', 'description' => 'Delete blog posts.'],
+            ['slug' => 'posts.manage', 'name' => 'Manage All Posts', 'description' => 'View, edit, and delete posts authored by other users.'],
         ];
     }
 

@@ -40,7 +40,11 @@ class PostCategoryController extends Controller
             $validated['depth'] = PostCategory::find($validated['parent_id'])->depth + 1;
         }
 
-        PostCategory::create($validated);
+        $category = PostCategory::create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json($category);
+        }
 
         return redirect()->back()->with('status', 'Category created.');
     }
@@ -62,12 +66,21 @@ class PostCategoryController extends Controller
             return redirect()->back()->withErrors(['parent_id' => 'A category cannot be its own parent.']);
         }
 
+        if (! empty($validated['parent_id'])
+            && in_array((int) $validated['parent_id'], $postCategory->getDescendantIds(), true)) {
+            return redirect()->back()->withErrors(['parent_id' => 'A category cannot be a descendant of itself.']);
+        }
+
         $postCategory->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json($postCategory);
+        }
 
         return redirect()->back()->with('status', 'Category updated.');
     }
 
-    public function destroy(PostCategory $postCategory)
+    public function destroy(Request $request, PostCategory $postCategory)
     {
         $this->authorize('manage-categories');
 
@@ -76,6 +89,10 @@ class PostCategoryController extends Controller
         }
 
         $postCategory->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->back()->with('status', 'Category deleted.');
     }
@@ -111,7 +128,7 @@ class PostCategoryController extends Controller
         foreach ($categories as $category) {
             if ($category->posts()->exists()) {
                 return redirect()->back()->withErrors([
-                    'bulk' => "Cannot delete \"{$category->name}\" â€” it has posts assigned.",
+                    'bulk' => "Cannot delete \"{$category->name}\" — it has posts assigned.",
                 ]);
             }
         }

@@ -66,7 +66,7 @@ See [Notifications](notifications.md) for the full notification architecture.
 app/Blog/
   BlogServiceProvider.php     # Registers routes, permissions, nav items
   Controllers/                # PostController, PostCategoryController, etc.
-  Models/                     # Post, PostCategory, PostTag, ContentBlock
+  Models/                     # Post, PostCategory, PostTag
   Routes/
     web.php                   # Admin routes (dashboard/posts/*)
     public.php                # Public routes (blog/*)

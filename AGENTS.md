@@ -80,7 +80,7 @@ packages/dashboard-core/           # CORE package (nreljed/dashboard-core — Co
       Services/                    # AiService
     Blog/                          # Self-contained blog feature
       Controllers/                 # Post, PostCategory, PostTag, BlogPublic
-      Models/                      # Post, PostCategory, PostTag, ContentBlock
+      Models/                      # Post, PostCategory, PostTag
       Requests/
       Resources/js/Pages/          # Index, Form, Dashboard, Categories, Tags, Public
       Routes/                      # web.php (admin + public)

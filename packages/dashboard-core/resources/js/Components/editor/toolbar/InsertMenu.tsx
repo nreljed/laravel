@@ -4,7 +4,16 @@ import { $getSelection, $isRangeSelection } from "lexical";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { $findMatchingParent } from "@lexical/utils";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/extension";
-import { Link, ImagePlus, Table, Columns3, Plus, Minus, ChevronDown } from "lucide-react";
+import {
+  Link,
+  ImagePlus,
+  Table,
+  Columns3,
+  Plus,
+  Minus,
+  ChevronDown,
+  Clapperboard,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,12 +25,14 @@ import { Button } from "@/Components/ui/button";
 import { ImageInsertDialog } from "../image";
 import { InsertTableDialog } from "../table";
 import { InsertLayoutDialog } from "../layout";
+import { YouTubeEmbedDialog } from "../youtube/YouTubeEmbedDialog";
 
 export function InsertMenu() {
   const [editor] = useLexicalComposerContext();
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [layoutDialogOpen, setLayoutDialogOpen] = useState(false);
+  const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
 
   const formatLink = () => {
     editor.update(() => {
@@ -62,6 +73,10 @@ export function InsertMenu() {
             <ImagePlus className="h-4 w-4" />
             Image
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setYoutubeDialogOpen(true)}>
+            <Clapperboard className="h-4 w-4" />
+            YouTube Video
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={insertHorizontalRule}>
             <Minus className="h-4 w-4" />
             Horizontal Rule
@@ -80,6 +95,7 @@ export function InsertMenu() {
       <ImageInsertDialog open={imageDialogOpen} onOpenChange={setImageDialogOpen} />
       <InsertTableDialog open={tableDialogOpen} onOpenChange={setTableDialogOpen} />
       <InsertLayoutDialog open={layoutDialogOpen} onOpenChange={setLayoutDialogOpen} />
+      <YouTubeEmbedDialog open={youtubeDialogOpen} onOpenChange={setYoutubeDialogOpen} />
     </>
   );
 }

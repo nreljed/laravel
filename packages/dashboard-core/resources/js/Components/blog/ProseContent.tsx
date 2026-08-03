@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { sanitizeLexicalTables } from "@/lib/sanitize-lexical-tables";
+import { buildCodeGutter, countCodeLines } from "@/lib/code-gutter";
 
 interface ProseContentProps {
   html: string;
@@ -13,6 +14,21 @@ function wrapTables(container: HTMLElement): void {
     wrapper.className = "table-scroll-wrapper";
     table.parentNode?.insertBefore(wrapper, table);
     wrapper.appendChild(table);
+  }
+}
+
+function attachCodeGutters(container: HTMLElement): void {
+  const pres = container.querySelectorAll<HTMLElement>("pre");
+  for (const pre of pres) {
+    if (pre.dataset.gutter !== undefined) continue;
+
+    const code = pre.querySelector("code");
+    const source = code ? code.getHTML() : (pre.textContent ?? "");
+    const lineCount = countCodeLines(source);
+    const gutter = buildCodeGutter(lineCount);
+    if (gutter !== undefined) {
+      pre.dataset.gutter = gutter;
+    }
   }
 }
 
@@ -64,6 +80,7 @@ export default function ProseContent({ html }: ProseContentProps) {
     }
 
     wrapTables(containerRef.current);
+    attachCodeGutters(containerRef.current);
     attachCopyButtons(containerRef.current);
     sanitizeLexicalTables(containerRef.current);
   }, []);

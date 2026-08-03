@@ -12,7 +12,7 @@ class EmailSettingsService
 
     /**
      * Default email settings.
-     * All empty â€” must be configured via the admin UI.
+     * All empty — must be configured via the admin UI.
      */
     public static function defaults(): array
     {

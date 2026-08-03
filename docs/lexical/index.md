@@ -105,12 +105,12 @@ resources/js/Components/editor/
 
 ## Consumer Entry Points
 
-| Import                                          | Used By                                                       |
-| ----------------------------------------------- | ------------------------------------------------------------- |
-| `@/Components/editor` → `RichTextEditor`        | Blog post form, `ContentBlockEditor`                          |
-| `@/Components/editor` → `uploadImageToServer`   | Blog post form, `ContentBlockEditor`, `FeaturedImageSelector` |
-| `@/Components/editor` → `deleteImageFromServer` | `FeaturedImageSelector`                                       |
-| `RichTextEditor` with `compact` prop            | `ContentBlockEditor` (toolbar hidden)                         |
+| Import                                          | Used By                                                   |
+| ----------------------------------------------- | --------------------------------------------------------- |
+| `@/Components/editor` → `RichTextEditor`        | Blog post form (`Blog/Form`)                              |
+| `@/Components/editor` → `uploadImageToServer`   | Blog post form, `FeaturedImageSelector`                   |
+| `@/Components/editor` → `deleteImageFromServer` | `FeaturedImageSelector`                                   |
+| `RichTextEditor` with `compact` prop            | — (previously `ContentBlockEditor`, removed as dead code) |
 
 ## Gap Analysis vs Lexical Playground
 

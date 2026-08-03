@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -37,7 +36,6 @@ use Nreljed\DashboardCore\Services\HtmlSanitizer;
  * @property-read User $user
  * @property-read self|null $category
  * @property-read Collection<int, PostTag> $tags
- * @property-read Collection<int, ContentBlock> $contentBlocks
  */
 class Post extends Model
 {
@@ -100,12 +98,6 @@ class Post extends Model
                 $paths[] = self::urlToPath($post->og_image);
             }
 
-            foreach ($post->contentBlocks as $block) {
-                if ($block->media_url) {
-                    $paths[] = self::urlToPath($block->media_url);
-                }
-            }
-
             foreach (array_unique(array_filter($paths)) as $path) {
                 Storage::disk('public')->delete($path);
             }
@@ -161,12 +153,6 @@ class Post extends Model
             $paths[] = self::urlToPath($this->og_image);
         }
 
-        foreach ($this->contentBlocks as $block) {
-            if ($block->media_url) {
-                $paths[] = self::urlToPath($block->media_url);
-            }
-        }
-
         return array_values(array_unique(array_filter($paths)));
     }
 
@@ -183,10 +169,5 @@ class Post extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(PostTag::class, 'post_tag_post');
-    }
-
-    public function contentBlocks(): HasMany
-    {
-        return $this->hasMany(ContentBlock::class)->orderBy('order');
     }
 }

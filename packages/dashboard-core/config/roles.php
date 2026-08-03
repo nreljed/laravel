@@ -69,7 +69,7 @@ return [
     'roles' => [
         'user' => [
             'name' => 'User',
-            'description' => 'Can manage own account and profile',
+            'description' => 'Can manage own account and profile, and create posts scoped to own content.',
             'sort_order' => 3,
             'permissions' => [
                 'view-dashboard',
@@ -78,15 +78,20 @@ return [
                 'delete-account',
                 'view-notifications',
                 'manage-notifications',
+                'posts.view',
+                'posts.create',
+                'posts.edit',
+                'posts.delete',
             ],
         ],
 
         'author' => [
             'name' => 'Author',
-            'description' => 'Can add content and manage own account. May select existing categories and tags but cannot create, edit, or delete them.',
+            'description' => 'Can add content and manage own account. Posts are scoped to own content; may select existing categories and tags but cannot create, edit, or delete them.',
             'sort_order' => 2,
             'permissions' => [
                 '*',
+                '!posts.manage',
                 '!manage-users',
                 '!manage-settings',
                 '!manage-roles',
@@ -101,7 +106,7 @@ return [
 
         'editor' => [
             'name' => 'Editor',
-            'description' => 'Every permission except the admin panel (users, settings, roles, system health, audit logs, email settings).',
+            'description' => 'Every permission except the admin panel (users, settings, roles, system health, audit logs, email settings). Can manage all posts.',
             'sort_order' => 1,
             'permissions' => [
                 '*',
