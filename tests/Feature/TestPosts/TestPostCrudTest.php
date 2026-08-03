@@ -6,6 +6,7 @@ use App\TestPosts\Models\TestPost;
 use Database\Factories\TestPostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -79,6 +80,31 @@ class TestPostCrudTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('test_posts', ['id' => $testPost->id]);
+    }
+
+    public function test_delete_removes_featured_and_gallery_files(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('test-posts/featured.webp', 'image');
+        Storage::disk('public')->put('test-posts/gallery-1.webp', 'image');
+        Storage::disk('public')->put('test-posts/gallery-2.webp', 'image');
+
+        $testPost = TestPostFactory::new()->create([
+            'featured_image' => '/storage/test-posts/featured.webp',
+            'gallery_images' => [
+                ['url' => '/storage/test-posts/gallery-1.webp'],
+                ['url' => '/storage/test-posts/gallery-2.webp'],
+            ],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->delete(route('dashboard.test-posts.destroy', $testPost))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('test_posts', ['id' => $testPost->id]);
+        Storage::disk('public')->assertMissing('test-posts/featured.webp');
+        Storage::disk('public')->assertMissing('test-posts/gallery-1.webp');
+        Storage::disk('public')->assertMissing('test-posts/gallery-2.webp');
     }
 
     public function test_test_post_requires_title(): void

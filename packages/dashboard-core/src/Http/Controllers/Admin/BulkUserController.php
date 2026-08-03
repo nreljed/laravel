@@ -9,6 +9,7 @@ use Nreljed\DashboardCore\Http\Controllers\Controller;
 use Nreljed\DashboardCore\Http\Requests\User\BulkActionRequest;
 use Nreljed\DashboardCore\Http\Requests\User\BulkDeleteRequest;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Services\AccountService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BulkUserController extends Controller
@@ -24,8 +25,13 @@ class BulkUserController extends Controller
                 ->with('flash', ['error' => 'No users to delete (self-deletion excluded).']);
         }
 
-        $count = User::whereIn('id', $ids)->count();
-        User::whereIn('id', $ids)->delete();
+        $users = User::whereIn('id', $ids)->get();
+        $count = $users->count();
+
+        foreach ($users as $user) {
+            app(AccountService::class)->deleteAllUserData($user);
+            $user->delete();
+        }
 
         return redirect()->back()
             ->with('flash', ['success' => "{$count} user(s) deleted successfully."]);

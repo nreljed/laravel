@@ -87,18 +87,22 @@ class Post extends Model
             }
         });
 
+        static::updating(function (Post $post) {
+            foreach (['featured_image', 'og_image'] as $field) {
+                $oldValue = $post->getOriginal($field);
+                $newValue = $post->{$field};
+
+                if ($oldValue && $oldValue !== $newValue) {
+                    $path = self::urlToPath($oldValue);
+                    if ($path) {
+                        Storage::disk('public')->delete($path);
+                    }
+                }
+            }
+        });
+
         static::deleting(function (Post $post) {
-            $paths = [];
-
-            if ($post->featured_image) {
-                $paths[] = self::urlToPath($post->featured_image);
-            }
-
-            if ($post->og_image) {
-                $paths[] = self::urlToPath($post->og_image);
-            }
-
-            foreach (array_unique(array_filter($paths)) as $path) {
+            foreach (array_unique(array_filter($post->getReferencedPaths())) as $path) {
                 Storage::disk('public')->delete($path);
             }
         });
@@ -153,7 +157,34 @@ class Post extends Model
             $paths[] = self::urlToPath($this->og_image);
         }
 
+        foreach ($this->getGalleryPaths() as $path) {
+            $paths[] = $path;
+        }
+
         return array_values(array_unique(array_filter($paths)));
+    }
+
+    /**
+     * Resolve storage paths referenced by the post gallery.
+     *
+     * @return list<string>
+     */
+    protected function getGalleryPaths(): array
+    {
+        $paths = [];
+
+        foreach ((array) ($this->metadata['post_gallery'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $path = self::urlToPath($item['url'] ?? null);
+            if ($path) {
+                $paths[] = $path;
+            }
+        }
+
+        return $paths;
     }
 
     public function user(): BelongsTo

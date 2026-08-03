@@ -4,6 +4,7 @@ namespace Tests\Feature\Blog;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Database\Factories\PostCategoryFactory;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
@@ -97,6 +98,100 @@ class BlogCrudTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+    }
+
+    public function test_post_delete_removes_featured_and_og_image_files(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/featured.webp', 'image');
+        Storage::disk('public')->put('posts/og.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'featured_image' => '/storage/posts/featured.webp',
+            'og_image' => '/storage/posts/og.webp',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->delete(route('dashboard.posts.destroy', $post))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+        Storage::disk('public')->assertMissing('posts/featured.webp');
+        Storage::disk('public')->assertMissing('posts/og.webp');
+    }
+
+    public function test_post_delete_removes_gallery_files(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/gallery-1.webp', 'image');
+        Storage::disk('public')->put('posts/gallery-2.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'metadata' => [
+                'post_gallery' => [
+                    ['url' => '/storage/posts/gallery-1.webp'],
+                    ['url' => '/storage/posts/gallery-2.webp'],
+                ],
+            ],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->delete(route('dashboard.posts.destroy', $post))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+        Storage::disk('public')->assertMissing('posts/gallery-1.webp');
+        Storage::disk('public')->assertMissing('posts/gallery-2.webp');
+    }
+
+    public function test_post_update_removes_replaced_featured_image_file(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/old-featured.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'featured_image' => '/storage/posts/old-featured.webp',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->put(route('dashboard.posts.update', $post), [
+                'title' => $post->title,
+                'content' => $post->content,
+                'status' => $post->status,
+                'featured_image' => '/storage/posts/new-featured.webp',
+            ])
+            ->assertRedirect();
+
+        Storage::disk('public')->assertMissing('posts/old-featured.webp');
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'featured_image' => '/storage/posts/new-featured.webp',
+        ]);
+    }
+
+    public function test_post_update_removes_replaced_og_image_file(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/old-og.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'og_image' => '/storage/posts/old-og.webp',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->put(route('dashboard.posts.update', $post), [
+                'title' => $post->title,
+                'content' => $post->content,
+                'status' => $post->status,
+                'og_image' => '/storage/posts/new-og.webp',
+            ])
+            ->assertRedirect();
+
+        Storage::disk('public')->assertMissing('posts/old-og.webp');
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'og_image' => '/storage/posts/new-og.webp',
+        ]);
     }
 
     public function test_post_requires_title(): void

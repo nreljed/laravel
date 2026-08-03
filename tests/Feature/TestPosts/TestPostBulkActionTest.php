@@ -5,6 +5,7 @@ namespace Tests\Feature\TestPosts;
 use Database\Factories\TestPostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
 use Tests\Concerns\CreatesTestUsers;
@@ -137,6 +138,31 @@ class TestPostBulkActionTest extends TestCase
         foreach ($testPostIds as $id) {
             $this->assertDatabaseMissing('test_posts', ['id' => $id]);
         }
+    }
+
+    public function test_bulk_delete_removes_featured_and_gallery_files(): void
+    {
+        Storage::fake('public');
+
+        $testPosts = TestPostFactory::new()->count(2)->create([
+            'featured_image' => '/storage/test-posts/featured.webp',
+            'gallery_images' => [
+                ['url' => '/storage/test-posts/gallery-1.webp'],
+            ],
+        ]);
+        Storage::disk('public')->put('test-posts/featured.webp', 'image');
+        Storage::disk('public')->put('test-posts/gallery-1.webp', 'image');
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.test-posts.bulk.action'), [
+            'ids' => $testPosts->pluck('id')->toArray(),
+            'action' => 'delete',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success', '2 test post(s) deleted successfully.');
+
+        Storage::disk('public')->assertMissing('test-posts/featured.webp');
+        Storage::disk('public')->assertMissing('test-posts/gallery-1.webp');
     }
 
     public function test_bulk_delete_with_mixed_ownership_only_deletes_authorized(): void

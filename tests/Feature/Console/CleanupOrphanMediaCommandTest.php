@@ -6,6 +6,8 @@ use Database\Factories\TestPostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -69,5 +71,50 @@ class CleanupOrphanMediaCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertTrue(Storage::disk('public')->exists('test-posts/kept.webp'));
+    }
+
+    public function test_deletes_orphan_avatar_files_and_keeps_referenced(): void
+    {
+        User::factory()->create(['avatar' => 'kept.webp']);
+
+        Storage::disk('public')->put('avatars/kept.webp', 'content');
+        Storage::disk('public')->put('avatars/orphan.webp', 'content');
+
+        $this->artisan('core:cleanup-orphan-media')
+            ->expectsOutputToContain('Deleted 1 orphan file(s).')
+            ->assertSuccessful();
+
+        $this->assertTrue(Storage::disk('public')->exists('avatars/kept.webp'));
+        $this->assertFalse(Storage::disk('public')->exists('avatars/orphan.webp'));
+    }
+
+    public function test_keeps_post_featured_og_and_gallery_files(): void
+    {
+        $admin = $this->admin();
+
+        PostFactory::new()->create([
+            'user_id' => $admin->id,
+            'featured_image' => '/storage/posts/featured.webp',
+            'og_image' => '/storage/posts/og.webp',
+            'metadata' => [
+                'post_gallery' => [
+                    ['url' => '/storage/posts/gallery-1.webp'],
+                ],
+            ],
+        ]);
+
+        Storage::disk('public')->put('posts/featured.webp', 'content');
+        Storage::disk('public')->put('posts/og.webp', 'content');
+        Storage::disk('public')->put('posts/gallery-1.webp', 'content');
+        Storage::disk('public')->put('posts/orphan.webp', 'content');
+
+        $this->artisan('core:cleanup-orphan-media')
+            ->expectsOutputToContain('Deleted 1 orphan file(s).')
+            ->assertSuccessful();
+
+        $this->assertTrue(Storage::disk('public')->exists('posts/featured.webp'));
+        $this->assertTrue(Storage::disk('public')->exists('posts/og.webp'));
+        $this->assertTrue(Storage::disk('public')->exists('posts/gallery-1.webp'));
+        $this->assertFalse(Storage::disk('public')->exists('posts/orphan.webp'));
     }
 }

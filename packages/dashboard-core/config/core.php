@@ -2,6 +2,7 @@
 
 use Nreljed\DashboardCore\Blog\BlogServiceProvider;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Models\User;
 
 return [
 
@@ -48,6 +49,7 @@ return [
 
     'orphan_media' => [
         'posts' => Post::class,
+        'avatars' => User::class,
     ],
 
 ];

@@ -4,6 +4,7 @@ namespace Tests\Feature\Blog;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
 use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
@@ -127,6 +128,27 @@ class BlogBulkActionTest extends TestCase
         foreach ($postIds as $id) {
             $this->assertDatabaseMissing('posts', ['id' => $id]);
         }
+    }
+
+    public function test_bulk_delete_removes_featured_image_files(): void
+    {
+        Storage::fake('public');
+
+        $posts = PostFactory::new()->count(2)->create([
+            'featured_image' => '/storage/posts/featured.webp',
+        ]);
+        $postIds = $posts->pluck('id')->toArray();
+        Storage::disk('public')->put('posts/featured.webp', 'image');
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.bulk.action'), [
+            'ids' => $postIds,
+            'action' => 'delete',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success', '2 post(s) deleted successfully.');
+
+        Storage::disk('public')->assertMissing('posts/featured.webp');
     }
 
     public function test_bulk_delete_with_mixed_ownership_only_deletes_authorized(): void

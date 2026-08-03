@@ -518,6 +518,25 @@ class UserAccountTest extends TestCase
         $this->assertNull($user->fresh());
     }
 
+    public function test_account_deletion_removes_avatar_file(): void
+    {
+        Storage::fake('avatars');
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+            'avatar' => 'some-avatar.webp',
+        ]);
+
+        Storage::disk('avatars')->put('some-avatar.webp', 'content');
+
+        $this->actingAs($user)->delete(route('dashboard.account.destroy'), [
+            'current_password' => 'password',
+            'confirmation' => 'delete my account',
+        ]);
+
+        $this->assertNull($user->fresh());
+        $this->assertFalse(Storage::disk('avatars')->exists('some-avatar.webp'));
+    }
+
     public function test_account_deletion_requires_correct_password(): void
     {
         $user = User::factory()->create(['password' => bcrypt('password')]);

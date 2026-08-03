@@ -4,6 +4,7 @@ namespace Nreljed\DashboardCore\Services;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Ai\Models\AiProvider;
 use Nreljed\DashboardCore\Ai\Models\AiUsageLog;
 use Nreljed\DashboardCore\Enums\AuditAction;
@@ -157,6 +158,14 @@ class AccountService
 
     public function deleteAllUserData(User $user): void
     {
+        if ($user->avatar) {
+            try {
+                Storage::disk('avatars')->delete($user->avatar);
+            } catch (\Throwable $e) {
+                Log::warning('Avatar cleanup failed for user '.$user->id.': '.$e->getMessage());
+            }
+        }
+
         try {
             app(FeatureRegistry::class)->cleanupUserData($user->id);
         } catch (\Throwable $e) {

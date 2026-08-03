@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
@@ -51,6 +52,28 @@ class BulkOperationsTest extends TestCase
         $response->assertRedirect();
         $this->assertNotNull($admin->fresh());
         $this->assertNull($user->fresh());
+    }
+
+    public function test_bulk_delete_removes_avatar_files(): void
+    {
+        Storage::fake('avatars');
+        $admin = $this->admin();
+        $userA = User::factory()->create(['avatar' => 'avatar-a.webp']);
+        $userB = User::factory()->create(['avatar' => 'avatar-b.webp']);
+
+        Storage::disk('avatars')->put('avatar-a.webp', 'content');
+        Storage::disk('avatars')->put('avatar-b.webp', 'content');
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.admin.users.bulk.delete'), [
+                'ids' => [$userA->id, $userB->id],
+            ])
+            ->assertRedirect();
+
+        $this->assertNull($userA->fresh());
+        $this->assertNull($userB->fresh());
+        $this->assertFalse(Storage::disk('avatars')->exists('avatar-a.webp'));
+        $this->assertFalse(Storage::disk('avatars')->exists('avatar-b.webp'));
     }
 
     public function test_admin_can_export_users_csv(): void

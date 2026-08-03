@@ -4,6 +4,7 @@ use App\TestPosts\Models\TestPost;
 use App\TestPosts\TestPostsServiceProvider;
 use Nreljed\DashboardCore\Blog\BlogServiceProvider;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Models\User;
 
 return [
 
@@ -49,6 +50,7 @@ return [
     'orphan_media' => [
         'posts' => Post::class,
         'test-posts' => TestPost::class,
+        'avatars' => User::class,
     ],
 
 ];
