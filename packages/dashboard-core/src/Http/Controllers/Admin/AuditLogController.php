@@ -289,13 +289,35 @@ class AuditLogController extends Controller
                 : "$actor started impersonation",
             AuditAction::ImpersonationStop->value => "$actor stopped impersonation",
             AuditAction::RoleAssigned->value => $targetLabel
-                ? "$actor assigned role ".($ctx['role_slug'] ?? $ctx['role'] ?? 'unknown')." to $targetLabel"
-                : "$actor assigned role ".($ctx['role'] ?? $ctx['role_slug'] ?? 'unknown'),
-            AuditAction::RoleRevoked->value => "$actor revoked role {$ctx['role']}",
+                ? "$actor assigned role ".($this->describeRoleSlugs($ctx) ?? $ctx['role_slug'] ?? $ctx['role'] ?? 'unknown')." to $targetLabel"
+                : "$actor assigned role ".($this->describeRoleSlugs($ctx) ?? $ctx['role'] ?? $ctx['role_slug'] ?? 'unknown'),
+            AuditAction::RoleRevoked->value => $targetLabel
+                ? "$actor revoked role ".($this->describeRoleSlugs($ctx) ?? $ctx['role_slug'] ?? $ctx['role'] ?? 'unknown')." from $targetLabel"
+                : "$actor revoked role ".($this->describeRoleSlugs($ctx) ?? $ctx['role'] ?? $ctx['role_slug'] ?? 'unknown'),
             AuditAction::PermissionAssigned->value => "$actor assigned permissions to role {$ctx['role']}",
             AuditAction::PermissionRevoked->value => "$actor revoked permissions from role {$ctx['role']}",
+            AuditAction::RoleCreated->value => "$actor created role {$ctx['role']}",
+            AuditAction::RoleUpdated->value => "$actor updated role {$ctx['role']}",
+            AuditAction::RoleDeleted->value => "$actor deleted role {$ctx['role']}",
+            AuditAction::RoleDuplicated->value => "$actor duplicated role {$ctx['source_role']} as {$ctx['role']}",
+            AuditAction::RolePermissionChanged->value => "$actor changed permissions on role {$ctx['role']}",
             AuditAction::SettingsChanged->value => "$actor changed app settings",
+            AuditAction::DatabaseReset->value => $ctx['purge_media']
+                ? "$actor reset the database and reseeded it (media purge enabled)"
+                : "$actor reset the database and reseeded it",
+            AuditAction::DatabaseReseed->value => "$actor re-ran the seeders (no data wiped)",
             default => "$actor performed $action",
         };
+    }
+
+    private function describeRoleSlugs(array $ctx): ?string
+    {
+        $slugs = $ctx['role_slugs'] ?? null;
+
+        if (is_array($slugs) && $slugs !== []) {
+            return implode(', ', array_map('strval', $slugs));
+        }
+
+        return null;
     }
 }

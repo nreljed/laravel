@@ -4,7 +4,6 @@ namespace Nreljed\DashboardCore\Blog\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Nreljed\DashboardCore\Blog\Models\ContentBlock;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Blog\Models\PostCategory;
 use Nreljed\DashboardCore\Blog\Models\PostTag;
@@ -15,11 +14,14 @@ use Nreljed\DashboardCore\Services\MediaService;
 
 class PostController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Post::class);
 
+        $user = $request->user();
+
         $posts = Post::with('user', 'category', 'tags')
+            ->when(! $user->hasPermission('posts.manage'), fn ($query) => $query->where('user_id', $user->id))
             ->latest()
             ->get(['id', 'title', 'slug', 'excerpt', 'status', 'featured_image', 'published_at', 'category_id', 'user_id', 'created_at', 'meta_title']);
 
@@ -27,7 +29,6 @@ class PostController extends Controller
             'posts' => $posts,
             'categories' => PostCategory::orderBy('name')->get(['id', 'name']),
         ]);
-
     }
 
     public function create()
@@ -69,13 +70,6 @@ class PostController extends Controller
             'seo_metadata.recommendations.*.field' => 'required|string',
             'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
             'seo_metadata.recommendations.*.message' => 'required|string',
-            'content_blocks' => 'nullable|array',
-            'content_blocks.*.type' => 'required|string|in:rich_text,image,gallery,embed,code,separator,heading',
-            'content_blocks.*.content' => 'nullable|string',
-            'content_blocks.*.media_url' => 'nullable|string|max:255',
-            'content_blocks.*.media_alt' => 'nullable|string|max:255',
-            'content_blocks.*.settings' => 'nullable|array',
-            'content_blocks.*.order' => 'nullable|integer',
         ]);
 
         $validated['user_id'] = $request->user()->id;
@@ -83,9 +77,8 @@ class PostController extends Controller
         $validated = $this->sanitizePostContent($validated);
 
         $tagIds = $validated['tag_ids'] ?? [];
-        $contentBlocks = $validated['content_blocks'] ?? [];
         $seoMetadata = $validated['seo_metadata'] ?? null;
-        unset($validated['tag_ids'], $validated['content_blocks'], $validated['seo_metadata']);
+        unset($validated['tag_ids'], $validated['seo_metadata']);
 
         if ($seoMetadata) {
             $existingMetadata = $validated['metadata'] ?? [];
@@ -101,12 +94,6 @@ class PostController extends Controller
             $post->tags()->attach($tagIds);
         }
 
-        if (! empty($contentBlocks)) {
-            foreach ($contentBlocks as $block) {
-                $post->contentBlocks()->create($this->sanitizeBlock($block));
-            }
-        }
-
         return redirect()->route('dashboard.posts.index')
             ->with('status', 'Post created successfully.');
     }
@@ -115,11 +102,11 @@ class PostController extends Controller
     {
         $this->authorize('update', $post);
 
-        $post->load('contentBlocks', 'tags', 'category');
+        $post->load('tags', 'category');
 
         return Inertia::render('Blog/Form', [
             'post' => $post,
-            'categories' => PostCategory::flatOptions($post->category_id),
+            'categories' => PostCategory::flatOptions(),
             'tags' => PostTag::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -152,23 +139,14 @@ class PostController extends Controller
             'seo_metadata.recommendations.*.field' => 'required|string',
             'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
             'seo_metadata.recommendations.*.message' => 'required|string',
-            'content_blocks' => 'nullable|array',
-            'content_blocks.*.id' => 'nullable|integer|exists:content_blocks,id',
-            'content_blocks.*.type' => 'required|string|in:rich_text,image,gallery,embed,code,separator,heading',
-            'content_blocks.*.content' => 'nullable|string',
-            'content_blocks.*.media_url' => 'nullable|string|max:255',
-            'content_blocks.*.media_alt' => 'nullable|string|max:255',
-            'content_blocks.*.settings' => 'nullable|array',
-            'content_blocks.*.order' => 'nullable|integer',
         ]);
 
         $validated = $this->applyPostScheduleStatus($validated);
         $validated = $this->sanitizePostContent($validated);
 
         $tagIds = $validated['tag_ids'] ?? [];
-        $newBlocks = $validated['content_blocks'] ?? [];
         $seoMetadata = $validated['seo_metadata'] ?? null;
-        unset($validated['tag_ids'], $validated['content_blocks'], $validated['seo_metadata']);
+        unset($validated['tag_ids'], $validated['seo_metadata']);
 
         if ($seoMetadata) {
             $existingMetadata = $post->metadata ?? [];
@@ -181,8 +159,6 @@ class PostController extends Controller
         $post->update($validated);
 
         $post->tags()->sync($tagIds);
-
-        $this->syncContentBlocks($post, $newBlocks);
 
         return redirect()->route('dashboard.posts.index')
             ->with('status', 'Post updated successfully.');
@@ -215,7 +191,7 @@ class PostController extends Controller
 
         $query = Post::whereIn('id', $ids);
 
-        if (! $user->isAdmin()) {
+        if (! $user->hasPermission('posts.manage')) {
             $query->where('user_id', $user->id);
         }
 
@@ -308,44 +284,15 @@ class PostController extends Controller
 
     public function deleteImage(Request $request)
     {
-        $this->authorize('create', Post::class);
+        if (! $request->user()->hasPermission('posts.edit')) {
+            abort(403);
+        }
 
         $request->validate(['path' => 'required|string']);
 
         app(MediaService::class)->delete($request->path);
 
         return response()->json(['success' => true]);
-    }
-
-    protected function syncContentBlocks(Post $post, array $newBlocks): void
-    {
-        $incomingIds = collect($newBlocks)->pluck('id')->filter();
-        $post->contentBlocks()->whereNotIn('id', $incomingIds)->delete();
-
-        foreach ($newBlocks as $order => $block) {
-            $block = $this->sanitizeBlock($block);
-
-            if (! empty($block['id'])) {
-                ContentBlock::where('id', $block['id'])->where('post_id', $post->id)
-                    ->update([
-                        'type' => $block['type'],
-                        'content' => $block['content'] ?? null,
-                        'media_url' => $block['media_url'] ?? null,
-                        'media_alt' => $block['media_alt'] ?? null,
-                        'settings' => $block['settings'] ?? null,
-                        'order' => $block['order'] ?? $order,
-                    ]);
-            } else {
-                $post->contentBlocks()->create([
-                    'type' => $block['type'],
-                    'content' => $block['content'] ?? null,
-                    'media_url' => $block['media_url'] ?? null,
-                    'media_alt' => $block['media_alt'] ?? null,
-                    'settings' => $block['settings'] ?? null,
-                    'order' => $block['order'] ?? $order,
-                ]);
-            }
-        }
     }
 
     protected function sanitizePostContent(array $validated): array
@@ -358,35 +305,24 @@ class PostController extends Controller
         return $validated;
     }
 
-    protected function sanitizeBlock(array $block): array
-    {
-        $type = $block['type'] ?? null;
-
-        $block['content'] = match ($type) {
-            'rich_text', 'code', 'heading' => HtmlSanitizer::sanitize($block['content'] ?? null),
-            'embed' => HtmlSanitizer::sanitizeUrl($block['content'] ?? null),
-            default => $block['content'] ?? null,
-        };
-
-        if (isset($block['media_url'])) {
-            $block['media_url'] = HtmlSanitizer::sanitizeImageUrl($block['media_url']);
-        }
-
-        return $block;
-    }
-
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $this->authorize('viewAny', Post::class);
 
+        $user = $request->user();
+
+        $postsQuery = fn () => Post::query()
+            ->when(! $user->hasPermission('posts.manage'), fn ($query) => $query->where('user_id', $user->id));
+
         return Inertia::render('Blog/Dashboard', [
             'stats' => [
-                'total' => Post::count(),
-                'published' => Post::where('status', 'published')->count(),
-                'draft' => Post::where('status', 'draft')->count(),
-                'archived' => Post::where('status', 'archived')->count(),
+                'total' => (clone $postsQuery())->count(),
+                'published' => (clone $postsQuery())->where('status', 'published')->count(),
+                'draft' => (clone $postsQuery())->where('status', 'draft')->count(),
+                'archived' => (clone $postsQuery())->where('status', 'archived')->count(),
             ],
-            'recentPosts' => Post::with('user', 'category')
+            'recentPosts' => $postsQuery()
+                ->with('user', 'category')
                 ->latest()
                 ->take(5)
                 ->get(['id', 'title', 'status', 'category_id', 'user_id', 'created_at']),

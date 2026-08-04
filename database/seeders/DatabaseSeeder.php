@@ -12,48 +12,31 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolesAndPermissionsSeeder::class);
+
+        $roleUsers = [
+            ['username' => 'editor', 'name' => 'Editor User', 'email' => 'nreljed@outlook.com', 'role' => 'editor'],
+            ['username' => 'author', 'name' => 'Author User', 'email' => 'neosavedme@gmail.com', 'role' => 'author'],
+            ['username' => 'user', 'name' => 'User Test', 'email' => 'nreljed@gmail.tn', 'role' => 'user'],
+            ['username' => 'nstudio', 'name' => 'nstudio webdesign', 'email' => 'nstudio.webdesign@gmail.com', 'role' => 'admin'],
+        ];
+
+        foreach ($roleUsers as $user) {
+            $model = User::firstOrCreate(
+                ['username' => $user['username']],
+                [
+                    'name' => $user['name'],
+                    'email' => $user['email'],
+                    'password' => Hash::make('azerty123/*'),
+                ],
+            );
+
+            $role = Role::where('slug', $user['role'])->first();
+            if ($role && ! $model->roles()->where('roles.id', $role->id)->exists()) {
+                $model->roles()->attach($role->id);
+            }
+        }
+
         $this->call(BlogContentSeeder::class);
-
-        // Editor
-        User::factory()->create([
-            'username' => 'editor',
-            'name' => 'Editor User',
-            'email' => 'nreljed@outlook.com',
-            'password' => Hash::make('azerty123/*'),
-        ])->roles()->attach(
-            Role::where('slug', 'editor')->first()->id
-        );
-
-        // Author
-        User::factory()->create([
-            'username' => 'author',
-            'name' => 'Author User',
-            'email' => 'neosavedme@gmail.com',
-            'password' => Hash::make('azerty123/*'),
-        ])->roles()->attach(
-            Role::where('slug', 'author')->first()->id
-        );
-
-        // User
-        User::factory()->create([
-            'username' => 'user',
-            'name' => 'User Test',
-            'email' => 'nreljed@gmail.tn',
-            'password' => Hash::make('azerty123/*'),
-        ])->roles()->attach(
-            Role::where('slug', 'user')->first()->id
-        );
-
-        // Admin
-        User::factory()->create([
-            'username' => 'nstudio',
-            'name' => 'nstudio webdesign',
-            'email' => 'nstudio.webdesign@gmail.com',
-            'password' => Hash::make('azerty123/*'),
-        ])->roles()->attach(
-            Role::where('slug', 'admin')->first()->id
-        );
-
         $this->call(SettingsSeeder::class);
     }
 }

@@ -28,6 +28,7 @@ Route::post('/deploy/cache-clear', [DeployController::class, 'cacheClear'])->mid
 Route::post('/deploy/check', [DeployController::class, 'check'])->middleware('throttle:5,1');
 Route::post('/deploy/migrate', [DeployController::class, 'migrate'])->middleware('throttle:5,1');
 Route::post('/deploy/create-admin', [DeployController::class, 'createAdmin'])->middleware('throttle:5,1');
+Route::post('/deploy/reset', [DeployController::class, 'resetDatabase'])->middleware('throttle:5,1');
 
 // ═══════════════════════════════════════════════════
 // CSP Report Endpoint — receives violation reports

@@ -9,7 +9,12 @@ class SettingsService
 {
     private const string CACHE_KEY = 'app_settings';
 
-    private const array GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting', 'audit_logs'];
+    private const array DEFAULT_GROUPS = ['general', 'registration', 'notifications', 'security', 'email', 'maintenance', 'formatting', 'audit_logs'];
+
+    private static function groups(): array
+    {
+        return array_merge(self::DEFAULT_GROUPS, config('core.settings.groups', []));
+    }
 
     public static function get(string $key, mixed $default = null): mixed
     {
@@ -95,7 +100,7 @@ class SettingsService
     {
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.'_grouped');
-        foreach (self::GROUPS as $group) {
+        foreach (self::groups() as $group) {
             Cache::forget(self::CACHE_KEY."_{$group}");
         }
     }

@@ -29,7 +29,7 @@ Use `search-docs` with `packages: ["lexical"]` or `packages: ["@lexical/react"]`
 - **Composer**: `LexicalExtensionComposer` with `defineExtension` (modern pattern)
 - **Additional deps**: `@floating-ui/react` ^0.27, `@atlaskit/pragmatic-drag-and-drop` ^2.0, `prismjs` ^1.30
 - **Editor location**: `resources/js/Components/editor/`
-- **Blog integration**: `app/Blog/Resources/js/Components/ContentBlockEditor.tsx`
+- **Blog integration**: `packages/dashboard-core/src/Blog/Resources/js/Pages/Form.tsx` (via `RichTextEditor`)
 
 ## Architecture
 
@@ -322,7 +322,7 @@ Theme is in `editor-theme.ts`. Use Tailwind CSS classes. Structure follows Lexic
 
 ## Blog Integration
 
-The blog feature uses this editor via `ContentBlockEditor.tsx` in `app/Blog/Resources/js/Components/`. The editor is instantiated with `<RichTextEditor html={content} onChange={handleChange} />` where `content` is a raw HTML string from Laravel.
+The blog feature uses this editor directly via `<RichTextEditor value={content} onChange={handleChange} />` in `packages/dashboard-core/src/Blog/Resources/js/Pages/Form.tsx`, where `content` is a raw HTML string from Laravel. (A separate `ContentBlockEditor` block-based wrapper was removed as dead code.)
 
 ## Commands
 

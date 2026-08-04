@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -37,7 +36,6 @@ use Nreljed\DashboardCore\Services\HtmlSanitizer;
  * @property-read User $user
  * @property-read self|null $category
  * @property-read Collection<int, PostTag> $tags
- * @property-read Collection<int, ContentBlock> $contentBlocks
  */
 class Post extends Model
 {
@@ -89,24 +87,22 @@ class Post extends Model
             }
         });
 
-        static::deleting(function (Post $post) {
-            $paths = [];
+        static::updating(function (Post $post) {
+            foreach (['featured_image', 'og_image'] as $field) {
+                $oldValue = $post->getOriginal($field);
+                $newValue = $post->{$field};
 
-            if ($post->featured_image) {
-                $paths[] = self::urlToPath($post->featured_image);
-            }
-
-            if ($post->og_image) {
-                $paths[] = self::urlToPath($post->og_image);
-            }
-
-            foreach ($post->contentBlocks as $block) {
-                if ($block->media_url) {
-                    $paths[] = self::urlToPath($block->media_url);
+                if ($oldValue && $oldValue !== $newValue) {
+                    $path = self::urlToPath($oldValue);
+                    if ($path) {
+                        Storage::disk('public')->delete($path);
+                    }
                 }
             }
+        });
 
-            foreach (array_unique(array_filter($paths)) as $path) {
+        static::deleting(function (Post $post) {
+            foreach (array_unique(array_filter($post->getReferencedPaths())) as $path) {
                 Storage::disk('public')->delete($path);
             }
         });
@@ -161,13 +157,34 @@ class Post extends Model
             $paths[] = self::urlToPath($this->og_image);
         }
 
-        foreach ($this->contentBlocks as $block) {
-            if ($block->media_url) {
-                $paths[] = self::urlToPath($block->media_url);
-            }
+        foreach ($this->getGalleryPaths() as $path) {
+            $paths[] = $path;
         }
 
         return array_values(array_unique(array_filter($paths)));
+    }
+
+    /**
+     * Resolve storage paths referenced by the post gallery.
+     *
+     * @return list<string>
+     */
+    protected function getGalleryPaths(): array
+    {
+        $paths = [];
+
+        foreach ((array) ($this->metadata['post_gallery'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $path = self::urlToPath($item['url'] ?? null);
+            if ($path) {
+                $paths[] = $path;
+            }
+        }
+
+        return $paths;
     }
 
     public function user(): BelongsTo
@@ -183,10 +200,5 @@ class Post extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(PostTag::class, 'post_tag_post');
-    }
-
-    public function contentBlocks(): HasMany
-    {
-        return $this->hasMany(ContentBlock::class)->orderBy('order');
     }
 }

@@ -87,54 +87,6 @@ class XssSanitizationTest extends TestCase
         $this->assertStringNotContainsString('src=', $post->content);
     }
 
-    public function test_post_update_sanitizes_rich_text_content_blocks(): void
-    {
-        $post = Post::create([
-            'user_id' => $this->admin()->id,
-            'title' => 'Block Post',
-            'status' => 'draft',
-        ]);
-
-        $this->actingAs($this->admin())
-            ->put(route('dashboard.posts.update', $post), [
-                'title' => 'Block Post',
-                'content' => '<p>Safe</p><script>alert(2)</script>',
-                'status' => 'draft',
-                'content_blocks' => [
-                    [
-                        'type' => 'rich_text',
-                        'content' => '<p>Body</p><script>alert(3)</script><img src="x" onerror="alert(4)">',
-                        'order' => 0,
-                    ],
-                    [
-                        'type' => 'embed',
-                        'content' => 'javascript:alert(5)',
-                        'order' => 1,
-                    ],
-                    [
-                        'type' => 'image',
-                        'media_url' => 'javascript:alert(6)',
-                        'order' => 2,
-                    ],
-                ],
-            ])
-            ->assertRedirect();
-
-        $post->refresh();
-        $blocks = $post->contentBlocks()->orderBy('order')->get();
-
-        $this->assertStringNotContainsString('<script', $post->content);
-
-        $this->assertSame('rich_text', $blocks[0]->type);
-        $this->assertStringContainsString('Body', $blocks[0]->content);
-        $this->assertStringNotContainsString('<script', $blocks[0]->content);
-        $this->assertStringNotContainsString('onerror', $blocks[0]->content);
-
-        $this->assertNull($blocks[1]->content);
-
-        $this->assertNull($blocks[2]->media_url);
-    }
-
     public function test_excerpt_is_stripped_of_html(): void
     {
         $payload = [
@@ -159,6 +111,97 @@ class XssSanitizationTest extends TestCase
         $twice = HtmlSanitizer::sanitize($once);
 
         $this->assertSame($once, $twice);
+    }
+
+    public function test_sanitizer_preserves_lexical_column_layout_attributes(): void
+    {
+        $html = '<div style="grid-template-columns: 1fr 1fr;" data-lexical-layout-container="true" data-responsive-mode="full">'
+            .'<div data-lexical-layout-item="true"><p>Left</p></div>'
+            .'<div data-lexical-layout-item="true"><p>Right</p></div>'
+            .'</div>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringContainsString('data-lexical-layout-container="true"', $sanitized);
+        $this->assertStringContainsString('data-lexical-layout-item="true"', $sanitized);
+        $this->assertStringContainsString('data-responsive-mode="full"', $sanitized);
+        $this->assertStringContainsString('grid-template-columns: 1fr 1fr', $sanitized);
+        $this->assertStringContainsString('Left', $sanitized);
+        $this->assertStringContainsString('Right', $sanitized);
+    }
+
+    public function test_sanitizer_preserves_lexical_checklist_markup(): void
+    {
+        $html = '<ul data-is-checklist="1"><li role="checkbox" tabindex="-1" aria-checked="true" value="1" class="lexical-checklist-checked">Done</li>'
+            .'<li role="checkbox" tabindex="-1" aria-checked="false" value="2" class="lexical-checklist-unchecked">Todo</li></ul>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringContainsString('data-is-checklist="1"', $sanitized);
+        $this->assertStringContainsString('aria-checked="true"', $sanitized);
+        $this->assertStringContainsString('aria-checked="false"', $sanitized);
+        $this->assertStringContainsString('lexical-checklist-checked', $sanitized);
+        $this->assertStringContainsString('lexical-checklist-unchecked', $sanitized);
+        $this->assertStringContainsString('Done', $sanitized);
+        $this->assertStringContainsString('Todo', $sanitized);
+    }
+
+    public function test_sanitizer_preserves_lexical_internal_checklist_type(): void
+    {
+        $html = '<ul __lexicalListType="check"><li role="checkbox" tabindex="-1" aria-checked="true">Done</li></ul>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringContainsString('__lexicallisttype="check"', $sanitized);
+        $this->assertStringContainsString('aria-checked="true"', $sanitized);
+    }
+
+    public function test_sanitizer_strips_checklist_event_handlers(): void
+    {
+        $html = '<ul data-is-checklist="1"><li role="checkbox" tabindex="-1" aria-checked="true" onmouseover="alert(1)">Done</li></ul>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringContainsString('data-is-checklist="1"', $sanitized);
+        $this->assertStringContainsString('aria-checked="true"', $sanitized);
+        $this->assertStringNotContainsString('onmouseover', $sanitized);
+        $this->assertStringContainsString('Done', $sanitized);
+    }
+
+    public function test_sanitizer_still_strips_layout_script_content(): void
+    {
+        $html = '<div data-lexical-layout-container="true">'
+            .'<div data-lexical-layout-item="true"><p>Safe</p><script>alert(1)</script></div>'
+            .'</div>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringContainsString('data-lexical-layout-container="true"', $sanitized);
+        $this->assertStringNotContainsString('<script', $sanitized);
+        $this->assertStringContainsString('Safe', $sanitized);
+    }
+
+    public function test_sanitizer_preserves_allowlisted_youtube_embeds(): void
+    {
+        $html = '<p>A</p>'
+            .'<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" frameborder="0" allowfullscreen="true"></iframe>'
+            .'<p>B</p>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringContainsString('https://www.youtube.com/embed/dQw4w9WgXcQ', $sanitized);
+        $this->assertStringContainsString('<iframe', $sanitized);
+    }
+
+    public function test_sanitizer_strips_non_allowlisted_iframes(): void
+    {
+        $html = '<p>A</p><iframe src="https://evil.example/x">bad</iframe><p>B</p>';
+
+        $sanitized = HtmlSanitizer::sanitize($html);
+
+        $this->assertStringNotContainsString('iframe', $sanitized);
+        $this->assertStringNotContainsString('evil.example', $sanitized);
+        $this->assertStringNotContainsString('bad', $sanitized);
     }
 
     public function test_plain_text_content_is_preserved(): void

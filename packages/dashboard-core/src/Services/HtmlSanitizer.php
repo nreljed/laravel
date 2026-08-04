@@ -14,7 +14,7 @@ class HtmlSanitizer
     private const ALLOWED_TAGS = [
         'a', 'b', 'blockquote', 'br', 'caption', 'code', 'col', 'colgroup',
         'div', 'em', 'figcaption', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'hr', 'i', 'img', 'li', 'mark', 'ol', 'p', 'pre', 's', 'small', 'span',
+        'hr', 'i', 'iframe', 'img', 'li', 'mark', 'ol', 'p', 'pre', 's', 'small', 'span',
         'strike', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th',
         'thead', 'tr', 'u', 'ul',
     ];
@@ -24,7 +24,7 @@ class HtmlSanitizer
      */
     private const DANGEROUS_TAGS = [
         'audio', 'base', 'body', 'button', 'canvas', 'embed', 'form', 'head',
-        'html', 'iframe', 'input', 'link', 'math', 'meta', 'noscript', 'object',
+        'html', 'input', 'link', 'math', 'meta', 'noscript', 'object',
         'optgroup', 'option', 'script', 'select', 'source', 'style', 'svg',
         'template', 'textarea', 'title', 'track', 'video',
     ];
@@ -32,7 +32,18 @@ class HtmlSanitizer
     /**
      * Attributes allowed on every tag.
      */
-    private const GLOBAL_ATTRIBUTES = ['class', 'dir', 'id', 'lang', 'style', 'title'];
+    private const GLOBAL_ATTRIBUTES = [
+        'class', 'dir', 'id', 'lang', 'style', 'title',
+        'data-lexical-layout-container', 'data-lexical-layout-item', 'data-responsive-mode',
+    ];
+
+    /**
+     * Checklist markup markers preserved so Lexical can re-import checklists
+     * without degrading them to plain bullet lists. Attribute names are
+     * lowercased by DOMDocument on parse, and Lexical reads the lowercase
+     * form on import.
+     */
+    private const CHECKLIST_ATTRIBUTES = ['data-is-checklist', '__lexicallisttype'];
 
     /**
      * Tag-specific attributes merged with the global allowlist.
@@ -40,14 +51,27 @@ class HtmlSanitizer
     private const ATTRIBUTES = [
         'a' => ['href', 'target', 'rel'],
         'blockquote' => ['cite'],
-        'code' => [],
+        'code' => ['data-language', 'data-highlight-language', 'data-theme'],
         'col' => ['span'],
         'colgroup' => ['span'],
+        'iframe' => ['src', 'title', 'allow', 'allowfullscreen', 'frameborder', 'loading', 'width', 'height'],
         'img' => ['src', 'alt', 'width', 'height', 'loading'],
-        'li' => ['value'],
+        'li' => ['value', 'role', 'tabindex', 'aria-checked'],
         'ol' => ['start', 'type'],
+        'pre' => ['data-language', 'data-highlight-language', 'data-theme'],
         'td' => ['colspan', 'rowspan'],
         'th' => ['colspan', 'rowspan', 'scope'],
+        'ul' => self::CHECKLIST_ATTRIBUTES,
+    ];
+
+    /**
+     * Hosts allowed as iframe embed sources. Everything else is dropped.
+     */
+    private const ALLOWED_EMBED_HOSTS = [
+        'www.youtube.com' => '/embed/',
+        'youtube-nocookie.com' => '/embed/',
+        'www.youtube-nocookie.com' => '/embed/',
+        'player.vimeo.com' => '/video/',
     ];
 
     /**
@@ -166,6 +190,12 @@ class HtmlSanitizer
 
             $tag = strtolower($element->tagName);
 
+            if ($tag === 'iframe' && ! self::isAllowedEmbedSource($element->getAttribute('src'))) {
+                $element->parentNode->removeChild($element);
+
+                continue;
+            }
+
             if (in_array($tag, self::DANGEROUS_TAGS, true)) {
                 $element->parentNode->removeChild($element);
 
@@ -210,6 +240,30 @@ class HtmlSanitizer
     private static function stripControlCharacters(string $value): string
     {
         return preg_replace('/[\x00-\x1F\x7F]/', '', $value) ?? $value;
+    }
+
+    /**
+     * Only allow iframes whose src points to an allowlisted embed host.
+     */
+    private static function isAllowedEmbedSource(string $src): bool
+    {
+        $src = self::stripControlCharacters(trim($src));
+
+        if ($src === '' || self::hasTraversal($src)) {
+            return false;
+        }
+
+        $scheme = strtolower((string) parse_url($src, PHP_URL_SCHEME));
+
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        $host = strtolower((string) parse_url($src, PHP_URL_HOST));
+        $path = (string) parse_url($src, PHP_URL_PATH);
+        $prefix = self::ALLOWED_EMBED_HOSTS[$host] ?? null;
+
+        return $prefix !== null && str_starts_with($path, $prefix);
     }
 
     private static function hasTraversal(string $value): bool

@@ -14,8 +14,16 @@ class SystemHealthService
 {
     public function getAll(): array
     {
+        $php = $this->getPhpInfo();
+        $extensions = $this->getExtensionsInfo();
+        $server = $this->getServerInfo();
+        $storage = $this->getStorageInfo();
+        $deployed = $this->getDeployedVersion();
+        $latest = $this->getLatestVersion();
+        $defaultMailer = config('mail.default');
+
         return [
-            'php' => $this->getPhpInfo(),
+            'php' => $php,
             'laravel' => [
                 'version' => app()->version(),
                 'environment' => app()->environment(),
@@ -26,7 +34,7 @@ class SystemHealthService
                 'name' => config('app.name'),
             ],
             'opcache' => $this->getOpcacheInfo(),
-            'extensions' => $this->getExtensionsInfo(),
+            'extensions' => $extensions,
             'all_loaded_extensions' => (function () {
                 $extensions = get_loaded_extensions();
                 sort($extensions);
@@ -34,10 +42,10 @@ class SystemHealthService
                 return $extensions;
             })(),
             'database' => $this->getDatabaseInfo(),
-            'server' => $this->getServerInfo(),
+            'server' => $server,
             'os' => $this->getOsInfo(),
             'environment' => $this->detectEnvironment(),
-            'recommendations' => $this->getRecommendations(),
+            'recommendations' => $this->getRecommendations($php, $extensions, $server, $storage, $deployed, $latest),
             'cache' => [
                 'driver' => config('cache.default'),
                 'ttl' => config('cache.ttl', 3600),
@@ -48,10 +56,16 @@ class SystemHealthService
                 'connection' => config('queue.connections.'.config('queue.default').'.driver', config('queue.default')),
             ],
             'mail' => [
-                'driver' => config('mail.default'),
+                'driver' => $defaultMailer,
                 'from_address' => config('mail.from.address'),
                 'from_name' => config('mail.from.name'),
-                'mailers' => config('mail.mailers.'.config('mail.default'), []),
+                'mailer' => array_filter([
+                    'transport' => config("mail.mailers.{$defaultMailer}.transport"),
+                    'host' => config("mail.mailers.{$defaultMailer}.host"),
+                    'port' => config("mail.mailers.{$defaultMailer}.port"),
+                    'username' => config("mail.mailers.{$defaultMailer}.username"),
+                    'encryption' => config("mail.mailers.{$defaultMailer}.encryption"),
+                ], static fn ($value) => $value !== null),
             ],
             'session' => [
                 'driver' => config('session.driver'),
@@ -80,9 +94,9 @@ class SystemHealthService
                 'admin' => User::whereHas('roles', fn ($q) => $q->where('slug', 'admin'))->count(),
             ],
             'build' => $this->getBuildInfo(),
-            'storage' => $this->getStorageInfo(),
-            'deployed_version' => $this->getDeployedVersion(),
-            'latest_version' => $this->getLatestVersion(),
+            'storage' => $storage,
+            'deployed_version' => $deployed,
+            'latest_version' => $latest,
             'laravel_cache' => $this->getLaravelCacheStatus(),
             'debug_access_url' => $this->getDebugAccessUrl(),
         ];
@@ -99,7 +113,7 @@ class SystemHealthService
             'sapi' => PHP_SAPI,
             'memory_limit' => $memoryLimit,
             'memory_limit_mb' => $memoryLimitMb,
-            'memory_limit_ok' => $memoryLimitMb >= 128,
+            'memory_limit_ok' => $memoryLimitMb === -1 || $memoryLimitMb >= 128,
             'max_execution_time' => ini_get('max_execution_time'),
             'max_input_time' => ini_get('max_input_time'),
             'max_input_vars' => ini_get('max_input_vars'),
@@ -307,10 +321,7 @@ class SystemHealthService
     {
         return [
             'software' => request()->server('SERVER_SOFTWARE', 'N/A'),
-            'is_https' => (! empty(request()->server('HTTPS')) && request()->server('HTTPS') !== 'off')
-                || (int) (request()->server('SERVER_PORT', 80)) === 443,
-            'is_https_ok' => (! empty(request()->server('HTTPS')) && request()->server('HTTPS') !== 'off')
-                || (int) (request()->server('SERVER_PORT', 80)) === 443,
+            'is_https' => request()->secure(),
             'document_root' => request()->server('DOCUMENT_ROOT', 'N/A'),
             'server_ip' => request()->server('SERVER_ADDR')
                 ?? (gethostbyname(gethostname()) ?: 'N/A'),
@@ -323,39 +334,54 @@ class SystemHealthService
 
     public function detectEnvironment(): array
     {
-        $iniPath = php_ini_loaded_file();
+        $iniPath = php_ini_loaded_file() ?: '';
         $serverSoft = request()->server('SERVER_SOFTWARE', '');
+        $hostLower = strtolower((string) request()->getHost());
+        $iniLower = strtolower($iniPath);
+        $serverLower = strtolower($serverSoft);
+
         $type = 'production';
         $detected = null;
 
-        if (str_contains($serverSoft, 'Herd') || str_contains($iniPath ?: '', 'Herd')) {
+        $localTools = [
+            'LocalWP' => str_contains($serverLower, 'local by flywheel')
+                || str_contains($serverLower, 'flywheel')
+                || str_contains($iniLower, '\\local\\run'),
+            'Herd' => str_contains($serverLower, 'herd') || str_contains($iniLower, 'herd'),
+            'Valet' => str_contains($serverLower, 'valet') || str_contains($iniLower, 'valet'),
+            'Laragon' => str_contains($serverLower, 'laragon'),
+            'DDEV' => str_contains($serverLower, 'ddev') || str_contains($hostLower, '.ddev.site'),
+            'XAMPP' => str_contains($serverLower, 'xampp') || str_contains($iniLower, 'xampp'),
+            'WAMP' => str_contains($serverLower, 'wamp') || str_contains($iniLower, 'wamp'),
+        ];
+
+        foreach ($localTools as $tool => $matches) {
+            if ($matches) {
+                $type = 'local';
+                $detected = $tool;
+                break;
+            }
+        }
+
+        // Dev-only TLDs are a reliable signal even when the server hides its identity.
+        if ($detected === null
+            && (str_ends_with($hostLower, '.test') || str_ends_with($hostLower, '.localhost') || $hostLower === 'localhost')) {
             $type = 'local';
-            $detected = 'Herd';
-        } elseif (str_contains($serverSoft, 'Valet') || str_contains($iniPath ?: '', 'Valet')) {
-            $type = 'local';
-            $detected = 'Valet';
-        } elseif (str_contains($serverSoft, 'Laragon') || str_contains($iniPath ?: '', 'laragon')) {
-            $type = 'local';
-            $detected = 'Laragon';
-        } elseif ($iniPath && str_contains(strtolower($iniPath), 'local\\run')) {
-            $type = 'local';
-            $detected = 'LocalWP';
-        } elseif (app()->environment('local')) {
-            $type = 'local';
-            $detected = 'Unknown';
+            $detected = 'Unknown (dev TLD)';
         }
 
         if ($detected === null) {
-            if (str_contains($serverSoft, 'Apache')) {
-                $detected = 'Apache';
-            } elseif (str_contains($serverSoft, 'LiteSpeed')) {
-                $detected = 'LiteSpeed';
-            } elseif (str_contains($serverSoft, 'nginx')) {
-                $detected = 'Nginx';
-            } elseif (str_contains($serverSoft, 'IIS')) {
-                $detected = 'IIS';
-            } else {
+            if (app()->environment('local')) {
+                $type = 'local';
                 $detected = 'Unknown';
+            } else {
+                $detected = match (true) {
+                    str_contains($serverSoft, 'Apache') => 'Apache',
+                    str_contains($serverSoft, 'LiteSpeed') => 'LiteSpeed',
+                    str_contains($serverSoft, 'nginx') => 'Nginx',
+                    str_contains($serverSoft, 'IIS') => 'IIS',
+                    default => 'Unknown',
+                };
             }
         }
 
@@ -368,29 +394,32 @@ class SystemHealthService
         ];
     }
 
-    public function getRecommendations(): array
-    {
+    public function getRecommendations(
+        array $php,
+        array $extensions,
+        array $server,
+        array $storage,
+        array $deployed,
+        array $latest,
+    ): array {
         $recommendations = [];
-        $phpInfo = $this->getPhpInfo();
-        $extensions = $this->getExtensionsInfo();
-        $server = $this->getServerInfo();
         $isProduction = app()->environment('production');
 
-        if (! $phpInfo['version_ok']) {
+        if (! $php['version_ok']) {
             $recommendations[] = [
                 'severity' => 'critical',
                 'title' => 'PHP version outdated',
-                'message' => 'PHP '.$phpInfo['version'].' is below the minimum 8.2.0.',
+                'message' => 'PHP '.$php['version'].' is below the minimum 8.2.0.',
                 'fix' => 'Upgrade PHP to 8.2 or higher via your hosting control panel.',
             ];
         }
 
-        if (! $phpInfo['memory_limit_ok']) {
+        if (! $php['memory_limit_ok']) {
             $recommendations[] = [
                 'severity' => 'high',
                 'title' => 'Low PHP memory limit',
-                'message' => 'Memory limit is '.$phpInfo['memory_limit']
-                    .' ('.$phpInfo['memory_limit_mb'].'M). Minimum 128M recommended.',
+                'message' => 'Memory limit is '.$php['memory_limit']
+                    .' ('.$php['memory_limit_mb'].'M). Minimum 128M recommended.',
                 'fix' => 'Set memory_limit = 256M in php.ini.',
             ];
         }
@@ -453,8 +482,6 @@ class SystemHealthService
             ];
         }
 
-        $deployed = $this->getDeployedVersion();
-        $latest = $this->getLatestVersion();
         if ($deployed['exists'] && $latest['found'] && $deployed['version'] !== $latest['version']) {
             $recommendations[] = [
                 'severity' => 'info',
@@ -484,8 +511,7 @@ class SystemHealthService
             ];
         }
 
-        $storageInfo = $this->getStorageInfo();
-        foreach ($storageInfo['dirs'] as $dir) {
+        foreach ($storage['dirs'] as $dir) {
             if (! $dir['writable']) {
                 $recommendations[] = [
                     'severity' => 'critical',
@@ -628,14 +654,7 @@ class SystemHealthService
         $recentErrors = 0;
         if ($path && file_exists($path)) {
             $size = $this->formatBytes(filesize($path));
-            try {
-                $lines = file($path);
-                if ($lines) {
-                    $recentLines = array_slice($lines, -500);
-                    $recentErrors = count(preg_grep('/\.(ERROR|CRITICAL|ALERT|EMERGENCY)\b/', $recentLines));
-                }
-            } catch (\Exception) {
-            }
+            $recentErrors = count(preg_grep('/\.(ERROR|CRITICAL|ALERT|EMERGENCY)\b/', $this->tailFile($path, 500)));
         }
 
         $logFiles = [];
@@ -664,6 +683,48 @@ class SystemHealthService
             'recent_errors' => $recentErrors,
             'files' => $logFiles,
         ];
+    }
+
+    /**
+     * Read the last N non-empty lines of a file without loading it fully into memory.
+     *
+     * @return string[]
+     */
+    protected function tailFile(string $path, int $lines): array
+    {
+        try {
+            $handle = fopen($path, 'rb');
+            if (! $handle) {
+                return [];
+            }
+
+            $size = filesize($path);
+            $chunkSize = 8192;
+            $offset = $size;
+            $buffer = '';
+            $wanted = $lines;
+
+            while ($offset > 0 && $wanted > 0 && strlen($buffer) < 2_097_152) {
+                $readSize = min($chunkSize, $offset);
+                $offset -= $readSize;
+                fseek($handle, $offset);
+                $buffer = fread($handle, $readSize).$buffer;
+                $wanted -= substr_count($buffer, "\n");
+            }
+
+            fclose($handle);
+
+            $split = preg_split("/\r?\n/", rtrim($buffer));
+            if (! is_array($split)) {
+                return [];
+            }
+
+            $split = array_values(array_filter($split, static fn ($line) => $line !== ''));
+
+            return count($split) > $lines ? array_slice($split, -$lines) : $split;
+        } catch (\Exception) {
+            return [];
+        }
     }
 
     protected function getDebugAccessUrl(): ?string
@@ -697,26 +758,21 @@ class SystemHealthService
         $cacheKey = 'system_health_latest_version';
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () {
-            $repo = 'nreljed/laravel';
-            $token = null;
+            [$repo, $token] = $this->githubConfig();
+
+            if ($token === null) {
+                return [
+                    'found' => false,
+                    'skipped' => true,
+                    'message' => 'No GITHUB_TOKEN configured; skipped release check.',
+                ];
+            }
 
             try {
-                $envPath = base_path('.env');
-                if (file_exists($envPath)) {
-                    foreach (file($envPath) as $line) {
-                        if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {
-                            $token = trim(substr(trim($line), strlen('GITHUB_TOKEN=')));
-                            $token = trim($token, '"\'');
-                        }
-                    }
-                }
-
-                $headers = ['Accept' => 'application/vnd.github+json'];
-                if ($token) {
-                    $headers['Authorization'] = 'Bearer '.$token;
-                }
-
-                $response = Http::withHeaders($headers)
+                $response = Http::withHeaders([
+                    'Accept' => 'application/vnd.github+json',
+                    'Authorization' => 'Bearer '.$token,
+                ])
                     ->timeout(5)
                     ->get("https://api.github.com/repos/{$repo}/releases/latest");
 
@@ -740,6 +796,30 @@ class SystemHealthService
         });
     }
 
+    /**
+     * Resolve the GitHub repo and token, mirroring the DeployController pattern
+     * of reading the raw .env file (survives config caching).
+     *
+     * @return array{0: string, 1: ?string}
+     */
+    protected function githubConfig(): array
+    {
+        $repo = env('GITHUB_REPO', 'nreljed/laravel');
+        $token = env('GITHUB_TOKEN');
+
+        $envPath = base_path('.env');
+        if ($token === null && file_exists($envPath)) {
+            foreach (file($envPath) as $line) {
+                if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {
+                    $token = trim(substr(trim($line), strlen('GITHUB_TOKEN=')));
+                    $token = trim($token, '"\'');
+                }
+            }
+        }
+
+        return [$repo, $token === '' ? null : $token];
+    }
+
     protected function getBuildInfo(): array
     {
         $path = public_path('build/manifest.json');
@@ -749,13 +829,14 @@ class SystemHealthService
         }
 
         $modified = filemtime($path);
+        $ageSeconds = max(0, time() - $modified);
 
         return [
             'exists' => true,
             'modified_at' => date('Y-m-d H:i:s', $modified),
             'modified_timestamp' => $modified,
-            'age' => now()->diffInDays(now()->setTimestamp($modified)).' days',
-            'age_hours' => round((time() - $modified) / 3600, 1),
+            'age' => floor($ageSeconds / 86400).' days',
+            'age_hours' => round($ageSeconds / 3600, 1),
         ];
     }
 
@@ -797,7 +878,6 @@ class SystemHealthService
                 'name' => $dir['name'],
                 'exists' => $exists,
                 'writable' => $writable,
-                'writable_ok' => $writable,
                 'file_count' => $fileCount,
                 'size' => $size > 0 ? $this->formatBytes($size) : '0 B',
             ];
@@ -806,6 +886,30 @@ class SystemHealthService
         return [
             'dirs' => $results,
             'total_size' => $totalSize > 0 ? $this->formatBytes($totalSize) : '0 B',
+            'disk' => $this->getDiskUsage(),
+        ];
+    }
+
+    protected function getDiskUsage(): ?array
+    {
+        $root = base_path();
+        $total = @disk_total_space($root);
+        $free = @disk_free_space($root);
+
+        if ($total === false || $free === false || $total <= 0) {
+            return null;
+        }
+
+        $used = max(0, $total - $free);
+        $totalBytes = (int) $total;
+        $freeBytes = (int) $free;
+
+        return [
+            'total' => $this->formatBytes($totalBytes),
+            'free' => $this->formatBytes($freeBytes),
+            'used' => $this->formatBytes((int) $used),
+            'percent' => round(($used / $total) * 100, 1),
+            'writable' => is_writable($root),
         ];
     }
 

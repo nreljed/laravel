@@ -12,6 +12,7 @@ import {
   ScrollText,
   Beaker,
   FlaskConical,
+  Database,
 } from "lucide-react";
 import { usePage } from "@inertiajs/react";
 import { NavMain, type NavItem } from "@/Components/navigation/nav-main";
@@ -38,6 +39,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const notificationUnreadCount = (pageProps.notificationUnreadCount as number) || 0;
   const brand = (pageProps.brand as { logo?: string; favicon?: string; name?: string }) || {};
   const appUrl = (pageProps.app_url as string) || null;
+  const databaseMaintenanceEnabled =
+    (pageProps.features as { databaseMaintenanceEnabled?: boolean } | undefined)
+      ?.databaseMaintenanceEnabled ?? false;
 
   const safeRoute = (name: string, fallback = "#"): string => {
     try {
@@ -68,17 +72,54 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   const adminNavItems: NavItem[] = [
-    { title: "Users", url: safeRoute("dashboard.admin.users.index"), icon: Users },
-    { title: "Roles", url: safeRoute("dashboard.admin.roles.index"), icon: Shield },
+    {
+      title: "Users",
+      url: safeRoute("dashboard.admin.users.index"),
+      icon: Users,
+      permission: "manage-users",
+    },
+    {
+      title: "Roles",
+      url: safeRoute("dashboard.admin.roles.index"),
+      icon: Shield,
+      permission: "manage-roles",
+    },
     {
       title: "Permissions",
       url: safeRoute("dashboard.admin.permissions.manage"),
       icon: ShieldCheck,
+      permission: "manage-roles",
     },
-    { title: "Settings", url: safeRoute("dashboard.admin.settings.general"), icon: Settings },
-    { title: "Audit Logs", url: safeRoute("dashboard.admin.audit-logs.index"), icon: ScrollText },
-    { title: "System Health", url: safeRoute("dashboard.admin.system-health"), icon: Activity },
+    {
+      title: "Settings",
+      url: safeRoute("dashboard.admin.settings.general"),
+      icon: Settings,
+      permission: "manage-settings",
+    },
+    {
+      title: "Audit Logs",
+      url: safeRoute("dashboard.admin.audit-logs.index"),
+      icon: ScrollText,
+      permission: "manage-audit-logs",
+    },
+    {
+      title: "System Health",
+      url: safeRoute("dashboard.admin.system-health"),
+      icon: Activity,
+      permission: "view-system-health",
+    },
+    {
+      title: "Database",
+      url: safeRoute("dashboard.admin.database"),
+      icon: Database,
+      permission: "manage-options",
+    },
   ];
+
+  const visibleAdminItems = adminNavItems.filter(
+    (item) =>
+      hasPermission(item.permission) && (item.title !== "Database" || databaseMaintenanceEnabled),
+  );
 
   const devNavItems: NavItem[] = [
     {
@@ -143,11 +184,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             );
           })}
 
-        {isAdmin && (
+        {visibleAdminItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
-              <NavMain items={adminNavItems} />
+              <NavMain items={visibleAdminItems} />
             </SidebarGroupContent>
           </SidebarGroup>
         )}

@@ -4,21 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldDescription } from "@/Components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/Components/ui/select";
 import { Badge } from "@/Components/ui/badge";
 import { PasswordInput } from "@/Components/shared/password-input";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+} from "@/Components/ui/combobox";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import { Separator } from "@/Components/ui/separator";
 import { ArrowLeft, Save, Check, X, Loader2, Shield, CalendarDays } from "lucide-react";
 import { FormEventHandler, useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Role {
   id: number;
@@ -31,7 +36,7 @@ interface UserData {
   username?: string;
   name: string;
   email: string;
-  role_id?: number;
+  role_ids?: number[];
   email_verified_at?: string | null;
   created_at?: string;
 }
@@ -46,6 +51,8 @@ export default function AdminUsersForm() {
   const { props } = usePage();
   const { user, roles, defaultRoleId } = props as unknown as PageProps;
   const isEditing = !!user?.id;
+  const { capabilities } = useAuth();
+  const canAssignRoles = capabilities.can["assign-roles"] === true;
 
   const { data, setData, post, put, processing, errors } = useForm({
     username: user?.username ?? "",
@@ -53,7 +60,7 @@ export default function AdminUsersForm() {
     email: user?.email ?? "",
     password: "",
     password_confirmation: "",
-    role_id: String(user?.role_id ?? defaultRoleId ?? ""),
+    role_ids: (user?.role_ids ?? (defaultRoleId ? [defaultRoleId] : [])).map(String),
     send_email: !isEditing,
   });
 
@@ -248,28 +255,58 @@ export default function AdminUsersForm() {
                     </Field>
 
                     <Field>
-                      <FieldLabel htmlFor="role">Role</FieldLabel>
-                      <Select
-                        value={data.role_id}
-                        onValueChange={(v) => setData("role_id", v ?? "")}
+                      <FieldLabel htmlFor="roles">Roles</FieldLabel>
+                      <Combobox
+                        multiple
+                        disabled={!canAssignRoles}
+                        value={roles.filter((role) => data.role_ids.includes(String(role.id)))}
+                        onValueChange={(value) =>
+                          setData(
+                            "role_ids",
+                            (value as Role[]).map((role) => String(role.id)),
+                          )
+                        }
+                        items={roles}
+                        itemToStringLabel={(role) => role.name}
+                        itemToStringValue={(role) => String(role.id)}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a role">
-                            {(value: string | null) =>
-                              roles.find((r) => String(r.id) === value)?.name ?? "Select a role"
-                            }
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {roles.map((role) => (
-                            <SelectItem key={role.id} value={String(role.id)}>
-                              {role.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <ComboboxChips className="w-full">
+                          <ComboboxValue>
+                            {(value: Role[]) => (
+                              <>
+                                {value.map((role) => (
+                                  <ComboboxChip key={role.id} showRemove={canAssignRoles}>
+                                    {role.name}
+                                  </ComboboxChip>
+                                ))}
+                                <ComboboxChipsInput
+                                  placeholder={
+                                    value.length === 0 ? "Search and select roles..." : ""
+                                  }
+                                />
+                              </>
+                            )}
+                          </ComboboxValue>
+                        </ComboboxChips>
+                        <ComboboxContent className="w-full">
+                          <ComboboxEmpty>No roles found.</ComboboxEmpty>
+                          <ComboboxList>
+                            {(role: Role) => (
+                              <ComboboxItem key={role.id} value={role}>
+                                {role.name}
+                              </ComboboxItem>
+                            )}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
+                      {!canAssignRoles && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          You don't have the <strong>assign-roles</strong> permission, so role
+                          assignment is unavailable.
+                        </p>
+                      )}
                       <FieldError
-                        errors={errors.role_id ? [{ message: errors.role_id }] : undefined}
+                        errors={errors.role_ids ? [{ message: errors.role_ids }] : undefined}
                       />
                     </Field>
                   </div>

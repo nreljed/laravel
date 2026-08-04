@@ -38,10 +38,13 @@ class SeoGenerationController extends Controller
     {
         $user = $request->user();
 
-        $query = Post::query();
+        $query = Post::query()
+            ->when(! $user->hasPermission('posts.manage'), fn ($q) => $q->where('user_id', $user->id));
 
         if ($request->boolean('all')) {
-            $query->whereNull('meta_title')->orWhere('meta_title', '');
+            $query->where(function ($q) {
+                $q->whereNull('meta_title')->orWhere('meta_title', '');
+            });
         } else {
             $query->whereIn('id', $request->validated('post_ids', []));
         }

@@ -17,10 +17,8 @@ class SendEmailTest extends TestCase
         $job = new SendEmail('recipient@example.com', 'Hello Subject', 'welcome', ['name' => 'Jane']);
         $job->handle();
 
-        Mail::assertSent(DynamicMailable::class, function (DynamicMailable $mail) {
-            return $mail->hasTo('recipient@example.com')
-                && $mail->envelope()->subject === 'Hello Subject';
-        });
+        Mail::assertSent(DynamicMailable::class, fn (DynamicMailable $mail) => $mail->hasTo('recipient@example.com')
+            && $mail->envelope()->subject === 'Hello Subject');
     }
 
     public function test_job_exposes_retry_configuration(): void

@@ -77,4 +77,44 @@ class BlogTagTest extends TestCase
         $this->assertNotNull($tag->slug);
         $this->assertEquals('my-new-tag', $tag->slug);
     }
+
+    public function test_tag_quick_add_returns_json(): void
+    {
+        $response = $this->actingAs($this->admin())->postJson(route('dashboard.posts.tags.store'), [
+            'name' => 'Quick Tag',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonStructure(['id', 'name']);
+        $this->assertDatabaseHas('post_tags', ['name' => 'Quick Tag']);
+    }
+
+    public function test_admin_can_reorder_tags(): void
+    {
+        $a = PostTagFactory::new()->create(['name' => 'Alpha', 'order' => 0]);
+        $b = PostTagFactory::new()->create(['name' => 'Beta', 'order' => 1]);
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.tags.reorder'), [
+            'ids' => [$b->id, $a->id],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertEquals(0, $b->fresh()->order);
+        $this->assertEquals(1, $a->fresh()->order);
+    }
+
+    public function test_bulk_delete_removes_tags(): void
+    {
+        $a = PostTagFactory::new()->create();
+        $b = PostTagFactory::new()->create();
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.tags.bulk'), [
+            'action' => 'delete',
+            'ids' => [$a->id, $b->id],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('post_tags', ['id' => $a->id]);
+        $this->assertDatabaseMissing('post_tags', ['id' => $b->id]);
+    }
 }

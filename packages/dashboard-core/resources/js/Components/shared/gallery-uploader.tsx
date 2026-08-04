@@ -18,6 +18,7 @@ import {
 import { toast } from "@/Components/ui/toast";
 import { Upload, Loader2, Trash2, CheckSquare, Square, X, SquareCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/Components/ui/alert-dialog";
 import { SortableImage } from "./gallery-sortable-image";
-import { useImageUpload } from "@/hooks/use-image-upload";
+import { useImageUpload, type UploadResult } from "@/hooks/use-image-upload";
 import { GALLERY_MAX_SIZE, formatFileSize } from "@/lib/gallery-utils";
 import {
   type GalleryImage,
@@ -42,25 +43,56 @@ import {
   imagesFromServerFormat,
 } from "@/types/gallery";
 
-interface GalleryUploaderProps {
+export type { GalleryImage, GalleryImageDone, ServerGalleryImage } from "@/types/gallery";
+export type { UploadResult } from "@/hooks/use-image-upload";
+
+type GalleryUploaderBaseProps = {
+  maxImages?: number;
+  compress?: boolean;
+  label?: string;
+  description?: string;
+  className?: string;
+};
+
+export interface GalleryUploaderUrlProps extends GalleryUploaderBaseProps {
   images: ServerGalleryImage[];
   onChange: (_images: ServerGalleryImage[]) => void;
   uploadUrl: string;
   deleteUrl: string;
-  maxImages?: number;
-  compress?: boolean;
 }
 
-export function GalleryUploader({
-  images: serverImages,
-  onChange,
-  uploadUrl,
-  deleteUrl,
-  maxImages = 20,
-  compress = true,
-}: GalleryUploaderProps) {
+export interface GalleryUploaderCallbackProps extends GalleryUploaderBaseProps {
+  value: GalleryImage[];
+  onChange: (_images: GalleryImage[]) => void;
+  onUpload: (
+    file: File,
+    onProgress: (pct: number) => void,
+    signal: AbortSignal,
+    pendingId: string,
+  ) => Promise<UploadResult>;
+  onDelete?: (image: GalleryImage) => Promise<void>;
+  onSetFeatured?: (image: GalleryImage) => Promise<void>;
+  onReorder?: (images: GalleryImage[]) => Promise<void>;
+}
+
+export type GalleryUploaderProps = GalleryUploaderUrlProps | GalleryUploaderCallbackProps;
+
+export function GalleryUploader(props: GalleryUploaderProps) {
+  const { maxImages = 20, compress = true, label, description, className } = props;
+  const isCallbackMode = "value" in props;
+
+  const onChange = props.onChange;
+  const uploadUrl = "value" in props ? undefined : props.uploadUrl;
+  const deleteUrl = "value" in props ? undefined : props.deleteUrl;
+  const onUpload = "value" in props ? props.onUpload : undefined;
+  const onDelete = "value" in props ? props.onDelete : undefined;
+  const onSetFeatured = "value" in props ? props.onSetFeatured : undefined;
+  const onReorder = "value" in props ? props.onReorder : undefined;
+  const serverImages = "value" in props ? [] : props.images;
+  const value = "value" in props ? props.value : undefined;
+
   const [internalImages, setInternalImages] = useState<GalleryImage[]>(() =>
-    imagesFromServerFormat(serverImages),
+    isCallbackMode ? (value ?? []) : imagesFromServerFormat(serverImages),
   );
   const [failedImages, setFailedImages] = useState<Map<string, File>>(new Map());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -68,7 +100,12 @@ export function GalleryUploader({
   const [deleteConfirmImage, setDeleteConfirmImage] = useState<GalleryImage | null>(null);
   const [deleteConfirmBulk, setDeleteConfirmBulk] = useState(false);
   const mountedRef = useRef(true);
-  const { upload, remove, retry } = useImageUpload({ uploadUrl, deleteUrl, compress });
+  const { upload, remove, retry } = useImageUpload({
+    uploadUrl,
+    deleteUrl,
+    compress,
+    enabled: !isCallbackMode,
+  });
 
   useEffect(() => {
     mountedRef.current = true;
@@ -79,11 +116,14 @@ export function GalleryUploader({
 
   const emitChange = useCallback(
     (images: GalleryImage[]) => {
-      if (mountedRef.current) {
-        onChange(imagesToServerFormat(images));
+      if (!mountedRef.current) return;
+      if (isCallbackMode) {
+        (onChange as (images: GalleryImage[]) => void)(images);
+      } else {
+        (onChange as (images: ServerGalleryImage[]) => void)(imagesToServerFormat(images));
       }
     },
-    [onChange],
+    [onChange, isCallbackMode],
   );
 
   const sensors = useSensors(
@@ -139,6 +179,44 @@ export function GalleryUploader({
     });
   }, []);
 
+  const doUpload = useCallback(
+    async (file: File, pendingId: string, signal: AbortSignal): Promise<UploadResult> => {
+      if (onUpload) {
+        return onUpload(file, (pct) => updateImageProgress(pendingId, pct), signal, pendingId);
+      }
+      return upload(file, signal);
+    },
+    [onUpload, upload, updateImageProgress],
+  );
+
+  const doRemove = useCallback(
+    async (image: GalleryImage): Promise<void> => {
+      if (onDelete) {
+        await onDelete(image);
+        return;
+      }
+      if (isGalleryImageDone(image)) {
+        await remove(image.path);
+      }
+    },
+    [onDelete, remove],
+  );
+
+  const doRetry = useCallback(
+    async (file: File, pendingId: string): Promise<UploadResult> => {
+      if (onUpload) {
+        return onUpload(
+          file,
+          (pct) => updateImageProgress(pendingId, pct),
+          new AbortController().signal,
+          pendingId,
+        );
+      }
+      return retry(file);
+    },
+    [onUpload, retry, updateImageProgress],
+  );
+
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       const remainingSlots = maxImages - internalImages.length;
@@ -161,7 +239,7 @@ export function GalleryUploader({
         try {
           updateImageProgress(stableId, 10);
 
-          const result = await upload(file, controller.signal);
+          const result = await doUpload(file, stableId, controller.signal);
 
           updateImageProgress(stableId, 100);
 
@@ -174,6 +252,7 @@ export function GalleryUploader({
               status: "done",
               url: result.url,
               path: result.path,
+              attachment_id: result.attachment_id,
             });
           }
           return result;
@@ -202,7 +281,7 @@ export function GalleryUploader({
     [
       internalImages.length,
       maxImages,
-      upload,
+      doUpload,
       updateImageProgress,
       markImageDone,
       markImageError,
@@ -223,7 +302,7 @@ export function GalleryUploader({
 
       if (isGalleryImageDone(image)) {
         try {
-          await remove(image.path);
+          await doRemove(image);
         } catch {
           // Best-effort delete
         }
@@ -253,7 +332,7 @@ export function GalleryUploader({
 
       toast.add({ title: "Image removed.", type: "success" });
     },
-    [remove, emitChange],
+    [doRemove, emitChange],
   );
 
   const handleRemove = useCallback((image: GalleryImage) => {
@@ -291,7 +370,7 @@ export function GalleryUploader({
 
       try {
         updateImageProgress(image.id, 10);
-        const result = await retry(file);
+        const result = await doRetry(file, image.id);
         updateImageProgress(image.id, 100);
 
         if (mountedRef.current) {
@@ -313,7 +392,7 @@ export function GalleryUploader({
         }
       }
     },
-    [failedImages, retry, updateImageProgress, markImageDone, markImageError],
+    [failedImages, doRetry, updateImageProgress, markImageDone, markImageError],
   );
 
   const handleSetFeatured = useCallback(
@@ -329,9 +408,13 @@ export function GalleryUploader({
         return updated;
       });
 
-      toast.add({ title: "Cover image updated.", type: "success" });
+      if (onSetFeatured) {
+        void onSetFeatured(image);
+      } else {
+        toast.add({ title: "Cover image updated.", type: "success" });
+      }
     },
-    [emitChange],
+    [emitChange, onSetFeatured],
   );
 
   const handleDragEnd = useCallback(
@@ -348,9 +431,12 @@ export function GalleryUploader({
           order: i,
         }));
         emitChange(reordered);
+        if (onReorder) {
+          void onReorder(reordered);
+        }
       }
     },
-    [internalImages, emitChange],
+    [internalImages, emitChange, onReorder],
   );
 
   const handleToggleSelect = useCallback((id: string) => {
@@ -379,7 +465,7 @@ export function GalleryUploader({
     if (toDelete.length === 0) return;
 
     const serverDeletes = toDelete.filter(isGalleryImageDone);
-    await Promise.allSettled(serverDeletes.map((img) => remove(img.path)));
+    await Promise.allSettled(serverDeletes.map((img) => doRemove(img)));
 
     for (const img of toDelete) {
       if (isGalleryImageUploading(img) && img.preview) {
@@ -396,7 +482,7 @@ export function GalleryUploader({
     setSelectedIds(new Set());
     setSelectionMode(false);
     toast.add({ title: `${toDelete.length} image(s) removed.`, type: "success" });
-  }, [internalImages, selectedIds, remove, emitChange]);
+  }, [internalImages, selectedIds, doRemove, emitChange]);
 
   const handleBulkDelete = useCallback(() => {
     if (selectedIds.size === 0) return;
@@ -409,7 +495,14 @@ export function GalleryUploader({
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", className)}>
+      {(label || description) && (
+        <div className="space-y-1">
+          {label && <p className="text-sm font-medium leading-none">{label}</p>}
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        </div>
+      )}
+
       {selectionMode && (
         <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-2">
           <div className="flex items-center gap-2">

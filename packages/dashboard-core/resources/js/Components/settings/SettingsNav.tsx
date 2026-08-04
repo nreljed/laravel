@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Globe, ShieldCheck, Bell, Lock, Mail, Wrench, Network } from "lucide-react";
+import { Globe, ShieldCheck, Bell, Lock, Mail, Wrench, Network, Boxes } from "lucide-react";
 
 interface SettingsNavItem {
   value: string;
@@ -10,6 +10,8 @@ interface SettingsNavItem {
 interface SettingsNavProps {
   activeTab: string;
   onTabChange: (_tab: string) => void;
+  items?: SettingsNavItem[];
+  enabledModules?: string[];
 }
 
 const CORE_ITEMS: SettingsNavItem[] = [
@@ -22,10 +24,24 @@ const CORE_ITEMS: SettingsNavItem[] = [
   { value: "ip-access", label: "IP Access", icon: Network },
 ];
 
-export function SettingsNav({ activeTab, onTabChange }: SettingsNavProps) {
+function humanizeModuleName(name: string): string {
+  return name.replaceAll(/[-_]+/g, " ").replaceAll(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export function SettingsNav({ activeTab, onTabChange, items, enabledModules }: SettingsNavProps) {
+  const resolvedItems =
+    items ??
+    (enabledModules && enabledModules.length > 0
+      ? enabledModules.map((name) => ({
+          value: name,
+          label: humanizeModuleName(name),
+          icon: Boxes,
+        }))
+      : CORE_ITEMS);
+
   return (
     <nav className="flex items-center gap-1 p-1 bg-muted rounded-lg flex-wrap">
-      {CORE_ITEMS.map((item) => {
+      {resolvedItems.map((item) => {
         const Icon = item.icon;
         const active = activeTab === item.value;
 

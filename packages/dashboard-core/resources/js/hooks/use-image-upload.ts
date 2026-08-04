@@ -2,15 +2,17 @@ import { useCallback, useState } from "react";
 import { processImage, getCsrfToken } from "@/lib/gallery-utils";
 
 interface UseImageUploadOptions {
-  uploadUrl: string;
-  deleteUrl: string;
+  uploadUrl?: string;
+  deleteUrl?: string;
   compress?: boolean;
   maxRetries?: number;
+  enabled?: boolean;
 }
 
-interface UploadResult {
+export interface UploadResult {
   url: string;
   path: string;
+  attachment_id?: number;
 }
 
 interface UseImageUploadReturn {
@@ -27,6 +29,7 @@ export function useImageUpload({
   deleteUrl,
   compress = true,
   maxRetries = 2,
+  enabled = true,
 }: UseImageUploadOptions): UseImageUploadReturn {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +40,10 @@ export function useImageUpload({
 
   const upload = useCallback(
     async (file: File, signal?: AbortSignal): Promise<UploadResult> => {
+      if (!enabled || !uploadUrl) {
+        throw new Error("Upload is not enabled for this image picker");
+      }
+
       setIsUploading(true);
       setError(null);
 
@@ -61,7 +68,7 @@ export function useImageUpload({
         }
 
         const data = await res.json();
-        return { url: data.url, path: data.path };
+        return { url: data.url, path: data.path, attachment_id: data.attachment_id };
       } catch (error_) {
         const message = error_ instanceof Error ? error_.message : "Upload failed";
         setError(message);
@@ -70,11 +77,15 @@ export function useImageUpload({
         setIsUploading(false);
       }
     },
-    [uploadUrl, compress],
+    [uploadUrl, compress, enabled],
   );
 
   const remove = useCallback(
     async (path: string): Promise<void> => {
+      if (!enabled || !deleteUrl) {
+        return;
+      }
+
       try {
         await fetch(deleteUrl, {
           method: "DELETE",
@@ -90,7 +101,7 @@ export function useImageUpload({
         throw error_;
       }
     },
-    [deleteUrl],
+    [deleteUrl, enabled],
   );
 
   const retry = useCallback(

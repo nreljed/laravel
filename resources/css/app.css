@@ -673,6 +673,26 @@
   font-size: inherit !important;
   color: inherit !important;
 }
+
+/* Frontend code block line numbers (mirror of the Lexical editor gutter) */
+pre[data-gutter] {
+  position: relative;
+  padding-left: 3.5em !important;
+}
+pre[data-gutter]::before {
+  content: attr(data-gutter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
+  text-align: right;
+  color: var(--muted-foreground);
+  border-right: 1px solid var(--border);
+  padding: 1em 0.6em;
+  white-space: pre-wrap;
+  min-width: 2.5em;
+  opacity: 0.6;
+}
 .prose code:not(pre code) {
   background-color: rgba(0, 0, 0, 0.06) !important;
   padding: 0.2em 0.4em !important;

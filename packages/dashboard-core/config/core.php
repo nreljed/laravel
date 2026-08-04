@@ -2,6 +2,7 @@
 
 use Nreljed\DashboardCore\Blog\BlogServiceProvider;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Models\User;
 
 return [
 
@@ -48,6 +49,23 @@ return [
 
     'orphan_media' => [
         'posts' => Post::class,
+        'avatars' => User::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Groups
+    |--------------------------------------------------------------------------
+    |
+    | Additional settings groups registered by consuming applications. The
+    | base groups (general, registration, notifications, security, email,
+    | maintenance, formatting, audit_logs) are always included. Feature
+    | service providers may add domain-specific groups here.
+    |
+    */
+
+    'settings' => [
+        'groups' => [],
     ],
 
 ];

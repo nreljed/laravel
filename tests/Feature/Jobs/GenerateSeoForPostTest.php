@@ -36,7 +36,7 @@ class GenerateSeoForPostTest extends TestCase
                 ]);
         });
 
-        (new GenerateSeoForPost($post, $user->id))->handle();
+        new GenerateSeoForPost($post, $user->id)->handle();
 
         $post->refresh();
         $this->assertEquals('Title A', $post->meta_title);
@@ -49,7 +49,7 @@ class GenerateSeoForPostTest extends TestCase
     {
         $post = PostFactory::new()->create();
 
-        (new GenerateSeoForPost($post, 999999))->handle();
+        new GenerateSeoForPost($post, 999999)->handle();
 
         $this->assertNull($post->fresh()->meta_title);
         $this->assertNull($post->fresh()->meta_description);
@@ -64,7 +64,7 @@ class GenerateSeoForPostTest extends TestCase
             $mock->shouldReceive('generateSeo')->once()->andThrow(new MissingAiProviderException);
         });
 
-        (new GenerateSeoForPost($post, $user->id))->handle();
+        new GenerateSeoForPost($post, $user->id)->handle();
 
         $this->assertNull($post->fresh()->meta_title);
     }
@@ -80,6 +80,6 @@ class GenerateSeoForPostTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        (new GenerateSeoForPost($post, $user->id))->handle();
+        new GenerateSeoForPost($post, $user->id)->handle();
     }
 }

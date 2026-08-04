@@ -3,10 +3,9 @@ import { useEffect } from "react";
 import { Pencil } from "lucide-react";
 import PublicLayout from "@/Layouts/PublicLayout";
 import { Badge } from "@/Components/ui/badge";
-import ContentBlockRenderer from "@/Components/blog/ContentBlockRenderer";
 import ProseContent from "@/Components/blog/ProseContent";
 import { useAuth } from "@/hooks/use-auth";
-import { highlightAllCodeBlocks } from "@/lib/prism-highlight";
+import { highlightAllCodeBlocks } from "@/lib/shiki-highlight";
 
 interface Author {
   id: number;
@@ -25,16 +24,6 @@ interface Tag {
   slug: string;
 }
 
-interface ContentBlock {
-  id?: number;
-  type: string;
-  content: string | null;
-  media_url: string | null;
-  media_alt: string | null;
-  settings: Record<string, unknown> | null;
-  order: number;
-}
-
 interface Post {
   id: number;
   title: string;
@@ -49,7 +38,6 @@ interface Post {
   user: Author;
   category: Category | null;
   tags: Tag[];
-  content_blocks: ContentBlock[];
 }
 
 interface BlogShowProps {
@@ -170,8 +158,6 @@ export default function BlogShow({ post }: BlogShowProps) {
         )}
 
         {post.content && <ProseContent html={post.content} />}
-
-        {post.content_blocks.length > 0 && <ContentBlockRenderer blocks={post.content_blocks} />}
 
         <div className="mt-12 border-t border-border pt-8">
           <Link

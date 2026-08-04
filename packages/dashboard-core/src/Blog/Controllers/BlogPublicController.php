@@ -39,7 +39,7 @@ class BlogPublicController extends Controller
 
     public function show(string $slug)
     {
-        $post = Post::with('user', 'category', 'tags', 'contentBlocks')
+        $post = Post::with('user', 'category', 'tags')
             ->where('slug', $slug)
             ->where('status', 'published')
             ->where(function ($q) {

@@ -7,6 +7,7 @@ interface GalleryImageBase {
   type: string;
   status: GalleryImageStatus;
   progress?: number;
+  attachment_id?: number;
 }
 
 export interface GalleryImageUploading extends GalleryImageBase {
@@ -68,6 +69,7 @@ export interface ServerGalleryImage {
   alt?: string;
   caption?: string;
   order?: number;
+  attachment_id?: number;
 }
 
 export function toServerFormat(image: GalleryImageDone): ServerGalleryImage {
@@ -75,6 +77,7 @@ export function toServerFormat(image: GalleryImageDone): ServerGalleryImage {
     url: image.url,
     alt: image.name,
     order: image.progress,
+    attachment_id: image.attachment_id,
   };
 }
 
@@ -88,6 +91,7 @@ export function fromServerFormat(serverImage: ServerGalleryImage, index: number)
     url: serverImage.url,
     path: serverImage.url.replace(/^\/storage\//, ""),
     preview: serverImage.url,
+    attachment_id: serverImage.attachment_id,
   };
 }
 

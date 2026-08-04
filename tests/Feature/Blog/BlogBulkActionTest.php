@@ -4,9 +4,11 @@ namespace Tests\Feature\Blog;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
 use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -128,6 +130,27 @@ class BlogBulkActionTest extends TestCase
         }
     }
 
+    public function test_bulk_delete_removes_featured_image_files(): void
+    {
+        Storage::fake('public');
+
+        $posts = PostFactory::new()->count(2)->create([
+            'featured_image' => '/storage/posts/featured.webp',
+        ]);
+        $postIds = $posts->pluck('id')->toArray();
+        Storage::disk('public')->put('posts/featured.webp', 'image');
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.bulk.action'), [
+            'ids' => $postIds,
+            'action' => 'delete',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success', '2 post(s) deleted successfully.');
+
+        Storage::disk('public')->assertMissing('posts/featured.webp');
+    }
+
     public function test_bulk_delete_with_mixed_ownership_only_deletes_authorized(): void
     {
         $role = Role::firstOrCreate(
@@ -154,7 +177,7 @@ class BlogBulkActionTest extends TestCase
 
     public function test_regular_user_without_posts_delete_cannot_bulk_action(): void
     {
-        $user = $this->regularUser();
+        $user = User::factory()->create();
         $post = PostFactory::new()->create(['user_id' => $user->id]);
 
         $response = $this->actingAs($user)->post(route('dashboard.posts.bulk.action'), [
@@ -174,5 +197,71 @@ class BlogBulkActionTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('ids');
+    }
+
+    public function test_editor_can_bulk_publish_posts_authored_by_others(): void
+    {
+        $editor = $this->editor();
+        $other = User::factory()->create();
+
+        $posts = PostFactory::new()->draft()->count(2)->create(['user_id' => $other->id]);
+
+        $response = $this->actingAs($editor)->post(route('dashboard.posts.bulk.action'), [
+            'ids' => $posts->pluck('id')->toArray(),
+            'action' => 'publish',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success', '2 post(s) updated to published.');
+
+        foreach ($posts as $post) {
+            $this->assertDatabaseHas('posts', ['id' => $post->id, 'status' => 'published']);
+        }
+    }
+
+    public function test_author_can_bulk_publish_own_posts(): void
+    {
+        $author = $this->contributor();
+        $post = PostFactory::new()->draft()->create(['user_id' => $author->id]);
+
+        $response = $this->actingAs($author)->post(route('dashboard.posts.bulk.action'), [
+            'ids' => [$post->id],
+            'action' => 'publish',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success', '1 post(s) updated to published.');
+        $this->assertDatabaseHas('posts', ['id' => $post->id, 'status' => 'published']);
+    }
+
+    public function test_author_cannot_bulk_publish_posts_authored_by_others(): void
+    {
+        $author = $this->contributor();
+        $other = User::factory()->create();
+
+        $post = PostFactory::new()->draft()->create(['user_id' => $other->id]);
+
+        $response = $this->actingAs($author)->post(route('dashboard.posts.bulk.action'), [
+            'ids' => [$post->id],
+            'action' => 'publish',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('posts', ['id' => $post->id, 'status' => 'draft']);
+    }
+
+    public function test_user_can_bulk_delete_own_post(): void
+    {
+        $user = $this->regularUser();
+        $post = PostFactory::new()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->post(route('dashboard.posts.bulk.action'), [
+            'ids' => [$post->id],
+            'action' => 'delete',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.success', '1 post(s) deleted successfully.');
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
     }
 }

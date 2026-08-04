@@ -167,7 +167,7 @@ class EmailSettingsController extends Controller
 
         $sampleData = $this->getSampleDataForTemplate($template);
 
-        // Fragment preview (for dialog) â€” no HTML/BODY wrapper
+        // Fragment preview (for dialog) — no HTML/BODY wrapper
         if ($request->query('fragment') === '1') {
             $html = $this->templateService->renderPreview($template, $sampleData);
 

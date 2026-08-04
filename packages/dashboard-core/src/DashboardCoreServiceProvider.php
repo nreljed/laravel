@@ -15,10 +15,12 @@ use Nreljed\DashboardCore\Ai\Models\AiProvider;
 use Nreljed\DashboardCore\Ai\Policies\AiProviderPolicy;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Models\Notification;
+use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\User;
 use Nreljed\DashboardCore\Notifications\ResetPassword as CustomResetPassword;
 use Nreljed\DashboardCore\Notifications\VerifyEmail as CustomVerifyEmail;
 use Nreljed\DashboardCore\Policies\PostPolicy;
+use Nreljed\DashboardCore\Policies\RolePolicy;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\FormattingService;
 use Nreljed\DashboardCore\Services\MailerConfigurator;
@@ -30,6 +32,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/core.php', 'core');
         $this->mergeConfigFrom(__DIR__.'/../config/roles.php', 'roles');
+        $this->mergeConfigFrom(__DIR__.'/../config/database-maintenance.php', 'database_maintenance');
 
         $this->app->singleton(FormattingService::class);
         $this->app->singleton(FeatureRegistry::class);
@@ -50,6 +53,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
 
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(AiProvider::class, AiProviderPolicy::class);
+        Gate::policy(Role::class, RolePolicy::class);
 
         Gate::before(function (User $user, string $ability) {
             if ($user->isAdmin()) {
@@ -73,6 +77,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/core.php' => config_path('core.php'),
                 __DIR__.'/../config/roles.php' => config_path('roles.php'),
+                __DIR__.'/../config/database-maintenance.php' => config_path('database-maintenance.php'),
             ], 'core-config');
 
             $this->publishes([

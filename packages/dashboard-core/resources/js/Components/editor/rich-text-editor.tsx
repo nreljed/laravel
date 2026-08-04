@@ -10,7 +10,7 @@ import { HistoryExtension } from "@lexical/history";
 import { ListExtension, CheckListExtension } from "@lexical/list";
 import { LinkExtension, AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
 import { TableExtension } from "@lexical/table";
-import { CodePrismExtension } from "@lexical/code-prism";
+import { CodeShikiExtension, ShikiTokenizer } from "@lexical/code-shiki";
 import { OverflowExtension } from "@lexical/overflow";
 import { HorizontalRuleExtension, AutoFocusExtension } from "@lexical/extension";
 import { DragonExtension } from "@lexical/dragon";
@@ -82,7 +82,16 @@ const editorExtension = defineExtension({
       hasTabHandler: true,
       hasNestedTables: false,
     }),
-    CodePrismExtension,
+    configExtension(CodeShikiExtension, {
+      tokenizer: {
+        ...ShikiTokenizer,
+        defaultTheme: "github-dark",
+        // Never stamp an unlabelled code block with the fallback language.
+        // Otherwise imported legacy blocks (no `data-language`) get silently
+        // corrupted to "javascript" and re-saved with the wrong language.
+        defaultLanguage: null,
+      },
+    }),
     OverflowExtension,
     HorizontalRuleExtension,
     configExtension(AutoFocusExtension, { defaultSelection: "rootStart", disabled: false }),

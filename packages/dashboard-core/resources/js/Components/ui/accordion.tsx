@@ -3,11 +3,46 @@ import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
-function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
+type AccordionProps = AccordionPrimitive.Root.Props & {
+  type?: "single" | "multiple";
+};
+
+function Accordion({
+  type,
+  defaultValue,
+  onValueChange,
+  multiple,
+  className,
+  ...props
+}: AccordionProps) {
+  const isMultiple = multiple === true || type === "multiple";
+
   return (
     <AccordionPrimitive.Root
       data-slot="accordion"
       className={cn("flex w-full flex-col", className)}
+      multiple={isMultiple}
+      defaultValue={
+        defaultValue === undefined
+          ? undefined
+          : Array.isArray(defaultValue)
+            ? defaultValue
+            : [defaultValue]
+      }
+      onValueChange={
+        onValueChange
+          ? (value, eventDetails) => {
+              if (isMultiple) {
+                onValueChange(value, eventDetails);
+              } else {
+                (onValueChange as unknown as (value: string, eventDetails: unknown) => void)(
+                  (value[0] as string) ?? "",
+                  eventDetails,
+                );
+              }
+            }
+          : undefined
+      }
       {...props}
     />
   );

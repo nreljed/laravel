@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Nreljed\DashboardCore\Ai\Models\AiProvider;
 use Nreljed\DashboardCore\Models\NotificationPreference;
 use Nreljed\DashboardCore\Models\User;
@@ -518,6 +520,25 @@ class UserAccountTest extends TestCase
         $this->assertNull($user->fresh());
     }
 
+    public function test_account_deletion_removes_avatar_file(): void
+    {
+        Storage::fake('avatars');
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+            'avatar' => 'some-avatar.webp',
+        ]);
+
+        Storage::disk('avatars')->put('some-avatar.webp', 'content');
+
+        $this->actingAs($user)->delete(route('dashboard.account.destroy'), [
+            'current_password' => 'password',
+            'confirmation' => 'delete my account',
+        ]);
+
+        $this->assertNull($user->fresh());
+        $this->assertFalse(Storage::disk('avatars')->exists('some-avatar.webp'));
+    }
+
     public function test_account_deletion_requires_correct_password(): void
     {
         $user = User::factory()->create(['password' => bcrypt('password')]);
@@ -594,6 +615,68 @@ class UserAccountTest extends TestCase
         ]);
 
         $this->assertDatabaseMissing('ai_providers', ['user_id' => $user->id]);
+    }
+
+    public function test_account_deletion_cleans_up_user_sessions(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('password')]);
+
+        DB::table('sessions')->insert([
+            'id' => Str::random(40),
+            'user_id' => $user->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Test Agent',
+            'payload' => 'test-payload',
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->actingAs($user)->delete(route('dashboard.account.destroy'), [
+            'current_password' => 'password',
+            'confirmation' => 'delete my account',
+        ]);
+
+        $this->assertNull($user->fresh());
+        $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
+    }
+
+    public function test_account_deletion_cleans_up_agent_conversations(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('password')]);
+
+        $conversationId = (string) Str::uuid();
+
+        DB::table('agent_conversations')->insert([
+            'id' => $conversationId,
+            'user_id' => $user->id,
+            'title' => 'Support chat',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('agent_conversation_messages')->insert([
+            'id' => (string) Str::uuid(),
+            'conversation_id' => $conversationId,
+            'user_id' => $user->id,
+            'agent' => 'ChatAgent',
+            'role' => 'user',
+            'content' => 'Hello',
+            'attachments' => '[]',
+            'tool_calls' => '[]',
+            'tool_results' => '[]',
+            'usage' => '{}',
+            'meta' => '{}',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)->delete(route('dashboard.account.destroy'), [
+            'current_password' => 'password',
+            'confirmation' => 'delete my account',
+        ]);
+
+        $this->assertNull($user->fresh());
+        $this->assertDatabaseMissing('agent_conversations', ['user_id' => $user->id]);
+        $this->assertDatabaseMissing('agent_conversation_messages', ['conversation_id' => $conversationId]);
     }
 
     // ── Verify Delete Password ────────────────────────────────────

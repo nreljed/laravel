@@ -182,6 +182,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this;
     }
 
+    /**
+     * @return list<string>
+     */
+    public function getReferencedPaths(): array
+    {
+        return $this->avatar ? ['avatars/'.$this->avatar] : [];
+    }
+
     #[\Override]
     protected static function boot(): void
     {

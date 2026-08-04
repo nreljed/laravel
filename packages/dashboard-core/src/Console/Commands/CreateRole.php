@@ -26,7 +26,7 @@ class CreateRole extends Command
         }
 
         $name = $this->argument('name');
-        $slug = str($name)->slug('_')->toString();
+        $slug = str($name)->slug('-')->toString();
 
         if (Role::where('slug', $slug)->exists()) {
             $this->error("Role with slug '{$slug}' already exists.");

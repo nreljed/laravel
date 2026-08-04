@@ -49,12 +49,18 @@ class ConfigRoleCatalogTest extends TestCase
         $this->assertTrue($author->hasPermission('posts.edit'));
         $this->assertTrue($author->hasPermission('posts.delete'));
         $this->assertTrue($author->hasPermission('test-posts.delete'));
+        $this->assertFalse($author->hasPermission('posts.manage'));
         $this->assertFalse($author->hasPermission('manage-categories'));
         $this->assertFalse($author->hasPermission('manage-tags'));
 
         $user = Role::where('slug', 'user')->first();
         $this->assertTrue($user->hasPermission('edit-profile'));
-        $this->assertFalse($user->hasPermission('posts.view'));
+        $this->assertTrue($user->hasPermission('posts.view'));
+        $this->assertTrue($user->hasPermission('posts.create'));
+        $this->assertTrue($user->hasPermission('posts.edit'));
+        $this->assertTrue($user->hasPermission('posts.delete'));
+        $this->assertFalse($user->hasPermission('posts.manage'));
+        $this->assertFalse($user->hasPermission('manage-categories'));
     }
 
     public function test_editor_role_grants_every_non_admin_permission(): void
@@ -64,11 +70,14 @@ class ConfigRoleCatalogTest extends TestCase
         $editor = Role::where('slug', 'editor')->first();
         $adminOnly = [
             'manage-users',
+            'impersonate-users',
+            'assign-roles',
             'manage-settings',
             'manage-roles',
             'view-system-health',
             'manage-options',
             'manage-audit-logs',
+            'export-audit-logs',
             'manage-email-settings',
         ];
 
@@ -81,18 +90,22 @@ class ConfigRoleCatalogTest extends TestCase
         }
     }
 
-    public function test_author_role_grants_every_non_admin_permission_except_term_management(): void
+    public function test_author_role_grants_every_non_admin_permission_except_manage_and_term_management(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $author = Role::where('slug', 'author')->first();
         $excluded = [
+            'posts.manage',
             'manage-users',
+            'impersonate-users',
+            'assign-roles',
             'manage-settings',
             'manage-roles',
             'view-system-health',
             'manage-options',
             'manage-audit-logs',
+            'export-audit-logs',
             'manage-email-settings',
             'manage-categories',
             'manage-tags',

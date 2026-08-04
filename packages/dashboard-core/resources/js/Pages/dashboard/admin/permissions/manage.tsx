@@ -17,6 +17,7 @@ import { toast } from "@/Components/ui/toast";
 interface RoleData {
   slug: string;
   name: string;
+  system: boolean;
   capabilities: string[];
 }
 
@@ -31,14 +32,12 @@ interface PageProps {
   groups: Record<string, PermissionDef[]>;
 }
 
-const IMMUTABLE_ROLES = new Set(["admin"]);
-
 export default function PermissionsManager() {
   const { roles: initialRoles, groups } = usePage().props as unknown as PageProps;
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [localOverrides, setLocalOverrides] = useState<Record<string, Record<string, boolean>>>({});
   const [selectedRole, setSelectedRole] = useState(
-    () => initialRoles.find((r) => r.slug !== "admin")?.slug ?? initialRoles[0]?.slug ?? "",
+    () => initialRoles.find((r) => !r.system)?.slug ?? initialRoles[0]?.slug ?? "",
   );
 
   const roles = useMemo(() => {
@@ -55,7 +54,7 @@ export default function PermissionsManager() {
   }, [initialRoles, localOverrides]);
 
   const currentRole = roles.find((r) => r.slug === selectedRole) ?? roles[0]!;
-  const isLocked = IMMUTABLE_ROLES.has(currentRole.slug);
+  const isLocked = currentRole.system;
 
   const handleToggle = useCallback(
     async (roleSlug: string, capability: string) => {
@@ -215,8 +214,8 @@ export default function PermissionsManager() {
               <ul className="text-sm text-muted-foreground mt-1 space-y-0.5 list-disc list-inside">
                 <li>Changes take effect immediately — users do not need to log out.</li>
                 <li>
-                  The <strong>Admin</strong> role is fully locked — you cannot modify it from this
-                  interface to prevent self-lockout.
+                  <strong>System roles</strong> (User, Author, Editor, Admin) are fully locked —
+                  they are managed by the config catalog to prevent self-lockout.
                 </li>
                 <li>
                   Use <strong>Roles</strong> to assign a set of permissions to multiple users at

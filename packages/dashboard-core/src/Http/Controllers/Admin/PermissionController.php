@@ -21,6 +21,7 @@ class PermissionController extends Controller
             ->map(fn (Role $role) => [
                 'slug' => $role->slug,
                 'name' => $role->name,
+                'system' => $role->isSystem(),
                 'capabilities' => $role->permissions()->pluck('slug')->toArray(),
             ]);
 
@@ -42,9 +43,9 @@ class PermissionController extends Controller
 
         $role = Role::where('slug', $validated['role'])->firstOrFail();
 
-        if ($role->slug === 'admin') {
+        if ($role->isSystem()) {
             return response()->json([
-                'error' => 'The Admin role is locked and cannot be modified.',
+                'error' => 'The '.$role->name.' role is locked and cannot be modified.',
             ], 400);
         }
 

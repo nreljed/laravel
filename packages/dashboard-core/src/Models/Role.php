@@ -50,6 +50,15 @@ class Role extends Model
         return $this->hasPermission($slug);
     }
 
+    /**
+     * Whether the role is managed by the config catalog (system roles are
+     * locked against edits/deletion in the UI and enforced server-side).
+     */
+    public function isSystem(): bool
+    {
+        return array_key_exists($this->slug, (array) config('roles.roles', []));
+    }
+
     protected static function newFactory(): RoleFactory
     {
         return RoleFactory::new();

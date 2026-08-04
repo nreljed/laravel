@@ -4,8 +4,11 @@ namespace Tests\Feature\Blog;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Database\Factories\PostCategoryFactory;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -22,7 +25,7 @@ class BlogCrudTest extends TestCase
 
     public function test_post_index_requires_permission(): void
     {
-        $user = $this->regularUser();
+        $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get(route('dashboard.posts.index'));
 
@@ -70,6 +73,22 @@ class BlogCrudTest extends TestCase
         ]);
     }
 
+    public function test_edit_page_includes_posts_assigned_category(): void
+    {
+        $category = PostCategoryFactory::new()->create(['name' => 'Technology']);
+        $post = PostFactory::new()->create(['category_id' => $category->id]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.posts.edit', $post));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Blog/Form', false)
+            ->where('post.category_id', $category->id)
+            ->has('categories', 1)
+            ->where('categories.0.id', $category->id));
+    }
+
     public function test_admin_can_delete_post(): void
     {
         $post = PostFactory::new()->create();
@@ -79,6 +98,100 @@ class BlogCrudTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+    }
+
+    public function test_post_delete_removes_featured_and_og_image_files(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/featured.webp', 'image');
+        Storage::disk('public')->put('posts/og.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'featured_image' => '/storage/posts/featured.webp',
+            'og_image' => '/storage/posts/og.webp',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->delete(route('dashboard.posts.destroy', $post))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+        Storage::disk('public')->assertMissing('posts/featured.webp');
+        Storage::disk('public')->assertMissing('posts/og.webp');
+    }
+
+    public function test_post_delete_removes_gallery_files(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/gallery-1.webp', 'image');
+        Storage::disk('public')->put('posts/gallery-2.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'metadata' => [
+                'post_gallery' => [
+                    ['url' => '/storage/posts/gallery-1.webp'],
+                    ['url' => '/storage/posts/gallery-2.webp'],
+                ],
+            ],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->delete(route('dashboard.posts.destroy', $post))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+        Storage::disk('public')->assertMissing('posts/gallery-1.webp');
+        Storage::disk('public')->assertMissing('posts/gallery-2.webp');
+    }
+
+    public function test_post_update_removes_replaced_featured_image_file(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/old-featured.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'featured_image' => '/storage/posts/old-featured.webp',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->put(route('dashboard.posts.update', $post), [
+                'title' => $post->title,
+                'content' => $post->content,
+                'status' => $post->status,
+                'featured_image' => '/storage/posts/new-featured.webp',
+            ])
+            ->assertRedirect();
+
+        Storage::disk('public')->assertMissing('posts/old-featured.webp');
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'featured_image' => '/storage/posts/new-featured.webp',
+        ]);
+    }
+
+    public function test_post_update_removes_replaced_og_image_file(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('posts/old-og.webp', 'image');
+
+        $post = PostFactory::new()->create([
+            'og_image' => '/storage/posts/old-og.webp',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->put(route('dashboard.posts.update', $post), [
+                'title' => $post->title,
+                'content' => $post->content,
+                'status' => $post->status,
+                'og_image' => '/storage/posts/new-og.webp',
+            ])
+            ->assertRedirect();
+
+        Storage::disk('public')->assertMissing('posts/old-og.webp');
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'og_image' => '/storage/posts/new-og.webp',
+        ]);
     }
 
     public function test_post_requires_title(): void
@@ -272,5 +385,61 @@ class BlogCrudTest extends TestCase
         $this->assertDatabaseHas('posts', [
             'title' => 'Null Content Post',
         ]);
+    }
+
+    public function test_post_stores_remote_image_url_in_content(): void
+    {
+        $html = '<p>See below.</p><img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee" alt="Remote image" width="800" height="600" />';
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.store'), [
+            'title' => 'Remote Image Test',
+            'content' => $html,
+            'status' => 'published',
+        ]);
+
+        $response->assertRedirect();
+
+        $post = Post::where('title', 'Remote Image Test')->first();
+        $this->assertStringContainsString('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee', $post->content);
+        $this->assertStringContainsString('alt="Remote image"', $post->content);
+    }
+
+    public function test_post_stores_storage_image_in_content(): void
+    {
+        $html = '<p>Local upload.</p><img src="/storage/posts/abc123.webp" alt="Uploaded" width="400" height="300" />';
+
+        $response = $this->actingAs($this->admin())->post(route('dashboard.posts.store'), [
+            'title' => 'Storage Image Test',
+            'content' => $html,
+            'status' => 'published',
+        ]);
+
+        $response->assertRedirect();
+
+        $post = Post::where('title', 'Storage Image Test')->first();
+        $this->assertStringContainsString('/storage/posts/abc123.webp', $post->content);
+        $this->assertStringContainsString('alt="Uploaded"', $post->content);
+    }
+
+    public function test_post_update_preserves_image_urls(): void
+    {
+        $post = PostFactory::new()->create([
+            'content' => '<img src="https://example.com/hero.jpg" alt="Hero" />',
+        ]);
+
+        $newContent = '<img src="https://example.com/hero.jpg" alt="Hero" /><p>Updated body.</p>';
+
+        $response = $this->actingAs($this->admin())
+            ->put(route('dashboard.posts.update', $post), [
+                'title' => $post->title,
+                'content' => $newContent,
+                'status' => $post->status,
+            ]);
+
+        $response->assertRedirect();
+
+        $post->refresh();
+        $this->assertStringContainsString('https://example.com/hero.jpg', $post->content);
+        $this->assertStringContainsString('Updated body.', $post->content);
     }
 }

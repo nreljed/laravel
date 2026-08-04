@@ -49,10 +49,11 @@ class BlogServiceProvider extends ServiceProvider
     public function permissions(): array
     {
         return [
-            ['slug' => 'posts.view', 'name' => 'View Posts', 'description' => 'View blog posts.'],
-            ['slug' => 'posts.create', 'name' => 'Create Posts', 'description' => 'Create new blog posts.'],
-            ['slug' => 'posts.edit', 'name' => 'Edit Posts', 'description' => 'Edit existing blog posts.'],
-            ['slug' => 'posts.delete', 'name' => 'Delete Posts', 'description' => 'Delete blog posts.'],
+            ['slug' => 'posts.view', 'name' => 'View Posts', 'description' => 'View blog posts.', 'group' => 'Blog'],
+            ['slug' => 'posts.create', 'name' => 'Create Posts', 'description' => 'Create new blog posts.', 'group' => 'Blog'],
+            ['slug' => 'posts.edit', 'name' => 'Edit Posts', 'description' => 'Edit existing blog posts.', 'group' => 'Blog'],
+            ['slug' => 'posts.delete', 'name' => 'Delete Posts', 'description' => 'Delete blog posts.', 'group' => 'Blog'],
+            ['slug' => 'posts.manage', 'name' => 'Manage All Posts', 'description' => 'View, edit, and delete posts authored by other users.', 'group' => 'Blog'],
         ];
     }
 
@@ -151,7 +152,7 @@ class BlogServiceProvider extends ServiceProvider
         return [];
     }
 
-    public function getGalleryConfigs(): array
+    public function getGalleryConfig(): array
     {
         return [
             'gallery' => [

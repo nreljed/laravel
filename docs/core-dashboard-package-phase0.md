@@ -88,7 +88,7 @@ Legend: **CORE** = moves into `Nreljed\DashboardCore\` (package) · **APP** = st
 
 ### Consumers' 5 blog migrations (identical basenames — skip on cutover)
 
-`create_content_blocks`, `create_post_categories`, `create_post_tags`, `add_seo_columns_to_posts`, `create_post_tag_post`.
+`create_post_categories`, `create_post_tags`, `add_seo_columns_to_posts`, `create_post_tag_post`.
 
 ### Master's 3 extra blog migrations (run fresh on consumers — all additive)
 
@@ -139,7 +139,7 @@ Legend: **CORE** = moves into `Nreljed\DashboardCore\` (package) · **APP** = st
 
 `@stripe/*`, `axios`, `sonner`, `radix-ui`, `react-hook-form`, `react-image-crop`, `leaflet-draw`, `leaflet.markercluster`, `react-leaflet-markercluster`, `@hookform/resolvers`.
 
-- `sonner` → **removed** at cutover (replaced by core Base UI `toast.add()`; the ApiTokensSection/ContentBlockEditor must swap `toast.success` → `toast.add({ type: "success" })`).
+- `sonner` → **removed** at cutover (replaced by core Base UI `toast.add()`).
 - Shop/Booking keep `@stripe/*`, `react-hook-form`, `react-image-crop`, leaflet-draw/cluster, `axios` for their domain features.
 - Booking's map uses leaflet-draw/markercluster — different from master's geoman; stays app-side.
 

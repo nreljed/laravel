@@ -6,6 +6,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\DashboardCore\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -22,7 +23,7 @@ class BlogSeoTest extends TestCase
 
     public function test_seo_generate_requires_permission(): void
     {
-        $user = $this->regularUser();
+        $user = User::factory()->create();
 
         $response = $this->actingAs($user)->postJson(route('dashboard.posts.seo.generate'), [
             'title' => 'Test Post',
@@ -66,7 +67,7 @@ class BlogSeoTest extends TestCase
 
     public function test_seo_bulk_requires_permission(): void
     {
-        $user = $this->regularUser();
+        $user = User::factory()->create();
 
         $response = $this->actingAs($user)->postJson(route('dashboard.posts.seo.bulk'), [
             'post_ids' => [1],
@@ -103,6 +104,40 @@ class BlogSeoTest extends TestCase
         // Without AI provider, jobs will be dispatched but won't produce results
         $response->assertOk();
         $response->assertJsonFragment(['count' => 2]);
+    }
+
+    public function test_seo_bulk_is_scoped_to_own_posts_for_non_managers(): void
+    {
+        $author = $this->contributor();
+        $other = User::factory()->create();
+
+        PostFactory::new()->create(['user_id' => $other->id, 'meta_title' => null]);
+        PostFactory::new()->create(['user_id' => $other->id, 'meta_title' => null]);
+        $ownPost = PostFactory::new()->create(['user_id' => $author->id, 'meta_title' => null]);
+
+        $response = $this->actingAs($author)->postJson(route('dashboard.posts.seo.bulk'), [
+            'post_ids' => [$ownPost->id],
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonFragment(['count' => 1]);
+    }
+
+    public function test_seo_bulk_all_is_scoped_to_own_posts_for_non_managers(): void
+    {
+        $author = $this->contributor();
+        $other = User::factory()->create();
+
+        PostFactory::new()->create(['user_id' => $other->id, 'meta_title' => null]);
+        PostFactory::new()->create(['user_id' => $other->id, 'meta_title' => null]);
+        PostFactory::new()->create(['user_id' => $author->id, 'meta_title' => null]);
+
+        $response = $this->actingAs($author)->postJson(route('dashboard.posts.seo.bulk'), [
+            'all' => true,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonFragment(['count' => 1]);
     }
 
     public function test_post_store_accepts_og_image(): void
