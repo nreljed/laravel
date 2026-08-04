@@ -108,7 +108,47 @@ class FeatureRegistry
     public function getAllGalleryConfigs(): array
     {
         return array_merge(...array_map(
-            fn (ServiceProvider $provider) => method_exists($provider, 'getGalleryConfigs') ? $provider->getGalleryConfigs() : [],
+            fn (ServiceProvider $provider) => method_exists($provider, 'getGalleryConfig') ? $provider->getGalleryConfig() : (method_exists($provider, 'getGalleryConfigs') ? $provider->getGalleryConfigs() : []),
+            array_values($this->providers),
+        ));
+    }
+
+    public function getAllMetaFormattingConfigs(): array
+    {
+        return array_merge(...array_map(
+            fn (ServiceProvider $provider) => method_exists($provider, 'getMetaFormattingConfig') ? $provider->getMetaFormattingConfig() : [],
+            array_values($this->providers),
+        ));
+    }
+
+    public function getAllRepeaterConfigs(): array
+    {
+        return array_merge(...array_map(
+            fn (ServiceProvider $provider) => method_exists($provider, 'getRepeaterConfig') ? $provider->getRepeaterConfig() : [],
+            array_values($this->providers),
+        ));
+    }
+
+    public function getAllProfileFieldConfigs(): array
+    {
+        return array_merge(...array_map(
+            fn (ServiceProvider $provider) => method_exists($provider, 'getProfileFieldsConfig') ? $provider->getProfileFieldsConfig() : [],
+            array_values($this->providers),
+        ));
+    }
+
+    public function getAllSettingsRoutes(): array
+    {
+        return array_filter(array_map(
+            fn (ServiceProvider $provider) => method_exists($provider, 'getSettingsRoute') ? $provider->getSettingsRoute() : null,
+            array_values($this->providers),
+        ));
+    }
+
+    public function getAllHasSettings(): array
+    {
+        return array_filter(array_map(
+            fn (ServiceProvider $provider) => method_exists($provider, 'hasSettings') ? $provider->hasSettings() : false,
             array_values($this->providers),
         ));
     }
@@ -139,12 +179,16 @@ class FeatureRegistry
     public function getAll(): array
     {
         return array_map(
-            fn (ServiceProvider $provider) => [
+            fn (ServiceProvider $provider) => array_filter([
                 'name' => method_exists($provider, 'name') ? $provider->name() : class_basename($provider),
                 'slug' => method_exists($provider, 'slug') ? $provider->slug() : null,
+                'description' => method_exists($provider, 'description') ? $provider->description() : null,
+                'version' => method_exists($provider, 'version') ? $provider->version() : null,
+                'dependencies' => method_exists($provider, 'dependencies') ? $provider->dependencies() : [],
                 'enabled' => true,
-                'version' => null,
-            ],
+                'has_settings' => method_exists($provider, 'hasSettings') ? $provider->hasSettings() : false,
+                'settings_route' => method_exists($provider, 'getSettingsRoute') ? $provider->getSettingsRoute() : null,
+            ], fn ($v) => $v !== null && $v !== [] && $v !== false),
             array_values($this->providers),
         );
     }

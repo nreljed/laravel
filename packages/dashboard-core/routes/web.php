@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use Nreljed\DashboardCore\Ai\Controllers\AiProviderController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\AuditLogController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\BulkUserController;
+use Nreljed\DashboardCore\Http\Controllers\Admin\DatabaseMaintenanceController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\ImpersonationController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\IpAccessRuleController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\PermissionController;
@@ -147,6 +148,13 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
     Route::middleware('permission:view-system-health')->group(function () {
         Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
         Route::post('/system-health/refresh', [AdminController::class, 'refreshSystemHealth'])->name('system-health.refresh');
+    });
+
+    // Database maintenance (danger zone) — admin only, env-gated at controller level
+    Route::middleware(['admin', 'permission:manage-options'])->group(function () {
+        Route::get('/database', [DatabaseMaintenanceController::class, 'index'])->name('database');
+        Route::post('/database/reset', [DatabaseMaintenanceController::class, 'reset'])->name('database.reset');
+        Route::post('/database/reseed', [DatabaseMaintenanceController::class, 'reseed'])->name('database.reseed');
     });
 
     // Settings (general, registration, notifications, security, branding, IP rules)

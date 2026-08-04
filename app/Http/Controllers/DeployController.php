@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Nreljed\DashboardCore\Exceptions\DatabaseMaintenanceException;
+use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
 
 class DeployController extends Controller
 {
@@ -122,6 +124,28 @@ class DeployController extends Controller
             $output[] = 'migrate: ERROR '.$e->getMessage();
 
             return response()->json(['status' => 'error', 'output' => $output], 500);
+        }
+    }
+
+    public function resetDatabase(Request $request, DatabaseMaintenanceService $service)
+    {
+        $this->verifyToken($request);
+        set_time_limit(300);
+
+        if ($request->input('confirm') !== 'RESET') {
+            return response()->json(['status' => 'error', 'error' => 'Confirmation required. Send confirm=RESET.'], 422);
+        }
+
+        try {
+            $result = $service->resetDatabase(
+                withSeed: $request->boolean('with_seed', true),
+                purgeMedia: $request->boolean('purge_media'),
+                userId: 0,
+            );
+
+            return response()->json(['status' => 'ok'] + $result);
+        } catch (DatabaseMaintenanceException $e) {
+            return response()->json(['status' => 'error', 'error' => $e->getMessage()], 500);
         }
     }
 

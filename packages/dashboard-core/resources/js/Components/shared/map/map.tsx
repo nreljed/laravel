@@ -39,6 +39,7 @@ import {
   PlusIcon,
   SquareIcon,
   Trash2Icon,
+  TriangleIcon,
   Undo2Icon,
   WaypointsIcon,
 } from "lucide-react";
@@ -1208,6 +1209,20 @@ function MapDrawRectangle({
     </MapDrawShapeButton>
   );
 }
+function MapDrawPolygon({
+  showArea = false,
+  shapeOptions = { color: "var(--color-primary)", opacity: 1, weight: 2 },
+  ...props
+}) {
+  return (
+    <MapDrawShapeButton
+      shape="Polygon"
+      options={{ pathOptions: shapeOptions, showMeasurements: showArea, ...props }}
+    >
+      <TriangleIcon />
+    </MapDrawShapeButton>
+  );
+}
 function MapDrawActionButton({
   drawAction,
   createDrawTool,
@@ -1404,6 +1419,7 @@ export {
   MapDrawDelete,
   MapDrawEdit,
   MapDrawMarker,
+  MapDrawPolygon,
   MapDrawPolyline,
   MapDrawRectangle,
   MapDrawUndo,

@@ -99,6 +99,10 @@ class HandleInertiaRequests extends Middleware
             },
             'featureNavItems' => $this->getFeatureNavItems(...),
             'featureData' => $this->getFeatureSharedData(...),
+            'features' => [
+                'databaseMaintenanceEnabled' => fn () => (bool) config('database_maintenance.enabled', false),
+            ],
+            'modules' => $this->getModules(...),
             'emailSettings' => $this->getEmailSettings(...),
             'emailTemplates' => $this->getEmailTemplates(...),
             'brand' => [
@@ -140,6 +144,15 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(FeatureRegistry::class)->getAllSharedData();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function getModules(): array
+    {
+        try {
+            return app(FeatureRegistry::class)->getAll();
         } catch (\Throwable) {
             return [];
         }

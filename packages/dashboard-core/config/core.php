@@ -52,4 +52,20 @@ return [
         'avatars' => User::class,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Groups
+    |--------------------------------------------------------------------------
+    |
+    | Additional settings groups registered by consuming applications. The
+    | base groups (general, registration, notifications, security, email,
+    | maintenance, formatting, audit_logs) are always included. Feature
+    | service providers may add domain-specific groups here.
+    |
+    */
+
+    'settings' => [
+        'groups' => [],
+    ],
+
 ];

@@ -302,6 +302,10 @@ class AuditLogController extends Controller
             AuditAction::RoleDuplicated->value => "$actor duplicated role {$ctx['source_role']} as {$ctx['role']}",
             AuditAction::RolePermissionChanged->value => "$actor changed permissions on role {$ctx['role']}",
             AuditAction::SettingsChanged->value => "$actor changed app settings",
+            AuditAction::DatabaseReset->value => $ctx['purge_media']
+                ? "$actor reset the database and reseeded it (media purge enabled)"
+                : "$actor reset the database and reseeded it",
+            AuditAction::DatabaseReseed->value => "$actor re-ran the seeders (no data wiped)",
             default => "$actor performed $action",
         };
     }

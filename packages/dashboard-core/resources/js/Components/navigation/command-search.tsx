@@ -12,7 +12,16 @@ import {
 } from "@/Components/ui/command";
 import { Button } from "@/Components/ui/button";
 import { Kbd } from "@/Components/ui/kbd";
-import { Search, LayoutDashboard, BarChart3, Bell, Users, Settings, Activity } from "lucide-react";
+import {
+  Search,
+  LayoutDashboard,
+  BarChart3,
+  Bell,
+  Users,
+  Settings,
+  Activity,
+  Database,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { featureIcons } from "@/lib/icons";
 
@@ -105,18 +114,25 @@ export function CommandSearch() {
     }
 
     if (isAdmin) {
+      const dbEnabled =
+        (pageProps.features as { databaseMaintenanceEnabled?: boolean } | undefined)
+          ?.databaseMaintenanceEnabled ?? false;
+
       items.push({
         heading: "Administration",
         items: [
           { title: "Users", icon: Users, url: route("dashboard.admin.users.index") },
           { title: "Settings", icon: Settings, url: route("dashboard.admin.settings.general") },
           { title: "System Health", icon: Activity, url: route("dashboard.admin.system-health") },
+          ...(dbEnabled
+            ? [{ title: "Database", icon: Database, url: route("dashboard.admin.database") }]
+            : []),
         ],
       });
     }
 
     return items;
-  }, [isAdmin, featureNavItems, userCapabilities]);
+  }, [isAdmin, featureNavItems, userCapabilities, pageProps.features]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

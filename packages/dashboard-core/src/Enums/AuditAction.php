@@ -26,6 +26,8 @@ enum AuditAction: string
     case RoleDeleted = 'role_deleted';
     case RoleDuplicated = 'role_duplicated';
     case RolePermissionChanged = 'role_permission_changed';
+    case DatabaseReset = 'database_reset';
+    case DatabaseReseed = 'database_reseed';
 
     public function severity(): string
     {
@@ -34,7 +36,9 @@ enum AuditAction: string
             self::ImpersonationStart,
             self::RoleRevoked,
             self::RoleDeleted,
-            self::PermissionRevoked => 'critical',
+            self::PermissionRevoked,
+            self::DatabaseReset,
+            self::DatabaseReseed => 'critical',
 
             self::PasswordChange,
             self::PasswordReset,

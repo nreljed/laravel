@@ -25,6 +25,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import AdminLayout from "@/Layouts/AdminLayout";
+import { jsonHeaders } from "@/lib/gallery-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
@@ -107,7 +108,6 @@ interface DatabaseInfo {
 interface ServerInfo {
   software: string;
   is_https: boolean;
-  is_https_ok: boolean;
   document_root: string;
   server_ip: string;
   server_protocol: string;
@@ -140,11 +140,18 @@ interface Recommendation {
   fix: string;
 }
 
+interface MailerConfig {
+  transport?: string;
+  host?: string;
+  port?: string;
+  username?: string;
+  encryption?: string;
+}
 interface MailInfo {
   driver: string;
   from_address: string;
   from_name: string;
-  mailers: unknown;
+  mailer: MailerConfig;
 }
 interface SessionInfo {
   driver: string;
@@ -195,6 +202,8 @@ interface LatestVersion {
   name?: string;
   body?: string;
   error?: string;
+  skipped?: boolean;
+  message?: string;
 }
 interface BuildInfo {
   exists: boolean;
@@ -223,13 +232,20 @@ interface StorageDir {
   name: string;
   exists: boolean;
   writable: boolean;
-  writable_ok: boolean;
   file_count: number;
   size: string;
+}
+interface DiskInfo {
+  total: string;
+  free: string;
+  used: string;
+  percent: number;
+  writable: boolean;
 }
 interface StorageInfo {
   dirs: StorageDir[];
   total_size: string;
+  disk: DiskInfo | null;
 }
 
 interface LaravelCacheStatus {
@@ -415,8 +431,16 @@ export default function SystemHealth(props: SystemHealthProps) {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await fetch(route("dashboard.admin.system-health.refresh"), { method: "POST" });
-      router.reload({ preserveUrl: true });
+      const response = await fetch(route("dashboard.admin.system-health.refresh"), {
+        method: "POST",
+        headers: jsonHeaders(),
+        credentials: "same-origin",
+      });
+      if (response.ok) {
+        router.reload({ preserveUrl: true });
+      } else {
+        location.reload();
+      }
     } catch {
       location.reload();
     } finally {
@@ -659,7 +683,9 @@ export default function SystemHealth(props: SystemHealthProps) {
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       Latest release:{" "}
-                      <span className="text-amber-500 dark:text-amber-400">Unreachable</span>
+                      <span className="text-muted-foreground">
+                        {props.latest_version.message ?? "Unreachable"}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -736,6 +762,8 @@ export default function SystemHealth(props: SystemHealthProps) {
               <InfoRow label="Name" value={props.laravel.name} />
               <InfoRow label="Laravel Version" value={props.laravel.version} />
               <InfoRow label="Environment" value={props.laravel.environment} />
+              <InfoRow label="Detected Tooling" value={props.environment.detected} />
+              <InfoRow label="php.ini" value={props.environment.ini_path} />
               <InfoRow
                 label="Debug Mode"
                 value={props.laravel.debug ? "Enabled" : "Disabled"}
@@ -936,14 +964,14 @@ export default function SystemHealth(props: SystemHealthProps) {
           <CollapsibleSection
             title="Server & OS"
             icon={<Server className="h-4 w-4 text-purple-500 dark:text-purple-400" />}
-            status={props.server.is_https_ok ? "good" : "warning"}
+            status={props.server.is_https ? "good" : "warning"}
           >
             <div className="space-y-1">
               <InfoRow label="Software" value={props.server.software} />
               <InfoRow
                 label="HTTPS"
                 value={props.server.is_https ? "Yes" : "No"}
-                ok={props.server.is_https_ok}
+                ok={props.server.is_https}
               />
               <InfoRow label="Protocol" value={props.server.server_protocol} />
               <InfoRow label="Host" value={props.server.http_host} />
@@ -958,32 +986,31 @@ export default function SystemHealth(props: SystemHealthProps) {
             </div>
           </CollapsibleSection>
 
-          {/* Environment */}
-          <CollapsibleSection
-            title="Environment"
-            icon={<Settings className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />}
-            status="info"
-          >
-            <div className="space-y-1">
-              <InfoRow
-                label="Type"
-                value={
-                  props.environment.type === "production"
-                    ? "Production"
-                    : props.environment.detected
-                }
-              />
-              <InfoRow label="php.ini" value={props.environment.ini_path} />
-            </div>
-          </CollapsibleSection>
-
           {/* Storage / Cache */}
           <CollapsibleSection
             title="Storage & Cache"
             icon={<FolderOpen className="h-4 w-4 text-rose-500 dark:text-rose-400" />}
-            status={props.storage.dirs.every((d) => d.writable_ok) ? "good" : "critical"}
+            status={props.storage.dirs.every((d) => d.writable) ? "good" : "critical"}
           >
             <div className="space-y-1">
+              {props.storage.disk && (
+                <>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <MiniCard value={props.storage.disk.free} label="Disk Free" />
+                    <MiniCard
+                      value={`${props.storage.disk.percent}%`}
+                      label="Disk Used"
+                      color={props.storage.disk.percent >= 90 ? "var(--red-500)" : undefined}
+                    />
+                  </div>
+                  <InfoRow
+                    label="Disk Usage"
+                    value={`${props.storage.disk.used} / ${props.storage.disk.total}`}
+                    ok={props.storage.disk.percent < 90}
+                  />
+                  <Separator className="my-2" />
+                </>
+              )}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <MiniCard
                   value={props.storage.dirs.reduce((s, d) => s + d.file_count, 0)}
@@ -995,11 +1022,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                 <div key={dir.name} className="space-y-1 mb-3">
                   <p className="text-xs font-medium text-muted-foreground">{dir.name}</p>
                   <InfoRow label="Exists" value={dir.exists ? "Yes" : "No"} ok={dir.exists} />
-                  <InfoRow
-                    label="Writable"
-                    value={dir.writable ? "Yes" : "No"}
-                    ok={dir.writable_ok}
-                  />
+                  <InfoRow label="Writable" value={dir.writable ? "Yes" : "No"} ok={dir.writable} />
                   <InfoRow label="Files" value={dir.file_count} />
                   <InfoRow label="Size" value={dir.size} />
                 </div>
@@ -1059,6 +1082,17 @@ export default function SystemHealth(props: SystemHealthProps) {
               <Separator className="my-2" />
               <p className="text-xs font-medium text-muted-foreground mb-1">Mail</p>
               <InfoRow label="Driver" value={props.mail.driver} />
+              {props.mail.mailer.transport && (
+                <InfoRow label="Transport" value={props.mail.mailer.transport} />
+              )}
+              {props.mail.mailer.host && <InfoRow label="Host" value={props.mail.mailer.host} />}
+              {props.mail.mailer.port && <InfoRow label="Port" value={props.mail.mailer.port} />}
+              {props.mail.mailer.username && (
+                <InfoRow label="Username" value={props.mail.mailer.username} />
+              )}
+              {props.mail.mailer.encryption && (
+                <InfoRow label="Encryption" value={props.mail.mailer.encryption} />
+              )}
               <InfoRow
                 label="From"
                 value={

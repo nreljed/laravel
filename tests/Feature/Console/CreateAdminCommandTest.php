@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\User;
@@ -59,6 +60,8 @@ class CreateAdminCommandTest extends TestCase
 
     public function test_skips_existing_admin_without_password(): void
     {
+        Config::set('admin.password', null);
+
         User::create([
             'name' => 'Existing Admin',
             'email' => config('admin.email'),
@@ -72,6 +75,8 @@ class CreateAdminCommandTest extends TestCase
 
     public function test_fails_when_no_password_provided(): void
     {
+        Config::set('admin.password', null);
+
         $this->artisan('app:create-admin', [
             '--email' => 'new-admin@example.com',
         ])

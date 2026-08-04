@@ -170,6 +170,17 @@ routes/
   console.php
 ```
 
+> **CRITICAL — `packages/dashboard-core` is a Composer path repo that installs as a COPY, not a symlink.**
+>
+> - PHP classes (everything under `packages/dashboard-core/src/...`) are autoloaded from **`vendor/nreljed/dashboard-core`**, a mirrored copy. Editing the source package has **no runtime/test effect** until you run:
+>   ```
+>   composer reinstall nreljed/dashboard-core
+>   ```
+> - **Always reinstall after ANY PHP change** to the package, then verify the edit landed in the vendor copy (e.g. `Select-String` on `vendor/nreljed/dashboard-core/...`) before running tinker/phpunit/verifying in the browser.
+> - On this Windows box `composer reinstall` can appear to hang past the shell timeout, but the file copy **does complete**. Don't blindly re-run; verify the vendor file instead.
+> - Frontend (`resources/js`) is consumed **directly** by Vite from `packages/dashboard-core/resources/js` — no reinstall needed, just `npm run build`.
+> - PHPUnit tests also load the vendor copy, so reinstall before running tests that exercise package classes.
+
 ## Feature Architecture
 
 Each feature is self-contained and registered via `FeatureRegistry`.
@@ -196,14 +207,14 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 ## Routes
 
-| Prefix                   | Middleware                          | Pages                                                          |
-| ------------------------ | ----------------------------------- | -------------------------------------------------------------- |
-| `/`                      | none (guest)                        | Welcome, About, Services, Contact                              |
-| `/dashboard`             | auth+verified                       | Dashboard, Stats, Notifications, Account                       |
-| `/dashboard/admin`       | auth+verified+admin+throttle:60,1   | Users, Roles, Permissions, Settings, System Health, Audit Logs |
-| `/dashboard/posts`       | auth+verified+permission:posts.view | Posts CRUD, Dashboard, Categories, Tags                        |
-| `/deploy/...`            | token                               | Deploy endpoints                                               |
-| `/api/notifications/...` | auth                                | Notification JSON endpoints                                    |
+| Prefix                   | Middleware                          | Pages                                                                                |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| `/`                      | none (guest)                        | Welcome, About, Services, Contact                                                    |
+| `/dashboard`             | auth+verified                       | Dashboard, Stats, Notifications, Account                                             |
+| `/dashboard/admin`       | auth+verified+admin+throttle:60,1   | Users, Roles, Permissions, Settings, System Health, Audit Logs, Database Maintenance |
+| `/dashboard/posts`       | auth+verified+permission:posts.view | Posts CRUD, Dashboard, Categories, Tags                                              |
+| `/deploy/...`            | token                               | Deploy endpoints (incl. `/deploy/reset`)                                             |
+| `/api/notifications/...` | auth                                | Notification JSON endpoints                                                          |
 
 ## AI Integration (BYOK)
 
@@ -432,6 +443,32 @@ pull_request → pr.yml
 2. Fetch latest release from GitHub API
 3. Download `deploy.zip`, extract, restore `.env`
 4. Run: migrate, create-admin, cache, storage:link
+
+**database-reset.yml** (`workflow_dispatch`, manual only):
+
+- Inputs: `confirm` (must equal `RESET`), `with_seed`, `purge_media`
+- Curls `POST /deploy/reset` with `secrets.DEPLOY_TOKEN`
+- Requires `DB_MAINTENANCE_ENABLED=true` in production `.env` (the endpoint itself is always
+  available — it just calls `DatabaseMaintenanceService::resetDatabase()`)
+
+### Database Maintenance Feature
+
+`packages/dashboard-core` ships an environment-gated reset/reseed feature:
+
+| Surface         | Gate                                                  | Route                                       |
+| --------------- | ----------------------------------------------------- | ------------------------------------------- |
+| Admin UI page   | `admin` + `manage-options` + `DB_MAINTENANCE_ENABLED` | `dashboard.admin.database(.reset\|.reseed)` |
+| Deploy endpoint | `DEPLOY_TOKEN` + `confirm=RESET`                      | `POST /deploy/reset`                        |
+
+- Shared logic lives in `Nreljed\DashboardCore\Services\DatabaseMaintenanceService` — runs
+  `migrate:fresh --seed` + `app:create-admin` (reset) or `db:seed` (reseed), optional media purge
+  of `storage/app/public`, `.maintenance-lock` file (15 min TTL), toggles maintenance mode,
+  writes a `critical` audit log, and notifies all admins.
+- `DB_MAINTENANCE_ENABLED` defaults to enabled everywhere **except** production. Keep it `false`
+  in production unless you intend to use the GitHub Action reset. `.env.example` and
+  `.env.production.example` both ship `DB_MAINTENANCE_ENABLED=false`.
+- UI reset ends the session and redirects to `/login`; deploy reset returns JSON.
+- Tests: `tests/Feature/Admin/DatabaseMaintenanceTest.php`, `tests/Feature/Deploy/DatabaseResetDeployEndpointTest.php`.
 
 ### GitHub Secrets
 

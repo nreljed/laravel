@@ -152,7 +152,7 @@ class BlogServiceProvider extends ServiceProvider
         return [];
     }
 
-    public function getGalleryConfigs(): array
+    public function getGalleryConfig(): array
     {
         return [
             'gallery' => [

@@ -12,6 +12,7 @@ import {
   ScrollText,
   Beaker,
   FlaskConical,
+  Database,
 } from "lucide-react";
 import { usePage } from "@inertiajs/react";
 import { NavMain, type NavItem } from "@/Components/navigation/nav-main";
@@ -38,6 +39,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const notificationUnreadCount = (pageProps.notificationUnreadCount as number) || 0;
   const brand = (pageProps.brand as { logo?: string; favicon?: string; name?: string }) || {};
   const appUrl = (pageProps.app_url as string) || null;
+  const databaseMaintenanceEnabled =
+    (pageProps.features as { databaseMaintenanceEnabled?: boolean } | undefined)
+      ?.databaseMaintenanceEnabled ?? false;
 
   const safeRoute = (name: string, fallback = "#"): string => {
     try {
@@ -104,9 +108,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Activity,
       permission: "view-system-health",
     },
+    {
+      title: "Database",
+      url: safeRoute("dashboard.admin.database"),
+      icon: Database,
+      permission: "manage-options",
+    },
   ];
 
-  const visibleAdminItems = adminNavItems.filter((item) => hasPermission(item.permission));
+  const visibleAdminItems = adminNavItems.filter(
+    (item) =>
+      hasPermission(item.permission) && (item.title !== "Database" || databaseMaintenanceEnabled),
+  );
 
   const devNavItems: NavItem[] = [
     {
