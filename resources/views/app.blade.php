@@ -28,7 +28,7 @@
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Prevent flash of wrong theme -->
-        <script>
+        <script nonce="{{ Vite::cspNonce() }}">
             (function () {
                 try {
                     var theme = localStorage.getItem('theme') || 'system';
@@ -40,7 +40,7 @@
         </script>
 
         <!-- Scripts -->
-        @routes
+        @routes(null, Vite::cspNonce())
         @viteReactRefresh
         @vite(['resources/js/app.tsx'])
         @inertiaHead
