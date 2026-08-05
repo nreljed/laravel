@@ -145,6 +145,13 @@ jobs:
       - name: Copy deploy script
         run: Copy-Item -Path scripts/deploy-cron.php -Destination deploy.php
 
+      - name: Record dashboard-core commit
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "storage\app" -Force | Out-Null
+          Set-Content -Path "storage\app\core.sha" -Value "$env:GITHUB_SHA" -NoNewline -Encoding ASCII
+          Write-Output "core.sha recorded: $env:GITHUB_SHA"
+
       - name: Create deploy.zip
         shell: pwsh
         run: |
@@ -157,7 +164,7 @@ jobs:
           $items = @(
             "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
             "app", "bootstrap", "config", "database", "public", "resources", "routes",
-            "storage", "vendor", ".env", "deploy.php"
+            "storage", "vendor", "deploy.php"
           )
           $fullPaths = $items | ForEach-Object { Join-Path $src $_ }
           Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal

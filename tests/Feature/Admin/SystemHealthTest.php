@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Nreljed\DashboardCore\Services\SystemHealthService;
 use Tests\Concerns\CreatesTestUsers;
@@ -90,5 +91,40 @@ class SystemHealthTest extends TestCase
         $this->assertSame('local', $env['type']);
         $this->assertTrue($env['is_local']);
         $this->assertFalse($env['is_production']);
+    }
+
+    public function test_refresh_includes_core_package_when_recorded(): void
+    {
+        Http::fake();
+
+        $shaFile = storage_path('app/core.sha');
+        File::put($shaFile, "50e9c0fcf28d365295c46af725da4822456c3574\n");
+
+        try {
+            $response = $this->actingAs($this->admin())
+                ->post(route('dashboard.admin.system-health.refresh'));
+
+            $response->assertOk();
+            $response->assertJsonPath('core_package.name', 'dashboard-core');
+            $response->assertJsonPath('core_package.sha', '50e9c0fcf28d365295c46af725da4822456c3574');
+            $response->assertJsonPath('core_package.short', '50e9c0f');
+            $response->assertJsonPath('core_package.url', 'https://github.com/nreljed/laravel/commit/50e9c0fcf28d365295c46af725da4822456c3574');
+        } finally {
+            File::delete($shaFile);
+        }
+    }
+
+    public function test_refresh_core_package_is_null_when_unrecorded(): void
+    {
+        Http::fake();
+        File::delete(storage_path('app/core.sha'));
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('dashboard.admin.system-health.refresh'));
+
+        $response->assertOk();
+        $response->assertJsonPath('core_package.sha', null);
+        $response->assertJsonPath('core_package.short', null);
+        $response->assertJsonPath('core_package.url', null);
     }
 }

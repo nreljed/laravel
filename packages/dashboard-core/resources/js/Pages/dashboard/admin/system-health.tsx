@@ -212,6 +212,13 @@ interface BuildInfo {
   age?: string;
   age_hours?: number;
 }
+interface CorePackage {
+  name: string;
+  sha: string | null;
+  short: string | null;
+  url: string | null;
+  version: string | null;
+}
 
 interface LogFile {
   name: string;
@@ -281,6 +288,7 @@ interface SystemHealthProps {
   storage: StorageInfo;
   deployed_version: DeployedVersion;
   latest_version: LatestVersion;
+  core_package: CorePackage;
   laravel_cache: LaravelCacheStatus;
   debug_access_url: string | null;
 }
@@ -506,6 +514,12 @@ export default function SystemHealth(props: SystemHealthProps) {
         "=== VERSION ===",
         L("Deployed", props.deployed_version.version ?? "?"),
         L("Latest", props.latest_version.found ? (props.latest_version.version ?? "?") : "Unknown"),
+        L(
+          "Core Package",
+          props.core_package.short
+            ? `${props.core_package.name}@${props.core_package.short}`
+            : `${props.core_package.name} (unrecorded)`,
+        ),
         "",
       );
     lines.push(
@@ -688,6 +702,22 @@ export default function SystemHealth(props: SystemHealthProps) {
                       </span>
                     </p>
                   )}
+                  <p className="text-xs text-muted-foreground">
+                    Dashboard Core:{" "}
+                    {props.core_package.url && props.core_package.short ? (
+                      <a
+                        href={props.core_package.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-primary hover:underline"
+                      >
+                        {props.core_package.short}
+                      </a>
+                    ) : (
+                      <span className="font-mono">unrecorded</span>
+                    )}
+                    {props.core_package.version && <> &middot; v{props.core_package.version}</>}
+                  </p>
                 </div>
               </div>
               <Badge variant={isUpToDate ? "success" : "warning"} className="shrink-0">
