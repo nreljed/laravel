@@ -97,6 +97,7 @@ class SystemHealthService
             'storage' => $storage,
             'deployed_version' => $deployed,
             'latest_version' => $latest,
+            'core_package' => $this->getCorePackage(),
             'laravel_cache' => $this->getLaravelCacheStatus(),
             'debug_access_url' => $this->getDebugAccessUrl(),
         ];
@@ -837,6 +838,39 @@ class SystemHealthService
             'modified_timestamp' => $modified,
             'age' => floor($ageSeconds / 86400).' days',
             'age_hours' => round($ageSeconds / 3600, 1),
+        ];
+    }
+
+    /**
+     * Resolve the installed dashboard-core package commit and version.
+     *
+     * The build pipeline records the source repo's main HEAD into
+     * storage/app/core.sha, so this is the exact package commit deployed.
+     */
+    protected function getCorePackage(): array
+    {
+        $sha = null;
+        $shaFile = storage_path('app/core.sha');
+        if (file_exists($shaFile)) {
+            $sha = trim((string) file_get_contents($shaFile));
+            if ($sha === '') {
+                $sha = null;
+            }
+        }
+
+        $version = null;
+        $composerFile = base_path('vendor/nreljed/dashboard-core/composer.json');
+        if (file_exists($composerFile)) {
+            $meta = json_decode((string) file_get_contents($composerFile), true);
+            $version = is_array($meta) ? ($meta['version'] ?? null) : null;
+        }
+
+        return [
+            'name' => 'dashboard-core',
+            'sha' => $sha,
+            'short' => $sha !== null ? substr($sha, 0, 7) : null,
+            'url' => $sha !== null ? 'https://github.com/nreljed/laravel/commit/'.$sha : null,
+            'version' => is_string($version) && $version !== '' ? $version : null,
         ];
     }
 
