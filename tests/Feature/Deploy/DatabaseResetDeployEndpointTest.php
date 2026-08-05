@@ -20,7 +20,7 @@ class DatabaseResetDeployEndpointTest extends TestCase
         parent::setUp();
 
         $this->token = 'test-reset-token';
-        Config::set('app.deploy_token', $this->token);
+        Config::set('deploy.token', $this->token);
     }
 
     public function test_reset_requires_token(): void

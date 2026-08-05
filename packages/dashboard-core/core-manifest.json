@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "package": "nreljed/dashboard-core",
+  "description": "Boundary fence manifest. Core-owned files must match the markers below; forbidden paths must never exist in a project working tree; overridable configs are the only legitimate per-project overrides.",
+  "app_owned_files": {
+    "bootstrap/app.php": {
+      "marker": "wired by Nreljed\\DashboardCore\\DashboardCoreServiceProvider"
+    },
+    "routes/web.php": {
+      "marker": "reserved for project-specific routes"
+    }
+  },
+  "forbidden_project_paths": [
+    "app/Http/Controllers/DeployController.php",
+    "app/Http/Controllers/PublicController.php",
+    "app/Models/Page.php",
+    "resources/js/Pages/Public"
+  ],
+  "overridable_config": [
+    "config/admin.php",
+    "config/core.php",
+    "config/deploy.php",
+    "config/roles.php"
+  ]
+}

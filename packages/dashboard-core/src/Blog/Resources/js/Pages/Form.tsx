@@ -11,7 +11,7 @@ import { Label } from "@/Components/ui/label";
 import { TermsSelector } from "@/Components/shared/terms-selector";
 import PublishSection from "@/Components/shared/publish-section";
 import { FeaturedImageSelector } from "@/Components/shared/featured-image-selector";
-import { SeoPanel } from "@/Components/shared/seo/SeoPanel";
+import { SeoPanel, type SeoData } from "@/Components/shared/seo/SeoPanel";
 import { useAuth } from "@/hooks/use-auth";
 
 interface Category {
@@ -67,8 +67,8 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
     meta_description: post?.meta_description || "",
     og_image: post?.og_image || "",
     focus_keyword: post?.focus_keyword || "",
-    seo_metadata:
-      (post?.metadata as Record<string, unknown>)?.seo || (null as Record<string, unknown> | null),
+    seo_metadata: ((post?.metadata as Record<string, unknown> | null)?.seo ??
+      null) as SeoData | null,
   });
 
   React.useEffect(() => {
@@ -127,14 +127,14 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
   );
 
   const handleSeoGenerated = React.useCallback(
-    (seoResponse: Record<string, unknown>) => {
+    (seoResponse: SeoData) => {
       form.setData("seo_metadata", seoResponse);
     },
     [form.setData],
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const options = {
       preserveScroll: true,
       onSuccess: () => {
@@ -221,7 +221,7 @@ export default function PostsForm({ post, categories, tags }: PostsFormProps) {
               status={form.data.status}
               publishDate={form.data.publish_date}
               onStatusChange={(status) => form.setData("status", status)}
-              onDateChange={(date) => form.setData("publish_date", date)}
+              onDateChange={(date) => form.setData("publish_date", date ?? "")}
               onSubmit={handleSubmit}
               loading={form.processing}
             />

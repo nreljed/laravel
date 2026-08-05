@@ -844,33 +844,19 @@ class SystemHealthService
     /**
      * Resolve the installed dashboard-core package commit and version.
      *
-     * The build pipeline records the source repo's main HEAD into
-     * storage/app/core.sha, so this is the exact package commit deployed.
+     * Delegates to CoreVersionService, which prefers the build-time recorded
+     * storage/app/core.json and falls back to the legacy core.sha marker.
      */
     protected function getCorePackage(): array
     {
-        $sha = null;
-        $shaFile = storage_path('app/core.sha');
-        if (file_exists($shaFile)) {
-            $sha = trim((string) file_get_contents($shaFile));
-            if ($sha === '') {
-                $sha = null;
-            }
-        }
-
-        $version = null;
-        $composerFile = base_path('vendor/nreljed/dashboard-core/composer.json');
-        if (file_exists($composerFile)) {
-            $meta = json_decode((string) file_get_contents($composerFile), true);
-            $version = is_array($meta) ? ($meta['version'] ?? null) : null;
-        }
+        $info = app(CoreVersionService::class)->info();
 
         return [
-            'name' => 'dashboard-core',
-            'sha' => $sha,
-            'short' => $sha !== null ? substr($sha, 0, 7) : null,
-            'url' => $sha !== null ? 'https://github.com/nreljed/laravel/commit/'.$sha : null,
-            'version' => is_string($version) && $version !== '' ? $version : null,
+            'name' => $info['name'],
+            'sha' => $info['sha'],
+            'short' => $info['sha'] !== null ? substr($info['sha'], 0, 7) : null,
+            'url' => $info['sha'] !== null ? 'https://github.com/nreljed/laravel/commit/'.$info['sha'] : null,
+            'version' => $info['version'],
         ];
     }
 

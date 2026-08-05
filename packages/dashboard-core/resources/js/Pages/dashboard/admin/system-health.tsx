@@ -509,10 +509,12 @@ export default function SystemHealth(props: SystemHealthProps) {
       L("HTTPS", String(props.server.is_https)),
       "",
     );
-    if (props.deployed_version.exists)
+    if (props.deployed_version.exists || props.latest_version.found || props.core_package.sha)
       lines.push(
         "=== VERSION ===",
-        L("Deployed", props.deployed_version.version ?? "?"),
+        ...(props.deployed_version.exists
+          ? [L("Deployed", props.deployed_version.version ?? "?")]
+          : []),
         L("Latest", props.latest_version.found ? (props.latest_version.version ?? "?") : "Unknown"),
         L(
           "Core Package",
@@ -554,10 +556,16 @@ export default function SystemHealth(props: SystemHealthProps) {
   const totalIssues = criticalCount + highCount;
   const hasIssues = totalIssues > 0;
 
+  const showVersionCard =
+    props.deployed_version.exists ||
+    props.latest_version.found ||
+    Boolean(props.core_package.sha) ||
+    Boolean(props.core_package.version);
+
+  const canCompareVersions = props.deployed_version.exists && props.latest_version.found;
+
   const isUpToDate =
-    props.deployed_version.exists &&
-    props.latest_version.found &&
-    props.deployed_version.version === props.latest_version.version;
+    canCompareVersions && props.deployed_version.version === props.latest_version.version;
 
   const all_extensions_loaded = props.extensions.every((e) => !e.required || e.loaded);
 
@@ -665,22 +673,29 @@ export default function SystemHealth(props: SystemHealthProps) {
         </div>
 
         {/* ── Version Comparison ── */}
-        {props.deployed_version.exists && (
+        {showVersionCard && (
           <Card
             className={
-              isUpToDate
-                ? "border-emerald-500/30 dark:border-emerald-400/30"
-                : "border-amber-500/30 dark:border-amber-400/30"
+              canCompareVersions
+                ? isUpToDate
+                  ? "border-emerald-500/30 dark:border-emerald-400/30"
+                  : "border-amber-500/30 dark:border-amber-400/30"
+                : undefined
             }
           >
             <CardContent className="flex items-center justify-between gap-4 p-4">
               <div className="flex items-center gap-3 min-w-0">
                 <GitCompareArrows
-                  className={`h-6 w-6 shrink-0 ${isUpToDate ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"}`}
+                  className={`h-6 w-6 shrink-0 ${canCompareVersions ? (isUpToDate ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400") : "text-muted-foreground"}`}
                 />
                 <div className="min-w-0">
                   <p className="text-sm font-medium">
-                    Deployed: <span className="font-mono">{props.deployed_version.version}</span>
+                    Deployed:{" "}
+                    {props.deployed_version.exists ? (
+                      <span className="font-mono">{props.deployed_version.version}</span>
+                    ) : (
+                      <span className="text-muted-foreground">local (not recorded)</span>
+                    )}
                   </p>
                   {props.latest_version.found ? (
                     <p className="text-xs text-muted-foreground">
@@ -720,9 +735,15 @@ export default function SystemHealth(props: SystemHealthProps) {
                   </p>
                 </div>
               </div>
-              <Badge variant={isUpToDate ? "success" : "warning"} className="shrink-0">
-                {isUpToDate ? "Up to date" : "Update available"}
-              </Badge>
+              {canCompareVersions ? (
+                <Badge variant={isUpToDate ? "success" : "warning"} className="shrink-0">
+                  {isUpToDate ? "Up to date" : "Update available"}
+                </Badge>
+              ) : (
+                <Badge variant="info" className="shrink-0">
+                  Local build
+                </Badge>
+              )}
             </CardContent>
           </Card>
         )}

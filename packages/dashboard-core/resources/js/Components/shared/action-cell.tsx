@@ -25,7 +25,6 @@ export interface ActionItem {
   id: number | string;
   title?: string;
   status?: string;
-  [key: string]: unknown;
 }
 
 interface ActionCellProps {

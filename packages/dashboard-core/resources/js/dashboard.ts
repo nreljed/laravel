@@ -2,6 +2,11 @@ import type { ComponentType } from "react";
 
 export type PageImport = () => Promise<{ default: ComponentType<unknown> }>;
 
+const featurePrefixes: Record<string, string> = {
+  Blog: "blog",
+  PublicSite: "public",
+};
+
 export function registerDashboard(): Record<string, PageImport> {
   const pageMap: Record<string, PageImport> = {};
 
@@ -15,16 +20,24 @@ export function registerDashboard(): Record<string, PageImport> {
     }
   }
 
-  const blogPages = import.meta.glob("../../src/Blog/Resources/js/Pages/**/*.tsx") as Record<
+  const featurePages = import.meta.glob("../../src/*/Resources/js/Pages/**/*.tsx") as Record<
     string,
     PageImport
   >;
 
-  for (const [path, importFn] of Object.entries(blogPages)) {
-    const componentPath = path.match(/Resources\/js\/Pages\/(.+)\.tsx$/)?.[1];
+  for (const [path, importFn] of Object.entries(featurePages)) {
+    const match = path.match(/src\/([^/]+)\/Resources\/js\/Pages\/(.+)\.tsx$/);
 
-    if (componentPath) {
-      pageMap[`blog/${componentPath.toLowerCase()}`] = importFn;
+    if (!match) {
+      continue;
+    }
+
+    const featureDir = match[1] ?? "";
+    const componentPath = match[2] ?? "";
+    const prefix = featurePrefixes[featureDir] ?? featureDir.toLowerCase();
+
+    if (componentPath !== "") {
+      pageMap[`${prefix}/${componentPath.toLowerCase()}`] = importFn;
     }
   }
 

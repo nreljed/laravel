@@ -24,7 +24,7 @@ class DeployEndpointTest extends TestCase
     {
         parent::setUp();
         $this->token = 'test-deploy-token-'.Str::random(16);
-        Config::set('app.deploy_token', $this->token);
+        Config::set('deploy.token', $this->token);
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 

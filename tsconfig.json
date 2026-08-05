@@ -27,6 +27,9 @@
     "resources/js/**/*.d.ts",
     "packages/dashboard-core/resources/js/**/*.ts",
     "packages/dashboard-core/resources/js/**/*.tsx",
-    "packages/dashboard-core/resources/js/**/*.d.ts"
+    "packages/dashboard-core/resources/js/**/*.d.ts",
+    "packages/dashboard-core/src/**/Resources/js/**/*.ts",
+    "packages/dashboard-core/src/**/Resources/js/**/*.tsx",
+    "packages/dashboard-core/src/**/Resources/js/**/*.d.ts"
   ]
 }

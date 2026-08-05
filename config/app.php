@@ -107,18 +107,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Deploy Token
-    |--------------------------------------------------------------------------
-    |
-    | Token used by the deploy webhook endpoints to authenticate requests
-    | from the CI/CD pipeline. Set this in your .env file.
-    |
-    */
-
-    'deploy_token' => env('DEPLOY_TOKEN'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

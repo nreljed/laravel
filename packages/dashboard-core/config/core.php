@@ -2,6 +2,7 @@
 
 use Nreljed\DashboardCore\Blog\BlogServiceProvider;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Http\Middleware\HandleInertiaRequests;
 use Nreljed\DashboardCore\Models\User;
 
 return [
@@ -19,6 +20,19 @@ return [
     */
 
     'load_migrations' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inertia Middleware
+    |--------------------------------------------------------------------------
+    |
+    | Middleware class appended to the "web" group that shares the Inertia
+    | page props. Consuming applications may override this with a subclass
+    | that adds project-specific shared data.
+    |
+    */
+
+    'inertia_middleware' => HandleInertiaRequests::class,
 
     /*
     |--------------------------------------------------------------------------

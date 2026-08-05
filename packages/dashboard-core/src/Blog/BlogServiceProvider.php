@@ -6,9 +6,13 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Concerns\InteractsWithFeatures;
+use Nreljed\DashboardCore\Contracts\FeatureProvider;
 
-class BlogServiceProvider extends ServiceProvider
+class BlogServiceProvider extends ServiceProvider implements FeatureProvider
 {
+    use InteractsWithFeatures;
+
     public function name(): string
     {
         return 'Blog';

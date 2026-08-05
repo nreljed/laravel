@@ -27,12 +27,14 @@ export function SiteHeader() {
       >
         Blog
       </Link>
-      <Link
-        href={route("test-posts.index")}
-        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-      >
-        Tests
-      </Link>
+      {route().has("test-posts.index") ? (
+        <Link
+          href={route("test-posts.index")}
+          className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+        >
+          Tests
+        </Link>
+      ) : null}
       <Link
         href={route("about")}
         className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
@@ -100,13 +102,15 @@ export function SiteHeader() {
             >
               Blog
             </Link>
-            <Link
-              href={route("test-posts.index")}
-              className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Tests
-            </Link>
+            {route().has("test-posts.index") ? (
+              <Link
+                href={route("test-posts.index")}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Tests
+              </Link>
+            ) : null}
             <Link
               href={route("about")}
               className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"

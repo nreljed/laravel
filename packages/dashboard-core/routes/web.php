@@ -1,9 +1,11 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Nreljed\DashboardCore\Ai\Controllers\AiProviderController;
+use Nreljed\DashboardCore\Deploy\Controllers\DeployController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\AuditLogController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\BulkUserController;
 use Nreljed\DashboardCore\Http\Controllers\Admin\DatabaseMaintenanceController;
@@ -23,7 +25,42 @@ use Nreljed\DashboardCore\Http\Controllers\NotificationTestController;
 use Nreljed\DashboardCore\Http\Controllers\RecoveryController;
 use Nreljed\DashboardCore\Http\Controllers\SettingsController;
 use Nreljed\DashboardCore\Http\Controllers\UserAccountController;
+use Nreljed\DashboardCore\PublicSite\Controllers\PublicController;
 use Nreljed\DashboardCore\Services\SettingsService;
+
+// ═══════════════════════════════════════════════════
+// PUBLIC FRONTEND Pages — no auth required
+// ═══════════════════════════════════════════════════
+Route::middleware('maintenance')->group(function () {
+    Route::get('/', fn () => Inertia::render('public/welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+    ]))->name('home');
+
+    Route::get('/about', [PublicController::class, 'about'])->name('about');
+    Route::get('/services', [PublicController::class, 'services'])->name('services');
+    Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
+});
+
+// ═══════════════════════════════════════════════════
+// DEPLOY Endpoints — token-protected, no CSRF, rate-limited
+// ═══════════════════════════════════════════════════
+// check + cache-clear accept GET so cron/probe workflows can poll status.
+Route::post('/deploy/upload', [DeployController::class, 'upload'])->middleware('throttle:5,1');
+Route::match(['get', 'post'], '/deploy/cache-clear', [DeployController::class, 'cacheClear'])->middleware('throttle:5,1');
+Route::match(['get', 'post'], '/deploy/check', [DeployController::class, 'check'])->middleware('throttle:5,1');
+Route::post('/deploy/migrate', [DeployController::class, 'migrate'])->middleware('throttle:5,1');
+Route::post('/deploy/create-admin', [DeployController::class, 'createAdmin'])->middleware('throttle:5,1');
+Route::post('/deploy/reset', [DeployController::class, 'resetDatabase'])->middleware('throttle:5,1');
+
+// ═══════════════════════════════════════════════════
+// CSP Report Endpoint — receives violation reports
+// ═══════════════════════════════════════════════════
+Route::post('/csp-report', function (Request $request) {
+    report(new Exception('CSP Violation: '.$request->input('csp-report.effective-directive', 'unknown')));
+
+    return response()->json(['status' => 'ok']);
+})->middleware('throttle:30,1')->name('csp.report');
 
 // ═══════════════════════════════════════════════════
 // MAINTENANCE — status check + bypass (outside maintenance middleware)

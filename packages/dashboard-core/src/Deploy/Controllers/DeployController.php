@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Nreljed\DashboardCore\Deploy\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Nreljed\DashboardCore\Exceptions\DatabaseMaintenanceException;
+use Nreljed\DashboardCore\Http\Controllers\Controller;
+use Nreljed\DashboardCore\Services\CoreVersionService;
 use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
 
 class DeployController extends Controller
@@ -14,7 +16,7 @@ class DeployController extends Controller
     protected function verifyToken(Request $request): void
     {
         $token = $request->input('token');
-        $expected = config('app.deploy_token');
+        $expected = config('deploy.token');
 
         if (! $expected || ! hash_equals((string) $expected, (string) $token)) {
             abort(403, 'Invalid or missing deploy token.');
@@ -406,9 +408,10 @@ class DeployController extends Controller
 
         $versionFile = base_path('.deployed-version');
         $lockFile = base_path('.deploy-lock');
-        $repo = 'nreljed/laravel';
+        $repo = config('deploy.github_repo', 'nreljed/laravel');
+        $lockTtl = (int) config('deploy.lock_ttl', 600);
 
-        if (File::exists($lockFile) && (time() - File::lastModified($lockFile)) < 600) {
+        if (File::exists($lockFile) && (time() - File::lastModified($lockFile)) < $lockTtl) {
             return response()->json(['status' => 'locked']);
         }
         File::put($lockFile, (string) getmypid());
@@ -416,14 +419,14 @@ class DeployController extends Controller
         try {
             $releases = $this->githubApi("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
             if (! $releases || ! isset($releases[0]['tag_name'])) {
-                return response()->json(['status' => 'no-release']);
+                return response()->json(['status' => 'no-release', 'core' => $this->getCoreInfo()]);
             }
 
             $latestTag = $releases[0]['tag_name'];
             $currentTag = File::exists($versionFile) ? trim(File::get($versionFile)) : '';
 
             if ($latestTag === $currentTag) {
-                return response()->json(['status' => 'current', 'tag' => $latestTag]);
+                return response()->json(['status' => 'current', 'tag' => $latestTag, 'core' => $this->getCoreInfo()]);
             }
 
             $assetUrl = '';
@@ -513,10 +516,15 @@ class DeployController extends Controller
                 }
             }
 
-            return response()->json(['status' => 'deployed', 'tag' => $latestTag, 'output' => $output]);
+            return response()->json(['status' => 'deployed', 'tag' => $latestTag, 'output' => $output, 'core' => $this->getCoreInfo()]);
         } finally {
             File::delete($lockFile);
         }
+    }
+
+    private function getCoreInfo(): array
+    {
+        return app(CoreVersionService::class)->info();
     }
 
     private function githubApi(string $url, string $token): ?array

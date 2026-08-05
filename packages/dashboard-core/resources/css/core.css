@@ -1,0 +1,922 @@
+/*
+ * dashboard-core shared Tailwind v4 stylesheet.
+ *
+ * Consuming apps import this from their own resources/css/app.css, AFTER
+ * `@import "tailwindcss"` and their `@source` globs:
+ *
+ *     @import "tw-animate-css";
+ *     @import "<relative-path>/packages/dashboard-core/resources/css/core.css";
+ *
+ * It provides:
+ *   - class-based dark mode + the data-horizontal / data-vertical variants
+ *     used by the core UI kit (tabs, slider, separator, scroll-area, ...)
+ *   - the full design-token set (shadcn/ui base-vega) referenced by core
+ *     components: colors, sidebar, link, table cell fills, map markers
+ *   - Lexical editor + Blog prose styling (checklists, tables, code blocks,
+ *     layout columns, image resizers)
+ *   - the scroll-fade utilities and Base UI menu helpers
+ *
+ * Do not move `@import "tailwindcss"` or `@source` into this file — content
+ * globs are per-app.
+ */
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant data-horizontal (&:is([data-orientation=horizontal]));
+@custom-variant data-vertical (&:is([data-orientation=vertical]));
+
+@theme {
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Link color — distinct from primary for visibility */
+  --link: oklch(0.45 0.18 265);
+  --link-foreground: oklch(0.45 0.18 265);
+
+  /* Table cell background colors — curated palette for the rich-text editor */
+  --cell-bg-gray: oklch(0.97 0 0);
+  --cell-bg-red: oklch(0.95 0.03 25);
+  --cell-bg-orange: oklch(0.95 0.05 50);
+  --cell-bg-yellow: oklch(0.96 0.05 85);
+  --cell-bg-green: oklch(0.95 0.04 150);
+  --cell-bg-blue: oklch(0.95 0.03 255);
+  --cell-bg-purple: oklch(0.95 0.04 300);
+  --cell-bg-teal: oklch(0.95 0.04 185);
+
+  /* Map marker colors */
+  --map-marker-color: #2563eb;
+  --map-marker-fill: #dbeafe;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  /* Link color — distinct from primary for visibility */
+  --link: oklch(0.65 0.18 265);
+  --link-foreground: oklch(0.65 0.18 265);
+
+  /* Table cell background colors — dark mode variants */
+  --cell-bg-gray: oklch(0.27 0 0);
+  --cell-bg-red: oklch(0.27 0.05 25);
+  --cell-bg-orange: oklch(0.27 0.06 50);
+  --cell-bg-yellow: oklch(0.28 0.06 85);
+  --cell-bg-green: oklch(0.27 0.06 150);
+  --cell-bg-blue: oklch(0.27 0.05 255);
+  --cell-bg-purple: oklch(0.27 0.06 300);
+  --cell-bg-teal: oklch(0.27 0.06 185);
+
+  /* Map marker colors */
+  --map-marker-color: #60a5fa;
+  --map-marker-fill: #1e3a5f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-link: var(--link);
+  --color-link-foreground: var(--link-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* scroll-fade-b — used by ui/message-scroller */
+@property --scroll-fade-b {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@theme inline {
+  @keyframes scroll-fade-reveal-b {
+    from {
+      --scroll-fade-b: var(
+        --_scroll-fade-size-b,
+        var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10)))
+      );
+    }
+    to {
+      --scroll-fade-b: 0px;
+    }
+  }
+}
+
+@utility scroll-fade-b {
+  --_scroll-fade-size-b: var(
+    --scroll-fade-b-size,
+    var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10)))
+  );
+  --scroll-fade-mask: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - var(--scroll-fade-b, 0px)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  @supports (animation-timeline: scroll()) {
+    animation: scroll-fade-reveal-b 1ms ease-in-out;
+    animation-timeline: scroll(self y);
+    animation-range: calc(100% - var(--scroll-fade-reveal, calc(var(--spacing) * 24))) 100%;
+    animation-fill-mode: both;
+  }
+
+  @supports not (animation-timeline: scroll()) {
+    --scroll-fade-b: var(--_scroll-fade-size-b);
+  }
+}
+
+@utility scroll-fade-b-* {
+  --scroll-fade-b-size: calc(var(--spacing) * --value(integer));
+  --scroll-fade-b-size: --value([length], [percentage]);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Lexical editor: checklist checkbox styles */
+.lexical-checklist-checked,
+.lexical-checklist-unchecked {
+  position: relative;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+  list-style-type: none;
+  outline: none;
+  display: block;
+  min-height: 1.5em;
+}
+
+.lexical-checklist-checked > *,
+.lexical-checklist-unchecked > * {
+  margin-left: 0.01em;
+}
+
+/* Unchecked checkbox: empty box */
+.lexical-checklist-unchecked::before {
+  content: "\200B" !important;
+  width: 0.9em !important;
+  height: 0.9em !important;
+  top: 50% !important;
+  left: 0 !important;
+  cursor: pointer;
+  display: block !important;
+  background-size: cover;
+  position: absolute !important;
+  transform: translateY(-50%);
+  border: 1px solid var(--border) !important;
+  border-radius: 2px !important;
+}
+
+/* Checked checkbox: filled box */
+.lexical-checklist-checked::before {
+  content: "\200B" !important;
+  width: 0.9em !important;
+  height: 0.9em !important;
+  top: 50% !important;
+  left: 0 !important;
+  cursor: pointer;
+  display: block !important;
+  background-size: cover;
+  position: absolute !important;
+  transform: translateY(-50%);
+  border: 1px solid var(--primary) !important;
+  border-radius: 2px !important;
+  background-color: var(--primary) !important;
+  background-repeat: no-repeat;
+}
+
+/* Checkmark inside checked box */
+.lexical-checklist-checked::after {
+  content: "" !important;
+  cursor: pointer;
+  border-color: white !important;
+  border-style: solid !important;
+  position: absolute !important;
+  display: block !important;
+  top: 45% !important;
+  width: 0.2em !important;
+  left: 0.35em !important;
+  height: 0.4em !important;
+  transform: translateY(-50%) rotate(45deg);
+  border-width: 0 0.1em 0.1em 0 !important;
+}
+
+/* Strikethrough for checked items */
+.lexical-checklist-checked {
+  text-decoration: line-through;
+}
+
+/* Focus state for keyboard navigation */
+.lexical-checklist-unchecked:focus::before,
+.lexical-checklist-checked:focus::before {
+  box-shadow: 0 0 0 2px var(--ring) !important;
+  border-radius: 2px !important;
+}
+
+/* RTL support */
+.lexical-checklist-unchecked[dir="rtl"]::before,
+.lexical-checklist-checked[dir="rtl"]::before {
+  left: auto;
+  right: 0;
+}
+.lexical-checklist-checked[dir="rtl"]::after {
+  left: auto;
+  right: 0.35em;
+}
+
+/* Lexical editor: table styles */
+[data-lexical-editor] table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: fit-content;
+}
+[data-lexical-editor] table td,
+[data-lexical-editor] table th {
+  width: 75px;
+  vertical-align: top;
+  text-align: start;
+  padding: 6px 8px;
+  position: relative;
+  outline: none;
+  overflow: auto;
+  word-break: break-word;
+}
+[data-lexical-editor] table td > *,
+[data-lexical-editor] table th > * {
+  overflow: inherit;
+}
+/* Colgroup col elements set explicit widths via style attribute */
+[data-lexical-editor] table colgroup col {
+  width: auto;
+}
+/* Dark mode: boost table border contrast — the default --border (white 10%) is too subtle for tables,
+   especially between th cells where bg-muted (0.269) and the effective border (~0.285) are nearly identical.
+   20% white gives effective lightness ~0.364, creating visible contrast against both th and td backgrounds. */
+.dark [data-lexical-editor] table td,
+.dark [data-lexical-editor] table th {
+  border-color: oklch(1 0 0 / 20%);
+}
+/* Public blog: responsive tables rendered from Lexical HTML.
+   TableNode.exportDOM() produces bare <table> without classes or <colgroup>
+   (createDOM adds them, exportDOM doesn't), so we must replicate the full
+   editor table styles here. Use table-layout: auto so columns size to their
+   content rather than forcing a rigid 75px width. */
+.prose table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: auto;
+  width: fit-content;
+  min-width: 0;
+}
+.prose table td,
+.prose table th {
+  max-width: 250px;
+  vertical-align: top;
+  text-align: start;
+  padding: 6px 8px;
+  position: relative;
+  overflow: auto;
+  word-break: break-word;
+}
+.prose table td > *,
+.prose table th > * {
+  overflow: inherit;
+}
+/* When colgroup cols exist (from Lexical), respect their explicit widths */
+.prose table colgroup col {
+  width: auto;
+}
+/* Scroll wrapper for responsive tables on mobile */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.5em 0;
+  max-width: 100%;
+}
+/* Table borders — th gets muted bg to match editor */
+.prose table th {
+  background-color: var(--muted);
+}
+.prose table td,
+.prose table th {
+  border: 1px solid var(--border);
+}
+/* Frozen row — first row sticks to top when scrolling (44px = below sticky toolbar at h-16) */
+/* Note: Lexical applies tableFrozenRow class to the wrapper div, not the table element */
+/* Lexical table DOM: colgroup precedes tr, so use :first-of-type not :first-child */
+/* position:sticky needs overflow:clip or visible on scrollable container */
+.table-frozen-row {
+  overflow-x: clip;
+}
+.table-frozen-row > table > tr:first-of-type > td,
+.table-frozen-row > table > tr:first-of-type > th {
+  position: sticky !important;
+  z-index: 2 !important;
+  top: 44px;
+  overflow: clip;
+}
+.table-frozen-row > table > tr:first-of-type > th {
+  background-color: var(--muted);
+}
+.table-frozen-row > table > tr:first-of-type > td {
+  background-color: var(--background);
+}
+/* Bottom border separator on frozen row cells */
+.table-frozen-row > table > tr:first-of-type > td::after,
+.table-frozen-row > table > tr:first-of-type > th::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+/* Frozen column — first column sticks to left when scrolling */
+.table-frozen-col > table > tr > td:first-child,
+.table-frozen-col > table > tr > th:first-child {
+  position: sticky !important;
+  z-index: 2 !important;
+  left: 0;
+}
+.table-frozen-col > table > tr > th:first-child {
+  background-color: var(--muted);
+}
+.table-frozen-col > table > tr > td:first-child {
+  background-color: var(--background);
+}
+/* Right border separator on frozen column cells */
+.table-frozen-col > table > tr > td:first-child::after,
+.table-frozen-col > table > tr > th:first-child::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 100%;
+  border-right: 1px solid var(--border);
+}
+/* Dark mode: boost frozen separator borders to match table cell borders */
+.dark .table-frozen-row > table > tr:first-of-type > td::after,
+.dark .table-frozen-row > table > tr:first-of-type > th::after {
+  border-bottom-color: oklch(1 0 0 / 20%);
+}
+.dark .table-frozen-col > table > tr > td:first-child::after,
+.dark .table-frozen-col > table > tr > th:first-child::after {
+  border-right-color: oklch(1 0 0 / 20%);
+}
+/* Frozen row + frozen column intersection cell */
+.table-frozen-row.table-frozen-col > table > tr:first-of-type > th:first-child {
+  z-index: 3 !important;
+}
+/* Table cell children: inherit overflow so content scrolls with the cell (Firefox workaround) */
+.overflow-auto > table td > *,
+.overflow-auto > table th > * {
+  overflow: inherit;
+}
+/* Table cell selection — semi-transparent highlight visible in both light & dark */
+.lexical-table-cell-selected {
+  caret-color: transparent;
+}
+[contenteditable]:focus-within .lexical-table-cell-selected::after {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background-color: rgba(130, 200, 255, 0.35);
+  content: "";
+  pointer-events: none;
+}
+/* Prevent native text selection from showing during table selection */
+.table-selection *::selection {
+  background-color: transparent;
+}
+/* Table add columns / rows buttons */
+.table-add-columns {
+  position: absolute;
+  background-color: hsl(var(--muted));
+  height: 100%;
+  animation: table-controls 0.2s ease;
+  border: 0;
+  cursor: pointer;
+}
+.table-add-columns::after {
+  content: "+";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.6;
+}
+.table-add-rows {
+  position: absolute;
+  width: calc(100% - 25px);
+  background-color: hsl(var(--muted));
+  animation: table-controls 0.2s ease;
+  border: 0;
+  cursor: pointer;
+}
+.table-add-rows::after {
+  content: "+";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.6;
+}
+.table-add-columns:hover,
+.table-add-rows:hover {
+  background-color: hsl(var(--accent));
+}
+@keyframes table-controls {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+/* Table cell action button container */
+.table-cell-action-btn-container {
+  display: block;
+  right: 5px;
+  top: 6px;
+  position: absolute;
+  z-index: 4;
+  width: 20px;
+  height: 20px;
+}
+.table-cell-action-btn {
+  background-color: hsl(var(--muted));
+  display: block;
+  border: 0;
+  border-radius: 20px;
+  width: 20px;
+  height: 20px;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+}
+.table-cell-action-btn:hover {
+  background-color: hsl(var(--accent));
+}
+/* Table cell resizer handle */
+.table-cell-resizer {
+  position: absolute;
+  right: -4px;
+  height: 100%;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 10;
+  top: 0;
+}
+.lexical-table-resize-handle {
+  position: absolute;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 10;
+}
+.lexical-table-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 1px;
+}
+.lexical-table-resize-handle:hover::after {
+  opacity: 0.5;
+}
+/* Table ruler line shown during resize */
+.lexical-table-cell-resize-ruler {
+  display: block;
+  position: absolute;
+  width: 1px;
+  background-color: var(--primary);
+  height: 100%;
+  top: 0;
+}
+/* Table scroll shadows */
+.table-scroll-shadow-left {
+  box-shadow: inset 10px 0 10px rgba(0, 0, 0, 0.1);
+}
+.table-scroll-shadow-right {
+  box-shadow: inset -10px 0 10px rgba(0, 0, 0, 0.1);
+}
+.table-scroll-shadow-middle {
+  box-shadow:
+    inset 10px 0 10px rgba(0, 0, 0, 0.1),
+    inset -10px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Lexical editor: link color in prose containers (dark mode override) */
+.dark .prose a {
+  color: var(--link) !important;
+  text-decoration: underline !important;
+  text-decoration-color: color-mix(in oklch, var(--link) 40%, transparent) !important;
+  text-underline-offset: 0.2em !important;
+  text-decoration-thickness: 1px !important;
+  font-weight: 500 !important;
+  transition: text-decoration-color 0.15s;
+}
+.dark .prose a:hover {
+  text-decoration-color: var(--link) !important;
+}
+
+/* Lexical editor: code block line numbers (editor only — data-gutter set by @lexical/code-shiki) */
+[data-lexical-editor] code[data-gutter]::before {
+  content: attr(data-gutter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
+  text-align: right;
+  color: var(--muted-foreground);
+  border-right: 1px solid var(--border);
+  padding: 1em 0.6em;
+  white-space: pre-wrap;
+  min-width: 2.5em;
+  opacity: 0.6;
+}
+
+/* Prose code block layout. Shiki highlights tokens inline (github-dark) but its
+   <pre> wrapper — which carries the theme background — is discarded when the
+   frontend re-highlights, so a fixed dark background is required here. */
+.prose pre {
+  background-color: rgb(45, 45, 45) !important;
+  color: #ccc !important;
+  padding: 1em !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 1.5em 0 !important;
+  font-size: 0.875em !important;
+  line-height: 1.7 !important;
+}
+.prose pre code {
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  color: inherit !important;
+}
+
+/* Frontend code block line numbers (mirror of the editor gutter) */
+pre[data-gutter] {
+  position: relative;
+  padding-left: 3.5em !important;
+}
+pre[data-gutter]::before {
+  content: attr(data-gutter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
+  text-align: right;
+  color: var(--muted-foreground);
+  border-right: 1px solid var(--border);
+  padding: 1em 0.6em;
+  white-space: pre-wrap;
+  min-width: 2.5em;
+  opacity: 0.6;
+}
+
+.prose code:not(pre code) {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  padding: 0.2em 0.4em !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875em !important;
+}
+.dark .prose code:not(pre code) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Code block wrapper + copy button (frontend public pages) */
+.code-block-wrapper {
+  position: relative;
+}
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background-color 0.15s,
+    color 0.15s;
+  z-index: 10;
+}
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+.code-copy-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+.code-copy-btn.copied {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+/* Dark mode code block adjustments */
+.dark .prose pre {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* Dark mode: boost prose table border contrast for visibility */
+.dark .prose table td,
+.dark .prose table th {
+  border-color: oklch(1 0 0 / 20%);
+}
+
+/* Lexical editor content: ensure links inside editor also get the right color */
+[data-lexical-editor] a {
+  color: var(--link) !important;
+  text-decoration: underline !important;
+  text-decoration-color: color-mix(in oklch, var(--link) 40%, transparent) !important;
+  text-underline-offset: 0.2em !important;
+  text-decoration-thickness: 1px !important;
+  font-weight: 500 !important;
+}
+
+/* Lexical editor: layout columns (matching Lexical Playground style) */
+[data-lexical-editor] [data-lexical-layout-container] {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0;
+}
+[data-lexical-editor] [data-lexical-layout-item] {
+  border: 1px dashed #ddd;
+  padding: 8px 16px;
+  min-height: 1.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.dark [data-lexical-editor] [data-lexical-layout-item] {
+  border-color: oklch(1 0 0 / 20%);
+}
+/* Responsive modes: 3-tier control for column layouts */
+/* Tablet (≤1023px): "full" mode stacks */
+@media (max-width: 1023px) {
+  [data-lexical-editor] [data-lexical-layout-container][data-responsive-mode="full"],
+  .prose [data-lexical-layout-container][data-responsive-mode="full"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Mobile (≤639px): "full" and "mobile-only" stack */
+@media (max-width: 639px) {
+  [data-lexical-editor] [data-lexical-layout-container][data-responsive-mode="full"],
+  .prose [data-lexical-layout-container][data-responsive-mode="full"],
+  [data-lexical-editor] [data-lexical-layout-container][data-responsive-mode="mobile-only"],
+  .prose [data-lexical-layout-container][data-responsive-mode="mobile-only"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Backward compat: old content without data-responsive-mode stacks on mobile */
+@media (max-width: 639px) {
+  [data-lexical-editor] [data-lexical-layout-container]:not([data-responsive-mode]),
+  .prose [data-lexical-layout-container]:not([data-responsive-mode]) {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Public blog: layout columns rendered from Lexical HTML.
+   LayoutContainerNode.exportDOM() sets inline style="grid-template-columns: ..."
+   but adds no classes, so we target the data attributes. */
+.prose [data-lexical-layout-container] {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0;
+}
+.prose [data-lexical-layout-item] {
+  border: 1px dashed var(--border);
+  padding: 8px 16px;
+  min-height: 1.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.dark .prose [data-lexical-layout-item] {
+  border-color: oklch(1 0 0 / 20%);
+}
+
+/* Lexical editor: image resizer handles */
+.image-resizer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--background);
+  border: 2px solid var(--primary);
+  border-radius: 2px;
+  z-index: 10;
+  box-shadow: 0 0 0 1px var(--border);
+  transition:
+    background-color 0.15s,
+    transform 0.15s;
+}
+.image-resizer:hover {
+  background: var(--primary);
+  transform: scale(1.15);
+}
+.image-resizer-n {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+.image-resizer-ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+.image-resizer-e {
+  top: 50%;
+  right: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+.image-resizer-se {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+.image-resizer-s {
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+.image-resizer-sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+.image-resizer-w {
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+.image-resizer-nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+.image-control-wrapper--resizing {
+  user-select: none;
+}
+
+/* Menu utility classes for Base UI (shadcn/ui base-vega) */
+.cn-menu-target {
+  /* Menu target positioning utility */
+  transform-origin: var(--transform-origin);
+}
+
+.cn-menu-translucent {
+  /* Menu translucency with backdrop blur */
+  background-color: color-mix(in oklch, var(--popover) 80%, transparent);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+/* Draggable block handle — hidden by default, visible on hover */
+.draggable-block-menu {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.draggable-block-menu.draggable-block-menu-visible {
+  opacity: 1;
+}
+.draggable-block-menu:hover {
+  opacity: 1;
+}

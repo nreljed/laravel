@@ -504,7 +504,7 @@ if ($authenticated && \file_exists($autoloadPath)) {
                         \str_contains($content, 'SQLSTATE') ||
                         \str_contains($content, 'sessions')) {
                         check('laravel', '→ Likely session/database issue', false,
-                            'Run: php artisan migrate (or access /migrate.php if available)');
+                            'Run: php artisan migrate');
                     } elseif (\str_contains($content, 'file_put_contents') ||
                         \str_contains($content, 'failed to open stream')) {
                         check('laravel', '→ Likely storage permissions', false,

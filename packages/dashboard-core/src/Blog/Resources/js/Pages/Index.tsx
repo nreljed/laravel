@@ -188,7 +188,7 @@ export default function BlogIndex({ posts, categories }: BlogIndexProps) {
     if (!categoryFilter) return posts;
     return posts.filter((p) => {
       if (categoryFilter === "none") return !p.category;
-      return String(p.category_id) === categoryFilter;
+      return String(p.category?.id) === categoryFilter;
     });
   }, [posts, categoryFilter]);
 

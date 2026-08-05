@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Nreljed\DashboardCore\PublicSite\Controllers;
 
 use Inertia\Inertia;
+use Nreljed\DashboardCore\Http\Controllers\Controller;
 
 class PublicController extends Controller
 {

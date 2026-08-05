@@ -5,6 +5,9 @@ namespace Nreljed\DashboardCore;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,6 +17,14 @@ use Illuminate\Support\ServiceProvider;
 use Nreljed\DashboardCore\Ai\Models\AiProvider;
 use Nreljed\DashboardCore\Ai\Policies\AiProviderPolicy;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Http\Middleware\AdminMiddleware;
+use Nreljed\DashboardCore\Http\Middleware\CheckIpAccess;
+use Nreljed\DashboardCore\Http\Middleware\CheckMaintenanceMode;
+use Nreljed\DashboardCore\Http\Middleware\CheckPermission;
+use Nreljed\DashboardCore\Http\Middleware\CheckRole;
+use Nreljed\DashboardCore\Http\Middleware\ConfigureSessionLifetime;
+use Nreljed\DashboardCore\Http\Middleware\ContentSecurityPolicy;
+use Nreljed\DashboardCore\Http\Middleware\HandleInertiaRequests;
 use Nreljed\DashboardCore\Models\Notification;
 use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\User;
@@ -33,6 +44,8 @@ class DashboardCoreServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/core.php', 'core');
         $this->mergeConfigFrom(__DIR__.'/../config/roles.php', 'roles');
         $this->mergeConfigFrom(__DIR__.'/../config/database-maintenance.php', 'database_maintenance');
+        $this->mergeConfigFrom(__DIR__.'/../config/admin.php', 'admin');
+        $this->mergeConfigFrom(__DIR__.'/../config/deploy.php', 'deploy');
 
         $this->app->singleton(FormattingService::class);
         $this->app->singleton(FeatureRegistry::class);
@@ -49,6 +62,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
         $this->loadRoutes();
         $this->loadConsoleRoutes();
 
+        $this->configureMiddleware();
         $this->configureRateLimiting();
 
         Gate::policy(Post::class, PostPolicy::class);
@@ -78,6 +92,8 @@ class DashboardCoreServiceProvider extends ServiceProvider
                 __DIR__.'/../config/core.php' => config_path('core.php'),
                 __DIR__.'/../config/roles.php' => config_path('roles.php'),
                 __DIR__.'/../config/database-maintenance.php' => config_path('database-maintenance.php'),
+                __DIR__.'/../config/admin.php' => config_path('admin.php'),
+                __DIR__.'/../config/deploy.php' => config_path('deploy.php'),
             ], 'core-config');
 
             $this->publishes([
@@ -96,6 +112,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
     {
         $this->commands([
             Console\Commands\CleanupOrphanMedia::class,
+            Console\Commands\CoreVersion::class,
             Console\Commands\CreateAdmin::class,
             Console\Commands\CreateRole::class,
             Console\Commands\ListPermissions::class,
@@ -131,6 +148,41 @@ class DashboardCoreServiceProvider extends ServiceProvider
 
             return $notification->toMail($notifiable);
         });
+    }
+
+    protected function configureMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        $router->aliasMiddleware('admin', AdminMiddleware::class);
+        $router->aliasMiddleware('role', CheckRole::class);
+        $router->aliasMiddleware('permission', CheckPermission::class);
+        $router->aliasMiddleware('maintenance', CheckMaintenanceMode::class);
+        $router->aliasMiddleware('session-lifetime', ConfigureSessionLifetime::class);
+        $router->aliasMiddleware('ip-access', CheckIpAccess::class);
+
+        $webMiddleware = [
+            ConfigureSessionLifetime::class,
+            CheckIpAccess::class,
+            ContentSecurityPolicy::class,
+            config('core.inertia_middleware', HandleInertiaRequests::class),
+            AddLinkHeadersForPreloadedAssets::class,
+        ];
+
+        $kernel = $this->app->make(HttpKernelContract::class);
+
+        foreach ($webMiddleware as $middleware) {
+            $kernel->appendMiddlewareToGroup('web', $middleware);
+        }
+
+        PreventRequestForgery::except([
+            'dashboard/account/avatar',
+            'deploy/*',
+            'api/notifications/unread-count',
+            'api/notifications/recent',
+            'api/notifications/',
+            'csp-report',
+        ]);
     }
 
     protected function configureRateLimiting(): void

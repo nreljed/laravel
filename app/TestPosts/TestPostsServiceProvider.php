@@ -6,9 +6,13 @@ use App\TestPosts\Models\TestPost;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Nreljed\DashboardCore\Concerns\InteractsWithFeatures;
+use Nreljed\DashboardCore\Contracts\FeatureProvider;
 
-class TestPostsServiceProvider extends ServiceProvider
+class TestPostsServiceProvider extends ServiceProvider implements FeatureProvider
 {
+    use InteractsWithFeatures;
+
     public function name(): string
     {
         return 'TestPosts';
@@ -105,7 +109,7 @@ class TestPostsServiceProvider extends ServiceProvider
         return [];
     }
 
-    public function getGalleryConfigs(): array
+    public function getGalleryConfig(): array
     {
         return [
             'test_post_gallery' => [

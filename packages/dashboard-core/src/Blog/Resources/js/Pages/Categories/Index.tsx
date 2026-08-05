@@ -9,9 +9,6 @@ import {
   ChevronRight,
   Search,
   X,
-  Globe,
-  FileText,
-  Layers,
 } from "lucide-react";
 import {
   DndContext,
@@ -46,7 +43,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
 } from "@/Components/ui/sheet";
 import {
   Empty,
@@ -96,17 +92,6 @@ function buildTree(categories: Category[]): TreeNode[] {
   }
 
   return roots;
-}
-
-function flattenTree(nodes: TreeNode[]): Category[] {
-  const result: Category[] = [];
-  for (const node of nodes) {
-    result.push({ ...node, children: undefined } as Category);
-    if (node.children.length > 0) {
-      result.push(...flattenTree(node.children));
-    }
-  }
-  return result;
 }
 
 function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
@@ -362,10 +347,6 @@ export default function PostCategoriesIndex({ categories }: Props) {
 
   const deselectAll = useCallback(() => {
     setSelectedIds(new Set());
-  }, []);
-
-  const handleDragStart = useCallback(() => {
-    setActiveId(null);
   }, []);
 
   const handleDragEnd = useCallback(

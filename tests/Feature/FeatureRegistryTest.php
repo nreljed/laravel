@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\DashboardCore\Contracts\FeatureProvider;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Tests\TestCase;
 
@@ -53,5 +54,31 @@ class FeatureRegistryTest extends TestCase
         $registry = app(FeatureRegistry::class);
         $types = $registry->getAllNotificationTypes();
         $this->assertIsArray($types);
+    }
+
+    public function test_all_configured_feature_providers_implement_the_contract(): void
+    {
+        foreach (config('core.features', []) as $class) {
+            $provider = app()->getProvider($class);
+            $this->assertNotNull($provider, "Feature provider [{$class}] is not registered.");
+            $this->assertInstanceOf(
+                FeatureProvider::class,
+                $provider,
+                "Feature provider [{$class}] must implement ".FeatureProvider::class.'.'
+            );
+            $this->assertNotSame('', $provider->slug(), "Feature provider [{$class}] must expose a slug.");
+        }
+    }
+
+    public function test_feature_registry_resolves_settings_routes_without_throwing(): void
+    {
+        $registry = app(FeatureRegistry::class);
+        $routes = $registry->getAllSettingsRoutes();
+
+        $this->assertIsArray($routes);
+        foreach ($routes as $route) {
+            $this->assertIsString($route);
+            $this->assertStringStartsWith('/', $route);
+        }
     }
 }

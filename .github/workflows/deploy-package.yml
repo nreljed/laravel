@@ -150,7 +150,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path "storage\app" -Force | Out-Null
           Set-Content -Path "storage\app\core.sha" -Value "$env:GITHUB_SHA" -NoNewline -Encoding ASCII
-          Write-Output "core.sha recorded: $env:GITHUB_SHA"
+          @{ name = "dashboard-core"; version = "${{ steps.version.outputs.version }}"; sha = "$env:GITHUB_SHA" } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
+          Write-Output "core.json recorded: $env:GITHUB_SHA @ ${{ steps.version.outputs.version }}"
 
       - name: Create deploy.zip
         shell: pwsh
