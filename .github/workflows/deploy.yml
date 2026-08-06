@@ -81,21 +81,21 @@ jobs:
           # Capture upload response: check for JSON (real app) vs HTML (Cloudflare)
           UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
             -F "file=@deploy.zip;filename=deploy.zip" \
-            "https://laravel.tunispromo.tn/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}" 2>&1)
+            "${{ vars.APP_URL }}/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}" 2>&1)
           HTTP_CODE=$(echo "$UPLOAD_RESP" | tail -1)
           BODY=$(echo "$UPLOAD_RESP" | sed '$d')
           if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | head -1 | grep -q '^{'; then
             echo "Deployed via /deploy/upload"
             echo "$BODY" | head -1
           elif CHECK_RESP=$(curl -s -X POST --max-time 300 \
-            "https://laravel.tunispromo.tn/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}" 2>&1) \
+            "${{ vars.APP_URL }}/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}" 2>&1) \
             && echo "$CHECK_RESP" | head -1 | grep -q '^{'; then
             echo "Deployed via /deploy/check (GitHub API)"
             echo "$CHECK_RESP" | head -1
           else
             echo "Deploy failed. Release created at:"
-            echo "https://github.com/nreljed/laravel/releases/tag/$VER"
+            echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
             echo "Manual deploy: download deploy.zip from release, upload to server, extract, then visit:"
-            echo "https://laravel.tunispromo.tn/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+            echo "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
             exit 1
           fi

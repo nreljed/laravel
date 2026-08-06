@@ -41,4 +41,4 @@ jobs:
             -X POST \
             -H "Content-Type: application/json" \
             -d '{"token":"${{ secrets.DEPLOY_TOKEN }}","confirm":"${{ inputs.confirm }}","with_seed":"${{ inputs.with_seed }}","purge_media":"${{ inputs.purge_media }}"}' \
-            "https://laravel.tunispromo.tn/deploy/reset"
+            "${{ vars.APP_URL }}/deploy/reset"

@@ -126,7 +126,7 @@ jobs:
           cat > .env <<EOF
           APP_NAME=Laravel
           APP_ENV=local
-          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_KEY=${{ secrets.APP_KEY }}
           APP_DEBUG=true
           APP_URL=http://localhost
           DB_CONNECTION=sqlite
@@ -208,9 +208,9 @@ jobs:
           cat > .env.prod <<EOF
           APP_NAME=Laravel
           APP_ENV=production
-          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_KEY=${{ secrets.APP_KEY }}
           APP_DEBUG=false
-          APP_URL=https://laravel.tunispromo.tn
+          APP_URL=${{ vars.APP_URL }}
           APP_LOCALE=en
           APP_FALLBACK_LOCALE=en
           BCRYPT_ROUNDS=12
@@ -224,7 +224,7 @@ jobs:
           DB_PASSWORD=$DB_PASSWORD
           SESSION_DRIVER=file
           SESSION_LIFETIME=120
-          SESSION_DOMAIN=.tunispromo.tn
+          SESSION_DOMAIN=${{ vars.SESSION_DOMAIN }}
           BROADCAST_CONNECTION=log
           FILESYSTEM_DISK=local
           QUEUE_CONNECTION=sync

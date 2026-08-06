@@ -23,4 +23,4 @@ jobs:
         run: |
           curl -sf --max-time 120 \
             -X POST \
-            "https://laravel.tunispromo.tn/deploy/migrate?token=${{ secrets.DEPLOY_TOKEN }}"
+            "${{ vars.APP_URL }}/deploy/migrate?token=${{ secrets.DEPLOY_TOKEN }}"
