@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      delete_stale:
+        description: "Delete remote files not present locally (full sync only). Use for recovery when server tree is mixed/stale."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   ftp-sync:
@@ -106,9 +111,27 @@ jobs:
       - name: Build app (full mode)
         if: inputs.mode == 'full' && inputs.probe_only != true
         run: |
+          $dbPath = (Get-Location).Path.Replace('\', '/') + '/database/database.sqlite'
+          @"
+          APP_NAME=Laravel
+          APP_ENV=local
+          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_DEBUG=true
+          APP_URL=http://localhost
+          DB_CONNECTION=sqlite
+          DB_DATABASE=$dbPath
+          SESSION_DRIVER=file
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          DEPLOY_TOKEN=build
+          GITHUB_TOKEN=build
+          "@ | Set-Content -Path .env -Encoding UTF8
+          New-Item -ItemType File -Path database/database.sqlite -Force
           composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
-          npm ci --ignore-scripts --no-audit --no-fund
+          npm install --ignore-scripts --no-audit --no-fund
           npm run build
+          Remove-Item -Force .env -ErrorAction SilentlyContinue
 
       - name: Sync full app (full mode)
         if: inputs.mode == 'full' && inputs.probe_only != true
@@ -120,9 +143,11 @@ jobs:
         run: |
           set -e
           PORT="${FTP_PORT:-21}"
+          DEL_ARGS=""
+          if [ "${{ inputs.delete_stale }}" = "true" ]; then DEL_ARGS="--delete"; fi
           for DIR in artisan composer.json composer.lock app bootstrap config database/migrations database/seeders public resources routes vendor deploy.php; do
             [ -e "$DIR" ] || { echo "Skipping missing: $DIR"; continue; }
             REMOTE_DIR="$REMOTE_BASE/$(dirname "$DIR")"
             echo "Syncing: $DIR -> $REMOTE_DIR"
-            timeout 900 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$DIR' '$REMOTE_DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
+            timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs $DEL_ARGS '$DIR' '$REMOTE_DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
           done
