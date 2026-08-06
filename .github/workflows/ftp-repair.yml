@@ -231,6 +231,7 @@ jobs:
           CACHE_STORE=file
           DEPLOY_TOKEN=$DEPLOY_TOKEN
           GITHUB_TOKEN=$GH_TOKEN
+          DB_MAINTENANCE_ENABLED=${{ vars.DB_MAINTENANCE_ENABLED || 'false' }}
           EOF
           echo "Uploading regenerated .env -> $REMOTE_BASE/.env"
           timeout 120 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_BASE'; put -O '$REMOTE_BASE' .env.prod -o .env; quit"

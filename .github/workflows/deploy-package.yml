@@ -158,6 +158,7 @@ jobs:
           CACHE_STORE=file
           DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
           GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+          DB_MAINTENANCE_ENABLED=${{ vars.DB_MAINTENANCE_ENABLED || 'false' }}
           '@ | Set-Content -Path .env -Encoding UTF8
 
       - name: Copy deploy script
