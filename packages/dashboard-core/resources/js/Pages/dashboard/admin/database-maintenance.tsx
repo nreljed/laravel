@@ -422,12 +422,12 @@ export default function DatabaseMaintenance({ status }: DatabaseMaintenanceProps
           <Table2 />
           <AlertTitle>How to enable this page</AlertTitle>
           <AlertDescription>
-            The UI is gated by the <span className="font-mono">DB_MAINTENANCE_ENABLED</span>{" "}
-            environment variable. It defaults to enabled everywhere except production. Set it to
-            <span className="font-mono"> true</span> explicitly (alongside{" "}
-            <span className="font-mono">DB_CONNECTION</span> and the{" "}
-            <span className="font-mono">ADMIN_*</span> variables) to allow the reset in staging or
-            production.
+            The UI is gated by the <span className="font-mono">database_maintenance_enabled</span>{" "}
+            setting. It defaults to enabled everywhere except production. Use Settings → Developer →
+            Database Maintenance UI (password-protected) to toggle it on, including in production.
+            When the setting is absent, the{" "}
+            <span className="font-mono">DB_MAINTENANCE_ENABLED</span> environment variable applies
+            instead.
           </AlertDescription>
         </Alert>
       </div>

@@ -7,6 +7,7 @@ use Inertia\Middleware;
 use Nreljed\DashboardCore\Http\Controllers\EmailSettingsController;
 use Nreljed\DashboardCore\Models\Notification;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
 use Nreljed\DashboardCore\Services\EmailSettingsService;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\NotificationService;
@@ -100,7 +101,13 @@ class HandleInertiaRequests extends Middleware
             'featureNavItems' => $this->getFeatureNavItems(...),
             'featureData' => $this->getFeatureSharedData(...),
             'features' => [
-                'databaseMaintenanceEnabled' => fn () => (bool) config('database_maintenance.enabled', false),
+                'databaseMaintenanceEnabled' => function () {
+                    try {
+                        return app(DatabaseMaintenanceService::class)->isEnabled();
+                    } catch (\Throwable) {
+                        return (bool) config('database_maintenance.enabled', false);
+                    }
+                },
             ],
             'modules' => $this->getModules(...),
             'emailSettings' => $this->getEmailSettings(...),

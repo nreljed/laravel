@@ -34,11 +34,25 @@ class DatabaseMaintenanceService
 
     /**
      * Whether the destructive UI is allowed to run in this environment.
-     * Controlled by the DB_MAINTENANCE_ENABLED env flag (defaults to enabled
-     * everywhere except production).
+     *
+     * The admin-set `database_maintenance_enabled` setting takes precedence
+     * when present; otherwise it falls back to the DB_MAINTENANCE_ENABLED env
+     * flag (defaults to enabled everywhere except production).
      */
     public function isEnabled(): bool
     {
+        try {
+            if (Schema::hasTable('settings')) {
+                $setting = SettingsService::get('database_maintenance_enabled');
+
+                if ($setting !== null && $setting !== '') {
+                    return (bool) $setting;
+                }
+            }
+        } catch (\Throwable) {
+            // Fall back to config when the settings store is unavailable.
+        }
+
         return (bool) config('database_maintenance.enabled', false);
     }
 

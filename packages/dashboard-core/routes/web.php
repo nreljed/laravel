@@ -205,7 +205,13 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
             Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
             Route::get('/security', [SettingsController::class, 'security'])->name('security');
             Route::get('/maintenance', [SettingsController::class, 'maintenance'])->name('maintenance');
+            Route::get('/dev', [SettingsController::class, 'dev'])->name('dev');
             Route::get('/ip-access', [SettingsController::class, 'ipAccess'])->name('ip-access');
+
+            // Database maintenance toggle (danger zone) — admin only, password-confirmed
+            Route::middleware(['admin', 'permission:manage-options'])
+                ->post('/dev/database-maintenance-toggle', [SettingsController::class, 'toggleDatabaseMaintenance'])
+                ->name('dev.database-maintenance-toggle');
 
             Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('logo.upload');
             Route::delete('/logo', [SettingsController::class, 'deleteLogo'])->name('logo.delete');

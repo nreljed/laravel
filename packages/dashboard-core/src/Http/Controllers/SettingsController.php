@@ -10,12 +10,14 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Nreljed\DashboardCore\Enums\AuditAction;
+use Nreljed\DashboardCore\Http\Requests\ToggleDatabaseMaintenanceRequest;
 use Nreljed\DashboardCore\Http\Requests\UpdateSettingsRequest;
 use Nreljed\DashboardCore\Http\Requests\UploadFaviconRequest;
 use Nreljed\DashboardCore\Http\Requests\UploadLogoRequest;
 use Nreljed\DashboardCore\Models\IpAccessRule;
 use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Services\AuditService;
+use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
 use Nreljed\DashboardCore\Services\SettingsService;
 
 class SettingsController extends Controller
@@ -88,6 +90,30 @@ class SettingsController extends Controller
         return $this->renderPage('dashboard/admin/settings/maintenance', [
             'settings' => Schema::hasTable('settings') ? SettingsService::getGroup('maintenance') : new \stdClass,
         ]);
+    }
+
+    public function dev(): Response
+    {
+        return $this->renderPage('dashboard/admin/settings/dev', [
+            'databaseMaintenanceEnabled' => app(DatabaseMaintenanceService::class)->isEnabled(),
+            'isProduction' => app()->isProduction(),
+        ]);
+    }
+
+    public function toggleDatabaseMaintenance(ToggleDatabaseMaintenanceRequest $request): RedirectResponse
+    {
+        $enabled = $request->boolean('enabled');
+
+        SettingsService::set('database_maintenance_enabled', $enabled ? '1' : '0');
+        SettingsService::clearCache();
+
+        AuditService::log(AuditAction::SettingsChanged, $request->user()->id, [
+            'changed_keys' => ['database_maintenance_enabled'],
+        ]);
+
+        return back()->with('status', $enabled
+            ? 'Database maintenance UI enabled. Accessible from Administration → Database Maintenance.'
+            : 'Database maintenance UI disabled.');
     }
 
     public function ipAccess(): Response

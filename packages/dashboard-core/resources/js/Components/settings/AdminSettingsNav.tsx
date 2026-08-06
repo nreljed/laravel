@@ -9,6 +9,7 @@ import {
   Mail,
   Wrench,
   Menu,
+  TerminalSquare,
   type LucideIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/Components/ui/sheet";
@@ -49,6 +50,10 @@ const NAV_ITEMS: NavCategory[] = [
     label: "Maintenance",
     items: [{ icon: Wrench, label: "Maintenance", route: "dashboard.admin.settings.maintenance" }],
   },
+  {
+    label: "Developer",
+    items: [{ icon: TerminalSquare, label: "Developer", route: "dashboard.admin.settings.dev" }],
+  },
 ];
 
 function getActiveRoute(url: string): string {
@@ -58,6 +63,7 @@ function getActiveRoute(url: string): string {
   if (url.includes("/settings/email")) return "dashboard.admin.settings.email";
   if (url.includes("/settings/maintenance")) return "dashboard.admin.settings.maintenance";
   if (url.includes("/settings/ip-access")) return "dashboard.admin.settings.ip-access";
+  if (url.includes("/settings/dev")) return "dashboard.admin.settings.dev";
   return "dashboard.admin.settings.general";
 }
 
