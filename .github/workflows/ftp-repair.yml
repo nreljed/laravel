@@ -1,0 +1,121 @@
+name: FTP Repair / Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "partial = upload listed paths only | full = build + sync whole app"
+        required: true
+        type: choice
+        options:
+          - partial
+          - full
+        default: partial
+      source_ref:
+        description: "Git ref to take files from (tag, branch, or commit SHA)"
+        required: false
+        default: "main"
+      paths:
+        description: "Newline-separated repo-relative files/dirs to upload (partial mode)"
+        required: false
+        default: "app/TestPosts/TestPostsServiceProvider.php"
+      remote_base:
+        description: "Remote base dir under FTP root (e.g. /public_html or /)"
+        required: false
+        default: "/public_html"
+      probe_only:
+        description: "Only list remote dirs to map the FTP layout, then stop"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  ftp-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+      - name: Probe remote layout
+        if: inputs.probe_only == true
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          PORT="${FTP_PORT:-21}"
+          lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "ls -la; bye"
+
+      - name: Upload paths (partial mode)
+        if: inputs.mode == 'partial' && inputs.probe_only != true
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          REMOTE_BASE: ${{ inputs.remote_base }}
+        run: |
+          set -e
+          PORT="${FTP_PORT:-21}"
+          while IFS= read -r P; do
+            [ -z "$P" ] && continue
+            case "$P" in
+              *.env|*.env.*|*/\.env*) echo "Refusing .env upload: $P"; exit 1 ;;
+            esac
+            [ -e "$P" ] || { echo "Missing local path: $P"; exit 1; }
+            REMOTE_DIR="$REMOTE_BASE/$(dirname "$P")"
+            if [ -f "$P" ]; then
+              echo "Uploading file: $P -> $REMOTE_DIR"
+              lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "mkdir -p '$REMOTE_DIR'; put -O '$REMOTE_DIR' '$P'; bye"
+            else
+              echo "Mirroring dir: $P -> $REMOTE_DIR"
+              lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$P' '$REMOTE_DIR'; bye"
+            fi
+          done <<< "${{ inputs.paths }}"
+
+      - name: Setup PHP
+        if: inputs.mode == 'full' && inputs.probe_only != true
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          tools: composer:v2
+
+      - name: Setup Node
+        if: inputs.mode == 'full' && inputs.probe_only != true
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Build app (full mode)
+        if: inputs.mode == 'full' && inputs.probe_only != true
+        run: |
+          composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+
+      - name: Sync full app (full mode)
+        if: inputs.mode == 'full' && inputs.probe_only != true
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          REMOTE_BASE: ${{ inputs.remote_base }}
+        run: |
+          set -e
+          PORT="${FTP_PORT:-21}"
+          for DIR in artisan composer.json composer.lock app bootstrap config database/migrations database/seeders public resources routes vendor deploy.php; do
+            [ -e "$DIR" ] || { echo "Skipping missing: $DIR"; continue; }
+            REMOTE_DIR="$REMOTE_BASE/$(dirname "$DIR")"
+            echo "Syncing: $DIR -> $REMOTE_DIR"
+            lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$DIR' '$REMOTE_DIR'; bye"
+          done
