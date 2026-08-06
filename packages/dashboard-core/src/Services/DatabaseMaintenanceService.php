@@ -117,11 +117,15 @@ class DatabaseMaintenanceService
 
             $this->disableMaintenanceMode($output);
 
-            AuditService::log(
-                $withSeed ? AuditAction::DatabaseReset : AuditAction::DatabaseReseed,
-                $userId ?? 0,
-                ['with_seed' => $withSeed, 'purge_media' => $purgeMedia],
-            );
+            try {
+                AuditService::log(
+                    $withSeed ? AuditAction::DatabaseReset : AuditAction::DatabaseReseed,
+                    $userId ?? 0,
+                    ['with_seed' => $withSeed, 'purge_media' => $purgeMedia],
+                );
+            } catch (\Throwable) {
+                // Best-effort — a failed audit write must never fail a completed reset.
+            }
 
             $this->notifyAdmins($withSeed, $purgeMedia);
 

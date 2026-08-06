@@ -8,11 +8,11 @@ use Nreljed\DashboardCore\Models\AuditLog;
 
 class AuditService
 {
-    public static function log(AuditAction $action, int $userId, array $context = []): void
+    public static function log(AuditAction $action, int $userId = 0, array $context = []): void
     {
         AuditLog::create([
             'action' => $action->value,
-            'user_id' => $userId,
+            'user_id' => $userId ?: null,
             'ip' => request()->ip() ?? 'unknown',
             'user_agent' => request()->userAgent() ?? '',
             'context' => ! empty($context) ? $context : null,
