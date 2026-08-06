@@ -99,8 +99,11 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}-${{ hashFiles('packages/dashboard-core/**') }}
 
-      - name: Install Composer dependencies (dev)
-        run: composer install --prefer-dist --no-interaction --no-scripts
+      - name: Install Composer dependencies (no-dev)
+        # --no-dev keeps dev-only packages (laravel/boost, telescope, pint, pail...)
+        # out of the deploy.zip. A dev-built vendor was the source of the
+        # "Class Laravel\Boost\BoostServiceProvider not found" boot failure.
+        run: composer install --no-dev --prefer-dist --no-interaction --no-scripts
 
       - name: Package Discover
         run: php artisan package:discover --ansi
