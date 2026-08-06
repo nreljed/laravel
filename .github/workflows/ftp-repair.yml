@@ -51,8 +51,9 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
+          set -x
           PORT="${FTP_PORT:-21}"
-          lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "ls -la; bye"
+          timeout 60 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 1; set net:reconnect-interval-base 1; set ftp:passive-mode on; set ftp:ssl-allow false; ls -la; quit" || echo "LFTP_PROBE_EXIT=$?"
 
       - name: Upload paths (partial mode)
         if: inputs.mode == 'partial' && inputs.probe_only != true
@@ -74,10 +75,10 @@ jobs:
             REMOTE_DIR="$REMOTE_BASE/$(dirname "$P")"
             if [ -f "$P" ]; then
               echo "Uploading file: $P -> $REMOTE_DIR"
-              lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "mkdir -p '$REMOTE_DIR'; put -O '$REMOTE_DIR' '$P'; bye"
+              timeout 120 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; put -O '$REMOTE_DIR' '$P'; quit" || { echo "FAILED: $P"; exit 1; }
             else
               echo "Mirroring dir: $P -> $REMOTE_DIR"
-              lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$P' '$REMOTE_DIR'; bye"
+              timeout 600 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$P' '$REMOTE_DIR'; quit" || { echo "FAILED: $P"; exit 1; }
             fi
           done <<< "${{ inputs.paths }}"
 
@@ -117,5 +118,5 @@ jobs:
             [ -e "$DIR" ] || { echo "Skipping missing: $DIR"; continue; }
             REMOTE_DIR="$REMOTE_BASE/$(dirname "$DIR")"
             echo "Syncing: $DIR -> $REMOTE_DIR"
-            lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$DIR' '$REMOTE_DIR'; bye"
+            timeout 900 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$DIR' '$REMOTE_DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
           done
