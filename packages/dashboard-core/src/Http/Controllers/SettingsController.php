@@ -105,7 +105,6 @@ class SettingsController extends Controller
         $enabled = $request->boolean('enabled');
 
         SettingsService::set('database_maintenance_enabled', $enabled ? '1' : '0');
-        SettingsService::clearCache();
 
         AuditService::log(AuditAction::SettingsChanged, $request->user()->id, [
             'changed_keys' => ['database_maintenance_enabled'],
