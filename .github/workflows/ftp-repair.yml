@@ -33,6 +33,15 @@ on:
         required: false
         type: boolean
         default: false
+      restore_env:
+        description: "Regenerate the production .env from the deploy-package template + GitHub secrets and upload it. Use ONLY to recover a deleted/missing server .env."
+        required: false
+        type: boolean
+        default: false
+      cleanup_paths:
+        description: "Newline-separated remote paths (relative to remote_base) to delete recursively BEFORE syncing. Use to remove misplaced dirs/files left by a bad run (e.g. Http, Policies, Providers, TestPosts at root)."
+        required: false
+        default: ""
 
 jobs:
   ftp-sync:
@@ -84,13 +93,13 @@ jobs:
               *.env|*.env.*|*/\.env*) echo "Refusing .env upload: $P"; exit 1 ;;
             esac
             [ -e "$P" ] || { echo "Missing local path: $P"; exit 1; }
-            REMOTE_DIR="$REMOTE_BASE/$(dirname "$P")"
             if [ -f "$P" ]; then
+              REMOTE_DIR="$REMOTE_BASE/$(dirname "$P")"
               echo "Uploading file: $P -> $REMOTE_DIR"
               timeout 120 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; put -O '$REMOTE_DIR' '$P'; quit" || { echo "FAILED: $P"; exit 1; }
             else
-              echo "Mirroring dir: $P -> $REMOTE_DIR"
-              timeout 600 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs '$P' '$REMOTE_DIR'; quit" || { echo "FAILED: $P"; exit 1; }
+              echo "Mirroring dir: $P -> $REMOTE_BASE/$P"
+              timeout 600 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_BASE'; mirror -R --parallel=4 --no-empty-dirs '$P' '$REMOTE_BASE/$P'; quit" || { echo "FAILED: $P"; exit 1; }
             fi
           done <<< "${{ inputs.paths }}"
 
@@ -135,6 +144,23 @@ jobs:
           npm run build
           rm -f .env
 
+      - name: Cleanup stale remote paths
+        if: inputs.cleanup_paths != ''
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          REMOTE_BASE: ${{ inputs.remote_base }}
+        run: |
+          set -e
+          PORT="${FTP_PORT:-21}"
+          while IFS= read -r P; do
+            [ -z "$P" ] && continue
+            TARGET="$REMOTE_BASE/$P"
+            echo "Removing remote path: $TARGET"
+            timeout 300 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; rm -rf '$TARGET'; quit" || { echo "FAILED rm: $TARGET"; exit 1; }
+          done <<< "${{ inputs.cleanup_paths }}"
+
       - name: Sync full app (full mode)
         if: inputs.mode == 'full' && inputs.probe_only != true
         env:
@@ -148,12 +174,64 @@ jobs:
           DEL_ARGS=""
           if [ "${{ inputs.delete_stale }}" = "true" ]; then DEL_ARGS="--delete"; fi
           BASE="$REMOTE_BASE"
-          for DIR in artisan composer.json composer.lock app bootstrap config database/migrations database/seeders public resources routes vendor deploy.php; do
+          # Mirrors the deploy.zip layout (deploy-package.yml). Each dir syncs into
+          # its own remote subdir so --delete only prunes that subtree, never the root.
+          for DIR in artisan composer.json composer.lock package.json package-lock.json app bootstrap config database public resources routes vendor deploy.php; do
             [ -e "$DIR" ] || { echo "Skipping missing: $DIR"; continue; }
             echo "Syncing: $DIR"
             if [ -f "$DIR" ]; then
               timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$BASE'; put -O '$BASE' '$DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
             else
-              timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mirror -R --parallel=4 --no-empty-dirs $DEL_ARGS '$DIR' '$BASE/$DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
+              # storage synced WITHOUT --delete: preserves server uploads/sessions/logs,
+              # only adds scaffolding + core.sha/core.json (matches deploy extract semantics).
+              TARGET="$BASE/$DIR"
+              if [ "$DIR" = "storage" ]; then DEL_ARGS_TARGET=""; else DEL_ARGS_TARGET="$DEL_ARGS"; fi
+              timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$BASE'; mirror -R --parallel=4 --no-empty-dirs $DEL_ARGS_TARGET '$DIR' '$TARGET'; quit" || { echo "FAILED: $DIR"; exit 1; }
             fi
           done
+
+      - name: Restore production .env
+        if: inputs.restore_env == true
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          REMOTE_BASE: ${{ inputs.remote_base }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -e
+          PORT="${FTP_PORT:-21}"
+          cat > .env.prod <<EOF
+          APP_NAME=Laravel
+          APP_ENV=production
+          APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
+          APP_DEBUG=false
+          APP_URL=https://laravel.tunispromo.tn
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          BCRYPT_ROUNDS=12
+          LOG_CHANNEL=stack
+          LOG_LEVEL=error
+          DB_CONNECTION=mysql
+          DB_HOST=localhost
+          DB_PORT=3306
+          DB_DATABASE=$DB_DATABASE
+          DB_USERNAME=$DB_USERNAME
+          DB_PASSWORD=$DB_PASSWORD
+          SESSION_DRIVER=file
+          SESSION_LIFETIME=120
+          SESSION_DOMAIN=.tunispromo.tn
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          DEPLOY_TOKEN=$DEPLOY_TOKEN
+          GITHUB_TOKEN=$GH_TOKEN
+          EOF
+          echo "Uploading regenerated .env -> $REMOTE_BASE/.env"
+          timeout 120 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_BASE'; put -O '$REMOTE_BASE' .env.prod -o .env; quit"
+          rm -f .env.prod
