@@ -147,14 +147,13 @@ jobs:
           PORT="${FTP_PORT:-21}"
           DEL_ARGS=""
           if [ "${{ inputs.delete_stale }}" = "true" ]; then DEL_ARGS="--delete"; fi
+          BASE="$REMOTE_BASE"
           for DIR in artisan composer.json composer.lock app bootstrap config database/migrations database/seeders public resources routes vendor deploy.php; do
             [ -e "$DIR" ] || { echo "Skipping missing: $DIR"; continue; }
-            REMOTE_DIR="$REMOTE_BASE/$(dirname "$DIR")"
-            REMOTE_DIR="${REMOTE_DIR#//}"
-            echo "Syncing: $DIR -> $REMOTE_DIR"
+            echo "Syncing: $DIR"
             if [ -f "$DIR" ]; then
-              timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; put -O '$REMOTE_DIR' '$DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
+              timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$BASE'; put -O '$BASE' '$DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
             else
-              timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mkdir -p '$REMOTE_DIR'; mirror -R --parallel=4 --no-empty-dirs $DEL_ARGS '$DIR' '$REMOTE_DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
+              timeout 1800 lftp -u "$FTP_USER" -p "$PORT" "$FTP_HOST" -e "set net:timeout 15; set net:max-retries 2; set ftp:passive-mode on; set ftp:ssl-allow false; mirror -R --parallel=4 --no-empty-dirs $DEL_ARGS '$DIR' '$BASE/$DIR'; quit" || { echo "FAILED: $DIR"; exit 1; }
             fi
           done
