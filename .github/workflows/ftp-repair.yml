@@ -176,7 +176,7 @@ jobs:
           BASE="$REMOTE_BASE"
           # Mirrors the deploy.zip layout (deploy-package.yml). Each dir syncs into
           # its own remote subdir so --delete only prunes that subtree, never the root.
-          for DIR in artisan composer.json composer.lock package.json package-lock.json app bootstrap config database public resources routes vendor deploy.php; do
+          for DIR in artisan composer.json composer.lock package.json package-lock.json app bootstrap config database public resources routes storage vendor deploy.php; do
             [ -e "$DIR" ] || { echo "Skipping missing: $DIR"; continue; }
             echo "Syncing: $DIR"
             if [ -f "$DIR" ]; then
