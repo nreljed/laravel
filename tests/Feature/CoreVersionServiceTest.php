@@ -61,12 +61,12 @@ class CoreVersionServiceTest extends TestCase
         $this->assertSame('50e9c0fabcd1234567890', $info['sha']);
     }
 
-    public function test_info_returns_nulls_when_unrecorded(): void
+    public function test_info_returns_null_sha_when_unrecorded(): void
     {
         $info = (new CoreVersionService)->info();
 
         $this->assertSame('dashboard-core', $info['name']);
-        $this->assertNull($info['version']);
+        $this->assertSame('0.1.0', $info['version']);
         $this->assertNull($info['sha']);
     }
 

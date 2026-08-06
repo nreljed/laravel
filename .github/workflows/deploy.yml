@@ -37,7 +37,12 @@ jobs:
       - name: Generate release notes
         run: |
           npm install -g git-cliff
-          git-cliff --unreleased --strip header -o release-notes.md 2>/dev/null || echo "No changes for v${{ steps.version.outputs.version }}" > release-notes.md
+          BASE_TAG=$(git tag --merged HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          if [ -z "$BASE_TAG" ]; then
+            BASE_TAG="v0.1.0"
+          fi
+          echo "Release notes base: $BASE_TAG"
+          git-cliff "$BASE_TAG..HEAD" --strip header -o release-notes.md 2>/dev/null || echo "No changes for v${{ steps.version.outputs.version }}" > release-notes.md
           git-cliff -o CHANGELOG.md 2>/dev/null || true
 
       - name: Download deploy.zip artifact

@@ -43,16 +43,31 @@ jobs:
             $ver = "${{ inputs.version }}"
           } else {
             $ver = "0.1.0"
-            $gcUrl = "https://github.com/orhun/git-cliff/releases/download/v2.8.0/git-cliff-2.8.0-x86_64-pc-windows-msvc.zip"
-            $gcZip = "$env:TEMP\git-cliff.zip"
-            Invoke-WebRequest -Uri $gcUrl -OutFile $gcZip -ErrorAction Stop
-            Expand-Archive -Path $gcZip -DestinationPath "$env:TEMP\git-cliff" -Force
-            $gc = Get-ChildItem -Path "$env:TEMP\git-cliff" -Recurse -Filter "git-cliff.exe" | Select-Object -First 1 -ExpandProperty FullName
-            try {
-              & $gc --bumped-version | Set-Content version.txt -NoNewline -ErrorAction Stop
-              $ver = (Get-Content version.txt -Raw -ErrorAction Stop).Trim().TrimStart('v')
-            } catch {
-              Write-Output "git-cliff version detection failed, using 0.1.0: $_"
+            # Deterministic bump from the highest reachable semver tag.
+            # NOTE: git-cliff --bumped-version misresolves on this repo's merge
+            # topology (it returns stale v0.1.34 instead of v0.5.0), so we
+            # compute the next version directly from git.
+            $lastTag = git tag --merged HEAD |
+              Where-Object { $_ -match '^v[0-9]+\.[0-9]+\.[0-9]+$' } |
+              Sort-Object { [version]($_ -replace '^v', '') } |
+              Select-Object -Last 1
+            if ($lastTag) {
+              $seg = $lastTag.TrimStart('v').Split('.')
+              $major = [int]$seg[0]; $minor = [int]$seg[1]; $patch = [int]$seg[2]
+              $commits = git log "$lastTag..HEAD" --pretty=format:"%s%B"
+              $bump = "patch"
+              foreach ($c in $commits) {
+                if ($c -match 'BREAKING CHANGE' -or $c -match '^[a-z]+(\([^)]*\))?!:') { $bump = "major"; break }
+                if ($c -match '^feat') { $bump = "minor" }
+              }
+              switch ($bump) {
+                "major" { $ver = "$($major + 1).0.0" }
+                "minor" { $ver = "$major.$($minor + 1).0" }
+                default { $ver = "$major.$minor.$($patch + 1)" }
+              }
+              Write-Output "Bumping from $lastTag (next: $ver)"
+            } else {
+              Write-Output "No semver tags found, starting at 0.1.0"
             }
           }
           echo "version=$ver" >> $env:GITHUB_OUTPUT
@@ -145,13 +160,16 @@ jobs:
       - name: Copy deploy script
         run: Copy-Item -Path scripts/deploy-cron.php -Destination deploy.php
 
-      - name: Record dashboard-core commit
+      - name: Record dashboard-core version and commit
         shell: pwsh
         run: |
+          $coreMeta = Get-Content "packages\dashboard-core\composer.json" -Raw | ConvertFrom-Json
+          $coreVersion = $coreMeta.version
+          $coreSha = (git log -1 --format="%H" -- packages/dashboard-core).Trim()
           New-Item -ItemType Directory -Path "storage\app" -Force | Out-Null
-          Set-Content -Path "storage\app\core.sha" -Value "$env:GITHUB_SHA" -NoNewline -Encoding ASCII
-          @{ name = "dashboard-core"; version = "${{ steps.version.outputs.version }}"; sha = "$env:GITHUB_SHA" } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
-          Write-Output "core.json recorded: $env:GITHUB_SHA @ ${{ steps.version.outputs.version }}"
+          Set-Content -Path "storage\app\core.sha" -Value $coreSha -NoNewline -Encoding ASCII
+          @{ name = "dashboard-core"; version = $coreVersion; sha = $coreSha } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
+          Write-Output "core.json recorded: dashboard-core $coreVersion @ $coreSha"
 
       - name: Create deploy.zip
         shell: pwsh
