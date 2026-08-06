@@ -177,8 +177,15 @@ jobs:
           $src = Get-Location
           $zip = "$src\deploy.zip"
           Remove-Item -Force $zip -ErrorAction SilentlyContinue
-          if (Test-Path "$src\bootstrap\cache") {
-            Move-Item "$src\bootstrap\cache" "$src\bootstrap\cache.bak"
+          # Laravel refuses to boot without bootstrap/cache existing, so the
+          # directory itself MUST ship in deploy.zip (fresh servers have nothing).
+          # Only the generated files are removed — they are rebuilt server-side by
+          # package:discover after extraction — while cache/.gitignore stays so the
+          # archive recreates the directory on fresh installs. Never move the dir
+          # aside: a .bak inside bootstrap/ gets zipped and lands on the server.
+          $cacheDir = "$src\bootstrap\cache"
+          if (Test-Path $cacheDir) {
+            Remove-Item "$cacheDir\packages.php", "$cacheDir\services.php" -Force -ErrorAction SilentlyContinue
           }
           $items = @(
             "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
@@ -189,10 +196,6 @@ jobs:
           Compress-Archive -Path $fullPaths -DestinationPath $zip -CompressionLevel Optimal
           $size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Output "deploy.zip created: $size MB"
-          if (Test-Path "$src\bootstrap\cache.bak") {
-            Remove-Item "$src\bootstrap\cache" -Recurse -Force -ErrorAction SilentlyContinue
-            Move-Item "$src\bootstrap\cache.bak" "$src\bootstrap\cache"
-          }
 
       - name: Upload deploy.zip artifact
         uses: actions/upload-artifact@v4
