@@ -43,13 +43,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lftp
 
+      - name: Configure FTP credentials
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          printf 'machine %s login %s password %s\n' "$FTP_HOST" "$FTP_USER" "$FTP_PASS" > "$HOME/.netrc"
+          chmod 600 "$HOME/.netrc"
+
       - name: Probe remote layout
         if: inputs.probe_only == true
         env:
           FTP_HOST: ${{ secrets.FTP_SERVER }}
           FTP_PORT: ${{ secrets.FTP_PORT }}
           FTP_USER: ${{ secrets.FTP_USERNAME }}
-          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           set -x
           PORT="${FTP_PORT:-21}"
@@ -61,7 +69,6 @@ jobs:
           FTP_HOST: ${{ secrets.FTP_SERVER }}
           FTP_PORT: ${{ secrets.FTP_PORT }}
           FTP_USER: ${{ secrets.FTP_USERNAME }}
-          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           REMOTE_BASE: ${{ inputs.remote_base }}
         run: |
           set -e
@@ -109,7 +116,6 @@ jobs:
           FTP_HOST: ${{ secrets.FTP_SERVER }}
           FTP_PORT: ${{ secrets.FTP_PORT }}
           FTP_USER: ${{ secrets.FTP_USERNAME }}
-          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           REMOTE_BASE: ${{ inputs.remote_base }}
         run: |
           set -e
