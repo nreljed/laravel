@@ -110,28 +110,30 @@ jobs:
 
       - name: Build app (full mode)
         if: inputs.mode == 'full' && inputs.probe_only != true
+        shell: bash
         run: |
-          $dbPath = (Get-Location).Path.Replace('\', '/') + '/database/database.sqlite'
-          @"
+          set -e
+          DB_PATH="$(pwd)/database/database.sqlite"
+          cat > .env <<EOF
           APP_NAME=Laravel
           APP_ENV=local
           APP_KEY=base64:pHIa377aV0cusfWxNM2X3bpkWnRpztIQFwBGevG2DaY=
           APP_DEBUG=true
           APP_URL=http://localhost
           DB_CONNECTION=sqlite
-          DB_DATABASE=$dbPath
+          DB_DATABASE=$DB_PATH
           SESSION_DRIVER=file
           FILESYSTEM_DISK=local
           QUEUE_CONNECTION=sync
           CACHE_STORE=file
           DEPLOY_TOKEN=build
           GITHUB_TOKEN=build
-          "@ | Set-Content -Path .env -Encoding UTF8
-          New-Item -ItemType File -Path database/database.sqlite -Force
+          EOF
+          touch database/database.sqlite
           composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
           npm install --ignore-scripts --no-audit --no-fund
           npm run build
-          Remove-Item -Force .env -ErrorAction SilentlyContinue
+          rm -f .env
 
       - name: Sync full app (full mode)
         if: inputs.mode == 'full' && inputs.probe_only != true
