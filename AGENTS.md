@@ -444,11 +444,13 @@ pull_request → pr.yml
 3. Download `deploy.zip`, extract, restore `.env`
 4. Run: migrate, create-admin, cache, storage:link
 
-**database-reset.yml** (`workflow_dispatch`, manual only):
+**database-maintenance.yml** (`workflow_dispatch`, manual only):
 
-- Inputs: `confirm` (must equal `RESET`), `with_seed`, `purge_media`
-- Curls `POST /deploy/reset` with `secrets.DEPLOY_TOKEN`
-- Requires `DB_MAINTENANCE_ENABLED=true` in production `.env` (the endpoint itself is always
+- Inputs: `command` (`migrate` | `reset`), `confirm` (`yes` for migrate, `RESET` for reset),
+  `with_seed`, `purge_media` (reset only)
+- `migrate` curls `POST /deploy/migrate`; `reset` curls `POST /deploy/reset` with
+  `secrets.DEPLOY_TOKEN`
+- Requires `DB_MAINTENANCE_ENABLED=true` in production `.env` for reset (the endpoint itself is always
   available — it just calls `DatabaseMaintenanceService::resetDatabase()`)
 
 ### Database Maintenance Feature

@@ -1,0 +1,73 @@
+name: Database Maintenance (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Operation to run on production"
+        required: true
+        type: choice
+        options:
+          - migrate
+          - reset
+        default: migrate
+      confirm:
+        description: 'Type "yes" for migrate or "RESET" for reset to confirm'
+        required: true
+        default: "no"
+      with_seed:
+        description: "Reseed demo content after wiping (reset only)"
+        required: true
+        type: choice
+        options:
+          - "true"
+          - "false"
+        default: "true"
+      purge_media:
+        description: "Also delete all uploaded media files (reset only)"
+        required: true
+        type: choice
+        options:
+          - "false"
+          - "true"
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          case "${{ inputs.command }}" in
+            migrate)
+              if [ "${{ inputs.confirm }}" != "yes" ]; then
+                echo "::error::Confirmation required — set confirm to 'yes' to run migrations"
+                exit 1
+              fi
+              ;;
+            reset)
+              if [ "${{ inputs.confirm }}" != "RESET" ]; then
+                echo "::error::Confirmation required — set confirm to 'RESET' to reset the database"
+                exit 1
+              fi
+              ;;
+          esac
+
+      - name: Run pending migrations (production)
+        if: inputs.command == 'migrate'
+        run: |
+          curl -sf --max-time 120 \
+            -X POST \
+            "${{ vars.APP_URL }}/deploy/migrate?token=${{ secrets.DEPLOY_TOKEN }}"
+
+      - name: Reset database (production)
+        if: inputs.command == 'reset'
+        run: |
+          curl -sf --max-time 600 \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"token":"${{ secrets.DEPLOY_TOKEN }}","confirm":"${{ inputs.confirm }}","with_seed":"${{ inputs.with_seed }}","purge_media":"${{ inputs.purge_media }}"}' \
+            "${{ vars.APP_URL }}/deploy/reset"

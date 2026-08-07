@@ -8,6 +8,13 @@ on:
       - "**.md"
       - ".gitignore"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     uses: ./.github/workflows/ci.yml

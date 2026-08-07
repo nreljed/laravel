@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
@@ -20,19 +27,10 @@ jobs:
     needs: package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
-
-      - name: Determine version
-        id: version
-        run: |
-          VER="${{ needs.package.outputs.version }}"
-          if [ -z "$VER" ]; then
-            VER="0.1.0"
-          fi
-          echo "version=$VER" >> $GITHUB_OUTPUT
 
       - name: Generate release notes
         run: |
@@ -42,11 +40,11 @@ jobs:
             BASE_TAG="v0.1.0"
           fi
           echo "Release notes base: $BASE_TAG"
-          git-cliff "$BASE_TAG..HEAD" --strip header -o release-notes.md 2>/dev/null || echo "No changes for v${{ steps.version.outputs.version }}" > release-notes.md
+          git-cliff "$BASE_TAG..HEAD" --strip header -o release-notes.md 2>/dev/null || echo "No changes for v${{ needs.package.outputs.version }}" > release-notes.md
           git-cliff -o CHANGELOG.md 2>/dev/null || true
 
       - name: Download deploy.zip artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deploy-package
 
@@ -54,8 +52,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GH_TOKEN }}
-          tag_name: "v${{ steps.version.outputs.version }}"
-          name: "v${{ steps.version.outputs.version }}"
+          tag_name: "v${{ needs.package.outputs.version }}"
+          name: "v${{ needs.package.outputs.version }}"
           body_path: release-notes.md
           files: deploy.zip
           fail_on_unmatched_files: true
@@ -64,19 +62,15 @@ jobs:
     needs: [package, release]
     runs-on: ubuntu-latest
     steps:
-      - name: Determine version
-        id: version
-        run: echo "version=${{ needs.package.outputs.version }}" >> $GITHUB_OUTPUT
-
       - name: Download deploy.zip artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deploy-package
 
       - name: Upload deploy archive to server
         shell: bash
         run: |
-          VER="v${{ steps.version.outputs.version }}"
+          VER="v${{ needs.package.outputs.version }}"
           echo "Release: $VER"
           # Capture upload response: check for JSON (real app) vs HTML (Cloudflare)
           UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \

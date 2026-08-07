@@ -23,8 +23,9 @@ push beta → beta-ci.yml
 pull_request → pr.yml (branches: main + beta)
   └─ ci.yml (reusable workflow_call)    — identical validation, no secrets needed
 
-manual → run-migration.yml (workflow_dispatch, confirm='yes')
-  └─ curl /deploy/migrate on production
+manual → database-maintenance.yml (workflow_dispatch)
+  └─ command=migrate → curl /deploy/migrate  (confirm='yes')
+  └─ command=reset   → curl /deploy/reset    (confirm='RESET')
 ```
 
 Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
@@ -62,10 +63,11 @@ Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
 
 - On push to `beta`: calls ci.yml with `secrets: inherit` — validates but does not deploy
 
-### run-migration.yml (Manual Migration)
+### database-maintenance.yml (Manual Maintenance)
 
-- `workflow_dispatch` with a `confirm` input that must equal `yes`
-- Curls `https://laravel.tunispromo.tn/deploy/migrate?token=...` on production
+- `workflow_dispatch` with a `command` input (`migrate` | `reset`)
+- `migrate` requires `confirm='yes'` and curls `/deploy/migrate` on production
+- `reset` requires `confirm='RESET'` and curls `/deploy/reset` (with_seed, purge_media)
 
 ## Server Deploy Flow
 
@@ -76,12 +78,12 @@ Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
 
 ### Deploy Endpoints (token-protected)
 
-| Endpoint              | Used by                                 |
-| --------------------- | --------------------------------------- |
-| `/deploy/upload`      | Primary — direct `deploy.zip` upload    |
-| `/deploy/check`       | Fallback — fetch latest GitHub release  |
-| `/deploy/cache-clear` | Post-deploy cache clear                 |
-| `/deploy/migrate`     | Manual migrations (`run-migration.yml`) |
+| Endpoint              | Used by                                        |
+| --------------------- | ---------------------------------------------- |
+| `/deploy/upload`      | Primary — direct `deploy.zip` upload           |
+| `/deploy/check`       | Fallback — fetch latest GitHub release         |
+| `/deploy/cache-clear` | Post-deploy cache clear                        |
+| `/deploy/migrate`     | Manual migrations (`database-maintenance.yml`) |
 
 `push-deploy` uploads to `/deploy/upload` first; if the response is not JSON (e.g. Cloudflare HTML), it falls back to `/deploy/check`. The deploy zip includes a copied `deploy.php` (from `scripts/deploy-cron.php`).
 
