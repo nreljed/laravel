@@ -5,16 +5,17 @@
 | Package test bootstrap
 |--------------------------------------------------------------------------
 |
-| The package is developed inside the monorepo, so the consuming
+| The package is distributed via Composer (vcs), so the consuming
 | application's vendor/autoload.php provides the framework dependencies.
-| When the package is installed standalone, its own vendor/autoload.php is
-| used instead.
+| When the package is developed in the monorepo or installed standalone,
+| its own autoloader is resolved instead.
 |
 */
 
 $candidates = [
-    __DIR__.'/../../../vendor/autoload.php',  // monorepo (master app)
-    __DIR__.'/../../vendor/autoload.php',     // standalone package install
+    __DIR__.'/../../../../vendor/autoload.php', // composer vcs install (consuming app root)
+    __DIR__.'/../../../vendor/autoload.php',    // monorepo (master app)
+    __DIR__.'/../../vendor/autoload.php',       // standalone package install
 ];
 
 foreach ($candidates as $autoload) {
