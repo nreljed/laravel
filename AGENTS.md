@@ -181,6 +181,33 @@ routes/
 > - Frontend (`resources/js`) is consumed **directly** by Vite from `packages/dashboard-core/resources/js` — no reinstall needed, just `npm run build`.
 > - PHPUnit tests also load the vendor copy, so reinstall before running tests that exercise package classes.
 
+> **CORE PUBLISH / PULL (since v0.1.x)**
+>
+> `nreljed/dashboard-core` now has its own private GitHub repo
+> (`https://github.com/nreljed/dashboard-core`, tags `vX.Y.Z`) as the **distribution**
+> source. Development still happens here in `packages/dashboard-core`; consumers
+> (Shop, Booking) install it as a Composer `vcs` package.
+>
+> - **Publish a new version** (from this master app):
+>   ```
+>   composer run core:publish            # bump patch, sync + push + tag
+>   composer run core:publish -- --version=1.2.0
+>   composer run core:publish -- --dry-run   # preview only
+>   ```
+>   The script mirrors `packages/dashboard-core` into a clone of the core repo
+>   (LF-normalized, `core.autocrlf=false`), bumps the `version` field in both
+>   trees, then commits + tags + pushes. It then prints next steps.
+> - **Consumers pull** the new version:
+>   ```
+>   composer update nreljed/dashboard-core
+>   npm run build
+>   ```
+> - The Shop app is migrated to this model (vcs repo + `^0.1`, static copy and
+>   `core-sync.php`/`.core-sha` removed; Vite/TS/phpunit/css aliases point at
+>   `vendor/nreljed/dashboard-core`). CI clones the private repo via
+>   `COMPOSER_AUTH` using `secrets.GH_TOKEN` — that token needs **Contents: Read**
+>   on the `nreljed/dashboard-core` repo.
+
 ## Feature Architecture
 
 Each feature is self-contained and registered via `FeatureRegistry`.

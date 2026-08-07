@@ -65,8 +65,13 @@ class CoreVersionServiceTest extends TestCase
     {
         $info = (new CoreVersionService)->info();
 
+        $expectedVersion = json_decode(
+            (string) file_get_contents(base_path('vendor/nreljed/dashboard-core/composer.json')),
+            true
+        )['version'];
+
         $this->assertSame('dashboard-core', $info['name']);
-        $this->assertSame('0.1.0', $info['version']);
+        $this->assertSame($expectedVersion, $info['version']);
         $this->assertNull($info['sha']);
     }
 
