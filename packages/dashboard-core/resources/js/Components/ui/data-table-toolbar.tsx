@@ -1,6 +1,7 @@
 import { XIcon } from "lucide-react";
-import type { Table } from "@tanstack/react-table";
+import type { ReactTable, RowData } from "@tanstack/react-table";
 
+import { AppTableFeatures } from "@/lib/table-features";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import {
@@ -11,8 +12,8 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 
-interface DataTableToolbarProps<TData> {
-  table: Table<TData>;
+interface DataTableToolbarProps<TData extends RowData> {
+  table: ReactTable<AppTableFeatures, TData>;
   searchKey?: string;
   searchPlaceholder?: string;
   filterOptions?: { label: string; value: string }[];
@@ -20,7 +21,7 @@ interface DataTableToolbarProps<TData> {
   filterTitle?: string;
 }
 
-export function DataTableToolbar<TData>({
+export function DataTableToolbar<TData extends RowData>({
   table,
   searchKey,
   searchPlaceholder = "Search...",
@@ -28,7 +29,7 @@ export function DataTableToolbar<TData>({
   filterKey,
   filterTitle,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+  const isFiltered = table.state.columnFilters.length > 0;
 
   return (
     <div

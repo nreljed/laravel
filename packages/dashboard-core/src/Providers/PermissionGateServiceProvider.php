@@ -4,9 +4,9 @@ namespace Nreljed\DashboardCore\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\User;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
+use Nreljed\DashboardCore\Services\PermissionCacheService;
 
 class PermissionGateServiceProvider extends ServiceProvider
 {
@@ -37,7 +37,7 @@ class PermissionGateServiceProvider extends ServiceProvider
             }
 
             try {
-                $slugs = array_merge($slugs, Permission::pluck('slug')->toArray());
+                $slugs = array_merge($slugs, array_values(app(PermissionCacheService::class)->getAllPermissions()));
             } catch (\Throwable) {
             }
 

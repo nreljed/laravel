@@ -82,4 +82,35 @@ return [
         'groups' => [],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Core Notification Types
+    |--------------------------------------------------------------------------
+    |
+    | Notification types shipped by the core package itself (features register
+    | their own types via getNotificationTypes()). Each type supports the
+    | following keys: label, description, group, severity, default_channels,
+    | default_enabled, and optional email_template.
+    |
+    */
+
+    'notification_types' => [
+        'database.maintenance' => [
+            'label' => 'Database maintenance',
+            'description' => 'Reset/reseed runs performed by an admin or the deploy endpoint.',
+            'group' => 'System',
+            'severity' => 'critical',
+            'default_channels' => ['in_app'],
+            'default_enabled' => true,
+        ],
+        'user.welcome' => [
+            'label' => 'Welcome emails',
+            'description' => 'Account-created emails sent to new users.',
+            'group' => 'Account',
+            'severity' => 'info',
+            'default_channels' => ['mail'],
+            'default_enabled' => true,
+        ],
+    ],
+
 ];

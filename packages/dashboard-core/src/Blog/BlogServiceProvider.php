@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Concerns\InteractsWithFeatures;
 use Nreljed\DashboardCore\Contracts\FeatureProvider;
+use Nreljed\DashboardCore\Observers\PostObserver;
 
 class BlogServiceProvider extends ServiceProvider implements FeatureProvider
 {
@@ -28,6 +29,8 @@ class BlogServiceProvider extends ServiceProvider implements FeatureProvider
         $this->loadRoutes();
         $this->loadPublicRoutes();
         $this->loadMigrations();
+
+        Post::observe(PostObserver::class);
     }
 
     protected function loadRoutes(): void

@@ -32,7 +32,9 @@ import { Button } from "@/Components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/Components/ui/collapsible";
 import { Separator } from "@/Components/ui/separator";
 
-/* ─── Type Definitions ─── */
+/*
+─── Type Definitions ───
+*/
 
 interface PhpInfo {
   version: string;
@@ -293,7 +295,9 @@ interface SystemHealthProps {
   debug_access_url: string | null;
 }
 
-/* ─── Helper Components ─── */
+/*
+─── Helper Components ───
+*/
 
 function StatusDot({ ok }: { ok: boolean }) {
   return (
@@ -430,7 +434,9 @@ function CollapsibleSection({
   );
 }
 
-/* ─── Main Page ─── */
+/*
+─── Main Page ───
+*/
 
 export default function SystemHealth(props: SystemHealthProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false);

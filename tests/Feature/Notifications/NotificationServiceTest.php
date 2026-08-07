@@ -6,6 +6,8 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Nreljed\DashboardCore\Models\NotificationPreference;
+use Nreljed\DashboardCore\Notifications\AppNotification;
 use Nreljed\DashboardCore\Services\NotificationService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
@@ -75,6 +77,44 @@ class NotificationServiceTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $deleted);
         $this->assertDatabaseMissing('notifications', ['id' => $oldId]);
         $this->assertDatabaseCount('notifications', 1);
+    }
+
+    public function test_notify_via_preferences_respects_disabled_in_app_preference(): void
+    {
+        $user = $this->regularUser();
+
+        NotificationPreference::create([
+            'user_id' => $user->id,
+            'type' => 'post.published',
+            'channel' => 'in_app',
+            'enabled' => false,
+        ]);
+
+        $service = app(NotificationService::class);
+        $service->notifyViaPreferences(
+            $user,
+            'post.published',
+            new AppNotification('post.published', ['title' => 'Skipped']),
+            ['in_app']
+        );
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_notify_via_preferences_creates_notification_when_enabled_and_invalidates_unread_cache(): void
+    {
+        $user = $this->regularUser();
+
+        $service = app(NotificationService::class);
+        $service->notifyViaPreferences(
+            $user,
+            'post.published',
+            new AppNotification('post.published', ['title' => 'Hello']),
+            ['in_app']
+        );
+
+        $this->assertDatabaseCount('notifications', 1);
+        $this->assertSame(1, $service->getCachedUnreadCount($user->id, $user::class));
     }
 
     protected function createNotificationsFor($user, int $count): array

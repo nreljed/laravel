@@ -44,7 +44,7 @@ class PermissionCacheService
             $userKeys[$key] = true;
             Cache::put('permissions:user_keys', array_keys($userKeys), self::CACHE_TTL);
 
-            $user = User::with('roles.permissions')->find($userId);
+            $user = User::with(['roles.permissions', 'permissions'])->find($userId);
 
             if (! $user) {
                 return [];

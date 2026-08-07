@@ -53,6 +53,21 @@ class UserManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_users_list_includes_avatar_url(): void
+    {
+        $target = User::factory()->create(['avatar' => 'avatar-a.webp']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.admin.users.index'));
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('dashboard/admin/users/index')
+            ->has('users', 2)
+            ->where('users.0.avatar_url', $target->fresh()->avatar_url)
+        );
+    }
+
     // ─── Edit Form ───────────────────────────────────────
 
     public function test_admin_can_view_edit_form(): void

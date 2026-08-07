@@ -63,6 +63,7 @@ class CreateAdmin extends Command
         $user->forceFill(['email_verified_at' => now()])->save();
 
         $user->roles()->syncWithoutDetaching([$role->id]);
+        $user->invalidatePermissionCache();
 
         if ($user->wasRecentlyCreated) {
             $this->info("Admin user created: {$email}");

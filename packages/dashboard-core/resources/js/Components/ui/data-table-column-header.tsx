@@ -1,6 +1,7 @@
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, EyeOffIcon } from "lucide-react";
-import type { Column } from "@tanstack/react-table";
+import type { CellData, Column, RowData } from "@tanstack/react-table";
 
+import { AppTableFeatures } from "@/lib/table-features";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
 import {
@@ -11,12 +12,15 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 
-interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement> {
-  column: Column<TData, TValue>;
+interface DataTableColumnHeaderProps<
+  TData extends RowData,
+  TValue extends CellData = CellData,
+> extends React.HTMLAttributes<HTMLDivElement> {
+  column: Column<AppTableFeatures, TData, TValue>;
   title: string;
 }
 
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue extends CellData = CellData>({
   column,
   title,
   className,

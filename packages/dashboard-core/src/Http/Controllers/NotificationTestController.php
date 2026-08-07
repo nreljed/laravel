@@ -70,7 +70,7 @@ class NotificationTestController extends Controller
                 $this->notificationService->notifyViaPreferences($user, $data['type'], $notification, ['email']);
                 $emailQueued = true;
             } else {
-                $user->notify($notification);
+                $this->notificationService->notifyViaPreferences($user, $data['type'], $notification, ['in_app']);
             }
         }
 

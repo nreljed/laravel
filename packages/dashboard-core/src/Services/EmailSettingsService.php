@@ -39,13 +39,12 @@ class EmailSettingsService
 
     /**
      * Get all email settings, merging stored values over defaults.
-     * Decrypts password if encrypted.
+     * Caches the stored (encrypted) row for 5 minutes; decryption happens on
+     * every read so the decrypted secret never touches the cache store.
      */
     public function getOptions(): array
     {
-        $settings = Setting::where('key', 'email_settings')->first();
-        $stored = $settings ? (array) json_decode($settings->value, true) : [];
-        $merged = array_merge(self::defaults(), $stored);
+        $merged = Cache::remember(self::CACHE_KEY, 300, fn () => $this->readStoredOptions());
 
         if (! empty($merged['smtp_password']) && $this->isEncrypted($merged['smtp_password'])) {
             try {
@@ -56,6 +55,19 @@ class EmailSettingsService
         }
 
         return $merged;
+    }
+
+    /**
+     * Read stored options straight from the database.
+     *
+     * @return array<string, mixed>
+     */
+    protected function readStoredOptions(): array
+    {
+        $settings = Setting::where('key', 'email_settings')->first();
+        $stored = $settings ? (array) json_decode($settings->value, true) : [];
+
+        return array_merge(self::defaults(), $stored);
     }
 
     /**

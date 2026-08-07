@@ -30,11 +30,13 @@ use Nreljed\DashboardCore\Models\Role;
 use Nreljed\DashboardCore\Models\User;
 use Nreljed\DashboardCore\Notifications\ResetPassword as CustomResetPassword;
 use Nreljed\DashboardCore\Notifications\VerifyEmail as CustomVerifyEmail;
+use Nreljed\DashboardCore\Observers\UserObserver;
 use Nreljed\DashboardCore\Policies\PostPolicy;
 use Nreljed\DashboardCore\Policies\RolePolicy;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\FormattingService;
 use Nreljed\DashboardCore\Services\MailerConfigurator;
+use Nreljed\DashboardCore\Services\NotificationService;
 
 class DashboardCoreServiceProvider extends ServiceProvider
 {
@@ -75,6 +77,8 @@ class DashboardCoreServiceProvider extends ServiceProvider
             }
         });
 
+        User::observe(UserObserver::class);
+
         $this->configureMailer();
         $this->configureNotifications();
 
@@ -85,6 +89,10 @@ class DashboardCoreServiceProvider extends ServiceProvider
             $notification->link ??= $data['link'] ?? $data['url'] ?? '';
             $notification->severity ??= $data['severity'] ?? 'info';
             $notification->module ??= $data['module'] ?? 'core';
+
+            if ($notification->notifiable_id) {
+                app(NotificationService::class)->invalidateUnreadCache($notification->notifiable_id);
+            }
         });
 
         if ($this->app->runningInConsole()) {
@@ -99,6 +107,10 @@ class DashboardCoreServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../resources/views' => resource_path('views/vendor/core'),
             ], 'core-views');
+
+            $this->publishesMigrations([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], 'core-migrations');
         }
     }
 

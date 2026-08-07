@@ -2,6 +2,7 @@ import { Head, router, useForm, usePage } from "@inertiajs/react";
 import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { AppTableFeatures } from "@/lib/table-features";
 import { toast } from "@/Components/ui/toast";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { DataTable } from "@/Components/ui/data-table";
@@ -78,7 +79,7 @@ export default function PostTagsIndex() {
   }, []);
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<TagItem>[] = [
+    const cols: ColumnDef<AppTableFeatures, TagItem>[] = [
       {
         accessorKey: "name",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Tag" />,

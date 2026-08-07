@@ -31,6 +31,7 @@ import {
 import { Pencil, Plus, Shield, Trash2, MoreHorizontal, Copy, Crown } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { AppTableFeatures } from "@/lib/table-features";
 
 interface Role {
   id: number;
@@ -61,7 +62,7 @@ export default function AdminRolesIndex() {
   };
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<Role>[] = [
+    const cols: ColumnDef<AppTableFeatures, Role>[] = [
       {
         accessorKey: "name",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,

@@ -4,7 +4,7 @@ import { DataTable } from "@/Components/ui/data-table";
 import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
-import { Avatar, AvatarFallback } from "@/Components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/Components/ui/avatar";
 import { getUserInitials, useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import {
 import { Plus, Pencil, Trash2, MoreHorizontal, LogIn, MailCheck, Send, Users } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { AppTableFeatures } from "@/lib/table-features";
 
 interface Role {
   id: number;
@@ -47,6 +48,7 @@ interface User {
   name: string;
   email: string;
   email_verified_at: string | null;
+  avatar_url: string | null;
   roles: Role[];
   created_at: string;
 }
@@ -134,7 +136,7 @@ export default function AdminUsersIndex() {
   })();
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<User>[] = [
+    const cols: ColumnDef<AppTableFeatures, User>[] = [
       {
         accessorKey: "id",
         header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
@@ -147,6 +149,9 @@ export default function AdminUsersIndex() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Avatar" />,
         cell: ({ row }) => (
           <Avatar className="size-8">
+            {row.original.avatar_url ? (
+              <AvatarImage src={row.original.avatar_url} alt={row.original.name} />
+            ) : null}
             <AvatarFallback>{getUserInitials(row.original.name)}</AvatarFallback>
           </Avatar>
         ),

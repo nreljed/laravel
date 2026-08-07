@@ -24,8 +24,8 @@ class SettingsService
     public static function set(string $key, mixed $value): void
     {
         Setting::set($key, $value);
-        Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.':'.$key);
+        self::clearCache();
     }
 
     public static function setMany(array $data): void

@@ -53,11 +53,8 @@ class SettingsController extends Controller
 
         $defaultRoleSlug = $settings['default_role'] ?? null;
         if (! $defaultRoleSlug || ! $roles->contains('slug', $defaultRoleSlug)) {
-            $defaultRoleSlug = $firstAvailableRole;
-            if ($defaultRoleSlug && Schema::hasTable('settings')) {
-                SettingsService::set('default_role', $defaultRoleSlug);
-                $settings['default_role'] = $defaultRoleSlug;
-            }
+            // Display-only fallback — persisted when registration settings are saved.
+            $settings['default_role'] = $firstAvailableRole;
         }
 
         return $this->renderPage('dashboard/admin/settings/registration', [

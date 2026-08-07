@@ -3,6 +3,7 @@ import { Plus, FileText } from "lucide-react";
 import { useMemo, useCallback } from "react";
 import { toast } from "@/Components/ui/toast";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { AppTableFeatures } from "@/lib/table-features";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { DataTable } from "@/Components/ui/data-table";
 import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header";
@@ -68,7 +69,7 @@ export default function TestPostsIndex({ testPosts }: TestPostsIndexProps) {
   );
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<TestPost>[] = [
+    const cols: ColumnDef<AppTableFeatures, TestPost>[] = [
       {
         id: "featured_image",
         header: "Image",

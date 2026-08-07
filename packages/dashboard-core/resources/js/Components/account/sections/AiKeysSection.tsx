@@ -143,7 +143,9 @@ export default function AiKeysSection({
         try {
           data = await response.json();
         } catch {
-          /* ignore parse errors */
+          /*
+          ignore parse errors
+          */
         }
         const msg =
           data?.api_key ??

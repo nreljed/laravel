@@ -17,6 +17,7 @@ import { toast } from "@/Components/ui/toast";
 import { useMemo, useState } from "react";
 import { FileText, Plus, Sparkles } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { AppTableFeatures } from "@/lib/table-features";
 
 interface Tag {
   id: number;
@@ -76,14 +77,13 @@ export default function BlogIndex({ posts, categories }: BlogIndexProps) {
     }
   };
 
-  const columns = useMemo<ColumnDef<Post>[]>(() => {
-    const cols: ColumnDef<Post>[] = [
+  const columns = useMemo<ColumnDef<AppTableFeatures, Post>[]>(() => {
+    const cols: ColumnDef<AppTableFeatures, Post>[] = [
       {
         id: "image",
         header: () => null,
         enableSorting: false,
         enableHiding: false,
-        size: 48,
         cell: ({ row }) =>
           row.original.featured_image ? (
             <img

@@ -34,6 +34,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'email_verified_at' => $user->email_verified_at?->toISOString(),
+                'avatar_url' => $user->avatar_url,
                 'roles' => $user->roles->map(fn (Role $r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
                 'created_at' => $user->created_at->toISOString(),
             ]);
@@ -86,6 +87,7 @@ class UserController extends Controller
 
         if ($roleIds !== []) {
             $user->roles()->sync($roleIds);
+            $user->invalidatePermissionCache();
 
             AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
                 'target_user_id' => $user->id,
@@ -146,6 +148,7 @@ class UserController extends Controller
 
             if ($addedIds !== [] || $removedIds !== []) {
                 $user->roles()->sync($newIds);
+                $user->invalidatePermissionCache();
 
                 if ($addedIds !== []) {
                     AuditService::log(AuditAction::RoleAssigned, $request->user()->id, [
@@ -214,6 +217,7 @@ class UserController extends Controller
         ]);
 
         $user->delete();
+        $user->invalidatePermissionCache();
 
         if (isset($email, $displayName)) {
             try {

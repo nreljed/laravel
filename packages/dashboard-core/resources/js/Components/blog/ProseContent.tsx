@@ -64,7 +64,9 @@ function attachCopyButtons(container: HTMLElement): void {
           btn.classList.remove("copied");
         }, 2000);
       } catch {
-        /* ignore */
+        /*
+        ignore
+        */
       }
     });
     wrapper.appendChild(btn);

@@ -135,7 +135,9 @@ function CodeBlockToolbar({ editor }: { editor: ReturnType<typeof useLexicalComp
           setCopiedKey(key);
           setTimeout(() => setCopiedKey(null), 2000);
         } catch {
-          /* ignore */
+          /*
+          ignore
+          */
         }
       }
     },

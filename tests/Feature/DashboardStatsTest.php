@@ -82,4 +82,28 @@ class DashboardStatsTest extends TestCase
         $this->assertCount(30, $analytics['posts']['data']);
         $this->assertSame(1, $analytics['posts']['data'][29]['count']);
     }
+
+    public function test_stats_cache_is_invalidated_when_user_is_created(): void
+    {
+        $this->seedRolesAndPermissions();
+        $before = app(DashboardService::class)->getStats()['total_users']['value'];
+
+        $this->regularUser();
+
+        $after = app(DashboardService::class)->getStats()['total_users']['value'];
+
+        $this->assertSame($before + 1, $after);
+    }
+
+    public function test_stats_cache_is_invalidated_when_post_is_created(): void
+    {
+        $this->seedRolesAndPermissions();
+        $before = app(DashboardService::class)->getStats()['posts']['value'] ?? 0;
+
+        PostFactory::new()->published()->create();
+
+        $after = app(DashboardService::class)->getStats()['posts']['value'];
+
+        $this->assertSame($before + 1, $after);
+    }
 }

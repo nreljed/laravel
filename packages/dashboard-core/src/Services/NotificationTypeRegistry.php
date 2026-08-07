@@ -11,7 +11,10 @@ class NotificationTypeRegistry
     public function all(): array
     {
         if ($this->types === null) {
-            $this->types = $this->registry->getAllNotificationTypes();
+            $this->types = array_merge(
+                config('core.notification_types', []),
+                $this->registry->getAllNotificationTypes(),
+            );
         }
 
         return $this->types;

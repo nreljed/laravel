@@ -64,7 +64,9 @@ export function EditImageDialog({ open, onOpenChange, nodeKey }: EditImageDialog
         try {
           await deleteImageFromServer(oldSrc);
         } catch {
-          /* ignore */
+          /*
+          ignore
+          */
         }
       }
     } catch {

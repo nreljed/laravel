@@ -55,6 +55,9 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     protected $appends = ['avatar_url'];
 
+    /** Per-request memoization of the admin bypass check. */
+    protected ?bool $isAdminMemo = null;
+
     /** @return MorphMany<Notification, $this> */
     public function notifications(): MorphMany
     {
@@ -88,6 +91,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function hasRole(string|array ...$roles): bool
     {
         $roles = array_merge(...array_map(fn ($r) => is_array($r) ? $r : [$r], $roles));
+
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->contains(fn (Role $role) => in_array($role->slug, $roles, true));
+        }
 
         return $this->roles()->whereIn('slug', $roles)->exists();
     }
@@ -143,7 +150,24 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->isAdminMemo ??= $this->hasRole('admin');
+    }
+
+    public function invalidatePermissionCache(): void
+    {
+        $this->isAdminMemo = null;
+        $this->unsetRelation('roles');
+        $this->unsetRelation('permissions');
+        app(PermissionCacheService::class)->forgetUser($this->id);
+    }
+
+    /** Reset the per-request admin memo after a database reload. */
+    #[\Override]
+    public function refresh(): static
+    {
+        $this->isAdminMemo = null;
+
+        return parent::refresh();
     }
 
     public function getDisplayNameOptions(): array
@@ -178,6 +202,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
         if ($role) {
             $this->roles()->syncWithoutDetaching([$role->id]);
         }
+
+        $this->invalidatePermissionCache();
 
         return $this;
     }

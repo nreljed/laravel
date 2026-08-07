@@ -1,21 +1,15 @@
 import * as React from "react";
 import type {
+  CellData,
   ColumnDef,
   ColumnFiltersState,
+  ColumnVisibilityState,
+  RowData,
   SortingState,
-  VisibilityState,
 } from "@tanstack/react-table";
-import {
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { flexRender, useTable } from "@tanstack/react-table";
 
+import { AppTableFeatures, tableFeaturesConfig } from "@/lib/table-features";
 import {
   Table,
   TableBody,
@@ -56,8 +50,8 @@ interface BulkAction {
   confirmLabel?: string;
 }
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData extends RowData> {
+  columns: ColumnDef<AppTableFeatures, TData, CellData>[];
   data: TData[];
   searchKey?: string;
   searchPlaceholder?: string;
@@ -70,7 +64,7 @@ interface DataTableProps<TData, TValue> {
   emptyState?: React.ReactNode;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   searchKey,
@@ -78,13 +72,13 @@ export function DataTable<TData, TValue>({
   filterOptions,
   filterKey,
   filterTitle,
-  pageSize: _pageSize = 10,
+  pageSize = 10,
   bulkActions,
   onBulkAction,
   emptyState,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] = React.useState({});
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [confirmAction, setConfirmAction] = React.useState<{
@@ -92,9 +86,9 @@ export function DataTable<TData, TValue>({
     ids: number[];
   } | null>(null);
 
-  const tableColumns = React.useMemo<ColumnDef<TData, TValue>[]>(() => {
+  const tableColumns = React.useMemo<ColumnDef<AppTableFeatures, TData, CellData>[]>(() => {
     if (!bulkActions) return columns;
-    const selectCol: ColumnDef<TData, TValue> = {
+    const selectCol: ColumnDef<AppTableFeatures, TData, CellData> = {
       id: "select",
       header: ({ table }) => (
         <Checkbox
@@ -117,8 +111,8 @@ export function DataTable<TData, TValue>({
     return [selectCol, ...columns];
   }, [columns, bulkActions]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns non-memoizable functions
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data,
     columns: tableColumns,
     state: {
@@ -132,12 +126,12 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize,
+      },
+    },
   });
 
   return (

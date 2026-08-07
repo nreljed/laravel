@@ -132,7 +132,9 @@ function ImageToolbar({ editor, onEdit }: ImageToolbarProps) {
       try {
         await deleteImageFromServer(imageSrc);
       } catch {
-        /* ignore */
+        /*
+        ignore
+        */
       }
     }
     hideToolbar();

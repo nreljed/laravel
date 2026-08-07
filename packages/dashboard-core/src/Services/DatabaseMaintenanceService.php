@@ -5,7 +5,6 @@ namespace Nreljed\DashboardCore\Services;
 use Closure;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Nreljed\DashboardCore\Enums\AuditAction;
@@ -263,7 +262,11 @@ class DatabaseMaintenanceService
                     : 'Seeders were re-run. No data was wiped.',
             );
 
-            Notification::send($admins, $notification);
+            $notificationService = app(NotificationService::class);
+
+            foreach ($admins as $admin) {
+                $notificationService->notifyViaPreferences($admin, 'database.maintenance', $notification, ['in_app']);
+            }
         } catch (\Throwable) {
             // Best-effort — a notification failure must never block the reset.
         }

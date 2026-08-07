@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Nreljed\DashboardCore\Models\Role;
+use Nreljed\DashboardCore\Models\User;
 use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\TestCase;
 
@@ -69,6 +71,22 @@ class SettingsRegistrationGateTest extends TestCase
     {
         $response = $this->get('/register');
         $response->assertStatus(200);
+    }
+
+    public function test_registration_settings_page_does_not_write_default_role(): void
+    {
+        if (! $this->canSetSetting()) {
+            $this->markTestSkipped('Settings table not available.');
+        }
+
+        $admin = User::factory()->create();
+        $admin->roles()->attach(Role::where('slug', 'admin')->first());
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.admin.settings.registration'))
+            ->assertOk();
+
+        $this->assertDatabaseMissing('settings', ['key' => 'default_role']);
     }
 
     protected function canSetSetting(): bool
