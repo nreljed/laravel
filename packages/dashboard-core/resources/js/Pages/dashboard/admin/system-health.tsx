@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { jsonHeaders } from "@/lib/gallery-utils";
+import { normalizeVersion } from "@/lib/versions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
@@ -627,14 +628,17 @@ export default function SystemHealth(props: SystemHealthProps) {
   const canCompareVersions = props.deployed_version.exists && props.latest_version.found;
 
   const isUpToDate =
-    canCompareVersions && props.deployed_version.version === props.latest_version.version;
+    canCompareVersions &&
+    normalizeVersion(props.deployed_version.version) ===
+      normalizeVersion(props.latest_version.version);
 
   const coreInstalled = props.core_package.version;
   const coreIsDev = props.core_package.is_dev === true;
   const canCompareCoreVersions =
     props.core_latest_version.found && Boolean(coreInstalled) && !coreIsDev;
   const coreUpToDate =
-    canCompareCoreVersions && coreInstalled === props.core_latest_version.version;
+    canCompareCoreVersions &&
+    normalizeVersion(coreInstalled) === normalizeVersion(props.core_latest_version.version);
 
   const appStatus: "up-to-date" | "update-available" | "unknown" | "git" | "not-recorded" =
     canCompareVersions
