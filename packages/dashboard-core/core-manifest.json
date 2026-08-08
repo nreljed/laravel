@@ -13,8 +13,7 @@
   "forbidden_project_paths": [
     "app/Http/Controllers/DeployController.php",
     "app/Http/Controllers/PublicController.php",
-    "app/Models/Page.php",
-    "resources/js/Pages/Public"
+    "app/Models/Page.php"
   ],
   "overridable_config": [
     "config/admin.php",
