@@ -26,4 +26,17 @@ class AdminController extends Controller
 
         return response()->json($systemHealth->getAll());
     }
+
+    public function readSystemHealthLog(SystemHealthService $systemHealth, string $file): JsonResponse
+    {
+        $lines = request()->integer('lines', 200);
+
+        try {
+            return response()->json($systemHealth->readLog($file, $lines));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Unable to read log file.'], 500);
+        }
+    }
 }

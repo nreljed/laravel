@@ -59,6 +59,57 @@ class SystemHealthTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_admin_can_read_log_file_tail(): void
+    {
+        $logPath = storage_path('logs/health-test.log');
+        File::put($logPath, "[2026-08-08 10:00:00] production.ERROR: Test failure\n[2026-08-08 10:00:01] production.INFO: All good\n");
+
+        try {
+            $response = $this->actingAs($this->admin())
+                ->get(route('dashboard.admin.system-health.logs', ['file' => 'health-test.log']));
+
+            $response->assertOk();
+            $response->assertJsonPath('name', 'health-test.log');
+            $response->assertJsonPath('lines.0', '[2026-08-08 10:00:00] production.ERROR: Test failure');
+            $response->assertJsonPath('lines.1', '[2026-08-08 10:00:01] production.INFO: All good');
+            $response->assertJsonPath('truncated', false);
+        } finally {
+            File::delete($logPath);
+        }
+    }
+
+    public function test_non_admin_cannot_read_log_file(): void
+    {
+        $response = $this->actingAs($this->regularUser())
+            ->get(route('dashboard.admin.system-health.logs', ['file' => 'laravel.log']));
+
+        $response->assertStatus(403);
+    }
+
+    public function test_log_read_rejects_path_traversal(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.admin.system-health.logs', ['file' => '../laravel.log']));
+
+        $this->assertContains($response->getStatusCode(), [400, 404]);
+    }
+
+    public function test_read_log_rejects_path_traversal_at_service_level(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        (new SystemHealthService)->readLog('../laravel.log');
+    }
+
+    public function test_log_read_returns_error_for_missing_file(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.admin.system-health.logs', ['file' => 'does-not-exist.log']));
+
+        $response->assertStatus(400);
+        $response->assertJsonPath('error', 'Log file not found.');
+    }
+
     public function test_system_health_mail_payload_does_not_leak_credentials(): void
     {
         $response = $this->actingAs($this->admin())

@@ -71,40 +71,56 @@ jobs:
         shell: bash
         run: |
           VER="v${{ needs.package.outputs.version }}"
+          APP_URL="${{ vars.APP_URL }}"
+          DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}"
           echo "Release: $VER"
 
           # Try direct upload first
           UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
             -F "file=@deploy.zip;filename=deploy.zip" \
-            "${{ vars.APP_URL }}/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}" 2>&1)
+            "$APP_URL/deploy/upload?token=$DEPLOY_TOKEN" 2>&1)
           UPLOAD_CODE=$(echo "$UPLOAD_RESP" | tail -1)
           UPLOAD_BODY=$(echo "$UPLOAD_RESP" | sed '$d')
 
-          if [ "$UPLOAD_CODE" = "200" ] && echo "$UPLOAD_BODY" | head -1 | grep -q '^{'; then
+          if [ "$UPLOAD_CODE" = "200" ] && echo "$UPLOAD_BODY" | grep -q '"status":"deployed"'; then
             echo "Deployed via /deploy/upload"
-            echo "$UPLOAD_BODY" | head -1
+            echo "$UPLOAD_BODY"
             exit 0
           fi
 
           echo "Upload failed (HTTP $UPLOAD_CODE); falling back to /deploy/check"
-          echo "Upload response: $(echo "$UPLOAD_BODY" | head -1 | cut -c1-300)"
+          echo "Upload response: $(echo "$UPLOAD_BODY" | head -c 500)"
 
-          # Fallback: server pulls latest release from the GitHub API
-          CHECK_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 -X POST \
-            "${{ vars.APP_URL }}/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}" 2>&1)
-          CHECK_CODE=$(echo "$CHECK_RESP" | tail -1)
-          CHECK_BODY=$(echo "$CHECK_RESP" | sed '$d')
+          # Fallback: server pulls latest release from the GitHub API.
+          # The host's security layer intermittently answers CI (datacenter) IPs
+          # with a 200/HTML block page, so retry a few times to ride it through.
+          for i in 1 2 3 4 5; do
+            CHECK_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 -X POST \
+              -H "User-Agent: GitHub-Actions-Deploy" -H "Accept: application/json" \
+              "$APP_URL/deploy/check?token=$DEPLOY_TOKEN" 2>&1)
+            CHECK_CODE=$(echo "$CHECK_RESP" | tail -1)
+            CHECK_BODY=$(echo "$CHECK_RESP" | sed '$d')
 
-          if echo "$CHECK_BODY" | head -1 | grep -q '^{'; then
-            echo "Deployed via /deploy/check (GitHub API)"
-            echo "$CHECK_BODY" | head -1
-            exit 0
-          fi
+            if [ "$CHECK_CODE" = "200" ] && echo "$CHECK_BODY" | grep -q '"status":"deployed"'; then
+              echo "Deployed via /deploy/check (GitHub API)"
+              echo "$CHECK_BODY"
+              exit 0
+            fi
 
-          echo "Deploy failed (upload HTTP $UPLOAD_CODE, check HTTP $CHECK_CODE)."
-          echo "Check response: $(echo "$CHECK_BODY" | head -1 | cut -c1-300)"
+            if [ "$CHECK_CODE" = "200" ] && echo "$CHECK_BODY" | grep -q '"status":"current"'; then
+              echo "Server already up to date via /deploy/check"
+              echo "$CHECK_BODY"
+              exit 0
+            fi
+
+            echo "Check attempt $i: HTTP $CHECK_CODE, not deployed. $(echo "$CHECK_BODY" | head -c 300)"
+            sleep 30
+          done
+
+          echo "Deploy failed (upload HTTP $UPLOAD_CODE, check HTTP $CHECK_CODE after retries)."
+          echo "Check response: $(echo "$CHECK_BODY" | head -c 500)"
           echo "Release created at:"
           echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
           echo "Manual deploy: download deploy.zip from release, upload to server, extract, then visit:"
-          echo "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          echo "$APP_URL/deploy/cache-clear?token=$DEPLOY_TOKEN"
           exit 1

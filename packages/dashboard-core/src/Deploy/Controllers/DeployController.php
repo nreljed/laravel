@@ -271,13 +271,22 @@ class DeployController extends Controller
 
         $storageDir = storage_path('app/deploy');
         File::ensureDirectoryExists($storageDir);
-        $zipFile = $file->storeAs('deploy', 'deploy-uploaded.zip');
-        if ($zipFile === false) {
-            $output[] = 'ERROR: Failed to store uploaded file';
+        $zipPath = $storageDir.'/deploy-uploaded.zip';
+
+        try {
+            $file->move($zipPath);
+        } catch (\Throwable $e) {
+            $output[] = 'ERROR: Failed to store uploaded file: '.$e->getMessage();
 
             return false;
         }
-        $zipPath = storage_path("app/$zipFile");
+
+        if (! file_exists($zipPath)) {
+            $output[] = "ERROR: Uploaded file missing at $zipPath";
+
+            return false;
+        }
+
         $output[] = 'Received '.round(filesize($zipPath) / 1048576, 1).' MB';
 
         $zip = new \ZipArchive;

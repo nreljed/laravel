@@ -210,6 +210,7 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
     Route::middleware('permission:view-system-health')->group(function () {
         Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
         Route::post('/system-health/refresh', [AdminController::class, 'refreshSystemHealth'])->name('system-health.refresh');
+        Route::get('/system-health/logs/{file}', [AdminController::class, 'readSystemHealthLog'])->name('system-health.logs');
     });
 
     // Database maintenance (danger zone) — admin only, env-gated at controller level

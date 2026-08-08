@@ -749,6 +749,39 @@ class SystemHealthService
         }
     }
 
+    /**
+     * Read the tail of a log file inside storage/logs.
+     *
+     * @return array{name: string, path: string, size: string, modified: string, lines: string[], truncated: bool}
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function readLog(string $file, int $lines = 200): array
+    {
+        $lines = max(50, min(1000, $lines));
+        $name = basename($file);
+
+        if ($name !== $file || ! str_ends_with(strtolower($name), '.log')) {
+            throw new \InvalidArgumentException('Invalid log file name.');
+        }
+
+        $path = storage_path('logs/'.$name);
+        if (! is_file($path)) {
+            throw new \InvalidArgumentException('Log file not found.');
+        }
+
+        $size = filesize($path);
+
+        return [
+            'name' => $name,
+            'path' => $path,
+            'size' => $this->formatBytes($size),
+            'modified' => date('Y-m-d H:i:s', filemtime($path)),
+            'lines' => $this->tailFile($path, $lines),
+            'truncated' => $size > 2_097_152,
+        ];
+    }
+
     protected function getDebugAccessUrl(): ?string
     {
         $appKey = config('app.key');
