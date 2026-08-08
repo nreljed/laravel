@@ -206,6 +206,7 @@ interface LatestVersion {
   version?: string;
   url?: string;
   published_at?: string;
+  checked_at?: string;
   name?: string;
   body?: string;
   error?: string;
@@ -218,6 +219,7 @@ interface CoreLatestVersion {
   version?: string;
   url?: string;
   published_at?: string;
+  checked_at?: string;
   name?: string;
   body?: string;
   error?: string;
@@ -322,6 +324,16 @@ interface SystemHealthProps {
 /*
 ─── Helper Components ───
 */
+
+function formatDateTime(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleString();
+}
 
 function StatusDot({ ok }: { ok: boolean }) {
   return (
@@ -635,13 +647,34 @@ export default function SystemHealth(props: SystemHealthProps) {
           ? "unknown"
           : "not-recorded";
 
-  const coreStatus: "up-to-date" | "update-available" | "dev" | "unknown" = canCompareCoreVersions
-    ? coreUpToDate
-      ? "up-to-date"
-      : "update-available"
-    : coreIsDev
-      ? "dev"
-      : "unknown";
+  const coreStatus:
+    "up-to-date" | "update-available" | "dev" | "check-off" | "check-failed" | "not-recorded" =
+    canCompareCoreVersions
+      ? coreUpToDate
+        ? "up-to-date"
+        : "update-available"
+      : coreIsDev
+        ? "dev"
+        : props.core_latest_version.skipped
+          ? "check-off"
+          : props.core_latest_version.error
+            ? "check-failed"
+            : "not-recorded";
+
+  const coreStatusHint: Record<
+    "up-to-date" | "update-available" | "dev" | "check-off" | "check-failed" | "not-recorded",
+    string
+  > = {
+    "up-to-date": "Installed core matches the latest release.",
+    "update-available": "Run `composer update nreljed/dashboard-core`, rebuild, and deploy.",
+    dev: "Local path repo (@dev). Publish via `composer run core:publish`; production installs tagged releases.",
+    "check-off": "Add GITHUB_TOKEN to the server .env to enable release checks.",
+    "check-failed":
+      props.core_latest_version.message ??
+      props.core_latest_version.error ??
+      "Release check failed.",
+    "not-recorded": "No core version recorded for this install yet.",
+  };
 
   const all_extensions_loaded = props.extensions.every((e) => !e.required || e.loaded);
 
@@ -793,7 +826,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                             <>
                               {" "}
                               &middot;{" "}
-                              {new Date(props.latest_version.published_at).toLocaleDateString()}
+                              {new Date(props.latest_version.published_at).toLocaleString()}
                             </>
                           )}
                         </>
@@ -806,6 +839,11 @@ export default function SystemHealth(props: SystemHealthProps) {
                         </>
                       )}
                     </p>
+                    {formatDateTime(props.latest_version.checked_at) && (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        Checked {formatDateTime(props.latest_version.checked_at)}
+                      </p>
+                    )}
                   </div>
                   <Badge
                     variant={
@@ -880,9 +918,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                             <>
                               {" "}
                               &middot;{" "}
-                              {new Date(
-                                props.core_latest_version.published_at,
-                              ).toLocaleDateString()}
+                              {new Date(props.core_latest_version.published_at).toLocaleString()}
                             </>
                           )}
                         </>
@@ -895,6 +931,11 @@ export default function SystemHealth(props: SystemHealthProps) {
                         </>
                       )}
                     </p>
+                    {formatDateTime(props.core_latest_version.checked_at) && (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        Checked {formatDateTime(props.core_latest_version.checked_at)}
+                      </p>
+                    )}
                   </div>
                   <Badge
                     variant={
@@ -902,7 +943,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                         ? "success"
                         : coreStatus === "update-available"
                           ? "warning"
-                          : coreStatus === "dev"
+                          : coreStatus === "dev" || coreStatus === "check-off"
                             ? "info"
                             : "secondary"
                     }
@@ -914,9 +955,16 @@ export default function SystemHealth(props: SystemHealthProps) {
                         ? "Update available"
                         : coreStatus === "dev"
                           ? "Dev build"
-                          : "Unknown"}
+                          : coreStatus === "check-off"
+                            ? "Check off"
+                            : coreStatus === "check-failed"
+                              ? "Check failed"
+                              : "Not recorded"}
                   </Badge>
                 </div>
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  {coreStatusHint[coreStatus]}
+                </p>
               </div>
             </CardContent>
           </Card>

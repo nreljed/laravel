@@ -140,7 +140,17 @@ class SystemHealthTest extends TestCase
         $response->assertJsonPath('core_package.sha', null);
         $response->assertJsonPath('core_package.short', null);
         $response->assertJsonPath('core_package.url', null);
-        $response->assertJsonPath('core_package.is_dev', false);
+        // No core.json record + @dev constraint means a path-repo install → dev build.
+        $response->assertJsonPath('core_package.is_dev', true);
+        $response->assertJsonPath('core_latest_version.found', false);
+        $response->assertJsonPath('core_latest_version.skipped', true);
+
+        $payload = $response->json();
+        $this->assertIsString($payload['core_latest_version']['checked_at'] ?? null);
+        $this->assertSame(
+            'No GITHUB_TOKEN configured; skipped core release check.',
+            $payload['core_latest_version']['message'] ?? null,
+        );
     }
 
     public function test_refresh_reports_core_latest_version_when_token_configured(): void
@@ -168,6 +178,10 @@ class SystemHealthTest extends TestCase
             $response->assertJsonPath('core_latest_version.found', true);
             $response->assertJsonPath('core_latest_version.version', 'v0.1.2');
             $response->assertJsonPath('core_latest_version.repo', 'nreljed/dashboard-core');
+
+            $payload = $response->json();
+            $this->assertIsString($payload['latest_version']['checked_at'] ?? null);
+            $this->assertIsString($payload['core_latest_version']['checked_at'] ?? null);
         } finally {
             Env::getRepository()->clear('GITHUB_TOKEN');
         }

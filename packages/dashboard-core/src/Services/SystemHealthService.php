@@ -839,6 +839,7 @@ class SystemHealthService
         $cacheKey = 'system_health_latest_version';
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () {
+            $checkedAt = now()->toISO8601String();
             [$repo, $token] = $this->githubConfig();
 
             if ($token === null) {
@@ -846,6 +847,7 @@ class SystemHealthService
                     'found' => false,
                     'skipped' => true,
                     'repo' => $repo,
+                    'checked_at' => $checkedAt,
                     'message' => 'No GITHUB_TOKEN configured; skipped release check.',
                 ];
             }
@@ -859,6 +861,7 @@ class SystemHealthService
                     return [
                         'found' => true,
                         'repo' => $repo,
+                        'checked_at' => $checkedAt,
                         'version' => $data['tag_name'] ?? 'unknown',
                         'url' => $data['html_url'] ?? null,
                         'published_at' => $data['published_at'] ?? null,
@@ -867,9 +870,19 @@ class SystemHealthService
                     ];
                 }
 
-                return ['found' => false, 'repo' => $repo, 'error' => 'HTTP '.$response->status()];
+                return [
+                    'found' => false,
+                    'repo' => $repo,
+                    'checked_at' => $checkedAt,
+                    'error' => 'HTTP '.$response->status(),
+                ];
             } catch (\Exception $e) {
-                return ['found' => false, 'repo' => $repo, 'error' => $e->getMessage()];
+                return [
+                    'found' => false,
+                    'repo' => $repo,
+                    'checked_at' => $checkedAt,
+                    'error' => $e->getMessage(),
+                ];
             }
         });
     }
@@ -883,6 +896,7 @@ class SystemHealthService
         $cacheKey = 'system_health_core_latest_version';
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () {
+            $checkedAt = now()->toISO8601String();
             $repo = config('core.github_repo', CoreVersionService::PACKAGE_REPO);
             [, $token] = $this->githubConfig();
 
@@ -891,6 +905,7 @@ class SystemHealthService
                     'found' => false,
                     'skipped' => true,
                     'repo' => $repo,
+                    'checked_at' => $checkedAt,
                     'message' => 'No GITHUB_TOKEN configured; skipped core release check.',
                 ];
             }
@@ -904,6 +919,7 @@ class SystemHealthService
                     return [
                         'found' => true,
                         'repo' => $repo,
+                        'checked_at' => $checkedAt,
                         'version' => $data['tag_name'] ?? 'unknown',
                         'url' => $data['html_url'] ?? null,
                         'published_at' => $data['published_at'] ?? null,
@@ -912,9 +928,19 @@ class SystemHealthService
                     ];
                 }
 
-                return ['found' => false, 'repo' => $repo, 'error' => 'HTTP '.$response->status()];
+                return [
+                    'found' => false,
+                    'repo' => $repo,
+                    'checked_at' => $checkedAt,
+                    'error' => 'HTTP '.$response->status(),
+                ];
             } catch (\Exception $e) {
-                return ['found' => false, 'repo' => $repo, 'error' => $e->getMessage()];
+                return [
+                    'found' => false,
+                    'repo' => $repo,
+                    'checked_at' => $checkedAt,
+                    'error' => $e->getMessage(),
+                ];
             }
         });
     }
@@ -1000,7 +1026,7 @@ class SystemHealthService
             'url' => $sha !== null ? 'https://github.com/'.$repo.'/commit/'.$sha : null,
             'repo' => $repo,
             'version' => $version,
-            'is_dev' => $this->isCoreDevBuild($version),
+            'is_dev' => $this->isCoreDevBuild($version, $sha),
             'constraint' => $this->coreComposerConstraint(),
             'vendor_version' => $vendorVersion,
             'source_version' => $sourceVersion,
@@ -1010,15 +1036,26 @@ class SystemHealthService
         ];
     }
 
-    protected function isCoreDevBuild(?string $version): bool
+    protected function isCoreDevBuild(?string $version, ?string $sha): bool
     {
         if ($version === null) {
             return true;
         }
 
-        return str_contains($version, 'dev')
+        if (str_contains($version, 'dev')
             || $version === '@dev'
-            || str_starts_with($version, '9999999');
+            || str_starts_with($version, '9999999')) {
+            return true;
+        }
+
+        if ($sha !== null) {
+            return false;
+        }
+
+        $constraint = $this->coreComposerConstraint();
+
+        return $constraint !== null
+            && (str_contains($constraint, '@dev') || str_starts_with($constraint, 'dev-'));
     }
 
     protected function coreComposerConstraint(): ?string
