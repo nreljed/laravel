@@ -10,21 +10,26 @@
  * with `composer update nreljed/dashboard-core`.
  *
  * Usage:
- *   php scripts/core-publish.php                bump patch, push vX.Y.Z
+ *   php scripts/core-publish.php                bump patch, push vX.Y.Z + release
  *   php scripts/core-publish.php --version=1.2.3 push a specific version
  *   php scripts/core-publish.php --dry-run       show the version + diff only
+ *   php scripts/core-publish.php --no-release    skip creating the GitHub release
  *
  * Requirements:
  *   - git on PATH, authenticated against github.com (e.g. `gh auth setup-git`)
+ *   - gh CLI on PATH to auto-create the GitHub release (optional)
  */
 $dryRun = false;
 $version = null;
+$skipRelease = false;
 
 for ($i = 1, $n = count($argv); $i < $n; $i++) {
     $arg = $argv[$i];
 
     if ($arg === '--dry-run') {
         $dryRun = true;
+    } elseif ($arg === '--no-release') {
+        $skipRelease = true;
     } elseif ($arg === '--version') {
         $version = $argv[++$i] ?? null;
     } elseif (str_starts_with($arg, '--version=')) {
@@ -58,6 +63,81 @@ function runGit(array $args, ?string $cwd = null): string
     }
 
     return implode("\n", $output);
+}
+
+/**
+ * Build markdown release notes from the file diff between two tags.
+ */
+function buildReleaseNotes(string $cloneDir, ?string $previousTag, string $version): string
+{
+    $notes = "## dashboard-core v{$version}\n";
+
+    if ($previousTag === null) {
+        return $notes."\nInitial release of dashboard-core.\n";
+    }
+
+    $changed = [];
+
+    foreach (explode("\n", runGit(['diff', '--stat', $previousTag, 'v'.$version], $cloneDir)) as $line) {
+        if (str_contains($line, '|')) {
+            $name = trim(explode('|', $line, 2)[0]);
+
+            if ($name !== '') {
+                $changed[] = $name;
+            }
+        }
+    }
+
+    if ($changed !== []) {
+        $notes .= "\n### Changed files\n\n";
+
+        foreach ($changed as $name) {
+            $notes .= "- `{$name}`\n";
+        }
+    }
+
+    $notes .= "\n**Full diff:** https://github.com/nreljed/dashboard-core/compare/{$previousTag}...v{$version}\n";
+
+    return $notes;
+}
+
+/**
+ * Create a GitHub release for the given tag using the gh CLI. Returns true on
+ * success (or when the release already exists), false when gh is unavailable
+ * or the release could not be created.
+ */
+function createRelease(string $cloneDir, string $tag, ?string $previousTag): bool
+{
+    $notes = buildReleaseNotes($cloneDir, $previousTag, ltrim($tag, 'v'));
+    $notesFile = tempnam(sys_get_temp_dir(), 'core-release-');
+
+    if ($notesFile === false || file_put_contents($notesFile, $notes) === false) {
+        return false;
+    }
+
+    $cmd = 'gh release create '.escapeshellarg($tag)
+        .' --repo nreljed/dashboard-core'
+        .' --title '.escapeshellarg('dashboard-core '.$tag)
+        .' --notes-file '.escapeshellarg($notesFile);
+
+    $output = [];
+    exec($cmd.' 2>&1', $output, $code);
+
+    unlink($notesFile);
+
+    if ($code !== 0) {
+        $message = implode("\n", $output);
+
+        if (str_contains($message, 'already exists')) {
+            return true;
+        }
+
+        fwrite(STDERR, 'gh release create failed: '.$cmd."\n".$message."\n");
+
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -157,23 +237,28 @@ if (array_merge($functionalDiff['added'], $functionalDiff['changed'], $functiona
     exit(0);
 }
 
-// Determine the next version.
-if ($version === null) {
-    $tagLines = array_filter(explode("\n", runGit(['ls-remote', '--tags', 'origin'], $cloneDir)));
-    $semverTags = [];
+// Resolve the latest existing tag (used for the next version and release notes).
+$previousTag = null;
+$semverTags = [];
 
-    foreach ($tagLines as $line) {
-        if (preg_match('/refs\/tags\/v(\d+)\.(\d+)\.(\d+)$/', trim($line), $m)) {
-            $semverTags[] = [$m[1], $m[2], $m[3]];
-        }
+foreach (array_filter(explode("\n", runGit(['ls-remote', '--tags', 'origin'], $cloneDir))) as $line) {
+    if (preg_match('/refs\/tags\/v(\d+)\.(\d+)\.(\d+)$/', trim($line), $m)) {
+        $semverTags[] = [$m[1], $m[2], $m[3]];
     }
+}
 
-    if ($semverTags !== []) {
-        usort($semverTags, fn ($a, $b) => [$a[0], $a[1], $a[2]] <=> [$b[0], $b[1], $b[2]]);
-        $last = end($semverTags);
-        $version = $last[0].'.'.$last[1].'.'.((int) $last[2] + 1);
-    } else {
+if ($semverTags !== []) {
+    usort($semverTags, fn ($a, $b) => [$a[0], $a[1], $a[2]] <=> [$b[0], $b[1], $b[2]]);
+    $previousTag = 'v'.implode('.', end($semverTags));
+}
+
+// Determine the next version (patch bump unless explicitly overridden).
+if ($version === null) {
+    if ($previousTag === null) {
         $version = '0.1.0';
+    } else {
+        [$major, $minor, $patch] = explode('.', substr($previousTag, 1));
+        $version = $major.'.'.$minor.'.'.((int) $patch + 1);
     }
 }
 
@@ -251,9 +336,25 @@ runGit(['commit', '-q', '-m', "chore: core v{$version}"], $cloneDir);
 runGit(['tag', "v{$version}"], $cloneDir);
 runGit(['push', 'origin', 'main', '--tags'], $cloneDir);
 
+$releaseTag = 'v'.$version;
+$releaseCreated = false;
+
+if (! $skipRelease) {
+    $releaseCreated = createRelease($cloneDir, $releaseTag, $previousTag);
+}
+
 out('');
 out('Published nreljed/dashboard-core v'.$version);
 out('  repo:  https://github.com/nreljed/dashboard-core');
+
+if ($releaseCreated) {
+    out('  release: https://github.com/nreljed/dashboard-core/releases/tag/'.$releaseTag);
+} elseif (! $skipRelease) {
+    out('');
+    out('Release not created automatically (gh unavailable or unauthenticated). Create it manually:');
+    out('  gh release create '.$releaseTag.' --repo nreljed/dashboard-core --title "dashboard-core v'.$version.'"');
+}
+
 out('');
 out('Next steps:');
 out('  1. Commit the composer.json version bump in this repo (master).');
