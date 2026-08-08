@@ -14,6 +14,7 @@ interface TestPost {
   slug: string;
   excerpt: string | null;
   featured_image: string | null;
+  featured_image_srcset?: string | null;
   published_at: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -60,7 +61,11 @@ export default function TestPostsPublicIndex({ testPosts }: TestPostsIndexProps)
                     <div className="aspect-video overflow-hidden">
                       <img
                         src={testPost.featured_image}
+                        srcSet={testPost.featured_image_srcset || undefined}
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                         alt={testPost.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover transition-transform group-hover:scale-105"
                       />
                     </div>

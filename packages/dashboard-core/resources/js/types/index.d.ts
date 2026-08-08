@@ -20,4 +20,16 @@ export type PageProps<T extends Record<string, unknown> = Record<string, unknown
   auth: {
     user: User;
   };
+  csp_nonce?: string;
+  app_url?: string;
+  seo?: {
+    title?: string;
+    description?: string;
+    og_image?: string;
+  };
+  brand?: {
+    name?: string;
+    logo?: string;
+    favicon?: string;
+  };
 };

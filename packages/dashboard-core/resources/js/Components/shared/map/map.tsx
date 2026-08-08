@@ -93,7 +93,9 @@ const LeafletMarkerClusterGroup = createLazyComponent(async () => {
   const mod = await import("react-leaflet-cluster");
   return { default: mod.default };
 });
-const Map = React.forwardRef(
+type MapProps = React.ComponentProps<typeof LeafletMapContainer>;
+
+const Map = React.forwardRef<L.Map, MapProps>(
   (
     {
       zoom = 15,
@@ -146,7 +148,22 @@ function useMapLayersContext() {
   }
   return context;
 }
-function MapTileLayer({ name = "Default", url, attribution, darkUrl, darkAttribution, ...props }) {
+type MapTileLayerProps = {
+  name?: string;
+  url?: string;
+  attribution?: string;
+  darkUrl?: string;
+  darkAttribution?: string;
+} & Omit<React.ComponentProps<typeof LeafletTileLayer>, "url" | "attribution">;
+
+function MapTileLayer({
+  name = "Default",
+  url,
+  attribution,
+  darkUrl,
+  darkAttribution,
+  ...props
+}: MapTileLayerProps) {
   const map = useMap();
   if (map.attributionControl) {
     map.attributionControl.setPrefix("");
@@ -347,6 +364,16 @@ function MapLayersControl({
     </MapControlContainer>
   );
 }
+type MapMarkerProps = {
+  icon?: React.ReactNode;
+  iconAnchor?: [number, number];
+  popupAnchor?: [number, number];
+  tooltipAnchor?: [number, number];
+} & Omit<
+  React.ComponentProps<typeof LeafletMarker>,
+  "icon" | "className" | "popupAnchor" | "tooltipAnchor"
+>;
+
 function MapMarker({
   icon,
   iconAnchor,
@@ -354,7 +381,7 @@ function MapMarker({
   popupAnchor,
   tooltipAnchor,
   ...props
-}) {
+}: MapMarkerProps) {
   const { L } = useLeaflet();
   if (!L) return null;
   const effectiveAnchor = iconAnchor || [12, 24];
@@ -487,7 +514,12 @@ function MapTooltip({ className, children, side = "top", sideOffset = 15, ...pro
     </LeafletTooltip>
   );
 }
-function MapZoomControl({ position = "top-1 left-1", className, ...props }) {
+type MapZoomControlProps = {
+  position?: string;
+  className?: string;
+} & React.ComponentProps<typeof ButtonGroup>;
+
+function MapZoomControl({ position = "top-1 left-1", className, ...props }: MapZoomControlProps) {
   const map = useMap();
   const [zoomLevel, setZoomLevel] = useState(map.getZoom());
   useMapEvents({

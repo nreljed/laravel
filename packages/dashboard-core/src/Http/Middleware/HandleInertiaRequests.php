@@ -13,6 +13,7 @@ use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\NotificationService;
 use Nreljed\DashboardCore\Services\SettingsService;
 use Nreljed\DashboardCore\Traits\RelativeTime;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -123,6 +124,13 @@ class HandleInertiaRequests extends Middleware
                 'og_image' => fn () => self::safeSetting('app_logo', ''),
             ],
             'app_url' => fn () => self::safeSetting('app_url', config('app.url')),
+            'ziggy' => function () {
+                try {
+                    return (new Ziggy)->toArray();
+                } catch (\Throwable) {
+                    return [];
+                }
+            },
             'registration' => [
                 'enabled' => fn () => self::safeSetting('enable_registration', '1') === '1',
                 'require_email_verification' => fn () => self::safeSetting('require_email_verification', '0') === '1',

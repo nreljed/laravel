@@ -13,15 +13,19 @@ return [
     | You can specify a custom SSR bundle path, or omit it to let Inertia
     | try and automatically detect it for you.
     |
-    | Do note that enabling these options will NOT automatically make SSR work,
-    | as a separate rendering service needs to be available. To learn more,
-    | please visit https://inertiajs.com/server-side-rendering
+    | This project targets plain shared hosting (no persistent Node process),
+    | so SSR is OFF by default — the app renders purely client-side. It is an
+    | opt-in: build `bootstrap/ssr` (npm run vite build --ssr), keep
+    | `node bootstrap/ssr/ssr.js` running on a Node-capable host, and set
+    | INERTIA_SSR_ENABLED=true.
+    |
+    | To learn more, please visit https://inertiajs.com/server-side-rendering
     |
     */
 
     'ssr' => [
 
-        'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', false),
 
         'runtime' => env('INERTIA_SSR_RUNTIME', 'node'),
 

@@ -62,6 +62,66 @@ class DeployController extends Controller
         return response()->json(['success' => true, 'message' => '.env written']);
     }
 
+    public function updateEnvValues(Request $request)
+    {
+        $this->verifyToken($request);
+
+        $values = $request->input('values');
+
+        if (! is_array($values) || $values === []) {
+            return response()->json(['error' => 'No values provided'], 400);
+        }
+
+        $forbiddenKeys = ['APP_KEY', 'DEPLOY_TOKEN'];
+        $safe = [];
+
+        foreach ($values as $key => $value) {
+            $key = trim((string) $key);
+            if ($key === '' || preg_match('/\s/', $key)) {
+                return response()->json(['error' => "Invalid environment key: {$key}"], 400);
+            }
+            if (in_array($key, $forbiddenKeys, true)) {
+                return response()->json(['error' => "Setting {$key} cannot be modified via this endpoint."], 403);
+            }
+            $safe[$key] = $value === null ? '' : (string) $value;
+        }
+
+        $envPath = base_path('.env');
+
+        if (File::exists($envPath)) {
+            File::copy($envPath, $envPath.'.backup.'.now()->timestamp);
+            $content = File::get($envPath);
+        } else {
+            $content = '';
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $content);
+        $written = [];
+
+        foreach ($lines as &$line) {
+            if (preg_match('/^\s*([A-Z0-9_]+)\s*=/', $line, $m)) {
+                $key = $m[1];
+                if (array_key_exists($key, $safe)) {
+                    $line = "{$key}={$safe[$key]}";
+                    $written[$key] = true;
+                }
+            }
+        }
+        unset($line);
+
+        foreach ($safe as $key => $value) {
+            if (! isset($written[$key])) {
+                $lines[] = "{$key}={$value}";
+            }
+        }
+
+        File::put($envPath, implode(PHP_EOL, $lines).PHP_EOL);
+
+        Artisan::call('config:clear');
+
+        return response()->json(['success' => true, 'updated' => array_keys($safe)]);
+    }
+
     public function cacheClear(Request $request)
     {
         $this->verifyToken($request);

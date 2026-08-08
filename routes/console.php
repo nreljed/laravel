@@ -11,3 +11,9 @@ Artisan::command('inspire', function () {
 Schedule::command('schedule:publish')->everyMinute();
 Schedule::command('notifications:purge', ['--days' => 90])->daily();
 Schedule::command('app:prune-audit-logs')->daily();
+
+// Shared-hosting queue worker: processes the database queue in short bursts
+// so SendEmail / GenerateSeoForPost (and batch SEO jobs) actually execute.
+Schedule::command('queue:work', ['--stop-when-empty' => true])
+    ->everyMinute()
+    ->withoutOverlapping();

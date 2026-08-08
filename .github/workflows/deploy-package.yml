@@ -162,6 +162,9 @@ jobs:
           DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
           GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           DB_MAINTENANCE_ENABLED=${{ vars.DB_MAINTENANCE_ENABLED || 'false' }}
+          # Shared host: no persistent Node process, so Inertia SSR stays OFF.
+          # Flip to true ONLY if the host runs node bootstrap/ssr/ssr.js.
+          INERTIA_SSR_ENABLED=false
           '@ | Set-Content -Path .env -Encoding UTF8
 
       - name: Copy deploy script

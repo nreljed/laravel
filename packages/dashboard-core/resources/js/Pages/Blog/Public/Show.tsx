@@ -31,6 +31,7 @@ interface Post {
   content: string | null;
   excerpt: string | null;
   featured_image: string | null;
+  featured_image_srcset?: string | null;
   published_at: string | null;
   meta_title: string | null;
   meta_description: string | null;
@@ -47,6 +48,7 @@ interface BlogShowProps {
 export default function BlogShow({ post }: BlogShowProps) {
   const pageProps = usePage().props as Record<string, unknown>;
   const appUrl = (pageProps.app_url as string) || "";
+  const cspNonce = (pageProps.csp_nonce as string) || undefined;
   const canonical = appUrl ? `${appUrl}/blog/${post.slug}` : undefined;
   const ogImageUrl = post.og_image || post.featured_image || undefined;
   const { user, capabilities } = useAuth();
@@ -89,6 +91,7 @@ export default function BlogShow({ post }: BlogShowProps) {
       <Head>
         <script
           type="application/ld+json"
+          nonce={cspNonce}
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </Head>
@@ -147,7 +150,11 @@ export default function BlogShow({ post }: BlogShowProps) {
           <div className="mb-8 overflow-hidden rounded-lg">
             <img
               src={post.featured_image}
+              srcSet={post.featured_image_srcset || undefined}
+              sizes="(min-width: 768px) 768px, 100vw"
               alt={post.title}
+              loading="lazy"
+              decoding="async"
               className="h-auto w-full object-cover"
             />
           </div>

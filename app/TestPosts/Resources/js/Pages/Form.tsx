@@ -31,23 +31,35 @@ interface TestPostsFormProps {
   testPost: TestPost | null;
 }
 
+type TestPostsFormData = {
+  title: string;
+  content: string;
+  excerpt: string;
+  gallery_images: ServerGalleryImage[];
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
+  address: Omit<AddressData, "raw"> | null;
+  map_zoom: number | null;
+};
+
 export default function TestPostsForm({ testPost }: TestPostsFormProps) {
   const isEditing = !!testPost;
 
-  const form = useForm({
+  const form = useForm<TestPostsFormData>({
     title: testPost?.title || "",
     content: testPost?.content || "",
     excerpt: testPost?.excerpt || "",
     gallery_images: testPost?.gallery_images || ([] as ServerGalleryImage[]),
     status: testPost?.status || "draft",
-    latitude: testPost?.latitude ?? (null as number | null),
-    longitude: testPost?.longitude ?? (null as number | null),
-    address: testPost?.address ?? (null as AddressData | null),
-    map_zoom: testPost?.map_zoom ?? (null as number | null),
+    latitude: testPost?.latitude ?? null,
+    longitude: testPost?.longitude ?? null,
+    address: testPost?.address ?? null,
+    map_zoom: testPost?.map_zoom ?? null,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
     const options = {
       preserveScroll: true,
       onSuccess: () => {
@@ -137,7 +149,9 @@ export default function TestPostsForm({ testPost }: TestPostsFormProps) {
               <CardContent>
                 <GalleryUploader
                   images={form.data.gallery_images}
-                  onChange={(images) => form.setData("gallery_images", images)}
+                  onChange={(images: ServerGalleryImage[]) =>
+                    form.setData("gallery_images", images)
+                  }
                   uploadUrl={route("dashboard.test-posts.upload-image").toString()}
                   deleteUrl={route("dashboard.test-posts.delete-image").toString()}
                   maxImages={20}

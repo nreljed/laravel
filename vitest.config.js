@@ -11,6 +11,8 @@ export default defineConfig({
         include: [
             "resources/js/**/*.test.{ts,tsx}",
             "packages/dashboard-core/resources/js/**/*.test.{ts,tsx}",
+            "packages/dashboard-core/src/*/Resources/js/**/*.test.{ts,tsx}",
+            "app/TestPosts/Resources/js/**/*.test.{ts,tsx}",
         ],
         setupFiles: ["./resources/js/test-setup.ts"],
         coverage: {
@@ -19,6 +21,8 @@ export default defineConfig({
             include: [
                 "resources/js/**/*.{ts,tsx}",
                 "packages/dashboard-core/resources/js/**/*.{ts,tsx}",
+                "packages/dashboard-core/src/*/Resources/js/**/*.{ts,tsx}",
+                "app/TestPosts/Resources/js/**/*.{ts,tsx}",
             ],
             exclude: [
                 "resources/js/**/__tests__/**",
@@ -27,6 +31,11 @@ export default defineConfig({
                 "packages/dashboard-core/resources/js/**/__tests__/**",
                 "packages/dashboard-core/resources/js/**/*.test.*",
                 "packages/dashboard-core/resources/js/Components/ui/**",
+                "packages/dashboard-core/src/*/Resources/js/**/__tests__/**",
+                "packages/dashboard-core/src/*/Resources/js/**/*.test.*",
+                "packages/dashboard-core/src/*/Resources/js/**/Components/ui/**",
+                "app/TestPosts/Resources/js/**/__tests__/**",
+                "app/TestPosts/Resources/js/**/*.test.*",
             ],
         },
     },

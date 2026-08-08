@@ -79,6 +79,9 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             className="sm:hidden"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="site-mobile-menu"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -86,7 +89,7 @@ export function SiteHeader() {
         </div>
       </div>
       {mobileMenuOpen && (
-        <div className="border-t border-border sm:hidden">
+        <div id="site-mobile-menu" className="border-t border-border sm:hidden">
           <div className="space-y-1 px-4 py-3">
             <Link
               href={route("home")}

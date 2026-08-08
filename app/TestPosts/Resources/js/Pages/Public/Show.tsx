@@ -1,4 +1,4 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import PublicLayout from "@/Layouts/PublicLayout";
 import { MapPin, Calendar, ArrowLeft } from "lucide-react";
 import { Map, MapTileLayer, MapMarker, MapZoomControl } from "@/Components/shared/map";
@@ -33,6 +33,7 @@ interface TestPost {
   content: string | null;
   excerpt: string | null;
   featured_image: string | null;
+  featured_image_srcset?: string | null;
   gallery_images: GalleryImage[] | null;
   published_at: string | null;
   latitude: number | null;
@@ -63,6 +64,8 @@ function formatAddress(address: AddressData | null): string | null {
 }
 
 export default function TestPostsPublicShow({ testPost }: TestPostsShowProps) {
+  const pageProps = usePage().props as Record<string, unknown>;
+  const cspNonce = (pageProps.csp_nonce as string) || undefined;
   const hasLocation = testPost.latitude != null && testPost.longitude != null;
   const center: [number, number] = hasLocation
     ? [testPost.latitude!, testPost.longitude!]
@@ -83,6 +86,7 @@ export default function TestPostsPublicShow({ testPost }: TestPostsShowProps) {
         {hasLocation && (
           <script
             type="application/ld+json"
+            nonce={cspNonce}
             dangerouslySetInnerHTML={{
               __html: JSON.stringify({
                 "@context": "https://schema.org",
@@ -93,7 +97,6 @@ export default function TestPostsPublicShow({ testPost }: TestPostsShowProps) {
                 datePublished: testPost.published_at || undefined,
                 author: testPost.user ? { "@type": "Person", name: testPost.user.name } : undefined,
                 ...(hasLocation && {
-                  "@type": "Article",
                   spatialCoverage: {
                     "@type": "Place",
                     geo: {
@@ -147,7 +150,11 @@ export default function TestPostsPublicShow({ testPost }: TestPostsShowProps) {
           <div className="mb-8 overflow-hidden rounded-lg">
             <img
               src={testPost.featured_image}
+              srcSet={testPost.featured_image_srcset || undefined}
+              sizes="(min-width: 896px) 896px, 100vw"
               alt={testPost.title}
+              loading="lazy"
+              decoding="async"
               className="h-auto w-full object-cover"
             />
           </div>
@@ -193,6 +200,8 @@ export default function TestPostsPublicShow({ testPost }: TestPostsShowProps) {
                     <img
                       src={image.url}
                       alt={image.alt || testPost.title}
+                      loading="lazy"
+                      decoding="async"
                       className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                     />
                     {image.caption && (

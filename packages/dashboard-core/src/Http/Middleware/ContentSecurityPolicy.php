@@ -13,6 +13,7 @@ class ContentSecurityPolicy
     {
         $nonce = base64_encode(random_bytes(16));
         Vite::useCspNonce($nonce);
+        $request->attributes->set('csp_nonce', $nonce);
 
         $response = $next($request);
 

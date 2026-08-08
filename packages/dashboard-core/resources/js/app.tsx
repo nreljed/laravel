@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/Components/ui/tooltip";
 import { Toaster, toast } from "@/Components/ui/toast";
+import { ErrorBoundary } from "@/Components/ErrorBoundary";
 import { registerDashboard, type PageImport } from "./dashboard";
 
 import "@/Components/ui/sidebar";
@@ -38,7 +39,7 @@ export type FoundationAppConfig = {
 
 export type { PageImport } from "./dashboard";
 
-export function createFoundationApp(config: FoundationAppConfig = {}): void {
+export function buildPageMap(config: FoundationAppConfig = {}): Record<string, PageImport> {
   const pageMap: Record<string, PageImport> = {
     ...registerDashboard(),
   };
@@ -54,6 +55,12 @@ export function createFoundationApp(config: FoundationAppConfig = {}): void {
       }
     }
   }
+
+  return pageMap;
+}
+
+export function createFoundationApp(config: FoundationAppConfig = {}): void {
+  const pageMap = buildPageMap(config);
 
   createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -77,7 +84,9 @@ export function createFoundationApp(config: FoundationAppConfig = {}): void {
           disableTransitionOnChange
         >
           <TooltipProvider>
-            <App {...props} />
+            <ErrorBoundary key={props.initialPage.url}>
+              <App {...props} />
+            </ErrorBoundary>
             <InertiaFlashListener />
             <Toaster />
           </TooltipProvider>

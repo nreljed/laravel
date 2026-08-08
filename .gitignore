@@ -10,6 +10,7 @@
 /public/build/*
 /public/hot
 /public/storage
+/bootstrap/ssr/*
 /.phpunit.result.cache
 /phpunit.xml
 vendor-bin

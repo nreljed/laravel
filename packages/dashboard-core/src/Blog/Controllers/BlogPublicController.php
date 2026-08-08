@@ -5,6 +5,8 @@ namespace Nreljed\DashboardCore\Blog\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Nreljed\DashboardCore\Blog\Models\Post;
+use Nreljed\DashboardCore\Blog\Models\PostCategory;
+use Nreljed\DashboardCore\Blog\Models\PostTag;
 use Nreljed\DashboardCore\Http\Controllers\Controller;
 
 class BlogPublicController extends Controller
@@ -30,10 +32,25 @@ class BlogPublicController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $categoryModel = $category
+            ? PostCategory::query()->where('slug', $category)->first()
+            : null;
+        $tagModel = $tag
+            ? PostTag::query()->where('slug', $tag)->first()
+            : null;
+
         return Inertia::render('Blog/Public/Index', [
             'posts' => $posts,
-            'category' => $category ?? null,
-            'tag' => $tag ?? null,
+            'category' => $categoryModel ? [
+                'name' => $categoryModel->name,
+                'slug' => $categoryModel->slug,
+                'meta_title' => $categoryModel->meta_title,
+                'meta_description' => $categoryModel->meta_description,
+            ] : null,
+            'tag' => $tagModel ? [
+                'name' => $tagModel->name,
+                'slug' => $tagModel->slug,
+            ] : null,
         ]);
     }
 

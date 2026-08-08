@@ -36,7 +36,9 @@ export default function AuthenticatedLayout({
 
   return (
     <SidebarProvider>
-      <Head title={title ?? "Dashboard"} />
+      <Head title={title ?? "Dashboard"}>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <AppSidebar />
       <SidebarInset>
         <ImpersonationBanner />

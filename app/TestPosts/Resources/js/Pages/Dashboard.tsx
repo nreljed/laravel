@@ -4,6 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
+import type { PageProps } from "@/types";
 
 interface TestPostStats {
   total: number;
@@ -21,8 +22,8 @@ interface RecentTestPost {
 }
 
 export default function TestPostsDashboard() {
-  const { stats, recentPosts } = usePage<{ stats: TestPostStats; recentPosts: RecentTestPost[] }>()
-    .props;
+  const { stats, recentPosts } =
+    usePage<PageProps<{ stats: TestPostStats; recentPosts: RecentTestPost[] }>>().props;
 
   const statCards = [
     {

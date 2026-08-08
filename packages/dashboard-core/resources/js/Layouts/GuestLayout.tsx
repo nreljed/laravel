@@ -8,7 +8,9 @@ export default function GuestLayout({ children, title }: PropsWithChildren<{ tit
 
   return (
     <>
-      <Head title={title} />
+      <Head title={title}>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="flex justify-center">

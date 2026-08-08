@@ -40,12 +40,12 @@ interface MapOptions {
 interface MapSectionInnerProps {
   latitude: number | null;
   longitude: number | null;
-  address: AddressData | null;
+  address: Omit<AddressData, "raw"> | null;
   mapZoom: number | null;
   mapData?: string | null;
   onLatitudeChange: (_lat: number | null) => void;
   onLongitudeChange: (_lng: number | null) => void;
-  onAddressChange: (_address: AddressData | null) => void;
+  onAddressChange: (_address: Omit<AddressData, "raw"> | null) => void;
   onMapZoomChange: (_zoom: number | null) => void;
   onMapDataChange?: (_geoJson: string | null) => void;
   title?: string;

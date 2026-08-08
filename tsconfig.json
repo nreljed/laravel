@@ -30,6 +30,9 @@
     "packages/dashboard-core/resources/js/**/*.d.ts",
     "packages/dashboard-core/src/**/Resources/js/**/*.ts",
     "packages/dashboard-core/src/**/Resources/js/**/*.tsx",
-    "packages/dashboard-core/src/**/Resources/js/**/*.d.ts"
+    "packages/dashboard-core/src/**/Resources/js/**/*.d.ts",
+    "app/TestPosts/Resources/js/**/*.ts",
+    "app/TestPosts/Resources/js/**/*.tsx",
+    "app/TestPosts/Resources/js/**/*.d.ts"
   ]
 }
