@@ -75,10 +75,11 @@ jobs:
           DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}"
           echo "Release: $VER"
 
-          # Try direct upload first
+          # Try direct upload first. A non-zero curl exit (e.g. timeout, exit 28)
+          # must not abort the step (set -e) — fall through to /deploy/check.
           UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
             -F "file=@deploy.zip;filename=deploy.zip" \
-            "$APP_URL/deploy/upload?token=$DEPLOY_TOKEN" 2>&1)
+            "$APP_URL/deploy/upload?token=$DEPLOY_TOKEN" 2>&1 || true)
           UPLOAD_CODE=$(echo "$UPLOAD_RESP" | tail -1)
           UPLOAD_BODY=$(echo "$UPLOAD_RESP" | sed '$d')
 
@@ -97,7 +98,7 @@ jobs:
           for i in 1 2 3 4 5; do
             CHECK_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 -X POST \
               -H "User-Agent: GitHub-Actions-Deploy" -H "Accept: application/json" \
-              "$APP_URL/deploy/check?token=$DEPLOY_TOKEN" 2>&1)
+              "$APP_URL/deploy/check?token=$DEPLOY_TOKEN" 2>&1 || true)
             CHECK_CODE=$(echo "$CHECK_RESP" | tail -1)
             CHECK_BODY=$(echo "$CHECK_RESP" | sed '$d')
 
