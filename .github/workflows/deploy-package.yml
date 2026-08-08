@@ -175,8 +175,8 @@ jobs:
           $coreSha = (git log -1 --format="%H" -- packages/dashboard-core).Trim()
           New-Item -ItemType Directory -Path "storage\app" -Force | Out-Null
           Set-Content -Path "storage\app\core.sha" -Value $coreSha -NoNewline -Encoding ASCII
-          @{ name = "dashboard-core"; version = $coreVersion; sha = $coreSha } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
-          Write-Output "core.json recorded: dashboard-core $coreVersion @ $coreSha"
+          @{ name = "dashboard-core"; version = $coreVersion; sha = $coreSha; repo = "${{ github.repository }}" } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
+          Write-Output "core.json recorded: dashboard-core $coreVersion @ $coreSha (${{ github.repository }})"
 
       - name: Create deploy.zip
         shell: pwsh

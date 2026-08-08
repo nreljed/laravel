@@ -7,13 +7,19 @@ class CoreVersionService
     public const PACKAGE_NAME = 'dashboard-core';
 
     /**
+     * GitHub repo hosting the dashboard-core distribution source. Consuming
+     * apps install it via Composer as a vcs package from this repo.
+     */
+    public const PACKAGE_REPO = 'nreljed/dashboard-core';
+
+    /**
      * Resolve the installed dashboard-core package identity.
      *
      * Prefers the build-time recorded storage/app/core.json (name, version,
-     * sha), then falls back to the legacy storage/app/core.sha marker plus the
-     * version field of the installed package composer.json.
+     * sha, repo), then falls back to the legacy storage/app/core.sha marker
+     * plus the version field of the installed package composer.json.
      *
-     * @return array{name: string, version: string|null, sha: string|null}
+     * @return array{name: string, version: string|null, sha: string|null, repo: string}
      */
     public function info(): array
     {
@@ -27,6 +33,7 @@ class CoreVersionService
             'name' => self::PACKAGE_NAME,
             'version' => $this->composerVersion(),
             'sha' => $this->shaFromMarker(),
+            'repo' => $this->defaultRepo(),
         ];
     }
 
@@ -39,13 +46,14 @@ class CoreVersionService
 
     public function commitUrl(): ?string
     {
-        $sha = $this->info()['sha'];
+        $info = $this->info();
+        $sha = $info['sha'];
 
-        return $sha !== null ? 'https://github.com/nreljed/laravel/commit/'.$sha : null;
+        return $sha !== null ? 'https://github.com/'.$info['repo'].'/commit/'.$sha : null;
     }
 
     /**
-     * @return array{name: string, version: string|null, sha: string|null}|null
+     * @return array{name: string, version: string|null, sha: string|null, repo: string}|null
      */
     protected function fromJsonFile(): ?array
     {
@@ -65,6 +73,7 @@ class CoreVersionService
             'name' => $this->clean($data['name'] ?? null) ?? self::PACKAGE_NAME,
             'version' => $this->clean($data['version'] ?? null),
             'sha' => $this->clean($data['sha'] ?? null),
+            'repo' => $this->clean($data['repo'] ?? null) ?? $this->defaultRepo(),
         ];
     }
 
@@ -86,6 +95,11 @@ class CoreVersionService
         $meta = json_decode((string) file_get_contents($path), true);
 
         return is_array($meta) ? $this->clean($meta['version'] ?? null) : null;
+    }
+
+    protected function defaultRepo(): string
+    {
+        return config('core.github_repo', self::PACKAGE_REPO);
     }
 
     protected function clean(mixed $value): ?string

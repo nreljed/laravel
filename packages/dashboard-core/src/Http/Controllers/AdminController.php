@@ -22,6 +22,7 @@ class AdminController extends Controller
     public function refreshSystemHealth(SystemHealthService $systemHealth): JsonResponse
     {
         Cache::forget('system_health_latest_version');
+        Cache::forget('system_health_core_latest_version');
 
         return response()->json($systemHealth->getAll());
     }

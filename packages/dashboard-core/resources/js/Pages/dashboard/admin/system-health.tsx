@@ -22,6 +22,7 @@ import {
   Bug,
   Layers,
   GitCompareArrows,
+  GitBranch,
   FolderOpen,
 } from "lucide-react";
 import AdminLayout from "@/Layouts/AdminLayout";
@@ -195,9 +196,25 @@ interface DeployedVersion {
   exists: boolean;
   version?: string;
   file_path?: string;
+  origin?: "deployed" | "git";
+  describe?: string;
+  is_dirty?: boolean;
 }
 interface LatestVersion {
   found: boolean;
+  repo?: string;
+  version?: string;
+  url?: string;
+  published_at?: string;
+  name?: string;
+  body?: string;
+  error?: string;
+  skipped?: boolean;
+  message?: string;
+}
+interface CoreLatestVersion {
+  found: boolean;
+  repo?: string;
   version?: string;
   url?: string;
   published_at?: string;
@@ -219,7 +236,13 @@ interface CorePackage {
   sha: string | null;
   short: string | null;
   url: string | null;
+  repo: string | null;
   version: string | null;
+  is_dev?: boolean;
+  constraint?: string | null;
+  vendor_version?: string | null;
+  source_version?: string | null;
+  needs_reinstall?: boolean;
 }
 
 interface LogFile {
@@ -291,6 +314,7 @@ interface SystemHealthProps {
   deployed_version: DeployedVersion;
   latest_version: LatestVersion;
   core_package: CorePackage;
+  core_latest_version: CoreLatestVersion;
   laravel_cache: LaravelCacheStatus;
   debug_access_url: string | null;
 }
@@ -515,11 +539,22 @@ export default function SystemHealth(props: SystemHealthProps) {
       L("HTTPS", String(props.server.is_https)),
       "",
     );
-    if (props.deployed_version.exists || props.latest_version.found || props.core_package.sha)
+    if (
+      props.deployed_version.exists ||
+      props.latest_version.found ||
+      props.core_latest_version.found ||
+      props.core_package.sha ||
+      props.core_package.version
+    )
       lines.push(
         "=== VERSION ===",
         ...(props.deployed_version.exists
-          ? [L("Deployed", props.deployed_version.version ?? "?")]
+          ? [
+              L(
+                props.deployed_version.origin === "git" ? "Git HEAD" : "Deployed",
+                props.deployed_version.version ?? "?",
+              ),
+            ]
           : []),
         L("Latest", props.latest_version.found ? (props.latest_version.version ?? "?") : "Unknown"),
         L(
@@ -527,6 +562,14 @@ export default function SystemHealth(props: SystemHealthProps) {
           props.core_package.short
             ? `${props.core_package.name}@${props.core_package.short}`
             : `${props.core_package.name} (unrecorded)`,
+        ),
+        L(
+          "Core Version",
+          props.core_package.version ? `v${props.core_package.version}` : "Unknown",
+        ),
+        L(
+          "Core Latest",
+          props.core_latest_version.found ? (props.core_latest_version.version ?? "?") : "Unknown",
         ),
         "",
       );
@@ -565,6 +608,7 @@ export default function SystemHealth(props: SystemHealthProps) {
   const showVersionCard =
     props.deployed_version.exists ||
     props.latest_version.found ||
+    props.core_latest_version.found ||
     Boolean(props.core_package.sha) ||
     Boolean(props.core_package.version);
 
@@ -572,6 +616,32 @@ export default function SystemHealth(props: SystemHealthProps) {
 
   const isUpToDate =
     canCompareVersions && props.deployed_version.version === props.latest_version.version;
+
+  const coreInstalled = props.core_package.version;
+  const coreIsDev = props.core_package.is_dev === true;
+  const canCompareCoreVersions =
+    props.core_latest_version.found && Boolean(coreInstalled) && !coreIsDev;
+  const coreUpToDate =
+    canCompareCoreVersions && coreInstalled === props.core_latest_version.version;
+
+  const appStatus: "up-to-date" | "update-available" | "unknown" | "git" | "not-recorded" =
+    canCompareVersions
+      ? isUpToDate
+        ? "up-to-date"
+        : "update-available"
+      : props.deployed_version.origin === "git"
+        ? "git"
+        : props.deployed_version.exists
+          ? "unknown"
+          : "not-recorded";
+
+  const coreStatus: "up-to-date" | "update-available" | "dev" | "unknown" = canCompareCoreVersions
+    ? coreUpToDate
+      ? "up-to-date"
+      : "update-available"
+    : coreIsDev
+      ? "dev"
+      : "unknown";
 
   const all_extensions_loaded = props.extensions.every((e) => !e.required || e.loaded);
 
@@ -678,78 +748,176 @@ export default function SystemHealth(props: SystemHealthProps) {
           </Card>
         </div>
 
-        {/* ── Version Comparison ── */}
+        {/* ── Versions ── */}
         {showVersionCard && (
           <Card
             className={
-              canCompareVersions
-                ? isUpToDate
-                  ? "border-emerald-500/30 dark:border-emerald-400/30"
-                  : "border-amber-500/30 dark:border-amber-400/30"
-                : undefined
+              appStatus === "up-to-date" && coreStatus !== "update-available"
+                ? "border-emerald-500/30 dark:border-emerald-400/30"
+                : appStatus === "update-available" || coreStatus === "update-available"
+                  ? "border-amber-500/30 dark:border-amber-400/30"
+                  : undefined
             }
           >
-            <CardContent className="flex items-center justify-between gap-4 p-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <GitCompareArrows
-                  className={`h-6 w-6 shrink-0 ${canCompareVersions ? (isUpToDate ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400") : "text-muted-foreground"}`}
-                />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    Deployed:{" "}
-                    {props.deployed_version.exists ? (
-                      <span className="font-mono">{props.deployed_version.version}</span>
-                    ) : (
-                      <span className="text-muted-foreground">local (not recorded)</span>
-                    )}
-                  </p>
-                  {props.latest_version.found ? (
-                    <p className="text-xs text-muted-foreground">
-                      Latest release:{" "}
-                      <span className="font-mono">{props.latest_version.version}</span>
-                      {props.latest_version.published_at && (
+            <CardContent className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <GitCompareArrows className="h-5 w-5 text-muted-foreground shrink-0" />
+                <p className="text-sm font-medium">Versions</p>
+              </div>
+
+              {/* Application */}
+              <div className="rounded-lg border border-border/50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Application
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-2 text-sm font-medium">
+                      {props.deployed_version.exists ? (
+                        <span className="font-mono">{props.deployed_version.version}</span>
+                      ) : (
+                        <span className="text-muted-foreground">not recorded</span>
+                      )}
+                      {props.deployed_version.origin === "git" && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <GitBranch className="h-3 w-3" />
+                          Git HEAD{props.deployed_version.is_dirty ? " · dirty" : " · clean"}
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {props.latest_version.found ? (
                         <>
-                          {" "}
-                          &middot;{" "}
-                          {new Date(props.latest_version.published_at).toLocaleDateString()}
+                          Latest: <span className="font-mono">{props.latest_version.version}</span>
+                          {props.latest_version.published_at && (
+                            <>
+                              {" "}
+                              &middot;{" "}
+                              {new Date(props.latest_version.published_at).toLocaleDateString()}
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          Latest:{" "}
+                          <span className="text-muted-foreground">
+                            {props.latest_version.message ?? "Unreachable"}
+                          </span>
                         </>
                       )}
                     </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Latest release:{" "}
-                      <span className="text-muted-foreground">
-                        {props.latest_version.message ?? "Unreachable"}
-                      </span>
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Dashboard Core:{" "}
-                    {props.core_package.url && props.core_package.short ? (
-                      <a
-                        href={props.core_package.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-mono text-primary hover:underline"
-                      >
-                        {props.core_package.short}
-                      </a>
-                    ) : (
-                      <span className="font-mono">unrecorded</span>
-                    )}
-                    {props.core_package.version && <> &middot; v{props.core_package.version}</>}
-                  </p>
+                  </div>
+                  <Badge
+                    variant={
+                      appStatus === "up-to-date"
+                        ? "success"
+                        : appStatus === "update-available"
+                          ? "warning"
+                          : "info"
+                    }
+                    className="shrink-0"
+                  >
+                    {appStatus === "up-to-date"
+                      ? "Up to date"
+                      : appStatus === "update-available"
+                        ? "Update available"
+                        : appStatus === "git"
+                          ? "Git build"
+                          : appStatus === "unknown"
+                            ? "Latest unknown"
+                            : "Local build"}
+                  </Badge>
                 </div>
               </div>
-              {canCompareVersions ? (
-                <Badge variant={isUpToDate ? "success" : "warning"} className="shrink-0">
-                  {isUpToDate ? "Up to date" : "Update available"}
-                </Badge>
-              ) : (
-                <Badge variant="info" className="shrink-0">
-                  Local build
-                </Badge>
-              )}
+
+              {/* Dashboard Core */}
+              <div className="mt-2 rounded-lg border border-border/50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Dashboard Core
+                    </p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-medium">
+                      {coreInstalled ? (
+                        <span className="font-mono">v{coreInstalled}</span>
+                      ) : (
+                        <span className="text-muted-foreground">unrecorded</span>
+                      )}
+                      {coreIsDev && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <GitBranch className="h-3 w-3" />
+                          dev build
+                        </span>
+                      )}
+                      {props.core_package.constraint && (
+                        <span className="text-[10px] text-muted-foreground">
+                          constraint {props.core_package.constraint}
+                        </span>
+                      )}
+                      {props.core_package.url && props.core_package.short ? (
+                        <a
+                          href={props.core_package.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-xs text-primary hover:underline"
+                        >
+                          {props.core_package.short}
+                        </a>
+                      ) : null}
+                      {props.core_package.needs_reinstall && (
+                        <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                          vendor {props.core_package.vendor_version} vs source{" "}
+                          {props.core_package.source_version} &mdash; run composer reinstall
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {props.core_latest_version.found ? (
+                        <>
+                          Latest:{" "}
+                          <span className="font-mono">{props.core_latest_version.version}</span>
+                          {props.core_latest_version.published_at && (
+                            <>
+                              {" "}
+                              &middot;{" "}
+                              {new Date(
+                                props.core_latest_version.published_at,
+                              ).toLocaleDateString()}
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          Latest:{" "}
+                          <span className="text-muted-foreground">
+                            {props.core_latest_version.message ?? "Unreachable"}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      coreStatus === "up-to-date"
+                        ? "success"
+                        : coreStatus === "update-available"
+                          ? "warning"
+                          : coreStatus === "dev"
+                            ? "info"
+                            : "secondary"
+                    }
+                    className="shrink-0"
+                  >
+                    {coreStatus === "up-to-date"
+                      ? "Up to date"
+                      : coreStatus === "update-available"
+                        ? "Update available"
+                        : coreStatus === "dev"
+                          ? "Dev build"
+                          : "Unknown"}
+                  </Badge>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}

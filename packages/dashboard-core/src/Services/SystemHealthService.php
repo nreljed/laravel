@@ -2,11 +2,13 @@
 
 namespace Nreljed\DashboardCore\Services;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Process;
 use Nreljed\DashboardCore\Models\User;
 use Symfony\Component\Console\Command\Command;
 
@@ -20,6 +22,8 @@ class SystemHealthService
         $storage = $this->getStorageInfo();
         $deployed = $this->getDeployedVersion();
         $latest = $this->getLatestVersion();
+        $core = $this->getCorePackage();
+        $coreLatest = $this->getCoreLatestVersion();
         $defaultMailer = config('mail.default');
 
         return [
@@ -45,7 +49,7 @@ class SystemHealthService
             'server' => $server,
             'os' => $this->getOsInfo(),
             'environment' => $this->detectEnvironment(),
-            'recommendations' => $this->getRecommendations($php, $extensions, $server, $storage, $deployed, $latest),
+            'recommendations' => $this->getRecommendations($php, $extensions, $server, $storage, $deployed, $latest, $core, $coreLatest),
             'cache' => [
                 'driver' => config('cache.default'),
                 'ttl' => config('cache.ttl', 3600),
@@ -97,7 +101,8 @@ class SystemHealthService
             'storage' => $storage,
             'deployed_version' => $deployed,
             'latest_version' => $latest,
-            'core_package' => $this->getCorePackage(),
+            'core_package' => $core,
+            'core_latest_version' => $coreLatest,
             'laravel_cache' => $this->getLaravelCacheStatus(),
             'debug_access_url' => $this->getDebugAccessUrl(),
         ];
@@ -402,6 +407,8 @@ class SystemHealthService
         array $storage,
         array $deployed,
         array $latest,
+        array $core,
+        array $coreLatest,
     ): array {
         $recommendations = [];
         $isProduction = app()->environment('production');
@@ -490,6 +497,20 @@ class SystemHealthService
                 'message' => 'Deployed version '.$deployed['version']
                     .' is behind latest release '.$latest['version'].'.',
                 'fix' => 'Run the deploy pipeline to update to the latest version.',
+            ];
+        }
+
+        $coreInstalled = $core['version'] ?? null;
+        if ($coreLatest['found']
+            && $coreInstalled !== null
+            && ($core['is_dev'] ?? false) === false
+            && version_compare(ltrim((string) $coreInstalled, 'v'), ltrim((string) $coreLatest['version'], 'v'), '<')) {
+            $recommendations[] = [
+                'severity' => 'info',
+                'title' => 'New dashboard-core version available',
+                'message' => 'Installed core '.$coreInstalled
+                    .' is behind latest release '.$coreLatest['version'].'.',
+                'fix' => 'Run composer update nreljed/dashboard-core and redeploy.',
             ];
         }
 
@@ -742,16 +763,75 @@ class SystemHealthService
     protected function getDeployedVersion(): array
     {
         $versionFile = base_path('.deployed-version');
-        if (! file_exists($versionFile)) {
-            return ['exists' => false];
+        if (file_exists($versionFile)) {
+            $version = trim(file_get_contents($versionFile));
+
+            return [
+                'exists' => true,
+                'version' => $version,
+                'origin' => 'deployed',
+                'file_path' => $versionFile,
+            ];
         }
-        $version = trim(file_get_contents($versionFile));
+
+        $gitVersion = $this->gitDerivedVersion();
+        if ($gitVersion !== null) {
+            return $gitVersion;
+        }
+
+        return ['exists' => false];
+    }
+
+    /**
+     * Derive the app version from git when no .deployed-version marker exists
+     * (local development, git checkouts). Returns null outside a git repo.
+     */
+    protected function gitDerivedVersion(): ?array
+    {
+        if (! is_dir(base_path('.git'))) {
+            return null;
+        }
+
+        $describe = $this->execGit(['describe', '--tags', '--match', 'v[0-9]*', '--abbrev=0']);
+        if ($describe === null) {
+            return null;
+        }
+
+        $fullDescribe = $this->execGit(['describe', '--tags', '--match', 'v[0-9]*']) ?? $describe;
+        $status = $this->execGit(['status', '--porcelain']);
 
         return [
             'exists' => true,
-            'version' => $version,
-            'file_path' => $versionFile,
+            'version' => $describe,
+            'origin' => 'git',
+            'describe' => $fullDescribe,
+            'is_dirty' => $status !== null && $status !== '',
         ];
+    }
+
+    /**
+     * Run a read-only git command rooted at the application directory.
+     * Returns trimmed stdout, or null when git is unavailable or fails.
+     *
+     * @param  array<int, string>  $args
+     */
+    protected function execGit(array $args): ?string
+    {
+        try {
+            $result = Process::timeout(3)
+                ->path(base_path())
+                ->run(array_merge(['git'], $args));
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! $result->successful()) {
+            return null;
+        }
+
+        $output = trim($result->output());
+
+        return $output === '' ? null : $output;
     }
 
     protected function getLatestVersion(): array
@@ -765,23 +845,20 @@ class SystemHealthService
                 return [
                     'found' => false,
                     'skipped' => true,
+                    'repo' => $repo,
                     'message' => 'No GITHUB_TOKEN configured; skipped release check.',
                 ];
             }
 
             try {
-                $response = Http::withHeaders([
-                    'Accept' => 'application/vnd.github+json',
-                    'Authorization' => 'Bearer '.$token,
-                ])
-                    ->timeout(5)
-                    ->get("https://api.github.com/repos/{$repo}/releases/latest");
+                $response = $this->githubGet("https://api.github.com/repos/{$repo}/releases/latest", $token);
 
                 if ($response->successful()) {
                     $data = $response->json();
 
                     return [
                         'found' => true,
+                        'repo' => $repo,
                         'version' => $data['tag_name'] ?? 'unknown',
                         'url' => $data['html_url'] ?? null,
                         'published_at' => $data['published_at'] ?? null,
@@ -790,11 +867,67 @@ class SystemHealthService
                     ];
                 }
 
-                return ['found' => false, 'error' => 'HTTP '.$response->status()];
+                return ['found' => false, 'repo' => $repo, 'error' => 'HTTP '.$response->status()];
             } catch (\Exception $e) {
-                return ['found' => false, 'error' => $e->getMessage()];
+                return ['found' => false, 'repo' => $repo, 'error' => $e->getMessage()];
             }
         });
+    }
+
+    /**
+     * Latest release of the dashboard-core package repo, so the health page
+     * can report whether the installed core is up to date.
+     */
+    protected function getCoreLatestVersion(): array
+    {
+        $cacheKey = 'system_health_core_latest_version';
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () {
+            $repo = config('core.github_repo', CoreVersionService::PACKAGE_REPO);
+            [, $token] = $this->githubConfig();
+
+            if ($token === null) {
+                return [
+                    'found' => false,
+                    'skipped' => true,
+                    'repo' => $repo,
+                    'message' => 'No GITHUB_TOKEN configured; skipped core release check.',
+                ];
+            }
+
+            try {
+                $response = $this->githubGet("https://api.github.com/repos/{$repo}/releases/latest", $token);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+
+                    return [
+                        'found' => true,
+                        'repo' => $repo,
+                        'version' => $data['tag_name'] ?? 'unknown',
+                        'url' => $data['html_url'] ?? null,
+                        'published_at' => $data['published_at'] ?? null,
+                        'name' => $data['name'] ?? null,
+                        'body' => $data['body'] ?? null,
+                    ];
+                }
+
+                return ['found' => false, 'repo' => $repo, 'error' => 'HTTP '.$response->status()];
+            } catch (\Exception $e) {
+                return ['found' => false, 'repo' => $repo, 'error' => $e->getMessage()];
+            }
+        });
+    }
+
+    protected function githubGet(string $url, string $token): Response
+    {
+        return Http::withHeaders([
+            'Accept' => 'application/vnd.github+json',
+            'Authorization' => 'Bearer '.$token,
+            'User-Agent' => 'CostBreaker360',
+        ])
+            ->timeout(5)
+            ->get($url);
     }
 
     /**
@@ -805,7 +938,7 @@ class SystemHealthService
      */
     protected function githubConfig(): array
     {
-        $repo = env('GITHUB_REPO', 'nreljed/laravel');
+        $repo = config('deploy.github_repo', 'nreljed/laravel');
         $token = env('GITHUB_TOKEN');
 
         $envPath = base_path('.env');
@@ -846,18 +979,71 @@ class SystemHealthService
      *
      * Delegates to CoreVersionService, which prefers the build-time recorded
      * storage/app/core.json and falls back to the legacy core.sha marker.
+     * The payload additionally describes whether the install is a dev build
+     * (path repo, @dev constraint) and whether the vendor copy is out of sync
+     * with the source package tree.
      */
     protected function getCorePackage(): array
     {
         $info = app(CoreVersionService::class)->info();
+        $repo = $info['repo'];
+        $sha = $info['sha'];
+        $version = $info['version'];
+
+        $vendorVersion = $this->composerJsonVersion(base_path('vendor/nreljed/dashboard-core/composer.json'));
+        $sourceVersion = $this->composerJsonVersion(base_path('packages/dashboard-core/composer.json'));
 
         return [
             'name' => $info['name'],
-            'sha' => $info['sha'],
-            'short' => $info['sha'] !== null ? substr($info['sha'], 0, 7) : null,
-            'url' => $info['sha'] !== null ? 'https://github.com/nreljed/laravel/commit/'.$info['sha'] : null,
-            'version' => $info['version'],
+            'sha' => $sha,
+            'short' => $sha !== null ? substr($sha, 0, 7) : null,
+            'url' => $sha !== null ? 'https://github.com/'.$repo.'/commit/'.$sha : null,
+            'repo' => $repo,
+            'version' => $version,
+            'is_dev' => $this->isCoreDevBuild($version),
+            'constraint' => $this->coreComposerConstraint(),
+            'vendor_version' => $vendorVersion,
+            'source_version' => $sourceVersion,
+            'needs_reinstall' => $vendorVersion !== null
+                && $sourceVersion !== null
+                && $vendorVersion !== $sourceVersion,
         ];
+    }
+
+    protected function isCoreDevBuild(?string $version): bool
+    {
+        if ($version === null) {
+            return true;
+        }
+
+        return str_contains($version, 'dev')
+            || $version === '@dev'
+            || str_starts_with($version, '9999999');
+    }
+
+    protected function coreComposerConstraint(): ?string
+    {
+        $path = base_path('composer.json');
+
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $meta = json_decode((string) file_get_contents($path), true);
+
+        return is_array($meta) ? ($meta['require']['nreljed/dashboard-core'] ?? null) : null;
+    }
+
+    protected function composerJsonVersion(string $path): ?string
+    {
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $meta = json_decode((string) file_get_contents($path), true);
+        $version = is_array($meta) ? trim((string) ($meta['version'] ?? '')) : '';
+
+        return $version === '' ? null : $version;
     }
 
     protected function getStorageInfo(): array

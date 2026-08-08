@@ -23,6 +23,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Dashboard Core GitHub Repo
+    |--------------------------------------------------------------------------
+    |
+    | GitHub repository that hosts the dashboard-core distribution source
+    | (https://github.com/nreljed/dashboard-core). Used by the system health
+    | page to link recorded core commits and to check the latest core release.
+    |
+    */
+
+    'github_repo' => env('CORE_GITHUB_REPO', 'nreljed/dashboard-core'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Inertia Middleware
     |--------------------------------------------------------------------------
     |

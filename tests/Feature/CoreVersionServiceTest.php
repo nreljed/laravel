@@ -36,6 +36,7 @@ class CoreVersionServiceTest extends TestCase
             'name' => 'dashboard-core',
             'version' => '1.2.3',
             'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
+            'repo' => 'nreljed/dashboard-core',
         ]));
 
         $service = new CoreVersionService;
@@ -44,9 +45,39 @@ class CoreVersionServiceTest extends TestCase
         $this->assertSame('dashboard-core', $info['name']);
         $this->assertSame('1.2.3', $info['version']);
         $this->assertSame('50e9c0fcf28d365295c46af725da4822456c3574', $info['sha']);
+        $this->assertSame('nreljed/dashboard-core', $info['repo']);
         $this->assertSame('50e9c0f', $service->shortSha());
         $this->assertSame(
+            'https://github.com/nreljed/dashboard-core/commit/50e9c0fcf28d365295c46af725da4822456c3574',
+            $service->commitUrl()
+        );
+    }
+
+    public function test_commit_url_uses_recorded_repo_when_set(): void
+    {
+        File::put($this->jsonPath, json_encode([
+            'name' => 'dashboard-core',
+            'version' => '1.2.3',
+            'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
+            'repo' => 'nreljed/laravel',
+        ]));
+
+        $service = new CoreVersionService;
+
+        $this->assertSame(
             'https://github.com/nreljed/laravel/commit/50e9c0fcf28d365295c46af725da4822456c3574',
+            $service->commitUrl()
+        );
+    }
+
+    public function test_commit_url_defaults_to_core_repo_when_unrecorded(): void
+    {
+        File::put($this->shaPath, '50e9c0fcf28d365295c46af725da4822456c3574'.PHP_EOL);
+
+        $service = new CoreVersionService;
+
+        $this->assertSame(
+            'https://github.com/nreljed/dashboard-core/commit/50e9c0fcf28d365295c46af725da4822456c3574',
             $service->commitUrl()
         );
     }
