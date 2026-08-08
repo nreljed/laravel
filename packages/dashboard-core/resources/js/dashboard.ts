@@ -7,7 +7,13 @@ const featurePrefixes: Record<string, string> = {
   PublicSite: "public",
 };
 
-export function registerDashboard(): Record<string, PageImport> {
+/**
+ * The opt-in CORE page kit. Returns the standard page map (dashboard, admin,
+ * account, auth, error, blog + template public pages). Consuming apps decide
+ * which core pages they use by spreading this into their own pageMap — core
+ * never auto-registers pages.
+ */
+export function registerCoreTemplates(): Record<string, PageImport> {
   const pageMap: Record<string, PageImport> = {};
 
   const corePages = import.meta.glob("./Pages/**/*.tsx") as Record<string, PageImport>;

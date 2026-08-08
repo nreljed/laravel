@@ -51,124 +51,111 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 ## Architecture
 
 ```
-app/
-  Http/
-    Controllers/
-      Controller.php              # Base controller
-      DeployController.php        # CI/CD endpoints (check, cacheClear, upload)
-      PublicController.php        # About, Services, Contact
-  Models/
-    Page.php
-  Policies/
-    TestPostPolicy.php
-  Providers/
-    AppServiceProvider.php
-    TelescopeServiceProvider.php
-  TestPosts/                      # Self-contained test feature
-packages/dashboard-core/           # CORE package (nreljed/dashboard-core — Composer path repo)
+app/                            # APP shell (thin — most logic lives in dashboard-core)
+  Http/Controllers/Controller.php # Base controller
+  Policies/TestPostPolicy.php
+  Providers/AppServiceProvider.php
+  Providers/TelescopeServiceProvider.php
+  TestPosts/                      # Self-contained test feature (service provider, controllers, models, routes, Resources/js)
+packages/dashboard-core/          # CORE package (nreljed/dashboard-core — Composer path repo)
   DashboardCoreServiceProvider.php # Boot: routes, permissions, nav items, shared props
+  routes/
+    web.php                       # Public, dashboard, admin, deploy, csp-report, maintenance
+    auth.php                      # Login, register, password, verification
+    console.php
+  resources/
+    js/                           # CORE frontend — see below
+    views/                        # Blade: app shell, errors/40x-50x, maintenance, mail templates, notifications, pagination
   src/
-    Ai/                            # Self-contained AI feature (BYOK)
-      Agents/                      # SeoAgent, ChatAgent, ContentAgent
-      Concerns/                    # HasAiProvider, LogsAiUsage
-      Controllers/                 # AiProviderController
-      Exceptions/                  # MissingAiProviderException
-      Models/                      # AiProvider, AiUsageLog
-      Policies/                    # AiProviderPolicy
-      Requests/                    # StoreAiProviderRequest, TestAiProviderRequest
-      Routes/                      # web.php (auth+verified)
-      Services/                    # AiService
-    Blog/                          # Self-contained blog feature
-      Controllers/                 # Post, PostCategory, PostTag, BlogPublic
-      Models/                      # Post, PostCategory, PostTag
-      Requests/
-      Resources/js/Pages/          # Index, Form, Dashboard, Categories, Tags, Public
-      Routes/                      # web.php (admin + public)
-      database/migrations/
-    Console/Commands/              # CreateAdmin, CreateRole, ListPermissions, PublishScheduledContent, PurgeNotifications, PruneAuditLogs, CleanupOrphanMedia
-    Database/                      # Factories, seeders, migrations
-    Enums/                         # AuditAction
+    Ai/                           # Self-contained AI feature (BYOK)
+      Agents/Concerns/Controllers/Exceptions/Models/Policies/Requests/Routes/Services/
+    Blog/                         # Self-contained blog feature
+      Controllers/Models/Requests/Resources/js/Pages/Routes/database/migrations/
+    Console/Commands/             # CreateAdmin, CreateRole, ListPermissions, PublishScheduledContent, PurgeNotifications, PruneAuditLogs, CleanupOrphanMedia
+    Contracts/
+    Database/                     # Factories, seeders, migrations
+    Deploy/                       # DeployController (check, cacheClear, upload, reset)
+    Enums/                        # AuditAction
     Http/
       Controllers/
-        Admin/                     # User, Role, Permission, AuditLog, Session, Bulk, Impersonation
-        Api/                       # NotificationPollController (JSON)
-        Auth/                      # Login, Register, Password, Email verification
-        AdminController.php        # Settings, System Health
+        Admin/                    # User, Role, Permission, AuditLog, Session, Bulk, Impersonation
+        Api/                      # NotificationPollController (JSON)
+        Auth/                     # Login, Register, Password, Email verification
+        AdminController.php       # Settings, System Health
         AvatarController.php
-        DashboardController.php    # Index, Stats, Notifications, SwitchMode
+        DashboardController.php   # Index, Stats, Notifications, SwitchMode
         EmailSettingsController.php
         NotificationTestController.php
-        UserAccountController.php  # Consolidated profile + account management
-        SettingsController.php     # Edit, update, logo upload
+        UserAccountController.php # Consolidated profile + account management
+        SettingsController.php    # Edit, update, logo upload
       Middleware/
-        HandleInertiaRequests.php  # Shared props: auth, notifications, flash, features, brand
-        AdminMiddleware.php        # 403 if not admin
+        HandleInertiaRequests.php # Shared props: auth, notifications, flash, features, brand
+        AdminMiddleware.php       # 403 if not admin
         CheckPermission.php       # user.permission:slug
         CheckRole.php             # user.role:slug
         CheckMaintenanceMode.php  # 503 Blade template (admins bypass)
         ConfigureSessionLifetime.php  # DB-driven session timeout
-        ContentSecurityPolicy.php  # CSP headers (production only)
-      Requests/                    # FormRequest classes by domain
-        UpdateContactRequest.php   # Contact page validation (DB-driven rules)
-    Jobs/
-      SendEmail.php               # Mailable dispatch with retry (tries=3, backoff)
-    Mail/                          # DynamicMailable
-    Models/                        # User, Notification, etc.
-    Notifications/                 # Database notification classes
-    Policies/                      # PostPolicy, AiProviderPolicy
-    Providers/                     # PermissionGateServiceProvider
-    Rules/
-      MinPasswordLength.php        # Reads password_min_length from DB
-    Services/
-      AccountService.php           # deleteAccount()
-      AiService.php               # Centralized AI provider resolution + usage logging
-      DashboardService.php         # Stats + analytics cache (5-min TTL via Cache::remember)
-      EmailSettingsService.php
-      FeatureRegistry.php          # Singleton — delegates to feature service providers (use app())
-      FormattingService.php        # Price/surface formatting
-      NotificationService.php      # Cached unread count, preference-aware dispatch, purge
-      SettingsService.php          # DB-driven app config (Cache::remember groups, 5-min TTL)
-    Traits/
-      RelativeTime.php             # Shared relative time formatting
-resources/js/                   # APP shell (master) — entry + public pages only
-  app.tsx                       # Entry — pageMap = registerDashboard() + local ./Pages glob + @test-posts
+        ContentSecurityPolicy.php # CSP headers (production only)
+      Requests/                   # FormRequest classes by domain (incl. UpdateContactRequest)
+    Jobs/SendEmail.php            # Mailable dispatch with retry (tries=3, backoff)
+    Mail/                         # DynamicMailable
+    Models/                       # User, Role, Permission, Post, PostCategory, PostTag, AiProvider, AiUsageLog, Notification, etc.
+    Notifications/                # Database notification classes
+    Observers/
+    Policies/                     # PostPolicy, AiProviderPolicy
+    Providers/                    # PermissionGateServiceProvider
+    PublicSite/                   # PublicController (About, Services, Contact)
+    Rules/                        # MinPasswordLength (reads password_min_length from DB)
+    Services/                     # AccountService, AiService, DashboardService, EmailSettingsService, FeatureRegistry, FormattingService, NotificationService, SettingsService, DatabaseMaintenanceService, ...
+    Support/
+    Traits/                       # RelativeTime
+resources/js/                   # APP shell (master) — entry point + project-owned frontend
+  app.tsx                       # Entry — buildPageMap({ basePages: registerCoreTemplates(), projectPages: @test-posts glob, projectPrefix: "testposts", pageOverrides: public/* }) → createFoundationApp()
+  ssr.tsx                       # SSR bootstrap — MUST mirror app.tsx's pageMap (basePages + projectPages + overrides) so SSR can't diverge
   test-setup.ts                 # Vitest setup
   Layouts/StoreLayout.tsx       # Future store layout
-  Pages/Public/                 # welcome, about, services, contact
+  Pages/Public/                 # PROJECT-OWNED marketing frontend — shadows core's public/welcome|about|services|contact via pageOverrides
 packages/dashboard-core/resources/js/   # CORE frontend (via @dashboard / @ aliases)
+  app.tsx                       # createFoundationApp() — createInertiaApp, ThemeProvider, TooltipProvider, ErrorBoundary, Toaster, flash listener
+  dashboard.ts                  # registerCoreTemplates() — the opt-in CORE page kit (control panel + blog + template public pages)
+  test-setup.ts
   Components/
-    ui/                          # shadcn/ui components (40+)
-    shared/                      # FeaturedImageSelector, TermsSelector, GalleryUploader
-    dashboard/                   # KpiCard, Sparkline, RevenueChart, etc.
-    frontend/                    # Public-facing components
-    notifications/               # NotificationBell, NotificationPanel, NotificationItem, NotificationDetailDialog
-    app-sidebar.tsx              # Dynamic sidebar from featureNavItems
-    nav-main.tsx                 # Collapsible nav
-    nav-user.tsx                 # User dropdown
-    command-search.tsx           # Ctrl+K palette
-    NotificationBell.tsx         # Adaptive polling (10s/30s/60s)
-    ThemeSwitcher.tsx
-  hooks/
-    use-auth.ts                  # user, isAdmin, getUserInitials
-    use-notifications.ts         # Native fetch() polling (10s/30s/60s adaptive)
-  Layouts/                       # AuthenticatedLayout, AdminLayout, GuestLayout, PublicLayout
-  Pages/
-    Auth/                        # Login, Register, Forgot/Reset Password, Verify Email
-    dashboard/                   # index, stats, profile, account, notifications, admin
-    Blog/Public/                 # Public blog index + show
-    Error.tsx                    # Handles 401/403/404/419/429/500/503
+    account/                    # Account/profile/security/integrations sections (sections/)
+    blog/                       # Blog admin components
+    editor/                     # Lexical rich-text editor (plugins/, toolbar/, table/, image/, youtube/, floating/, hooks/, shared/, components/)
+    frontend/                   # Public-facing components
+    layout/                     # AppShell, sidebar shell, header
+    navigation/                 # Sidebar nav (featureNavItems), nav-user, command-search (Ctrl+K), notification bell
+    notifications/              # NotificationBell, NotificationPanel, NotificationItem, NotificationDetailDialog
+    seo/                        # SEO fields / metadata preview
+    settings/                   # Settings sections (sections/, archive/)
+    shared/                     # FeaturedImageSelector, TermsSelector, GalleryUploader (map/, seo/)
+    ui/                         # shadcn/ui components (40+)
+  hooks/                        # use-auth, use-notifications (native fetch polling, 10s/30s/60s adaptive)
+  Layouts/                      # AuthenticatedLayout, AdminLayout, GuestLayout, PublicLayout
   lib/
-    utils.ts                     # cn() helper
-    icons.ts                     # featureIcons map
-    notifications.ts             # Severity type, normalizeType, getSeverity, getTypeLabel
-    schemas/                     # Zod schemas
-  types/                         # TypeScript type definitions
-  dashboard.ts                   # registerDashboard() — CORE + Blog feature page globs
-routes/
-  web.php                        # Public, deploy, csp-report routes (APP-only)
+    utils.ts                    # cn() helper
+    icons.ts                    # featureIcons map
+    notifications.ts            # Severity type, normalizeType, getSeverity, getTypeLabel
+    schemas/                    # Zod schemas
+  Pages/
+    Auth/                       # Login, Register, RegisterClosed, Email-Verified, Confirm/Forgot/Reset Password, Verify Email
+    dashboard/                  # index, stats, account/{profile,security,advanced,integrations,notifications}, admin/{users,roles,permissions,audit-logs,system-health,database-maintenance,settings/*}, developer/style-guide, notifications/{index,test}
+    Blog/Public/                # Public blog index + show
+    Error.tsx                   # Handles 401/403/404/419/429/500/503
+  types/                        # TypeScript type definitions
+routes/                         # APP-only routes (most routing lives in the package)
+  web.php                       # Reserved for project-specific routes — public/dashboard/admin/deploy/csp-report live in packages/dashboard-core/routes
   channels.php
   console.php
 ```
+
+> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: CORE pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The app entry spreads it into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/posts'` (→ `Blog/Posts/Index.tsx`).
+
+> **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `app.tsx` builds its own explicit pageMap:
+> `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. When adding/removing core pages, mirror any change in `ssr.tsx`.
+
+> **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
 
 > **CRITICAL — `packages/dashboard-core` is a Composer path repo that installs as a COPY, not a symlink.**
 >

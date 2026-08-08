@@ -67,7 +67,33 @@ All dashboard frontend ships as TypeScript source in `resources/js/`. Add a
 - `vite.config.js`: `alias: { '@dashboard': 'vendor/nreljed/dashboard-core/resources/js' }`
 - `tsconfig.json`: `paths: { "@dashboard/*": ["vendor/nreljed/dashboard-core/resources/js/*"] }`
 - `tailwind.config.js`: add `vendor/nreljed/dashboard-core/resources/js` to `@source`
-- `resources/js/app.tsx`: call `registerDashboard()` instead of page globbing
+- `resources/css/app.css`: `@import` the shared stylesheet (see its header comment for per-app token overrides)
+
+#### Page inventory (opt-in)
+
+Core never auto-registers pages. Each app's `app.tsx` builds an explicit page
+map — spread the standard kit, add namespaced project pages, and shadow any
+core page:
+
+```ts
+import { createFoundationApp, type FoundationAppConfig } from "@dashboard/app";
+import { registerCoreTemplates } from "@dashboard/dashboard";
+
+const config: FoundationAppConfig = {
+  basePages: registerCoreTemplates(), // the standard CORE kit
+  projectPages: import.meta.glob("./Pages/**/*.tsx"),
+  projectPrefix: "shop", // namespaced project pages
+  pageOverrides: {
+    // swap CORE pages, wins last
+    "public/about": () => import("./Pages/Public/About"),
+  },
+};
+
+createFoundationApp(config);
+```
+
+Routes + controllers stay in core (they render `public/*`, `dashboard/*`, …) —
+only the page component swaps.
 
 See `package.json` for the peer-dependency contract (shipped for reference —
 there is no separate npm package).

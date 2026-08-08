@@ -67,7 +67,7 @@ nreljed/laravel  (master = Cost Breaker 360)
 - `vite.config.js`: alias `@dashboard → vendor/nreljed/dashboard-core/resources/js`
 - `tailwind.config.js`: `@source` into vendor
 - `tsconfig.json`: path alias `@dashboard`
-- `resources/js/app.tsx`: `registerDashboard()` replaces page globbing
+- `resources/js/app.tsx`: explicit page inventory — `basePages: registerCoreTemplates()` + `pageOverrides` replaces page globbing
 - `config/core.php` override file: roles, settings defaults, feature registration
 
 **Overrides (consumer wins, 3 levels):**
@@ -150,7 +150,7 @@ public function onUserDelete(int $userId): void;
 
 1. Dynamic `FeatureRegistry` + `Feature` contract
 2. Config-driven roles & settings (`config/roles.php`, `config/settings.php`)
-3. `registerDashboard()` (Inertia name-based page resolution) + component shadow
+3. `registerCoreTemplates()` (opt-in Inertia page kit) + `pageOverrides` shadowing
 4. Generic `stats.tsx` via `getAnalyticsSeries()`
 5. Adopt API Tokens + `ForceInertiaCacheHeaders` into core
 6. Frontend import rewrite (`@blog`, `@test-posts` → `@dashboard`)
@@ -166,7 +166,7 @@ public function onUserDelete(int $userId): void;
 
 ### Phase 4 — Shop Cutover
 
-1. Delete duplicated core code (master-wins); add `@dashboard` alias + `registerDashboard()`
+1. Delete duplicated core code (master-wins); add `@dashboard` alias + explicit page inventory (`registerCoreTemplates()` + `pageOverrides`)
 2. Keep app-side: `Shop/` feature, public pages, domain dashboard, rich dashboard as **page override**
 3. Keep Shop's `crm_user`→`customer` **one-time migration** on cutover
 4. **Green gate:** shop.laravel.tunispromo.tn verified
@@ -200,7 +200,7 @@ public function onUserDelete(int $userId): void;
 ## 10. Notes & Known Limitations (Phase 2a/2b cutover)
 
 - **Inertia test finder vs blog feature pages** — `config/inertia.php` `pages.paths` now includes the CORE and Blog feature `Pages/` roots so `assertInertia()->component(...)` can locate files. Blog _admin_ pages render as `Blog/Index`-style names but live at `src/Blog/Resources/js/Pages/Index.tsx` — the `Blog` segment is a feature namespace, not a folder under `Pages/`, so the test finder can't resolve those names. No test asserts them today (only `Blog/Public/Show`, which resolves via the CORE root). If you ever add such an assertion, extend the finder or assert props instead.
-- **`@dashboard-blog` alias** — reserved for future feature pages. `registerDashboard()` currently globs feature pages by relative path, so no import uses the alias yet.
+- **`@dashboard-blog` alias** — reserved for future feature pages. `registerCoreTemplates()` currently globs feature pages by relative path, so no import uses the alias yet.
 - **Path-repo refresh** — `composer update` won't refresh the vendor mirror; after editing package code run `composer reinstall nreljed/dashboard-core`.
 - **Prism highlighting** — `resources/js/lib/prism-highlight.ts` uses `import(\`prismjs/components/prism-${lang}\`)` (bare specifier), which browsers can't resolve at runtime → non-fatal console error on public blog pages; code blocks render un-highlighted. Pre-existing (identical code in pre-cutover master). Fix: static imports in the package.
 - **`packages/` is committed with the master repo** (path repo, not a submodule) — CI checkout and `composer install` depend on it.

@@ -16,6 +16,13 @@
  *     layout columns, image resizers)
  *   - the scroll-fade utilities and Base UI menu helpers
  *
+ * Per-app theming: after the import, a consuming app may override ANY subset
+ * of the CSS variables below under `@layer base` — tokens only, keep the
+ * utility classes. Every core component/page reads the tokens, so overriding
+ * `--primary` / `--radius` / fonts restyles the whole app. Don't edit this
+ * file for one-off project tweaks; add new shared tokens/components here so
+ * they vendor back to consuming apps.
+ *
  * Do not move `@import "tailwindcss"` or `@source` into this file — content
  * globs are per-app.
  */
