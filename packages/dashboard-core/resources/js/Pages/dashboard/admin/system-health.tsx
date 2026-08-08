@@ -806,23 +806,23 @@ export default function SystemHealth(props: SystemHealthProps) {
               <div className="rounded-lg border border-border/50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
                       Application
                     </p>
-                    <p className="mt-0.5 flex items-center gap-2 text-sm font-medium">
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold">
                       {props.deployed_version.exists ? (
                         <span className="font-mono">{props.deployed_version.version}</span>
                       ) : (
                         <span className="text-muted-foreground">not recorded</span>
                       )}
                       {props.deployed_version.origin === "git" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <GitBranch className="h-3 w-3" />
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <GitBranch className="h-3.5 w-3.5" />
                           Git HEAD{props.deployed_version.is_dirty ? " · dirty" : " · clean"}
                         </span>
                       )}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {props.latest_version.found ? (
                         <>
                           Latest: <span className="font-mono">{props.latest_version.version}</span>
@@ -844,7 +844,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                       )}
                     </p>
                     {formatDateTime(props.latest_version.checked_at) && (
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Checked {formatDateTime(props.latest_version.checked_at)}
                       </p>
                     )}
@@ -876,23 +876,23 @@ export default function SystemHealth(props: SystemHealthProps) {
               <div className="mt-2 rounded-lg border border-border/50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
                       Dashboard Core
                     </p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-medium">
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold">
                       {coreInstalled ? (
                         <span className="font-mono">v{coreInstalled}</span>
                       ) : (
                         <span className="text-muted-foreground">unrecorded</span>
                       )}
                       {coreIsDev && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <GitBranch className="h-3 w-3" />
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <GitBranch className="h-3.5 w-3.5" />
                           dev build
                         </span>
                       )}
                       {props.core_package.constraint && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           constraint {props.core_package.constraint}
                         </span>
                       )}
@@ -901,19 +901,19 @@ export default function SystemHealth(props: SystemHealthProps) {
                           href={props.core_package.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-mono text-xs text-primary hover:underline"
+                          className="font-mono text-sm text-primary hover:underline"
                         >
                           {props.core_package.short}
                         </a>
                       ) : null}
                       {props.core_package.needs_reinstall && (
-                        <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                        <span className="text-xs text-amber-500 dark:text-amber-400">
                           vendor {props.core_package.vendor_version} vs source{" "}
                           {props.core_package.source_version} &mdash; run composer reinstall
                         </span>
                       )}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {props.core_latest_version.found ? (
                         <>
                           Latest:{" "}
@@ -936,7 +936,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                       )}
                     </p>
                     {formatDateTime(props.core_latest_version.checked_at) && (
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Checked {formatDateTime(props.core_latest_version.checked_at)}
                       </p>
                     )}
@@ -966,9 +966,7 @@ export default function SystemHealth(props: SystemHealthProps) {
                               : "Not recorded"}
                   </Badge>
                 </div>
-                <p className="mt-2 text-[10px] text-muted-foreground">
-                  {coreStatusHint[coreStatus]}
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">{coreStatusHint[coreStatus]}</p>
               </div>
             </CardContent>
           </Card>
