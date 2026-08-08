@@ -133,6 +133,30 @@ if (! is_dir($cloneDir)) {
     runGit(['fetch', 'origin', '--tags', '--prune'], $cloneDir);
 }
 
+// Decide up front whether anything functionally changed, so running
+// core:publish with no new code does not mint a pointless version tag.
+// composer.json is excluded from the "functional" diff because the local
+// copy is reformatted by the prettier pre-commit hook (2-space) while the
+// distribution copy is written by json_encode (4-space) — a cosmetic-only
+// difference that must not trigger a release.
+$diff = diffTrees($source, $cloneDir);
+
+$functionalDiff = [
+    'added' => array_values(array_filter($diff['added'], fn ($rel) => $rel !== 'composer.json')),
+    'changed' => array_values(array_filter($diff['changed'], fn ($rel) => $rel !== 'composer.json')),
+    'removed' => array_values(array_filter($diff['removed'], fn ($rel) => $rel !== 'composer.json')),
+];
+
+if (array_merge($functionalDiff['added'], $functionalDiff['changed'], $functionalDiff['removed']) === []) {
+    $onlyComposerFile = array_merge($diff['added'], $diff['changed'], $diff['removed']) !== [];
+
+    out($onlyComposerFile
+        ? 'Nothing to publish - only composer.json differs (formatting/version). Skipping version bump.'
+        : 'Nothing to publish - source and distribution trees are identical. Skipping version bump.');
+
+    exit(0);
+}
+
 // Determine the next version.
 if ($version === null) {
     $tagLines = array_filter(explode("\n", runGit(['ls-remote', '--tags', 'origin'], $cloneDir)));
@@ -160,12 +184,6 @@ if (! preg_match('/^\d+\.\d+\.\d+$/', $version)) {
 
 out("Publishing dashboard-core v{$version}");
 out("  source: {$source}");
-
-$diff = diffTrees($source, $cloneDir);
-
-if (array_merge($diff['added'], $diff['changed'], $diff['removed']) === []) {
-    out('  nothing to publish (trees are identical).');
-}
 
 foreach ($diff['removed'] as $rel) {
     out("  - {$rel}");
