@@ -29,16 +29,13 @@ jobs:
 
       # GH_TOKEN must be a fine-grained PAT with Contents: Read+Write on the
       # nreljed/dashboard-core repo so the mirror push and gh release succeed.
+      # gh reads GH_TOKEN from the environment automatically for `gh release
+      # create`, so no extra gh login step is needed.
       - name: Authenticate git against github.com
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-
-      - name: Authenticate gh CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: echo "$GH_TOKEN" | gh auth login --with-token
 
       # Mirrors packages/dashboard-core into nreljed/dashboard-core, bumps the
       # patch version, tags vX.Y.Z, pushes main + tags, and creates a GitHub
