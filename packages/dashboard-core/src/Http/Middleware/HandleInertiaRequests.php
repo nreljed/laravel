@@ -88,10 +88,6 @@ class HandleInertiaRequests extends Middleware
             'userCapabilities' => fn () => $request->user()
                 ? $this->getUserCapabilities($request->user())
                 : [],
-            'userMode' => fn () => $request->user()
-                ? ($request->session()->get('user_mode', 'guest'))
-                : 'guest',
-            'canSwitchMode' => fn () => false,
             'formattingSettings' => function () {
                 try {
                     return SettingsService::getFormattingDefaults();
@@ -100,7 +96,6 @@ class HandleInertiaRequests extends Middleware
                 }
             },
             'featureNavItems' => $this->getFeatureNavItems(...),
-            'featureData' => $this->getFeatureSharedData(...),
             'features' => [
                 'databaseMaintenanceEnabled' => function () {
                     try {
@@ -116,10 +111,10 @@ class HandleInertiaRequests extends Middleware
             'brand' => [
                 'logo' => fn () => self::safeSetting('app_logo', ''),
                 'favicon' => fn () => self::safeSetting('app_favicon', ''),
-                'name' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
+                'name' => fn () => self::safeSetting('app_name', config('app.name', '')),
             ],
             'seo' => [
-                'title' => fn () => self::safeSetting('app_name', 'Cost Breaker 360'),
+                'title' => fn () => self::safeSetting('app_name', config('app.name', '')),
                 'description' => fn () => self::safeSetting('app_description', ''),
                 'og_image' => fn () => self::safeSetting('app_logo', ''),
             ],
@@ -135,14 +130,10 @@ class HandleInertiaRequests extends Middleware
                 'enabled' => fn () => self::safeSetting('enable_registration', '1') === '1',
                 'require_email_verification' => fn () => self::safeSetting('require_email_verification', '0') === '1',
             ],
-            'wishlistIds' => collect(...),
-            'wishlistResult' => fn () => null,
             'impersonating' => fn () => $request->session()->get('impersonating', false),
             'impersonator' => fn () => $request->session()->has('impersonator_id')
                 ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name', 'email'])
                 : null,
-            'activeCurrencies' => $this->getActiveCurrencies(...),
-            'selectedCurrency' => fn () => session('selected_currency', 'EUR'),
         ];
     }
 
@@ -208,11 +199,6 @@ class HandleInertiaRequests extends Middleware
             'isAdmin' => $user->isAdmin(),
             'can' => $permissions,
         ];
-    }
-
-    protected function getActiveCurrencies(): array
-    {
-        return [['code' => 'EUR', 'name' => 'Euro', 'symbol' => "\u{20ac}", 'is_default' => true]];
     }
 
     protected function getEmailTemplates(): array

@@ -1,10 +1,10 @@
 # dashboard-core
 
-Shared dashboard core for the Cost Breaker 360 product family — the master
-app (Cost Breaker 360), Shop, and Booking. The package is the source of
-truth for the dashboard, admin panel, auth, account, notifications, settings,
-email, blog, and AI (BYOK) features. Applications keep only domain-specific
-code on top (public pages, domain features, custom dashboard pages).
+Shared dashboard core platform — the source of truth for the dashboard,
+admin panel, auth, account, notifications, settings, email, blog, and AI
+(BYOK) features across Laravel applications (master app, Shop, Booking).
+Applications keep only domain-specific code on top (public pages, domain
+features, custom dashboard pages).
 
 ## Installation
 

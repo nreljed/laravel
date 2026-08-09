@@ -33,12 +33,10 @@ export function SeoHead({
   const appUrl = (pageProps.app_url as string) || "";
   const brand = (pageProps.brand as { name?: string }) || {};
 
-  const fullTitle = title
-    ? `${title} — ${siteSeo.title || "Cost Breaker 360"}`
-    : siteSeo.title || "Cost Breaker 360";
+  const fullTitle = title ? `${title} — ${siteSeo.title || ""}` : siteSeo.title || "";
   const metaDescription = description || siteSeo.description || "";
   const ogImageUrl = ogImage || siteSeo.og_image || "";
-  const siteName = brand.name || siteSeo.title || "Cost Breaker 360";
+  const siteName = brand.name || siteSeo.title || "";
   const resolvedCanonical = canonical || appUrl || undefined;
 
   return (

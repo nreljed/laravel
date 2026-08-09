@@ -9,7 +9,7 @@ import { NavUser } from "@/Components/navigation/nav-user";
 export function SiteHeader() {
   const { props } = usePage();
   const brand = (props.brand as { logo?: string; favicon?: string; name?: string }) || {};
-  const appName = brand.name || "Cost Breaker 360";
+  const appName = brand.name || "";
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

@@ -24,7 +24,7 @@ class RecoveryMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: config('app.name', 'Cost Breaker 360').' — Maintenance Recovery Link',
+            subject: config('app.name', 'Dashboard').' — Maintenance Recovery Link',
         );
     }
 
@@ -39,7 +39,7 @@ class RecoveryMail extends Mailable
 
     private function buildHtml(string $url): string
     {
-        $appName = config('app.name', 'Cost Breaker 360');
+        $appName = config('app.name', 'Dashboard');
 
         return <<<HTML
         <!DOCTYPE html>

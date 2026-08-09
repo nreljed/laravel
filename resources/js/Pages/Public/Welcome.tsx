@@ -63,7 +63,7 @@ export default function Welcome() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             {props.auth?.user ? (
-              <Link href={route("dashboard")}>
+              <Link href={route("dashboard.index")}>
                 <Button size="lg">
                   Go to Dashboard
                   <ArrowRight className="ml-2 h-4 w-4" />

@@ -48,7 +48,7 @@ export function NavLogo({ logo, favicon, name, appUrl }: NavLogoProps) {
           <div className="flex items-center gap-3 px-2 py-1.5 flex-1 group-data-[collapsible=icon]:justify-center">
             {renderLogoIcon()}
             <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-medium">{name || "Cost Breaker 360"}</span>
+              <span className="truncate font-medium">{name || ""}</span>
             </div>
           </div>
 
@@ -87,7 +87,7 @@ export function NavLogo({ logo, favicon, name, appUrl }: NavLogoProps) {
                 </>
               )}
               <DropdownMenuItem className="cursor-pointer">
-                <Link href={route("dashboard")} className="flex w-full items-center">
+                <Link href={route("dashboard.index")} className="flex w-full items-center">
                   <span className="flex items-center flex-1">Dashboard</span>
                 </Link>
               </DropdownMenuItem>

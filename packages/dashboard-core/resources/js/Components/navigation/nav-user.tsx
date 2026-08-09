@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, router, usePage } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 import {
   MoreVertical,
   LogOut,
@@ -8,8 +8,6 @@ import {
   Monitor,
   AlertTriangle,
   LogIn,
-  Hotel,
-  UserRound,
   UserPlus,
   LayoutDashboard,
   CircleUserRound,
@@ -48,9 +46,6 @@ interface NavUserProps {
 export function NavUser({ isMobile = false, variant = "default" }: NavUserProps) {
   const { user, isLoggedIn } = useAuth();
   const { theme, setTheme } = useTheme();
-  const pageProps = usePage().props;
-  const userMode = (pageProps.userMode as string) || "guest";
-  const canSwitchMode = pageProps.canSwitchMode as boolean;
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const isBasic = variant === "basic";
 
@@ -172,7 +167,7 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            render={<Link href={route("dashboard")} className="flex w-full items-center" />}
+            render={<Link href={route("dashboard.index")} className="flex w-full items-center" />}
           >
             <span className="flex items-center flex-1">Dashboard</span>
             <LayoutDashboard className="h-4 w-4 ml-auto text-muted-foreground" />
@@ -225,33 +220,6 @@ export function NavUser({ isMobile = false, variant = "default" }: NavUserProps)
               </button>
             </div>
           </div>
-          {canSwitchMode && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() =>
-                  router.post(
-                    route("dashboard.switch-mode"),
-                    { mode: userMode === "guest" ? "host" : "guest" },
-                    { preserveScroll: true },
-                  )
-                }
-                className="cursor-pointer"
-              >
-                <span className="flex items-center flex-1 gap-2">
-                  {userMode === "guest" ? (
-                    <Hotel className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <UserRound className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  Switch to {userMode === "guest" ? "Host" : "Guest"}
-                </span>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {userMode === "guest" ? "Guest" : "Host"}
-                </span>
-              </DropdownMenuItem>
-            </>
-          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"

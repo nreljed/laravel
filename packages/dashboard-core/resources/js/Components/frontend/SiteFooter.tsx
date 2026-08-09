@@ -5,7 +5,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 export function SiteFooter() {
   const { props } = usePage();
   const brand = (props.brand as { logo?: string; name?: string }) || {};
-  const appName = brand.name || "Cost Breaker 360";
+  const appName = brand.name || "";
 
   return (
     <footer className="border-t border-border bg-background">

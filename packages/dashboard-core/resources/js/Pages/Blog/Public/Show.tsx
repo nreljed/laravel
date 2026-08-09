@@ -68,7 +68,11 @@ export default function BlogShow({ post }: BlogShowProps) {
     datePublished: post.published_at || undefined,
     author: post.user ? { "@type": "Person", name: post.user.name } : undefined,
     publisher: appUrl
-      ? { "@type": "Organization", name: "Cost Breaker 360", url: appUrl }
+      ? {
+          "@type": "Organization",
+          name: (pageProps.brand as { name?: string } | undefined)?.name || appUrl,
+          url: appUrl,
+        }
       : undefined,
     mainEntityOfPage: canonical ? { "@type": "WebPage", "@id": canonical } : undefined,
     keywords: post.tags?.map((t) => t.name).join(", ") || undefined,

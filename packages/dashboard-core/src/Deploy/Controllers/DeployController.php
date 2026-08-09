@@ -599,7 +599,7 @@ class DeployController extends Controller
     private function githubApi(string $url, string $token): ?array
     {
         $response = Http::withHeaders([
-            'User-Agent' => 'CostBreaker360',
+            'User-Agent' => 'DashboardCore',
             'Accept' => 'application/vnd.github.v3+json',
         ])->withToken($token)
             ->timeout(30)
@@ -611,7 +611,7 @@ class DeployController extends Controller
     private function githubDownload(string $url, string $token): string|false
     {
         $response = Http::withHeaders([
-            'User-Agent' => 'CostBreaker360',
+            'User-Agent' => 'DashboardCore',
             'Accept' => 'application/octet-stream',
         ])->withToken($token)
             ->timeout(300)

@@ -467,7 +467,7 @@ function ComboboxDemo() {
 export default function StyleGuide() {
   const pageProps = usePage().props;
   const brand = (pageProps.brand as BrandProps) || {};
-  const appName = brand.name || "Cost Breaker 360";
+  const appName = brand.name || "";
   const logoUrl = brand.logo || null;
   const faviconUrl = brand.favicon || null;
 
@@ -477,7 +477,7 @@ export default function StyleGuide() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={route("dashboard")}>Dashboard</BreadcrumbLink>
+              <BreadcrumbLink href={route("dashboard.index")}>Dashboard</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -654,17 +654,19 @@ export default function StyleGuide() {
                     navigation
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button render={<Link href={route("dashboard")} />}>Dashboard (Default)</Button>
-                    <Button variant="outline" render={<Link href={route("dashboard")} />}>
+                    <Button render={<Link href={route("dashboard.index")} />}>
+                      Dashboard (Default)
+                    </Button>
+                    <Button variant="outline" render={<Link href={route("dashboard.index")} />}>
                       Outline
                     </Button>
-                    <Button variant="secondary" render={<Link href={route("dashboard")} />}>
+                    <Button variant="secondary" render={<Link href={route("dashboard.index")} />}>
                       Secondary
                     </Button>
-                    <Button variant="ghost" render={<Link href={route("dashboard")} />}>
+                    <Button variant="ghost" render={<Link href={route("dashboard.index")} />}>
                       Ghost
                     </Button>
-                    <Button variant="link" render={<Link href={route("dashboard")} />}>
+                    <Button variant="link" render={<Link href={route("dashboard.index")} />}>
                       Link Style
                     </Button>
                   </div>

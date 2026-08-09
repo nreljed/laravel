@@ -93,7 +93,7 @@ export default function ErrorPage({ status, retryAfter }: ErrorPageProps) {
 
   return (
     <>
-      <Head title={`${error.title} — Cost Breaker 360`} />
+      <Head title={error.title} />
 
       <div className="relative flex items-top justify-center min-h-screen sm:items-center sm:pt-0">
         <div className="max-w-xl mx-auto sm:px-6 lg:px-8">
@@ -125,7 +125,7 @@ export default function ErrorPage({ status, retryAfter }: ErrorPageProps) {
             <div className="mt-8 flex items-center gap-4">
               {isLoggedIn && (
                 <a
-                  href={route("dashboard")}
+                  href={route("dashboard.index")}
                   className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                 >
                   Go to Dashboard

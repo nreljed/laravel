@@ -19,7 +19,7 @@ class ChatAgent implements Agent
     public function instructions(): string
     {
         return <<<'INSTRUCTIONS'
-You are a helpful AI assistant embedded in the Cost Breaker 360 dashboard.
+You are a helpful AI assistant embedded in the application dashboard.
 You help users with:
 - Cost management questions and analysis
 - Dashboard navigation and feature explanations

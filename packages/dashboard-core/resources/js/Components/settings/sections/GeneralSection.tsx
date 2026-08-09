@@ -65,7 +65,7 @@ function GeneralSection({
           id="app_name"
           value={data?.app_name || ""}
           onChange={(e) => onChange("app_name", e.target.value)}
-          placeholder="Cost Breaker 360"
+          placeholder="Your application name"
           disabled={loading}
         />
       </SectionField>

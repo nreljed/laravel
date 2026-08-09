@@ -983,7 +983,7 @@ class SystemHealthService
         return Http::withHeaders([
             'Accept' => 'application/vnd.github+json',
             'Authorization' => 'Bearer '.$token,
-            'User-Agent' => 'CostBreaker360',
+            'User-Agent' => 'DashboardCore',
         ])
             ->timeout(5)
             ->get($url);

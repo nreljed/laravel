@@ -91,6 +91,11 @@ class SettingsService
         return app(FormattingService::class)->formatPrice($value, self::getFormattingOptions());
     }
 
+    public static function formatCurrency(float|int|string $value): string
+    {
+        return app(FormattingService::class)->formatCurrency($value);
+    }
+
     public static function formatSurface(float|int|string $value): string
     {
         return app(FormattingService::class)->formatSurface($value, self::getFormattingOptions());

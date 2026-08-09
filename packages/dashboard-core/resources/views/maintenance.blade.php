@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'Cost Breaker 360') }} — Under Maintenance</title>
+    <title>{{ config('app.name', 'Dashboard') }} — Under Maintenance</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {

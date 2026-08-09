@@ -4,7 +4,7 @@ import PublicLayout from "@/Layouts/PublicLayout";
 export default function Welcome() {
   const { props } = usePage();
   const brand = (props.brand as { logo?: string; name?: string }) || {};
-  const appName = brand.name || "Cost Breaker 360";
+  const appName = brand.name || "";
   const registration = (props.registration as { enabled?: boolean }) || {};
   const registrationEnabled = registration.enabled !== false;
 
@@ -25,7 +25,7 @@ export default function Welcome() {
           <div className="mt-10 flex items-center justify-center gap-4">
             {props.auth?.user ? (
               <Link
-                href={route("dashboard")}
+                href={route("dashboard.index")}
                 className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Go to Dashboard

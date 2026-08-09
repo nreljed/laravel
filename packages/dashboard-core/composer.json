@@ -1,6 +1,6 @@
 {
   "name": "nreljed/dashboard-core",
-  "description": "Shared dashboard core for the Cost Breaker 360 product family (master app, Shop, Booking).",
+  "description": "Shared dashboard core platform for Laravel apps (dashboard, admin, auth, blog, AI, deploy).",
   "version": "0.1.5",
   "type": "library",
   "license": "proprietary",

@@ -2,7 +2,6 @@
 
 namespace Nreljed\DashboardCore\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,18 +65,5 @@ class DashboardController extends Controller
             'filter' => $filter,
             'typeFilter' => $typeFilter,
         ]);
-    }
-
-    public function switchMode(Request $request): RedirectResponse
-    {
-        $mode = $request->input('mode', 'host');
-
-        if (! in_array($mode, ['host', 'guest'])) {
-            return redirect()->back();
-        }
-
-        $request->session()->put('user_mode', $mode);
-
-        return redirect()->back();
     }
 }

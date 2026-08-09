@@ -6,32 +6,32 @@ class FormattingService
 {
     protected array $currencySymbols = [
         'USD' => '$',
-        'EUR' => 'â‚¬',
-        'GBP' => 'Â£',
-        'TND' => 'Ø¯.Øª',
-        'MAD' => 'Ø¯.Ù….',
+        'EUR' => '€',
+        'GBP' => '£',
+        'TND' => 'د.ت',
+        'MAD' => 'د.م.',
         'DZD' => 'DA',
-        'EGP' => 'EÂ£',
-        'SAR' => 'Ø±.Ø³',
-        'AED' => 'Ø¯.Ø¥',
-        'QAR' => 'Ø±.Ù‚',
-        'KWD' => 'Ø¯.Ùƒ',
-        'BHD' => '.Ø¯.Ø¨',
-        'OMR' => 'Ø±.Ø¹',
-        'JOD' => 'Ø¯.Ø£',
-        'LYD' => 'Ù„.Ø¯',
-        'SDG' => 'Ø¬.Ø³.',
-        'SYP' => 'Ù„.Ø³',
-        'IQD' => 'Ø¹.Ø¯',
-        'IRR' => 'ï·¼',
-        'TRY' => 'â‚º',
+        'EGP' => 'E£',
+        'SAR' => 'ر.س',
+        'AED' => 'د.إ',
+        'QAR' => 'ر.ق',
+        'KWD' => 'د.ك',
+        'BHD' => '.د.ب',
+        'OMR' => 'ر.ع',
+        'JOD' => 'د.أ',
+        'LYD' => 'ل.د',
+        'SDG' => 'ج.س.',
+        'SYP' => 'ل.س',
+        'IQD' => 'ع.د',
+        'IRR' => '﷼',
+        'TRY' => '₺',
     ];
 
     protected array $surfaceUnits = [
-        'sq_ft' => 'ftÂ²',
-        'sq_m' => 'mÂ²',
-        'sq_yd' => 'ydÂ²',
-        'sq_meter' => 'ãŽ¡',
+        'sq_ft' => 'ft²',
+        'sq_m' => 'm²',
+        'sq_yd' => 'yd²',
+        'sq_meter' => '㎡',
         'sq_feet' => 'sq ft',
         'acres' => 'ac',
         'hectares' => 'ha',
@@ -60,6 +60,27 @@ class FormattingService
             : $formatted.' '.$symbol;
     }
 
+    /**
+     * Format a money value using the app's configured formatting settings.
+     *
+     * Options may override any of: currency, position, thousands_sep,
+     * decimal_sep, empty_text. Empty options fall back to the settings-driven
+     * defaults, making this the canonical currency contract for core and
+     * consumer apps alike.
+     */
+    public function formatCurrency(float|int|string $value, array $options = []): string
+    {
+        $settings = SettingsService::getFormattingOptions();
+
+        return $this->formatPrice($value, array_merge([
+            'currency' => $settings['currency'] ?? 'USD',
+            'position' => $settings['position'] ?? 'before',
+            'thousands_sep' => $settings['thousands_sep'] ?? ',',
+            'decimal_sep' => $settings['decimal_sep'] ?? '.',
+            'empty_text' => $settings['empty_text'] ?? '',
+        ], $options));
+    }
+
     public function formatSurface(float|int|string $value, array $options = []): string
     {
         $surface = floatval($value);
@@ -72,7 +93,7 @@ class FormattingService
         $thousandsSep = $options['thousands_sep'] ?? ',';
         $decimalSep = $options['decimal_sep'] ?? '.';
 
-        $unitLabel = $this->surfaceUnits[$unit] ?? 'ftÂ²';
+        $unitLabel = $this->surfaceUnits[$unit] ?? 'ft²';
         $formatted = $this->formatNumber($surface, $thousandsSep, $decimalSep);
 
         return $formatted.' '.$unitLabel;
@@ -195,25 +216,25 @@ class FormattingService
     {
         $labels = [
             'USD' => 'US Dollar ($)',
-            'EUR' => 'Euro (â‚¬)',
-            'GBP' => 'British Pound (Â£)',
-            'TND' => 'Tunisian Dinar (Ø¯.Øª)',
-            'MAD' => 'Moroccan Dirham (Ø¯.Ù….)',
+            'EUR' => 'Euro (€)',
+            'GBP' => 'British Pound (£)',
+            'TND' => 'Tunisian Dinar (د.ت)',
+            'MAD' => 'Moroccan Dirham (د.م.)',
             'DZD' => 'Algerian Dinar (DA)',
-            'EGP' => 'Egyptian Pound (EÂ£)',
-            'SAR' => 'Saudi Riyal (Ø±.Ø³)',
-            'AED' => 'UAE Dirham (Ø¯.Ø¥)',
-            'QAR' => 'Qatari Riyal (Ø±.Ù‚)',
-            'KWD' => 'Kuwaiti Dinar (Ø¯.Ùƒ)',
-            'BHD' => 'Bahraini Dinar (.Ø¯.Ø¨)',
-            'OMR' => 'Omani Rial (Ø±.Ø¹)',
-            'JOD' => 'Jordanian Dinar (Ø¯.Ø£)',
-            'LYD' => 'Libyan Dinar (Ù„.Ø¯)',
-            'SDG' => 'Sudanese Pound (Ø¬.Ø³.)',
-            'SYP' => 'Syrian Pound (Ù„.Ø³)',
-            'IQD' => 'Iraqi Dinar (Ø¹.Ø¯)',
-            'IRR' => 'Iranian Rial (ï·¼)',
-            'TRY' => 'Turkish Lira (â‚º)',
+            'EGP' => 'Egyptian Pound (E£)',
+            'SAR' => 'Saudi Riyal (ر.س)',
+            'AED' => 'UAE Dirham (د.إ)',
+            'QAR' => 'Qatari Riyal (ر.ق)',
+            'KWD' => 'Kuwaiti Dinar (د.ك)',
+            'BHD' => 'Bahraini Dinar (.د.ب)',
+            'OMR' => 'Omani Rial (ر.ع)',
+            'JOD' => 'Jordanian Dinar (د.أ)',
+            'LYD' => 'Libyan Dinar (ل.د)',
+            'SDG' => 'Sudanese Pound (ج.س.)',
+            'SYP' => 'Syrian Pound (ل.س)',
+            'IQD' => 'Iraqi Dinar (ع.د)',
+            'IRR' => 'Iranian Rial (﷼)',
+            'TRY' => 'Turkish Lira (₺)',
         ];
 
         return $labels[$code] ?? "{$code} ({$symbol})";
@@ -222,10 +243,10 @@ class FormattingService
     protected function getUnitLabel(string $code): string
     {
         $labels = [
-            'sq_ft' => 'Square Feet (ftÂ²)',
-            'sq_m' => 'Square Meters (mÂ²)',
-            'sq_yd' => 'Square Yards (ydÂ²)',
-            'sq_meter' => 'Square Meters (ãŽ¡)',
+            'sq_ft' => 'Square Feet (ft²)',
+            'sq_m' => 'Square Meters (m²)',
+            'sq_yd' => 'Square Yards (yd²)',
+            'sq_meter' => 'Square Meters (㎡)',
             'sq_feet' => 'Square Feet (sq ft)',
             'acres' => 'Acres',
             'hectares' => 'Hectares',
