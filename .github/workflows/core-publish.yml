@@ -37,6 +37,27 @@ jobs:
         run: |
           git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
 
+      # Real write-access probe: create a probe file on a throwaway branch and
+      # delete the branch. Exercises Contents: Write on the core repo without
+      # touching main's history. Fails fast if GH_TOKEN can't push to the repo.
+      - name: Verify write access to core repo
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          REPO="nreljed/dashboard-core"
+          BRANCH="ci-write-probe"
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" >/dev/null 2>&1 || true
+          BASE_SHA=$(gh api "repos/$REPO/commits/main" --jq .sha)
+          gh api -X POST "repos/$REPO/git/refs" \
+            -f ref="refs/heads/$BRANCH" \
+            -f sha="$BASE_SHA" >/dev/null
+          gh api -X PUT "repos/$REPO/contents/.core-write-probe" \
+            -f message="ci: verify write access" \
+            -f content="cHJvYmU=" \
+            -f branch="$BRANCH" >/dev/null
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" >/dev/null
+          echo "Write access to $REPO confirmed."
+
       # Mirrors packages/dashboard-core into nreljed/dashboard-core, bumps the
       # patch version, tags vX.Y.Z, pushes main + tags, and creates a GitHub
       # release. Exits 0 when nothing functional changed, so this job is
