@@ -5,14 +5,15 @@ namespace Nreljed\DashboardCore\Deploy\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
+use Nreljed\DashboardCore\Deploy\Services\DeployService;
 use Nreljed\DashboardCore\Exceptions\DatabaseMaintenanceException;
 use Nreljed\DashboardCore\Http\Controllers\Controller;
-use Nreljed\DashboardCore\Services\CoreVersionService;
 use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
 
 class DeployController extends Controller
 {
+    public function __construct(private readonly DeployService $deployService) {}
+
     protected function verifyToken(Request $request): void
     {
         $token = $request->input('token');
@@ -315,14 +316,14 @@ class DeployController extends Controller
             $output[] = 'Restored .env';
         }
 
-        $stale = $this->removeStaleFiles($zipFiles);
+        $stale = $this->deployService->removeStaleFiles($zipFiles);
         if ($stale['aborted']) {
             $output[] = "Stale cleanup aborted ($stale[candidates] = ".round($stale['ratio'] * 100).'%)';
         } else {
             $output[] = "Removed $stale[removed] stale files";
         }
 
-        $this->cleanStaleMigrations($zipFiles, $output);
+        $this->deployService->cleanStaleMigrations($zipFiles, $output);
 
         $commands = [
             'package:discover' => [[]],
@@ -372,68 +373,12 @@ class DeployController extends Controller
 
     private function removeStaleFiles(array $zipFiles): array
     {
-        $staleDirs = ['app', 'config', 'database', 'public', 'resources', 'routes', 'bootstrap'];
-        $protected = ['bootstrap/cache/'];
-        $rootLen = strlen(base_path()) + 1;
-        $staleCandidates = 0;
-        $staleRemoved = 0;
-        $staleList = [];
-
-        foreach ($staleDirs as $dir) {
-            $full = base_path($dir);
-            if (! is_dir($full)) {
-                continue;
-            }
-            $files = File::allFiles($full);
-            foreach ($files as $file) {
-                $rel = str_replace('\\', '/', substr($file->getPathname(), $rootLen));
-                $skip = array_any($protected, fn ($p) => str_starts_with($rel, $p));
-                if ($skip) {
-                    continue;
-                }
-                if (! str_ends_with($rel, '.php') && ! str_ends_with($rel, '.js') && ! str_ends_with($rel, '.ts') && ! str_ends_with($rel, '.tsx')) {
-                    continue;
-                }
-                $staleCandidates++;
-                if (! isset($zipFiles[$rel])) {
-                    $staleRemoved++;
-                    $staleList[] = $rel;
-                }
-            }
-        }
-
-        $staleRatio = $staleCandidates > 0 ? $staleRemoved / $staleCandidates : 0;
-
-        if ($staleRatio > 0.10) {
-            return ['aborted' => true, 'removed' => 0, 'candidates' => $staleCandidates, 'ratio' => $staleRatio];
-        }
-
-        foreach ($staleList as $rel) {
-            File::delete(base_path($rel));
-        }
-
-        return ['aborted' => false, 'removed' => $staleRemoved, 'candidates' => $staleCandidates, 'ratio' => $staleRatio];
+        return $this->deployService->removeStaleFiles($zipFiles);
     }
 
     private function cleanStaleMigrations(array $zipFiles, array &$output): void
     {
-        $migrationsDir = database_path('migrations');
-        if (! is_dir($migrationsDir)) {
-            return;
-        }
-
-        $removed = 0;
-        foreach (File::files($migrationsDir) as $file) {
-            $rel = 'database/migrations/'.$file->getFilename();
-            if (! isset($zipFiles[$rel])) {
-                File::delete($file->getPathname());
-                $removed++;
-            }
-        }
-
-        if ($removed > 0) {
-            $output[] = "Cleaned $removed stale migration files";
-        }
+        $this->deployService->cleanStaleMigrations($zipFiles, $output);
     }
 
     private function wipeCache(): void
@@ -455,168 +400,50 @@ class DeployController extends Controller
     public function check(Request $request)
     {
         $this->verifyToken($request);
-        set_time_limit(300);
-
-        $output = [];
-        $envPath = base_path('.env');
 
         // If a file was uploaded directly (CI fallback), bypass GitHub API entirely
         if ($request->hasFile('file')) {
+            $output = [];
+
             return $this->processUploadedZip($request, $output);
         }
 
-        $githubToken = '';
-        if (File::exists($envPath)) {
-            foreach (explode("\n", File::get($envPath)) as $line) {
-                if (str_starts_with(trim($line), 'GITHUB_TOKEN=')) {
-                    $githubToken = trim(substr(trim($line), strlen('GITHUB_TOKEN=')));
-                    $githubToken = trim($githubToken, '"\'');
-                }
-            }
-        }
+        $result = $this->deployService->check();
 
-        $versionFile = base_path('.deployed-version');
-        $lockFile = base_path('.deploy-lock');
-        $repo = config('deploy.github_repo', 'nreljed/laravel');
-        $lockTtl = (int) config('deploy.lock_ttl', 600);
-
-        if (File::exists($lockFile) && (time() - File::lastModified($lockFile)) < $lockTtl) {
-            return response()->json(['status' => 'locked']);
-        }
-        File::put($lockFile, (string) getmypid());
-
-        try {
-            $releases = $this->githubApi("https://api.github.com/repos/$repo/releases?per_page=1", $githubToken);
-            if (! $releases || ! isset($releases[0]['tag_name'])) {
-                return response()->json(['status' => 'no-release', 'core' => $this->getCoreInfo()]);
-            }
-
-            $latestTag = $releases[0]['tag_name'];
-            $currentTag = File::exists($versionFile) ? trim(File::get($versionFile)) : '';
-
-            if ($latestTag === $currentTag) {
-                return response()->json(['status' => 'current', 'tag' => $latestTag, 'core' => $this->getCoreInfo()]);
-            }
-
-            $assetUrl = '';
-            foreach ($releases[0]['assets'] ?? [] as $asset) {
-                if ($asset['name'] === 'deploy.zip') {
-                    $assetUrl = $asset['url'];
-                    break;
-                }
-            }
-
-            if (! $assetUrl) {
-                return response()->json(['error' => 'No deploy.zip in release']);
-            }
-
-            $output[] = "New release: $latestTag";
-
-            $zipData = $this->githubDownload($assetUrl, $githubToken);
-            if (! $zipData || strlen($zipData) < 100) {
-                return response()->json(['error' => 'Download failed']);
-            }
-
-            $zipFile = storage_path('app/deploy-'.uniqid().'.zip');
-            File::put($zipFile, $zipData);
-            $output[] = 'Downloaded '.round(strlen($zipData) / 1048576, 1).' MB';
-
-            $backupEnv = File::exists($envPath) ? File::get($envPath) : '';
-
-            $zip = new \ZipArchive;
-            if ($zip->open($zipFile) !== true) {
-                return response()->json(['error' => 'Failed to open ZIP']);
-            }
-
-            // Build a lookup set of all entries in the zip (excluding dir markers)
-            $zipFiles = [];
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $stat = $zip->statIndex($i);
-                if ($stat && $stat['name'] !== '' && ! str_ends_with($stat['name'], '/')) {
-                    $zipFiles[str_replace('\\', '/', $stat['name'])] = true;
-                }
-            }
-
-            $zip->extractTo(base_path());
-            $zip->close();
-            File::delete($zipFile);
-
-            if ($backupEnv) {
-                File::put($envPath, $backupEnv);
-                $output[] = 'Restored .env';
-            }
-
-            File::put($versionFile, $latestTag);
-            $output[] = "New version: $latestTag";
-
-            $stale = $this->removeStaleFiles($zipFiles);
-            if ($stale['aborted']) {
-                $output[] = "Stale cleanup aborted (ratio: $stale[ratio])";
-            } else {
-                $output[] = "Removed $stale[removed] stale files";
-            }
-
-            $this->cleanStaleMigrations($zipFiles, $output);
-
-            $commands = [
-                'package:discover' => [[]],
-                'migrate' => [['--force' => true]],
-                'app:create-admin' => [[
-                    '--no-interaction' => true,
-                    '--email' => config('admin.email', ''),
-                    '--password' => config('admin.password', ''),
-                    '--name' => config('admin.name', 'Admin'),
-                ]],
-                'config:cache' => [[]],
-                'route:cache' => [[]],
-                'view:cache' => [[]],
-                'storage:link' => [['--force' => true]],
-            ];
-
-            foreach ($commands as $cmd => [$params]) {
-                try {
-                    Artisan::call($cmd, $params);
-                    $output[] = "$cmd: ".strtok(trim(Artisan::output()), "\n");
-                } catch (\Exception $e) {
-                    $output[] = "$cmd: ERROR ".$e->getMessage();
-                    if (in_array($cmd, ['migrate', 'config:cache'])) {
-                        return response()->json(['status' => 'error', 'error' => "$cmd failed", 'output' => $output], 500);
-                    }
-                }
-            }
-
-            return response()->json(['status' => 'deployed', 'tag' => $latestTag, 'output' => $output, 'core' => $this->getCoreInfo()]);
-        } finally {
-            File::delete($lockFile);
-        }
+        return match ($result['status']) {
+            'deployed' => response()->json([
+                'status' => 'deployed',
+                'tag' => $result['tag'],
+                'output' => $result['output'],
+                'core' => $result['core'],
+            ]),
+            'current' => response()->json([
+                'status' => 'current',
+                'tag' => $result['tag'],
+                'core' => $result['core'],
+            ]),
+            'locked' => response()->json(['status' => 'locked']),
+            'no-release' => response()->json([
+                'status' => 'no-release',
+                'core' => $result['core'],
+            ]),
+            default => $this->errorResponse($result),
+        };
     }
 
-    private function getCoreInfo(): array
+    /**
+     * @param  array{status: string, message: string, tag: string|null, output: array<int, string>, core: array<string, mixed>, status_code: int}  $result
+     */
+    private function errorResponse(array $result)
     {
-        return app(CoreVersionService::class)->info();
-    }
+        if ($result['status_code'] === 500) {
+            return response()->json([
+                'status' => 'error',
+                'error' => $result['message'],
+                'output' => $result['output'],
+            ], 500);
+        }
 
-    private function githubApi(string $url, string $token): ?array
-    {
-        $response = Http::withHeaders([
-            'User-Agent' => 'DashboardCore',
-            'Accept' => 'application/vnd.github.v3+json',
-        ])->withToken($token)
-            ->timeout(30)
-            ->get($url);
-
-        return $response->successful() ? $response->json() : null;
-    }
-
-    private function githubDownload(string $url, string $token): string|false
-    {
-        $response = Http::withHeaders([
-            'User-Agent' => 'DashboardCore',
-            'Accept' => 'application/octet-stream',
-        ])->withToken($token)
-            ->timeout(300)
-            ->get($url);
-
-        return $response->successful() ? $response->body() : false;
+        return response()->json(['error' => $result['message']], $result['status_code']);
     }
 }

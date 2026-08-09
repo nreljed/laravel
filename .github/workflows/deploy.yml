@@ -61,6 +61,10 @@ jobs:
   push-deploy:
     needs: [package, release]
     runs-on: ubuntu-latest
+    # Best-effort: the host's security layer intermittently blocks CI (datacenter)
+    # IPs. The server self-deploys via the scheduled deploy:auto command, so a
+    # failed push must not fail the pipeline — the server catches up in minutes.
+    continue-on-error: true
     steps:
       - name: Download deploy.zip artifact
         uses: actions/download-artifact@v8
@@ -122,6 +126,7 @@ jobs:
           echo "Check response: $(echo "$CHECK_BODY" | head -c 500)"
           echo "Release created at:"
           echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
+          echo "The server's scheduled deploy:auto will pick up this release automatically within ~5 minutes."
           echo "Manual deploy: download deploy.zip from release, upload to server, extract, then visit:"
           echo "$APP_URL/deploy/cache-clear?token=$DEPLOY_TOKEN"
           exit 1

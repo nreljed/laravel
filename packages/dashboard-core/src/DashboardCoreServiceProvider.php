@@ -130,6 +130,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
             Console\Commands\CoreVersion::class,
             Console\Commands\CreateAdmin::class,
             Console\Commands\CreateRole::class,
+            Console\Commands\DeployAuto::class,
             Console\Commands\ListPermissions::class,
             Console\Commands\PurgeNotifications::class,
             Console\Commands\PruneAuditLogs::class,

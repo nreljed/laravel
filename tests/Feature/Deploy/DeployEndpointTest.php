@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Nreljed\DashboardCore\Models\User;
 use Tests\TestCase;
@@ -112,6 +113,31 @@ class DeployEndpointTest extends TestCase
             $response->assertJson(['status' => 'locked']);
         } finally {
             File::delete($lockFile);
+        }
+    }
+
+    public function test_check_returns_current_when_version_matches(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response([
+                ['tag_name' => 'v1.2.3', 'assets' => []],
+            ]),
+        ]);
+
+        $versionFile = base_path('.deployed-version');
+        File::put($versionFile, 'v1.2.3');
+
+        try {
+            $response = $this->postJson('/deploy/check', ['token' => $this->token]);
+
+            $response->assertOk();
+            $response->assertJson([
+                'status' => 'current',
+                'tag' => 'v1.2.3',
+            ]);
+        } finally {
+            File::delete($versionFile);
+            File::delete(base_path('.deploy-lock'));
         }
     }
 
