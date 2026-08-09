@@ -62,7 +62,7 @@ class RegisteredUserController extends Controller
             $user->sendEmailVerificationNotification();
         }
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('dashboard.index', absolute: false));
     }
 
     public function checkAvailability(Request $request): JsonResponse

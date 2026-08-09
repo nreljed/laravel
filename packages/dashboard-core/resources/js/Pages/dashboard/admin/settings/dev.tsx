@@ -54,7 +54,10 @@ export default function DeveloperSettings({
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Link href={route("dashboard")} className="transition-colors hover:text-foreground">
+              <Link
+                href={route("dashboard.index")}
+                className="transition-colors hover:text-foreground"
+              >
                 Dashboard
               </Link>
             </BreadcrumbItem>

@@ -55,7 +55,7 @@ class UsernameValidationTest extends TestCase
             'password_confirmation' => 'Password123!',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertDatabaseHas('users', ['username' => 'nstudio.webdesign']);
     }
 
@@ -97,7 +97,7 @@ class UsernameValidationTest extends TestCase
             'password_confirmation' => 'Password123!',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertDatabaseHas('users', ['username' => 'myuser']);
         $this->assertDatabaseMissing('users', ['username' => 'MyUser']);
     }

@@ -159,7 +159,7 @@ class RateLimitingTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertAuthenticated();
     }
 
@@ -204,7 +204,7 @@ class RateLimitingTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertAuthenticatedAs($user2);
     }
 
@@ -374,7 +374,7 @@ class RateLimitingTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertAuthenticated();
     }
 
@@ -416,7 +416,7 @@ class RateLimitingTest extends TestCase
                 'password_confirmation' => 'password',
             ]);
 
-            $response->assertRedirect(route('dashboard', absolute: false));
+            $response->assertRedirect(route('dashboard.index', absolute: false));
         }
     }
 

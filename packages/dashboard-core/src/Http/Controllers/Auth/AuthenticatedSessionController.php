@@ -37,7 +37,7 @@ class AuthenticatedSessionController extends Controller
 
         AuditService::log(AuditAction::Login, Auth::id());
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('dashboard.index', absolute: false));
     }
 
     /**

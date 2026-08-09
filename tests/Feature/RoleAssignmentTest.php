@@ -80,7 +80,7 @@ class RoleAssignmentTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
 
         $user = User::where('email', 'test@example.com')->first();
         $this->assertNotNull($user);

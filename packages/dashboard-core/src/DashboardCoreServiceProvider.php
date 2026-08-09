@@ -2,6 +2,7 @@
 
 namespace Nreljed\DashboardCore;
 
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -66,6 +67,8 @@ class DashboardCoreServiceProvider extends ServiceProvider
 
         $this->configureMiddleware();
         $this->configureRateLimiting();
+
+        RedirectIfAuthenticated::redirectUsing(fn () => route('dashboard.index'));
 
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(AiProvider::class, AiProviderPolicy::class);

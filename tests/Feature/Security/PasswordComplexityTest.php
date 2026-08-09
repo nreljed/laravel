@@ -36,7 +36,7 @@ class PasswordComplexityTest extends TestCase
             'password_confirmation' => 'Password1!',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertDatabaseHas('users', ['email' => 'complex@example.com']);
     }
 
@@ -114,7 +114,7 @@ class PasswordComplexityTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('dashboard.index', absolute: false));
         $this->assertDatabaseHas('users', ['email' => 'simplepass@example.com']);
     }
 

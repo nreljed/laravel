@@ -19,7 +19,7 @@ export default function EmailVerified() {
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex flex-col gap-3">
-          <Button className="w-full" onClick={() => router.visit(route("dashboard"))}>
+          <Button className="w-full" onClick={() => router.visit(route("dashboard.index"))}>
             Continue to Dashboard
           </Button>
           <p className="text-center text-sm text-muted-foreground">

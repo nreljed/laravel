@@ -73,7 +73,7 @@ export function CommandSearch() {
       {
         heading: "Navigation",
         items: [
-          { title: "Dashboard", icon: LayoutDashboard, url: route("dashboard") },
+          { title: "Dashboard", icon: LayoutDashboard, url: route("dashboard.index") },
           { title: "Stats", icon: BarChart3, url: route("dashboard.stats") },
           { title: "Notifications", icon: Bell, url: route("dashboard.notifications") },
           { title: "Account", icon: Settings, url: route("dashboard.account") },

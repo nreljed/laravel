@@ -138,7 +138,7 @@ Route::get('/maintenance/recovery/{token}', [RecoveryController::class, 'claim']
 // DASHBOARD (Backend) Pages — requires auth
 // ═══════════════════════════════════════════════════
 Route::middleware(['auth', 'maintenance'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
 
     // Notifications — page render only (CRUD via JSON API)
@@ -155,9 +155,6 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::post('/mark-bulk', [NotificationPollController::class, 'markBulk'])->middleware('throttle:20,1')->name('mark-bulk');
         Route::post('/delete-bulk', [NotificationPollController::class, 'deleteBulk'])->middleware('throttle:20,1')->name('delete-bulk');
     });
-
-    // Host/Guest mode switch
-    Route::post('/dashboard/user/mode', [DashboardController::class, 'switchMode'])->name('dashboard.switch-mode');
 
     // Impersonation stop — outside admin middleware so impersonated users can reach it
     Route::prefix('dashboard/admin')->name('dashboard.admin.')->group(function () {

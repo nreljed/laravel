@@ -39,14 +39,14 @@ class ImpersonationController extends Controller
 
         session()->put('impersonating', true);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('dashboard.index')
             ->with('flash', ['success' => 'You are now acting as '.$user->name.'.']);
     }
 
     public function stop(Request $request): RedirectResponse
     {
         if (! session()->has('impersonator_id')) {
-            return redirect()->route('dashboard')
+            return redirect()->route('dashboard.index')
                 ->with('flash', ['error' => 'Not currently impersonating.']);
         }
 
