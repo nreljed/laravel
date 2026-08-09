@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Nreljed\DashboardCore\Services\CoreVersionService;
 use Tests\TestCase;
@@ -17,8 +18,12 @@ class CoreVersionServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->jsonPath = storage_path('app/core.json');
-        $this->shaPath = storage_path('app/core.sha');
+        $suffix = getmypid();
+        $this->jsonPath = storage_path("app/core-{$suffix}.json");
+        $this->shaPath = storage_path("app/core-{$suffix}.sha");
+
+        Config::set('core.json_path', $this->jsonPath);
+        Config::set('core.sha_path', $this->shaPath);
 
         File::delete([$this->jsonPath, $this->shaPath]);
     }

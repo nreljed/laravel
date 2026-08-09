@@ -126,7 +126,7 @@ class DatabaseMaintenanceTest extends TestCase
         $service->shouldReceive('isEnabled')->andReturn(true);
         $service->shouldReceive('resetDatabase')
             ->once()
-            ->withArgs(fn (bool $withSeed, bool $purgeMedia, ?int $userId) => $withSeed === true && $purgeMedia === false && $userId > 0)
+            ->withArgs(fn (bool $purgeMedia, ?int $userId, bool $demo) => $purgeMedia === false && $userId > 0 && $demo === false)
             ->andReturn(['success' => true, 'output' => []]);
         $this->instance(DatabaseMaintenanceService::class, $service);
 
@@ -146,7 +146,7 @@ class DatabaseMaintenanceTest extends TestCase
         $service->shouldReceive('isEnabled')->andReturn(true);
         $service->shouldReceive('resetDatabase')
             ->once()
-            ->withArgs(fn (bool $withSeed, bool $purgeMedia, ?int $userId) => $withSeed === true && $purgeMedia === true && $userId > 0)
+            ->withArgs(fn (bool $purgeMedia, ?int $userId, bool $demo) => $purgeMedia === true && $userId > 0 && $demo === false)
             ->andReturn(['success' => true, 'output' => []]);
         $this->instance(DatabaseMaintenanceService::class, $service);
 
@@ -190,19 +190,53 @@ class DatabaseMaintenanceTest extends TestCase
         $response = $this->actingAs($this->admin())
             ->post(route('dashboard.admin.database.reseed'), [
                 'password' => 'password',
+                'groups' => ['roles'],
             ]);
 
         $response->assertSessionHasErrors('confirmation');
-        $service->shouldNotHaveReceived('resetDatabase');
+        $service->shouldNotHaveReceived('reseedDatabase');
+    }
+
+    public function test_reseed_rejects_missing_groups(): void
+    {
+        $service = Mockery::mock(DatabaseMaintenanceService::class);
+        $service->shouldReceive('isEnabled')->andReturn(true);
+        $this->instance(DatabaseMaintenanceService::class, $service);
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('dashboard.admin.database.reseed'), [
+                'confirmation' => 'RESEED',
+                'password' => 'password',
+            ]);
+
+        $response->assertSessionHasErrors('groups');
+        $service->shouldNotHaveReceived('reseedDatabase');
+    }
+
+    public function test_reseed_rejects_unknown_group(): void
+    {
+        $service = Mockery::mock(DatabaseMaintenanceService::class);
+        $service->shouldReceive('isEnabled')->andReturn(true);
+        $this->instance(DatabaseMaintenanceService::class, $service);
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('dashboard.admin.database.reseed'), [
+                'confirmation' => 'RESEED',
+                'password' => 'password',
+                'groups' => ['nope'],
+            ]);
+
+        $response->assertSessionHasErrors('groups.0');
+        $service->shouldNotHaveReceived('reseedDatabase');
     }
 
     public function test_reseed_runs_service_and_redirects_back(): void
     {
         $service = Mockery::mock(DatabaseMaintenanceService::class);
         $service->shouldReceive('isEnabled')->andReturn(true);
-        $service->shouldReceive('resetDatabase')
+        $service->shouldReceive('reseedDatabase')
             ->once()
-            ->withArgs(fn (bool $withSeed, bool $purgeMedia) => $withSeed === false && $purgeMedia === false)
+            ->withArgs(fn (array $groups, ?int $userId) => $groups === ['roles'] && $userId > 0)
             ->andReturn(['success' => true, 'output' => []]);
         $this->instance(DatabaseMaintenanceService::class, $service);
 
@@ -212,6 +246,7 @@ class DatabaseMaintenanceTest extends TestCase
                 [
                     'confirmation' => 'RESEED',
                     'password' => 'password',
+                    'groups' => ['roles'],
                 ],
                 ['Referer' => route('dashboard.admin.database')],
             );
@@ -224,7 +259,7 @@ class DatabaseMaintenanceTest extends TestCase
     {
         $service = Mockery::mock(DatabaseMaintenanceService::class);
         $service->shouldReceive('isEnabled')->andReturn(true);
-        $service->shouldReceive('resetDatabase')
+        $service->shouldReceive('reseedDatabase')
             ->once()
             ->andThrow(new DatabaseMaintenanceException('Database reseed failed.'));
         $this->instance(DatabaseMaintenanceService::class, $service);
@@ -235,6 +270,7 @@ class DatabaseMaintenanceTest extends TestCase
                 [
                     'confirmation' => 'RESEED',
                     'password' => 'password',
+                    'groups' => ['roles'],
                 ],
                 ['Referer' => route('dashboard.admin.database')],
             );

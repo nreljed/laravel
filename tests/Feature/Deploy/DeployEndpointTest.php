@@ -26,6 +26,8 @@ class DeployEndpointTest extends TestCase
         parent::setUp();
         $this->token = 'test-deploy-token-'.Str::random(16);
         Config::set('deploy.token', $this->token);
+        Config::set('deploy.lock_path', base_path('.deploy-lock-'.getmypid()));
+        Config::set('deploy.version_path', base_path('.deployed-version-'.getmypid()));
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
@@ -102,7 +104,7 @@ class DeployEndpointTest extends TestCase
 
     public function test_check_returns_locked_when_lock_file_is_fresh(): void
     {
-        $lockFile = base_path('.deploy-lock');
+        $lockFile = config('deploy.lock_path');
         File::put($lockFile, 'test-pid');
         touch($lockFile, now()->subSeconds(60)->timestamp);
 
@@ -124,7 +126,7 @@ class DeployEndpointTest extends TestCase
             ]),
         ]);
 
-        $versionFile = base_path('.deployed-version');
+        $versionFile = config('deploy.version_path');
         File::put($versionFile, 'v1.2.3');
 
         try {
@@ -137,7 +139,7 @@ class DeployEndpointTest extends TestCase
             ]);
         } finally {
             File::delete($versionFile);
-            File::delete(base_path('.deploy-lock'));
+            File::delete(config('deploy.lock_path'));
         }
     }
 

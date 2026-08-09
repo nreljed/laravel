@@ -13,16 +13,25 @@ class DeployAutoCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected string $lockPath;
+
+    protected string $versionPath;
+
     protected function setUp(): void
     {
         parent::setUp();
         Config::set('deploy.github_repo', 'nreljed/laravel');
+
+        $this->lockPath = base_path('.deploy-lock-'.getmypid());
+        $this->versionPath = base_path('.deployed-version-'.getmypid());
+        Config::set('deploy.lock_path', $this->lockPath);
+        Config::set('deploy.version_path', $this->versionPath);
     }
 
     protected function tearDown(): void
     {
-        File::delete(base_path('.deploy-lock'));
-        File::delete(base_path('.deployed-version'));
+        File::delete($this->lockPath);
+        File::delete($this->versionPath);
         parent::tearDown();
     }
 
@@ -33,8 +42,8 @@ class DeployAutoCommandTest extends TestCase
 
     public function test_skips_when_deploy_lock_is_fresh(): void
     {
-        File::put(base_path('.deploy-lock'), 'test-pid');
-        touch(base_path('.deploy-lock'), now()->subSeconds(30)->timestamp);
+        File::put($this->lockPath, 'test-pid');
+        touch($this->lockPath, now()->subSeconds(30)->timestamp);
 
         $this->artisan('deploy:auto')
             ->expectsOutputToContain('already in progress')
@@ -49,7 +58,7 @@ class DeployAutoCommandTest extends TestCase
             ]),
         ]);
 
-        File::put(base_path('.deployed-version'), 'v1.2.3');
+        File::put($this->versionPath, 'v1.2.3');
 
         $this->artisan('deploy:auto')
             ->expectsOutputToContain('Already up to date (v1.2.3)')

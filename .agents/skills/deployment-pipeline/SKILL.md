@@ -67,7 +67,7 @@ Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
 
 - `workflow_dispatch` with a `command` input (`migrate` | `reset`)
 - `migrate` requires `confirm='yes'` and curls `/deploy/migrate` on production
-- `reset` requires `confirm='RESET'` and curls `/deploy/reset` (with_seed, purge_media)
+- `reset` requires `confirm='RESET'` and curls `/deploy/reset` (with_demo, purge_media)
 
 ## Server Deploy Flow
 

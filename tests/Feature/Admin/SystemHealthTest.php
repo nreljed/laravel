@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
@@ -26,7 +27,8 @@ class SystemHealthTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         Cache::flush();
-        File::delete(base_path('.deployed-version'));
+        Config::set('deploy.version_path', base_path('.deployed-version-'.getmypid()));
+        File::delete(config('deploy.version_path'));
         File::delete([storage_path('app/core.json'), storage_path('app/core.sha')]);
     }
 
@@ -108,6 +110,123 @@ class SystemHealthTest extends TestCase
 
         $response->assertStatus(400);
         $response->assertJsonPath('error', 'Log file not found.');
+    }
+
+    public function test_admin_can_view_log_viewer_page(): void
+    {
+        $logPath = storage_path('logs/health-test.log');
+        File::put($logPath, "[2026-08-08 10:00:00] production.ERROR: First\n[2026-08-08 10:00:01] production.INFO: Second\n");
+
+        try {
+            $response = $this->actingAs($this->admin())
+                ->get(route('dashboard.admin.logs', ['file' => 'health-test.log']));
+
+            $response->assertOk();
+            $response->assertInertia(fn ($page) => $page
+                ->component('dashboard/admin/logs')
+                ->has('files')
+                ->where('selected', 'health-test.log')
+                ->where('log.name', 'health-test.log')
+                ->where('log.total_lines', 2)
+                ->where('log.total_pages', 1)
+                ->has('log.lines', 2)
+            );
+        } finally {
+            File::delete($logPath);
+        }
+    }
+
+    public function test_non_admin_cannot_view_log_viewer_page(): void
+    {
+        $response = $this->actingAs($this->regularUser())
+            ->get(route('dashboard.admin.logs'));
+
+        $response->assertStatus(403);
+    }
+
+    public function test_log_viewer_defaults_to_first_file(): void
+    {
+        File::put(storage_path('logs/0-zzz.log'), "line z\n");
+        File::put(storage_path('logs/0-aaa.log'), "line a\n");
+
+        try {
+            $response = $this->actingAs($this->admin())
+                ->get(route('dashboard.admin.logs'));
+
+            $response->assertOk();
+            $response->assertInertia(fn ($page) => $page
+                ->component('dashboard/admin/logs')
+                ->where('selected', '0-aaa.log')
+            );
+        } finally {
+            File::delete([storage_path('logs/0-zzz.log'), storage_path('logs/0-aaa.log')]);
+        }
+    }
+
+    public function test_log_viewer_falls_back_to_first_file_for_invalid_file(): void
+    {
+        File::put(storage_path('logs/0-file.log'), "line one\n");
+
+        try {
+            $response = $this->actingAs($this->admin())
+                ->get(route('dashboard.admin.logs', ['file' => 'nonexistent.log']));
+
+            $response->assertOk();
+            $response->assertInertia(fn ($page) => $page
+                ->where('selected', '0-file.log')
+            );
+        } finally {
+            File::delete(storage_path('logs/0-file.log'));
+        }
+    }
+
+    public function test_read_log_page_paginates_from_most_recent(): void
+    {
+        $logPath = storage_path('logs/health-test.log');
+        File::put($logPath, implode("\n", array_map(fn ($i) => "Line {$i}", range(1, 100))));
+
+        try {
+            $service = new SystemHealthService;
+
+            $page1 = $service->readLogPage('health-test.log', 25, 1);
+            $this->assertSame(1, $page1['page']);
+            $this->assertSame(100, $page1['total_lines']);
+            $this->assertSame(4, $page1['total_pages']);
+            $this->assertSame(array_map(fn ($i) => "Line {$i}", range(76, 100)), $page1['lines']);
+
+            $page4 = $service->readLogPage('health-test.log', 25, 4);
+            $this->assertSame(4, $page4['page']);
+            $this->assertSame(array_map(fn ($i) => "Line {$i}", range(1, 25)), $page4['lines']);
+
+            $overflow = $service->readLogPage('health-test.log', 25, 99);
+            $this->assertSame(4, $overflow['page']);
+        } finally {
+            File::delete($logPath);
+        }
+    }
+
+    public function test_admin_can_download_log_file(): void
+    {
+        $logPath = storage_path('logs/health-test.log');
+        File::put($logPath, "hello world\n");
+
+        try {
+            $response = $this->actingAs($this->admin())
+                ->get(route('dashboard.admin.logs.download', ['file' => 'health-test.log']));
+
+            $response->assertOk();
+            $response->assertDownload('health-test.log');
+        } finally {
+            File::delete($logPath);
+        }
+    }
+
+    public function test_non_admin_cannot_download_log_file(): void
+    {
+        $response = $this->actingAs($this->regularUser())
+            ->get(route('dashboard.admin.logs.download', ['file' => 'laravel.log']));
+
+        $response->assertStatus(403);
     }
 
     public function test_system_health_mail_payload_does_not_leak_credentials(): void
@@ -240,16 +359,21 @@ class SystemHealthTest extends TestCase
 
     public function test_deployed_version_uses_marker_when_present(): void
     {
-        File::put(base_path('.deployed-version'), 'v9.9.9');
+        $versionFile = config('deploy.version_path');
+        File::put($versionFile, 'v9.9.9');
 
-        $response = $this->actingAs($this->admin())
-            ->get(route('dashboard.admin.system-health'));
+        try {
+            $response = $this->actingAs($this->admin())
+                ->get(route('dashboard.admin.system-health'));
 
-        $response->assertInertia(fn ($page) => $page
-            ->where('deployed_version.exists', true)
-            ->where('deployed_version.version', 'v9.9.9')
-            ->where('deployed_version.origin', 'deployed')
-        );
+            $response->assertInertia(fn ($page) => $page
+                ->where('deployed_version.exists', true)
+                ->where('deployed_version.version', 'v9.9.9')
+                ->where('deployed_version.origin', 'deployed')
+            );
+        } finally {
+            File::delete($versionFile);
+        }
     }
 
     public function test_deployed_version_falls_back_to_git_describe_locally(): void

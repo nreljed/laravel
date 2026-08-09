@@ -72,8 +72,8 @@ class DatabaseResetDeployEndpointTest extends TestCase
         $service = Mockery::mock(DatabaseMaintenanceService::class);
         $service->shouldReceive('resetDatabase')
             ->once()
-            ->withArgs(fn (bool $withSeed, bool $purgeMedia, ?int $userId) => $withSeed === true && $purgeMedia === false && $userId === 0)
-            ->andReturn(['success' => true, 'output' => ['migrate:fresh --seed: ok']]);
+            ->withArgs(fn (bool $purgeMedia, ?int $userId, bool $demo) => $purgeMedia === false && $userId === 0 && $demo === false)
+            ->andReturn(['success' => true, 'output' => ['migrate:fresh: ok']]);
         $this->instance(DatabaseMaintenanceService::class, $service);
 
         $response = $this->postJson('/deploy/reset', [
@@ -87,19 +87,19 @@ class DatabaseResetDeployEndpointTest extends TestCase
         $response->assertJsonStructure(['output']);
     }
 
-    public function test_reset_passes_seed_and_purge_flags(): void
+    public function test_reset_passes_demo_and_purge_flags(): void
     {
         $service = Mockery::mock(DatabaseMaintenanceService::class);
         $service->shouldReceive('resetDatabase')
             ->once()
-            ->withArgs(fn (bool $withSeed, bool $purgeMedia, ?int $userId) => $withSeed === false && $purgeMedia === true && $userId === 0)
+            ->withArgs(fn (bool $purgeMedia, ?int $userId, bool $demo) => $purgeMedia === true && $userId === 0 && $demo === true)
             ->andReturn(['success' => true, 'output' => []]);
         $this->instance(DatabaseMaintenanceService::class, $service);
 
         $response = $this->postJson('/deploy/reset', [
             'token' => $this->token,
             'confirm' => 'RESET',
-            'with_seed' => false,
+            'with_demo' => true,
             'purge_media' => true,
         ]);
 

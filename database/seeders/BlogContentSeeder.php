@@ -11,16 +11,6 @@ use Nreljed\DashboardCore\Models\User;
 
 class BlogContentSeeder extends Seeder
 {
-    private const string SOURCE_IMAGES_DIR = 'D:\WEB PROJECTS\Archived projects\myhome\Source Demo Properties Images';
-
-    private const array DEMO_IMAGES = [
-        'sanibell-bv-530lZQXMKGw-unsplash.jpg',
-        'sanibell-bv-w2Ey_vOI-H8-unsplash.jpg',
-        'douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg',
-        'charkrit-t1LQYntvpCc-unsplash.jpg',
-        'michiel-van-kaam-QhbtepGK5Yg-unsplash.jpg',
-    ];
-
     /**
      * @var array<string, int> slug => id for created categories
      */
@@ -29,11 +19,7 @@ class BlogContentSeeder extends Seeder
     public function run(): void
     {
         // Remove all existing posts so the demo feed is exactly what this seeder defines.
-        // Post::query()->delete() fires the deleting callback which removes featured/og
-        // images from storage, so demo images are (re)copied afterwards.
         Post::query()->delete();
-
-        $this->copyDemoImages();
 
         $this->seedCategories();
         $this->seedTags();
@@ -124,13 +110,26 @@ class BlogContentSeeder extends Seeder
             ?? User::first();
     }
 
-    private function img(string $file, string $alt, int $w = 800, int $h = 600): string
+    /**
+     * Render a demo image pulled from the online Picsum placeholder service.
+     * Images are deterministic per seed string, so reseeding always yields the
+     * same photo and no image files are required in the repo or on disk.
+     */
+    private function img(string $seed, string $alt, int $w = 800, int $h = 600): string
     {
-        $src = preg_match('#^https?://#i', $file) === 1 ? $file : '/storage/posts/'.$file;
+        $src = 'https://picsum.photos/seed/'.$seed.'/'.$w.'/'.$h;
 
         return '<span class="block my-4 rounded-md max-w-full" style="position: relative; display: inline-block;">'
-            .'<img src="'.$src.'" alt="'.$alt.'" class="max-w-full rounded-md object-cover transition-shadow" width="'.$w.'" height="'.$h.'" />'
+            .'<img src="'.$src.'" alt="'.$alt.'" class="max-w-full rounded-md object-cover transition-shadow" width="'.$w.'" height="'.$h.'" loading="lazy" />'
             .'</span>';
+    }
+
+    /**
+     * Featured / OG image URL for a post, served from the online Picsum service.
+     */
+    private function demoImage(string $seed): string
+    {
+        return 'https://picsum.photos/seed/'.$seed.'/1200/630';
     }
 
     private function codeBlock(string $language, string $code): string
@@ -181,10 +180,10 @@ class BlogContentSeeder extends Seeder
         $twoCol = $this->layout2(
             '<h3>Design First</h3>'
             .'<p>Every project starts with understanding the user. Wireframes, prototypes, and design systems ensure consistency across every screen.</p>'
-            .$this->img('sanibell-bv-w2Ey_vOI-H8-unsplash.jpg', 'Modern interior design showcase', 800, 600),
+            .$this->img('sanibell-bv-w2Ey_vOI-H8', 'Modern interior design showcase', 800, 600),
             '<h3>Built to Scale</h3>'
             .'<p>Robust architecture with Laravel, Inertia.js, and React delivers a seamless experience that grows with your business.</p>'
-            .$this->img('douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg', 'Modern building architecture', 800, 600),
+            .$this->img('douglas-sheppard-CGZbE-Pa1S8', 'Modern building architecture', 800, 600),
         );
 
         $threeCol = $this->layout3(
@@ -432,7 +431,7 @@ HTML;
             [
                 $twoCol,
                 $threeCol,
-                $this->img('douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg', 'Editor image upload demonstration', 800, 600),
+                $this->img('douglas-sheppard-CGZbE-Pa1S8', 'Editor image upload demonstration', 800, 600),
                 $this->codeBlock('php', $phpCode),
                 $this->codeBlock('ts', $tsCode),
             ],
@@ -445,11 +444,11 @@ HTML;
             'excerpt' => 'A comprehensive demonstration of every Lexical editor feature: formatting, links, lists, tables, column layouts, code blocks, and images.',
             'published_at' => now()->subDays(3),
             'category_id' => $this->categoryIds['web-development'],
-            'featured_image' => '/storage/posts/sanibell-bv-530lZQXMKGw-unsplash.jpg',
+            'featured_image' => $this->demoImage('lexical-editor-showcase'),
             'meta_title' => 'The Complete Lexical Editor Showcase | Cost Breaker 360',
             'meta_description' => 'See every Lexical editor feature in action: formatting, links, lists, tables, column layouts, code blocks, and images.',
             'focus_keyword' => 'lexical editor features',
-            'og_image' => '/storage/posts/sanibell-bv-530lZQXMKGw-unsplash.jpg',
+            'og_image' => $this->demoImage('lexical-editor-showcase'),
         ], ['Lexical', 'React', 'TypeScript', 'Tailwind CSS', 'Shadcn UI']);
     }
 
@@ -580,7 +579,7 @@ CODE;
             [
                 $this->codeBlock('php', $modelCode),
                 $this->codeBlock('php', $routeCode),
-                $this->img('https://images.unsplash.com/photo-1547658719-da2b51169166?w=1200', 'Remote image from Unsplash', 800, 600),
+                $this->img('blog-laravel-tutorial', 'Remote image from Picsum', 800, 600),
             ],
             $content,
         );
@@ -591,11 +590,11 @@ CODE;
             'excerpt' => 'A step-by-step tutorial: feature-based architecture, nested categories, and the Lexical editor.',
             'published_at' => now()->subDays(1),
             'category_id' => $this->categoryIds['backend'],
-            'featured_image' => '/storage/posts/douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg',
+            'featured_image' => $this->demoImage('laravel-blog-tutorial'),
             'meta_title' => 'Modern Blog with Laravel 13 and React 19 | Cost Breaker 360',
             'meta_description' => 'Learn to build a feature-based blog with Laravel 13, React 19, and the Lexical editor.',
             'focus_keyword' => 'laravel blog tutorial',
-            'og_image' => '/storage/posts/douglas-sheppard-CGZbE-Pa1S8-unsplash.jpg',
+            'og_image' => $this->demoImage('laravel-blog-tutorial'),
         ], ['Laravel', 'React', 'PHP', 'TypeScript']);
     }
 
@@ -725,11 +724,11 @@ HTML;
             'excerpt' => 'How Cost Breaker 360 runs zero-cost AI agents by resolving per-user provider keys dynamically.',
             'published_at' => now()->subDays(2),
             'category_id' => $this->categoryIds['artificial-intelligence'],
-            'featured_image' => '/storage/posts/michiel-van-kaam-QhbtepGK5Yg-unsplash.jpg',
+            'featured_image' => $this->demoImage('ai-agents'),
             'meta_title' => 'Laravel AI: Bring Your Own Key Agents | Cost Breaker 360',
             'meta_description' => 'Zero-cost AI agents in Laravel: BYOK provider resolution, encrypted key storage, and structured output.',
             'focus_keyword' => 'laravel ai agents',
-            'og_image' => '/storage/posts/michiel-van-kaam-QhbtepGK5Yg-unsplash.jpg',
+            'og_image' => $this->demoImage('ai-agents'),
         ], ['Laravel', 'AI', 'PHP', 'TypeScript']);
     }
 
@@ -763,30 +762,11 @@ HTML;
             'excerpt' => 'A warm welcome and a quick guide to what you will find on the blog.',
             'published_at' => now()->subHours(6),
             'category_id' => $this->categoryIds['business'],
-            'featured_image' => '/storage/posts/charkrit-t1LQYntvpCc-unsplash.jpg',
+            'featured_image' => $this->demoImage('welcome-blog'),
             'meta_title' => 'Welcome to the Blog | Cost Breaker 360',
             'meta_description' => 'Welcome to the Cost Breaker 360 blog — updates, tutorials, and product stories.',
             'focus_keyword' => 'welcome blog',
-            'og_image' => '/storage/posts/charkrit-t1LQYntvpCc-unsplash.jpg',
+            'og_image' => $this->demoImage('welcome-blog'),
         ], ['JavaScript', 'Design Systems']);
-    }
-
-    private function copyDemoImages(): void
-    {
-        $destDir = storage_path('app/public/posts');
-        if (! is_dir($destDir)) {
-            mkdir($destDir, 0755, true);
-        }
-
-        foreach (self::DEMO_IMAGES as $filename) {
-            $dest = $destDir.'/'.$filename;
-            if (file_exists($dest)) {
-                continue;
-            }
-            $source = self::SOURCE_IMAGES_DIR.'\\'.$filename;
-            if (file_exists($source)) {
-                copy($source, $dest);
-            }
-        }
     }
 }

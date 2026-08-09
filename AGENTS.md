@@ -367,7 +367,7 @@ The `@typescript-eslint/strict-type-checked` preset requires type-aware linting 
 - Always run `npm run build` after code changes
 - CSP middleware only applies in production
 - Site: `https://laravel.local/`
-- **Seed users**: All seeded role users (editor/author/user/admin in `DatabaseSeeder`) share the same password `azerty123/*` — never forget this. Admin: `nstudio.webdesign@gmail.com` (username `nstudio`).
+- **Seed users**: All demo role users (editor/author/user/admin in `DemoUsersSeeder`) share the same password `azerty123/*` — never forget this. Admin: `nstudio.webdesign@gmail.com` (username `nstudio`).
 
 ## Playwright MCP
 
@@ -461,7 +461,7 @@ pull_request → pr.yml
 **database-maintenance.yml** (`workflow_dispatch`, manual only):
 
 - Inputs: `command` (`migrate` | `reset`), `confirm` (`yes` for migrate, `RESET` for reset),
-  `with_seed`, `purge_media` (reset only)
+  `with_demo`, `purge_media` (reset only)
 - `migrate` curls `POST /deploy/migrate`; `reset` curls `POST /deploy/reset` with
   `secrets.DEPLOY_TOKEN`
 - Requires `DB_MAINTENANCE_ENABLED=true` in production `.env` for reset (the endpoint itself is always
@@ -476,15 +476,19 @@ pull_request → pr.yml
 | Admin UI page   | `admin` + `manage-options` + `DB_MAINTENANCE_ENABLED` | `dashboard.admin.database(.reset\|.reseed)` |
 | Deploy endpoint | `DEPLOY_TOKEN` + `confirm=RESET`                      | `POST /deploy/reset`                        |
 
-- Shared logic lives in `Nreljed\DashboardCore\Services\DatabaseMaintenanceService` — runs
-  `migrate:fresh --seed` + `app:create-admin` (reset) or `db:seed` (reseed), optional media purge
-  of `storage/app/public`, `.maintenance-lock` file (15 min TTL), toggles maintenance mode,
-  writes a `critical` audit log, and notifies all admins.
+- Shared logic lives in `Nreljed\DashboardCore\Services\DatabaseMaintenanceService` —
+  `resetDatabase()` runs `migrate:fresh` + baseline seeders (roles/permissions + settings) +
+  `app:create-admin`; demo-tier seeders (`demo_users`, `blog`) only run when `demo: true`
+  (`with_demo` on the endpoint, UI always resets baseline-only). `reseedDatabase()` re-runs
+  only the selected seeder groups via `db:seed --class`. Seeder groups are a config catalog
+  (`config/database-maintenance.php` → `seeders`; baseline/destructive flags). Optional media
+  purge of `storage/app/public`, `.maintenance-lock` file (15 min TTL), toggles maintenance
+  mode, writes a `critical` audit log, and notifies all admins.
 - `DB_MAINTENANCE_ENABLED` defaults to enabled everywhere **except** production. Keep it `false`
   in production unless you intend to use the GitHub Action reset. `.env.example` and
   `.env.production.example` both ship `DB_MAINTENANCE_ENABLED=false`.
 - UI reset ends the session and redirects to `/login`; deploy reset returns JSON.
-- Tests: `tests/Feature/Admin/DatabaseMaintenanceTest.php`, `tests/Feature/Deploy/DatabaseResetDeployEndpointTest.php`.
+- Tests: `tests/Feature/Admin/DatabaseMaintenanceTest.php`, `tests/Feature/Admin/DatabaseMaintenanceServiceTest.php`, `tests/Feature/Deploy/DatabaseResetDeployEndpointTest.php`.
 
 ### GitHub Secrets
 

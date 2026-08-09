@@ -15,14 +15,14 @@ on:
         description: 'Type "yes" for migrate or "RESET" for reset to confirm'
         required: true
         default: "no"
-      with_seed:
-        description: "Reseed demo content after wiping (reset only)"
+      with_demo:
+        description: "Also seed demo content (users, blog) after wiping (reset only)"
         required: true
         type: choice
         options:
-          - "true"
           - "false"
-        default: "true"
+          - "true"
+        default: "false"
       purge_media:
         description: "Also delete all uploaded media files (reset only)"
         required: true
@@ -69,5 +69,5 @@ jobs:
           curl -sf --max-time 600 \
             -X POST \
             -H "Content-Type: application/json" \
-            -d '{"token":"${{ secrets.DEPLOY_TOKEN }}","confirm":"${{ inputs.confirm }}","with_seed":"${{ inputs.with_seed }}","purge_media":"${{ inputs.purge_media }}"}' \
+            -d '{"token":"${{ secrets.DEPLOY_TOKEN }}","confirm":"${{ inputs.confirm }}","with_demo":"${{ inputs.with_demo }}","purge_media":"${{ inputs.purge_media }}"}' \
             "${{ vars.APP_URL }}/deploy/reset"
