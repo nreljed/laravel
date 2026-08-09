@@ -1,4 +1,4 @@
-import { Head, router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import React from "react";
 import {
   Activity,
@@ -401,84 +401,6 @@ function MiniCard({
   );
 }
 
-function logLineClass(line: string) {
-  if (/\.(ALERT|CRITICAL|EMERGENCY)\b/.test(line)) {
-    return "text-red-600 dark:text-red-400 font-semibold";
-  }
-  if (/\.ERROR\b/.test(line)) {
-    return "text-rose-500 dark:text-rose-400";
-  }
-  if (/\.WARNING\b/.test(line)) {
-    return "text-amber-600 dark:text-amber-400";
-  }
-  if (/\.(NOTICE|INFO|DEBUG)\b/.test(line)) {
-    return "text-muted-foreground";
-  }
-  return "text-foreground";
-}
-
-function LogViewer({ log }: { log: LogFile }) {
-  const [open, setOpen] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [lines, setLines] = React.useState<string[]>([]);
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        route("dashboard.admin.system-health.logs", { file: log.name }),
-        { credentials: "same-origin" },
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? `HTTP ${response.status}`);
-      }
-      setLines(data.lines ?? []);
-    } catch (error_) {
-      setError(error_ instanceof Error ? error_.message : "Failed to load log");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggle = () => {
-    if (!open && lines.length === 0) {
-      void load();
-    }
-    setOpen((value) => !value);
-  };
-
-  return (
-    <div className="shrink-0">
-      <Button variant="outline" size="sm" onClick={toggle} disabled={loading}>
-        <FileText className="mr-1.5 h-3.5 w-3.5" />
-        {open ? "Hide" : "View"}
-      </Button>
-      {open && (
-        <div className="mt-2 rounded-md border border-border/50">
-          <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words bg-muted/40 p-3 text-[11px] font-mono leading-relaxed">
-            {loading ? (
-              <span className="text-muted-foreground">Loading…</span>
-            ) : error ? (
-              <span className="text-red-500">{error}</span>
-            ) : lines.length === 0 ? (
-              <span className="text-muted-foreground">Log is empty.</span>
-            ) : (
-              lines.map((line, i) => (
-                <div key={i} className={logLineClass(line)}>
-                  {line}
-                </div>
-              ))
-            )}
-          </pre>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function CollapsibleSection({
   defaultOpen = false,
   title,
@@ -501,7 +423,7 @@ function CollapsibleSection({
         ? "border-amber-500/30 dark:border-amber-400/30"
         : status === "critical"
           ? "border-red-500/30 dark:border-red-400/30"
-          : "border-border/50";
+          : "border-sky-500/30 dark:border-sky-400/30";
 
   const badgeVariant =
     status === "good"
@@ -1484,9 +1406,17 @@ export default function SystemHealth(props: SystemHealthProps) {
               {props.logs.files.length > 0 && (
                 <>
                   <Separator className="my-2" />
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Log Files ({props.logs.files.length})
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Log Files ({props.logs.files.length})
+                    </p>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={route("dashboard.admin.logs")}>
+                        <FileText className="mr-1.5 h-3.5 w-3.5" />
+                        Open Log Viewer
+                      </Link>
+                    </Button>
+                  </div>
                   <div className="space-y-2">
                     {props.logs.files.map((f) => (
                       <div
@@ -1499,7 +1429,12 @@ export default function SystemHealth(props: SystemHealthProps) {
                             {f.size} — {f.modified}
                           </p>
                         </div>
-                        <LogViewer log={f} />
+                        <Button asChild variant="outline" size="sm" className="shrink-0">
+                          <Link href={route("dashboard.admin.logs", { file: f.name })}>
+                            <FileText className="mr-1.5 h-3.5 w-3.5" />
+                            View
+                          </Link>
+                        </Button>
                       </div>
                     ))}
                   </div>

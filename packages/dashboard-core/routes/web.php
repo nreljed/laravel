@@ -208,6 +208,10 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
         Route::get('/system-health', [AdminController::class, 'systemHealth'])->name('system-health');
         Route::post('/system-health/refresh', [AdminController::class, 'refreshSystemHealth'])->name('system-health.refresh');
         Route::get('/system-health/logs/{file}', [AdminController::class, 'readSystemHealthLog'])->name('system-health.logs');
+
+        // Dedicated log viewer page
+        Route::get('/logs/{file?}', [AdminController::class, 'logViewer'])->name('logs');
+        Route::get('/logs/{file}/download', [AdminController::class, 'downloadSystemHealthLog'])->name('logs.download');
     });
 
     // Database maintenance (danger zone) — admin only, env-gated at controller level

@@ -76,19 +76,32 @@ class DatabaseMaintenanceService
             'media_disk_path' => storage_path('app/public'),
             'last_reset_at' => $lastReset?->created_at?->toISOString(),
             'last_reset_by' => $lastReset?->user?->name,
+            'reseed_groups' => array_values(array_map(
+                fn (string $key, array $group) => [
+                    'key' => $key,
+                    'label' => $group['label'] ?? $key,
+                    'destructive' => (bool) ($group['destructive'] ?? false),
+                ],
+                array_keys($this->seederGroups()),
+                $this->seederGroups(),
+            )),
         ];
     }
 
     /**
-     * Run the destructive operation.
+     * Run a destructive database reset: migrate:fresh, baseline seeders
+     * (roles/permissions + settings), then app:create-admin.
      *
-     * @param  bool  $withSeed  true = migrate:fresh --seed + app:create-admin, false = db:seed only
+     * Demo content seeders (users, blog, ...) are skipped unless `$demo` is
+     * true, so a production reset always yields a clean baseline environment.
+     *
      * @param  bool  $purgeMedia  additionally empty the public media disk
      * @param  int|null  $userId  actor id used for the audit trail
+     * @param  bool  $demo  also run demo-tier seeders after the baseline
      *
      * @throws DatabaseMaintenanceException
      */
-    public function resetDatabase(bool $withSeed = true, bool $purgeMedia = false, ?int $userId = null): array
+    public function resetDatabase(bool $purgeMedia = false, ?int $userId = null, bool $demo = false): array
     {
         if ($this->isLocked()) {
             throw new DatabaseMaintenanceException('Another database maintenance operation is already running. Please wait a few minutes and try again.');
@@ -102,26 +115,26 @@ class DatabaseMaintenanceService
 
             $this->enableMaintenanceMode($output);
 
-            if ($withSeed) {
-                $exitCode = $this->run('migrate:fresh', ['--force' => true, '--seed' => true], $output);
-                if ($exitCode !== 0) {
-                    throw new DatabaseMaintenanceException('migrate:fresh --seed failed.');
-                }
+            $exitCode = $this->run('migrate:fresh', ['--force' => true], $output);
+            if ($exitCode !== 0) {
+                throw new DatabaseMaintenanceException('migrate:fresh failed.');
+            }
 
-                $exitCode = $this->run('app:create-admin', [
-                    '--no-interaction' => true,
-                    '--email' => config('admin.email', ''),
-                    '--password' => config('admin.password', ''),
-                    '--name' => config('admin.name', 'Admin'),
-                ], $output);
+            foreach ($this->seedersForReset($demo) as $key => $class) {
+                $exitCode = $this->run('db:seed', ['--force' => true, '--class' => $class], $output);
                 if ($exitCode !== 0) {
-                    throw new DatabaseMaintenanceException('app:create-admin failed. Check the ADMIN_EMAIL and ADMIN_PASSWORD environment variables.');
+                    throw new DatabaseMaintenanceException("Seeder '{$key}' failed (migrate:fresh).");
                 }
-            } else {
-                $exitCode = $this->run('db:seed', ['--force' => true], $output);
-                if ($exitCode !== 0) {
-                    throw new DatabaseMaintenanceException('db:seed failed.');
-                }
+            }
+
+            $exitCode = $this->run('app:create-admin', [
+                '--no-interaction' => true,
+                '--email' => config('admin.email', ''),
+                '--password' => config('admin.password', ''),
+                '--name' => config('admin.name', 'Admin'),
+            ], $output);
+            if ($exitCode !== 0) {
+                throw new DatabaseMaintenanceException('app:create-admin failed. Check the ADMIN_EMAIL and ADMIN_PASSWORD environment variables.');
             }
 
             if ($purgeMedia) {
@@ -132,15 +145,78 @@ class DatabaseMaintenanceService
 
             try {
                 AuditService::log(
-                    $withSeed ? AuditAction::DatabaseReset : AuditAction::DatabaseReseed,
+                    AuditAction::DatabaseReset,
                     $userId ?? 0,
-                    ['with_seed' => $withSeed, 'purge_media' => $purgeMedia],
+                    ['purge_media' => $purgeMedia, 'demo' => $demo],
                 );
             } catch (\Throwable) {
                 // Best-effort — a failed audit write must never fail a completed reset.
             }
 
-            $this->notifyAdmins($withSeed, $purgeMedia);
+            $this->notifyAdmins(AuditAction::DatabaseReset, $purgeMedia);
+
+            return ['success' => true, 'output' => $output];
+        } catch (DatabaseMaintenanceException $e) {
+            $this->disableMaintenanceMode($output);
+
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->disableMaintenanceMode($output);
+
+            throw new DatabaseMaintenanceException($e->getMessage(), 0, $e);
+        } finally {
+            $this->releaseLock();
+        }
+    }
+
+    /**
+     * Re-run only the selected seeder groups (no destructive wipe).
+     *
+     * @param  list<string>  $groupKeys  seeder group slugs (see config 'database_maintenance.seeders')
+     * @param  int|null  $userId  actor id used for the audit trail
+     *
+     * @throws DatabaseMaintenanceException
+     */
+    public function reseedDatabase(array $groupKeys, ?int $userId = null): array
+    {
+        $classes = $this->seedersForGroups($groupKeys);
+
+        if ($classes === []) {
+            throw new DatabaseMaintenanceException('No seeders were selected to re-run.');
+        }
+
+        if ($this->isLocked()) {
+            throw new DatabaseMaintenanceException('Another database maintenance operation is already running. Please wait a few minutes and try again.');
+        }
+
+        $this->acquireLock();
+        $output = [];
+
+        try {
+            @set_time_limit(0);
+
+            $this->enableMaintenanceMode($output);
+
+            foreach ($classes as $key => $class) {
+                $exitCode = $this->run('db:seed', ['--force' => true, '--class' => $class], $output);
+                if ($exitCode !== 0) {
+                    throw new DatabaseMaintenanceException("Seeder '{$key}' failed.");
+                }
+            }
+
+            $this->disableMaintenanceMode($output);
+
+            try {
+                AuditService::log(
+                    AuditAction::DatabaseReseed,
+                    $userId ?? 0,
+                    ['seeders' => array_keys($classes)],
+                );
+            } catch (\Throwable) {
+                // Best-effort — a failed audit write must never fail a completed reseed.
+            }
+
+            $this->notifyAdmins(AuditAction::DatabaseReseed, false);
 
             return ['success' => true, 'output' => $output];
         } catch (DatabaseMaintenanceException $e) {
@@ -247,19 +323,20 @@ class DatabaseMaintenanceService
         $output[] = "Purged media: $deletedDirectories directorie(s), $deletedFiles file(s).";
     }
 
-    private function notifyAdmins(bool $withSeed, bool $purgeMedia): void
+    private function notifyAdmins(AuditAction $action, bool $purgeMedia): void
     {
         try {
             $admins = User::query()
                 ->whereHas('roles', fn ($query) => $query->where('slug', 'admin'))
                 ->get();
 
+            $isReset = $action === AuditAction::DatabaseReset;
             $notification = new DatabaseMaintenanceNotification(
-                $withSeed ? AuditAction::DatabaseReset->value : AuditAction::DatabaseReseed->value,
-                $withSeed ? 'Database reset completed' : 'Database reseed completed',
-                $withSeed
-                    ? 'The database was reset and reseeded. Media purge: '.($purgeMedia ? 'yes' : 'no').'.'
-                    : 'Seeders were re-run. No data was wiped.',
+                $action->value,
+                $isReset ? 'Database reset completed' : 'Database reseed completed',
+                $isReset
+                    ? 'The database was reset to a clean baseline. Media purge: '.($purgeMedia ? 'yes' : 'no').'.'
+                    : 'Selected seeders were re-run. No data was wiped.',
             );
 
             $notificationService = app(NotificationService::class);
@@ -270,6 +347,54 @@ class DatabaseMaintenanceService
         } catch (\Throwable) {
             // Best-effort — a notification failure must never block the reset.
         }
+    }
+
+    /**
+     * @return array<string, array{class: class-string, label?: string, destructive?: bool, baseline?: bool}>
+     */
+    private function seederGroups(): array
+    {
+        return (array) config('database_maintenance.seeders', []);
+    }
+
+    /**
+     * Baseline groups always run on reset; demo groups only when requested.
+     *
+     * @return array<string, class-string>
+     */
+    private function seedersForReset(bool $demo): array
+    {
+        $groups = $this->seederGroups();
+
+        $selected = array_filter($groups, static fn (array $group) => (bool) ($group['baseline'] ?? false));
+
+        if ($demo) {
+            $selected += array_filter($groups, static fn (array $group) => ! ($group['baseline'] ?? false));
+        }
+
+        return array_map(static fn (array $group): string => $group['class'], $selected);
+    }
+
+    /**
+     * @param  list<string>  $groupKeys
+     * @return array<string, class-string>
+     *
+     * @throws DatabaseMaintenanceException
+     */
+    private function seedersForGroups(array $groupKeys): array
+    {
+        $groups = $this->seederGroups();
+        $classes = [];
+
+        foreach ($groupKeys as $key) {
+            if (! isset($groups[$key])) {
+                throw new DatabaseMaintenanceException("Unknown seeder group '{$key}'.");
+            }
+
+            $classes[$key] = $groups[$key]['class'];
+        }
+
+        return $classes;
     }
 
     private function tableCount(): int

@@ -29,8 +29,8 @@ class DeployService
         $envPath = base_path('.env');
         $githubToken = $this->githubToken($envPath);
 
-        $versionFile = base_path('.deployed-version');
-        $lockFile = base_path('.deploy-lock');
+        $versionFile = config('deploy.version_path', base_path('.deployed-version'));
+        $lockFile = config('deploy.lock_path', base_path('.deploy-lock'));
         $repo = config('deploy.github_repo', 'nreljed/laravel');
         $lockTtl = (int) config('deploy.lock_ttl', 600);
 

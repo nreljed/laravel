@@ -57,7 +57,7 @@ class CoreVersionService
      */
     protected function fromJsonFile(): ?array
     {
-        $path = storage_path('app/core.json');
+        $path = config('core.json_path', storage_path('app/core.json'));
 
         if (! is_file($path)) {
             return null;
@@ -79,7 +79,7 @@ class CoreVersionService
 
     protected function shaFromMarker(): ?string
     {
-        $path = storage_path('app/core.sha');
+        $path = config('core.sha_path', storage_path('app/core.sha'));
 
         return is_file($path) ? $this->clean(file_get_contents($path)) : null;
     }

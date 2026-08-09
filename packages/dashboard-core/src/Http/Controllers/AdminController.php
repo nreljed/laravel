@@ -39,4 +39,48 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unable to read log file.'], 500);
         }
     }
+
+    public function logViewer(SystemHealthService $systemHealth, ?string $file = null)
+    {
+        $info = $systemHealth->getLogInfo();
+        $files = $info['files'];
+        $names = array_column($files, 'name');
+        $selected = $file !== null && in_array($file, $names, true) ? $file : ($names[0] ?? null);
+
+        $perPage = request()->integer('per_page', 200);
+        $page = request()->integer('page', 1);
+
+        $log = $selected
+            ? $systemHealth->readLogPage($selected, $perPage, $page)
+            : [
+                'name' => null,
+                'size' => null,
+                'modified' => null,
+                'lines' => [],
+                'page' => 1,
+                'per_page' => $perPage,
+                'total_lines' => 0,
+                'total_pages' => 1,
+                'truncated' => false,
+            ];
+
+        return Inertia::render('dashboard/admin/logs', [
+            'channel' => $info['channel'],
+            'level' => $info['level'],
+            'driver' => $info['driver'],
+            'path' => $info['path'],
+            'files' => $files,
+            'selected' => $selected,
+            'log' => $log,
+        ]);
+    }
+
+    public function downloadSystemHealthLog(SystemHealthService $systemHealth, string $file)
+    {
+        try {
+            return $systemHealth->downloadLog($file);
+        } catch (\InvalidArgumentException $e) {
+            abort(400, $e->getMessage());
+        }
+    }
 }

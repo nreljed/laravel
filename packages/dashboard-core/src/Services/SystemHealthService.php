@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Nreljed\DashboardCore\Models\User;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SystemHealthService
 {
@@ -658,7 +659,7 @@ class SystemHealthService
         return $scheduled;
     }
 
-    protected function getLogInfo(): array
+    public function getLogInfo(): array
     {
         $channel = Config::get('logging.default');
         $channels = Config::get('logging.channels', []);
@@ -731,7 +732,11 @@ class SystemHealthService
                 $offset -= $readSize;
                 fseek($handle, $offset);
                 $buffer = fread($handle, $readSize).$buffer;
-                $wanted -= substr_count($buffer, "\n");
+                $nonEmpty = count(array_filter(
+                    preg_split("/\r?\n/", rtrim($buffer)) ?: [],
+                    static fn ($line) => $line !== '',
+                ));
+                $wanted = max(0, $lines - $nonEmpty);
             }
 
             fclose($handle);
@@ -782,6 +787,90 @@ class SystemHealthService
         ];
     }
 
+    /**
+     * Count the non-empty lines of a log file via a single streaming pass.
+     */
+    protected function countNonEmptyLines(string $path): int
+    {
+        try {
+            $handle = fopen($path, 'rb');
+            if (! $handle) {
+                return 0;
+            }
+
+            $count = 0;
+            while (($line = fgets($handle, 65536)) !== false) {
+                if (rtrim($line, "\r\n") !== '') {
+                    $count++;
+                }
+            }
+            fclose($handle);
+
+            return $count;
+        } catch (\Exception) {
+            return 0;
+        }
+    }
+
+    /**
+     * Read a paged window of non-empty lines, page 1 being the most recent
+     * lines in the file. Supports a single-level download as well.
+     *
+     * @return array{name: string, size: string, modified: string, lines: string[], page: int, per_page: int, total_lines: int, total_pages: int, truncated: bool}
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function readLogPage(string $file, int $perPage = 200, int $page = 1): array
+    {
+        $perPage = max(20, min(1000, $perPage));
+        $page = max(1, $page);
+
+        $name = basename($file);
+        if ($name !== $file || ! str_ends_with(strtolower($name), '.log')) {
+            throw new \InvalidArgumentException('Invalid log file name.');
+        }
+
+        $path = storage_path('logs/'.$name);
+        if (! is_file($path)) {
+            throw new \InvalidArgumentException('Log file not found.');
+        }
+
+        $size = filesize($path);
+        $totalLines = $this->countNonEmptyLines($path);
+        $totalPages = max(1, (int) ceil($totalLines / $perPage));
+        $page = min($page, $totalPages);
+
+        $window = $this->tailFile($path, $page * $perPage);
+        $lines = count($window) > $perPage ? array_slice($window, 0, $perPage) : $window;
+
+        return [
+            'name' => $name,
+            'size' => $this->formatBytes($size),
+            'modified' => date('Y-m-d H:i:s', filemtime($path)),
+            'lines' => $lines,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_lines' => $totalLines,
+            'total_pages' => $totalPages,
+            'truncated' => $size > 2_097_152,
+        ];
+    }
+
+    public function downloadLog(string $file): BinaryFileResponse
+    {
+        $name = basename($file);
+        if ($name !== $file || ! str_ends_with(strtolower($name), '.log')) {
+            throw new \InvalidArgumentException('Invalid log file name.');
+        }
+
+        $path = storage_path('logs/'.$name);
+        if (! is_file($path)) {
+            abort(404, 'Log file not found.');
+        }
+
+        return response()->download($path, $name);
+    }
+
     protected function getDebugAccessUrl(): ?string
     {
         $appKey = config('app.key');
@@ -795,7 +884,7 @@ class SystemHealthService
 
     protected function getDeployedVersion(): array
     {
-        $versionFile = base_path('.deployed-version');
+        $versionFile = config('deploy.version_path', base_path('.deployed-version'));
         if (file_exists($versionFile)) {
             $version = trim(file_get_contents($versionFile));
 

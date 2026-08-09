@@ -17,6 +17,8 @@ class DatabaseReseedRequest extends FormRequest
 
     public function rules(): array
     {
+        $groupKeys = array_keys((array) config('database_maintenance.seeders', []));
+
         return [
             'confirmation' => ['required', 'string', Rule::in(['RESEED'])],
             'password' => ['required', 'string', function ($attribute, $value, $fail) {
@@ -24,6 +26,8 @@ class DatabaseReseedRequest extends FormRequest
                     $fail('The password does not match your current password.');
                 }
             }],
+            'groups' => ['required', 'array', 'min:1'],
+            'groups.*' => ['required', 'string', Rule::in($groupKeys)],
         ];
     }
 }

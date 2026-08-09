@@ -37,4 +37,19 @@ return [
 
     'lock_ttl' => 600,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Deploy Marker Paths
+    |--------------------------------------------------------------------------
+    |
+    | Filesystem paths for the deploy lock and the last-deployed version
+    | marker. Overridable so test workers can isolate their own copies and
+    | avoid racing each other over the shared markers.
+    |
+    */
+
+    'lock_path' => base_path('.deploy-lock'),
+
+    'version_path' => base_path('.deployed-version'),
+
 ];

@@ -32,9 +32,9 @@ class DatabaseMaintenanceController extends Controller
 
         try {
             $this->service->resetDatabase(
-                withSeed: true,
                 purgeMedia: $request->boolean('purge_media'),
                 userId: $request->user()->id,
+                demo: false,
             );
         } catch (DatabaseMaintenanceException $e) {
             $this->endSession($request);
@@ -44,7 +44,7 @@ class DatabaseMaintenanceController extends Controller
 
         $this->endSession($request);
 
-        return redirect()->route('login')->with('flash', ['success' => 'Database has been reset and reseeded. Sign in with your admin credentials to continue.']);
+        return redirect()->route('login')->with('flash', ['success' => 'Database has been reset to a clean baseline. Sign in with your admin credentials to continue.']);
     }
 
     public function reseed(DatabaseReseedRequest $request): RedirectResponse
@@ -52,16 +52,15 @@ class DatabaseMaintenanceController extends Controller
         abort_unless($this->service->isEnabled(), 403);
 
         try {
-            $this->service->resetDatabase(
-                withSeed: false,
-                purgeMedia: false,
+            $this->service->reseedDatabase(
+                groupKeys: $request->input('groups', []),
                 userId: $request->user()->id,
             );
         } catch (DatabaseMaintenanceException $e) {
             return back()->with('flash', ['error' => 'Database reseed failed: '.$e->getMessage()]);
         }
 
-        return back()->with('flash', ['success' => 'Seeders were re-run successfully.']);
+        return back()->with('flash', ['success' => 'Selected seeders were re-run successfully.']);
     }
 
     private function endSession(Request $request): void

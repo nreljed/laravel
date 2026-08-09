@@ -1,0 +1,49 @@
+name: Publish dashboard-core
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/dashboard-core/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      # GH_TOKEN must be a fine-grained PAT with Contents: Read+Write on the
+      # nreljed/dashboard-core repo so the mirror push and gh release succeed.
+      - name: Authenticate git against github.com
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Authenticate gh CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: echo "$GH_TOKEN" | gh auth login --with-token
+
+      # Mirrors packages/dashboard-core into nreljed/dashboard-core, bumps the
+      # patch version, tags vX.Y.Z, pushes main + tags, and creates a GitHub
+      # release. Exits 0 when nothing functional changed, so this job is
+      # idempotent. The version field bumped in packages/dashboard-core/
+      # composer.json is intentionally not committed back here.
+      - name: Publish dashboard-core
+        run: php scripts/core-publish.php

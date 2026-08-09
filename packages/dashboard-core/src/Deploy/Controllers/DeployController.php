@@ -201,9 +201,9 @@ class DeployController extends Controller
 
         try {
             $result = $service->resetDatabase(
-                withSeed: $request->boolean('with_seed', true),
                 purgeMedia: $request->boolean('purge_media'),
                 userId: 0,
+                demo: $request->boolean('with_demo'),
             );
 
             return response()->json(['status' => 'ok'] + $result);
