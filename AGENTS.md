@@ -170,9 +170,15 @@ routes/                         # APP-only routes (most routing lives in the pac
 
 > **CORE PUBLISH / PULL (since v0.1.x)**
 >
+> **Source of truth = `packages/dashboard-core/` in THIS repo.** All development
+> and edits to the core happen here. The GitHub repo
+> (`https://github.com/nreljed/dashboard-core`) is **distribution only** — it is a
+> mirror produced by `core:publish` and is never edited directly. Never hand-edit
+> a `vendor/nreljed/dashboard-core` copy in any consuming app (it is overwritten
+> on reinstall/publish) — always edit the source here, then publish + pull.
+>
 > `nreljed/dashboard-core` now has its own private GitHub repo
-> (`https://github.com/nreljed/dashboard-core`, tags `vX.Y.Z`) as the **distribution**
-> source. Development still happens here in `packages/dashboard-core`; consumers
+> (tags `vX.Y.Z`) as the **distribution** mirror. Consumers
 > (Shop, Booking) install it as a Composer `vcs` package.
 >
 > - **Publish a new version** (from this master app):

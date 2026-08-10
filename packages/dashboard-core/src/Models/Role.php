@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Nreljed\DashboardCore\Database\Factories\RoleFactory;
+use Nreljed\DashboardCore\Support\RoleCatalog;
 
 /**
  * @property int $id
@@ -51,12 +52,12 @@ class Role extends Model
     }
 
     /**
-     * Whether the role is managed by the config catalog (system roles are
-     * locked against edits/deletion in the UI and enforced server-side).
+     * Whether the role is managed by the merged config catalog (system roles
+     * are locked against edits/deletion in the UI and enforced server-side).
      */
     public function isSystem(): bool
     {
-        return array_key_exists($this->slug, (array) config('roles.roles', []));
+        return RoleCatalog::hasRole($this->slug);
     }
 
     protected static function newFactory(): RoleFactory

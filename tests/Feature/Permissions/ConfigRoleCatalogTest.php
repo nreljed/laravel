@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Services\FeatureRegistry;
+use Nreljed\DashboardCore\Support\RoleCatalog;
 use Tests\TestCase;
 
 class ConfigRoleCatalogTest extends TestCase
@@ -18,7 +18,7 @@ class ConfigRoleCatalogTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $expected = count(config('roles.permissions', [])) + count(app(FeatureRegistry::class)->permissions());
+        $expected = count(RoleCatalog::permissions());
 
         $this->assertSame($expected, Permission::count());
         $this->assertDatabaseHas('permissions', ['slug' => 'manage-users', 'name' => 'Manage Users']);
@@ -160,6 +160,83 @@ class ConfigRoleCatalogTest extends TestCase
 
         // Roles removed from the catalog are preserved, not deleted.
         $this->assertNotNull(Role::where('slug', 'editor')->first());
+    }
+
+    public function test_app_delta_roles_merge_with_base_roles(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        // An app only declares its additions; the base roles are merged in.
+        config(['roles.roles' => [
+            'shop_owner' => [
+                'name' => 'Shop Owner',
+                'description' => 'Full shop control',
+                'sort_order' => 2,
+                'permissions' => ['*'],
+            ],
+        ]]);
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->assertNotNull(Role::where('slug', 'shop_owner')->first());
+        $this->assertNotNull(Role::where('slug', 'user')->first());
+        $this->assertNotNull(Role::where('slug', 'author')->first());
+        $this->assertNotNull(Role::where('slug', 'editor')->first());
+        $this->assertNotNull(Role::where('slug', 'admin')->first());
+        $this->assertTrue(RoleCatalog::hasRole('shop_owner'));
+        $this->assertTrue(RoleCatalog::hasRole('admin'));
+    }
+
+    public function test_app_delta_roles_override_base_role_of_same_slug(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        // Re-declaring a base slug replaces it; the base definition is not kept.
+        config(['roles.roles' => [
+            'editor' => [
+                'name' => 'Editor (App)',
+                'description' => 'App-customized editor',
+                'sort_order' => 9,
+                'permissions' => ['view-dashboard', 'posts.view'],
+            ],
+        ]]);
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $editor = Role::where('slug', 'editor')->first();
+        $this->assertNotNull($editor);
+        $this->assertSame('Editor (App)', $editor->name);
+        $this->assertSame(9, $editor->sort_order);
+        $this->assertSame(
+            ['posts.view', 'view-dashboard'],
+            $editor->permissions()->pluck('slug')->sort()->values()->all(),
+        );
+    }
+
+    public function test_app_delta_permissions_merge_with_base_catalog(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        config(['roles.permissions' => [
+            ['name' => 'Manage Reports', 'slug' => 'manage-reports', 'description' => 'View and export reports'],
+        ]]);
+
+        $this->assertSame(
+            ['manage-reports', 'manage-users', 'posts.view'],
+            array_values(array_intersect(
+                ['manage-reports', 'manage-users', 'posts.view'],
+                array_column(RoleCatalog::permissions(), 'slug'),
+            )),
+        );
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->assertDatabaseHas('permissions', ['slug' => 'manage-reports']);
+        $this->assertDatabaseHas('permissions', ['slug' => 'manage-users']);
+        $this->assertDatabaseHas('permissions', ['slug' => 'posts.view']);
+
+        $admin = Role::where('slug', 'admin')->first();
+        $this->assertTrue($admin->hasPermission('manage-reports'));
     }
 
     public function test_admin_role_grants_newly_registered_permissions(): void

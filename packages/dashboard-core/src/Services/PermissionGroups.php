@@ -3,6 +3,7 @@
 namespace Nreljed\DashboardCore\Services;
 
 use Nreljed\DashboardCore\Models\Permission;
+use Nreljed\DashboardCore\Support\RoleCatalog;
 
 class PermissionGroups
 {
@@ -23,19 +24,7 @@ class PermissionGroups
     {
         $groups = [];
 
-        foreach (config('roles.permissions', []) as $permission) {
-            $groups[$permission['group'] ?? 'Administration'][] = [
-                'slug' => $permission['slug'],
-                'name' => $permission['name'],
-                'description' => $permission['description'],
-            ];
-        }
-
-        foreach (app(FeatureRegistry::class)->permissions() as $permission) {
-            if (! is_array($permission)) {
-                continue;
-            }
-
+        foreach (RoleCatalog::permissions() as $permission) {
             $groups[$permission['group'] ?? 'Administration'][] = [
                 'slug' => $permission['slug'],
                 'name' => $permission['name'],

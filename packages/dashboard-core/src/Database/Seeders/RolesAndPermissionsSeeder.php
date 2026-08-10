@@ -5,8 +5,8 @@ namespace Nreljed\DashboardCore\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Nreljed\DashboardCore\Models\Permission;
 use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\PermissionCacheService;
+use Nreljed\DashboardCore\Support\RoleCatalog;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -20,12 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
     protected function syncPermissions(): void
     {
-        $catalog = array_merge(
-            config('roles.permissions', []),
-            app(FeatureRegistry::class)->permissions(),
-        );
-
-        foreach ($catalog as $permission) {
+        foreach (RoleCatalog::permissions() as $permission) {
             Permission::updateOrCreate(
                 ['slug' => $permission['slug']],
                 [
@@ -38,7 +33,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
     protected function syncRoles(): void
     {
-        foreach (config('roles.roles', []) as $slug => $definition) {
+        foreach (RoleCatalog::roles() as $slug => $definition) {
             $role = Role::updateOrCreate(
                 ['slug' => $slug],
                 [

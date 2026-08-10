@@ -12,6 +12,7 @@ use Nreljed\DashboardCore\Services\EmailSettingsService;
 use Nreljed\DashboardCore\Services\FeatureRegistry;
 use Nreljed\DashboardCore\Services\NotificationService;
 use Nreljed\DashboardCore\Services\SettingsService;
+use Nreljed\DashboardCore\Support\RoleCatalog;
 use Nreljed\DashboardCore\Traits\RelativeTime;
 use Tighten\Ziggy\Ziggy;
 
@@ -178,12 +179,7 @@ class HandleInertiaRequests extends Middleware
         $slugs = [];
 
         try {
-            $slugs = array_merge($slugs, collect(config('roles.permissions', []))->pluck('slug')->all());
-        } catch (\Throwable) {
-        }
-
-        try {
-            $slugs = array_merge($slugs, collect(app(FeatureRegistry::class)->permissions())->pluck('slug')->all());
+            $slugs = collect(RoleCatalog::permissions())->pluck('slug')->all();
         } catch (\Throwable) {
         }
 

@@ -17,13 +17,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Core Permission Catalog
+    | Base Permission Catalog
     |--------------------------------------------------------------------------
     |
-    | Shared permission catalog for every application consuming the dashboard
-    | core. Feature-level permissions (e.g. "posts.view") are declared by each
-    | feature provider's permissions() method and are merged automatically by
-    | the seeder -- do not list feature permissions here.
+    | The engine-provided permission catalog shared by every application that
+    | consumes the dashboard core. Do not edit these in your own config/roles.php
+    | -- list only your app-specific additions under "permissions" below. The
+    | RoleCatalog helper merges base_permissions + permissions + every feature
+    | provider's permissions() automatically, so the seeder and the permission
+    | UI can never drift from the engine.
     |
     | Each entry carries an optional "group" key used by the UI to bucket
     | permissions (General, Blog, Administration). Entries without a group fall
@@ -32,7 +34,7 @@ return [
     |
     */
 
-    'permissions' => [
+    'base_permissions' => [
         ['name' => 'View Dashboard', 'slug' => 'view-dashboard', 'description' => 'Access the main dashboard', 'group' => 'General'],
         ['name' => 'View Profile', 'slug' => 'view-profile', 'description' => 'View own profile', 'group' => 'General'],
         ['name' => 'Edit Profile', 'slug' => 'edit-profile', 'description' => 'Edit own name, email, password', 'group' => 'General'],
@@ -55,26 +57,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Role Catalog
+    | App-Specific Permission Catalog (delta)
     |--------------------------------------------------------------------------
     |
-    | Roles = config catalog, per-app. Each role maps to the permission slugs it
-    | grants. Use '*' to grant every registered permission (admin).
-    |
-    | A role may combine '*' with '!' prefixed exclusions to express "everything
-    | except ..." (e.g. editor = every permission except admin-only ones). This
-    | keeps roles future-proof: permissions added later are picked up
-    | automatically unless explicitly excluded.
-    |
-    | Consuming applications publish this file (php artisan vendor:publish
-    | --tag=core-config) and override the "roles" array wholesale to define
-    | their own catalog. Permission slugs reference the shared catalog above
-    | plus any feature-declared permissions; slugs for features that are not
-    | registered in the consuming app are silently ignored.
+    | List ONLY the additional permission entries your application introduces.
+    | The engine's base_permissions above are merged in automatically by
+    | RoleCatalog::permissions(). To *change* a base permission entry, declare
+    | the same slug here -- your entry wins.
     |
     */
 
-    'roles' => [
+    'permissions' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Base Role Catalog
+    |--------------------------------------------------------------------------
+    |
+    | The engine-provided default roles. The seeder merges these with the app
+    | catalog ("roles") using array_replace, so every consumer starts from the
+    | same baseline and adds or overrides roles in its own config/roles.php.
+    |
+    | Each role maps to the permission slugs it grants. Use '*' to grant every
+    | registered permission (admin). A role may combine '*' with '!' prefixed
+    | exclusions to express "everything except ..." (e.g. editor = every
+    | permission except admin-only ones). This keeps roles future-proof:
+    | permissions added later are picked up automatically unless excluded.
+    |
+    */
+
+    'base_roles' => [
         'user' => [
             'name' => 'User',
             'description' => 'Can manage own account and profile, and create posts scoped to own content.',
@@ -141,5 +153,24 @@ return [
             'permissions' => '*',
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | App Role Catalog (delta)
+    |--------------------------------------------------------------------------
+    |
+    | Roles your application adds or overrides on top of base_roles. The seeder
+    | merges base + this catalog via RoleCatalog::roles() (array_replace), so:
+    |
+    |   - A role slug listed here replaces the base role of the same slug.
+    |   - Roles only present in base_roles are inherited unchanged.
+    |   - New slugs are simply added.
+    |
+    | This means a consuming app normally only declares its deltas -- it no
+    | longer needs to re-declare the engine's default roles.
+    |
+    */
+
+    'roles' => [],
 
 ];

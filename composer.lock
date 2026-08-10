@@ -3192,11 +3192,11 @@
         },
         {
             "name": "nreljed/dashboard-core",
-            "version": "0.1.1",
+            "version": "0.1.6",
             "dist": {
                 "type": "path",
                 "url": "packages/dashboard-core",
-                "reference": "090f516ed3b113d8a6dbd5ad579ec11c17ea4833"
+                "reference": "68c672d503bd4eb6e9a49c2351d07b1c3010cfb8"
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3239,7 +3239,7 @@
                     "name": "Nreljed"
                 }
             ],
-            "description": "Shared dashboard core for the Cost Breaker 360 product family (master app, Shop, Booking).",
+            "description": "Shared dashboard core platform for Laravel apps (dashboard, admin, auth, blog, AI, deploy).",
             "transport-options": {
                 "symlink": false,
                 "relative": true

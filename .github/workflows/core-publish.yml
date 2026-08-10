@@ -64,4 +64,31 @@ jobs:
       # idempotent. The version field bumped in packages/dashboard-core/
       # composer.json is intentionally not committed back here.
       - name: Publish dashboard-core
-        run: php scripts/core-publish.php
+        id: publish
+        run: |
+          OUTPUT=$(php scripts/core-publish.php 2>&1)
+          echo "$OUTPUT"
+          VERSION=$(printf '%s\n' "$OUTPUT" | sed -nE 's/^Published nreljed\/dashboard-core v([0-9]+\.[0-9]+\.[0-9]+)$/\1/p')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Best-effort: after a real publish, nudge consuming apps (Shop, ...) to
+      # pull the new version via repository_dispatch (event_type: core-updated).
+      # The weekly cron in each consumer is the fallback, so a failed dispatch
+      # never blocks the publish. GH_TOKEN must include the consumer repo with
+      # Contents: Read+Write for the dispatch to succeed.
+      - name: Dispatch core-updated to consumers
+        if: steps.publish.outputs.version != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          VERSION="${{ steps.publish.outputs.version }}"
+          for REPO in "nreljed/laravel.shop"; do
+            if gh api -X POST "repos/$REPO/dispatches" \
+              -f event_type="core-updated" \
+              -f "client_payload[version]=v$VERSION" >/dev/null 2>&1; then
+              echo "Dispatched core-updated v$VERSION to $REPO"
+            else
+              echo "WARN: dispatch to $REPO failed (check GH_TOKEN permissions on $REPO). Consumers catch up on their weekly schedule."
+            fi
+          done
