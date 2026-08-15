@@ -183,6 +183,93 @@ public function onUserDelete(int $userId): void;
 2. Core→consumer channel for feature requests
 3. Documented "how to add a feature" (implements `Feature`)
 
+## 7.1 Standardization Contract (Deploy & Feature Convention) — 2026-08-15
+
+> All projects (master, Shop, Booking) run the SAME deploy architecture because
+> `DeployController`, `DeployService`, `deploy:auto`, and the `/deploy/*` routes all
+> ship from this package. This section is the canonical contract — keep it in sync
+> when anything below changes.
+
+### 7.1.1 Config contract
+
+| Config file         | Ships in | Consumer override   | Keys                                                                                                       |
+| ------------------- | -------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `config/deploy.php` | package  | **yes** (see below) | `token` (`env('DEPLOY_TOKEN')`), `github_repo` (`env('GITHUB_REPO', 'nreljed/laravel')`), `lock_ttl` (600) |
+| `config/core.php`   | package  | yes                 | `features`, `load_migrations`, `inertia_middleware`, `orphan_media`, `settings.groups`                     |
+| `config/admin.php`  | package  | yes                 | admin UI settings                                                                                          |
+| `config/roles.php`  | package  | yes                 | per-app role catalog (D7)                                                                                  |
+
+**Consumer `config/deploy.php` MUST override `github_repo`** to its own repo, or the
+server will self-deploy the wrong project:
+
+```php
+// e.g. laravel.shop/app/config/deploy.php
+return [
+    'token' => env('DEPLOY_TOKEN'),
+    'github_repo' => env('GITHUB_REPO', 'nreljed/laravel.shop'),
+    'lock_ttl' => 600,
+];
+```
+
+### 7.1.2 Deploy endpoint contract (all shipped from the package)
+
+| Endpoint                                                   | Method   | Auth    | Purpose                                                        |
+| ---------------------------------------------------------- | -------- | ------- | -------------------------------------------------------------- |
+| `/deploy/upload`                                           | POST     | `token` | Upload `deploy.zip` directly, extract over root                |
+| `/deploy/check`                                            | GET/POST | `token` | Server pulls latest release from GitHub API, self-deploys      |
+| `/deploy/env`                                              | POST     | `token` | Update server `.env` values (rejects `APP_KEY`/`DEPLOY_TOKEN`) |
+| `/deploy/cache-clear`                                      | GET      | `token` | Emergency reset: `migrate:fresh` + cache clear                 |
+| `/deploy/migrate`, `/deploy/create-admin`, `/deploy/reset` | —        | `token` | Deploy helpers                                                 |
+
+All routes: throttle `5,1`. `DeployService::check()` reads `GITHUB_TOKEN` from the
+server `.env`; lock file `.deploy-lock` TTL 600s.
+
+### 7.1.3 Canonical CI/CD deploy flow (check-first)
+
+Both `nreljed/laravel` and `nreljed/laravel.shop` use the SAME `push-deploy` job shape:
+
+1. **env-push**: `POST /deploy/env` with `GITHUB_TOKEN` (unified PAT) — runs `if: always()`, `continue-on-error`.
+2. **Poll `/deploy/check`** (8 × 45s) — accept `"status":"deployed"` or `"status":"current"` matching the release tag.
+3. **Fallback `/deploy/upload`** only if check didn't confirm, then **confirm via check** again (response can be lost mid-extract).
+4. **FTP fallback** (optional, `continue-on-error`): DirectAdmin account whose **home IS the app project root** → upload `deploy.zip` to `ftp://server:21/deploy.zip`. Skips itself when `FTP_*` secrets are unset.
+
+Resilience: the server's scheduled `deploy:auto` (every 5 min, in `routes/console.php`)
+picks up any release CI couldn't push (hosting firewall blocks datacenter IPs).
+
+### 7.1.4 FeatureProvider contract checklist
+
+A feature provider must implement `Nreljed\DashboardCore\Contracts\FeatureProvider`
+(+ `InteractsWithFeatures` trait). Only `name()` and `slug()` are required; the trait
+supplies no-op defaults for everything else. Common overrides:
+
+| Method                                          | Purpose                                   |
+| ----------------------------------------------- | ----------------------------------------- |
+| `description()`, `version()`, `dependencies()`  | registry metadata                         |
+| `getNavGroupLabel()`                            | sidebar group heading ("Shop", "Content") |
+| `getNavItems()`                                 | sidebar entries                           |
+| `getDashboardData()` / `getAnalyticsSeries()`   | dashboard stats                           |
+| `getSharedData()`                               | Inertia shared props                      |
+| `getSettingsRoute()` + `hasSettings()`          | settings link                             |
+| `getEmailTemplates()`, `getNotificationTypes()` | email/notification registration           |
+| `permissions()`                                 | feature permission slugs                  |
+
+Add a feature with `php artisan make:feature {Name}` (scaffolds a discoverable
+provider) then register it in `config/core.php` `features`.
+
+### 7.1.5 Publish flow (core → consumers)
+
+```
+push to main touching packages/dashboard-core/**  ──▶  core-publish.yml
+    ├── subtree-split to nreljed/dashboard-core
+    ├── version bump (patch/minor, git-cliff) + tag
+    ├── GH release (deploy.zip of the package)
+    └── dispatch core-updated to consumers
+Consumers: ./update-core.sh  (composer update → npm install → npm run build → php artisan migrate)
+```
+
+Rules: one `GH_TOKEN` (unified PAT) in every repo + server `.env`; one `DEPLOY_TOKEN`
+per app (matches that server's `app.deploy_token`); never commit either.
+
 ## 8. Risks
 
 - **Blog schema drift** — mitigated in Phase 0 gate

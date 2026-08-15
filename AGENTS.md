@@ -430,7 +430,7 @@ push main → deploy.yml
   ├─ ci.yml (reusable workflow_call)    — ubuntu-latest, full validation
   ├─ deploy-package.yml (reusable)      — windows-latest, builds deploy.zip
   ├─ release                            — creates GitHub Release
-  └─ push-deploy                        — uploads deploy.zip to server
+  └─ push-deploy                        — canonical check-first deploy (env-push → check → upload → FTP)
 
 pull_request → pr.yml
   └─ ci.yml (reusable workflow_call)    — same validation as deploy
@@ -450,8 +450,14 @@ pull_request → pr.yml
 
 **deploy.yml** (orchestrator, push main):
 
-- Calls `ci.yml` → `deploy-package.yml` → creates GitHub Release → uploads to server
-- All jobs run sequentially with `needs:` dependencies
+- Calls `ci.yml` → `deploy-package.yml` → creates GitHub Release → canonical `push-deploy`
+- `push-deploy` job (shared shape with `laravel.shop`):
+  1. **env-push** — `POST /deploy/env` with unified `GITHUB_TOKEN` (`if: always()`, `continue-on-error`)
+  2. **Poll `/deploy/check`** (8 × 45s) — accept `"deployed"` or `"current"` matching the release tag
+  3. **Fallback `/deploy/upload`** only if check didn't confirm, then re-confirm via check (response can be lost mid-extract)
+  4. **FTP fallback** (`continue-on-error`) — DirectAdmin account (`laravel@tunispromo.tn`), home IS the project root, uploads `deploy.zip` to root. Skips itself when `FTP_*` secrets are unset.
+- Resilience: if CI is blocked by the host's security layer (datacenter IPs), the server's
+  scheduled `deploy:auto` (every 5 min) picks the release up itself within ~5 minutes.
 
 **pr.yml** (pull_request to main):
 
@@ -460,7 +466,7 @@ pull_request → pr.yml
 **Server (`DeployController::check()`):**
 
 1. Verify token + lock file (10 min TTL)
-2. Fetch latest release from GitHub API
+2. Fetch latest release from GitHub API (via `GITHUB_TOKEN` in server `.env`)
 3. Download `deploy.zip`, extract, restore `.env`
 4. Run: migrate, create-admin, cache, storage:link
 
@@ -498,12 +504,17 @@ pull_request → pr.yml
 
 ### GitHub Secrets
 
-| Secret                                          | Purpose                                                                                                 |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `DEPLOY_TOKEN`                                  | Must match `config('app.deploy_token')`                                                                 |
-| `GH_TOKEN`                                      | ONE fine-grained PAT covering all four repos (see "GitHub Token Structure" in the Shop app's AGENTS.md) |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`   | Production MySQL                                                                                        |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | Initial admin bootstrap                                                                                 |
+| Secret                                                      | Purpose                                                                                                           |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_TOKEN`                                              | Must match `config('app.deploy_token')` — **per-repo** (this app's server)                                        |
+| `GH_TOKEN`                                                  | ONE unified fine-grained PAT covering all four repos (`laravel`, `laravel.shop`, `dashboard-core`, `shop-module`) |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`               | Production MySQL                                                                                                  |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`             | Initial admin bootstrap                                                                                           |
+| `FTP_SERVER` / `FTP_PORT` / `FTP_USERNAME` / `FTP_PASSWORD` | DirectAdmin FTP fallback for this app's own domain (`laravel@tunispromo.tn`)                                      |
+
+> Full secrets table + `gh` cheat sheet: [`docs/github-cli.md`](docs/github-cli.md).
+> Deploy contract (config keys, endpoints, FeatureProvider checklist, publish flow):
+> [`docs/core-dashboard-package.md`](docs/core-dashboard-package.md) §7.1.
 
 ### After Schema/Seeder Changes
 
