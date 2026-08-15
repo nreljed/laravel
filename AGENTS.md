@@ -498,12 +498,12 @@ pull_request → pr.yml
 
 ### GitHub Secrets
 
-| Secret                                          | Purpose                                 |
-| ----------------------------------------------- | --------------------------------------- |
-| `DEPLOY_TOKEN`                                  | Must match `config('app.deploy_token')` |
-| `GH_TOKEN`                                      | Fine-grained PAT (Contents: Read+Write) |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`   | Production MySQL                        |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | Initial admin bootstrap                 |
+| Secret                                          | Purpose                                                                                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_TOKEN`                                  | Must match `config('app.deploy_token')`                                                                 |
+| `GH_TOKEN`                                      | ONE fine-grained PAT covering all four repos (see "GitHub Token Structure" in the Shop app's AGENTS.md) |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`   | Production MySQL                                                                                        |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | Initial admin bootstrap                                                                                 |
 
 ### After Schema/Seeder Changes
 
