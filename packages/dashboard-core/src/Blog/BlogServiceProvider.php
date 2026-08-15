@@ -61,6 +61,8 @@ class BlogServiceProvider extends ServiceProvider implements FeatureProvider
             ['slug' => 'posts.edit', 'name' => 'Edit Posts', 'description' => 'Edit existing blog posts.', 'group' => 'Blog'],
             ['slug' => 'posts.delete', 'name' => 'Delete Posts', 'description' => 'Delete blog posts.', 'group' => 'Blog'],
             ['slug' => 'posts.manage', 'name' => 'Manage All Posts', 'description' => 'View, edit, and delete posts authored by other users.', 'group' => 'Blog'],
+            ['slug' => 'posts.categories.manage', 'name' => 'Manage Post Categories', 'description' => 'Create, edit, and delete post categories.', 'group' => 'Blog'],
+            ['slug' => 'posts.tags.manage', 'name' => 'Manage Post Tags', 'description' => 'Create, edit, and delete post tags.', 'group' => 'Blog'],
         ];
     }
 
@@ -77,8 +79,8 @@ class BlogServiceProvider extends ServiceProvider implements FeatureProvider
                     ['title' => 'Dashboard', 'url' => route('dashboard.posts.dashboard', [], false), 'permission' => 'posts.view'],
                     ['title' => 'All Posts', 'url' => route('dashboard.posts.index', [], false), 'permission' => 'posts.view'],
                     ['title' => 'Add Post', 'url' => route('dashboard.posts.create', [], false), 'permission' => 'posts.create'],
-                    ['title' => 'Categories', 'url' => route('dashboard.posts.categories.index', [], false), 'permission' => 'manage-categories'],
-                    ['title' => 'Tags', 'url' => route('dashboard.posts.tags.index', [], false), 'permission' => 'manage-tags'],
+                    ['title' => 'Categories', 'url' => route('dashboard.posts.categories.index', [], false), 'permission' => 'posts.categories.manage'],
+                    ['title' => 'Tags', 'url' => route('dashboard.posts.tags.index', [], false), 'permission' => 'posts.tags.manage'],
                 ],
             ],
         ];

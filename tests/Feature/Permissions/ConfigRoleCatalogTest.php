@@ -39,8 +39,8 @@ class ConfigRoleCatalogTest extends TestCase
         $editor = Role::where('slug', 'editor')->first();
         $this->assertSame(1, $editor->sort_order);
         $this->assertTrue($editor->hasPermission('posts.delete'));
-        $this->assertTrue($editor->hasPermission('manage-categories'));
-        $this->assertTrue($editor->hasPermission('manage-tags'));
+        $this->assertTrue($editor->hasPermission('posts.categories.manage'));
+        $this->assertTrue($editor->hasPermission('posts.tags.manage'));
         $this->assertTrue($editor->hasPermission('test-posts.delete'));
         $this->assertFalse($editor->hasPermission('manage-users'));
         $this->assertFalse($editor->hasPermission('manage-email-settings'));
@@ -50,8 +50,8 @@ class ConfigRoleCatalogTest extends TestCase
         $this->assertTrue($author->hasPermission('posts.delete'));
         $this->assertTrue($author->hasPermission('test-posts.delete'));
         $this->assertFalse($author->hasPermission('posts.manage'));
-        $this->assertFalse($author->hasPermission('manage-categories'));
-        $this->assertFalse($author->hasPermission('manage-tags'));
+        $this->assertFalse($author->hasPermission('posts.categories.manage'));
+        $this->assertFalse($author->hasPermission('posts.tags.manage'));
 
         $user = Role::where('slug', 'user')->first();
         $this->assertTrue($user->hasPermission('edit-profile'));
@@ -60,7 +60,7 @@ class ConfigRoleCatalogTest extends TestCase
         $this->assertTrue($user->hasPermission('posts.edit'));
         $this->assertTrue($user->hasPermission('posts.delete'));
         $this->assertFalse($user->hasPermission('posts.manage'));
-        $this->assertFalse($user->hasPermission('manage-categories'));
+        $this->assertFalse($user->hasPermission('posts.categories.manage'));
     }
 
     public function test_editor_role_grants_every_non_admin_permission(): void
@@ -107,8 +107,8 @@ class ConfigRoleCatalogTest extends TestCase
             'manage-audit-logs',
             'export-audit-logs',
             'manage-email-settings',
-            'manage-categories',
-            'manage-tags',
+            'posts.categories.manage',
+            'posts.tags.manage',
         ];
 
         foreach (Permission::pluck('slug') as $slug) {

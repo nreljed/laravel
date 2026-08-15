@@ -25,17 +25,17 @@ Route::put('/{post}/status', [PostController::class, 'updateStatus'])->name('upd
 Route::delete('/{post}', [PostController::class, 'destroy'])->name('destroy')->middleware('permission:posts.delete');
 
 // Categories (editor+)
-Route::get('/categories', [PostCategoryController::class, 'index'])->name('categories.index')->middleware('permission:manage-categories');
-Route::post('/categories', [PostCategoryController::class, 'store'])->name('categories.store')->middleware('permission:manage-categories');
-Route::post('/categories/reorder', [PostCategoryController::class, 'reorder'])->name('categories.reorder')->middleware('permission:manage-categories');
-Route::post('/categories/bulk', [PostCategoryController::class, 'bulk'])->name('categories.bulk')->middleware('permission:manage-categories');
-Route::put('/categories/{postCategory}', [PostCategoryController::class, 'update'])->name('categories.update')->middleware('permission:manage-categories');
-Route::delete('/categories/{postCategory}', [PostCategoryController::class, 'destroy'])->name('categories.destroy')->middleware('permission:manage-categories');
+Route::get('/categories', [PostCategoryController::class, 'index'])->name('categories.index')->middleware('permission:posts.categories.manage');
+Route::post('/categories', [PostCategoryController::class, 'store'])->name('categories.store')->middleware('permission:posts.categories.manage');
+Route::post('/categories/reorder', [PostCategoryController::class, 'reorder'])->name('categories.reorder')->middleware('permission:posts.categories.manage');
+Route::post('/categories/bulk', [PostCategoryController::class, 'bulk'])->name('categories.bulk')->middleware('permission:posts.categories.manage');
+Route::put('/categories/{postCategory}', [PostCategoryController::class, 'update'])->name('categories.update')->middleware('permission:posts.categories.manage');
+Route::delete('/categories/{postCategory}', [PostCategoryController::class, 'destroy'])->name('categories.destroy')->middleware('permission:posts.categories.manage');
 
 // Tags (editor+)
-Route::get('/tags', [PostTagController::class, 'index'])->name('tags.index')->middleware('permission:manage-tags');
-Route::post('/tags', [PostTagController::class, 'store'])->name('tags.store')->middleware('permission:manage-tags');
-Route::post('/tags/reorder', [PostTagController::class, 'reorder'])->name('tags.reorder')->middleware('permission:manage-tags');
-Route::post('/tags/bulk', [PostTagController::class, 'bulk'])->name('tags.bulk')->middleware('permission:manage-tags');
-Route::put('/tags/{postTag}', [PostTagController::class, 'update'])->name('tags.update')->middleware('permission:manage-tags');
-Route::delete('/tags/{postTag}', [PostTagController::class, 'destroy'])->name('tags.destroy')->middleware('permission:manage-tags');
+Route::get('/tags', [PostTagController::class, 'index'])->name('tags.index')->middleware('permission:posts.tags.manage');
+Route::post('/tags', [PostTagController::class, 'store'])->name('tags.store')->middleware('permission:posts.tags.manage');
+Route::post('/tags/reorder', [PostTagController::class, 'reorder'])->name('tags.reorder')->middleware('permission:posts.tags.manage');
+Route::post('/tags/bulk', [PostTagController::class, 'bulk'])->name('tags.bulk')->middleware('permission:posts.tags.manage');
+Route::put('/tags/{postTag}', [PostTagController::class, 'update'])->name('tags.update')->middleware('permission:posts.tags.manage');
+Route::delete('/tags/{postTag}', [PostTagController::class, 'destroy'])->name('tags.destroy')->middleware('permission:posts.tags.manage');

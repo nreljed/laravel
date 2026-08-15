@@ -3,6 +3,7 @@
 namespace Nreljed\DashboardCore\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Inertia\AlwaysProp;
 use Inertia\Middleware;
 use Nreljed\DashboardCore\Http\Controllers\EmailSettingsController;
 use Nreljed\DashboardCore\Models\Notification;
@@ -97,6 +98,11 @@ class HandleInertiaRequests extends Middleware
                 }
             },
             'featureNavItems' => $this->getFeatureNavItems(...),
+            'sharedData' => new AlwaysProp($this->getFeatureSharedData(...)),
+            'repeaterConfigs' => $this->getFeatureRepeaterConfigs(...),
+            'profileFieldConfigs' => $this->getFeatureProfileFieldConfigs(...),
+            'settingsRoutes' => $this->getFeatureSettingsRoutes(...),
+            'featureSettingsNav' => $this->getFeatureSettingsNav(...),
             'features' => [
                 'databaseMaintenanceEnabled' => function () {
                     try {
@@ -151,6 +157,42 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(FeatureRegistry::class)->getAllSharedData();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function getFeatureRepeaterConfigs(): array
+    {
+        try {
+            return app(FeatureRegistry::class)->getAllRepeaterConfigs();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function getFeatureProfileFieldConfigs(): array
+    {
+        try {
+            return app(FeatureRegistry::class)->getAllProfileFieldConfigs();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function getFeatureSettingsRoutes(): array
+    {
+        try {
+            return app(FeatureRegistry::class)->getAllSettingsRoutes();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function getFeatureSettingsNav(): array
+    {
+        try {
+            return app(FeatureRegistry::class)->getAllSettingsNav();
         } catch (\Throwable) {
             return [];
         }

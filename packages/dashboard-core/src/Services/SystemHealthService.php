@@ -26,6 +26,7 @@ class SystemHealthService
         $core = $this->getCorePackage();
         $coreLatest = $this->getCoreLatestVersion();
         $defaultMailer = config('mail.default');
+        $featureIssues = $this->getFeatureIssues();
 
         return [
             'php' => $php,
@@ -50,7 +51,7 @@ class SystemHealthService
             'server' => $server,
             'os' => $this->getOsInfo(),
             'environment' => $this->detectEnvironment(),
-            'recommendations' => $this->getRecommendations($php, $extensions, $server, $storage, $deployed, $latest, $core, $coreLatest),
+            'recommendations' => $this->getRecommendations($php, $extensions, $server, $storage, $deployed, $latest, $core, $coreLatest, $featureIssues),
             'cache' => [
                 'driver' => config('cache.default'),
                 'ttl' => config('cache.ttl', 3600),
@@ -90,6 +91,11 @@ class SystemHealthService
                     'version' => $m['version'] ?? null,
                 ])->values()->toArray()
                 : [],
+            'features' => [
+                'valid' => $featureIssues === [],
+                'issue_count' => count($featureIssues),
+                'issues' => $featureIssues,
+            ],
             'schedule' => $this->getScheduleInfo(),
             'logs' => $this->getLogInfo(),
             'users' => [
@@ -107,6 +113,19 @@ class SystemHealthService
             'laravel_cache' => $this->getLaravelCacheStatus(),
             'debug_access_url' => $this->getDebugAccessUrl(),
         ];
+    }
+
+    protected function getFeatureIssues(): array
+    {
+        if (! app()->bound(FeatureRegistry::class)) {
+            return [];
+        }
+
+        try {
+            return app(FeatureRegistry::class)->validate();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     public function getPhpInfo(): array
@@ -410,9 +429,19 @@ class SystemHealthService
         array $latest,
         array $core,
         array $coreLatest,
+        array $featureIssues = [],
     ): array {
         $recommendations = [];
         $isProduction = app()->environment('production');
+
+        foreach ($featureIssues as $issue) {
+            $recommendations[] = [
+                'severity' => $issue['severity'],
+                'title' => 'Feature configuration issue: '.$issue['provider'],
+                'message' => $issue['message'],
+                'fix' => 'Review the feature provider configuration in config/core.php.',
+            ];
+        }
 
         if (! $php['version_ok']) {
             $recommendations[] = [

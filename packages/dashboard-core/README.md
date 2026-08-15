@@ -129,6 +129,36 @@ Optional hooks: `getDashboardData()`, `getAnalyticsSeries()`,
 
 No core edits are required to add a feature — just register the provider.
 
+### Module-authoring checklist
+
+Every feature provider must pass both conformance tests
+(`packages/dashboard-core/tests/FeatureProviderContractTest.php` in this repo
+and `tests/Feature/FeatureProviderContractTest.php` in the host):
+
+- **Implement `FeatureProvider`** and use the `InteractsWithFeatures` trait
+  (safe no-op defaults for every capability method). Only `name()` and
+  `slug()` are mandatory to implement yourself.
+- **`getSharedData()`** returns an array of **lazy closures**, not eagerly
+  resolved values. The core middleware wraps the aggregated result in
+  `Inertia\AlwaysProp` and exposes it as the top-level `sharedData` prop, so
+  nested closures resolve per-request and survive partial reloads. Consumers
+  read `props.sharedData.{key}` — never call `Inertia::share()` from a
+  provider (it bypasses registry aggregation and breaks partial reloads).
+- **`getNavItems()`** returns sidebar items; group headings come from
+  `getNavGroupLabel()` (injected by `FeatureRegistry::getAllNavItems()`).
+  Feature icons are resolved by name via `lib/icons.ts` (`registerFeatureIcons`)
+  and fall back to a generic icon in `nav-main.tsx`.
+- **`getSettingsRoute()`** returns a **route name** (not a URL) for the
+  feature's settings page, or `null`. The registry resolves it lazily so a
+  stale name degrades to "no settings link". Optional `getSettingsNav()`
+  provides settings-category nav items rendered under `featureSettingsNav`.
+- **Permission slugs are scoped** to the feature prefix (e.g. `shop.orders.view`).
+  Generic admin permissions (no dot) are allowed but reserved for core.
+- **`getDashboardData()`** returns a keyed array; the registry normalizes it
+  (`label`, `icon`, `total`) for the dashboard KPI cards.
+- Register the provider class in `config('core.features')`. Run
+  `php artisan permissions:sync` after adding permissions.
+
 ## Tests
 
 ```bash

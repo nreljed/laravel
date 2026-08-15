@@ -41,8 +41,6 @@ return [
         ['name' => 'Delete Account', 'slug' => 'delete-account', 'description' => 'Delete own account', 'group' => 'General'],
         ['name' => 'View Notifications', 'slug' => 'view-notifications', 'description' => 'View notifications', 'group' => 'General'],
         ['name' => 'Manage Notifications', 'slug' => 'manage-notifications', 'description' => 'Mark read, delete notifications', 'group' => 'General'],
-        ['name' => 'Manage Categories', 'slug' => 'manage-categories', 'description' => 'Manage post categories', 'group' => 'Blog'],
-        ['name' => 'Manage Tags', 'slug' => 'manage-tags', 'description' => 'Manage post tags', 'group' => 'Blog'],
         ['name' => 'Manage Users', 'slug' => 'manage-users', 'description' => 'Create, edit, delete users', 'group' => 'Administration'],
         ['name' => 'Impersonate Users', 'slug' => 'impersonate-users', 'description' => 'Sign in as another user to troubleshoot', 'group' => 'Administration'],
         ['name' => 'Assign Roles', 'slug' => 'assign-roles', 'description' => 'Assign and remove roles on users', 'group' => 'Administration'],
@@ -122,8 +120,12 @@ return [
                 '!manage-audit-logs',
                 '!export-audit-logs',
                 '!manage-email-settings',
+                // Legacy Blog term-management slugs retained as no-op
+                // exclusions so orphaned rows granted via '*' never resurface.
                 '!manage-categories',
                 '!manage-tags',
+                '!posts.categories.manage',
+                '!posts.tags.manage',
             ],
         ],
 

@@ -11,7 +11,7 @@ class PostTagController extends Controller
 {
     public function index()
     {
-        $this->authorize('manage-tags');
+        $this->authorize('posts.tags.manage');
 
         $tags = PostTag::withCount('posts')->orderBy('name')->get();
 
@@ -26,7 +26,7 @@ class PostTagController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('manage-tags');
+        $this->authorize('posts.tags.manage');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:post_tags,name',
@@ -44,7 +44,7 @@ class PostTagController extends Controller
 
     public function update(Request $request, PostTag $postTag)
     {
-        $this->authorize('manage-tags');
+        $this->authorize('posts.tags.manage');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:post_tags,name,'.$postTag->id,
@@ -62,7 +62,7 @@ class PostTagController extends Controller
 
     public function destroy(PostTag $postTag)
     {
-        $this->authorize('manage-tags');
+        $this->authorize('posts.tags.manage');
 
         $postTag->delete();
 
@@ -75,7 +75,7 @@ class PostTagController extends Controller
 
     public function reorder(Request $request)
     {
-        $this->authorize('manage-tags');
+        $this->authorize('posts.tags.manage');
 
         $validated = $request->validate([
             'ids' => 'required|array',
@@ -91,7 +91,7 @@ class PostTagController extends Controller
 
     public function bulk(Request $request)
     {
-        $this->authorize('manage-tags');
+        $this->authorize('posts.tags.manage');
 
         $validated = $request->validate([
             'action' => 'required|string|in:delete',

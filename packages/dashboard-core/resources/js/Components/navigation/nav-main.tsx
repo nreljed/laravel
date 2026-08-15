@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, usePage } from "@inertiajs/react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 import { Badge } from "@/Components/ui/badge";
 import {
   SidebarMenu,
@@ -79,6 +79,11 @@ const NavMain = ({ items = [], defaultOpenKeys = [], iconMap = {} }: NavMainProp
       }
       if (typeof iconProp === "string" && Object.hasOwn(iconMap, iconProp)) {
         return iconMap[iconProp] ?? null;
+      }
+      // Fall back to a safe default so a stale or unknown icon name never
+      // breaks rendering of the sidebar.
+      if (typeof iconProp === "string") {
+        return FileText;
       }
       return null;
     },

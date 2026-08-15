@@ -47,9 +47,23 @@ class FeatureRegistry
 
     public function getAllNavItems(): array
     {
-        return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getNavItems(), array_values($this->providers))
-        );
+        $items = [];
+
+        foreach ($this->providers as $provider) {
+            $groupLabel = $provider->getNavGroupLabel();
+
+            foreach ($provider->getNavItems() as $item) {
+                // Normalize group labels so the sidebar renders consistent
+                // headings even when a provider only exposes getNavGroupLabel().
+                if ($groupLabel !== null && ! isset($item['groupLabel'])) {
+                    $item['groupLabel'] = $groupLabel;
+                }
+
+                $items[] = $item;
+            }
+        }
+
+        return $items;
     }
 
     public function getAllSharedData(): array
@@ -67,7 +81,39 @@ class FeatureRegistry
             $featureData = $provider->getDashboardData();
 
             if (! empty($featureData)) {
-                $data[$provider->slug()] = $featureData;
+                $data[$provider->slug()] = $this->normalizeDashboardData($featureData, $provider->slug());
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Guarantee the reserved keys the dashboard renders (label, icon, total)
+     * are always present so a partial provider payload degrades gracefully
+     * instead of producing malformed tiles.
+     */
+    protected function normalizeDashboardData(array $data, string $slug): array
+    {
+        $reserved = ['label', 'icon', 'total'];
+
+        $data['label'] ??= ucfirst($slug);
+        $data['icon'] ??= 'FileText';
+
+        // Derive "total" from the first numeric value when the provider did
+        // not explicitly declare one, so the primary KPI card still renders.
+        if (! array_key_exists('total', $data)) {
+            foreach ($data as $key => $value) {
+                if (in_array($key, $reserved, true)) {
+                    continue;
+                }
+
+                if (is_numeric($value)) {
+                    $data['total'] = $value;
+                    unset($data[$key]);
+
+                    break;
+                }
             }
         }
 
@@ -135,6 +181,38 @@ class FeatureRegistry
         ));
     }
 
+    /**
+     * Settings navigation entries for providers that expose a settings page,
+     * ready to be rendered by the admin settings sidebar.
+     *
+     * @return array<int, array{label: string, route: string, url: string}>
+     */
+    public function getAllSettingsNav(): array
+    {
+        $nav = [];
+
+        foreach ($this->providers as $provider) {
+            if (! $provider->hasSettings()) {
+                continue;
+            }
+
+            $route = $provider->getSettingsRoute();
+            $url = $this->resolveSettingsUrl($route);
+
+            if ($route === null || $url === null) {
+                continue;
+            }
+
+            $nav[] = [
+                'label' => $provider->name(),
+                'route' => $route,
+                'url' => $url,
+            ];
+        }
+
+        return $nav;
+    }
+
     public function getAllHasSettings(): array
     {
         return array_filter(array_map(
@@ -192,6 +270,77 @@ class FeatureRegistry
         foreach ($this->providers as $provider) {
             $provider->onUserDelete($userId);
         }
+    }
+
+    /**
+     * Structural validation of the registered feature providers. Used by the
+     * system health page to surface misconfigurations that would otherwise
+     * fail silently (duplicate slugs, broken dependencies, unresolvable
+     * settings routes, malformed dashboard data).
+     *
+     * @return array<int, array{severity: string, provider: string, message: string}>
+     */
+    public function validate(): array
+    {
+        $issues = [];
+
+        $slugs = [];
+        $bySlug = [];
+
+        foreach ($this->providers as $provider) {
+            $slug = $provider->slug();
+            $bySlug[$slug] = $provider;
+            $slugs[] = $slug;
+        }
+
+        $duplicates = array_diff_assoc($slugs, array_unique($slugs));
+        foreach (array_unique($duplicates) as $slug) {
+            $issues[] = [
+                'severity' => 'critical',
+                'provider' => $slug,
+                'message' => "Duplicate feature slug [{$slug}] registered by multiple providers.",
+            ];
+        }
+
+        foreach ($this->providers as $provider) {
+            $slug = $provider->slug();
+
+            foreach ($provider->dependencies() as $dependency) {
+                if (! array_key_exists($dependency, $bySlug)) {
+                    $issues[] = [
+                        'severity' => 'high',
+                        'provider' => $slug,
+                        'message' => "Declares dependency [{$dependency}] but no registered feature provides that slug.",
+                    ];
+                }
+            }
+
+            $settingsRoute = $provider->getSettingsRoute();
+            if ($provider->hasSettings() && ($settingsRoute === null || $this->resolveSettingsUrl($settingsRoute) === null)) {
+                $issues[] = [
+                    'severity' => 'medium',
+                    'provider' => $slug,
+                    'message' => "Declares a settings page but route [{$settingsRoute}] cannot be resolved.",
+                ];
+            }
+
+            $dashboardData = $provider->getDashboardData();
+            if ($dashboardData !== []) {
+                $normalized = $this->normalizeDashboardData($dashboardData, $slug);
+
+                foreach (['label', 'icon', 'total'] as $reserved) {
+                    if (! array_key_exists($reserved, $normalized)) {
+                        $issues[] = [
+                            'severity' => 'medium',
+                            'provider' => $slug,
+                            'message' => "Dashboard data is missing the reserved [{$reserved}] key.",
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $issues;
     }
 
     /**

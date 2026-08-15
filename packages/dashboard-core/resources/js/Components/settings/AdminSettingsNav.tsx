@@ -10,6 +10,7 @@ import {
   Wrench,
   Menu,
   TerminalSquare,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/Components/ui/sheet";
@@ -56,7 +57,27 @@ const NAV_ITEMS: NavCategory[] = [
   },
 ];
 
-function getActiveRoute(url: string): string {
+interface FeatureSettingsLink {
+  label: string;
+  route: string;
+  url: string;
+}
+
+function useFeatureSettingsNav(): FeatureSettingsLink[] {
+  const { props } = usePage();
+
+  return (props.featureSettingsNav as FeatureSettingsLink[] | undefined) ?? [];
+}
+
+function pathnameOf(value: string): string {
+  try {
+    return new URL(value, globalThis.location?.origin).pathname;
+  } catch {
+    return value;
+  }
+}
+
+function getActiveRoute(url: string, featureLinks: FeatureSettingsLink[]): string {
   if (url.includes("/settings/registration")) return "dashboard.admin.settings.registration";
   if (url.includes("/settings/notifications")) return "dashboard.admin.settings.notifications";
   if (url.includes("/settings/security")) return "dashboard.admin.settings.security";
@@ -64,16 +85,44 @@ function getActiveRoute(url: string): string {
   if (url.includes("/settings/maintenance")) return "dashboard.admin.settings.maintenance";
   if (url.includes("/settings/ip-access")) return "dashboard.admin.settings.ip-access";
   if (url.includes("/settings/dev")) return "dashboard.admin.settings.dev";
+
+  const currentPathname = pathnameOf(url);
+
+  for (const link of featureLinks) {
+    const linkPathname = pathnameOf(link.url);
+
+    if (currentPathname === linkPathname || currentPathname.startsWith(`${linkPathname}/`)) {
+      return link.route;
+    }
+  }
+
   return "dashboard.admin.settings.general";
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   const { url } = usePage();
-  const activeRoute = getActiveRoute(url);
+  const featureLinks = useFeatureSettingsNav();
+  const activeRoute = getActiveRoute(url, featureLinks);
+
+  const categories: NavCategory[] = [
+    ...NAV_ITEMS,
+    ...(featureLinks.length > 0
+      ? [
+          {
+            label: "Features",
+            items: featureLinks.map((link) => ({
+              icon: Settings as LucideIcon,
+              label: link.label,
+              route: link.route,
+            })),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <ul className="space-y-6">
-      {NAV_ITEMS.map((category) => (
+      {categories.map((category) => (
         <li key={category.label ?? "__top"}>
           {category.label && (
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
