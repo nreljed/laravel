@@ -71,6 +71,28 @@ jobs:
         with:
           name: deploy-package
 
+      - name: Push GITHUB_TOKEN to server .env
+        # Runs before the upload so the server can authenticate /deploy/check
+        # (self-deploy path reads GITHUB_TOKEN from the server .env). Always
+        # runs, even if later steps fail, so the token never gets skipped.
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          ENV_URL="${{ vars.APP_URL }}/deploy/env?token=${{ secrets.DEPLOY_TOKEN }}"
+          for i in 1 2 3; do
+            RESP=$(curl -s -X POST --max-time 60 -H "Content-Type: application/json" \
+              -d "{\"values\":{\"GITHUB_TOKEN\":\"${{ secrets.GH_TOKEN }}\"}}" \
+              "$ENV_URL" 2>&1)
+            FIRST=$(echo "$RESP" | head -1)
+            echo "[env $i/3] $FIRST"
+            case "$FIRST" in
+              *'"success":true'*) echo "GITHUB_TOKEN pushed to server .env"; exit 0 ;;
+            esac
+            [ "$i" -lt 3 ] && sleep 20
+          done
+          echo "GITHUB_TOKEN push did not confirm; manual: POST $ENV_URL with {\"values\":{\"GITHUB_TOKEN\":\"<value>\"}}"
+
       - name: Upload deploy archive to server
         shell: bash
         run: |
