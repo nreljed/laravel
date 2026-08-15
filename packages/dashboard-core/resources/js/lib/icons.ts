@@ -52,8 +52,11 @@ export function registerFeatureIcons(icons: Record<string, FeatureIcon>): void {
  * unknown icon name never breaks rendering.
  */
 export function resolveFeatureIcon(name?: string | null): FeatureIcon {
-  if (name && Object.hasOwn(featureIcons, name)) {
-    return featureIcons[name];
+  if (name) {
+    const icon = featureIcons[name];
+    if (icon) {
+      return icon;
+    }
   }
 
   return FileText;
