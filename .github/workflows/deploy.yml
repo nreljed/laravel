@@ -61,10 +61,14 @@ jobs:
   push-deploy:
     needs: [package, release]
     runs-on: ubuntu-latest
-    # Best-effort: the host's security layer intermittently blocks CI (datacenter)
-    # IPs. The server self-deploys via the scheduled deploy:auto command, so a
-    # failed push must not fail the pipeline — the server catches up in minutes.
-    continue-on-error: true
+    # Canonical check-first flow (shared with laravel.shop). /deploy/check makes
+    # the server pull deploy.zip from the GitHub API itself, avoiding a large
+    # upload through the edge (Cloudflare cuts connections ~100s).
+    #
+    # The host's security layer intermittently blocks CI (datacenter) IPs. If
+    # both the check and upload paths fail, the server still self-deploys via
+    # the scheduled deploy:auto command within ~5 minutes — the job fails so
+    # CI is honest, but the release is already created and will be picked up.
     steps:
       - name: Download deploy.zip artifact
         uses: actions/download-artifact@v8
@@ -99,56 +103,147 @@ jobs:
           VER="v${{ needs.package.outputs.version }}"
           APP_URL="${{ vars.APP_URL }}"
           DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}"
+          CHECK_URL="$APP_URL/deploy/check?token=$DEPLOY_TOKEN"
+          UPLOAD_URL="$APP_URL/deploy/upload?token=$DEPLOY_TOKEN"
           echo "Release: $VER"
 
-          # Try direct upload first. A non-zero curl exit (e.g. timeout, exit 28)
-          # must not abort the step (set -e) — fall through to /deploy/check.
-          UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
-            -F "file=@deploy.zip;filename=deploy.zip" \
-            "$APP_URL/deploy/upload?token=$DEPLOY_TOKEN" 2>&1 || true)
-          UPLOAD_CODE=$(echo "$UPLOAD_RESP" | tail -1)
-          UPLOAD_BODY=$(echo "$UPLOAD_RESP" | sed '$d')
+          # Prefer /deploy/check: the server pulls deploy.zip from the GitHub API itself,
+          # avoiding a large upload through the edge. Cloudflare cuts connections ~100s,
+          # so the server may finish processing AFTER the response is lost — poll for it.
+          # During extraction the server returns HTML/500 transiently — that means "still busy".
+          poll_check() {
+            for i in 1 2 3 4 5 6 7 8; do
+              RESP=$(curl -s -X POST --max-time 120 "$CHECK_URL" 2>&1)
+              FIRST=$(echo "$RESP" | head -1)
+              case "$FIRST" in
+                *'"status":"deployed"'*)
+                  echo "Deployed via /deploy/check (GitHub API)"
+                  echo "$FIRST"
+                  return 0
+                  ;;
+                *'"status":"current"'*)
+                  if echo "$FIRST" | grep -q "\"tag\":\"$VER\""; then
+                    echo "Confirmed on $VER via /deploy/check"
+                    echo "$FIRST"
+                    return 0
+                  fi
+                  CURRENT_TAG=$(echo "$FIRST" | sed 's/.*"tag":"\([^"]*\)".*/\1/')
+                  echo "[poll $i/8] server on ${CURRENT_TAG:-?}, waiting for $VER"
+                  ;;
+                *'"status":"locked"'*)
+                  echo "[poll $i/8] server still working (locked)"
+                  ;;
+                *)
+                  echo "[poll $i/8] server busy (response not JSON yet)"
+                  ;;
+              esac
+              [ "$i" -lt 8 ] && sleep 45
+            done
+            return 1
+          }
 
-          if [ "$UPLOAD_CODE" = "200" ] && echo "$UPLOAD_BODY" | grep -q '"status":"deployed"'; then
-            echo "Deployed via /deploy/upload"
-            echo "$UPLOAD_BODY"
-            exit 0
+          # Upload response can be lost mid-extract; confirm the deploy by polling /deploy/check
+          # until it reports current/deployed with the expected tag.
+          confirm_deployed() {
+            for i in 1 2 3 4 5 6 7 8; do
+              RESP=$(curl -s --max-time 120 "$CHECK_URL" 2>&1)
+              FIRST=$(echo "$RESP" | head -1)
+              case "$FIRST" in
+                *'"status":"deployed"'*)
+                  echo "Confirmed deployed via /deploy/check"
+                  echo "$FIRST"
+                  return 0
+                  ;;
+                *'"status":"current"'*)
+                  if echo "$FIRST" | grep -q "\"tag\":\"$VER\""; then
+                    echo "Confirmed on $VER via /deploy/check"
+                    echo "$FIRST"
+                    return 0
+                  fi
+                  echo "[confirm $i/8] tag not yet $VER, retrying"
+                  ;;
+                *'"status":"locked"'*)
+                  echo "[confirm $i/8] server still working (locked), retrying"
+                  ;;
+                *)
+                  echo "[confirm $i/8] server busy, retrying"
+                  ;;
+              esac
+              [ "$i" -lt 8 ] && sleep 45
+            done
+            return 1
+          }
+
+          if poll_check; then
+            echo "push-deploy OK (check path)"
+          else
+            echo "check path did not confirm $VER, uploading deploy.zip directly"
+            UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
+              -F "file=@deploy.zip;filename=deploy.zip" \
+              "$UPLOAD_URL" 2>&1)
+            HTTP_CODE=$(echo "$UPLOAD_RESP" | tail -1)
+            BODY=$(echo "$UPLOAD_RESP" | sed '$d')
+            echo "Upload HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | head -1 | grep -q '"status":"deployed"'; then
+              echo "Deployed via /deploy/upload"
+              echo "$BODY" | head -1
+              echo "push-deploy OK (upload path)"
+            else
+              # Response lost or transient HTML mid-extract; the deploy may still be in flight.
+              echo "Upload response not clean (HTTP $HTTP_CODE), confirming via /deploy/check..."
+              if confirm_deployed; then
+                echo "push-deploy OK (confirmed after upload)"
+              else
+                echo "Deploy not confirmed after upload. Release created at:"
+                echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
+                echo "Manual deploy: download deploy.zip from release, upload to server, extract, then visit:"
+                echo "$APP_URL/deploy/cache-clear?token=$DEPLOY_TOKEN"
+                exit 1
+              fi
+            fi
           fi
 
-          echo "Upload failed (HTTP $UPLOAD_CODE); falling back to /deploy/check"
-          echo "Upload response: $(echo "$UPLOAD_BODY" | head -c 500)"
-
-          # Fallback: server pulls latest release from the GitHub API.
-          # The host's security layer intermittently answers CI (datacenter) IPs
-          # with a 200/HTML block page, so retry a few times to ride it through.
-          for i in 1 2 3 4 5; do
-            CHECK_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 -X POST \
-              -H "User-Agent: GitHub-Actions-Deploy" -H "Accept: application/json" \
-              "$APP_URL/deploy/check?token=$DEPLOY_TOKEN" 2>&1 || true)
-            CHECK_CODE=$(echo "$CHECK_RESP" | tail -1)
-            CHECK_BODY=$(echo "$CHECK_RESP" | sed '$d')
-
-            if [ "$CHECK_CODE" = "200" ] && echo "$CHECK_BODY" | grep -q '"status":"deployed"'; then
-              echo "Deployed via /deploy/check (GitHub API)"
-              echo "$CHECK_BODY"
-              exit 0
-            fi
-
-            if [ "$CHECK_CODE" = "200" ] && echo "$CHECK_BODY" | grep -q '"status":"current"'; then
-              echo "Server already up to date via /deploy/check"
-              echo "$CHECK_BODY"
-              exit 0
-            fi
-
-            echo "Check attempt $i: HTTP $CHECK_CODE, not deployed. $(echo "$CHECK_BODY" | head -c 300)"
-            sleep 30
-          done
-
-          echo "Deploy failed (upload HTTP $UPLOAD_CODE, check HTTP $CHECK_CODE after retries)."
-          echo "Check response: $(echo "$CHECK_BODY" | head -c 500)"
-          echo "Release created at:"
-          echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
-          echo "The server's scheduled deploy:auto will pick up this release automatically within ~5 minutes."
-          echo "Manual deploy: download deploy.zip from release, upload to server, extract, then visit:"
-          echo "$APP_URL/deploy/cache-clear?token=$DEPLOY_TOKEN"
-          exit 1
+      - name: FTP Upload fallback (DirectAdmin)
+        # Only relevant when the hosting FTP account homes to this app's project
+        # root. Skips itself when the FTP_* secrets are not defined (see script guard).
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+        run: |
+          if ("$env:FTP_USERNAME" -eq "") { Write-Output "FTP_* secrets not set — skipping FTP fallback"; exit 0 }
+          $ftpPort = if ($env:FTP_PORT) { $env:FTP_PORT } else { "21" }
+          # FTP account home is the Laravel project root (public_html), so upload to root.
+          $ftpUrl = "ftp://$env:FTP_SERVER`:$ftpPort/deploy.zip"
+          $cred = New-Object System.Net.NetworkCredential($env:FTP_USERNAME, $env:FTP_PASSWORD)
+          try {
+            $ftp = [System.Net.FtpWebRequest]::Create($ftpUrl)
+            $ftp.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+            $ftp.Credentials = $cred
+            $ftp.UseBinary = $true
+            $ftp.UsePassive = $true
+            $ftp.KeepAlive = $false
+            $fileBytes = [System.IO.File]::ReadAllBytes("deploy.zip")
+            $ftp.ContentLength = $fileBytes.Length
+            $rs = $ftp.GetRequestStream()
+            $rs.Write($fileBytes, 0, $fileBytes.Length)
+            $rs.Close()
+            $resp = $ftp.GetResponse()
+            Write-Output "FTP upload OK: $($resp.StatusDescription)"
+            $resp.Close()
+            Write-Output "---"
+            Write-Output "Extract via DirectAdmin File Manager, then visit:"
+            Write-Output "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          } catch {
+            Write-Output "FTP upload failed: $_"
+            $VER = "${{ needs.package.outputs.version }}"
+            Write-Output "Manual steps:"
+            Write-Output "1. Download from: https://github.com/${{ github.repository }}/releases/download/v$VER/deploy.zip"
+            Write-Output "2. Upload via DirectAdmin File Manager to public_html/"
+            Write-Output "3. Extract, then visit:"
+            Write-Output "   ${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          }
