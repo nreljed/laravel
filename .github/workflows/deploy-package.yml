@@ -13,7 +13,7 @@ on:
         value: ${{ jobs.package.outputs.version }}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -207,10 +207,31 @@ jobs:
           $size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Output "deploy.zip created: $size MB"
 
-      - name: Upload deploy.zip artifact
-        uses: actions/upload-artifact@v7
+      - name: Generate release notes
+        shell: pwsh
+        run: |
+          npm install -g git-cliff
+          $baseTag = git tag --merged HEAD |
+            Where-Object { $_ -match '^v[0-9]+\.[0-9]+\.[0-9]+$' } |
+            Sort-Object { [version]($_ -replace '^v', '') } |
+            Select-Object -Last 1
+          if (-not $baseTag) { $baseTag = "v0.1.0" }
+          Write-Output "Release notes base: $baseTag"
+          git-cliff "$baseTag..HEAD" --strip header -o release-notes.md 2>$null
+          if (-not (Test-Path release-notes.md)) {
+            Set-Content release-notes.md "No changes for v${{ steps.version.outputs.version }}"
+          }
+          git-cliff -o CHANGELOG.md 2>$null
+
+      - name: Create GitHub Release (release assets, not Actions artifacts)
+        # Creating the release here (instead of uploading an Actions artifact)
+        # keeps deploy.zip in release storage, which is NOT billed against the
+        # 0.5GB Actions artifact quota that kept failing on the free plan.
+        uses: softprops/action-gh-release@v3
         with:
-          name: deploy-package
-          path: deploy.zip
-          retention-days: 3
-          if-no-files-found: error
+          token: ${{ secrets.GH_TOKEN }}
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "v${{ steps.version.outputs.version }}"
+          body_path: release-notes.md
+          files: deploy.zip
+          fail_on_unmatched_files: true

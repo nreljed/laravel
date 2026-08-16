@@ -23,43 +23,8 @@ jobs:
       version: ""
     secrets: inherit
 
-  release:
-    needs: package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Generate release notes
-        run: |
-          npm install -g git-cliff
-          BASE_TAG=$(git tag --merged HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
-          if [ -z "$BASE_TAG" ]; then
-            BASE_TAG="v0.1.0"
-          fi
-          echo "Release notes base: $BASE_TAG"
-          git-cliff "$BASE_TAG..HEAD" --strip header -o release-notes.md 2>/dev/null || echo "No changes for v${{ needs.package.outputs.version }}" > release-notes.md
-          git-cliff -o CHANGELOG.md 2>/dev/null || true
-
-      - name: Download deploy.zip artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: deploy-package
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          tag_name: "v${{ needs.package.outputs.version }}"
-          name: "v${{ needs.package.outputs.version }}"
-          body_path: release-notes.md
-          files: deploy.zip
-          fail_on_unmatched_files: true
-
   push-deploy:
-    needs: [package, release]
+    needs: package
     runs-on: ubuntu-latest
     # Canonical check-first flow (shared with laravel.shop). /deploy/check makes
     # the server pull deploy.zip from the GitHub API itself, avoiding a large
@@ -69,11 +34,23 @@ jobs:
     # both the check and upload paths fail, the server still self-deploys via
     # the scheduled deploy:auto command within ~5 minutes — the job fails so
     # CI is honest, but the release is already created and will be picked up.
+    #
+    # deploy.zip comes from the GitHub Release (created by the package job),
+    # not an Actions artifact — release assets are NOT billed against the
+    # 0.5GB Actions artifact storage quota.
     steps:
-      - name: Download deploy.zip artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: deploy-package
+      - name: Download deploy.zip from release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          VER="v${{ needs.package.outputs.version }}"
+          echo "Downloading deploy.zip from release $VER"
+          gh release download "$VER" \
+            --repo "${{ github.repository }}" \
+            --pattern "deploy.zip" \
+            --clobber
+          ls -la deploy.zip
 
       - name: Push GITHUB_TOKEN to server .env
         # Runs before the upload so the server can authenticate /deploy/check
