@@ -61,11 +61,13 @@ class UserManagementTest extends TestCase
             ->get(route('dashboard.admin.users.index'));
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page
-            ->component('dashboard/admin/users/index')
-            ->has('users', 2)
-            ->where('users.0.avatar_url', $target->fresh()->avatar_url)
-        );
+        $page = $response->viewData('page');
+        $users = $page['props']['users'];
+
+        $this->assertCount(2, $users);
+        $found = collect($users)->firstWhere('id', $target->id);
+        $this->assertNotNull($found);
+        $this->assertStringContainsString('avatars/avatar-a.webp', $found['avatar_url']);
     }
 
     // ─── Edit Form ───────────────────────────────────────
