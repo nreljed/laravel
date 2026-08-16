@@ -108,7 +108,7 @@ class HandleInertiaRequests extends Middleware
                     try {
                         return app(DatabaseMaintenanceService::class)->isEnabled();
                     } catch (\Throwable) {
-                        return (bool) config('database_maintenance.enabled', false);
+                        return (bool) config('database_maintenance.enabled', true);
                     }
                 },
             ],

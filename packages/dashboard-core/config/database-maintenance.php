@@ -20,7 +20,7 @@ use Database\Seeders\SettingsSeeder;
 
 return [
 
-    'enabled' => env('DB_MAINTENANCE_ENABLED', ! app()->environment('production')),
+    'enabled' => env('DB_MAINTENANCE_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------
