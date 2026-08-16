@@ -66,8 +66,11 @@ jobs:
       - name: Publish dashboard-core
         id: publish
         run: |
+          set +e
           OUTPUT=$(php scripts/core-publish.php 2>&1)
-          echo "$OUTPUT"
+          CODE=$?
+          printf '%s\n' "$OUTPUT"
+          if [ "$CODE" -ne 0 ]; then exit "$CODE"; fi
           VERSION=$(printf '%s\n' "$OUTPUT" | sed -nE 's/^Published nreljed\/dashboard-core v([0-9]+\.[0-9]+\.[0-9]+)$/\1/p')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
