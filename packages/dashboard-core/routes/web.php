@@ -214,8 +214,8 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
         Route::get('/logs/{file}/download', [AdminController::class, 'downloadSystemHealthLog'])->name('logs.download');
     });
 
-    // Database maintenance (danger zone) — admin only, env-gated at controller level
-    Route::middleware(['admin', 'permission:manage-settings'])->group(function () {
+    // Database maintenance (danger zone) — permission-gated, env-gated at controller level
+    Route::middleware('permission:manage-settings')->group(function () {
         Route::get('/database', [DatabaseMaintenanceController::class, 'index'])->name('database');
         Route::post('/database/reset', [DatabaseMaintenanceController::class, 'reset'])->name('database.reset');
         Route::post('/database/reseed', [DatabaseMaintenanceController::class, 'reseed'])->name('database.reseed');
@@ -235,8 +235,8 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
             Route::get('/dev', [SettingsController::class, 'dev'])->name('dev');
             Route::get('/ip-access', [SettingsController::class, 'ipAccess'])->name('ip-access');
 
-            // Database maintenance toggle (danger zone) — admin only, password-confirmed
-            Route::middleware(['admin', 'permission:manage-settings'])
+            // Database maintenance toggle (danger zone) — permission-gated, password-confirmed
+            Route::middleware('permission:manage-settings')
                 ->post('/dev/database-maintenance-toggle', [SettingsController::class, 'toggleDatabaseMaintenance'])
                 ->name('dev.database-maintenance-toggle');
 
