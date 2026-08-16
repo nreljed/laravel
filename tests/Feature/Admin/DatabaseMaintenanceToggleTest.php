@@ -96,7 +96,11 @@ class DatabaseMaintenanceToggleTest extends TestCase
         $this->assertFalse(app(DatabaseMaintenanceService::class)->isEnabled());
 
         $page = $this->actingAs($this->admin())->get(route('dashboard.admin.database'));
-        $page->assertStatus(403);
+        $page->assertStatus(200);
+        $page->assertInertia(fn ($page) => $page
+            ->component('dashboard/admin/database-maintenance')
+            ->where('status.enabled', false)
+        );
     }
 
     public function test_non_admin_cannot_toggle(): void

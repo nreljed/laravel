@@ -184,7 +184,7 @@ export default function DatabaseMaintenance({ status }: DatabaseMaintenanceProps
   const reseedReady =
     reseedConfirmation === "RESEED" && reseedPassword.length > 0 && selectedGroups.length > 0;
   const isProcessing = processing !== null;
-  const isResetLocked = status.locked || isProcessing;
+  const isResetLocked = status.locked || isProcessing || !status.enabled;
 
   return (
     <AdminLayout title="Database Maintenance">
@@ -224,6 +224,24 @@ export default function DatabaseMaintenance({ status }: DatabaseMaintenanceProps
             Destructive operations to reset or reseed the application database.
           </p>
         </div>
+
+        {!status.enabled && (
+          <Alert>
+            <Info />
+            <AlertTitle>Database maintenance UI is disabled</AlertTitle>
+            <AlertDescription>
+              The reset and reseed tools are currently disabled. Go to{" "}
+              <Link
+                href={route("dashboard.admin.settings.dev")}
+                className="underline underline-offset-2"
+              >
+                Settings → Developer
+              </Link>{" "}
+              and enable the <span className="font-mono">Database Maintenance UI</span> toggle to
+              access these tools.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {status.locked && (
           <Alert variant="destructive">
@@ -458,7 +476,7 @@ export default function DatabaseMaintenance({ status }: DatabaseMaintenanceProps
                             id={`db_reseed_group_${group.key}`}
                             checked={selectedGroups.includes(group.key)}
                             onCheckedChange={() => toggleGroup(group.key)}
-                            disabled={isProcessing}
+                            disabled={isProcessing || !status.enabled}
                           />
                           <div className="space-y-0.5">
                             <FieldLabel htmlFor={`db_reseed_group_${group.key}`}>
@@ -517,7 +535,7 @@ export default function DatabaseMaintenance({ status }: DatabaseMaintenanceProps
                     <Button
                       variant="outline"
                       onClick={runReseed}
-                      disabled={!reseedReady || isProcessing}
+                      disabled={!reseedReady || isProcessing || !status.enabled}
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
                       {processing === "reseed" ? "Reseeding..." : "Reseed database"}

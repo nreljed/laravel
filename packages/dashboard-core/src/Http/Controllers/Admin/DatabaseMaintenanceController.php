@@ -19,8 +19,6 @@ class DatabaseMaintenanceController extends Controller
 
     public function index(): Response
     {
-        abort_unless($this->service->isEnabled(), 403);
-
         return Inertia::render('dashboard/admin/database-maintenance', [
             'status' => $this->service->status(),
         ]);

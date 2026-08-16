@@ -66,14 +66,18 @@ class DatabaseMaintenanceTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_page_returns_403_when_feature_disabled(): void
+    public function test_page_returns_200_when_feature_disabled(): void
     {
         Config::set('database_maintenance.enabled', false);
 
         $response = $this->actingAs($this->admin())
             ->get(route('dashboard.admin.database'));
 
-        $response->assertStatus(403);
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('dashboard/admin/database-maintenance')
+            ->where('status.enabled', false)
+        );
     }
 
     public function test_reset_returns_403_when_feature_disabled(): void
