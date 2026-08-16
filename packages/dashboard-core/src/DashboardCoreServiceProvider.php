@@ -6,6 +6,7 @@ use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
@@ -64,6 +65,7 @@ class DashboardCoreServiceProvider extends ServiceProvider
 
         $this->loadRoutes();
         $this->loadConsoleRoutes();
+        $this->configureSchedules();
 
         $this->configureMiddleware();
         $this->configureRateLimiting();
@@ -137,6 +139,19 @@ class DashboardCoreServiceProvider extends ServiceProvider
             Console\Commands\PruneAuditLogs::class,
             Console\Commands\PublishScheduledContent::class,
         ]);
+    }
+
+    protected function configureSchedules(): void
+    {
+        if (! config('deploy.auto_enabled', true)) {
+            return;
+        }
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('deploy:auto')
+                ->everyFiveMinutes()
+                ->withoutOverlapping();
+        });
     }
 
     protected function configureMailer(): void

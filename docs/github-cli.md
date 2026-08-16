@@ -140,7 +140,7 @@ gh run list --workflow=deploy.yml
 
 Pushing to `main` touching `packages/dashboard-core/**` triggers `core-publish.yml`:
 
-- Subtree-splits `packages/dashboard-core` → `nreljed/dashboard-core`
+- Mirrors `packages/dashboard-core` → `nreljed/dashboard-core` (via `scripts/core-publish.php`, LF-normalized clone)
 - Bumps patch/minor (git-cliff), tags, and releases the package
 - Dispatches `core-updated` to consumers (Shop, Booking)
 

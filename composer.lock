@@ -3192,11 +3192,11 @@
         },
         {
             "name": "nreljed/dashboard-core",
-            "version": "0.1.7",
+            "version": "0.1.9",
             "dist": {
                 "type": "path",
                 "url": "packages/dashboard-core",
-                "reference": "515e7e06d456eeabc61fbf493dc685aee0dae2bc"
+                "reference": "0798c1cc652d13e946b233d85c813024e0911371"
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",

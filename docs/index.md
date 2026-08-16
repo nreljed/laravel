@@ -23,10 +23,15 @@
 
 ## Package Architecture
 
-| Document                                                                      | Description                                                        |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [Shared Core Package](core-dashboard-package.md)                              | Master plan: monorepo → `nreljed/dashboard-core` for Shop/Booking  |
-| [Phase 0 — Classification & Reconciliation](core-dashboard-package-phase0.md) | Core/App classification, migration diff, User parity, npm-dep scan |
+| Document                                                                              | Description                                                                                 |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [Shared Core Package](core-dashboard-package.md)                                      | Master plan: monorepo → `nreljed/dashboard-core` for Shop/Booking                           |
+| [Phase 0 — Classification & Reconciliation](core-dashboard-package-phase0.md)         | Core/App classification, migration diff, User parity, npm-dep scan                          |
+| [Core Standardization & Deploy (executed)](core-standardization-and-deploy-prompt.md) | Historical execution record — deploy parity + core standardization, **all done 2026-08-15** |
+
+> **Core standardization + deploy parity are DONE (2026-08-15).** The consumer contract
+> lives in [`core-dashboard-package.md`](core-dashboard-package.md) §7.1; day-to-day ops
+> (secrets, releases, fork checklist) live in [`github-cli.md`](github-cli.md).
 
 ## Lexical Editor
 
@@ -43,12 +48,13 @@
 
 ## Workflow
 
-| Document                               | Description                                   |
-| -------------------------------------- | --------------------------------------------- |
-| [Setup](workflow/setup.md)             | Local dev environment, LocalWP, install       |
-| [Development](workflow/development.md) | Daily workflow, conventions, git branching    |
-| [Deployment](workflow/deploy.md)       | CI/CD pipeline, GitHub Actions, server deploy |
-| [Testing](workflow/testing.md)         | PHPUnit, Vitest, ESLint, CI pipeline          |
+| Document                               | Description                                                |
+| -------------------------------------- | ---------------------------------------------------------- |
+| [Setup](workflow/setup.md)             | Local dev environment, LocalWP, install                    |
+| [Development](workflow/development.md) | Daily workflow, conventions, git branching                 |
+| [Deployment](workflow/deploy.md)       | CI/CD pipeline, GitHub Actions, server deploy              |
+| [GitHub CLI](github-cli.md)            | Secrets, releases, runs, fork checklist (`gh` cheat sheet) |
+| [Testing](workflow/testing.md)         | PHPUnit, Vitest, ESLint, CI pipeline                       |
 
 ## Component Structure
 

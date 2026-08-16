@@ -260,7 +260,7 @@ provider) then register it in `config/core.php` `features`.
 
 ```
 push to main touching packages/dashboard-core/**  ──▶  core-publish.yml
-    ├── subtree-split to nreljed/dashboard-core
+    ├── mirror sync to nreljed/dashboard-core (scripts/core-publish.php, LF-normalized clone)
     ├── version bump (patch/minor, git-cliff) + tag
     ├── GH release (deploy.zip of the package)
     └── dispatch core-updated to consumers

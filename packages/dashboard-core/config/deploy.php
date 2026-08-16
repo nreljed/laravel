@@ -28,6 +28,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Auto Deploy Schedule
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the core service provider schedules `deploy:auto` every
+    | five minutes so every project shares the same server-side self-deploy
+    | behaviour without any host-level routes/console.php wiring.
+    |
+    */
+
+    'auto_enabled' => true,
+
+    /*
+    |--------------------------------------------------------------------------
     | Deploy Lock TTL
     |--------------------------------------------------------------------------
     |

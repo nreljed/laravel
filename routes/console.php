@@ -12,12 +12,6 @@ Schedule::command('schedule:publish')->everyMinute();
 Schedule::command('notifications:purge', ['--days' => 90])->daily();
 Schedule::command('app:prune-audit-logs')->daily();
 
-// Server-side self-deploy: if CI cannot reach the host (hosting firewall
-// blocks datacenter IPs), the cron picks up new GitHub releases by itself.
-Schedule::command('deploy:auto')
-    ->everyFiveMinutes()
-    ->withoutOverlapping();
-
 // Shared-hosting queue worker: processes the database queue in short bursts
 // so SendEmail / GenerateSeoForPost (and batch SEO jobs) actually execute.
 Schedule::command('queue:work', ['--stop-when-empty' => true])

@@ -3,7 +3,34 @@
 > Target repo: **`nreljed/laravel`** (`main`) — Cost Breaker 360 master, hosts `packages/dashboard-core`
 > Work dir: `C:\Users\nrelj\Local Sites\laravel\app`
 > Prepared: 2026-08-15 · Author: opencode
-> Status: **Ready to execute** — hand this file to a fresh session/agent.
+> Status: **✅ DONE — executed 2026-08-15**. This is a historical record. **Do not hand it
+> to a fresh session as pending work.** All gaps G1–G7 are resolved and verified live.
+
+---
+
+## ✅ EXECUTED — 2026-08-15 (do not re-run)
+
+Everything in this prompt was completed and verified the same day it was written:
+
+| Deliverable                           | Commit / Evidence                                                                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| G1 check-first flow (monorepo)        | `80178d2` — `deploy.yml` polls `/deploy/check` first (8×45s), `/deploy/upload` only as fallback                               |
+| G2 `continue-on-error` policy         | `80178d2` — kept only on best-effort steps (env-push, FTP); job fails honestly (comment at deploy.yml:64-71)                  |
+| G3 FTP fallback + laravel account     | `80178d2` — `laravel@tunispromo.tn` exists, home IS the project root; both runs logged `FTP upload OK: 226 Transfer complete` |
+| G4 shop `deploy:auto` parity          | `c566bf1` in `C:\Users\nrelj\Local Sites\shop-laravel\app` — `routes/console.php:19-21`; shop deploy green                    |
+| G5 `docs/github-cli.md` + `AGENTS.md` | `6739a10` — `docs/github-cli.md` (178 lines), AGENTS.md deploy section refreshed                                              |
+| G6 deploy skill                       | `~/.config/opencode/skills/deploy/SKILL.md` — monorepo rows + canonical check-first + core-publish flow                       |
+| G7 core standardization docs          | `6739a10` — `docs/core-dashboard-package.md` §7.1 Standardization Contract                                                    |
+
+**Verified live in CI:** runs `31892796425` (→ v0.15.1) and `31893485873` (→ v0.15.2) both green:
+env-push returned `{"success":true,"updated":["GITHUB_TOKEN"]}`, deploy confirmed via
+`Deployed via /deploy/check (GitHub API)`, and FTP fallback returned `226 Transfer complete`.
+Releases `v0.15.0`/`v0.15.1`/`v0.15.2` published.
+
+**Package boundary audit (item 6):** holds — no app-only code leaked into
+`packages/dashboard-core/src/**` (TestPosts stays app-side), and none of the
+`core-manifest.json` forbidden project paths exist in the app. Note: the
+`core:check-boundary` command does not exist — the audit was manual (plan said "if present").
 
 ---
 
@@ -97,7 +124,7 @@ and verify a core change end-to-end before leaving it.
 
 5. Add `Schedule::command('deploy:auto')->everyFiveMinutes()->withoutOverlapping();` to
    `C:\Users\nrelj\Local Sites\shop-laravel\app\routes\console.php` (mirrors monorepo resilience).
-   Push to `master`, verify shop deploy still green.
+   Push to `main`, verify shop deploy still green.
 
 ### Phase C — Core package standardization
 

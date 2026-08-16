@@ -357,7 +357,7 @@ if ($releaseCreated) {
 
 out('');
 out('Next steps:');
-out('  1. Commit the composer.json version bump in this repo (master).');
+out('  1. Commit the composer.json version bump in this repo (main).');
 out('  2. In each consuming app:');
 out('       composer update nreljed/dashboard-core');
 out('       npm run build');
