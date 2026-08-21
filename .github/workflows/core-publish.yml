@@ -16,13 +16,22 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    # Self-hosted runner (win-runner-laravel): free minutes, immune to hosted
+    # billing blocks. Steps are bash-flavored; the runner is Windows, so pin
+    # bash explicitly (Git for Windows must be on the machine).
+    runs-on: [self-hosted]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
+      # PHP 8.4 + composer are preinstalled on the self-hosted runner;
+      # setup-php only makes sense on GitHub-hosted machines.
       - name: Setup PHP
+        if: runner.os == 'Linux'
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
