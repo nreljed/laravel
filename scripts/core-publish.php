@@ -48,6 +48,35 @@ function ignoredPaths(): array
     return ['vendor', 'node_modules', '.git', '.core-sha', '.phpunit.result.cache'];
 }
 
+function deleteDirectory(string $dir): void
+{
+    if (! is_dir($dir)) {
+        return;
+    }
+
+    $items = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($items as $item) {
+        $path = $item->getPathname();
+
+        if ($item->isDir()) {
+            rmdir($path);
+
+            continue;
+        }
+
+        // Git marks loose/packed objects read-only — clear the flag so
+        // unlink() works on Windows.
+        chmod($path, 0666);
+        unlink($path);
+    }
+
+    rmdir($dir);
+}
+
 function runGit(array $args, ?string $cwd = null): string
 {
     $cmd = array_merge(['git'], $args);
@@ -205,6 +234,14 @@ if (! is_dir($source)) {
     exit(2);
 }
 
+// A leftover directory from an interrupted run may exist without being a
+// usable clone (e.g. .git present but no HEAD) — re-clone in that case
+// instead of failing on `git fetch`.
+if (is_dir($cloneDir) && ! is_file($cloneDir.'/.git/HEAD')) {
+    out("Removing invalid clone at {$cloneDir} ...");
+    deleteDirectory($cloneDir);
+}
+
 if (! is_dir($cloneDir)) {
     out("Cloning {$repoUrl} into {$cloneDir} ...");
     runGit(['clone', '-c', 'core.autocrlf=false', $repoUrl, $cloneDir]);
@@ -212,6 +249,13 @@ if (! is_dir($cloneDir)) {
     out("Updating existing clone at {$cloneDir} ...");
     runGit(['fetch', 'origin', '--tags', '--prune'], $cloneDir);
 }
+
+// CI runners have no global git identity, which made `git commit` fail with
+// "Author identity unknown" and killed every automated publish since the
+// workflow went live. Set a bot identity on the clone itself so publishing
+// works from any machine without touching the host's global git config.
+runGit(['config', 'user.name', 'github-actions[bot]'], $cloneDir);
+runGit(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], $cloneDir);
 
 // Decide up front whether anything functionally changed, so running
 // core:publish with no new code does not mint a pointless version tag.
