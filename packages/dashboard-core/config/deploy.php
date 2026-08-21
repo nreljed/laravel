@@ -37,7 +37,7 @@ return [
     |
     */
 
-    'auto_enabled' => true,
+    'auto_enabled' => env('DEPLOY_AUTO_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------

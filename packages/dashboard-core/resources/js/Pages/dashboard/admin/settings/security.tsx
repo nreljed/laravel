@@ -1,4 +1,4 @@
-import { Head, usePage, Link } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
   Breadcrumb,
@@ -9,20 +9,12 @@ import {
 } from "@/Components/ui/breadcrumb";
 import { AdminSettingsNav } from "@/Components/settings/AdminSettingsNav";
 import { SecuritySection } from "@/Components/settings/sections/SecuritySection";
-import { useEffect } from "react";
-import { toast } from "@/Components/ui/toast";
 
 interface SecurityProps {
   settings?: Record<string, string>;
 }
 
 export default function SecuritySettings({ settings = {} }: SecurityProps) {
-  const flash = usePage().props.flash as Record<string, string> | undefined;
-
-  useEffect(() => {
-    if (flash?.status) toast.add({ title: flash.status, type: "success" });
-  }, [flash?.status]);
-
   return (
     <AdminLayout title="Settings">
       <Head title="Security Settings" />
@@ -30,7 +22,10 @@ export default function SecuritySettings({ settings = {} }: SecurityProps) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Link href="/dashboard" className="transition-colors hover:text-foreground">
+              <Link
+                href={route("dashboard.index")}
+                className="transition-colors hover:text-foreground"
+              >
                 Dashboard
               </Link>
             </BreadcrumbItem>

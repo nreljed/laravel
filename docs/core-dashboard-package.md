@@ -259,13 +259,51 @@ provider) then register it in `config/core.php` `features`.
 ### 7.1.5 Publish flow (core → consumers)
 
 ```
-push to main touching packages/dashboard-core/**  ──▶  core-publish.yml
+push to main touching packages/dashboard-core/**  ──▶  core-publish.yml (this repo)
     ├── mirror sync to nreljed/dashboard-core (scripts/core-publish.php, LF-normalized clone)
     ├── version bump (patch/minor, git-cliff) + tag
-    ├── GH release (deploy.zip of the package)
-    └── dispatch core-updated to consumers
-Consumers: ./update-core.sh  (composer update → npm install → npm run build → php artisan migrate)
+    ├── GH release
+    └── dispatch core-updated (client_payload.version) to each consumer repo
+                                                          │
+        ┌─────────────────────────────────────────────────┘
+        ▼
+consumer repo  core-update.yml   (triggers: repository_dispatch + weekly Mon 09:00 UTC cron + manual)
+    ├── composer update nreljed/dashboard-core --with-dependencies --no-scripts
+    ├── no composer.lock change? → exit "already up to date"
+    └── else open PR "chore: update dashboard-core to vX.Y.Z" (composer.lock only)
+            └── PR CI runs full validation → merge → push to main → deploy.yml → production
 ```
+
+**Consumers today:** `nreljed/laravel.shop` (add new repos to the `for REPO in ...` loop in
+`core-publish.yml` and copy `.github/workflows/core-update.yml` from Shop).
+
+**Manual operations:**
+
+```bash
+# Publish a release right now from this repo (same as the workflow does)
+php scripts/core-publish.php                # or: composer run core:publish
+php scripts/core-publish.php --dry-run      # preview version + diff only
+
+# Nudge a consumer without a new release
+gh workflow run core-update.yml -R nreljed/laravel.shop
+
+# This monorepo never pulls — it owns packages/dashboard-core.
+# After editing package code locally, refresh the vendor mirror:
+composer reinstall nreljed/dashboard-core
+```
+
+**Invariants & history:**
+
+- The publish script sets a bot git identity (`github-actions[bot]`) on its temp clone —
+  CI runners have none, and missing identity made every automated publish fail with
+  "Author identity unknown" (2026-08-16 → fixed 2026-08-21). It also re-clones when the
+  temp dir holds an interrupted/broken clone (missing `.git/HEAD`; Windows needs chmod
+  before unlinking read-only git objects).
+- The script bumps the `version` field in BOTH trees but intentionally does not commit it
+  back to this repo — the source tree's field may lag the latest tag; that is expected.
+- A failed dispatch never blocks publishing (`continue-on-error`); consumers catch up on
+  the weekly cron. Consumers only ever receive updates via reviewed PRs — never direct
+  pushes to their main.
 
 Rules: one `GH_TOKEN` (unified PAT) in every repo + server `.env`; one `DEPLOY_TOKEN`
 per app (matches that server's `app.deploy_token`); never commit either.

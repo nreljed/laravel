@@ -54,11 +54,11 @@ class BulkUserController extends Controller
 
     public function sendPasswordReset(BulkActionRequest $request): RedirectResponse
     {
+        $users = User::whereIn('id', $request->ids)->get();
         $sent = 0;
 
-        foreach ($request->ids as $id) {
-            $user = User::find($id);
-            if ($user && Password::sendResetLink(['email' => $user->email]) === Password::RESET_LINK_SENT) {
+        foreach ($users as $user) {
+            if (Password::sendResetLink(['email' => $user->email]) === Password::RESET_LINK_SENT) {
                 $sent++;
             }
         }

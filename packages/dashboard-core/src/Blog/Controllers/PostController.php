@@ -2,8 +2,11 @@
 
 namespace Nreljed\DashboardCore\Blog\Controllers;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Blog\Models\PostCategory;
 use Nreljed\DashboardCore\Blog\Models\PostTag;
@@ -14,7 +17,7 @@ use Nreljed\DashboardCore\Services\MediaService;
 
 class PostController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $this->authorize('viewAny', Post::class);
 
@@ -31,7 +34,7 @@ class PostController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): Response
     {
         $this->authorize('create', Post::class);
 
@@ -42,51 +45,14 @@ class PostController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', Post::class);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'excerpt' => 'nullable|string|max:500',
-            'featured_image' => 'nullable|string|max:255',
-            'status' => 'nullable|string|in:draft,published,archived,future',
-            'publish_date' => 'nullable|date|required_if:status,future',
-            'category_id' => 'nullable|exists:post_categories,id',
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'exists:post_tags,id',
-            'meta_title' => 'nullable|string|max:70',
-            'meta_description' => 'nullable|string|max:160',
-            'og_image' => 'nullable|string|max:255',
-            'focus_keyword' => 'nullable|string|max:100',
-            'seo_metadata' => 'nullable|array',
-            'seo_metadata.seo_score' => 'nullable|integer|min:0|max:100',
-            'seo_metadata.primary_keyword' => 'nullable|string|max:100',
-            'seo_metadata.secondary_keywords' => 'nullable|array',
-            'seo_metadata.title_options' => 'nullable|array',
-            'seo_metadata.meta_description_options' => 'nullable|array',
-            'seo_metadata.recommendations' => 'nullable|array',
-            'seo_metadata.recommendations.*.field' => 'required|string',
-            'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
-            'seo_metadata.recommendations.*.message' => 'required|string',
-        ]);
+        $validated = $request->validate(self::validationRules());
 
         $validated['user_id'] = $request->user()->id;
-        $validated = $this->applyPostScheduleStatus($validated);
-        $validated = $this->sanitizePostContent($validated);
-
-        $tagIds = $validated['tag_ids'] ?? [];
-        $seoMetadata = $validated['seo_metadata'] ?? null;
-        unset($validated['tag_ids'], $validated['seo_metadata']);
-
-        if ($seoMetadata) {
-            $existingMetadata = $validated['metadata'] ?? [];
-            $validated['metadata'] = array_merge($existingMetadata, [
-                'seo' => $seoMetadata,
-                'seo_generated_at' => now()->toISOString(),
-            ]);
-        }
+        [$validated, $tagIds] = $this->preparePostData($validated);
 
         $post = Post::create($validated);
 
@@ -98,7 +64,7 @@ class PostController extends Controller
             ->with('status', 'Post created successfully.');
     }
 
-    public function edit(Post $post)
+    public function edit(Post $post): Response
     {
         $this->authorize('update', $post);
 
@@ -111,60 +77,22 @@ class PostController extends Controller
         ]);
     }
 
-    public function update(Request $request, Post $post)
+    public function update(Request $request, Post $post): RedirectResponse
     {
         $this->authorize('update', $post);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'excerpt' => 'nullable|string|max:500',
-            'featured_image' => 'nullable|string|max:255',
-            'status' => 'nullable|string|in:draft,published,archived,future',
-            'publish_date' => 'nullable|date|required_if:status,future',
-            'category_id' => 'nullable|exists:post_categories,id',
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'exists:post_tags,id',
-            'meta_title' => 'nullable|string|max:70',
-            'meta_description' => 'nullable|string|max:160',
-            'og_image' => 'nullable|string|max:255',
-            'focus_keyword' => 'nullable|string|max:100',
-            'seo_metadata' => 'nullable|array',
-            'seo_metadata.seo_score' => 'nullable|integer|min:0|max:100',
-            'seo_metadata.primary_keyword' => 'nullable|string|max:100',
-            'seo_metadata.secondary_keywords' => 'nullable|array',
-            'seo_metadata.title_options' => 'nullable|array',
-            'seo_metadata.meta_description_options' => 'nullable|array',
-            'seo_metadata.recommendations' => 'nullable|array',
-            'seo_metadata.recommendations.*.field' => 'required|string',
-            'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
-            'seo_metadata.recommendations.*.message' => 'required|string',
-        ]);
+        $validated = $request->validate(self::validationRules());
 
-        $validated = $this->applyPostScheduleStatus($validated);
-        $validated = $this->sanitizePostContent($validated);
-
-        $tagIds = $validated['tag_ids'] ?? [];
-        $seoMetadata = $validated['seo_metadata'] ?? null;
-        unset($validated['tag_ids'], $validated['seo_metadata']);
-
-        if ($seoMetadata) {
-            $existingMetadata = $post->metadata ?? [];
-            $validated['metadata'] = array_merge($existingMetadata, [
-                'seo' => $seoMetadata,
-                'seo_generated_at' => now()->toISOString(),
-            ]);
-        }
+        [$validated, $tagIds] = $this->preparePostData($validated, $post->metadata);
 
         $post->update($validated);
-
         $post->tags()->sync($tagIds);
 
         return redirect()->route('dashboard.posts.index')
             ->with('status', 'Post updated successfully.');
     }
 
-    public function destroy(Post $post)
+    public function destroy(Post $post): RedirectResponse
     {
         $this->authorize('delete', $post);
 
@@ -174,7 +102,7 @@ class PostController extends Controller
             ->with('status', 'Post deleted successfully.');
     }
 
-    public function bulkAction(BulkActionRequest $request)
+    public function bulkAction(BulkActionRequest $request): RedirectResponse
     {
         $user = $request->user();
         $action = $request->input('action');
@@ -226,7 +154,7 @@ class PostController extends Controller
             ->with('flash.success', "{$count} post(s) {$label}.");
     }
 
-    public function updateStatus(Request $request, Post $post)
+    public function updateStatus(Request $request, Post $post): RedirectResponse
     {
         $this->authorize('update', $post);
 
@@ -244,6 +172,102 @@ class PostController extends Controller
             ->with('flash.success', 'Post status updated successfully.');
     }
 
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $this->authorize('create', Post::class);
+
+        $service = app(MediaService::class);
+        $validated = $request->validate($service->getValidationRules());
+
+        $result = $service->upload($validated['file'], 'posts');
+
+        return response()->json($result);
+    }
+
+    public function deleteImage(Request $request): JsonResponse
+    {
+        if (! $request->user()->hasPermission('posts.edit')) {
+            abort(403);
+        }
+
+        $request->validate(['path' => 'required|string']);
+
+        app(MediaService::class)->delete($request->path);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function validationRules(): array
+    {
+        return [
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string',
+            'excerpt' => 'nullable|string|max:500',
+            'featured_image' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:draft,published,archived,future',
+            'publish_date' => 'nullable|date|required_if:status,future',
+            'category_id' => 'nullable|exists:post_categories,id',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'exists:post_tags,id',
+            'meta_title' => 'nullable|string|max:70',
+            'meta_description' => 'nullable|string|max:160',
+            'og_image' => 'nullable|string|max:255',
+            'focus_keyword' => 'nullable|string|max:100',
+            'seo_metadata' => 'nullable|array',
+            'seo_metadata.seo_score' => 'nullable|integer|min:0|max:100',
+            'seo_metadata.primary_keyword' => 'nullable|string|max:100',
+            'seo_metadata.secondary_keywords' => 'nullable|array',
+            'seo_metadata.title_options' => 'nullable|array',
+            'seo_metadata.meta_description_options' => 'nullable|array',
+            'seo_metadata.recommendations' => 'nullable|array',
+            'seo_metadata.recommendations.*.field' => 'required|string',
+            'seo_metadata.recommendations.*.severity' => 'required|string|in:critical,warning,info',
+            'seo_metadata.recommendations.*.message' => 'required|string',
+        ];
+    }
+
+    /**
+     * Extract tag IDs, merge SEO metadata, schedule status, and sanitize content.
+     *
+     * @return array{0: array<string, mixed>, 1: list<int>}
+     */
+    protected function preparePostData(array $validated, ?array $existingMetadata = null): array
+    {
+        $validated = $this->applyPostScheduleStatus($validated);
+        $validated = $this->sanitizePostContent($validated);
+
+        $tagIds = $validated['tag_ids'] ?? [];
+        $seoMetadata = $validated['seo_metadata'] ?? null;
+        unset($validated['tag_ids'], $validated['seo_metadata']);
+
+        if ($seoMetadata) {
+            $base = $existingMetadata ?? $validated['metadata'] ?? [];
+            $validated['metadata'] = array_merge($base, [
+                'seo' => $seoMetadata,
+                'seo_generated_at' => now()->toISOString(),
+            ]);
+        }
+
+        return [$validated, $tagIds];
+    }
+
+    protected function sanitizePostContent(array $validated): array
+    {
+        $validated['content'] = HtmlSanitizer::sanitize($validated['content'] ?? null);
+        $validated['excerpt'] = HtmlSanitizer::sanitizeText($validated['excerpt'] ?? null);
+        $validated['featured_image'] = HtmlSanitizer::sanitizeImageUrl($validated['featured_image'] ?? null);
+        $validated['og_image'] = HtmlSanitizer::sanitizeImageUrl($validated['og_image'] ?? null);
+
+        return $validated;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
     protected function applyPostScheduleStatus(array $validated): array
     {
         $status = $validated['status'] ?? 'draft';
@@ -270,42 +294,7 @@ class PostController extends Controller
         return $validated;
     }
 
-    public function uploadImage(Request $request)
-    {
-        $this->authorize('create', Post::class);
-
-        $service = app(MediaService::class);
-        $validated = $request->validate($service->getValidationRules());
-
-        $result = $service->upload($validated['file'], 'posts');
-
-        return response()->json($result);
-    }
-
-    public function deleteImage(Request $request)
-    {
-        if (! $request->user()->hasPermission('posts.edit')) {
-            abort(403);
-        }
-
-        $request->validate(['path' => 'required|string']);
-
-        app(MediaService::class)->delete($request->path);
-
-        return response()->json(['success' => true]);
-    }
-
-    protected function sanitizePostContent(array $validated): array
-    {
-        $validated['content'] = HtmlSanitizer::sanitize($validated['content'] ?? null);
-        $validated['excerpt'] = HtmlSanitizer::sanitizeText($validated['excerpt'] ?? null);
-        $validated['featured_image'] = HtmlSanitizer::sanitizeImageUrl($validated['featured_image'] ?? null);
-        $validated['og_image'] = HtmlSanitizer::sanitizeImageUrl($validated['og_image'] ?? null);
-
-        return $validated;
-    }
-
-    public function dashboard(Request $request)
+    public function dashboard(Request $request): Response
     {
         $this->authorize('viewAny', Post::class);
 

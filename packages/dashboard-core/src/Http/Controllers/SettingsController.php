@@ -4,6 +4,7 @@ namespace Nreljed\DashboardCore\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -164,42 +165,13 @@ class SettingsController extends Controller
     {
         $this->authorize('manage-settings');
 
-        $file = $request->file('logo');
-
-        $filename = $file->store('logos');
-
-        $oldLogo = SettingsService::get('app_logo', '');
-        if ($oldLogo) {
-            $oldPath = str_replace(Storage::disk('logos')->url(''), '', $oldLogo);
-            if ($oldPath && Storage::disk('logos')->exists($oldPath)) {
-                Storage::disk('logos')->delete($oldPath);
-            }
-        }
-
-        SettingsService::set('app_logo', Storage::disk('logos')->url($filename));
-        SettingsService::clearCache();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Logo uploaded successfully!',
-            'url' => Storage::disk('logos')->url($filename).'?v='.time(),
-        ]);
+        return response()->json($this->uploadSettingImage($request->file('logo'), 'logos', 'app_logo', 'Logo'));
     }
 
     public function deleteLogo(): JsonResponse
     {
         $this->authorize('manage-settings');
-
-        $oldLogo = SettingsService::get('app_logo', '');
-        if ($oldLogo) {
-            $oldPath = str_replace(Storage::disk('logos')->url(''), '', $oldLogo);
-            if ($oldPath && Storage::disk('logos')->exists($oldPath)) {
-                Storage::disk('logos')->delete($oldPath);
-            }
-        }
-
-        SettingsService::set('app_logo', '');
-        SettingsService::clearCache();
+        $this->deleteSettingImage('logos', 'app_logo');
 
         return response()->json([
             'success' => true,
@@ -211,46 +183,50 @@ class SettingsController extends Controller
     {
         $this->authorize('manage-settings');
 
-        $file = $request->file('favicon');
-
-        $filename = $file->store('favicons');
-
-        $oldFavicon = SettingsService::get('app_favicon', '');
-        if ($oldFavicon) {
-            $oldPath = str_replace(Storage::disk('favicons')->url(''), '', $oldFavicon);
-            if ($oldPath && Storage::disk('favicons')->exists($oldPath)) {
-                Storage::disk('favicons')->delete($oldPath);
-            }
-        }
-
-        SettingsService::set('app_favicon', Storage::disk('favicons')->url($filename));
-        SettingsService::clearCache();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Favicon uploaded successfully!',
-            'url' => Storage::disk('favicons')->url($filename).'?v='.time(),
-        ]);
+        return response()->json($this->uploadSettingImage($request->file('favicon'), 'favicons', 'app_favicon', 'Favicon'));
     }
 
     public function deleteFavicon(): JsonResponse
     {
         $this->authorize('manage-settings');
-
-        $oldFavicon = SettingsService::get('app_favicon', '');
-        if ($oldFavicon) {
-            $oldPath = str_replace(Storage::disk('favicons')->url(''), '', $oldFavicon);
-            if ($oldPath && Storage::disk('favicons')->exists($oldPath)) {
-                Storage::disk('favicons')->delete($oldPath);
-            }
-        }
-
-        SettingsService::set('app_favicon', '');
-        SettingsService::clearCache();
+        $this->deleteSettingImage('favicons', 'app_favicon');
 
         return response()->json([
             'success' => true,
             'message' => 'Favicon removed successfully!',
         ]);
+    }
+
+    /**
+     * @return array{success: true, message: string, url: string}
+     */
+    private function uploadSettingImage(UploadedFile $file, string $disk, string $settingKey, string $label): array
+    {
+        $filename = $file->store($disk);
+
+        $this->deleteSettingImage($disk, $settingKey);
+
+        SettingsService::set($settingKey, Storage::disk($disk)->url($filename));
+        SettingsService::clearCache();
+
+        return [
+            'success' => true,
+            'message' => "{$label} uploaded successfully!",
+            'url' => Storage::disk($disk)->url($filename).'?v='.time(),
+        ];
+    }
+
+    private function deleteSettingImage(string $disk, string $settingKey): void
+    {
+        $oldValue = SettingsService::get($settingKey, '');
+        if ($oldValue) {
+            $oldPath = str_replace(Storage::disk($disk)->url(''), '', $oldValue);
+            if ($oldPath && Storage::disk($disk)->exists($oldPath)) {
+                Storage::disk($disk)->delete($oldPath);
+            }
+        }
+
+        SettingsService::set($settingKey, '');
+        SettingsService::clearCache();
     }
 }

@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Head, Link, useForm, usePage } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
   Breadcrumb,
@@ -17,7 +16,6 @@ import { Label } from "@/Components/ui/label";
 import { Field } from "@/Components/ui/field";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { CurrentPasswordInput } from "@/Components/shared/current-password-input";
-import { toast } from "@/Components/ui/toast";
 import { ShieldAlert, TerminalSquare } from "lucide-react";
 
 interface DeveloperSettingsProps {
@@ -29,16 +27,10 @@ export default function DeveloperSettings({
   databaseMaintenanceEnabled,
   isProduction,
 }: DeveloperSettingsProps) {
-  const flash = usePage().props.flash as Record<string, string> | undefined;
-
   const { data, setData, post, processing, errors, reset } = useForm({
     enabled: databaseMaintenanceEnabled,
     password: "",
   });
-
-  useEffect(() => {
-    if (flash?.status) toast.add({ title: flash.status, type: "success" });
-  }, [flash?.status]);
 
   const save = () => {
     post(route("dashboard.admin.settings.dev.database-maintenance-toggle"), {

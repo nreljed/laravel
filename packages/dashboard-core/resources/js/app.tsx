@@ -75,24 +75,91 @@ export function buildPageMap(config: FoundationAppConfig = {}): Record<string, P
   return pageMap;
 }
 
+function resolvePage(pageMap: Record<string, PageImport>) {
+  return async (name: string) => {
+    const importPage = pageMap[name.toLowerCase()];
+    if (!importPage) {
+      throw new Error(`Page not found: ${name}`);
+    }
+    const result = typeof importPage === "function" ? importPage() : importPage;
+    const module = await result;
+    return module.default || module;
+  };
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function FoundationShell({ App, props }: { App: any; props: any }) {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <TooltipProvider>
+        <ErrorBoundary key={props.initialPage.url}>
+          <App {...props} />
+        </ErrorBoundary>
+        <InertiaFlashListener />
+        <Toaster />
+      </TooltipProvider>
+    </ThemeProvider>
+  );
+}
+
 export function createFoundationApp(config: FoundationAppConfig = {}): void {
   const pageMap = buildPageMap(config);
 
   createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: async (name) => {
-      const importPage = pageMap[name.toLowerCase()];
-      if (!importPage) {
-        throw new Error(`Page not found: ${name}`);
-      }
-      const result = typeof importPage === "function" ? importPage() : importPage;
-      const module = await result;
-      return module.default || module;
-    },
+    resolve: resolvePage(pageMap),
     setup({ el, App, props }) {
       const root = createRoot(el);
+      root.render(<FoundationShell App={App} props={props} />);
+    },
+    progress: {
+      color: "#4B5563",
+    },
+  });
+}
 
-      root.render(
+export async function createSSRFoundationApp(
+  config: FoundationAppConfig,
+  page: any,
+): Promise<unknown> {
+  const [
+    { renderToString },
+    { ThemeProvider },
+    { TooltipProvider },
+    { Toaster },
+    { ErrorBoundary },
+  ] = await Promise.all([
+    import("react-dom/server"),
+    import("next-themes"),
+    import("@/Components/ui/tooltip"),
+    import("@/Components/ui/toast"),
+    import("@/Components/ErrorBoundary"),
+  ]);
+
+  const pageMap = buildPageMap(config);
+
+  type ZiggyGlobal = typeof globalThis & { Ziggy?: object };
+
+  function setZiggyConfig(configValue: object): void {
+    Object.defineProperty(globalThis as ZiggyGlobal, "Ziggy", {
+      value: configValue,
+      configurable: true,
+      writable: true,
+    });
+  }
+
+  const ziggy = page.props?.ziggy;
+  if (typeof ziggy === "object" && ziggy !== null) {
+    setZiggyConfig(ziggy);
+  }
+
+  return createInertiaApp({
+    page,
+    render: renderToString,
+    title: (title) => `${title} - ${appName}`,
+    resolve: resolvePage(pageMap),
+    setup({ App, props }) {
+      return (
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -103,14 +170,10 @@ export function createFoundationApp(config: FoundationAppConfig = {}): void {
             <ErrorBoundary key={props.initialPage.url}>
               <App {...props} />
             </ErrorBoundary>
-            <InertiaFlashListener />
             <Toaster />
           </TooltipProvider>
-        </ThemeProvider>,
+        </ThemeProvider>
       );
-    },
-    progress: {
-      color: "#4B5563",
     },
   });
 }

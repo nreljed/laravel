@@ -19,7 +19,10 @@ export default function Advanced() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Link href="/dashboard" className="transition-colors hover:text-foreground">
+              <Link
+                href={route("dashboard.index")}
+                className="transition-colors hover:text-foreground"
+              >
                 Dashboard
               </Link>
             </BreadcrumbItem>

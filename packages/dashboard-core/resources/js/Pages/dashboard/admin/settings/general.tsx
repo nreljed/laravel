@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Head, usePage, router, Link } from "@inertiajs/react";
+import { useState } from "react";
+import { Head, router, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
   Breadcrumb,
@@ -19,18 +19,12 @@ interface GeneralProps {
 }
 
 export default function GeneralSettings({ settings = {} }: GeneralProps) {
-  const flash = usePage().props.flash as Record<string, string> | undefined;
-
   const [genData, setGenData] = useState(settings);
   const [fmtData, setFmtData] = useState(settings);
   const [genErrors, setGenErrors] = useState({});
   const [fmtErrors, setFmtErrors] = useState({});
   const [genLoading, setGenLoading] = useState(false);
   const [fmtLoading, setFmtLoading] = useState(false);
-
-  useEffect(() => {
-    if (flash?.status) toast.add({ title: flash.status, type: "success" });
-  }, [flash?.status]);
 
   const handleGenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +79,10 @@ export default function GeneralSettings({ settings = {} }: GeneralProps) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Link href="/dashboard" className="transition-colors hover:text-foreground">
+              <Link
+                href={route("dashboard.index")}
+                className="transition-colors hover:text-foreground"
+              >
                 Dashboard
               </Link>
             </BreadcrumbItem>

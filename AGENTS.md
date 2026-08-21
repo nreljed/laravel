@@ -110,15 +110,17 @@ packages/dashboard-core/          # CORE package (nreljed/dashboard-core — Com
     Support/
     Traits/                       # RelativeTime
 resources/js/                   # APP shell (master) — entry point + project-owned frontend
-  app.tsx                       # Entry — buildPageMap({ basePages: registerCoreTemplates(), projectPages: @test-posts glob, projectPrefix: "testposts", pageOverrides: public/* }) → createFoundationApp()
-  ssr.tsx                       # SSR bootstrap — MUST mirror app.tsx's pageMap (basePages + projectPages + overrides) so SSR can't diverge
+  app.tsx                       # Entry — imports pageConfig, calls createFoundationApp()
+  ssr.tsx                       # SSR bootstrap — imports same pageConfig, calls createSSRFoundationApp()
+  page-config.ts                # SINGLE SOURCE OF TRUTH for page resolution — shared by app.tsx + ssr.tsx
   test-setup.ts                 # Vitest setup
   Layouts/StoreLayout.tsx       # Future store layout
   Pages/Public/                 # PROJECT-OWNED marketing frontend — shadows core's public/welcome|about|services|contact via pageOverrides
 packages/dashboard-core/resources/js/   # CORE frontend (via @dashboard / @ aliases)
-  app.tsx                       # createFoundationApp() — createInertiaApp, ThemeProvider, TooltipProvider, ErrorBoundary, Toaster, flash listener
+  app.tsx                       # createFoundationApp() + createSSRFoundationApp() — Inertia setup, ThemeProvider, TooltipProvider, ErrorBoundary, Toaster, flash listener
   dashboard.ts                  # registerCoreTemplates() — the opt-in CORE page kit (control panel + blog + template public pages)
   test-setup.ts
+  vite.dedupe.js                # Canonical dedup list for Vite resolve.dedupe — consuming apps import this
   Components/
     account/                    # Account/profile/security/integrations sections (sections/)
     blog/                       # Blog admin components
@@ -152,10 +154,19 @@ routes/                         # APP-only routes (most routing lives in the pac
 
 > **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: CORE pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The app entry spreads it into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/posts'` (→ `Blog/Posts/Index.tsx`).
 
-> **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `app.tsx` builds its own explicit pageMap:
-> `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. When adding/removing core pages, mirror any change in `ssr.tsx`.
+> **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `page-config.ts` builds its own explicit pageMap:
+> `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. Both `app.tsx` and `ssr.tsx` import the same `pageConfig` object — never duplicate the config block.
 
 > **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
+
+> **Frontend dependency management** — the core package ships a `package.json` with `peerDependencies` declaring every runtime npm package it imports (React, Inertia, Lexical, Radix, shadcn, etc.). Consuming apps must install these as direct dependencies. The core also ships `vite.dedupe.js` — a canonical list of package names that must be added to Vite's `resolve.dedupe` to prevent duplicate bundles when multiple packages (dashboard-core, shop-module, etc.) share the same dependencies. Consuming apps import it:
+>
+> ```js
+> import { packageDedupes } from "../packages/dashboard-core/vite.dedupe.js";
+> // or from vendor: import { packageDedupes } from "@nreljed/dashboard-core/vite-dedupes";
+> ```
+>
+> When adding a new npm dependency to the core's frontend, update both `packages/dashboard-core/package.json` (peerDependencies) and `packages/dashboard-core/vite.dedupe.js`.
 
 > **CRITICAL — `packages/dashboard-core` is a Composer path repo that installs as a COPY, not a symlink.**
 >
@@ -190,6 +201,15 @@ routes/                         # APP-only routes (most routing lives in the pac
 >   The script mirrors `packages/dashboard-core` into a clone of the core repo
 >   (LF-normalized, `core.autocrlf=false`), bumps the `version` field in both
 >   trees, then commits + tags + pushes. It then prints next steps.
+> - **Automated propagation (since 2026-08-21):** pushing to `main` with
+>   `packages/dashboard-core/**` changes triggers `core-publish.yml`, which publishes
+>   the release AND fires a `repository_dispatch` (`core-updated`) to each consumer
+>   repo. Each consumer's `core-update.yml` (see Shop) turns that into an automatic
+>   `composer update nreljed/dashboard-core` **PR** — merge it and their normal
+>   deploy pipeline takes over. Weekly Mon 09:00 UTC cron is the fallback; manual
+>   trigger: `gh workflow run core-update.yml -R <consumer>`. THIS monorepo never
+>   pulls — after editing package code locally just run
+>   `composer reinstall nreljed/dashboard-core`.
 > - **Consumers pull** the new version:
 >   ```
 >   composer update nreljed/dashboard-core

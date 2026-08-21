@@ -61,7 +61,7 @@ class AvatarController extends Controller
         ]);
 
         $avatarUrl = $user->avatar_url;
-        $cacheBust = $avatarUrl ? time() : time();
+        $cacheBust = time();
         $urlWithBuster = $avatarUrl ? $avatarUrl.'?v='.$cacheBust : null;
 
         return response()->json([

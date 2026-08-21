@@ -2,6 +2,7 @@
 
 namespace Nreljed\DashboardCore\Http\Controllers\Admin;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,41 +18,7 @@ class AuditLogController extends Controller
     public function index(Request $request): Response
     {
         $query = AuditLog::with('user.roles');
-
-        if ($request->filled('action')) {
-            $query->where('action', $request->action);
-        }
-
-        if ($request->filled('severity')) {
-            $severityActions = collect(AuditAction::cases())
-                ->filter(fn ($case) => $case->severity() === $request->severity)
-                ->map(fn ($case) => $case->value)
-                ->values()
-                ->toArray();
-            $query->whereIn('action', $severityActions);
-        }
-
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $userIds = User::where('name', 'like', "%{$search}%")->pluck('id');
-            $query->where(function ($q) use ($search, $userIds) {
-                $q->whereIn('user_id', $userIds)
-                    ->orWhere('ip', 'like', "%{$search}%")
-                    ->orWhere('context', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
+        $this->applyFilters($query, $request);
 
         $defaultPerPage = (int) SettingsService::get('audit_logs.default_per_page', 50);
         $perPage = min((int) $request->input('per_page', $defaultPerPage), 100);
@@ -144,41 +111,7 @@ class AuditLogController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $query = AuditLog::with('user');
-
-        if ($request->filled('action')) {
-            $query->where('action', $request->action);
-        }
-
-        if ($request->filled('severity')) {
-            $severityActions = collect(AuditAction::cases())
-                ->filter(fn ($case) => $case->severity() === $request->severity)
-                ->map(fn ($case) => $case->value)
-                ->values()
-                ->toArray();
-            $query->whereIn('action', $severityActions);
-        }
-
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $userIds = User::where('name', 'like', "%{$search}%")->pluck('id');
-            $query->where(function ($q) use ($search, $userIds) {
-                $q->whereIn('user_id', $userIds)
-                    ->orWhere('ip', 'like', "%{$search}%")
-                    ->orWhere('context', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
+        $this->applyFilters($query, $request);
 
         $headers = [
             'Content-Type' => 'text/csv; charset=utf-8',
@@ -252,6 +185,44 @@ class AuditLogController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    private function applyFilters(Builder $query, Request $request): void
+    {
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        if ($request->filled('severity')) {
+            $severityActions = collect(AuditAction::cases())
+                ->filter(fn ($case) => $case->severity() === $request->severity)
+                ->map(fn ($case) => $case->value)
+                ->values()
+                ->toArray();
+            $query->whereIn('action', $severityActions);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $userIds = User::where('name', 'like', "%{$search}%")->pluck('id');
+            $query->where(function ($q) use ($search, $userIds) {
+                $q->whereIn('user_id', $userIds)
+                    ->orWhere('ip', 'like', "%{$search}%")
+                    ->orWhere('context', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
     }
 
     private function describe(AuditLog $log, ?array $target): string
