@@ -15,7 +15,8 @@ concurrency:
 
 jobs:
   stale:
-    runs-on: ubuntu-latest
+    # Self-hosted: hosted runners are billing-blocked account-wide.
+    runs-on: [self-hosted]
     steps:
       - uses: actions/stale@v11
         with:

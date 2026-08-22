@@ -25,7 +25,8 @@ jobs:
 
   push-deploy:
     needs: package
-    runs-on: ubuntu-latest
+    # Self-hosted: hosted runners are billing-blocked account-wide.
+    runs-on: [self-hosted]
     # Canonical check-first flow (shared with laravel.shop). /deploy/check makes
     # the server pull deploy.zip from the GitHub API itself, avoiding a large
     # upload through the edge (Cloudflare cuts connections ~100s).

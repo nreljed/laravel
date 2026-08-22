@@ -37,7 +37,11 @@ permissions:
 
 jobs:
   run:
-    runs-on: ubuntu-latest
+    # Self-hosted: hosted runners are billing-blocked account-wide.
+    runs-on: [self-hosted]
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Validate confirmation
         run: |

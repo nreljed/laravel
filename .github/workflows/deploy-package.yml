@@ -17,7 +17,10 @@ permissions:
 
 jobs:
   package:
-    runs-on: windows-latest
+    # Self-hosted (win-runner-laravel): hosted runners are billing-blocked
+    # account-wide. Bare run steps still execute under pwsh on this runner
+    # (C:\tools\pwsh), matching windows-latest behavior.
+    runs-on: [self-hosted]
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
