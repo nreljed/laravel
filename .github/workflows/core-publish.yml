@@ -95,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           VERSION="${{ steps.publish.outputs.version }}"
-          for REPO in "nreljed/laravel.shop"; do
+          for REPO in "nreljed/laravel.shop" "nreljed/laravel.booking"; do
             if gh api -X POST "repos/$REPO/dispatches" \
               -f event_type="core-updated" \
               -f "client_payload[version]=v$VERSION" >/dev/null 2>&1; then

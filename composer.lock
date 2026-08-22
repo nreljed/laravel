@@ -3255,11 +3255,11 @@
         },
         {
             "name": "nreljed/dashboard-core",
-            "version": "0.1.9",
+            "version": "0.1.14",
             "dist": {
                 "type": "path",
                 "url": "packages/dashboard-core",
-                "reference": "0798c1cc652d13e946b233d85c813024e0911371"
+                "reference": "56dd1572f62049c27b9682f43174592424594c9d"
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",

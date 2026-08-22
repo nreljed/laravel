@@ -420,6 +420,19 @@ Remove-Item -LiteralPath "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright"
 - `.gitignore` has `/*.png` as safety net, but output should never land in root
 - `--no-sandbox`: Not used in our config. Chromium on Windows works fine with sandbox. If you see this message, it's from a previous config or environment variable (`PLAYWRIGHT_MCP_NO_SANDBOX`).
 
+## Self-Hosted Runners
+
+GitHub-hosted runners are billing-blocked account-wide, so CI/CD runs on three self-hosted
+runners on this laptop — one per repo: `C:\actions-runner-shop` (`win-runner-shop` → laravel.shop),
+`C:\actions-runner-laravel` (`win-runner-laravel` → laravel), `C:\actions-runner-booking`
+(`win-runner-booking` → laravel.booking). Plain `run.cmd` processes (NO Windows services, no UAC),
+auto-started at login via `Startup\start-gha-runners.cmd`, label `self-hosted`.
+
+> Full setup/reproduction steps, the `.env` PATH override, and the failure-modes table live in the
+> **`self-hosted-runners` skill** (`~/.config/opencode/skills/self-hosted-runners/SKILL.md`) — read it
+> before touching runner config. Never force-kill listeners repeatedly (ghost broker sessions = jobs
+> stuck queued; fix is API-delete + re-register).
+
 ## Commands
 
 ```bash
