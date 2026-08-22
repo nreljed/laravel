@@ -55,25 +55,37 @@ jobs:
 
       - name: Push GITHUB_TOKEN to server .env
         # Runs before the upload so the server can authenticate /deploy/check
-        # (self-deploy path reads GITHUB_TOKEN from the server .env). Always
-        # runs, even if later steps fail, so the token never gets skipped.
+        # (self-deploy path reads GITHUB_TOKEN from the server .env).
+        #
+        # Pipe-free implementation: under `set -o pipefail`, `echo "$RESP" |
+        # head -1` can die with SIGPIPE (exit 141) when the server answers
+        # with a large non-JSON body (e.g. its 403 HTML page), silently
+        # skipping the token push. Parameter expansion replaces the pipe.
         if: always()
         continue-on-error: true
         shell: bash
         run: |
           ENV_URL="${{ vars.APP_URL }}/deploy/env?token=${{ secrets.DEPLOY_TOKEN }}"
+          PAYLOAD="{\"values\":{\"GITHUB_TOKEN\":\"${{ secrets.GH_TOKEN }}\"}}"
+          CONFIRMED=""
           for i in 1 2 3; do
-            RESP=$(curl -s -X POST --max-time 60 -H "Content-Type: application/json" \
-              -d "{\"values\":{\"GITHUB_TOKEN\":\"${{ secrets.GH_TOKEN }}\"}}" \
-              "$ENV_URL" 2>&1)
-            FIRST=$(echo "$RESP" | head -1)
-            echo "[env $i/3] $FIRST"
-            case "$FIRST" in
-              *'"success":true'*) echo "GITHUB_TOKEN pushed to server .env"; exit 0 ;;
-            esac
+            if RESP=$(curl -sS -X POST --max-time 60 -H "Content-Type: application/json" \
+                 -d "$PAYLOAD" "$ENV_URL" 2>&1); then
+              case "$RESP" in
+                *'"success":true'*) CONFIRMED=yes; break ;;
+              esac
+            else
+              RESP="curl failed: $?"
+            fi
+            echo "[env $i/3] ${RESP:0:160}"
             [ "$i" -lt 3 ] && sleep 20
           done
-          echo "GITHUB_TOKEN push did not confirm; manual: POST $ENV_URL with {\"values\":{\"GITHUB_TOKEN\":\"<value>\"}}"
+          if [ -n "$CONFIRMED" ]; then
+            echo "GITHUB_TOKEN pushed to server .env"
+          else
+            echo "::warning::GITHUB_TOKEN push NOT confirmed after 3 attempts — update manually: POST $ENV_URL with {\"values\":{\"GITHUB_TOKEN\":\"<value>\"}}"
+            exit 1
+          fi
 
       - name: Upload deploy archive to server
         shell: bash
