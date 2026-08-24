@@ -26,9 +26,12 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
   `vendor/nreljed/dashboard-core/...` (vite.config.js + tsconfig.json).
 - Develop core via PRs in `nreljed/dashboard-core`; release = semver tag →
   GitHub Release (auto) → `core-updated` dispatch to all consumer apps.
-- `core-publish.yml` + `scripts/core-publish.php` are RETIRED once
-  `packages/dashboard-core/` is deleted at the end of the burn-in window.
-  Do not edit either copy of core until then — package repo only.
+- Burn-in COMPLETE (2026-08-24): `packages/dashboard-core/`,
+  `core-publish.yml`, `scripts/core-publish.php` and the `core:publish`
+  script are deleted; vitest/eslint/prettier/pre-push configs, Inertia page
+  globs, CSS sources and deploy-package core recording all read from
+  `vendor/nreljed/dashboard-core` / `composer.lock`. Never re-create a local
+  copy of core — package repo only.
 - `composer.lock` is the pin of record — commit it whenever core updates.
 
 ## Tech Stack
