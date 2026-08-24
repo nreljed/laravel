@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../";
-@source "../../packages/dashboard-core/resources/js/";
-@source "../../packages/dashboard-core/src/Blog/Resources/js/";
+@source "../../vendor/nreljed/dashboard-core/resources/js/";
+@source "../../vendor/nreljed/dashboard-core/src/Blog/Resources/js/";
 
 @import "tw-animate-css";
-@import "../../packages/dashboard-core/resources/css/core.css";
+@import "../../vendor/nreljed/dashboard-core/resources/css/core.css";
