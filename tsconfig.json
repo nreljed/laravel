@@ -15,9 +15,9 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@dashboard/*": ["./packages/dashboard-core/resources/js/*"],
-      "@dashboard-blog/*": ["./packages/dashboard-core/src/Blog/Resources/js/*"],
-      "@/*": ["./packages/dashboard-core/resources/js/*"],
+      "@dashboard/*": ["./vendor/nreljed/dashboard-core/resources/js/*"],
+      "@dashboard-blog/*": ["./vendor/nreljed/dashboard-core/src/Blog/Resources/js/*"],
+      "@/*": ["./vendor/nreljed/dashboard-core/resources/js/*"],
       "ziggy-js": ["./vendor/tightenco/ziggy"]
     }
   },
@@ -25,12 +25,12 @@
     "resources/js/**/*.ts",
     "resources/js/**/*.tsx",
     "resources/js/**/*.d.ts",
-    "packages/dashboard-core/resources/js/**/*.ts",
-    "packages/dashboard-core/resources/js/**/*.tsx",
-    "packages/dashboard-core/resources/js/**/*.d.ts",
-    "packages/dashboard-core/src/**/Resources/js/**/*.ts",
-    "packages/dashboard-core/src/**/Resources/js/**/*.tsx",
-    "packages/dashboard-core/src/**/Resources/js/**/*.d.ts",
+    "vendor/nreljed/dashboard-core/resources/js/**/*.ts",
+    "vendor/nreljed/dashboard-core/resources/js/**/*.tsx",
+    "vendor/nreljed/dashboard-core/resources/js/**/*.d.ts",
+    "vendor/nreljed/dashboard-core/src/**/Resources/js/**/*.ts",
+    "vendor/nreljed/dashboard-core/src/**/Resources/js/**/*.tsx",
+    "vendor/nreljed/dashboard-core/src/**/Resources/js/**/*.d.ts",
     "app/TestPosts/Resources/js/**/*.ts",
     "app/TestPosts/Resources/js/**/*.tsx",
     "app/TestPosts/Resources/js/**/*.d.ts"
