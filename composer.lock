@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4c5fad2cabd563ab46485690849ddff2",
+    "content-hash": "77495a0b5f72ae9cdd676a341b0d2333",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3255,11 +3255,17 @@
         },
         {
             "name": "nreljed/dashboard-core",
-            "version": "0.1.14",
+            "version": "0.1.17",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/dashboard-core.git",
+                "reference": "5c96f4500f1829a31edb7089f6e2d70de0cbfb6b"
+            },
             "dist": {
-                "type": "path",
-                "url": "packages/dashboard-core",
-                "reference": "56dd1572f62049c27b9682f43174592424594c9d"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/dashboard-core/zipball/5c96f4500f1829a31edb7089f6e2d70de0cbfb6b",
+                "reference": "5c96f4500f1829a31edb7089f6e2d70de0cbfb6b",
+                "shasum": ""
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3303,10 +3309,11 @@
                 }
             ],
             "description": "Shared dashboard core platform for Laravel apps (dashboard, admin, auth, blog, AI, deploy).",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/dashboard-core/tree/v0.1.17",
+                "issues": "https://github.com/nreljed/dashboard-core/issues"
+            },
+            "time": "2026-08-24T00:46:27+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -10999,9 +11006,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "nreljed/dashboard-core": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
