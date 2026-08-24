@@ -299,7 +299,7 @@ class SystemHealthTest extends TestCase
         }
     }
 
-    public function test_refresh_core_package_is_null_when_unrecorded(): void
+    public function test_refresh_core_package_sha_is_null_when_unrecorded(): void
     {
         Http::fake();
 
@@ -310,8 +310,9 @@ class SystemHealthTest extends TestCase
         $response->assertJsonPath('core_package.sha', null);
         $response->assertJsonPath('core_package.short', null);
         $response->assertJsonPath('core_package.url', null);
-        // No core.json record + @dev constraint means a path-repo install → dev build.
-        $response->assertJsonPath('core_package.is_dev', true);
+        // Model B: no core.json/core.sha marker, but the install is a pinned
+        // VCS build (^0.1 with a stamped version) — NOT a dev build.
+        $response->assertJsonPath('core_package.is_dev', false);
         $response->assertJsonPath('core_latest_version.found', false);
         $response->assertJsonPath('core_latest_version.skipped', true);
 
