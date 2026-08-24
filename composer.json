@@ -70,7 +70,6 @@
       "@php artisan config:clear --ansi @no_additional_args",
       "@php artisan test"
     ],
-    "core:publish": "php scripts/core-publish.php",
     "phpstan": "vendor/bin/phpstan analyse --no-progress",
     "rector": "vendor/bin/rector process",
     "rector:test": "vendor/bin/rector process --dry-run",

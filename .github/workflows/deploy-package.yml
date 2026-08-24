@@ -103,7 +103,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}-${{ hashFiles('packages/dashboard-core/**') }}
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install Composer dependencies (no-dev)
         # --no-dev keeps dev-only packages (laravel/boost, telescope, pint, pail...)
@@ -176,13 +176,17 @@ jobs:
       - name: Record dashboard-core version and commit
         shell: pwsh
         run: |
-          $coreMeta = Get-Content "packages\dashboard-core\composer.json" -Raw | ConvertFrom-Json
-          $coreVersion = $coreMeta.version
-          $coreSha = (git log -1 --format="%H" -- packages/dashboard-core).Trim()
+          # Model B: core is a composer dependency — read the pinned version
+          # and source SHA from composer.lock (no local packages/ checkout).
+          $lock = Get-Content "composer.lock" -Raw | ConvertFrom-Json
+          $core = $lock.packages | Where-Object { $_.name -eq 'nreljed/dashboard-core' } | Select-Object -First 1
+          if (-not $core) { throw "nreljed/dashboard-core not found in composer.lock" }
+          $coreVersion = $core.version
+          $coreSha = if ($core.source.reference) { $core.source.reference } else { $core.dist.reference }
           New-Item -ItemType Directory -Path "storage\app" -Force | Out-Null
           Set-Content -Path "storage\app\core.sha" -Value $coreSha -NoNewline -Encoding ASCII
           @{ name = "dashboard-core"; version = $coreVersion; sha = $coreSha; repo = "${{ github.repository }}" } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
-          Write-Output "core.json recorded: dashboard-core $coreVersion @ $coreSha (${{ github.repository }})"
+          Write-Output "core.json recorded: dashboard-core $coreVersion @ $coreSha (locked)"
 
       - name: Create deploy.zip
         shell: pwsh

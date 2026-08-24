@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: vendor
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}-${{ hashFiles('packages/dashboard-core/**') }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
 
       - name: Create .env
         run: cp .env.example .env

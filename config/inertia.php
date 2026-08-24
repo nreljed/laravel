@@ -76,8 +76,8 @@ return [
         'paths' => [
 
             resource_path('js/Pages'),
-            base_path('packages/dashboard-core/resources/js/Pages'),
-            base_path('packages/dashboard-core/src/Blog/Resources/js/Pages'),
+            base_path('vendor/nreljed/dashboard-core/resources/js/Pages'),
+            base_path('vendor/nreljed/dashboard-core/src/Blog/Resources/js/Pages'),
 
         ],
 
