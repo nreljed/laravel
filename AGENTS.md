@@ -15,6 +15,22 @@ Cost Breaker 360 is a server-rendered single-page application that provides:
 
 The app uses a **feature-based architecture** where each domain (Blog, future features) is self-contained with its own routes, controllers, models, migrations, and frontend pages.
 
+## Package Model & Source of Truth (2026-08-24)
+
+**`nreljed/dashboard-core` is now the standalone product repo and the single
+source of truth.** This monorepo became a regular consumer on 2026-08-24:
+
+- composer requires `nreljed/dashboard-core: ^0.1` from the VCS repo (was:
+  path repo `packages/dashboard-core` + `@dev`).
+- Frontend aliases `@` / `@dashboard` / `@dashboard-blog` resolve into
+  `vendor/nreljed/dashboard-core/...` (vite.config.js + tsconfig.json).
+- Develop core via PRs in `nreljed/dashboard-core`; release = semver tag →
+  GitHub Release (auto) → `core-updated` dispatch to all consumer apps.
+- `core-publish.yml` + `scripts/core-publish.php` are RETIRED once
+  `packages/dashboard-core/` is deleted at the end of the burn-in window.
+  Do not edit either copy of core until then — package repo only.
+- `composer.lock` is the pin of record — commit it whenever core updates.
+
 ## Tech Stack
 
 | Layer         | Technology                    | Version                           |
