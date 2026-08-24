@@ -40,6 +40,12 @@ class DatabaseMaintenanceServiceTest extends TestCase
 
     public function test_reset_runs_baseline_without_demo_content(): void
     {
+        // v0.1.17: create-admin only runs when admin env is configured.
+        config([
+            'admin.email' => 'admin@example.com',
+            'admin.password' => 'secret-password',
+        ]);
+
         $commands = [];
         $result = $this->serviceWithRecorder($commands)->resetDatabase();
 
@@ -62,6 +68,28 @@ class DatabaseMaintenanceServiceTest extends TestCase
         $this->assertContains(
             'app:create-admin',
             collect($commands)->pluck('command')->all(),
+        );
+    }
+
+    public function test_reset_skips_create_admin_without_admin_env(): void
+    {
+        config(['admin.email' => null, 'admin.password' => null]);
+
+        $commands = [];
+        $output = [];
+        $service = new DatabaseMaintenanceService(function (string $command, array $params = []) use (&$commands) {
+            $commands[] = ['command' => $command, 'params' => $params];
+
+            return 0;
+        });
+
+        $result = $service->resetDatabase();
+
+        $this->assertTrue($result['success']);
+        $this->assertEmpty(collect($commands)->where('command', 'app:create-admin'));
+        $this->assertStringContainsString(
+            'app:create-admin skipped',
+            implode("\n", $result['output']),
         );
     }
 

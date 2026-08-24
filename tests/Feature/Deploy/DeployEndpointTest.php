@@ -74,7 +74,7 @@ class DeployEndpointTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('success', true);
-        $response->assertJsonStructure(['output' => ['migrate:fresh', 'cache:clear', 'app:create-admin']]);
+        $response->assertJsonStructure(['output' => ['migrate', 'cache:clear', 'app:create-admin']]);
     }
 
     public function test_check_requires_token(): void
