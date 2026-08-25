@@ -100,6 +100,9 @@ jobs:
 
       - name: PHP tests
         if: ${{ !inputs.skip-php-tests }}
+        # -d covers this parent process; --parallel WORKERS inherit memory_limit
+        # from the runner's C:\php\php.ini (bumped to 512M 2026-08-25) because
+        # -d flags don't propagate to spawned processes.
         run: php -d memory_limit=512M artisan test --parallel --compact
 
       - name: Laravel Pint
