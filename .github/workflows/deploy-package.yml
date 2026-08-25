@@ -8,7 +8,9 @@ on:
         required: true
         type: string
     outputs:
-      version: ${{ jobs.package.outputs.version }}
+      version:
+        description: "The version used"
+        value: ${{ jobs.package.outputs.version }}
       skip:
         description: "true when the computed tag already exists (superseded run)"
         value: ${{ jobs.package.outputs.skip }}
