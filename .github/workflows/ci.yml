@@ -92,7 +92,9 @@ jobs:
 
       - name: Frontend tests
         if: ${{ !inputs.skip-npm-tests }}
-        run: npm run test
+        # Monorepo has no frontend test files yet (--passWithNoTests so deploys
+        # and dependabot PR checks aren't blocked by an empty vitest suite).
+        run: npm run test -- --passWithNoTests
 
       - name: Build frontend assets
         if: ${{ !inputs.skip-npm-tests }}
