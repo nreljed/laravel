@@ -8,9 +8,10 @@ on:
         required: true
         type: string
     outputs:
-      version:
-        description: "The version used"
-        value: ${{ jobs.package.outputs.version }}
+      version: ${{ jobs.package.outputs.version }}
+      skip:
+        description: "true when the computed tag already exists (superseded run)"
+        value: ${{ jobs.package.outputs.skip }}
 
 permissions:
   contents: write
@@ -23,6 +24,7 @@ jobs:
     runs-on: [self-hosted]
     outputs:
       version: ${{ steps.version.outputs.version }}
+      skip: ${{ steps.version.outputs.skip }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -49,6 +51,8 @@ jobs:
             $ver = "${{ inputs.version }}"
           } else {
             $ver = "0.1.0"
+            # Re-fetch tags so concurrent runs see releases created after checkout.
+            git fetch origin --tags --force 2>$null
             # Deterministic bump from the highest reachable semver tag.
             # NOTE: git-cliff --bumped-version misresolves on this repo's merge
             # topology (it returns stale v0.1.34 instead of v0.5.0), so we
@@ -76,7 +80,13 @@ jobs:
               Write-Output "No semver tags found, starting at 0.1.0"
             }
           }
+          $skip = "false"
+          if (git ls-remote --exit-code origin "refs/tags/v$ver") {
+            Write-Output "::warning::Tag v$ver already exists - a newer deploy supersedes this run, skipping release/deploy"
+            $skip = "true"
+          }
           echo "version=$ver" >> $env:GITHUB_OUTPUT
+          echo "skip=$skip" >> $env:GITHUB_OUTPUT
 
       - name: Generate build .env (SQLite)
         shell: pwsh
@@ -231,6 +241,7 @@ jobs:
           git-cliff -o CHANGELOG.md 2>$null
 
       - name: Create GitHub Release (release assets, not Actions artifacts)
+        if: steps.version.outputs.skip != 'true'
         # Creating the release here (instead of uploading an Actions artifact)
         # keeps deploy.zip in release storage, which is NOT billed against the
         # 0.5GB Actions artifact quota that kept failing on the free plan.

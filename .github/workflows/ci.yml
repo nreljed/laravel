@@ -70,7 +70,8 @@ jobs:
         run: php artisan migrate --force
 
       - name: Install npm dependencies
-        run: npm ci
+        # eslint v10 conflicts with eslint-plugin-react peers; strict npm ci ERESOLVEs
+        run: npm ci --legacy-peer-deps
 
       - name: npm audit (security advisories)
         # Fails the build when package-lock.json contains packages with known
@@ -99,7 +100,7 @@ jobs:
 
       - name: PHP tests
         if: ${{ !inputs.skip-php-tests }}
-        run: php artisan test --parallel --compact
+        run: php -d memory_limit=512M artisan test --parallel --compact
 
       - name: Laravel Pint
         if: ${{ !inputs.skip-php-tests }}
