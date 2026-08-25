@@ -82,11 +82,11 @@ jobs:
               Write-Output "No semver tags found, starting at 0.1.0"
             }
           }
-          $skip = "false"
-          if (git ls-remote --exit-code origin "refs/tags/v$ver") {
-            Write-Output "::warning::Tag v$ver already exists - a newer deploy supersedes this run, skipping release/deploy"
-            $skip = "true"
-          }
+          # git exits non-zero when the tag is absent; swallow it and reset
+          # LASTEXITCODE so the runner's implicit "exit $LASTEXITCODE" passes.
+          git ls-remote --exit-code origin "refs/tags/v$ver" *> $null
+          $skip = if ($LASTEXITCODE -eq 0) { "true" } else { "false" }
+          $global:LASTEXITCODE = 0
           echo "version=$ver" >> $env:GITHUB_OUTPUT
           echo "skip=$skip" >> $env:GITHUB_OUTPUT
 
