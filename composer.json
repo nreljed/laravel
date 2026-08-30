@@ -10,13 +10,6 @@
   "license": "MIT",
   "repositories": [
     {
-      "type": "path",
-      "url": "C:/Users/nrelj/Local Sites/dashboard-core",
-      "options": {
-        "symlink": true
-      }
-    },
-    {
       "type": "vcs",
       "url": "https://github.com/nreljed/dashboard-core.git"
     }

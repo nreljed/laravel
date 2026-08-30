@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7452b24388a9b02da7685b6c37ebcd70",
+    "content-hash": "77495a0b5f72ae9cdd676a341b0d2333",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3255,11 +3255,17 @@
         },
         {
             "name": "nreljed/dashboard-core",
-            "version": "0.1.17",
+            "version": "0.1.18",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/dashboard-core.git",
+                "reference": "e5e793dee1bb298063aa2c08f5b8f3a202215ed5"
+            },
             "dist": {
-                "type": "path",
-                "url": "C:/Users/nrelj/Local Sites/dashboard-core",
-                "reference": "f63963a125b3d742cd9ab7b53e222b08c33572c6"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/dashboard-core/zipball/e5e793dee1bb298063aa2c08f5b8f3a202215ed5",
+                "reference": "e5e793dee1bb298063aa2c08f5b8f3a202215ed5",
+                "shasum": ""
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3303,10 +3309,11 @@
                 }
             ],
             "description": "Shared dashboard core platform for Laravel apps (dashboard, admin, auth, blog, AI, deploy).",
-            "transport-options": {
-                "symlink": true,
-                "relative": false
-            }
+            "support": {
+                "source": "https://github.com/nreljed/dashboard-core/tree/v0.1.18",
+                "issues": "https://github.com/nreljed/dashboard-core/issues"
+            },
+            "time": "2026-08-30T03:32:39+00:00"
         },
         {
             "name": "nunomaduro/termwind",
