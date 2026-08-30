@@ -23,6 +23,10 @@ jobs:
     defaults:
       run:
         shell: bash
+    # Private vcs repo: nreljed/dashboard-core installs via GH_TOKEN (needs
+    # Contents: Read on that repo). Composer reads JSON from COMPOSER_AUTH.
+    env:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
     steps:
       - uses: actions/checkout@v7
 
@@ -72,6 +76,12 @@ jobs:
       - name: Install npm dependencies
         # eslint v10 conflicts with eslint-plugin-react peers; strict npm ci ERESOLVEs
         run: npm ci --legacy-peer-deps
+
+      - name: Check core dependency parity
+        # --legacy-peer-deps swallows peer ERESOLVEs above; this guard fails
+        # loudly when the app's deps miss core's peerDependencies or the
+        # core npm/composer versions drift. Needs `composer install` first.
+        run: npm run check:core-deps
 
       - name: npm audit (security advisories)
         # Fails the build when package-lock.json contains packages with known

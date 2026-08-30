@@ -11,6 +11,7 @@
 /public/hot
 /public/storage
 /bootstrap/ssr/*
+/packages/
 /.phpunit.result.cache
 /phpunit.xml
 vendor-bin
