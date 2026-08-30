@@ -36,7 +36,7 @@ class CoreConfigMergeTest extends TestCase
     {
         $features = config('core.features');
 
-        $featureClasses = array_map(fn ($class) => class_basename($class), $features);
+        $featureClasses = array_map(class_basename(...), $features);
 
         $this->assertContains('BlogServiceProvider', $featureClasses, 'Blog should be registered as a feature.');
         $this->assertContains('TestPostsServiceProvider', $featureClasses, 'TestPosts should be registered as an app-owned feature.');
