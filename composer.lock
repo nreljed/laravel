@@ -3255,16 +3255,16 @@
         },
         {
             "name": "nreljed/dashboard-core",
-            "version": "0.1.18",
+            "version": "0.1.19",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/dashboard-core.git",
-                "reference": "e5e793dee1bb298063aa2c08f5b8f3a202215ed5"
+                "reference": "54d52dbe910445ee5ee2edc7d0150e599e8126f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/dashboard-core/zipball/e5e793dee1bb298063aa2c08f5b8f3a202215ed5",
-                "reference": "e5e793dee1bb298063aa2c08f5b8f3a202215ed5",
+                "url": "https://api.github.com/repos/nreljed/dashboard-core/zipball/54d52dbe910445ee5ee2edc7d0150e599e8126f3",
+                "reference": "54d52dbe910445ee5ee2edc7d0150e599e8126f3",
                 "shasum": ""
             },
             "require": {
@@ -3309,11 +3309,7 @@
                 }
             ],
             "description": "Shared dashboard core platform for Laravel apps (dashboard, admin, auth, blog, AI, deploy).",
-            "support": {
-                "source": "https://github.com/nreljed/dashboard-core/tree/v0.1.18",
-                "issues": "https://github.com/nreljed/dashboard-core/issues"
-            },
-            "time": "2026-08-30T03:32:39+00:00"
+            "time": "2026-08-31T16:36:01+00:00"
         },
         {
             "name": "nunomaduro/termwind",
