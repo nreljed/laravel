@@ -135,6 +135,7 @@ export default function TestPostsForm({ testPost }: TestPostsFormProps) {
               onLongitudeChange={(lng) => form.setData("longitude", lng)}
               onAddressChange={(addr) => form.setData("address", addr)}
               onMapZoomChange={(zoom) => form.setData("map_zoom", zoom)}
+              options={{ countryCode: "TN" }}
               errors={form.errors}
             />
 

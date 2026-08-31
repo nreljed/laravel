@@ -614,12 +614,14 @@ class SeoAgent implements Agent, HasStructuredOutput
 {
     use Promptable, ResolvesUserProvider;
 
-    public function provider(): array
+    public function provider(): string
     {
-        return [
-            'driver' => $this->provider->provider,
-            'key' => $this->provider->getDecryptedKey(),
-        ];
+        return $this->getResolvedProvider()['driver'];
+    }
+
+    public function model(): ?string
+    {
+        return $this->getResolvedProvider()['model'];
     }
 
     public function schema(JsonSchema $schema): array
@@ -690,7 +692,7 @@ CODE;
 
 <h2>How Provider Resolution Works</h2>
 
-<p>Agent classes implement the <code>Agent</code> interface and use the <code>provider()</code> method for dynamic per-user key resolution — never <code>config()->set()</code> at runtime:</p>
+<p>Agent classes implement the <code>Agent</code> interface and use the <code>provider()</code> method for dynamic per-user key resolution. The method returns the provider's <strong>config key</strong> (a string); the per-user key is injected into that provider's config via <code>config()->set()</code> before prompting (see <code>ResolvesUserProvider::injectProviderKey()</code>):</p>
 
 <!--AGENT_CODE-->
 
@@ -713,7 +715,7 @@ CODE;
   <li><strong>ContentAgent</strong> — drafts full articles from a brief</li>
 </ol>
 
-<blockquote>The key rule: never use <code>config()->set()</code> at runtime. Pass <code>provider:</code> and <code>key:</code> arrays to <code>agent()->prompt()</code> or <code>agent()->stream()</code> for thread safety.</blockquote>
+<blockquote>The key rule: the SDK's <code>provider()</code> returns a <em>config key</em> (string or failover array), not inline credentials. Per-user BYOK keys must be injected via <code>config()->set("ai.providers.{driver}.key", $key)</code> before prompting — safe per-request in PHP.</blockquote>
 HTML;
 
         $content = str_replace('<!--AGENT_CODE-->', $this->codeBlock('php', $agentCode), $content);

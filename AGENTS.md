@@ -246,17 +246,25 @@ vendor/nreljed/dashboard-core/src/Ai/   # Routes registered by DashboardCoreServ
 
 ### SDK Pattern
 
-Agent classes use `provider()` method for dynamic per-user BYOK (not `#[Provider]` attributes):
+Agent classes use the `provider()` method for dynamic per-user BYOK (not `#[Provider]` attributes). The method returns the **driver config key as a string**; the per-user key is injected into that provider's config via `config()->set()` (see `ResolvesUserProvider::injectProviderKey()`). It must NOT return `['driver' => ..., 'key' => ...]` — the SDK treats an array as a failover list, not inline credentials:
 
 ```php
 class SeoAgent implements Agent, HasStructuredOutput
 {
     use Promptable, ResolvesUserProvider;
 
-    public function provider(): array
+    public function provider(): string
     {
-        return ['driver' => $provider->provider, 'key' => $provider->getDecryptedKey()];
+        return $this->getResolvedProvider()['driver'];
     }
+
+    public function model(): ?string
+    {
+        return $this->getResolvedProvider()['model'];
+    }
+
+    // Per-user key is injected via config()->set("ai.providers.{driver}.key", ...)
+    // inside injectProviderKey() before prompting.
 
     public function schema(JsonSchema $schema): array { ... }
 }
@@ -264,19 +272,21 @@ class SeoAgent implements Agent, HasStructuredOutput
 
 ### Supported Providers
 
-| Slug        | Name           | Models                                           |
-| ----------- | -------------- | ------------------------------------------------ |
-| `openai`    | OpenAI         | gpt-4o, gpt-4.1, o3-mini                         |
-| `anthropic` | Anthropic      | claude-opus-4, claude-sonnet-4, claude-haiku-4-5 |
-| `gemini`    | Google Gemini  | gemini-2.5-pro, gemini-2.5-flash                 |
-| `mistral`   | Mistral        | mistral-large-latest, mistral-small-latest       |
-| `deepseek`  | DeepSeek       | deepseek-chat, deepseek-reasoner                 |
-| `xai`       | xAI (Grok)     | grok-3, grok-3-mini                              |
-| `ollama`    | Ollama (Local) | configurable                                     |
+The authoritative model list lives in `AiProvider::supportedProviders()`. Current catalog:
+
+| Slug        | Name           | Models                                                            |
+| ----------- | -------------- | ----------------------------------------------------------------- |
+| `openai`    | OpenAI         | gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5, o4-mini          |
+| `anthropic` | Anthropic      | claude-opus-4-8, claude-sonnet-5, claude-haiku-4-5                |
+| `gemini`    | Google Gemini  | gemini-3.6-flash, gemini-3.5-flash-lite, gemini-2.5-pro           |
+| `mistral`   | Mistral        | mistral-medium-latest, mistral-small-latest, mistral-large-latest |
+| `deepseek`  | DeepSeek       | deepseek-chat, deepseek-reasoner                                  |
+| `xai`       | xAI (Grok)     | grok-4.5, grok-4.3, grok-4.20-reasoning                           |
+| `ollama`    | Ollama (Local) | configurable                                                      |
 
 ### Key Rules
 
-- **Thread safety**: Never use `config()->set()` at runtime — pass `provider:` + `key:` arrays to `agent()->prompt()` or `agent()->stream()`
+- **BYOK key injection (required)**: The Laravel AI SDK's `provider()` returns a `Lab|array|string` _config key_ (e.g. `'openai'`). An array return is a **failover** list (provider→model pairs), NOT inline credentials — `\Laravel\Ai\Providers\Provider::providerCredentials()` reads `key` from the provider's **config**. So per-user keys MUST be set via `config()->set("ai.providers.{$driver}.key", $key)` before prompting (see `ResolvesUserProvider::injectProviderKey()`). This is safe per-request in PHP; "never use `config()->set()`" guidance is wrong for this SDK.
 - **Encrypted storage**: Keys stored via `Crypt::encryptString()`, decrypted on demand
 - **Owner-only access**: `AiProviderPolicy` ensures users can only manage their own keys
 - **Usage logging**: Best-effort via `LogsAiUsage` trait — failures don't block requests
