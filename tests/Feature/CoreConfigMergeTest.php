@@ -16,7 +16,7 @@ class CoreConfigMergeTest extends TestCase
 
     public function test_core_config_loads_with_app_overrides(): void
     {
-        $features = config('core.features');
+        $features = config('features.providers');
 
         $this->assertIsArray($features);
         $this->assertNotEmpty($features, 'At least one feature provider must be configured.');
@@ -34,7 +34,7 @@ class CoreConfigMergeTest extends TestCase
 
     public function test_app_can_register_additional_features(): void
     {
-        $features = config('core.features');
+        $features = config('features.providers');
 
         $featureClasses = array_map(class_basename(...), $features);
 
@@ -99,7 +99,7 @@ class CoreConfigMergeTest extends TestCase
 
     public function test_app_orphan_media_config_includes_core_and_app_models(): void
     {
-        $orphanMedia = config('core.orphan_media');
+        $orphanMedia = config('media.orphan_media');
 
         $this->assertIsArray($orphanMedia);
         $this->assertArrayHasKey('posts', $orphanMedia, 'Core posts model should be in orphan_media config.');

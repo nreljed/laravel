@@ -79,8 +79,8 @@ vendor/nreljed/dashboard-core/      # CORE platform (composer vcs, the product �
   routes/
     web.php                         # Public, dashboard, admin, deploy, csp-report, maintenance
     auth.php                        # Login, register, password, verification
-  config/                           # core.php, roles.php, admin.php, deploy.php, database-maintenance.php
-    core.php                        # features registry, inertia middleware, settings groups, notification types
+  config/                           # core.php, roles.php, admin.php, deploy.php, database-maintenance.php, features.php, media.php
+    core.php                        # engine gates: load_migrations, github_repo, inertia_middleware, settings groups
     roles.php                       # base permission catalog + default roles (RoleCatalog merges + app delta + features)
   resources/
     js/                             # CORE frontend — components/ui, hooks, layouts, editor, Pages
@@ -197,7 +197,7 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 1. Create `vendor/nreljed/dashboard-core/src/{Name}/` with Controllers/, Models/, Requests/, Resources/js/Pages/
 2. Create `{Name}ServiceProvider.php` — register routes, permissions, nav items in `boot()`
-3. Register the service provider in `config('core.features')`
+3. Register the service provider in `config/features.php` (`providers` array)
 4. Declare feature permissions in `{Name}ServiceProvider::permissions()`; grant them to roles via `config/roles.php` (package config catalog, per-app overridable)
 5. Ship it via the core dev loop: edit the core clone → tag → `composer update nreljed/dashboard-core`
 
@@ -384,11 +384,14 @@ Remove-Item -LiteralPath "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright"
 
 ## Self-Hosted Runners
 
-GitHub-hosted runners are billing-blocked account-wide, so CI/CD runs on three self-hosted
-runners on this laptop — one per repo: `C:\actions-runner-shop` (`win-runner-shop` → laravel.shop),
-`C:\actions-runner-laravel` (`win-runner-laravel` → laravel), `C:\actions-runner-booking`
-(`win-runner-booking` → laravel.booking). Plain `run.cmd` processes (NO Windows services, no UAC),
-auto-started at login via `Startup\start-gha-runners.cmd`, label `self-hosted`.
+GitHub-hosted runners are billing-blocked account-wide, so CI/CD runs on seven self-hosted
+runners on this laptop — one per repo, all under `C:\runners\<suffix>` (moved from flat
+`C:\actions-runner-*` on 2026-08-31): `C:\runners\shop` (`win-runner-shop` → laravel.shop),
+`C:\runners\laravel` (`win-runner-laravel` → laravel), `C:\runners\booking` (`win-runner-booking` →
+laravel.booking), `C:\runners\core` (`win-runner-core` → dashboard-core), `C:\runners\shopmodule`,
+`C:\runners\bookingmodule`, `C:\runners\projectwp`. Plain `run.cmd` processes (NO Windows services,
+no UAC), label `self-hosted`. Runners do NOT auto-start — start them on-demand via
+`pwsh -NoProfile -File C:\tools\gha-runner.ps1 <name|all>`.
 
 > Full setup/reproduction steps, the `.env` PATH override, and the failure-modes table live in the
 > **`self-hosted-runners` skill** (`~/.config/opencode/skills/self-hosted-runners/SKILL.md`) — read it

@@ -58,7 +58,7 @@ class FeatureRegistryTest extends TestCase
 
     public function test_all_configured_feature_providers_implement_the_contract(): void
     {
-        foreach (config('core.features', []) as $class) {
+        foreach (config('features.providers', []) as $class) {
             $provider = app()->getProvider($class);
             $this->assertNotNull($provider, "Feature provider [{$class}] is not registered.");
             $this->assertInstanceOf(

@@ -163,7 +163,7 @@ When forking this project for a new deployment (e.g. Booking):
 4. **Update** `.github/workflows/deploy.yml`:
    - `APP_URL` and `SESSION_DOMAIN`
    - FTP account home is the project root — upload to root (`ftp://server:port/deploy.zip`), not `domains/.../public_html/...`
-5. **Update** `config/core.php`: features (add the app's `FeatureProvider`), settings groups
+5. **Update** config files: `config/features.php` (add the app's `FeatureProvider`), `config/media.php`, settings groups in `config/core.php`
 6. **Push to the default branch** — the CI pipeline runs automatically
 
 ## Why `gh` over Web UI?

@@ -54,7 +54,7 @@ nreljed/laravel  (master = Cost Breaker 360)
 │  │  ├─ Notifications/ · Policies/ · Requests/ · Rules/ · Jobs/ · Mail/ · Traits/ · Enums/
 │  │  └─ ...
 │  ├─ database/migrations/    # VERBATIM copies (same basenames → existing DBs skip)
-│  ├─ config/                 # core.php, roles.php, settings.php, ai-providers.php
+│  ├─ config/                 # core.php, roles.php, admin.php, deploy.php, database-maintenance.php, features.php, media.php
 │  ├─ resources/js/           # @dashboard pages, components, hooks, lib
 │  ├─ routes/
 │  ├─ tests/
@@ -68,7 +68,7 @@ nreljed/laravel  (master = Cost Breaker 360)
 - `tailwind.config.js`: `@source` into vendor
 - `tsconfig.json`: path alias `@dashboard`
 - `resources/js/app.tsx`: explicit page inventory — `basePages: registerCoreTemplates()` + `pageOverrides` replaces page globbing
-- `config/core.php` override file: roles, settings defaults, feature registration
+- `config/core.php` override file: engine gates (load_migrations, inertia_middleware, settings groups); `config/features.php` + `config/media.php` for feature/media overrides
 
 **Overrides (consumer wins, 3 levels):**
 
@@ -99,7 +99,7 @@ public function getGalleryConfigs(): array;
 public function onUserDelete(int $userId): void;
 ```
 
-`FeatureRegistry` discovers **registered providers** (via `config/core.php`) — **no core edits to add a feature**. Core consumers (Blog, AI) implement it; app features (Shop, Properties, Posts) implement it too.
+`FeatureRegistry` discovers **registered providers** (via `config/features.php`) — **no core edits to add a feature**. Core consumers (Blog, AI) implement it; app features (Shop, Properties, Posts) implement it too.
 
 ## 6. Specificity Coverage Matrix
 
@@ -192,12 +192,15 @@ public function onUserDelete(int $userId): void;
 
 ### 7.1.1 Config contract
 
-| Config file         | Ships in | Consumer override   | Keys                                                                                                       |
-| ------------------- | -------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `config/deploy.php` | package  | **yes** (see below) | `token` (`env('DEPLOY_TOKEN')`), `github_repo` (`env('GITHUB_REPO', 'nreljed/laravel')`), `lock_ttl` (600) |
-| `config/core.php`   | package  | yes                 | `features`, `load_migrations`, `inertia_middleware`, `orphan_media`, `settings.groups`                     |
-| `config/admin.php`  | package  | yes                 | admin UI settings                                                                                          |
-| `config/roles.php`  | package  | yes                 | per-app role catalog (D7)                                                                                  |
+| Config file                       | Ships in | Consumer override   | Keys                                                                                                       |
+| --------------------------------- | -------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `config/deploy.php`               | package  | **yes** (see below) | `token` (`env('DEPLOY_TOKEN')`), `github_repo` (`env('GITHUB_REPO', 'nreljed/laravel')`), `lock_ttl` (600) |
+| `config/core.php`                 | package  | yes                 | `load_migrations`, `github_repo`, `inertia_middleware`, `settings.groups`                                  |
+| `config/features.php`             | package  | yes                 | `providers` (FeatureRegistry list), `enabled` (per-slug defaults)                                          |
+| `config/media.php`                | package  | yes                 | `orphan_media` (folder → model pairs)                                                                      |
+| `config/admin.php`                | package  | yes                 | admin UI settings                                                                                          |
+| `config/roles.php`                | package  | yes                 | per-app role catalog (D7)                                                                                  |
+| `config/database-maintenance.php` | package  | yes                 | seeder groups, baseline/destructive flags                                                                  |
 
 **Consumer `config/deploy.php` MUST override `github_repo`** to its own repo, or the
 server will self-deploy the wrong project:
@@ -254,7 +257,7 @@ supplies no-op defaults for everything else. Common overrides:
 | `permissions()`                                 | feature permission slugs                  |
 
 Add a feature with `php artisan make:feature {Name}` (scaffolds a discoverable
-provider) then register it in `config/core.php` `features`.
+provider) then register it in `config/features.php` `providers`.
 
 ### 7.1.5 Publish flow (core → consumers)
 

@@ -197,44 +197,33 @@ jobs:
       - name: FTP Upload fallback (DirectAdmin)
         # Only relevant when the hosting FTP account homes to this app's project
         # root. Skips itself when the FTP_* secrets are not defined (see script guard).
+        # curl-based approach shared with laravel.shop / laravel.booking.
         if: always()
         continue-on-error: true
-        shell: pwsh
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_PORT: ${{ secrets.FTP_PORT }}
+        shell: bash
         run: |
-          if ("$env:FTP_USERNAME" -eq "") { Write-Output "FTP_* secrets not set — skipping FTP fallback"; exit 0 }
-          $ftpPort = if ($env:FTP_PORT) { $env:FTP_PORT } else { "21" }
+          if [ -z "${{ secrets.FTP_USERNAME }}" ]; then
+            echo "FTP_* secrets not set — skipping FTP fallback"
+            exit 0
+          fi
+          FTP_PORT="${{ secrets.FTP_PORT || '21' }}"
           # FTP account home is the Laravel project root (public_html), so upload to root.
-          $ftpUrl = "ftp://$env:FTP_SERVER`:$ftpPort/deploy.zip"
-          $cred = New-Object System.Net.NetworkCredential($env:FTP_USERNAME, $env:FTP_PASSWORD)
-          try {
-            $ftp = [System.Net.FtpWebRequest]::Create($ftpUrl)
-            $ftp.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
-            $ftp.Credentials = $cred
-            $ftp.UseBinary = $true
-            $ftp.UsePassive = $true
-            $ftp.KeepAlive = $false
-            $fileBytes = [System.IO.File]::ReadAllBytes("deploy.zip")
-            $ftp.ContentLength = $fileBytes.Length
-            $rs = $ftp.GetRequestStream()
-            $rs.Write($fileBytes, 0, $fileBytes.Length)
-            $rs.Close()
-            $resp = $ftp.GetResponse()
-            Write-Output "FTP upload OK: $($resp.StatusDescription)"
-            $resp.Close()
-            Write-Output "---"
-            Write-Output "Extract via DirectAdmin File Manager, then visit:"
-            Write-Output "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
-          } catch {
-            Write-Output "FTP upload failed: $_"
-            $VER = "${{ needs.package.outputs.version }}"
-            Write-Output "Manual steps:"
-            Write-Output "1. Download from: https://github.com/${{ github.repository }}/releases/download/v$VER/deploy.zip"
-            Write-Output "2. Upload via DirectAdmin File Manager to public_html/"
-            Write-Output "3. Extract, then visit:"
-            Write-Output "   ${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
-          }
+          FTP_URL="ftp://${{ secrets.FTP_SERVER }}:$FTP_PORT/deploy.zip"
+          if curl -s --max-time 300 \
+            -T deploy.zip \
+            --ftp-create-dirs \
+            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            "$FTP_URL"; then
+            echo "FTP upload OK"
+            echo "---"
+            echo "Extract via DirectAdmin File Manager, then visit:"
+            echo "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          else
+            echo "FTP upload failed"
+            VER="v${{ needs.package.outputs.version }}"
+            echo "Manual steps:"
+            echo "1. Download from: https://github.com/${{ github.repository }}/releases/download/$VER/deploy.zip"
+            echo "2. Upload via DirectAdmin File Manager to public_html/"
+            echo "3. Extract, then visit:"
+            echo "   ${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          fi
