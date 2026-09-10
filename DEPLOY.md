@@ -164,12 +164,6 @@ PRs include updated lock files (package-lock.json, composer.lock). Merge them to
 > `push-deploy` job in `deploy.yml`. If a Release exists but the server didn't deploy,
 > just hit `/deploy/check?token=...` once (or wait ≤5 min for `deploy:auto`).
 
-### Stale Bot (`.github/stale.yml`)
-
-- Issues/PRs with 60 days of inactivity get the `stale` label
-- Closed after 14 more days if no activity
-- Exempts `pinned`, `security`, and `blocked` labels
-
 ### Issue & PR Templates
 
 - Bug reports and feature requests use structured YAML forms

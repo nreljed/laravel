@@ -84,7 +84,7 @@ jobs:
           if [ -n "$CONFIRMED" ]; then
             echo "GITHUB_TOKEN pushed to server .env"
           else
-            echo "::warning::GITHUB_TOKEN push NOT confirmed after 3 attempts — update manually: POST $ENV_URL with {\"values\":{\"GITHUB_TOKEN\":\"<value>\"}}"
+            echo "GITHUB_TOKEN push NOT confirmed after 3 attempts - update manually: POST $ENV_URL with {\"values\":{\"GITHUB_TOKEN\":\"<value>\"}}"
             exit 1
           fi
 

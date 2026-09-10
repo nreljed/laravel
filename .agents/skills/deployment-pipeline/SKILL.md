@@ -17,15 +17,8 @@ push main → deploy.yml (orchestrator)
   ├─ release                            — creates GitHub Release
   └─ push-deploy                        — uploads deploy.zip to server
 
-push beta → beta-ci.yml
-  └─ ci.yml (reusable workflow_call)    — same validation, no deploy
-
-pull_request → pr.yml (branches: main + beta)
+pull_request → pr.yml (branches: main)
   └─ ci.yml (reusable workflow_call)    — identical validation, no secrets needed
-
-manual → database-maintenance.yml (workflow_dispatch)
-  └─ command=migrate → curl /deploy/migrate  (confirm='yes')
-  └─ command=reset   → curl /deploy/reset    (confirm='RESET')
 ```
 
 Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
@@ -56,18 +49,8 @@ Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
 
 ### pr.yml (Pull Request)
 
-- Runs on PRs to `main` and `beta`; `paths-ignore` for `docs/**`, `**.md`, `.gitignore`
+- Runs on PRs to `main`; `paths-ignore` for `docs/**`, `**.md`, `.gitignore`
 - Calls ci.yml — identical validation, no secrets needed
-
-### beta-ci.yml (Beta Validation)
-
-- On push to `beta`: calls ci.yml with `secrets: inherit` — validates but does not deploy
-
-### database-maintenance.yml (Manual Maintenance)
-
-- `workflow_dispatch` with a `command` input (`migrate` | `reset`)
-- `migrate` requires `confirm='yes'` and curls `/deploy/migrate` on production
-- `reset` requires `confirm='RESET'` and curls `/deploy/reset` (with_demo, purge_media)
 
 ## Server Deploy Flow
 
@@ -83,7 +66,6 @@ Repo: `nreljed/laravel` · Production site: `https://laravel.tunispromo.tn`
 | `/deploy/upload`      | Primary — direct `deploy.zip` upload           |
 | `/deploy/check`       | Fallback — fetch latest GitHub release         |
 | `/deploy/cache-clear` | Post-deploy cache clear                        |
-| `/deploy/migrate`     | Manual migrations (`database-maintenance.yml`) |
 
 `push-deploy` uploads to `/deploy/upload` first; if the response is not JSON (e.g. Cloudflare HTML), it falls back to `/deploy/check`. The deploy zip includes a copied `deploy.php` (from `scripts/deploy-cron.php`).
 
