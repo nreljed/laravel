@@ -50,8 +50,9 @@ class UserAccountTest extends TestCase
             'first_name' => 'Jane',
             'last_name' => 'Smith',
             'bio' => 'Hello world',
-            'url' => 'https://example.com',
-            'contact_email' => 'contact@example.com',
+            'social_media' => [
+                ['social_title' => 'Website', 'social_value' => 'https://example.com'],
+            ],
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -62,8 +63,7 @@ class UserAccountTest extends TestCase
         $this->assertSame('Jane', $user->first_name);
         $this->assertSame('Smith', $user->last_name);
         $this->assertSame('Hello world', $user->bio);
-        $this->assertSame('https://example.com', $user->url);
-        $this->assertSame('contact@example.com', $user->contact_email);
+        $this->assertSame([['social_title' => 'Website', 'social_value' => 'https://example.com']], $user->social_links);
     }
 
     public function test_profile_accepts_null_values(): void
@@ -90,15 +90,17 @@ class UserAccountTest extends TestCase
         $this->assertNull($user->bio);
     }
 
-    public function test_profile_rejects_invalid_url(): void
+    public function test_profile_rejects_invalid_social_media(): void
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->patch(route('dashboard.account.profile'), [
-            'url' => 'not-a-url',
+            'social_media' => [
+                ['social_title' => str_repeat('t', 51), 'social_value' => 'https://example.com'],
+            ],
         ]);
 
-        $response->assertSessionHasErrors('url');
+        $response->assertSessionHasErrors('social_media.0.social_title');
     }
 
     public function test_profile_rejects_bio_over_1000_chars(): void

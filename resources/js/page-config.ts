@@ -1,5 +1,5 @@
 import type { FoundationAppConfig, PageImport } from "@dashboard/app";
-import { registerBlogPages } from "@dashboard-blog/pages";
+import { registerPostsPages } from "@dashboard-posts/pages";
 import { registerCoreTemplates } from "@dashboard/dashboard";
 
 /**
@@ -7,13 +7,13 @@ import { registerCoreTemplates } from "@dashboard/dashboard";
  * Imported by the client entry (app.tsx) so the full page registry
  * lives in one place. Core/foundation pages are registered via
  * registerCoreTemplates(); feature modules register their own kits
- * (registerBlogPages) — both spread here. Project theme overrides are
+ * (registerPostsPages) — both spread here. Project theme overrides are
  * declared in pageOverrides and always win.
  */
 export const pageConfig: FoundationAppConfig = {
   basePages: {
     ...registerCoreTemplates(),
-    ...registerBlogPages(),
+    ...registerPostsPages(),
   },
   projectPages: import.meta.glob("@test-posts/Pages/**/*.tsx") as Record<string, PageImport>,
   projectPrefix: "testposts",

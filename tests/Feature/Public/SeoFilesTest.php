@@ -3,10 +3,10 @@
 namespace Tests\Feature\Public;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Blog\Models\Post;
-use Nreljed\DashboardCore\Blog\Models\PostCategory;
-use Nreljed\DashboardCore\Blog\Models\PostTag;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Posts\Models\Post;
+use Nreljed\DashboardCore\Posts\Models\PostCategory;
+use Nreljed\DashboardCore\Posts\Models\PostTag;
 use Nreljed\DashboardCore\Services\SettingsService;
 use Tests\TestCase;
 

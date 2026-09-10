@@ -30,7 +30,7 @@ export default defineConfig({
         dedupe: packageDedupes,
         alias: {
             '@dashboard': path.resolve(__dirname, './vendor/nreljed/dashboard-core/resources/js'),
-            '@dashboard-blog': path.resolve(__dirname, './vendor/nreljed/dashboard-core/src/Blog/Resources/js'),
+            '@dashboard-posts': path.resolve(__dirname, './vendor/nreljed/dashboard-core/src/Posts/Resources/js'),
             '@': path.resolve(__dirname, './vendor/nreljed/dashboard-core/resources/js'),
             '@test-posts': path.resolve(__dirname, './app/TestPosts/Resources/js'),
         },

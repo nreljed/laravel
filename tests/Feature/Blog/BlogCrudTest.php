@@ -5,10 +5,10 @@ namespace Tests\Feature\Blog;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Database\Factories\PostCategoryFactory;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Posts\Models\Post;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -83,7 +83,7 @@ class BlogCrudTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->component('Blog/Form', false)
+            ->component('posts/edit', false)
             ->where('post.category_id', $category->id)
             ->has('categories', 1)
             ->where('categories.0.id', $category->id));

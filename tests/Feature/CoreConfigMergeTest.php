@@ -38,7 +38,7 @@ class CoreConfigMergeTest extends TestCase
 
         $featureClasses = array_map(class_basename(...), $features);
 
-        $this->assertContains('BlogServiceProvider', $featureClasses, 'Blog should be registered as a feature.');
+        $this->assertContains('PostsServiceProvider', $featureClasses, 'Posts should be registered as a feature.');
         $this->assertContains('TestPostsServiceProvider', $featureClasses, 'TestPosts should be registered as an app-owned feature.');
     }
 
@@ -48,7 +48,7 @@ class CoreConfigMergeTest extends TestCase
         $all = $registry->getAll();
 
         $this->assertIsArray($all);
-        $this->assertGreaterThanOrEqual(2, count($all), 'Registry should resolve at least Blog and TestPosts providers.');
+        $this->assertGreaterThanOrEqual(2, count($all), 'Registry should resolve at least Posts and TestPosts providers.');
 
         foreach ($all as $feature) {
             $this->assertArrayHasKey('name', $feature);

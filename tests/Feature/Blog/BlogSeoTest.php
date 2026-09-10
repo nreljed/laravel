@@ -4,9 +4,9 @@ namespace Tests\Feature\Blog;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Database\Factories\PostFactory;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Posts\Models\Post;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

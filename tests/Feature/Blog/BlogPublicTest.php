@@ -66,7 +66,7 @@ class BlogPublicTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Blog/Public/Show')
+            ->component('blog/public/show')
             ->has('post')
         );
     }
@@ -82,7 +82,7 @@ class BlogPublicTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Blog/Public/Show')
+            ->component('blog/public/show')
             ->where('post.id', $post->id)
             ->where('post.user.id', $author->id)
         );
@@ -101,7 +101,7 @@ class BlogPublicTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Blog/Public/Show')
+            ->component('blog/public/show')
             ->where('post.id', $post->id)
             ->where('post.user.id', $author->id)
         );
@@ -118,7 +118,7 @@ class BlogPublicTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Blog/Public/Show')
+            ->component('blog/public/show')
             ->where('post.id', $post->id)
         );
     }

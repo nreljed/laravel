@@ -16,7 +16,7 @@
     "noEmit": true,
     "paths": {
       "@dashboard/*": ["./vendor/nreljed/dashboard-core/resources/js/*"],
-      "@dashboard-blog/*": ["./vendor/nreljed/dashboard-core/src/Blog/Resources/js/*"],
+      "@dashboard-posts/*": ["./vendor/nreljed/dashboard-core/src/Posts/Resources/js/*"],
       "@/*": ["./vendor/nreljed/dashboard-core/resources/js/*"],
       "ziggy-js": ["./vendor/tightenco/ziggy"]
     }

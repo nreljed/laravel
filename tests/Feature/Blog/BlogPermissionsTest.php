@@ -120,7 +120,7 @@ class BlogPermissionsTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->component('Blog/Index', false)
+            ->component('posts/index', false)
             ->has('posts', 3));
     }
 
@@ -167,7 +167,7 @@ class BlogPermissionsTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->component('Blog/Index', false)
+            ->component('posts/index', false)
             ->has('posts', 1)
             ->where('posts.0.id', $ownPost->id));
     }
@@ -215,7 +215,7 @@ class BlogPermissionsTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->component('Blog/Index', false)
+            ->component('posts/index', false)
             ->has('posts', 1)
             ->where('posts.0.id', $ownPost->id));
     }

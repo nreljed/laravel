@@ -37,10 +37,13 @@ class MediaUploadTest extends TestCase
         ]);
 
         $response->assertOk();
-        $response->assertJsonStructure(['url', 'path']);
+        $response->assertJsonStructure([
+            'success',
+            'data' => ['url', 'path'],
+        ]);
 
-        $path = $response->json('path');
-        $this->assertStringStartsWith('media/', $path);
+        $path = $response->json('data.path');
+        $this->assertStringStartsWith('media-library/', $path);
         $this->assertTrue(Storage::disk('public')->exists($path));
     }
 

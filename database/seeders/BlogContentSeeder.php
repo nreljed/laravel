@@ -4,10 +4,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Blog\Models\Post;
-use Nreljed\DashboardCore\Blog\Models\PostCategory;
-use Nreljed\DashboardCore\Blog\Models\PostTag;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Posts\Models\Post;
+use Nreljed\DashboardCore\Posts\Models\PostCategory;
+use Nreljed\DashboardCore\Posts\Models\PostTag;
 
 class BlogContentSeeder extends Seeder
 {
@@ -457,7 +457,7 @@ HTML;
         $modelCode = <<<'CODE'
 <?php
 
-namespace Nreljed\DashboardCore\Blog\Models;
+namespace Nreljed\DashboardCore\Posts\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -479,7 +479,7 @@ CODE;
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Nreljed\DashboardCore\Blog\Controllers\PostController;
+use Nreljed\DashboardCore\Posts\Controllers\PostController;
 
 Route::middleware(['auth', 'verified'])
     ->prefix('dashboard/posts')

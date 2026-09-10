@@ -3,9 +3,9 @@
 use App\TestPosts\Models\TestPost;
 use App\TestPosts\TestPostsServiceProvider;
 use Nreljed\DashboardCore\Ai\AiServiceProvider;
-use Nreljed\DashboardCore\Blog\BlogServiceProvider;
-use Nreljed\DashboardCore\Blog\Models\Post;
 use Nreljed\DashboardCore\Models\User;
+use Nreljed\DashboardCore\Posts\Models\Post;
+use Nreljed\DashboardCore\Posts\PostsServiceProvider;
 use Nreljed\DashboardCore\PublicSite\PublicSiteServiceProvider;
 
 return [
@@ -15,7 +15,7 @@ return [
     | Load Migrations
     |--------------------------------------------------------------------------
     |
-    | Disable package migrations — this product already has its own migration
+    | Disable package migrations - this product already has its own migration
     | files for the same tables.
     |
     */
@@ -35,9 +35,27 @@ return [
 
     'features' => [
         PublicSiteServiceProvider::class,
-        BlogServiceProvider::class,
+        PostsServiceProvider::class,
         AiServiceProvider::class,
         TestPostsServiceProvider::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feature Defaults
+    |--------------------------------------------------------------------------
+    |
+    | Per-feature enabled/disabled defaults. These sit below the persisted
+    | settings table (FeatureSettingsService) but above the fail-closed
+    | fallback in InteractsWithFeatures::defaultEnabled().
+    |
+    */
+
+    'features_enabled' => [
+        'public-site' => true,
+        'posts' => true,
+        'ai' => true,
+        'test-posts' => true,
     ],
 
     /*
