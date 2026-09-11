@@ -1,7 +1,9 @@
 # Deployment
 
-> Canonical flow (shared with `laravel.shop`) — see also [`../github-cli.md`](../github-cli.md)
-> and the `deploy` skill (`~/.config/opencode/skills/deploy/SKILL.md`). Server-side
+> Canonical flow (shared with `laravel.shop`) — see also [`../github-cli.md`](../github-cli.md),
+> [`runners.md`](runners.md) (runner placement: self-hosted default, cloud switch
+> via `RUNNER_CI`/`RUNNER_PACKAGE`), and the `deploy` skill
+> (`~/.config/opencode/skills/deploy/SKILL.md`). Server-side
 > `DeployController`/`DeployService`/`deploy:auto` all ship from `nreljed/dashboard-core`
 > (see `docs/core-dashboard-package.md` §7.1).
 
@@ -9,8 +11,8 @@
 
 Deploys automatically on push to `main`. The pipeline has four sequential jobs:
 
-1. **ci** — lint, typecheck, test, build (ubuntu, reusable workflow_call)
-2. **package** — build `deploy.zip` on Windows (reusable workflow_call)
+1. **ci** — lint, typecheck, test, build (`RUNNER_CI`, cloud: ubuntu-latest)
+2. **package** — build `deploy.zip` on Windows (`RUNNER_PACKAGE`, cloud: windows-latest)
 3. **release** — create GitHub Release with `deploy.zip` artifact
 4. **push-deploy** — env-push + check-first deploy (upload/FTP fallback)
 

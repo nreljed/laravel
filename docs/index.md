@@ -48,13 +48,14 @@
 
 ## Workflow
 
-| Document                               | Description                                                |
-| -------------------------------------- | ---------------------------------------------------------- |
-| [Setup](workflow/setup.md)             | Local dev environment, LocalWP, install                    |
-| [Development](workflow/development.md) | Daily workflow, conventions, git branching                 |
-| [Deployment](workflow/deploy.md)       | CI/CD pipeline, GitHub Actions, server deploy              |
-| [GitHub CLI](github-cli.md)            | Secrets, releases, runs, fork checklist (`gh` cheat sheet) |
-| [Testing](workflow/testing.md)         | PHPUnit, Vitest, ESLint, CI pipeline                       |
+| Document                               | Description                                                       |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| [Setup](workflow/setup.md)             | Local dev environment, LocalWP, install                           |
+| [Development](workflow/development.md) | Daily workflow, conventions, git branching                        |
+| [Deployment](workflow/deploy.md)       | CI/CD pipeline, GitHub Actions, server deploy                     |
+| [Runners](workflow/runners.md)         | self-hosted ⇄ GitHub-hosted switch (`RUNNER_CI`/`RUNNER_PACKAGE`) |
+| [GitHub CLI](github-cli.md)            | Secrets, releases, runs, fork checklist (`gh` cheat sheet)        |
+| [Testing](workflow/testing.md)         | PHPUnit, Vitest, ESLint, CI pipeline                              |
 
 ## Component Structure
 
