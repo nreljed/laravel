@@ -107,17 +107,21 @@ export default function TestPostsDashboard() {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href={route("dashboard.test-posts.create")}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Test
-                </Link>
+              <Button
+                render={<Link href={route("dashboard.test-posts.create")} />}
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                New Test
               </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href={route("dashboard.test-posts.index")}>
-                  <List className="mr-2 h-4 w-4" />
-                  All Test
-                </Link>
+              <Button
+                render={<Link href={route("dashboard.test-posts.index")} />}
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <List className="mr-2 h-4 w-4" />
+                All Test
               </Button>
             </CardContent>
           </Card>

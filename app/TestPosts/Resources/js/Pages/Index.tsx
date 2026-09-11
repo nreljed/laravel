@@ -36,7 +36,7 @@ interface TestPostsIndexProps {
 }
 
 export default function TestPostsIndex({ testPosts }: TestPostsIndexProps) {
-  const handleBulkAction = useCallback((action: string, ids: number[]) => {
+  const handleBulkAction = useCallback((action: string, ids: (number | string)[]) => {
     router.post(
       route("dashboard.test-posts.bulk.action"),
       { ids, action },
