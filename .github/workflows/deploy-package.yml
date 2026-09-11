@@ -115,12 +115,6 @@ jobs:
           "@ | Set-Content -Path .env -Encoding UTF8
           New-Item -ItemType File -Path database/database.sqlite -Force
 
-      - name: Cache Composer dependencies
-        uses: actions/cache@v6
-        with:
-          path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
-
       - name: Install Composer dependencies (no-dev)
         # --no-dev keeps dev-only packages (laravel/boost, telescope, pint, pail...)
         # out of the deploy.zip. A dev-built vendor was the source of the
@@ -132,12 +126,6 @@ jobs:
 
       - name: Run migrations (SQLite build)
         run: php artisan migrate --force
-
-      - name: Cache npm dependencies
-        uses: actions/cache@v6
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
 
       - name: Install npm dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
