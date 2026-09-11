@@ -26,8 +26,8 @@ jobs:
   push-deploy:
     needs: package
     if: needs.package.outputs.skip != 'true'
-    # Self-hosted: hosted runners are billing-blocked account-wide.
-    runs-on: [self-hosted]
+    # Runner switch (self-hosted ⇄ GitHub-hosted): RUNNER_CI var on this repo.
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
     # Canonical check-first flow (shared with laravel.shop). /deploy/check makes
     # the server pull deploy.zip from the GitHub API itself, avoiding a large
     # upload through the edge (Cloudflare cuts connections ~100s).

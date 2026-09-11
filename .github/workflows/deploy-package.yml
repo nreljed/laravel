@@ -23,7 +23,10 @@ jobs:
     # Self-hosted (win-runner-laravel): hosted runners are billing-blocked
     # account-wide. Bare run steps still execute under pwsh on this runner
     # (C:\tools\pwsh), matching windows-latest behavior.
-    runs-on: [self-hosted]
+    #
+    # Runner switch (self-hosted ⇄ GitHub-hosted): pwsh/Compress-Archive make
+    # this job Windows-bound, so it reads RUNNER_PACKAGE (self-hosted | windows-latest).
+    runs-on: ${{ vars.RUNNER_PACKAGE || 'self-hosted' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
       skip: ${{ steps.version.outputs.skip }}

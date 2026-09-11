@@ -31,7 +31,9 @@ jobs:
     # billing blocks. Runner is Windows - pin bash explicitly; the runner
     # process must have "C:\Program Files\Git\bin" ahead of system32 in its
     # PATH so `bash` resolves to Git Bash and not the WSL stub.
-    runs-on: [self-hosted]
+    #
+    # Runner switch (self-hosted ⇄ GitHub-hosted): RUNNER_CI var on this repo.
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
     defaults:
       run:
         shell: bash
