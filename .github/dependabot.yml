@@ -8,11 +8,18 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    ignore:
-      # @typescript-eslint has no TypeScript 7 support yet — see AGENTS.md
+ignore:
+      # @typescript-eslint has no TypeScript 7 support yet - see AGENTS.md
       # "Known Blockers". Bumping to 7.x breaks the ESLint pipeline.
       - dependency-name: "typescript"
         versions: ["7.x"]
+      # Core's peer range is ^0.49.0 (pre-1.0 semver: <0.50.0). A lexical
+      # 0.50 bump needs a coordinated core peer-range bump first - dependabot
+      # auto-bumps would fail the check:core-deps parity gate.
+      - dependency-name: "lexical"
+        versions: [">=0.50.0"]
+      - dependency-name: "@lexical/*"
+        versions: [">=0.50.0"]
     groups:
       minor-and-patch:
         applies-to: version-updates
