@@ -393,6 +393,30 @@ laravel.booking), `C:\runners\core` (`win-runner-core` → dashboard-core), `C:\
 no UAC), label `self-hosted`. Runners do NOT auto-start — start them on-demand via
 `pwsh -NoProfile -File C:\tools\gha-runner.ps1 <name|all>`.
 
+### Runner switch (self-hosted ⇄ GitHub-hosted)
+
+All nreljed workflows read `runs-on` from **per-repo Actions variables** (set on all 7 repos),
+so choosing the runner is a variable flip, not a code change:
+
+| Variable                                                                | self-hosted (default) | GitHub-hosted    |
+| ----------------------------------------------------------------------- | --------------------- | ---------------- |
+| `RUNNER_CI` (validators, push-deploy, update workflows, core/module CI) | `self-hosted`         | `ubuntu-latest`  |
+| `RUNNER_PACKAGE` (Windows-bound build/packaging: pwsh, 7-Zip)           | `self-hosted`         | `windows-latest` |
+
+- Flip all repos at once: `pwsh -NoProfile -File C:\tools\switch-runners.ps1 self|cloud`.
+  Single repo: `gh variable set RUNNER_CI -R nreljed/laravel --body ubuntu-latest`.
+- `runs-on` is `${{ vars.RUNNER_CI || 'self-hosted' }}` — missing var degrades safely.
+- `workflow_call` reusables (consumer-ci.yml) resolve `vars` against the **calling** repo —
+  laravel/shop/booking must each have `RUNNER_CI` set.
+- `consumer-ci.yml` cache steps are gated `RUNNER_CI != 'self-hosted'` — cache is re-enabled
+  only on GitHub-hosted (ephemeral) runners; self-hosted stays cache-free (upload-stall trap).
+- Two vars (not one) because GitHub-hosted bills Linux 1x vs Windows 2x; validators run on
+  cheap ubuntu, only pwsh `Compress-Archive`/7-Zip packaging is Windows-bound.
+- GitHub has NO native auto-failover between runner types — this variable is the mechanism.
+  `nreljed` is a User account → no org-level vars; per-repo only.
+- **Project-WP caveat:** its workflows hardcode `C:\php` (preinstalled toolchain) — a cloud
+  flip breaks those jobs until setup-php is added. Staged for consistency only.
+
 > Full setup/reproduction steps, the `.env` PATH override, and the failure-modes table live in the
 > **`self-hosted-runners` skill** (`~/.config/opencode/skills/self-hosted-runners/SKILL.md`) — read it
 > before touching runner config. Never force-kill listeners repeatedly (ghost broker sessions = jobs
@@ -425,8 +449,8 @@ Deploys automatically on push to `main`. Uses **reusable workflows** for cross-r
 
 ```
 push main → deploy.yml
-  ├─ ci.yml (reusable workflow_call)    — ubuntu-latest, full validation
-  ├─ deploy-package.yml (reusable)      — windows-latest, builds deploy.zip
+  ├─ ci.yml (reusable workflow_call)    — RUNNER_CI, full validation
+  ├─ deploy-package.yml (reusable)      — RUNNER_PACKAGE, builds deploy.zip
   ├─ release                            — creates GitHub Release
   └─ push-deploy                        — canonical check-first deploy (env-push → check → upload → FTP)
 
@@ -434,13 +458,13 @@ pull_request → pr.yml
   └─ ci.yml (reusable workflow_call)    — same validation as deploy
 ```
 
-**ci.yml** (reusable `workflow_call`, ubuntu-latest):
+**ci.yml** (reusable `workflow_call`, `RUNNER_CI`):
 
 - PHP 8.4 + Node 22, Composer + npm caches
 - SQLite .env + migrate, then: lint, typecheck, format:check, vitest, build, phpunit, pint
 - Inputs: `skip-php-tests`, `skip-npm-tests` (boolean, default false)
 
-**deploy-package.yml** (reusable `workflow_call`, windows-latest):
+**deploy-package.yml** (reusable `workflow_call`, `RUNNER_PACKAGE`):
 
 - git-cliff version bump → SQLite build .env → full build pipeline
 - Strip dev deps → production .env → `deploy.zip` artifact
