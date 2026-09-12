@@ -41,8 +41,10 @@ jobs:
       - uses: actions/checkout@v7
 
       # PHP 8.4 + composer are preinstalled on the self-hosted runner;
-      # setup-php validates extensions, setup-node pins the version.
+      # setup-php only runs on GitHub-hosted Linux (php.ini rename not
+      # concurrency-safe on the shared Windows runners).
       - name: Setup PHP
+        if: runner.os == 'Linux'
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"

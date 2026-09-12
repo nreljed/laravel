@@ -41,6 +41,9 @@ jobs:
           fetch-tags: true
 
       - name: Setup PHP
+        # PHP 8.4 is preinstalled on the self-hosted Windows runner;
+        # setup-php only runs on GitHub-hosted (windows-latest).
+        if: vars.RUNNER_PACKAGE != 'self-hosted'
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
