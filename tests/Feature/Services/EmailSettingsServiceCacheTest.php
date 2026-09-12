@@ -4,8 +4,8 @@ namespace Tests\Feature\Services;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Services\EmailSettingsService;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Services\EmailSettingsService;
 use Tests\TestCase;
 
 class EmailSettingsServiceCacheTest extends TestCase

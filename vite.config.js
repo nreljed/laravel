@@ -5,7 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 import inertia from '@inertiajs/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packageDedupes } from './vendor/nreljed/dashboard-core/vite.dedupe.js';
+import { platformAliases, platformRefreshGlobs } from './vendor/nreljed/platform/platform.aliases.js';
+import { blogAliases, blogRefreshGlobs } from './vendor/nreljed/blog/blog.aliases.js';
+import { packageDedupes } from './vendor/nreljed/platform/vite.dedupe.js';
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,8 +20,8 @@ export default defineConfig({
             refresh: [
                 'resources/js/**',
                 'app/**/Resources/js/**',
-                'vendor/nreljed/dashboard-core/resources/js/**',
-                'vendor/nreljed/dashboard-core/src/**/Resources/js/**',
+                ...platformRefreshGlobs(),
+                ...blogRefreshGlobs(),
             ],
         }),
         react(),
@@ -29,9 +31,8 @@ export default defineConfig({
     resolve: {
         dedupe: packageDedupes,
         alias: {
-            '@dashboard': path.resolve(__dirname, './vendor/nreljed/dashboard-core/resources/js'),
-            '@dashboard-posts': path.resolve(__dirname, './vendor/nreljed/dashboard-core/src/Posts/Resources/js'),
-            '@': path.resolve(__dirname, './vendor/nreljed/dashboard-core/resources/js'),
+            ...platformAliases(),
+            ...blogAliases(),
             '@test-posts': path.resolve(__dirname, './app/TestPosts/Resources/js'),
         },
     },

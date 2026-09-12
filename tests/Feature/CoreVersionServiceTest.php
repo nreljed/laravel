@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
-use Nreljed\DashboardCore\Services\CoreVersionService;
+use Nreljed\Platform\Services\CoreVersionService;
 use Tests\TestCase;
 
 class CoreVersionServiceTest extends TestCase
@@ -38,22 +38,22 @@ class CoreVersionServiceTest extends TestCase
     public function test_info_reads_from_core_json_when_present(): void
     {
         File::put($this->jsonPath, json_encode([
-            'name' => 'dashboard-core',
+            'name' => 'platform',
             'version' => '1.2.3',
             'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
-            'repo' => 'nreljed/dashboard-core',
+            'repo' => 'nreljed/platform',
         ]));
 
         $service = new CoreVersionService;
         $info = $service->info();
 
-        $this->assertSame('dashboard-core', $info['name']);
+        $this->assertSame('platform', $info['name']);
         $this->assertSame('1.2.3', $info['version']);
         $this->assertSame('50e9c0fcf28d365295c46af725da4822456c3574', $info['sha']);
-        $this->assertSame('nreljed/dashboard-core', $info['repo']);
+        $this->assertSame('nreljed/platform', $info['repo']);
         $this->assertSame('50e9c0f', $service->shortSha());
         $this->assertSame(
-            'https://github.com/nreljed/dashboard-core/commit/50e9c0fcf28d365295c46af725da4822456c3574',
+            'https://github.com/nreljed/platform/commit/50e9c0fcf28d365295c46af725da4822456c3574',
             $service->commitUrl()
         );
     }
@@ -61,7 +61,7 @@ class CoreVersionServiceTest extends TestCase
     public function test_commit_url_uses_recorded_repo_when_set(): void
     {
         File::put($this->jsonPath, json_encode([
-            'name' => 'dashboard-core',
+            'name' => 'platform',
             'version' => '1.2.3',
             'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
             'repo' => 'nreljed/laravel',
@@ -82,7 +82,7 @@ class CoreVersionServiceTest extends TestCase
         $service = new CoreVersionService;
 
         $this->assertSame(
-            'https://github.com/nreljed/dashboard-core/commit/50e9c0fcf28d365295c46af725da4822456c3574',
+            'https://github.com/nreljed/platform/commit/50e9c0fcf28d365295c46af725da4822456c3574',
             $service->commitUrl()
         );
     }
@@ -93,7 +93,7 @@ class CoreVersionServiceTest extends TestCase
 
         $info = (new CoreVersionService)->info();
 
-        $this->assertSame('dashboard-core', $info['name']);
+        $this->assertSame('platform', $info['name']);
         $this->assertSame('50e9c0fabcd1234567890', $info['sha']);
     }
 
@@ -102,11 +102,11 @@ class CoreVersionServiceTest extends TestCase
         $info = (new CoreVersionService)->info();
 
         $expectedVersion = json_decode(
-            (string) file_get_contents(base_path('vendor/nreljed/dashboard-core/composer.json')),
+            (string) file_get_contents(base_path('vendor/nreljed/platform/composer.json')),
             true
         )['version'];
 
-        $this->assertSame('dashboard-core', $info['name']);
+        $this->assertSame('platform', $info['name']);
         $this->assertSame($expectedVersion, $info['version']);
         $this->assertNull($info['sha']);
     }
@@ -114,13 +114,13 @@ class CoreVersionServiceTest extends TestCase
     public function test_core_version_command_prints_table(): void
     {
         File::put($this->jsonPath, json_encode([
-            'name' => 'dashboard-core',
+            'name' => 'platform',
             'version' => '2.0.0',
             'sha' => 'abcdef0123456789',
         ]));
 
         $this->artisan('core:version')
-            ->expectsOutputToContain('dashboard-core')
+            ->expectsOutputToContain('platform')
             ->expectsOutputToContain('2.0.0')
             ->expectsOutputToContain('abcdef0')
             ->assertExitCode(0);
@@ -129,7 +129,7 @@ class CoreVersionServiceTest extends TestCase
     public function test_core_version_command_prints_json(): void
     {
         File::put($this->jsonPath, json_encode([
-            'name' => 'dashboard-core',
+            'name' => 'platform',
             'version' => '2.0.0',
             'sha' => 'abcdef0123456789',
         ]));
@@ -138,7 +138,7 @@ class CoreVersionServiceTest extends TestCase
 
         $output = Artisan::output();
         $this->assertSame(0, $code);
-        $this->assertStringContainsString('"name": "dashboard-core"', $output);
+        $this->assertStringContainsString('"name": "platform"', $output);
         $this->assertStringContainsString('"version": "2.0.0"', $output);
         $this->assertStringContainsString('"sha": "abcdef0123456789"', $output);
     }

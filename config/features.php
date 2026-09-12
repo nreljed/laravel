@@ -1,9 +1,9 @@
 <?php
 
 use App\TestPosts\TestPostsServiceProvider;
-use Nreljed\DashboardCore\Ai\AiServiceProvider;
-use Nreljed\DashboardCore\Posts\PostsServiceProvider;
-use Nreljed\DashboardCore\PublicSite\PublicSiteServiceProvider;
+use Nreljed\Blog\BlogServiceProvider;
+use Nreljed\Platform\Ai\AiServiceProvider;
+use Nreljed\Platform\PublicSite\PublicSiteServiceProvider;
 
 return [
 
@@ -20,7 +20,7 @@ return [
 
     'providers' => [
         PublicSiteServiceProvider::class,
-        PostsServiceProvider::class,
+        BlogServiceProvider::class,
         AiServiceProvider::class,
         TestPostsServiceProvider::class,
     ],

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "77495a0b5f72ae9cdd676a341b0d2333",
+    "content-hash": "4bf4d6cf93ef22ba1cabb2add2eda075",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3254,18 +3254,62 @@
             "time": "2026-07-04T14:30:18+00:00"
         },
         {
-            "name": "nreljed/dashboard-core",
-            "version": "0.1.39",
-            "source": {
-                "type": "git",
-                "url": "git@github.com:nreljed/dashboard-core.git",
-                "reference": "e749f3151cb06da32f705f0b3aeab2c9eaa9cd82"
-            },
+            "name": "nreljed/blog",
+            "version": "0.1.0",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/dashboard-core/zipball/e749f3151cb06da32f705f0b3aeab2c9eaa9cd82",
-                "reference": "e749f3151cb06da32f705f0b3aeab2c9eaa9cd82",
-                "shasum": ""
+                "type": "path",
+                "url": "../../blog",
+                "reference": "7ec3a299b84692f4a4c64094b01c812bb5715619"
+            },
+            "require": {
+                "laravel/framework": "^13.0",
+                "nreljed/platform": "^0.1",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "nunomaduro/collision": "^8.6",
+                "phpunit/phpunit": "^13.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Nreljed\\Blog\\BlogServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Nreljed\\Blog\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Nreljed\\Blog\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "Nreljed"
+                }
+            ],
+            "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
+            "name": "nreljed/platform",
+            "version": "0.1.39",
+            "dist": {
+                "type": "path",
+                "url": "../../dashboard-core",
+                "reference": "29b797ec280f67c7da1e8be9daf5d747330ef310"
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3286,18 +3330,18 @@
             "extra": {
                 "laravel": {
                     "providers": [
-                        "Nreljed\\DashboardCore\\DashboardCoreServiceProvider"
+                        "Nreljed\\Platform\\PlatformServiceProvider"
                     ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "Nreljed\\DashboardCore\\": "src/"
+                    "Nreljed\\Platform\\": "src/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
-                    "Nreljed\\DashboardCore\\Tests\\": "tests/"
+                    "Nreljed\\Platform\\Tests\\": "tests/"
                 }
             },
             "license": [
@@ -3308,12 +3352,11 @@
                     "name": "Nreljed"
                 }
             ],
-            "description": "Shared dashboard core platform for Laravel apps (dashboard, admin, auth, blog, AI, deploy).",
-            "support": {
-                "source": "https://github.com/nreljed/dashboard-core/tree/v0.1.39",
-                "issues": "https://github.com/nreljed/dashboard-core/issues"
-            },
-            "time": "2026-09-12T15:46:19+00:00"
+            "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
         },
         {
             "name": "nunomaduro/termwind",

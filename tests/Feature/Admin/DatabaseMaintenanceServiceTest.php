@@ -7,8 +7,8 @@ use Database\Seeders\DemoUsersSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Exceptions\DatabaseMaintenanceException;
-use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
+use Nreljed\Platform\Exceptions\DatabaseMaintenanceException;
+use Nreljed\Platform\Services\DatabaseMaintenanceService;
 use Tests\TestCase;
 
 class DatabaseMaintenanceServiceTest extends TestCase

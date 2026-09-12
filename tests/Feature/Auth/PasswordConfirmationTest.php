@@ -3,7 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 use Tests\TestCase;
 
 class PasswordConfirmationTest extends TestCase

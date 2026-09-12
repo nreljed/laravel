@@ -4,8 +4,8 @@ namespace Tests\Feature\Admin;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\Permission;
-use Nreljed\DashboardCore\Models\Role;
+use Nreljed\Platform\Models\Permission;
+use Nreljed\Platform\Models\Role;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

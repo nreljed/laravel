@@ -4,15 +4,15 @@ use App\Providers\AppServiceProvider;
 use App\Providers\TelescopeServiceProvider;
 use App\TestPosts\TestPostsServiceProvider;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
-use Nreljed\DashboardCore\Ai\AiServiceProvider;
-use Nreljed\DashboardCore\DashboardCoreServiceProvider;
-use Nreljed\DashboardCore\Posts\PostsServiceProvider;
-use Nreljed\DashboardCore\Providers\PermissionGateServiceProvider;
-use Nreljed\DashboardCore\PublicSite\PublicSiteServiceProvider;
+use Nreljed\Blog\BlogServiceProvider;
+use Nreljed\Platform\Ai\AiServiceProvider;
+use Nreljed\Platform\PlatformServiceProvider;
+use Nreljed\Platform\Providers\PermissionGateServiceProvider;
+use Nreljed\Platform\PublicSite\PublicSiteServiceProvider;
 
 return array_filter([
-    DashboardCoreServiceProvider::class,
-    PostsServiceProvider::class,
+    PlatformServiceProvider::class,
+    BlogServiceProvider::class,
     PublicSiteServiceProvider::class,
     AiServiceProvider::class,
     PermissionGateServiceProvider::class,

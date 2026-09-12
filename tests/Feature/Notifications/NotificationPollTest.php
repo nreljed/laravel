@@ -147,7 +147,7 @@ class NotificationPollTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             $notifications[] = $user->notifications()->create([
                 'id' => (string) Str::uuid(),
-                'type' => 'Nreljed\DashboardCore\Notifications\TestNotification',
+                'type' => 'Nreljed\Platform\Notifications\TestNotification',
                 'data' => ['title' => 'Test', 'message' => 'Test message '.$i],
             ]);
         }

@@ -3,8 +3,8 @@
 namespace Tests\Concerns;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
-use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\Role;
+use Nreljed\Platform\Models\User;
 
 trait CreatesTestUsers
 {

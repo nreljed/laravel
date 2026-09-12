@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Nreljed\DashboardCore\Database\Seeders\RolesAndPermissionsSeeder as CoreRolesAndPermissionsSeeder;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder as CoreRolesAndPermissionsSeeder;
 
 class RolesAndPermissionsSeeder extends Seeder
 {

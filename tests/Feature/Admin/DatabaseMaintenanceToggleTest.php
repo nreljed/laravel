@@ -5,9 +5,9 @@ namespace Tests\Feature\Admin;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Services\DatabaseMaintenanceService;
-use Nreljed\DashboardCore\Services\SettingsService;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Services\DatabaseMaintenanceService;
+use Nreljed\Platform\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

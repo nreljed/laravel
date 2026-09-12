@@ -1,9 +1,9 @@
 <?php
 
-use Nreljed\DashboardCore\Support\FoundationCheck;
+use Nreljed\Platform\Support\FoundationCheck;
 
 /**
- * Foundation boundary check for the dashboard-core package.
+ * Foundation boundary check for the nreljed/platform package.
  *
  * Verifies the app tree still respects the core boundary after a project
  * clone sync: core-owned files match their markers, forbidden project paths
@@ -16,10 +16,10 @@ use Nreljed\DashboardCore\Support\FoundationCheck;
  */
 $root = $argv[1] ?? dirname(__DIR__);
 
-$classFile = $root.'/vendor/nreljed/dashboard-core/src/Support/FoundationCheck.php';
+$classFile = $root.'/vendor/nreljed/platform/src/Support/FoundationCheck.php';
 
 if (! is_file($classFile)) {
-    fwrite(STDERR, "dashboard-core is not installed; run composer install first.\n");
+    fwrite(STDERR, "nreljed/platform is not installed; run composer install first.\n");
 
     exit(1);
 }

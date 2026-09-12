@@ -7,8 +7,8 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Models\User;
 use Tests\TestCase;
 
 class RateLimitingTest extends TestCase

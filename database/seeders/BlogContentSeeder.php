@@ -4,10 +4,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Models\User;
-use Nreljed\DashboardCore\Posts\Models\Post;
-use Nreljed\DashboardCore\Posts\Models\PostCategory;
-use Nreljed\DashboardCore\Posts\Models\PostTag;
+use Nreljed\Blog\Models\Post;
+use Nreljed\Blog\Models\PostCategory;
+use Nreljed\Blog\Models\PostTag;
+use Nreljed\Platform\Models\User;
 
 class BlogContentSeeder extends Seeder
 {
@@ -460,7 +460,7 @@ HTML;
         $modelCode = <<<'CODE'
 <?php
 
-namespace Nreljed\DashboardCore\Posts\Models;
+namespace Nreljed\Blog\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -482,7 +482,7 @@ CODE;
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Nreljed\DashboardCore\Posts\Controllers\PostController;
+use Nreljed\Blog\Controllers\PostController;
 
 Route::middleware(['auth', 'verified'])
     ->prefix('dashboard/posts')
@@ -499,7 +499,7 @@ CODE;
         
         <p>In this tutorial you will learn how to scaffold a feature-based blog exactly like the one powering this site — from routing and models to the Lexical editor.</p>
         
-        <blockquote>This guide assumes you have Laravel 13, PHP 8.4, and Node 22 installed. The full source for this blog lives in <code>packages/dashboard-core/src/Blog</code>.</blockquote>
+        <blockquote>This guide assumes you have Laravel 13, PHP 8.4, and Node 22 installed. The full source for this blog lives in <code>vendor/nreljed/blog</code>.</blockquote>
         
         <h2>What You Will Build</h2>
         
@@ -606,7 +606,7 @@ CODE;
         $agentCode = <<<'CODE'
 <?php
 
-namespace Nreljed\DashboardCore\Ai\Agents;
+namespace Nreljed\Platform\Ai\Agents;
 
 use Laravel\Ai\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;

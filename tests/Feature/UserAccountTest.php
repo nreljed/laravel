@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Ai\Models\AiProvider;
-use Nreljed\DashboardCore\Models\NotificationPreference;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Ai\Models\AiProvider;
+use Nreljed\Platform\Models\NotificationPreference;
+use Nreljed\Platform\Models\User;
 use Tests\TestCase;
 
 class UserAccountTest extends TestCase

@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Contracts\FeatureProvider;
-use Nreljed\DashboardCore\Services\FeatureRegistry;
+use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Services\FeatureRegistry;
 use Tests\TestCase;
 
 class FeatureRegistryTest extends TestCase

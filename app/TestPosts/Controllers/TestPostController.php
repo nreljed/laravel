@@ -8,8 +8,8 @@ use App\TestPosts\Requests\BulkActionRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Nreljed\DashboardCore\Services\HtmlSanitizer;
-use Nreljed\DashboardCore\Services\MediaService;
+use Nreljed\Platform\Services\HtmlSanitizer;
+use Nreljed\Platform\Services\MediaService;
 
 class TestPostController extends Controller
 {

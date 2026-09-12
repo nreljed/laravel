@@ -3,9 +3,9 @@
 namespace Tests\Feature\Services;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Enums\AuditAction;
-use Nreljed\DashboardCore\Models\AuditLog;
-use Nreljed\DashboardCore\Services\AuditService;
+use Nreljed\Platform\Enums\AuditAction;
+use Nreljed\Platform\Models\AuditLog;
+use Nreljed\Platform\Services\AuditService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

@@ -6,8 +6,8 @@ use Database\Factories\TestPostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Nreljed\DashboardCore\Models\Permission;
-use Nreljed\DashboardCore\Models\Role;
+use Nreljed\Platform\Models\Permission;
+use Nreljed\Platform\Models\Role;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

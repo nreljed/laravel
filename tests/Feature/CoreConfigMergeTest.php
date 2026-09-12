@@ -3,7 +3,8 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Services\FeatureRegistry;
+use Nreljed\Blog\Models\Post;
+use Nreljed\Platform\Services\FeatureRegistry;
 use Tests\TestCase;
 
 /**
@@ -38,7 +39,7 @@ class CoreConfigMergeTest extends TestCase
 
         $featureClasses = array_map(class_basename(...), $features);
 
-        $this->assertContains('PostsServiceProvider', $featureClasses, 'Posts should be registered as a feature.');
+        $this->assertContains('BlogServiceProvider', $featureClasses, 'Blog should be registered as a feature.');
         $this->assertContains('TestPostsServiceProvider', $featureClasses, 'TestPosts should be registered as an app-owned feature.');
     }
 
@@ -48,7 +49,7 @@ class CoreConfigMergeTest extends TestCase
         $all = $registry->getAll();
 
         $this->assertIsArray($all);
-        $this->assertGreaterThanOrEqual(2, count($all), 'Registry should resolve at least Posts and TestPosts providers.');
+        $this->assertGreaterThanOrEqual(2, count($all), 'Registry should resolve at least Blog and TestPosts providers.');
 
         foreach ($all as $feature) {
             $this->assertArrayHasKey('name', $feature);
@@ -102,8 +103,13 @@ class CoreConfigMergeTest extends TestCase
         $orphanMedia = config('media.orphan_media');
 
         $this->assertIsArray($orphanMedia);
-        $this->assertArrayHasKey('posts', $orphanMedia, 'Core posts model should be in orphan_media config.');
         $this->assertArrayHasKey('avatars', $orphanMedia, 'Core avatars model should be in orphan_media config.');
         $this->assertArrayHasKey('test-posts', $orphanMedia, 'App-owned TestPost model should be in orphan_media config.');
+
+        $registry = app(FeatureRegistry::class);
+        $targets = $registry->getAllOrphanMediaTargets();
+
+        $this->assertArrayHasKey('posts', $targets, 'Blog provider should contribute the posts orphan media target.');
+        $this->assertSame(Post::class, $targets['posts']);
     }
 }

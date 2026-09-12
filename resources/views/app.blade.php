@@ -8,7 +8,7 @@
 
         <!-- Favicon -->
         @php
-            $favicon = \Nreljed\DashboardCore\Services\SettingsService::get('app_favicon', '');
+            $favicon = \Nreljed\Platform\Services\SettingsService::get('app_favicon', '');
             $faviconUrl = $favicon ?: asset('favicon.svg');
             $ext = pathinfo(parse_url($faviconUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
             $mime = match($ext) {
@@ -18,7 +18,7 @@
             };
         @endphp
         <link rel="icon" type="{{ $mime }}" href="{{ $faviconUrl }}">
-        <link rel="apple-touch-icon" href="{{ $favicon && $ext !== 'svg' ? $favicon : \Nreljed\DashboardCore\Services\SettingsService::get('app_logo', '') }}">
+        <link rel="apple-touch-icon" href="{{ $favicon && $ext !== 'svg' ? $favicon : \Nreljed\Platform\Services\SettingsService::get('app_logo', '') }}">
 
         <!-- CSRF Token -->
         <meta name="csrf-token" content="{{ csrf_token() }}">

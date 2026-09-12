@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\Role;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\File;
-use Nreljed\DashboardCore\Support\FoundationCheck;
+use Nreljed\Platform\Support\FoundationCheck;
 use Tests\TestCase;
 
 class FoundationCheckTest extends TestCase
@@ -18,7 +18,7 @@ class FoundationCheckTest extends TestCase
     public function test_foundation_check_detects_drift_in_isolated_root(): void
     {
         $root = sys_get_temp_dir().'/foundation-check-'.uniqid();
-        File::ensureDirectoryExists($root.'/vendor/nreljed/dashboard-core');
+        File::ensureDirectoryExists($root.'/vendor/nreljed/platform');
 
         $manifest = [
             'schema' => 1,
@@ -33,7 +33,7 @@ class FoundationCheckTest extends TestCase
                 'config/core.php',
             ],
         ];
-        File::put($root.'/vendor/nreljed/dashboard-core/core-manifest.json', json_encode($manifest));
+        File::put($root.'/vendor/nreljed/platform/core-manifest.json', json_encode($manifest));
         File::ensureDirectoryExists($root.'/bootstrap');
         File::put($root.'/bootstrap/app.php', "<?php\n// drift: core marker missing\n");
         File::ensureDirectoryExists($root.'/app/Http/Controllers');
@@ -45,7 +45,7 @@ class FoundationCheckTest extends TestCase
             $this->assertFalse($result['clean']);
             $this->assertContains('missing app-owned file: routes/web.php', $result['issues']);
             $this->assertContains('app-owned file drifted from core: bootstrap/app.php', $result['issues']);
-            $this->assertContains('forbidden project path exists: app/Http/Controllers/DeployController.php (move into dashboard-core)', $result['issues']);
+            $this->assertContains('forbidden project path exists: app/Http/Controllers/DeployController.php (move into platform)', $result['issues']);
         } finally {
             File::deleteDirectory($root);
         }

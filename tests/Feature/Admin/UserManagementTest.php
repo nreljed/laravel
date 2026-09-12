@@ -7,11 +7,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Models\Permission;
-use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Models\User;
-use Nreljed\DashboardCore\Notifications\ResetPassword;
+use Nreljed\Platform\Models\Permission;
+use Nreljed\Platform\Models\Role;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Models\User;
+use Nreljed\Platform\Notifications\ResetPassword;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

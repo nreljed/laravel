@@ -23,7 +23,7 @@ return new class extends Migration
         });
 
         // Blog-owned table (feature may be disabled in other apps).
-        if (Schema::hasTable('post_categories')) {
+        if (Schema::hasTable('post_categories') && ! Schema::hasIndex('post_categories', 'post_categories_parent_id_index')) {
             Schema::table('post_categories', function (Blueprint $table) {
                 $table->index('parent_id', 'post_categories_parent_id_index');
             });

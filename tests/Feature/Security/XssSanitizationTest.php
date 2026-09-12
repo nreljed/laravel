@@ -4,8 +4,8 @@ namespace Tests\Feature\Security;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Posts\Models\Post;
-use Nreljed\DashboardCore\Services\HtmlSanitizer;
+use Nreljed\Blog\Models\Post;
+use Nreljed\Platform\Services\HtmlSanitizer;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

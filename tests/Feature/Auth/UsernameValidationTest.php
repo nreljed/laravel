@@ -4,7 +4,7 @@ namespace Tests\Feature\Auth;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

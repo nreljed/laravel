@@ -4,10 +4,10 @@ namespace Tests\Feature\Console;
 
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\AuditLog;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Models\User;
-use Nreljed\DashboardCore\Services\SettingsService;
+use Nreljed\Platform\Models\AuditLog;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Models\User;
+use Nreljed\Platform\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

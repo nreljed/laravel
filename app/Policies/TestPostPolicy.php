@@ -4,7 +4,7 @@ namespace App\Policies;
 
 use App\TestPosts\Models\TestPost;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 
 class TestPostPolicy
 {

@@ -4,9 +4,9 @@ namespace Tests\Feature\Services;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Nreljed\DashboardCore\Models\Setting;
-use Nreljed\DashboardCore\Services\FormattingService;
-use Nreljed\DashboardCore\Services\SettingsService;
+use Nreljed\Platform\Models\Setting;
+use Nreljed\Platform\Services\FormattingService;
+use Nreljed\Platform\Services\SettingsService;
 use Tests\TestCase;
 
 class FormattingServiceTest extends TestCase

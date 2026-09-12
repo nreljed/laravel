@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Core middleware (aliases, web group appends, CSRF exceptions) is
-        // wired by Nreljed\DashboardCore\DashboardCoreServiceProvider.
+        // wired by Nreljed\Platform\PlatformServiceProvider.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

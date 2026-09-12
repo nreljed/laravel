@@ -6,8 +6,8 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Nreljed\DashboardCore\Models\Permission;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\Permission;
+use Nreljed\Platform\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

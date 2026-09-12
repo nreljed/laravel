@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Nreljed\DashboardCore\Models\Role;
+use Nreljed\Platform\Models\Role;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

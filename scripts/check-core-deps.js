@@ -8,9 +8,9 @@
  * — or worse, pass `npm run build` against a subtly broken tree. This guard
  * reproduces the loud failure deterministically.
  *
- * It also enforces the release invariant that `nreljed/dashboard-core`'s
+ * It also enforces the release invariant that `nreljed/platform`'s
  * composer.json `version` and package.json `version` never drift (they are
- * bumped together by the core release process; the product ships BOTH
+ * bumped together by the platform release process; the product ships BOTH
  * ecosystems).
  *
  * Exit codes: 0 = ok (skips when vendor core is not installed), 1 = failure.
@@ -23,7 +23,7 @@ import semver from 'semver';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const coreDir = path.join(root, 'vendor', 'nreljed', 'dashboard-core');
+const coreDir = path.join(root, 'vendor', 'nreljed', 'platform');
 
 const errors = [];
 

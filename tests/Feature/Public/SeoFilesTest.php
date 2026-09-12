@@ -3,11 +3,11 @@
 namespace Tests\Feature\Public;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\User;
-use Nreljed\DashboardCore\Posts\Models\Post;
-use Nreljed\DashboardCore\Posts\Models\PostCategory;
-use Nreljed\DashboardCore\Posts\Models\PostTag;
-use Nreljed\DashboardCore\Services\SettingsService;
+use Nreljed\Blog\Models\Post;
+use Nreljed\Blog\Models\PostCategory;
+use Nreljed\Blog\Models\PostTag;
+use Nreljed\Platform\Models\User;
+use Nreljed\Platform\Services\SettingsService;
 use Tests\TestCase;
 
 class SeoFilesTest extends TestCase

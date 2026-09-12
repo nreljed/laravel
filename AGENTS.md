@@ -17,20 +17,24 @@ The app uses a **feature-based architecture** where each domain (Blog, future fe
 
 ## Package Model & Source of Truth (2026-08-24)
 
-**`nreljed/dashboard-core` is now the standalone product repo and the single
+**`nreljed/platform` is now the standalone product repo and the single
 source of truth.** This monorepo became a regular consumer on 2026-08-24:
 
-- composer requires `nreljed/dashboard-core: ^0.1` from the VCS repo (was:
-  path repo `packages/dashboard-core` + `@dev`).
-- Frontend aliases `@` / `@dashboard` / `@dashboard-blog` resolve into
-  `vendor/nreljed/dashboard-core/...` (vite.config.js + tsconfig.json).
-- Develop core via PRs in `nreljed/dashboard-core`; release = semver tag →
+- composer requires `nreljed/platform: ^0.1` from the VCS repo (was:
+  path repo + `@dev`).
+- Frontend aliases `@` / `@dashboard` resolve into
+  `vendor/nreljed/platform/...`, and `@blog` into
+  `vendor/nreljed/blog/...` (vite.config.js + tsconfig.json).
+- Develop core via PRs in `nreljed/platform`; release = semver tag →
   GitHub Release (auto) → `core-updated` dispatch to all consumer apps.
-- Burn-in COMPLETE (2026-08-24): `packages/dashboard-core/`,
+- Blog is a sibling standalone package (`nreljed/blog`, slug `posts`):
+  `registerBlogPages()` from `@blog/pages`, its own migrations/commands,
+  `blog-updated` dispatch. Apps consume both via Composer vcs.
+- Burn-in COMPLETE (2026-08-24): the old local core copy,
   `core-publish.yml`, `scripts/core-publish.php` and the `core:publish`
   script are deleted; vitest/eslint/prettier/pre-push configs, Inertia page
   globs, CSS sources and deploy-package core recording all read from
-  `vendor/nreljed/dashboard-core` / `composer.lock`. Never re-create a local
+  `vendor/nreljed/platform` / `composer.lock`. Never re-create a local
   copy of core — package repo only.
 - `composer.lock` is the pin of record — commit it whenever core updates.
 
@@ -64,18 +68,18 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 - `next-themes` `<ThemeProvider>` for dark mode
 - `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
-- Aliases `@`, `@dashboard` → `vendor/nreljed/dashboard-core/resources/js` (CORE frontend); `@dashboard-blog` → `vendor/nreljed/dashboard-core/src/Blog/Resources/js`; `@test-posts` → `app/TestPosts/Resources/js` — see `vite.config.js`, `tsconfig.json`, `vitest.config.js`
+- Aliases `@`, `@dashboard` → `vendor/nreljed/platform/resources/js` (PLATFORM frontend); `@blog` → `vendor/nreljed/blog/src/Resources/js` (Blog feature frontend); `@test-posts` → `app/TestPosts/Resources/js` — see `vite.config.js`, `tsconfig.json`, `vitest.config.js`
 - `asChild` / `Slot` pattern is standard for component composition
 
 ## Architecture
 
 The app is a **platform consumer**: the dashboard platform lives in the
-`nreljed/dashboard-core` package (installed from GitHub via Composer vcs into
-`vendor/nreljed/dashboard-core`); this repo is a thin app shell + theme.
+`nreljed/platform` package (installed from GitHub via Composer vcs into
+`vendor/nreljed/platform`); this repo is a thin app shell + theme.
 
 ```
-vendor/nreljed/dashboard-core/      # CORE platform (composer vcs, the product — see below)
-  DashboardCoreServiceProvider.php  # Kernel: routes, middleware, rates, gates, schedules, mailer
+vendor/nreljed/platform/      # CORE platform (composer vcs, the product — see below)
+  PlatformServiceProvider.php  # Kernel: routes, middleware, rates, gates, schedules, mailer
   routes/
     web.php                         # Public, dashboard, admin, deploy, csp-report, maintenance
     auth.php                        # Login, register, password, verification
@@ -86,26 +90,36 @@ vendor/nreljed/dashboard-core/      # CORE platform (composer vcs, the product �
     js/                             # CORE frontend — components/ui, hooks, layouts, editor, Pages
     css/core.css                    # design tokens (shadcn base-vega) — apps override, never edit
     views/                          # Blade: app shell, errors/40x-50x, maintenance, mail, notifications, pagination
-  src/
+src/
     Ai/                             # BYOK AI feature (agents, ai providers, usage logs)
-    Blog/                           # FeatureProvider module (controllers, models, requests, migrations, Resources/js)
-    Console/Commands/               # CreateAdmin, CreateRole, ListPermissions, PublishScheduledContent, ...
+    PublicSite/                     # Public template pages (welcome/about/services/contact, sitemap)
+    Console/Commands/               # CreateAdmin, CreateRole, ListPermissions, ...
     Contracts/                      # FeatureProvider interface
     Database/                       # Factories, seeders, migrations
     Deploy/                         # DeployController (check, cacheClear, upload, reset, env)
     Enums/                          # AuditAction
     Http/                           # Middleware (HandleInertiaRequests, Admin, CheckPermission, ...), Controllers (Admin/Auth/Api), Requests
     Jobs/ Mail/ Models/             # SendEmail, DynamicMailable, User, Role, Permission, Notification, ...
-    Notifications/ Observers/ Policies/ Providers/ PublicSite/
+    Notifications/ Observers/ Policies/ Providers/
     Rules/ Services/ Support/ Traits/
     Support/FoundationCheck.php     # Boundary fence monitor
   package.json                      # npm peerDependencies + vite.dedupe.js (canonical dedupe list)
-  vite.dedupe.js                    # resolve.dedupe list — apps wire: import { packageDedupes } from "./vendor/nreljed/dashboard-core/vite.dedupe.js"
+  platform.aliases.js               # Self-locating @dashboard/@ aliases + refresh globs
+  vite.dedupe.js                    # resolve.dedupe list — apps wire: import { packageDedupes } from "./vendor/nreljed/platform/vite.dedupe.js"
   core-manifest.json                # Boundary fence manifest (app_owned_files, forbidden paths, overridable config)
   docs/                             # architecture, feature-provider, frontend, theme, modules, deploy, commands
   tests/                            # core test suite (runs in core CI; consumers opt-in via core's phpunit.xml.dist)
   .github/workflows/ci.yml          # core repo lint + phpunit; auto-release on v* tags
-app/                                # APP shell (thin — most logic lives in the core package)
+vendor/nreljed/blog/                # BLOG feature package (composer vcs, standalone repo nreljed/blog)
+  BlogServiceProvider.php           # slug posts, dashboard/posts + blog routes, schedule:publish, own commands/migrations
+  src/                              # Nreljed\Blog — Controllers, Models, Requests, Routes, Services, Console, Jobs, Observers, Policies, Database
+  database/migrations/              # 11 posts/categories/tags migrations (CANONICAL — apps must not re-own these)
+  src/Resources/js/                 # Blog frontend (@blog) — pages.ts exports registerBlogPages()
+  package.json                      # npm peerDependencies
+  blog.aliases.js                   # Self-locating @blog alias + refresh globs
+  tests/                            # Structural/contract suite (blog CI; apps keep their own integration tests)
+  scripts/frontend-boundary-check.php
+app/                                # APP shell (thin — most logic lives in the platform/blog packages)
   Http/Controllers/Controller.php   # Base controller
   Policies/TestPostPolicy.php
   Providers/AppServiceProvider.php
@@ -118,7 +132,7 @@ resources/js/                       # APP shell (master) — entry point + proje
   Layouts/StoreLayout.tsx           # Future store layout (project theme example)
   Pages/Public/                     # PROJECT-OWNED marketing theme — overrides core's public/welcome|about|services|contact
 routes/                             # APP-only routes (most routing lives in the core package)
-  web.php                           # Reserved for project-specific routes — public/dashboard/admin/deploy/csp-report live in vendor/nreljed/dashboard-core/routes
+  web.php                           # Reserved for project-specific routes — public/dashboard/admin/deploy/csp-report live in vendor/nreljed/platform/routes
   channels.php
   console.php
 ```
@@ -133,35 +147,35 @@ routes/                             # APP-only routes (most routing lives in the
 > engine code in core, keep project visuals in `resources/js`, keep project
 > features in `app/`.
 > **Platform skills** (feature-architecture, permission-system, lexical-editor-development)
-> live globally at `~/.config/opencode/skills/` — they describe the dashboard-core
-> platform, not this app. App/project conventions stay in this repo's `.agents/skills/`.
+> live globally at `~/.config/opencode/skills/` — they describe the platform
+> package, not this app. App/project conventions stay in this repo's `.agents/skills/`.
 
-> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The app entry spreads it into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
+> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
 
 > **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `page-config.ts` builds its own explicit pageMap:
 > `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*`, `blog/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. The client entry (`app.tsx`) imports `pageConfig` — never duplicate the config block.
 
 > **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
 
-> **Frontend dependency management** — the core package ships a `package.json` with `peerDependencies` declaring every runtime npm package it imports (React, Inertia, Lexical, Radix, shadcn, etc.). Consuming apps must install these as direct dependencies. The core also ships `vite.dedupe.js` — a canonical list of package names that must be added to Vite's `resolve.dedupe` to prevent duplicate bundles when multiple packages (dashboard-core, shop-module, etc.) share the same dependencies. Consuming apps import it (this repo wires it in `vite.config.js`):
+> **Frontend dependency management** — the core package ships a `package.json` with `peerDependencies` declaring every runtime npm package it imports (React, Inertia, Lexical, Radix, shadcn, etc.). Consuming apps must install these as direct dependencies. The core also ships `vite.dedupe.js` — a canonical list of package names that must be added to Vite's `resolve.dedupe` to prevent duplicate bundles when multiple packages (platform, blog, shop-module, etc.) share the same dependencies. Consuming apps import it (this repo wires it in `vite.config.js`):
 >
 > ```js
-> import { packageDedupes } from "./vendor/nreljed/dashboard-core/vite.dedupe.js";
+> import { packageDedupes } from "./vendor/nreljed/platform/vite.dedupe.js";
 > ```
 >
 > When adding a new npm dependency to the core's frontend, update both the core's `package.json` (peerDependencies) and the core's `vite.dedupe.js`.
 
 > **Core development model (vcs install — do NOT hand-edit vendor)** — everything under
-> `vendor/nreljed/dashboard-core` is a Composer vcs install (dist zip pinned by
+> `vendor/nreljed/platform` is a Composer vcs install (dist zip pinned by
 > `composer.lock`). It is overwritten on `composer update` — never edit it directly.
-> Core source lives in the standalone repo **`C:\Users\nrelj\Local Sites\dashboard-core`**
-> (origin `github.com/nreljed/dashboard-core`). Dev loop:
+> Core source lives in the standalone platform repo, cloned locally at
+> **`C:\Users\nrelj\Local Sites\dashboard-core`** (origin `github.com/nreljed/platform`). Dev loop:
 >
 > 1. Edit the **core clone**, commit + push (branch → PR).
 > 2. Tag `vX.Y.Z` → core CI (`ci.yml`) creates the GitHub Release automatically.
 >    The publish step bumps **both** `composer.json` `version` and `package.json`
 >    `version` — the two must never drift.
-> 3. Consumers pull: `composer update nreljed/dashboard-core && npm run build`.
+> 3. Consumers pull: `composer update nreljed/platform && npm run build`.
 > 4. Automated propagation: push to core `main` fires `repository_dispatch`
 >    (`core-updated`) to consumer repos; their `core-update.yml` opens a
 >    `composer update` PR (Shop has this; merge → their deploy takes over). Weekly
@@ -170,12 +184,12 @@ routes/                             # APP-only routes (most routing lives in the
 >
 > - **Fast local iteration**: the vendor copy drives runtime/tests. To test core
 >   changes live before tagging, temporarily switch this repo's composer entry to a
->   `path` repo, `composer update nreljed/dashboard-core`, and revert the entry
+>   `path` repo, `composer update nreljed/platform`, and revert the entry
 >   before pushing. There is **no `composer reinstall` shortcut** — that only worked
 >   for the deleted path-repo model. Frontend consumes `vendor/...` too, so core JS
 >   edits also need the updated vendor copy.
 > - Consumer CI clones the private repo via `COMPOSER_AUTH` using `secrets.GH_TOKEN` —
->   that token needs **Contents: Read** on `nreljed/dashboard-core`.
+>   that token needs **Contents: Read** on `nreljed/platform`.
 
 ## Feature Architecture
 
@@ -183,7 +197,7 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 ### How It Works
 
-1. **`FeatureRegistry`** (`vendor/nreljed/dashboard-core/src/Services/FeatureRegistry.php`) — singleton, delegates to feature service providers
+1. **`FeatureRegistry`** (`vendor/nreljed/platform/src/Services/FeatureRegistry.php`) — singleton, delegates to feature service providers
 2. **Feature Service Providers** (e.g., `BlogServiceProvider`) — register routes, permissions, nav items
 3. **`HandleInertiaRequests`** calls `FeatureRegistry::getAllNavItems()` and `getAllSharedData()` to share props
 
@@ -195,11 +209,11 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 
 ### Adding a New Feature
 
-1. Create `vendor/nreljed/dashboard-core/src/{Name}/` with Controllers/, Models/, Requests/, Resources/js/Pages/
+1. Create `vendor/nreljed/platform/src/{Name}/` with Controllers/, Models/, Requests/, Resources/js/Pages/
 2. Create `{Name}ServiceProvider.php` — register routes, permissions, nav items in `boot()`
 3. Register the service provider in `config/features.php` (`providers` array)
 4. Declare feature permissions in `{Name}ServiceProvider::permissions()`; grant them to roles via `config/roles.php` (package config catalog, per-app overridable)
-5. Ship it via the core dev loop: edit the core clone → tag → `composer update nreljed/dashboard-core`
+5. Ship it via the core dev loop: edit the core clone → tag → `composer update nreljed/platform`
 
 ## Routes
 
@@ -219,7 +233,7 @@ Pure **Bring Your Own Key** model — zero platform AI cost. Users manage their 
 ### Architecture
 
 ```
-vendor/nreljed/dashboard-core/src/Ai/   # Routes registered by DashboardCoreServiceProvider (core routes/web.php)
+vendor/nreljed/platform/src/Ai/   # Routes registered by PlatformServiceProvider (core routes/web.php)
   Agents/
     SeoAgent.php               # SEO metadata generation (structured output)
     ChatAgent.php              # Dashboard chat assistant (streaming)
@@ -296,7 +310,7 @@ The authoritative model list lives in `AiProvider::supportedProviders()`. Curren
 - **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`, `notificationUnreadCount`, `flash`, `featureNavItems`, `userCapabilities`, `emailSettings`, `brand`, `impersonating`
 - **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`
 - **Feature authorization**: Route middleware `permission:feature.view`, controller `$this->authorize()`, or FormRequest `authorize()`
-- **Roles & permissions (config catalog)**: Custom slug-based RBAC, package-owned (`Nreljed\DashboardCore\Models\Role`/`Permission` — NOT Spatie). Core permission catalog + default roles live in `vendor/nreljed/dashboard-core/config/roles.php`; roles are `'*'`/slug-mapped, per-app overridable via a published `config/roles.php`. Gates auto-register from `FeatureRegistry::permissions()` + `permissions` table (`PermissionGateServiceProvider`). Seeder: `Nreljed\DashboardCore\Database\Seeders\RolesAndPermissionsSeeder` (idempotent, config-driven). Slug convention: kebab for global (`manage-users`), dot for features (`posts.view`) — never snake_case.
+- **Roles & permissions (config catalog)**: Custom slug-based RBAC, package-owned (`Nreljed\Platform\Models\Role`/`Permission` — NOT Spatie). Core permission catalog + default roles live in `vendor/nreljed/platform/config/roles.php`; roles are `'*'`/slug-mapped, per-app overridable via a published `config/roles.php`. Gates auto-register from `FeatureRegistry::permissions()` + `permissions` table (`PermissionGateServiceProvider`). Seeder: `Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder` (idempotent, config-driven). Slug convention: kebab for global (`manage-users`), dot for features (`posts.view`) — never snake_case.
 - **Rate limiting**: Login (5 attempts/60s), auth routes (5/min IP-based), admin (60/min)
 - **Validation**: `$request->validate()` or FormRequest classes
 - **Error handling**: Inertia renders `Error.tsx` for all HTTP exceptions
@@ -388,7 +402,7 @@ GitHub-hosted runners are billing-blocked account-wide, so CI/CD runs on seven s
 runners on this laptop — one per repo, all under `C:\runners\<suffix>` (moved from flat
 `C:\actions-runner-*` on 2026-08-31): `C:\runners\shop` (`win-runner-shop` → laravel.shop),
 `C:\runners\laravel` (`win-runner-laravel` → laravel), `C:\runners\booking` (`win-runner-booking` →
-laravel.booking), `C:\runners\core` (`win-runner-core` → dashboard-core), `C:\runners\shopmodule`,
+laravel.booking), `C:\runners\core` (`win-runner-core` → nreljed/platform), `C:\runners\shopmodule`,
 `C:\runners\bookingmodule`, `C:\runners\projectwp`. Plain `run.cmd` processes (NO Windows services,
 no UAC), label `self-hosted`. Runners do NOT auto-start — start them on-demand via
 `pwsh -NoProfile -File C:\tools\gha-runner.ps1 <name|all>`.
@@ -503,14 +517,14 @@ pull_request → pr.yml
 
 ### Database Maintenance Feature
 
-`vendor/nreljed/dashboard-core` ships an environment-gated reset/reseed feature:
+`vendor/nreljed/platform` ships an environment-gated reset/reseed feature:
 
 | Surface         | Gate                                                  | Route                                       |
 | --------------- | ----------------------------------------------------- | ------------------------------------------- |
 | Admin UI page   | `admin` + `manage-options` + `DB_MAINTENANCE_ENABLED` | `dashboard.admin.database(.reset\|.reseed)` |
 | Deploy endpoint | `DEPLOY_TOKEN` + `confirm=RESET`                      | `POST /deploy/reset`                        |
 
-- Shared logic lives in `Nreljed\DashboardCore\Services\DatabaseMaintenanceService` —
+- Shared logic lives in `Nreljed\Platform\Services\DatabaseMaintenanceService` —
   `resetDatabase()` runs `migrate:fresh` + baseline seeders (roles/permissions + settings) +
   `app:create-admin`; demo-tier seeders (`demo_users`, `blog`) only run when `demo: true`
   (`with_demo` on the endpoint, UI always resets baseline-only). `reseedDatabase()` re-runs
@@ -526,13 +540,13 @@ pull_request → pr.yml
 
 ### GitHub Secrets
 
-| Secret                                                      | Purpose                                                                                                           |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `DEPLOY_TOKEN`                                              | Must match `config('app.deploy_token')` — **per-repo** (this app's server)                                        |
-| `GH_TOKEN`                                                  | ONE unified fine-grained PAT covering all four repos (`laravel`, `laravel.shop`, `dashboard-core`, `shop-module`) |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`               | Production MySQL                                                                                                  |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`             | Initial admin bootstrap                                                                                           |
-| `FTP_SERVER` / `FTP_PORT` / `FTP_USERNAME` / `FTP_PASSWORD` | DirectAdmin FTP fallback for this app's own domain (`laravel@tunispromo.tn`)                                      |
+| Secret                                                      | Purpose                                                                                                                                             |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_TOKEN`                                              | Must match `config('app.deploy_token')` — **per-repo** (this app's server)                                                                          |
+| `GH_TOKEN`                                                  | ONE unified fine-grained PAT covering all repos (`laravel`, `laravel.shop`, `laravel.booking`, `platform`, `blog`, `shop-module`, `booking-module`) |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`               | Production MySQL                                                                                                                                    |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`             | Initial admin bootstrap                                                                                                                             |
+| `FTP_SERVER` / `FTP_PORT` / `FTP_USERNAME` / `FTP_PASSWORD` | DirectAdmin FTP fallback for this app's own domain (`laravel@tunispromo.tn`)                                                                        |
 
 > Full secrets table + `gh` cheat sheet: [`docs/github-cli.md`](docs/github-cli.md).
 > Deploy contract (config keys, endpoints, FeatureProvider checklist, publish flow):

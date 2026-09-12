@@ -6,9 +6,9 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Models\NotificationPreference;
-use Nreljed\DashboardCore\Notifications\AppNotification;
-use Nreljed\DashboardCore\Services\NotificationService;
+use Nreljed\Platform\Models\NotificationPreference;
+use Nreljed\Platform\Notifications\AppNotification;
+use Nreljed\Platform\Services\NotificationService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -64,7 +64,7 @@ class NotificationServiceTest extends TestCase
         $oldId = (string) Str::uuid();
         DB::table('notifications')->insert([
             'id' => $oldId,
-            'type' => 'Nreljed\DashboardCore\Notifications\TestNotification',
+            'type' => 'Nreljed\Platform\Notifications\TestNotification',
             'notifiable_id' => $user->id,
             'notifiable_type' => $user::class,
             'data' => json_encode(['title' => 'Old notification', 'message' => 'Old']),
@@ -124,7 +124,7 @@ class NotificationServiceTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             $notifications[] = $user->notifications()->create([
                 'id' => (string) Str::uuid(),
-                'type' => 'Nreljed\DashboardCore\Notifications\TestNotification',
+                'type' => 'Nreljed\Platform\Notifications\TestNotification',
                 'data' => ['title' => 'Test', 'message' => 'Test message '.$i],
             ]);
         }

@@ -1,6 +1,6 @@
 <?php
 
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 
 return [
 

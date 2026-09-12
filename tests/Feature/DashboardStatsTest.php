@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
-use Nreljed\DashboardCore\Database\Factories\PostFactory;
-use Nreljed\DashboardCore\Services\DashboardService;
+use Nreljed\Blog\Database\Factories\PostFactory;
+use Nreljed\Platform\Services\DashboardService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

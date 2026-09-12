@@ -25,13 +25,13 @@ class NotificationPurgeCommandTest extends TestCase
 
         $old = $user->notifications()->create([
             'id' => (string) Str::uuid(),
-            'type' => 'Nreljed\DashboardCore\Notifications\TestNotification',
+            'type' => 'Nreljed\Platform\Notifications\TestNotification',
             'data' => ['message' => 'Old'],
             'created_at' => now()->subDays(100),
         ]);
         $recent = $user->notifications()->create([
             'id' => (string) Str::uuid(),
-            'type' => 'Nreljed\DashboardCore\Notifications\TestNotification',
+            'type' => 'Nreljed\Platform\Notifications\TestNotification',
             'data' => ['message' => 'Recent'],
             'created_at' => now()->subDay(),
         ]);
@@ -50,7 +50,7 @@ class NotificationPurgeCommandTest extends TestCase
 
         $old = $user->notifications()->create([
             'id' => (string) Str::uuid(),
-            'type' => 'Nreljed\DashboardCore\Notifications\TestNotification',
+            'type' => 'Nreljed\Platform\Notifications\TestNotification',
             'data' => ['message' => 'Old'],
             'created_at' => now()->subDays(30),
         ]);

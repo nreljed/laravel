@@ -6,8 +6,8 @@ use App\TestPosts\Models\TestPost;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use Nreljed\DashboardCore\Concerns\InteractsWithFeatures;
-use Nreljed\DashboardCore\Contracts\FeatureProvider;
+use Nreljed\Platform\Concerns\InteractsWithFeatures;
+use Nreljed\Platform\Contracts\FeatureProvider;
 
 class TestPostsServiceProvider extends ServiceProvider implements FeatureProvider
 {

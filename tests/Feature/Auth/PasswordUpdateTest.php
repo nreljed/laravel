@@ -4,7 +4,7 @@ namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase

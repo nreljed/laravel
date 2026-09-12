@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 use Tests\TestCase;
 
 class DeployEndpointTest extends TestCase

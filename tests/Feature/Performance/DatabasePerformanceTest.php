@@ -5,9 +5,9 @@ namespace Tests\Feature\Performance;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Nreljed\DashboardCore\Database\Factories\PostFactory;
-use Nreljed\DashboardCore\Services\DashboardService;
-use Nreljed\DashboardCore\Services\SettingsService;
+use Nreljed\Blog\Database\Factories\PostFactory;
+use Nreljed\Platform\Services\DashboardService;
+use Nreljed\Platform\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

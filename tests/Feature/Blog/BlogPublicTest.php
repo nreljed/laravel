@@ -4,7 +4,7 @@ namespace Tests\Feature\Blog;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
-use Nreljed\DashboardCore\Database\Factories\PostFactory;
+use Nreljed\Blog\Database\Factories\PostFactory;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

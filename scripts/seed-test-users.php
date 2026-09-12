@@ -20,8 +20,8 @@ $kernel->bootstrap();
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Hash;
-use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\Role;
+use Nreljed\Platform\Models\User;
 
 echo "=== Seeding Test Users ===\n\n";
 

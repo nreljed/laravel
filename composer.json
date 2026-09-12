@@ -10,14 +10,33 @@
   "license": "MIT",
   "repositories": [
     {
+      "type": "path",
+      "url": "../../dashboard-core",
+      "options": {
+        "symlink": false
+      }
+    },
+    {
+      "type": "path",
+      "url": "../../blog",
+      "options": {
+        "symlink": false
+      }
+    },
+    {
       "type": "vcs",
-      "url": "https://github.com/nreljed/dashboard-core.git"
+      "url": "https://github.com/nreljed/platform.git"
+    },
+    {
+      "type": "vcs",
+      "url": "https://github.com/nreljed/blog.git"
     }
   ],
   "require": {
     "php": "^8.4",
     "fakerphp/faker": "^1.23",
-    "nreljed/dashboard-core": "^0.1",
+    "nreljed/blog": "^0.1",
+    "nreljed/platform": "^0.1",
     "inertiajs/inertia-laravel": "^3.1",
     "intervention/image-laravel": "^4.0",
     "laravel/ai": "^0.10",

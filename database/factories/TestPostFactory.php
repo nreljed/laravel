@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\TestPosts\Models\TestPost;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Nreljed\DashboardCore\Models\User;
+use Nreljed\Platform\Models\User;
 
 class TestPostFactory extends Factory
 {

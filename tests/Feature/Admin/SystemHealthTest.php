@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
-use Nreljed\DashboardCore\Services\SystemHealthService;
+use Nreljed\Platform\Services\SystemHealthService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -276,10 +276,10 @@ class SystemHealthTest extends TestCase
 
         $jsonFile = storage_path('app/core.json');
         File::put($jsonFile, json_encode([
-            'name' => 'dashboard-core',
+            'name' => 'platform',
             'version' => '1.2.3',
             'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
-            'repo' => 'nreljed/dashboard-core',
+            'repo' => 'nreljed/platform',
         ]));
 
         try {
@@ -287,12 +287,12 @@ class SystemHealthTest extends TestCase
                 ->post(route('dashboard.admin.system-health.refresh'));
 
             $response->assertOk();
-            $response->assertJsonPath('core_package.name', 'dashboard-core');
+            $response->assertJsonPath('core_package.name', 'platform');
             $response->assertJsonPath('core_package.version', '1.2.3');
             $response->assertJsonPath('core_package.sha', '50e9c0fcf28d365295c46af725da4822456c3574');
             $response->assertJsonPath('core_package.short', '50e9c0f');
-            $response->assertJsonPath('core_package.repo', 'nreljed/dashboard-core');
-            $response->assertJsonPath('core_package.url', 'https://github.com/nreljed/dashboard-core/commit/50e9c0fcf28d365295c46af725da4822456c3574');
+            $response->assertJsonPath('core_package.repo', 'nreljed/platform');
+            $response->assertJsonPath('core_package.url', 'https://github.com/nreljed/platform/commit/50e9c0fcf28d365295c46af725da4822456c3574');
             $response->assertJsonPath('core_package.is_dev', false);
         } finally {
             File::delete($jsonFile);
@@ -333,7 +333,7 @@ class SystemHealthTest extends TestCase
                 'tag_name' => 'v0.8.0',
                 'published_at' => '2026-08-01T00:00:00Z',
             ], 200),
-            'api.github.com/repos/nreljed/dashboard-core/releases/latest' => Http::response([
+            'api.github.com/repos/nreljed/platform/releases/latest' => Http::response([
                 'tag_name' => 'v0.1.2',
                 'published_at' => '2026-08-02T00:00:00Z',
             ], 200),
@@ -348,7 +348,7 @@ class SystemHealthTest extends TestCase
             $response->assertJsonPath('latest_version.version', 'v0.8.0');
             $response->assertJsonPath('core_latest_version.found', true);
             $response->assertJsonPath('core_latest_version.version', 'v0.1.2');
-            $response->assertJsonPath('core_latest_version.repo', 'nreljed/dashboard-core');
+            $response->assertJsonPath('core_latest_version.repo', 'nreljed/platform');
 
             $payload = $response->json();
             $this->assertIsString($payload['latest_version']['checked_at'] ?? null);

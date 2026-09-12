@@ -5,9 +5,9 @@ namespace Tests\Feature\Permissions;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Nreljed\DashboardCore\Models\Permission;
-use Nreljed\DashboardCore\Models\Role;
-use Nreljed\DashboardCore\Support\RoleCatalog;
+use Nreljed\Platform\Models\Permission;
+use Nreljed\Platform\Models\Role;
+use Nreljed\Platform\Support\RoleCatalog;
 use Tests\TestCase;
 
 class ConfigRoleCatalogTest extends TestCase

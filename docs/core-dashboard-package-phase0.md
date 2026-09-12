@@ -15,7 +15,7 @@
 
 ## 0.2 Core/App Classification (master files)
 
-Legend: **CORE** = moves into `Nreljed\DashboardCore\` (package) · **APP** = stays in master app.
+Legend: **CORE** = moves into `Nreljed\Platform\` (package) · **APP** = stays in master app.
 
 ### PHP — app/
 
@@ -127,7 +127,7 @@ Legend: **CORE** = moves into `Nreljed\DashboardCore\` (package) · **APP** = st
 | `casts` phone                                   | `=> 'string'`               | absent                               | CORE (adopt master)                                      |
 | domain relations (`orders()`)                   | ❌                          | Shop: `orders()`                     | **APP** — consumer's `App\Models\User` extends core User |
 
-**Pattern for consumers:** `app/Models/User.php` = `class User extends Nreljed\DashboardCore\Models\User` adding domain relations. Auth binding (`config/auth.php` providers.users.model) points at the consumer's model. No core edits.
+**Pattern for consumers:** `app/Models/User.php` = `class User extends Nreljed\Platform\Models\User` adding domain relations. Auth binding (`config/auth.php` providers.users.model) points at the consumer's model. No core edits.
 
 ## 0.5 npm-dep Scan & Peer-Dependency Contract
 
@@ -197,29 +197,29 @@ Phase 1 is executed as a **namespace-rewritten COPY** into `packages/dashboard-c
 
 - **`src/`** — 155 PHP files: `Blog/**` + `Ai/**` features wholesale, `Console/Commands`, `Enums`, `Http/{Controllers,Middleware,Requests}` (incl. all `Auth/*`, `Api/NotificationPollController`, `Admin/*`), `Jobs`, `Mail`, `Models` (Page.php pruned), `Notifications`, `Policies/PostPolicy.php`, `Providers/PermissionGateServiceProvider.php`, `Rules`, `Services`, `Traits`, plus `DashboardCoreServiceProvider.php` and `Database/Factories/*`.
 - **`database/migrations/`** — 32/37 core migrations; 5 excluded (see §0.2): `create_pages_table`, `telescope_entries`, `drop_modules_table`, `drop_nickname_from_users`, `add_location_to_test_posts`. Blog feature migrations ride inside `src/Blog/database/migrations/`.
-- **`routes/`** — `web.php` (new, `Nreljed\DashboardCore\` namespace, maintenance/dashboard/notifications/impersonation/account incl. ai-keys/media/admin/settings/users/roles/audit-logs/permissions/developer/ip-rules + `require auth.php`), `auth.php`, `console.php` (schedule:publish, notifications:purge, app:prune-audit-logs).
+- **`routes/`** — `web.php` (new, `Nreljed\Platform\` namespace, maintenance/dashboard/notifications/impersonation/account incl. ai-keys/media/admin/settings/users/roles/audit-logs/permissions/developer/ip-rules + `require auth.php`), `auth.php`, `console.php` (schedule:publish, notifications:purge, app:prune-audit-logs).
 - **`config/core.php`** — package default: `load_migrations => true` (apps with their own migrations set `false`), `features => [BlogServiceProvider::class]`, `orphan_media => ['posts' => Post::class]`.
 - **`resources/js/**`** — Components, hooks, lib, types, Layouts (minus StoreLayout), Pages (Auth, dashboard/**, Blog/Public/**, Error.tsx), test-setup. Public pages + StoreLayout stay APP.
 - **`resources/views/`** — 52 files (app, errors, email, recovery, vendor).
-- **Factories** — package-local `Nreljed\DashboardCore\Database\Factories\` (User, Role, Permission, Post, PostCategory, PostTag); models resolve via `newFactory()`/docblock.
-- **`composer.json`** — `nreljed/dashboard-core`, PSR-4 `Nreljed\DashboardCore\` → `src/`, requires mirror master runtime deps (inertia 3, intervention/image-laravel 4, laravel/ai 0.9, sanctum 4, web-push, ziggy), no spatie (custom Role/Permission models), auto-discovers `DashboardCoreServiceProvider`.
+- **Factories** — package-local `Nreljed\Platform\Database\Factories\` (User, Role, Permission, Post, PostCategory, PostTag); models resolve via `newFactory()`/docblock.
+- **`composer.json`** — `nreljed/dashboard-core`, PSR-4 `Nreljed\Platform\` → `src/`, requires mirror master runtime deps (inertia 3, intervention/image-laravel 4, laravel/ai 0.9, sanctum 4, web-push, ziggy), no spatie (custom Role/Permission models), auto-discovers `DashboardCoreServiceProvider`.
 
 ### APP couplings removed in the copy
 
 - `FeatureRegistry` → **config-driven** (`config('core.features')`), no hard-coded `TestPostsServiceProvider`.
 - `CleanupOrphanMedia` → renamed to `core:cleanup-orphan-media`, iterates `config('core.orphan_media')` (default `posts` → `Post`); `Post::getReferencedPaths()` added (mirrors its `deleting` hook).
-- `SystemHealthService::getScheduleInfo()` now matches consumer app namespace OR `Nreljed\DashboardCore\`.
-- `notifications.ts` `normalizeNotificationType()` strips both `Nreljed\DashboardCore\Notifications\` and `App\Notifications\`.
+- `SystemHealthService::getScheduleInfo()` now matches consumer app namespace OR `Nreljed\Platform\`.
+- `notifications.ts` `normalizeNotificationType()` strips both `Nreljed\Platform\Notifications\` and `App\Notifications\`.
 
 ### Rename mechanics (recorded for the record)
 
-- PowerShell `-replace 'App\\' → 'Nreljed\DashboardCore\\'` over 146 files, then collapsed the resulting double-backslashes, then stripped UTF-8 BOMs (PS 5.1 `-Encoding utf8` adds BOMs — PHP fatal). `php -l` clean on all 206 package files; Pint `--dirty` applied (80 files fixed).
+- PowerShell `-replace 'App\\' → 'Nreljed\Platform\\'` over 146 files, then collapsed the resulting double-backslashes, then stripped UTF-8 BOMs (PS 5.1 `-Encoding utf8` adds BOMs — PHP fatal). `php -l` clean on all 206 package files; Pint `--dirty` applied (80 files fixed).
 - Rector's `RenameClassRector` prefix-mapping was considered; the direct text replace was deterministic because every `App\` occurrence in the package resolved to a copied class (verified zero references to TestPosts/Telescope/Page remain).
 
 ### Package tests
 
 - `phpunit.xml.dist` + `tests/bootstrap.php` (resolves monorepo or standalone vendor/autoload).
-- `tests/NamespaceIntegrityTest.php` (5 tests): no `App\` refs, every file declares `Nreljed\DashboardCore\`, PSR-4 path parity, no BOMs, composer autoload maps `src/`.
+- `tests/NamespaceIntegrityTest.php` (5 tests): no `App\` refs, every file declares `Nreljed\Platform\`, PSR-4 path parity, no BOMs, composer autoload maps `src/`.
 - Run with: `vendor\bin\phpunit -c packages\dashboard-core\phpunit.xml.dist` → 5/5 pass.
 
 ### Not yet done (Phase 1 remainder / Phase 2)

@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use Database\Factories\TestPostFactory;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\DashboardCore\Models\NotificationPreference;
-use Nreljed\DashboardCore\Models\Permission;
-use Nreljed\DashboardCore\Models\Role;
+use Nreljed\Platform\Models\NotificationPreference;
+use Nreljed\Platform\Models\Permission;
+use Nreljed\Platform\Models\Role;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

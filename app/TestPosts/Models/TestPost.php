@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Nreljed\DashboardCore\Models\User;
-use Nreljed\DashboardCore\Services\MediaService;
+use Nreljed\Platform\Models\User;
+use Nreljed\Platform\Services\MediaService;
 
 /**
  * @property int $id

@@ -28,7 +28,7 @@
 | D7  | **Roles = config catalog**, per-app                                                                                                                                                                                                                                                                                                                       |
 | D8  | **Page override** for rich dashboards                                                                                                                                                                                                                                                                                                                     |
 | D9  | **API Tokens + ForceInertiaCacheHeaders adopted into core**                                                                                                                                                                                                                                                                                               |
-| D10 | **Single package now**, structured to split into per-feature packages later (sub-namespaces `Nreljed\DashboardCore\Blog`, `.Ai`, ...)                                                                                                                                                                                                                     |
+| D10 | **Single package now**, structured to split into per-feature packages later (sub-namespaces `Nreljed\Platform\Blog`, `.Ai`, ...)                                                                                                                                                                                                                          |
 | D11 | **Feature-toggle mechanism NOT adopted** — Booking's broken `ModuleController` dropped                                                                                                                                                                                                                                                                    |
 | D12 | **Composer-only distribution** — `nreljed/dashboard-core` on GitHub Packages is the _only_ artifact. One version tag drives everything                                                                                                                                                                                                                    |
 | D13 | **Dev loop via `path` repository** — Shop/Booking resolve core from a local master clone (`"type":"path","url":"../laravel/packages/dashboard-core"`). Edit master → test in all three apps instantly, zero tags/publishing during dev. Tagged VCS used only for production                                                                               |
@@ -41,7 +41,7 @@
 nreljed/laravel  (master = Cost Breaker 360)
 ├─ app/            # the reference app (uses the package)
 ├─ packages/dashboard-core/
-│  ├─ composer.json          # nreljed/dashboard-core, PSR-4 Nreljed\DashboardCore\ => src/
+│  ├─ composer.json          # nreljed/dashboard-core, PSR-4 Nreljed\Platform\ => src/
 │  ├─ package.json           # peer-dependency contract for the shipped TSX
 │  ├─ src/
 │  │  ├─ DashboardCoreServiceProvider.php   # routes, middleware, migrations, config, commands, scheduler, gates
@@ -84,7 +84,7 @@ nreljed/laravel  (master = Cost Breaker 360)
 
 ## 5. Extension Layer — the Plugin Contract
 
-**`Feature` interface** (in `Nreljed\DashboardCore\Contracts\Feature`):
+**`Feature` interface** (in `Nreljed\Platform\Contracts\Feature`):
 
 ```php
 public function slug(): string;
@@ -139,7 +139,7 @@ public function onUserDelete(int $userId): void;
 > Execution report: [`core-dashboard-package-phase0.md`](core-dashboard-package-phase0.md) §0.10
 
 1. Create `packages/dashboard-core/` with the full tree (PHP + migrations + JS)
-2. **Rename `App\` → `Nreljed\DashboardCore\`** — done via deterministic PowerShell text replace (146 files) + Pint, NOT Rector; rector's `RenameClassRector` prefix-mapping was considered and rejected because the copy is self-contained (every `App\` resolves to a copied class; zero TestPosts/Telescope/Page refs remain)
+2. **Rename `App\` → `Nreljed\Platform\`** — done via deterministic PowerShell text replace (146 files) + Pint, NOT Rector; rector's `RenameClassRector` prefix-mapping was considered and rejected because the copy is self-contained (every `App\` resolves to a copied class; zero TestPosts/Telescope/Page refs remain)
 3. Migrations moved **verbatim** (same basenames → existing DBs skip); 5 master-only migrations excluded (Pages, Telescope, modules, nickname, test-posts)
 4. Composer: `nreljed/dashboard-core`, PSR-4, package tests wired (5/5 pass) — master suite still 431/431 green
 5. `git subtree` split branch `split/dashboard-core` for the publish pipeline (Phase 3)
@@ -241,7 +241,7 @@ picks up any release CI couldn't push (hosting firewall blocks datacenter IPs).
 
 ### 7.1.4 FeatureProvider contract checklist
 
-A feature provider must implement `Nreljed\DashboardCore\Contracts\FeatureProvider`
+A feature provider must implement `Nreljed\Platform\Contracts\FeatureProvider`
 (+ `InteractsWithFeatures` trait). Only `name()` and `slug()` are required; the trait
 supplies no-op defaults for everything else. Common overrides:
 
