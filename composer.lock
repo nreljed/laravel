@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4bf4d6cf93ef22ba1cabb2add2eda075",
+    "content-hash": "7dd708d87a3ebb15176d302a6dac6148",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3256,10 +3256,16 @@
         {
             "name": "nreljed/blog",
             "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/blog.git",
+                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../blog",
-                "reference": "7ec3a299b84692f4a4c64094b01c812bb5715619"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -3298,18 +3304,25 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.0",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
+            "time": "2026-09-12T20:22:01+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.39",
+            "version": "0.1.40",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/platform.git",
+                "reference": "54ca9be775e8538707c05f2c30c0077a519c921a"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../dashboard-core",
-                "reference": "29b797ec280f67c7da1e8be9daf5d747330ef310"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/54ca9be775e8538707c05f2c30c0077a519c921a",
+                "reference": "54ca9be775e8538707c05f2c30c0077a519c921a",
+                "shasum": ""
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3353,10 +3366,11 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.40",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
+            "time": "2026-09-12T20:31:31+00:00"
         },
         {
             "name": "nunomaduro/termwind",

@@ -10,20 +10,6 @@
   "license": "MIT",
   "repositories": [
     {
-      "type": "path",
-      "url": "../../dashboard-core",
-      "options": {
-        "symlink": false
-      }
-    },
-    {
-      "type": "path",
-      "url": "../../blog",
-      "options": {
-        "symlink": false
-      }
-    },
-    {
       "type": "vcs",
       "url": "https://github.com/nreljed/platform.git"
     },
