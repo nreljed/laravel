@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   validate:
-    uses: nreljed/dashboard-core/.github/workflows/consumer-ci.yml@main
+    uses: nreljed/platform/.github/workflows/consumer-ci.yml@main
     with:
       skip-php-tests: ${{ inputs.skip-php-tests || false }}
       skip-npm-tests: ${{ inputs.skip-npm-tests || false }}

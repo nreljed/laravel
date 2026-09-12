@@ -30,8 +30,8 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       skip: ${{ steps.version.outputs.skip }}
-    # Private vcs repo: nreljed/dashboard-core installs via GH_TOKEN (needs
-    # Contents: Read on that repo). Composer reads JSON from COMPOSER_AUTH.
+    # Private vcs repos: nreljed/platform + nreljed/blog install via GH_TOKEN
+    # (needs Contents: Read on those repos). Composer reads JSON from COMPOSER_AUTH.
     env:
       COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
     steps:
@@ -186,20 +186,25 @@ jobs:
       - name: Copy deploy script
         run: Copy-Item -Path scripts/deploy-cron.php -Destination deploy.php
 
-      - name: Record dashboard-core version and commit
+      - name: Record platform + blog versions and commit
         shell: pwsh
         run: |
           # Model B: core is a composer dependency — read the pinned version
           # and source SHA from composer.lock (no local packages/ checkout).
           $lock = Get-Content "composer.lock" -Raw | ConvertFrom-Json
-          $core = $lock.packages | Where-Object { $_.name -eq 'nreljed/dashboard-core' } | Select-Object -First 1
-          if (-not $core) { throw "nreljed/dashboard-core not found in composer.lock" }
-          $coreVersion = $core.version
-          $coreSha = if ($core.source.reference) { $core.source.reference } else { $core.dist.reference }
+          $platform = $lock.packages | Where-Object { $_.name -eq 'nreljed/platform' } | Select-Object -First 1
+          if (-not $platform) { throw "nreljed/platform not found in composer.lock" }
+          $platformVersion = $platform.version
+          $platformSha = if ($platform.source.reference) { $platform.source.reference } else { $platform.dist.reference }
+          $blog = $lock.packages | Where-Object { $_.name -eq 'nreljed/blog' } | Select-Object -First 1
           New-Item -ItemType Directory -Path "storage\app" -Force | Out-Null
-          Set-Content -Path "storage\app\core.sha" -Value $coreSha -NoNewline -Encoding ASCII
-          @{ name = "dashboard-core"; version = $coreVersion; sha = $coreSha; repo = "${{ github.repository }}" } | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
-          Write-Output "core.json recorded: dashboard-core $coreVersion @ $coreSha (locked)"
+          Set-Content -Path "storage\app\core.sha" -Value $platformSha -NoNewline -Encoding ASCII
+          $record = @{
+            name = "platform"; version = $platformVersion; sha = $platformSha; repo = "${{ github.repository }}"
+            blog = if ($blog) { @{ version = $blog.version; sha = if ($blog.source.reference) { $blog.source.reference } else { $blog.dist.reference } } } else { $null }
+          }
+          $record | ConvertTo-Json | Set-Content -Path "storage\app\core.json" -Encoding UTF8
+          Write-Output "core.json recorded: platform $platformVersion @ $platformSha (locked)"
 
       - name: Create deploy.zip
         shell: pwsh

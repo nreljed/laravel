@@ -1,4 +1,4 @@
-name: Core Update (dashboard-core)
+name: Core Update (platform + blog)
 
 on:
   schedule:
@@ -56,13 +56,13 @@ jobs:
         with:
           node-version: "26"
 
-      # dashboard-core is a private vcs repo; the single GH_TOKEN authenticates
-      # the clone. --no-scripts avoids booting Laravel in a bare checkout
-      # (no .env needed for the lock update).
-      - name: Update dashboard-core
+      # nreljed/platform (kernel) + nreljed/blog (feature) are private vcs repos;
+      # the single GH_TOKEN authenticates both clones. --no-scripts avoids
+      # booting Laravel in a bare checkout (no .env needed for the lock update).
+      - name: Update platform + blog
         env:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
-        run: composer update nreljed/dashboard-core --with-dependencies --no-scripts --no-interaction
+        run: composer update nreljed/platform nreljed/blog --with-dependencies --no-scripts --no-interaction
 
       - name: Check for changes
         id: check
@@ -79,7 +79,7 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         id: version
         run: |
-          VER=$(php -r 'echo json_decode(file_get_contents("vendor/nreljed/dashboard-core/composer.json"), true)["version"] ?? "unknown";')
+          VER=$(php -r 'echo json_decode(file_get_contents("vendor/nreljed/platform/composer.json"), true)["version"] ?? "unknown";')
           echo "version=$VER" >> "$GITHUB_OUTPUT"
 
       # Full validation against the UPDATED lock - mirrors ci.yml exactly.
@@ -145,15 +145,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add composer.lock
-          git commit -m "chore: update dashboard-core to v${{ steps.version.outputs.version }}"
+          git commit -m "chore: update platform + blog to v${{ steps.version.outputs.version }}"
           git push -u origin "$BRANCH"
           gh pr create \
             --base main \
             --head "$BRANCH" \
-            --title "chore: update dashboard-core to v${{ steps.version.outputs.version }}" \
-            --body "Automated update of \`nreljed/dashboard-core\` (\`core-update.yml\`).
+            --title "chore: update platform + blog to v${{ steps.version.outputs.version }}" \
+            --body "Automated update of \`nreljed/platform\` + \`nreljed/blog\` (\`core-update.yml\`).
 
-            - Resolved version: v${{ steps.version.outputs.version }}
+            - Resolved version: v${{ steps.version.outputs.version }} (platform)
             - Only \`composer.lock\` changed; full validation (tests, typecheck, build) ran on this exact tree before merge.
             "
 
