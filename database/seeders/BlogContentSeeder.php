@@ -35,6 +35,7 @@ class BlogContentSeeder extends Seeder
         $this->seedLaravelTutorial($users['author']);
         $this->seedAiAgents($users['editor']);
         $this->seedWelcome($users['user']);
+        $this->seedScheduledPost($users['editor']);
     }
 
     private function seedCategories(): void
@@ -93,6 +94,7 @@ class BlogContentSeeder extends Seeder
         $tagNames = [
             'Laravel', 'React', 'TypeScript', 'Tailwind CSS', 'Lexical',
             'Inertia.js', 'Shadcn UI', 'PHP', 'JavaScript', 'Performance', 'SEO', 'Design Systems',
+            'News', 'Announcement',
         ];
 
         foreach ($tagNames as $name) {
@@ -169,6 +171,7 @@ class BlogContentSeeder extends Seeder
             array_merge([
                 'user_id' => $author->id,
                 'status' => 'published',
+                'metadata' => ['_demo' => 'blog'],
             ], $data),
         );
 
@@ -770,5 +773,38 @@ HTML;
             'focus_keyword' => 'welcome blog',
             'og_image' => $this->demoImage('welcome-blog'),
         ], ['JavaScript', 'Design Systems']);
+    }
+
+    private function seedScheduledPost(User $author): void
+    {
+        $content = <<<'HTML'
+<h1>The Roadmap for the Next Quarter</h1>
+
+<p>Here is a preview of what's coming next — this post is scheduled to publish automatically by the <code>schedule:publish</code> command.</p>
+
+<h2>Highlights</h2>
+
+<ul>
+  <li>Performance improvements across the dashboard</li>
+  <li>A reporting module for cost trends</li>
+  <li>More AI assistant capabilities</li>
+</ul>
+
+<blockquote>Scheduled posts flip to published on their due date, and the reader is notified by email.</blockquote>
+HTML;
+
+        $this->createPost($author, 'the-roadmap-for-the-next-quarter', [
+            'title' => 'The Roadmap for the Next Quarter',
+            'content' => $content,
+            'excerpt' => 'A look ahead at what the Cost Breaker 360 team is planning for the next quarter.',
+            'status' => 'future',
+            'published_at' => now()->addDay(),
+            'category_id' => $this->categoryIds['news'],
+            'featured_image' => $this->demoImage('roadmap-next-quarter'),
+            'meta_title' => 'The Roadmap for the Next Quarter | Cost Breaker 360',
+            'meta_description' => 'A preview of the Cost Breaker 360 roadmap: performance, reporting, and AI capabilities coming next quarter.',
+            'focus_keyword' => 'cost breaker roadmap',
+            'og_image' => $this->demoImage('roadmap-next-quarter'),
+        ], ['News', 'Announcement']);
     }
 }
