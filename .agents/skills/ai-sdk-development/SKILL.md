@@ -407,7 +407,7 @@ $store->assertAdded('file_id');
 
 ## Project BYOK (Bring Your Own Key) Pattern
 
-This project (dashboard-core `src/Ai/`) resolves each user's provider key at runtime. The SDK's `provider()` must return a **config key string** (e.g. `'openai'`); the per-user key is injected into that provider's config via `config()->set("ai.providers.{driver}.key", $key)` before prompting — see `ResolvesUserProvider::injectProviderKey()`.
+This project (platform `src/Ai/`) resolves each user's provider key at runtime. The SDK's `provider()` must return a **config key string** (e.g. `'openai'`); the per-user key is injected into that provider's config via `config()->set("ai.providers.{driver}.key", $key)` before prompting — see `ResolvesUserProvider::injectProviderKey()`.
 
 Do NOT return `['driver' => ..., 'key' => ...]` from `provider()`: the SDK treats an array as a **failover** list (provider→model pairs), and `Provider::providerCredentials()` reads `key` from the provider's **config** — so both are read from `ai.providers.{driver}`. `config()->set()` per-request is safe in PHP.
 
