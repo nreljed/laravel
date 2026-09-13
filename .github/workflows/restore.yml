@@ -26,9 +26,18 @@ on:
           - status
           - recover
           - install
+      version:
+        description: "Release tag to record as .deployed-version (install only); empty = leave marker untouched"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
 
 jobs:
   runner:
@@ -66,10 +75,15 @@ jobs:
           ACTION="${{ inputs.action }}"
           RUNNER_URL="$APP_URL/runner.php"
           echo "Invoking action=$ACTION on $RUNNER_URL"
+          PARAMS=()
+          if [ -n "${{ inputs.version }}" ]; then
+            PARAMS+=("--data-urlencode" "version=${{ inputs.version }}")
+          fi
           RESP=$(curl -s --max-time 300 \
             -X POST \
             --data-urlencode "key=$DEPLOY_TOKEN" \
             --data-urlencode "action=$ACTION" \
+            "${PARAMS[@]}" \
             "$RUNNER_URL" 2>&1)
           echo "$RESP"
           echo "---"

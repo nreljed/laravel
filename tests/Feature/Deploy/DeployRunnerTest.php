@@ -146,6 +146,25 @@ class DeployRunnerTest extends TestCase
         $this->assertSame("<?php\n // live\n", File::get($this->sandbox.'/vendor/autoload.php'));
     }
 
+    public function test_install_writes_version_marker_when_version_given(): void
+    {
+        $zipPath = $this->sandbox.'/deploy.zip';
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($zipPath, \ZipArchive::CREATE) === true);
+
+        $zip->addFromString('artisan', "<?php echo \"Laravel Runner Test\\n\";\n");
+        $zip->addFromString('vendor/autoload.php', "<?php\n // staged autoload\n");
+        $zip->addFromString('bootstrap/app.php', "<?php\n // app\n");
+        $zip->close();
+
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+        $result = \rd_action_install($topo, 'v0.21.0');
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame('v0.21.0', File::get($this->sandbox.'/.deployed-version'));
+        $this->assertTrue(File::exists($this->sandbox.'/vendor/autoload.php'));
+    }
+
     public function test_install_heals_stranded_backup_before_installing(): void
     {
         File::makeDirectory($this->sandbox.'/storage/app/deploy-staging-z-vendor-backup', 0755, true);

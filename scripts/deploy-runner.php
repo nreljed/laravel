@@ -394,7 +394,7 @@ function rd_boot_check(string $stage, array $topo, array &$output): bool
  *
  * @return array<string, mixed>
  */
-function rd_action_install(array $topo): array
+function rd_action_install(array $topo, string $version = ''): array
 {
     $root = $topo['root'];
     $zipPath = $root.'/deploy.zip';
@@ -497,6 +497,11 @@ function rd_action_install(array $topo): array
         }
 
         $output[] = 'Swapped staged release into place (vendor last).';
+
+        if ($version !== '') {
+            file_put_contents($root.'/.deployed-version', $version);
+            $output[] = "Version marker: $version";
+        }
     } catch (Throwable $e) {
         rd_rrmdir($stage);
         $output[] = 'Install aborted: '.$e->getMessage();
@@ -579,7 +584,7 @@ if (PHP_SAPI !== 'cli' || isset($_SERVER['RUNNER_HTTP'])) {
                 $payload = match ($action) {
                     'status' => rd_action_status($topo),
                     'recover' => rd_action_recover($topo),
-                    'install' => rd_action_install($topo),
+                    'install' => rd_action_install($topo, (string) ($_GET['version'] ?? $_POST['version'] ?? '')),
                     'health' => rd_action_health($topo),
                     default => ['ok' => false, 'error' => "unknown-action: {$action}"],
                 };

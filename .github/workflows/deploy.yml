@@ -240,9 +240,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          echo "push-deploy failed — dispatching restore.yml (action=recover, then install if needed)"
+          VER="v${{ needs.package.outputs.version }}"
+          echo "push-deploy failed — dispatching restore.yml (action=recover, then install if needed) for $VER"
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
             -f action=recover
-          echo "Restore workflow dispatched. Watch it with:"
+          gh run watch $(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null) --repo "${{ github.repository }}" --exit-status >/dev/null 2>&1 || true
+          gh workflow run restore.yml \
+            --repo "${{ github.repository }}" \
+            -f action=install \
+            -f version="$VER"
+          echo "Restore workflow dispatched for $VER. Watch it with:"
           echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
