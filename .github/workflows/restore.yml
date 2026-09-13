@@ -1,0 +1,101 @@
+name: Deploy Runner (Auto-Repair)
+
+# Standalone zero-framework control plane for the deploy endpoints. Used when a
+# deploy wedges the app (missing vendor/, half-swapped release, fatal during
+# bootstrap) so /deploy/* cannot answer:
+#
+#   1. FTP-uploads scripts/deploy-runner.php to the web root as runner.php
+#      (FTP account homes to the project root; the web root is public/).
+#   2. Invokes the requested action over HTTP using the same DEPLOY_TOKEN the
+#      server reads from its own .env (GitHub secrets are write-only, values
+#      can only be used inside Actions).
+#   3. Polls health until the app answers or the action is confirmed.
+#
+# GitHub secrets used at runtime (values are never readable outside CI):
+#   FTP_SERVER, FTP_PORT, FTP_USERNAME, FTP_PASSWORD, DEPLOY_TOKEN, GH_TOKEN
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Runner action to execute"
+        required: true
+        default: "status"
+        type: choice
+        options:
+          - status
+          - recover
+          - install
+
+permissions:
+  contents: read
+
+jobs:
+  runner:
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: FTP upload of runner.php
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.FTP_USERNAME }}" ]; then
+            echo "FTP_* secrets not set — cannot stage runner.php"
+            exit 1
+          fi
+          FTP_PORT="${{ secrets.FTP_PORT || '21' }}"
+          # FTP home = project root (public_html); web root is public/, so the
+          # runner lands at public/runner.php -> https://<app>/runner.php
+          FTP_URL="ftp://${{ secrets.FTP_SERVER }}:$FTP_PORT/public/runner.php"
+          if curl -s -T scripts/deploy-runner.php --ftp-create-dirs \
+            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            "$FTP_URL"; then
+            echo "runner.php uploaded to public/runner.php"
+          else
+            echo "FTP upload failed"
+            exit 1
+          fi
+
+      - name: Invoke runner action
+        shell: bash
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          ACTION="${{ inputs.action }}"
+          RUNNER_URL="$APP_URL/runner.php"
+          echo "Invoking action=$ACTION on $RUNNER_URL"
+          RESP=$(curl -s --max-time 300 \
+            -X POST \
+            --data-urlencode "key=$DEPLOY_TOKEN" \
+            --data-urlencode "action=$ACTION" \
+            "$RUNNER_URL" 2>&1)
+          echo "$RESP"
+          echo "---"
+          if echo "$RESP" | grep -q '"ok":true\|"ok": true'; then
+            echo "Runner action $ACTION OK"
+          else
+            echo "Runner action $ACTION did not report ok"
+            exit 1
+          fi
+
+      - name: Wait for app health (if a recovery was attempted)
+        if: inputs.action == 'recover' || inputs.action == 'install'
+        shell: bash
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          HTTP=000
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+              "$APP_URL/" 2>/dev/null || echo 000)
+            echo "[health $i/10] HTTP $HTTP"
+            if [ "$HTTP" = "200" ]; then
+              echo "App is healthy (HTTP 200 on homepage)"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "App did not reach HTTP 200 after recovery"
+          exit 1

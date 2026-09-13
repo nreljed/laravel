@@ -227,3 +227,22 @@ jobs:
             echo "3. Extract, then visit:"
             echo "   ${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
           fi
+
+      - name: Fallback to deploy-runner auto-repair
+        # When the check/upload path could not confirm the deploy (app wedged,
+        # vendor half-swapped, /deploy/* unreachable), hand control to the
+        # standalone runner workflow. It stages runner.php via FTP and invokes
+        # recover (heal stranded vendor backup) or install (safe-swap of a
+        # deploy.zip it fetched from the release API) — no File Manager needed.
+        if: failure()
+        continue-on-error: false
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "push-deploy failed — dispatching restore.yml (action=recover, then install if needed)"
+          gh workflow run restore.yml \
+            --repo "${{ github.repository }}" \
+            -f action=recover
+          echo "Restore workflow dispatched. Watch it with:"
+          echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"

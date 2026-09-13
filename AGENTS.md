@@ -169,7 +169,7 @@ routes/                             # APP-only routes (most routing lives in the
 > `vendor/nreljed/platform` is a Composer vcs install (dist zip pinned by
 > `composer.lock`). It is overwritten on `composer update` — never edit it directly.
 > Core source lives in the standalone platform repo, cloned locally at
-> **`C:\Users\nrelj\Local Sites\dashboard-core`** (origin `github.com/nreljed/platform`). Dev loop:
+> **`C:\Users\nrelj\Local Sites\platform`** (origin `github.com/nreljed/platform`). Dev loop:
 >
 > 1. Edit the **core clone**, commit + push (branch → PR).
 > 2. Tag `vX.Y.Z` → core CI (`ci.yml`) creates the GitHub Release automatically.
