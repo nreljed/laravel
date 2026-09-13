@@ -35,6 +35,28 @@ class DeployRunnerTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Directory symlinks are the core primitive of the release model. They are
+     * unavailable on Windows PHP without admin/Developer Mode, so tests that
+     * exercise symlink creation skip there and run fully on Linux (production).
+     */
+    protected function requiresSymlinkCapability(): void
+    {
+        static $works = null;
+
+        if ($works === null) {
+            $probe = $this->sandbox.'/symlink-probe';
+            File::makeDirectory($probe.'/target', 0755, true);
+            $link = $probe.'/link';
+
+            $works = @symlink($probe.'/target', $link) && is_link($link);
+        }
+
+        if (! $works) {
+            $this->markTestSkipped('Directory symlinks unavailable on this environment.');
+        }
+    }
+
     public function test_env_get_parses_quoted_and_unquoted_values(): void
     {
         $env = $this->sandbox.'/.env';
@@ -347,5 +369,260 @@ class DeployRunnerTest extends TestCase
         $this->assertTrue($result['complete']);
         $this->assertSame(1536, $result['freed']);
         $this->assertFalse(File::isDirectory($dir));
+    }
+
+    public function test_release_tag_sanitizes_version(): void
+    {
+        $this->assertSame('v0.24.0-beta.1', \rd_release_tag('v0.24.0-beta.1'));
+        $this->assertSame('v0.24.0-9d8f', \rd_release_tag('v0.24.0@9d8f/../'));
+        $this->assertSame('unknown', \rd_release_tag('!!!'));
+    }
+
+    public function test_list_releases_returns_newest_first_and_skips_hidden(): void
+    {
+        $releases = $this->sandbox.'/releases';
+        File::makeDirectory($releases, 0755, true);
+        File::makeDirectory($releases.'/old-release', 0755, true);
+        File::makeDirectory($releases.'/new-release', 0755, true);
+        File::makeDirectory($releases.'/.staging-abc', 0755, true);
+        touch($releases.'/old-release', time() - 3600);
+        touch($releases.'/new-release', time());
+
+        $list = \rd_list_releases($this->sandbox);
+
+        $this->assertSame(['new-release', 'old-release'], $list);
+        $this->assertNotContains('.staging-abc', $list);
+    }
+
+    public function test_active_release_follows_current_symlink_with_newest_fallback(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $releases = $this->sandbox.'/releases';
+        File::makeDirectory($releases.'/r2', 0755, true);
+        File::makeDirectory($releases.'/r1', 0755, true);
+        touch($releases.'/r1', time() - 3600);
+        touch($releases.'/r2', time());
+
+        // No current symlink -> newest release.
+        $this->assertSame($releases.'/r2', \rd_active_release($this->sandbox));
+
+        // Stale current symlink -> resolve target even if not newest.
+        symlink('releases/r1', $this->sandbox.'/current');
+        $this->assertSame($releases.'/r1', \rd_active_release($this->sandbox));
+    }
+
+    public function test_resolve_symlink_handles_relative_and_absolute(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        File::makeDirectory($this->sandbox.'/releases/r1', 0755, true);
+        symlink('releases/r1', $this->sandbox.'/current');
+
+        $this->assertSame($this->sandbox.'/releases/r1', \rd_resolve_symlink($this->sandbox.'/current', $this->sandbox));
+
+        symlink($this->sandbox.'/releases/r1', $this->sandbox.'/current-abs');
+        $this->assertSame($this->sandbox.'/releases/r1', \rd_resolve_symlink($this->sandbox.'/current-abs', $this->sandbox));
+
+        $this->assertSame('', \rd_resolve_symlink($this->sandbox.'/missing', $this->sandbox));
+    }
+
+    public function test_release_install_from_legacy_creates_release_and_flips_symlinks(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $home = $this->sandbox;
+        $legacyPublic = $home.'/public';
+        File::makeDirectory($legacyPublic, 0755, true);
+        File::put($legacyPublic.'/index.php', '<?php legacy');
+        File::put($home.'/.env', "DEPLOY_TOKEN='secret-token'\n");
+        File::makeDirectory($home.'/storage/app/public', 0755, true);
+        File::put($home.'/storage/app/public/logo.png', 'png');
+
+        // Build a minimal deploy.zip that mirrors a Laravel release tree.
+        $zipPath = $home.'/deploy.zip';
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, ZipArchive::CREATE);
+        $zip->addFromString('artisan', "<?php\n");
+        $zip->addFromString('bootstrap/app.php', "<?php\n");
+        $zip->addFromString('vendor/autoload.php', "<?php\n");
+        $zip->addFromString('public/index.php', '<?php release');
+        $zip->addFromString('.deployed-version', 'v0.24.0');
+        $zip->close();
+
+        $topo = ['root' => $home, 'home' => $home, 'layout' => 'legacy'];
+        $result = \rd_action_release_install($topo, 'v0.24.0');
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame('installed', $result['status']);
+
+        // releases/<ts>-v0.24.0 exists with the shared links.
+        $list = \rd_list_releases($home);
+        $this->assertCount(1, $list);
+        $release = $home.'/releases/'.$list[0];
+        $this->assertSame('v0.24.0', trim((string) File::get($release.'/.deployed-version')));
+        $this->assertTrue(is_link($release.'/.env'), 'shared .env symlinked');
+        $this->assertTrue(is_link($release.'/storage'), 'shared storage symlinked');
+        $this->assertTrue(is_link($release.'/public/storage'), 'public/storage symlinked');
+
+        // public/ now a symlink to the release public, legacy dir moved aside.
+        $this->assertTrue(is_link($home.'/public'));
+        $this->assertSame('releases/'.$list[0].'/public', (string) readlink($home.'/public'));
+        $legacy = glob($home.'/public.legacy-*') ?: [];
+        $this->assertCount(1, $legacy);
+        $this->assertSame('<?php legacy', File::get($legacy[0].'/index.php'));
+
+        // current symlink + deploy.zip consumed + version marker.
+        $this->assertSame('releases/'.$list[0], (string) readlink($home.'/current'));
+        $this->assertFileDoesNotExist($zipPath);
+        $this->assertSame('v0.24.0', trim((string) File::get($home.'/.deployed-version')));
+
+        // Runner self-homed into the new release's public/.
+        $this->assertFileExists($release.'/public/runner.php');
+    }
+
+    public function test_release_install_subsequent_flips_to_newest_without_downtime(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $home = $this->sandbox;
+
+        // Bootstrap release layout with one release.
+        File::makeDirectory($home.'/releases/r1', 0755, true);
+        File::put($home.'/releases/r1/.deployed-version', 'v0.1.0');
+        File::put($home.'/releases/r1/artisan', "<?php\n");
+        File::put($home.'/releases/r1/vendor/autoload.php', "<?php\n");
+        File::put($home.'/releases/r1/bootstrap/app.php', "<?php\n");
+        symlink('releases/r1', $home.'/current');
+        symlink($home.'/storage/app/public', $home.'/releases/r1/public/storage');
+        symlink('releases/r1/public', $home.'/public');
+        File::put($home.'/.env', "DEPLOY_TOKEN='secret-token'\n");
+        File::makeDirectory($home.'/storage/app/public', 0755, true);
+
+        // New deploy.zip.
+        $zipPath = $home.'/deploy.zip';
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, ZipArchive::CREATE);
+        $zip->addFromString('artisan', "<?php\n");
+        $zip->addFromString('bootstrap/app.php', "<?php\n");
+        $zip->addFromString('vendor/autoload.php', "<?php\n");
+        $zip->addFromString('public/index.php', '<?php v2');
+        $zip->close();
+
+        $topo = ['root' => $home.'/releases/r1', 'home' => $home, 'layout' => 'release'];
+        $result = \rd_action_release_install($topo, 'v0.2.0');
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame('installed', $result['status']);
+
+        $list = \rd_list_releases($home);
+        $this->assertCount(2, $list);
+        $this->assertSame('r1', $list[1], 'old release retained');
+        $this->assertSame('v0.2.0', trim((string) File::get($home.'/releases/'.$list[0].'/.deployed-version')));
+
+        // public + current point at the newest release.
+        $this->assertSame('releases/'.$list[0].'/public', (string) readlink($home.'/public'));
+        $this->assertSame('releases/'.$list[0], (string) readlink($home.'/current'));
+        $this->assertSame('<?php v2', File::get($home.'/public/index.php'));
+    }
+
+    public function test_release_rollback_returns_to_previous_release(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $home = $this->sandbox;
+        $rel = $home.'/releases';
+
+        foreach (['r2', 'r1'] as $name) {
+            File::makeDirectory($rel.'/'.$name, 0755, true);
+            File::put($rel.'/'.$name.'/public/index.php', '<?php '.$name);
+        }
+        touch($rel.'/r1', time() - 3600);
+        touch($rel.'/r2', time());
+        File::put($rel.'/r1/.deployed-version', 'v0.1.0');
+        File::put($rel.'/r2/.deployed-version', 'v0.2.0');
+        symlink('releases/r2', $home.'/current');
+        symlink('releases/r2/public', $home.'/public');
+
+        $topo = ['root' => $rel.'/r2', 'home' => $home, 'layout' => 'release'];
+        $result = \rd_action_release_rollback($topo);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame('rolled_back', $result['status']);
+        $this->assertSame('r1', $result['release']);
+        $this->assertSame('releases/r1', (string) readlink($home.'/current'));
+        $this->assertSame('releases/r1/public', (string) readlink($home.'/public'));
+        $this->assertSame('v0.1.0', trim((string) File::get($home.'/.deployed-version')));
+    }
+
+    public function test_release_rollback_restores_legacy_webroot_when_no_previous_release(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $home = $this->sandbox;
+        File::makeDirectory($home.'/releases/r1/public', 0755, true);
+        File::put($home.'/releases/r1/public/index.php', '<?php release');
+        File::makeDirectory($home.'/public.legacy-20260101T000000Z', 0755, true);
+        File::put($home.'/public.legacy-20260101T000000Z/index.php', '<?php legacy');
+        symlink('releases/r1', $home.'/current');
+        symlink('releases/r1/public', $home.'/public');
+
+        $topo = ['root' => $home.'/releases/r1', 'home' => $home, 'layout' => 'release'];
+        $result = \rd_action_release_rollback($topo);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame('rolled_back_to_legacy', $result['status']);
+        $this->assertFalse(is_link($home.'/public'));
+        $this->assertSame('<?php legacy', File::get($home.'/public/index.php'));
+        $this->assertFileDoesNotExist($home.'/current');
+    }
+
+    public function test_release_cleanup_deletes_older_releases_beyond_keep(): void
+    {
+        $home = $this->sandbox;
+        $rel = $home.'/releases';
+
+        foreach (['r3', 'r2', 'r1'] as $i => $name) {
+            File::makeDirectory($rel.'/'.$name, 0755, true);
+            File::put($rel.'/'.$name.'/file.txt', 'x');
+            // r3 newest … r1 oldest.
+            touch($rel.'/'.$name, time() - $i * 3600);
+        }
+
+        $topo = ['root' => $home, 'home' => $home, 'layout' => 'release'];
+        $result = \rd_action_release_cleanup($topo, 2);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame(2, $result['keep']);
+        $this->assertSame(1, $result['removed']);
+        $this->assertFalse(File::isDirectory($rel.'/r1'));
+        $this->assertTrue(File::isDirectory($rel.'/r2'));
+        $this->assertTrue(File::isDirectory($rel.'/r3'));
+    }
+
+    public function test_status_reports_release_layout_and_active_release(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $home = $this->sandbox;
+        $rel = $home.'/releases';
+
+        File::makeDirectory($rel.'/r1/public', 0755, true);
+        File::put($rel.'/r1/.deployed-version', 'v0.9.0');
+        File::put($rel.'/r1/vendor/autoload.php', "<?php\n");
+        symlink('releases/r1', $home.'/current');
+        symlink('releases/r1/public', $home.'/public');
+
+        $topo = ['root' => $rel.'/r1', 'home' => $home, 'layout' => 'release'];
+        $status = \rd_action_status($topo);
+
+        $this->assertTrue($status['ok']);
+        $this->assertSame('release', $status['layout']);
+        $this->assertSame('v0.9.0', $status['version']);
+        $this->assertTrue($status['vendor_ok']);
+        $this->assertSame('releases/r1', $status['current_symlink']);
+        $this->assertCount(1, $status['releases']);
+        $this->assertTrue($status['releases'][0]['active']);
+        $this->assertStringContainsString('releases/r1', $status['webroot']);
     }
 }
