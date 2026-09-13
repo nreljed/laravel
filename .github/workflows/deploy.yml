@@ -231,9 +231,11 @@ jobs:
       - name: Fallback to deploy-runner auto-repair
         # When the check/upload path could not confirm the deploy (app wedged,
         # vendor half-swapped, /deploy/* unreachable), hand control to the
-        # standalone runner workflow. It stages runner.php via FTP and invokes
-        # recover (heal stranded vendor backup) or install (safe-swap of a
-        # deploy.zip it fetched from the release API) — no File Manager needed.
+        # standalone runner workflow. It stages runner.php via FTP (plus
+        # deploy.zip for release-install) and invokes recover (heal stranded
+        # backup) then release-install (atomic Capistrano-style flip of a
+        # deploy.zip it fetches via FTP/staged at the project root) — no File
+        # Manager needed. release-install resumes while extraction is partial.
         if: failure()
         continue-on-error: false
         shell: bash
@@ -241,14 +243,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           VER="v${{ needs.package.outputs.version }}"
-          echo "push-deploy failed — dispatching restore.yml (action=recover, then install if needed) for $VER"
+          echo "push-deploy failed — dispatching restore.yml (action=recover, then release-install if needed) for $VER"
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
             -f action=recover
           gh run watch $(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null) --repo "${{ github.repository }}" --exit-status >/dev/null 2>&1 || true
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
-            -f action=install \
+            -f action=release-install \
             -f version="$VER"
-          echo "Restore workflow dispatched for $VER. Watch it with:"
+          echo "Restore workflow dispatched (release-install) for $VER. Watch it with:"
           echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"

@@ -6,10 +6,16 @@ name: Deploy Runner (Auto-Repair)
 #
 #   1. FTP-uploads scripts/deploy-runner.php to the web root as runner.php
 #      (FTP account homes to the project root; the web root is public/).
-#   2. Invokes the requested action over HTTP using the same DEPLOY_TOKEN the
+#   2. For release-install, also drops deploy.zip at the project root over FTP
+#      so the runner resolves home/ and consumes it (FTP home IS the app root,
+#      and root uploads are immune to Cloudflare's ~100s upload cut).
+#   3. Invokes the requested action over HTTP using the same DEPLOY_TOKEN the
 #      server reads from its own .env (GitHub secrets are write-only, values
 #      can only be used inside Actions).
-#   3. Polls health until the app answers or the action is confirmed.
+#   4. release-install is resumable: the runner extracts within a ~85s budget
+#      and returns "partial" with a .progress marker; this workflow re-invokes
+#      until the release is fully installed (status=installed).
+#   5. Polls health until the app answers or the action is confirmed.
 #
 # GitHub secrets used at runtime (values are never readable outside CI):
 #   FTP_SERVER, FTP_PORT, FTP_USERNAME, FTP_PASSWORD, DEPLOY_TOKEN, GH_TOKEN
@@ -26,13 +32,21 @@ on:
           - status
           - recover
           - install
+          - release-install
+          - release-rollback
+          - release-cleanup
           - logs
           - health
           - prune
       version:
-        description: "Release tag to record as .deployed-version (install only); empty = leave marker untouched"
+        description: "Release tag to install/record as .deployed-version (release-install/install only); empty = leave marker untouched"
         required: false
         default: ""
+        type: string
+      keep:
+        description: "Releases to retain (release-cleanup only); default 3"
+        required: false
+        default: "3"
         type: string
 
 permissions:
@@ -74,6 +88,38 @@ jobs:
             exit 1
           fi
 
+      - name: FTP upload of deploy.zip (release-install only)
+        if: inputs.action == 'release-install'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if [ -z "${{ secrets.FTP_USERNAME }}" ]; then
+            echo "FTP_* secrets not set — cannot stage deploy.zip"
+            exit 1
+          fi
+          VER="${{ inputs.version }}"
+          if [ -n "$VER" ]; then
+            gh release download "$VER" --repo "${{ github.repository }}" \
+              --pattern "deploy.zip" --clobber
+          else
+            gh release download --repo "${{ github.repository }}" \
+              --pattern "deploy.zip" --clobber
+          fi
+          ls -la deploy.zip
+          FTP_PORT="${{ secrets.FTP_PORT || '21' }}"
+          # FTP home is the Laravel project root — upload deploy.zip to root so
+          # the runner's home/ resolves it (same home-root quirk as deploy.yml).
+          FTP_URL="ftp://${{ secrets.FTP_SERVER }}:$FTP_PORT/deploy.zip"
+          if curl -s -T deploy.zip --ftp-create-dirs \
+            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            "$FTP_URL"; then
+            echo "deploy.zip uploaded to project root"
+          else
+            echo "FTP upload of deploy.zip failed"
+            exit 1
+          fi
+
       - name: Invoke runner action
         shell: bash
         env:
@@ -83,16 +129,63 @@ jobs:
           ACTION="${{ inputs.action }}"
           RUNNER_URL="$APP_URL/runner.php"
           echo "Invoking action=$ACTION on $RUNNER_URL"
+
+          invoke() {
+            curl -s --max-time 300 \
+              -X POST \
+              --data-urlencode "key=$DEPLOY_TOKEN" \
+              --data-urlencode "action=$1" \
+              "${@:2}" \
+              "$RUNNER_URL" 2>&1
+          }
+
+          if [ "$ACTION" = "release-install" ]; then
+            # Resumable extraction: re-invoke until status=installed (each pass
+            # resumes from the .progress marker). The runner allocates a ~85s
+            # budget; a large zip may need several passes. The host can kill the
+            # connection mid-pass (its response is then empty/HTML/transient) —
+            # that ALSO means "still busy", so retry counts against the same cap.
+            VER="${{ inputs.version }}"
+            ATTEMPT=1
+            while [ "$ATTEMPT" -le 60 ]; do
+              echo "[release-install attempt $ATTEMPT/60]"
+              RESP=$(invoke release-install --data-urlencode "version=$VER")
+              echo "$RESP"
+              echo "---"
+              if echo "$RESP" | grep -q '"status":"installed"'; then
+                echo "Release installed (status=installed)"
+                exit 0
+              fi
+              if echo "$RESP" | grep -q '"partial":true'; then
+                echo "Extraction partial — resuming (budget hit)"
+                ATTEMPT=$((ATTEMPT + 1))
+                sleep 3
+                continue
+              fi
+              if echo "$RESP" | grep -q '"ok":false\|"ok": false'; then
+                echo "Runner action release-install failed:"
+                echo "$RESP"
+                exit 1
+              fi
+              if echo "$RESP" | grep -q '"ok":true'; then
+                echo "Runner action release-install OK"
+                exit 0
+              fi
+              echo "No clean JSON response (connection killed mid-pass?) — treating as busy, resuming"
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 5
+            done
+            echo "release-install did not finish within 60 attempts"
+            exit 1
+          fi
+
           PARAMS=()
-          if [ -n "${{ inputs.version }}" ]; then
+          if [ "$ACTION" = "release-cleanup" ]; then
+            PARAMS+=("--data-urlencode" "keep=${{ inputs.keep }}")
+          elif [ -n "${{ inputs.version }}" ]; then
             PARAMS+=("--data-urlencode" "version=${{ inputs.version }}")
           fi
-          RESP=$(curl -s --max-time 300 \
-            -X POST \
-            --data-urlencode "key=$DEPLOY_TOKEN" \
-            --data-urlencode "action=$ACTION" \
-            "${PARAMS[@]}" \
-            "$RUNNER_URL" 2>&1)
+          RESP=$(invoke "$ACTION" "${PARAMS[@]}")
           echo "$RESP"
           echo "---"
           if echo "$RESP" | grep -q '"ok":true\|"ok": true'; then
@@ -102,8 +195,8 @@ jobs:
             exit 1
           fi
 
-      - name: Wait for app health (if a recovery was attempted)
-        if: inputs.action == 'recover' || inputs.action == 'install'
+      - name: Wait for app health (if a recovery/release flip was attempted)
+        if: inputs.action == 'recover' || inputs.action == 'install' || inputs.action == 'release-install' || inputs.action == 'release-rollback'
         shell: bash
         env:
           APP_URL: ${{ vars.APP_URL }}

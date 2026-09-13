@@ -49,6 +49,30 @@ already exists and will be picked up.
 7. `php artisan config:cache`, `route:cache`, `view:cache`
 8. `php artisan storage:link`
 
+### Release Model (`deploy-runner.php` auto-repair fallback)
+
+The standalone runner (`scripts/deploy-runner.php`, staged as `public/runner.php` via
+FTP) is the zero-framework control plane used when `/deploy/*` cannot answer. Its
+`release-install` action implements a Capistrano-style **atomic release layout**:
+
+- Extracts `deploy.zip` into `releases/<ts>-<version>/` (budget-aware, resumable
+  via a `.progress` marker — each HTTP pass runs ~85s before the host kills the
+  connection, so big zips resume on re-invoke).
+- Links the shared `.env` + `storage` into the release, then atomically flips the
+  webroot `public/` symlink to the new release (`public` → the docroot). A legacy
+  in-place webroot is moved aside to `public.legacy-*` on first migration and
+  restored by rollback when no previous release exists.
+- `current/` records the active release; `home/.deployed-version` mirrors it.
+- `release-rollback` re-points `public`/`current` to the previous release
+  (or restores the legacy webroot); `release-cleanup` keeps the newest N releases.
+- The runner self-copies into each release's `public/`, so `/runner.php` keeps
+  answering after the flip even if the new app is broken.
+
+`restore.yml` drives it: FTP-stages `runner.php` (+ `deploy.zip` for release-install),
+invokes the action over HTTP with `DEPLOY_TOKEN`, loops while extraction is `partial`,
+then polls health. `deploy.yml` dispatches `recover` then `release-install` when the
+check/upload path cannot confirm a deploy.
+
 ## Endpoints
 
 All deploy endpoints are token-protected, CSRF-exempt, and rate-limited
