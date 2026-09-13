@@ -102,6 +102,7 @@ jobs:
           # avoiding a large upload through the edge. Cloudflare cuts connections ~100s,
           # so the server may finish processing AFTER the response is lost — poll for it.
           # During extraction the server returns HTML/500 transiently — that means "still busy".
+          RELEASE_LAYOUT=0
           poll_check() {
             for i in 1 2 3 4 5 6 7 8; do
               RESP=$(curl -s -X POST --max-time 120 "$CHECK_URL" 2>&1)
@@ -123,6 +124,13 @@ jobs:
                   ;;
                 *'"status":"locked"'*)
                   echo "[poll $i/8] server still working (locked)"
+                  ;;
+                *'"status":"release-layout"'*)
+                  RELEASE_LAYOUT=1
+                  echo "RELEASE_LAYOUT=true" >> "$GITHUB_ENV"
+                  echo "[poll $i/8] release-layout host — in-place deploy disabled, delegating to deploy-runner release-install"
+                  echo "$FIRST"
+                  return 2
                   ;;
                 *)
                   echo "[poll $i/8] server busy (response not JSON yet)"
@@ -156,6 +164,13 @@ jobs:
                 *'"status":"locked"'*)
                   echo "[confirm $i/8] server still working (locked), retrying"
                   ;;
+                *'"status":"release-layout"'*)
+                  RELEASE_LAYOUT=1
+                  echo "RELEASE_LAYOUT=true" >> "$GITHUB_ENV"
+                  echo "[confirm $i/8] release-layout host — in-place confirm cannot succeed, delegating to deploy-runner release-install"
+                  echo "$FIRST"
+                  return 2
+                  ;;
                 *)
                   echo "[confirm $i/8] server busy, retrying"
                   ;;
@@ -167,6 +182,9 @@ jobs:
 
           if poll_check; then
             echo "push-deploy OK (check path)"
+          elif [ "$RELEASE_LAYOUT" = "1" ]; then
+            echo "release-layout host — skipping in-place upload; deploy-runner release-install will perform the atomic flip"
+            exit 1
           else
             echo "check path did not confirm $VER, uploading deploy.zip directly"
             UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
@@ -184,6 +202,9 @@ jobs:
               echo "Upload response not clean (HTTP $HTTP_CODE), confirming via /deploy/check..."
               if confirm_deployed; then
                 echo "push-deploy OK (confirmed after upload)"
+              elif [ "$RELEASE_LAYOUT" = "1" ]; then
+                echo "release-layout host — in-place upload cannot confirm; deploy-runner release-install will perform the atomic flip"
+                exit 1
               else
                 echo "Deploy not confirmed after upload. Release created at:"
                 echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
@@ -198,7 +219,7 @@ jobs:
         # Only relevant when the hosting FTP account homes to this app's project
         # root. Skips itself when the FTP_* secrets are not defined (see script guard).
         # curl-based approach shared with laravel.shop / laravel.booking.
-        if: always()
+        if: always() && env.RELEASE_LAYOUT != 'true'
         continue-on-error: true
         shell: bash
         run: |
@@ -229,13 +250,15 @@ jobs:
           fi
 
       - name: Fallback to deploy-runner auto-repair
-        # When the check/upload path could not confirm the deploy (app wedged,
-        # vendor half-swapped, /deploy/* unreachable), hand control to the
-        # standalone runner workflow. It stages runner.php via FTP (plus
-        # deploy.zip for release-install) and invokes recover (heal stranded
-        # backup) then release-install (atomic Capistrano-style flip of a
-        # deploy.zip it fetches via FTP/staged at the project root) — no File
-        # Manager needed. release-install resumes while extraction is partial.
+        # When the check/upload path could not confirm the deploy (release-layout
+        # host where in-place is disabled, app wedged, vendor half-swapped,
+        # /deploy/* unreachable), hand control to the standalone runner
+        # workflow. It stages runner.php via FTP (plus deploy.zip for
+        # release-install) and invokes recover (heal stranded backup) then
+        # release-install (atomic Capistrano-style flip of a deploy.zip it
+        # fetches via FTP/staged at the project root) — no File Manager needed.
+        # release-install resumes while extraction is partial. This step FAILS
+        # if release-install does not confirm, surfacing a real deploy result.
         if: failure()
         continue-on-error: false
         shell: bash
@@ -243,14 +266,37 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           VER="v${{ needs.package.outputs.version }}"
-          echo "push-deploy failed — dispatching restore.yml (action=recover, then release-install if needed) for $VER"
+          echo "push-deploy failed — dispatching restore.yml (action=recover, then release-install) for $VER"
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
             -f action=recover
-          gh run watch $(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null) --repo "${{ github.repository }}" --exit-status >/dev/null 2>&1 || true
+          RECOVER_RUN_ID=""
+          for i in $(seq 1 10); do
+            RECOVER_RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null)
+            [ -n "$RECOVER_RUN_ID" ] && break
+            sleep 5
+          done
+          echo "Watching restore.yml run $RECOVER_RUN_ID (recover)"
+          gh run watch "$RECOVER_RUN_ID" --repo "${{ github.repository }}" --exit-status >/dev/null 2>&1 || true
+          echo "recover done — dispatching release-install for $VER; waiting for the atomic flip"
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
             -f action=release-install \
             -f version="$VER"
-          echo "Restore workflow dispatched (release-install) for $VER. Watch it with:"
-          echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
+          RELEASE_INSTALL_RUN_ID=""
+          for i in $(seq 1 10); do
+            RELEASE_INSTALL_RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null)
+            if [ -n "$RELEASE_INSTALL_RUN_ID" ] && [ "$RELEASE_INSTALL_RUN_ID" != "$RECOVER_RUN_ID" ]; then
+              break
+            fi
+            RELEASE_INSTALL_RUN_ID=""
+            sleep 5
+          done
+          if [ -n "$RELEASE_INSTALL_RUN_ID" ]; then
+            echo "Watching restore.yml run $RELEASE_INSTALL_RUN_ID (release-install)"
+            gh run watch "$RELEASE_INSTALL_RUN_ID" --repo "${{ github.repository }}" --exit-status
+          else
+            echo "Could not resolve the release-install run id after dispatch. Watch manually with:"
+            echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
+            exit 1
+          fi
