@@ -152,11 +152,11 @@ jobs:
               RESP=$(invoke release-install --data-urlencode "version=$VER")
               echo "$RESP"
               echo "---"
-              if echo "$RESP" | grep -q '"status":"installed"'; then
+              if echo "$RESP" | grep -q '"status":"installed"\|"status": "installed"'; then
                 echo "Release installed (status=installed)"
                 exit 0
               fi
-              if echo "$RESP" | grep -q '"partial":true'; then
+              if echo "$RESP" | grep -q '"partial":true\|"partial": true'; then
                 echo "Extraction partial — resuming (budget hit)"
                 ATTEMPT=$((ATTEMPT + 1))
                 sleep 3
@@ -167,7 +167,7 @@ jobs:
                 echo "$RESP"
                 exit 1
               fi
-              if echo "$RESP" | grep -q '"ok":true'; then
+              if echo "$RESP" | grep -q '"ok":true\|"ok": true'; then
                 echo "Runner action release-install OK"
                 exit 0
               fi
