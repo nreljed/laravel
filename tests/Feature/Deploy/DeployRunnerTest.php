@@ -213,4 +213,87 @@ class DeployRunnerTest extends TestCase
         $this->assertStringContainsString('line-5-sample', $joined);
         $this->assertStringContainsString('line-1-sample', $joined);
     }
+
+    public function test_prune_removes_stale_zips_and_staging(): void
+    {
+        $storageApp = $this->sandbox.'/storage/app';
+        File::makeDirectory($storageApp, 0755, true);
+
+        // Create stale zips
+        File::put($storageApp.'/deploy-aaa111.zip', str_repeat('x', 1024));
+        File::put($storageApp.'/deploy-bbb222.zip', str_repeat('y', 2048));
+
+        // Create stale staging dirs
+        File::makeDirectory($storageApp.'/deploy-staging-aaa111', 0755, true);
+        File::put($storageApp.'/deploy-staging-aaa111/file.txt', 'staged');
+
+        File::makeDirectory($this->sandbox.'/vendor', 0755, true);
+        File::put($this->sandbox.'/vendor/autoload.php', "<?php\n");
+
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+        $result = \rd_action_prune($topo);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertGreaterThanOrEqual(3, $result['removed']);
+        $this->assertGreaterThan(0, $result['freed_bytes']);
+        $this->assertFalse(File::exists($storageApp.'/deploy-aaa111.zip'));
+        $this->assertFalse(File::exists($storageApp.'/deploy-bbb222.zip'));
+        $this->assertFalse(File::isDirectory($storageApp.'/deploy-staging-aaa111'));
+    }
+
+    public function test_prune_preserves_newest_vendor_backup_when_vendor_missing(): void
+    {
+        $storageApp = $this->sandbox.'/storage/app';
+        File::makeDirectory($storageApp, 0755, true);
+
+        // No live vendor/ present — newest vendor-backup must survive.
+        File::makeDirectory($storageApp.'/deploy-staging-old-vendor-backup', 0755, true);
+        File::put($storageApp.'/deploy-staging-old-vendor-backup/autoload.php', "<?php\n");
+        touch($storageApp.'/deploy-staging-old-vendor-backup', time() - 120);
+
+        File::makeDirectory($storageApp.'/deploy-staging-new-vendor-backup', 0755, true);
+        File::put($storageApp.'/deploy-staging-new-vendor-backup/autoload.php', "<?php\n");
+        touch($storageApp.'/deploy-staging-new-vendor-backup', time());
+
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+        $result = \rd_action_prune($topo);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertTrue(File::isDirectory($storageApp.'/deploy-staging-new-vendor-backup'), 'newest backup preserved');
+        $this->assertFalse(File::isDirectory($storageApp.'/deploy-staging-old-vendor-backup'), 'older backup removed');
+        $this->assertStringContainsString('Kept newest stranded vendor backup', implode("\n", $result['output']));
+    }
+
+    public function test_prune_removes_all_vendor_backups_when_vendor_present(): void
+    {
+        $storageApp = $this->sandbox.'/storage/app';
+        File::makeDirectory($storageApp, 0755, true);
+
+        File::makeDirectory($this->sandbox.'/vendor', 0755, true);
+        File::put($this->sandbox.'/vendor/autoload.php', "<?php\n");
+
+        File::makeDirectory($storageApp.'/deploy-staging-x-vendor-backup', 0755, true);
+        File::put($storageApp.'/deploy-staging-x-vendor-backup/autoload.php', "<?php\n");
+
+        File::makeDirectory($storageApp.'/deploy-staging-y-vendor-backup', 0755, true);
+        File::put($storageApp.'/deploy-staging-y-vendor-backup/autoload.php', "<?php\n");
+
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+        $result = \rd_action_prune($topo);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertFalse(File::isDirectory($storageApp.'/deploy-staging-x-vendor-backup'));
+        $this->assertFalse(File::isDirectory($storageApp.'/deploy-staging-y-vendor-backup'));
+        $this->assertGreaterThanOrEqual(2, $result['removed']);
+    }
+
+    public function test_prune_returns_noop_when_no_storage_app(): void
+    {
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+        $result = \rd_action_prune($topo);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('no_storage_app', $result['status']);
+        $this->assertSame(0, $result['removed']);
+    }
 }

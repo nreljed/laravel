@@ -28,6 +28,7 @@ on:
           - install
           - logs
           - health
+          - prune
       version:
         description: "Release tag to record as .deployed-version (install only); empty = leave marker untouched"
         required: false

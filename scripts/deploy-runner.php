@@ -12,7 +12,7 @@ declare(strict_types=1);
  * Usage (HTTP, after CI or an operator uploads this file to the web root):
  *
  *   https://<site>/runner.php?key=<DEPLOY_TOKEN>&action=status
- *   ...&action=recover | install | health | logs
+ *   ...&action=recover | install | health | logs | prune
  *
  * Auth: the key must hash_equals the DEPLOY_TOKEN read from the nearest
  * ancestor `artisan` + `.env` directory. Env values are read only for
@@ -27,6 +27,11 @@ declare(strict_types=1);
  *   install   - safe-swap ROOT/deploy.zip into place (stage -> boot-check ->
  *               vendor-last swap, mirroring platform DeployService).
  *   health    - quick liveness probe (JSON with app-visible markers).
+ *   prune     - remove stale deploy artifacts under storage/app (aborted-stage
+ *               leaves: deploy-*.zip downloads + deploy-staging-* trees). Keeps
+ *               the newest stranded *-vendor-backup when live vendor/ is missing
+ *               (that backup is the recovery path), and never touches live
+ *               storage, public/build or bootstrap/cache.
  *
  * The file is structured so tests can include it and call the pure functions
  * without going through HTTP.
@@ -622,6 +627,150 @@ function rd_action_logs(array $topo): array
     return ['ok' => true, 'action' => 'logs', 'status' => 'ok', 'output' => $output];
 }
 
+/**
+ * Remove stale deploy artifacts under storage/app/ that accumulate when a
+ * deploy is interrupted before cleanup (old bootCheck throwing, OOM, timeout).
+ *
+ * Deletes:
+ *   - deploy-*.zip        — stale GitHub-release downloads (24 MB each).
+ *   - deploy-staging-*    — stale extraction trees (each a full app copy).
+ *
+ * Preserves:
+ *   - deploy-staging-*-vendor-backup — when live vendor/autoload.php is missing,
+ *     keep the newest one (that's the recovery path); delete older leftovers.
+ *   - Everything outside storage/app (live storage, public/build, vendor/).
+ *
+ * @return array<string, mixed>
+ */
+function rd_action_prune(array $topo): array
+{
+    $root = $topo['root'];
+    $storageApp = $root.'/storage/app';
+    $output = [];
+
+    if (! is_dir($storageApp)) {
+        $output[] = 'No storage/app directory; nothing to prune.';
+
+        return ['ok' => true, 'action' => 'prune', 'status' => 'no_storage_app', 'removed' => 0, 'freed_bytes' => 0, 'output' => $output];
+    }
+
+    $removed = 0;
+    $freedBytes = 0;
+
+    // --- Stale deploy-*.zip downloads ---
+    foreach (glob($storageApp.'/deploy-*.zip') ?: [] as $zipPath) {
+        $size = @filesize($zipPath) ?: 0;
+        $output[] = 'Removed '.basename($zipPath).' ('.rd_format_bytes($size).')';
+        @unlink($zipPath);
+        $removed++;
+        $freedBytes += $size;
+    }
+
+    // --- Stale deploy-staging-* extraction trees ---
+    $vendorOk = is_file($root.'/vendor/autoload.php');
+    $vendorBackups = glob($storageApp.'/deploy-staging-*-vendor-backup') ?: [];
+    $nonBackups = [];
+
+    foreach (glob($storageApp.'/deploy-staging-*') ?: [] as $stage) {
+        if (str_ends_with(basename($stage), '-vendor-backup')) {
+            continue;
+        }
+
+        $nonBackups[] = $stage;
+    }
+
+    foreach ($nonBackups as $stage) {
+        $size = rd_dir_size($stage);
+        $output[] = 'Removed '.basename($stage).' ('.rd_format_bytes($size).')';
+        rd_rrmdir($stage);
+        $removed++;
+        $freedBytes += $size;
+    }
+
+    // Vendor backups: keep newest when live vendor/ is missing (recovery path);
+    // delete everything when vendor/ is present (install completed, backups stale).
+    if ($vendorOk) {
+        foreach ($vendorBackups as $backup) {
+            $size = rd_dir_size($backup);
+            $output[] = 'Removed '.basename($backup).' (vendor present) ('.rd_format_bytes($size).')';
+            rd_rrmdir($backup);
+            $removed++;
+            $freedBytes += $size;
+        }
+    } elseif ($vendorBackups !== []) {
+        usort($vendorBackups, fn (string $a, string $b): int => (int) @filemtime($b) <=> (int) @filemtime($a));
+        $kept = array_shift($vendorBackups);
+        $output[] = 'Kept newest stranded vendor backup: '.basename($kept).' (live vendor missing)';
+
+        foreach ($vendorBackups as $staleBackup) {
+            $size = rd_dir_size($staleBackup);
+            $output[] = 'Removed stale '.basename($staleBackup).' ('.rd_format_bytes($size).')';
+            rd_rrmdir($staleBackup);
+            $removed++;
+            $freedBytes += $size;
+        }
+    }
+
+    if ($removed === 0) {
+        $output[] = 'No stale deploy artifacts found under storage/app.';
+    }
+
+    return [
+        'ok' => true,
+        'action' => 'prune',
+        'status' => 'ok',
+        'removed' => $removed,
+        'freed_bytes' => $freedBytes,
+        'freed' => rd_format_bytes($freedBytes),
+        'output' => $output,
+    ];
+}
+
+/**
+ * Recursively sum the size of all files under a directory.
+ */
+function rd_dir_size(string $dir): int
+{
+    $size = 0;
+
+    if (! is_dir($dir)) {
+        return 0;
+    }
+
+    $iter = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+    );
+
+    foreach ($iter as $file) {
+        if (is_file($file->getPathname())) {
+            $size += $file->getSize();
+        }
+    }
+
+    return $size;
+}
+
+/**
+ * Format a byte count for human-readable output.
+ */
+function rd_format_bytes(int $bytes): string
+{
+    if ($bytes <= 0) {
+        return '0 B';
+    }
+
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $i = 0;
+    $value = (float) $bytes;
+
+    while ($value >= 1024 && $i < count($units) - 1) {
+        $value /= 1024;
+        $i++;
+    }
+
+    return round($value, 1).' '.$units[$i];
+}
+
 // --- HTTP entry point (skipped under tests that include this file) ---
 if (PHP_SAPI !== 'cli' || isset($_SERVER['RUNNER_HTTP'])) {
     if (! defined('DEPLOY_RUNNER_HTTP_ENTRY')) {
@@ -651,6 +800,7 @@ if (PHP_SAPI !== 'cli' || isset($_SERVER['RUNNER_HTTP'])) {
                     'install' => rd_action_install($topo, (string) ($_GET['version'] ?? $_POST['version'] ?? '')),
                     'health' => rd_action_health($topo),
                     'logs' => rd_action_logs($topo),
+                    'prune' => rd_action_prune($topo),
                     default => ['ok' => false, 'error' => "unknown-action: {$action}"],
                 };
             }
