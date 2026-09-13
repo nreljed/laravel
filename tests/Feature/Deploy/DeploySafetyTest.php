@@ -142,6 +142,31 @@ class DeploySafetyTest extends TestCase
         }
     }
 
+    public function test_install_zip_heals_stranded_vendor_backup_from_killed_previous_run(): void
+    {
+        $backupDir = storage_path('app/deploy-staging-'.uniqid().'-vendor-backup');
+        File::makeDirectory($backupDir, 0755, true);
+        File::put($backupDir.'/autoload.php', "<?php\n // stranded backup\n");
+        File::deleteDirectory($this->sandbox.'/vendor');
+
+        $output = [];
+        $zipFiles = [];
+        $service = app(DeployService::class);
+
+        try {
+            $result = $service->installZipFile(storage_path('app/does-not-exist-'.uniqid().'.zip'), $zipFiles, $output);
+
+            $this->assertFalse($result);
+            $this->assertContains('Interrupted install healed; previous version restored', $output);
+            $this->assertTrue(File::isDirectory($this->sandbox.'/vendor'));
+            $this->assertTrue(File::exists($this->sandbox.'/vendor/autoload.php'));
+            $this->assertSame("<?php\n // stranded backup\n", File::get($this->sandbox.'/vendor/autoload.php'));
+            $this->assertEmpty(File::glob(storage_path('app/deploy-staging-*-vendor-backup')), 'Stranded backup not cleaned up after heal.');
+        } finally {
+            File::deleteDirectory($backupDir);
+        }
+    }
+
     public function test_deploy_auto_reports_error_and_keeps_running_when_archive_is_invalid(): void
     {
         $lockPath = storage_path('app/.deploy-lock-'.getmypid().'-'.uniqid());
