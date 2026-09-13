@@ -38,8 +38,13 @@ on:
 permissions:
   contents: read
 
+# Uses its own concurrency group, NOT deploy-production: deploy.yml dispatches
+# this workflow as an auto-repair fallback from inside a deploy-production run —
+# sharing that group with cancel-in-progress:true would make a dispatched
+# restore cancel its own parent mid-FTP-upload. This group only serializes
+# runner operations against each other (a queued prune cancels a running one).
 concurrency:
-  group: deploy-production
+  group: deploy-runner
   cancel-in-progress: true
 
 jobs:

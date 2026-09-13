@@ -296,4 +296,56 @@ class DeployRunnerTest extends TestCase
         $this->assertSame('no_storage_app', $result['status']);
         $this->assertSame(0, $result['removed']);
     }
+
+    public function test_prune_reports_partial_and_defers_when_budget_exhausted(): void
+    {
+        $storageApp = $this->sandbox.'/storage/app';
+        File::makeDirectory($storageApp, 0755, true);
+
+        File::put($storageApp.'/deploy-aaa111.zip', str_repeat('x', 1024));
+
+        File::makeDirectory($storageApp.'/deploy-staging-aaa111', 0755, true);
+        File::put($storageApp.'/deploy-staging-aaa111/file.txt', 'staged');
+        File::makeDirectory($storageApp.'/deploy-staging-aaa111/vendor', 0755, true);
+        File::put($storageApp.'/deploy-staging-aaa111/vendor/autoload.php', "<?php\n");
+
+        File::makeDirectory($storageApp.'/deploy-staging-bbb222', 0755, true);
+        File::put($storageApp.'/deploy-staging-bbb222/file.txt', 'staged');
+
+        File::makeDirectory($this->sandbox.'/vendor', 0755, true);
+        File::put($this->sandbox.'/vendor/autoload.php', "<?php\n");
+
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+
+        // A zero-second budget forces the very first deferred check to fire.
+        $result = \rd_action_prune($topo, 0);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertTrue($result['partial']);
+        $this->assertGreaterThan(0, $result['remaining']);
+        $this->assertFalse(File::exists($storageApp.'/deploy-aaa111.zip'), 'zip pruned regardless of budget');
+        $this->assertTrue(File::isDirectory($storageApp.'/deploy-staging-aaa111'), 'trees deferred when budget exhausted');
+
+        // A second run with ample budget finishes the job (idempotent resume).
+        $again = \rd_action_prune($topo, 30);
+        $this->assertTrue($again['ok'], implode("\n", $again['output']));
+        $this->assertFalse($again['partial']);
+        $this->assertFalse(File::exists($storageApp.'/deploy-aaa111.zip'));
+        $this->assertFalse(File::isDirectory($storageApp.'/deploy-staging-aaa111'));
+        $this->assertFalse(File::isDirectory($storageApp.'/deploy-staging-bbb222'));
+    }
+
+    public function test_rrmdir_collect_returns_freed_bytes_and_completion(): void
+    {
+        $dir = $this->sandbox.'/tree';
+        File::makeDirectory($dir.'/sub', 0755, true);
+        File::put($dir.'/a.txt', str_repeat('a', 512));
+        File::put($dir.'/sub/b.txt', str_repeat('b', 1024));
+
+        $result = \rd_rrmdir_collect($dir);
+
+        $this->assertTrue($result['complete']);
+        $this->assertSame(1536, $result['freed']);
+        $this->assertFalse(File::isDirectory($dir));
+    }
 }

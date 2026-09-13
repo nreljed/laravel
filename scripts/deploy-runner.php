@@ -642,7 +642,7 @@ function rd_action_logs(array $topo): array
  *
  * @return array<string, mixed>
  */
-function rd_action_prune(array $topo): array
+function rd_action_prune(array $topo, ?int $budgetSeconds = null): array
 {
     $root = $topo['root'];
     $storageApp = $root.'/storage/app';
@@ -654,10 +654,24 @@ function rd_action_prune(array $topo): array
         return ['ok' => true, 'action' => 'prune', 'status' => 'no_storage_app', 'removed' => 0, 'freed_bytes' => 0, 'output' => $output];
     }
 
+    // Budget: stay under max_execution_time. If the host caps it at 30s (and
+    // set_time_limit was blocked at the HTTP entry), budget ~= 25s; with a
+    // lifted cap, budget grows to at most 240s. Parts cut off by the budget
+    // return a partial success so a repeat invoke continues the cleanup.
+    if ($budgetSeconds === null) {
+        $maxExec = (int) (@ini_get('max_execution_time') ?: 30);
+        if ($maxExec <= 0 || $maxExec > 240) {
+            $maxExec = 240;
+        }
+        $budgetSeconds = max(10, $maxExec - 5);
+    }
+
+    $budgetUntil = microtime(true) + $budgetSeconds;
     $removed = 0;
     $freedBytes = 0;
+    $timedOut = false;
 
-    // --- Stale deploy-*.zip downloads ---
+    // --- Stale deploy-*.zip downloads (cheap, never counts against budget) ---
     foreach (glob($storageApp.'/deploy-*.zip') ?: [] as $zipPath) {
         $size = @filesize($zipPath) ?: 0;
         $output[] = 'Removed '.basename($zipPath).' ('.rd_format_bytes($size).')';
@@ -666,10 +680,11 @@ function rd_action_prune(array $topo): array
         $freedBytes += $size;
     }
 
-    // --- Stale deploy-staging-* extraction trees ---
+    // --- Stale deploy-staging-* extraction trees (walk + delete in ONE pass) ---
     $vendorOk = is_file($root.'/vendor/autoload.php');
     $vendorBackups = glob($storageApp.'/deploy-staging-*-vendor-backup') ?: [];
     $nonBackups = [];
+    $remaining = 0;
 
     foreach (glob($storageApp.'/deploy-staging-*') ?: [] as $stage) {
         if (str_ends_with(basename($stage), '-vendor-backup')) {
@@ -680,22 +695,48 @@ function rd_action_prune(array $topo): array
     }
 
     foreach ($nonBackups as $stage) {
-        $size = rd_dir_size($stage);
-        $output[] = 'Removed '.basename($stage).' ('.rd_format_bytes($size).')';
-        rd_rrmdir($stage);
+        if (microtime(true) > $budgetUntil) {
+            $timedOut = true;
+            $remaining++;
+            $output[] = 'Time budget reached; deferred '.basename($stage).' to next prune run ('.round($budgetUntil - microtime(true) + $budgetSeconds).'s budget)';
+
+            continue;
+        }
+
+        $collect = rd_rrmdir_collect($stage, $budgetUntil);
+        $output[] = 'Removed '.basename($stage).' ('.rd_format_bytes($collect['freed']).')';
         $removed++;
-        $freedBytes += $size;
+        $freedBytes += $collect['freed'];
+
+        if (! $collect['complete']) {
+            $timedOut = true;
+            $remaining++;
+            $output[] = 'Time budget reached mid-tree; re-invoke prune to finish.';
+        }
     }
 
     // Vendor backups: keep newest when live vendor/ is missing (recovery path);
     // delete everything when vendor/ is present (install completed, backups stale).
     if ($vendorOk) {
         foreach ($vendorBackups as $backup) {
-            $size = rd_dir_size($backup);
-            $output[] = 'Removed '.basename($backup).' (vendor present) ('.rd_format_bytes($size).')';
-            rd_rrmdir($backup);
+            if (microtime(true) > $budgetUntil) {
+                $timedOut = true;
+                $remaining++;
+                $output[] = 'Time budget reached; deferred '.basename($backup).' (vendor present) to next prune run.';
+
+                continue;
+            }
+
+            $collect = rd_rrmdir_collect($backup, $budgetUntil);
+            $output[] = 'Removed '.basename($backup).' (vendor present) ('.rd_format_bytes($collect['freed']).')';
             $removed++;
-            $freedBytes += $size;
+            $freedBytes += $collect['freed'];
+
+            if (! $collect['complete']) {
+                $timedOut = true;
+                $remaining++;
+                $output[] = 'Time budget reached mid-tree; re-invoke prune to finish.';
+            }
         }
     } elseif ($vendorBackups !== []) {
         usort($vendorBackups, fn (string $a, string $b): int => (int) @filemtime($b) <=> (int) @filemtime($a));
@@ -703,51 +744,89 @@ function rd_action_prune(array $topo): array
         $output[] = 'Kept newest stranded vendor backup: '.basename($kept).' (live vendor missing)';
 
         foreach ($vendorBackups as $staleBackup) {
-            $size = rd_dir_size($staleBackup);
-            $output[] = 'Removed stale '.basename($staleBackup).' ('.rd_format_bytes($size).')';
-            rd_rrmdir($staleBackup);
+            if (microtime(true) > $budgetUntil) {
+                $timedOut = true;
+                $remaining++;
+                $output[] = 'Time budget reached; deferred stale '.basename($staleBackup).' to next prune run.';
+
+                continue;
+            }
+
+            $collect = rd_rrmdir_collect($staleBackup, $budgetUntil);
+            $output[] = 'Removed stale '.basename($staleBackup).' ('.rd_format_bytes($collect['freed']).')';
             $removed++;
-            $freedBytes += $size;
+            $freedBytes += $collect['freed'];
+
+            if (! $collect['complete']) {
+                $timedOut = true;
+                $remaining++;
+                $output[] = 'Time budget reached mid-tree; re-invoke prune to finish.';
+            }
         }
     }
 
-    if ($removed === 0) {
+    if ($removed === 0 && $remaining === 0) {
         $output[] = 'No stale deploy artifacts found under storage/app.';
     }
 
     return [
         'ok' => true,
         'action' => 'prune',
-        'status' => 'ok',
+        'status' => $timedOut ? 'partial' : 'ok',
         'removed' => $removed,
         'freed_bytes' => $freedBytes,
         'freed' => rd_format_bytes($freedBytes),
+        'partial' => $timedOut,
+        'remaining' => $remaining,
         'output' => $output,
     ];
 }
 
 /**
- * Recursively sum the size of all files under a directory.
+ * Delete a directory tree in a single pass while collecting the freed bytes.
+ *
+ * Checks the time budget inside the walk so a host with a low
+ * max_execution_time never dies mid-delete — the caller sees an incomplete
+ * result and can re-invoke to continue (prune is idempotent).
+ *
+ * @return array{freed: int, complete: bool}
  */
-function rd_dir_size(string $dir): int
+function rd_rrmdir_collect(string $dir, float $budgetUntil = 0.0): array
 {
-    $size = 0;
-
     if (! is_dir($dir)) {
-        return 0;
+        return ['freed' => 0, 'complete' => true];
     }
 
-    $iter = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
-    );
+    $freed = 0;
 
-    foreach ($iter as $file) {
-        if (is_file($file->getPathname())) {
-            $size += $file->getSize();
+    foreach (scandir($dir) ?: [] as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $path = $dir.'/'.$item;
+
+        if (is_dir($path)) {
+            if ($budgetUntil > 0 && microtime(true) > $budgetUntil) {
+                return ['freed' => $freed, 'complete' => false];
+            }
+
+            $sub = rd_rrmdir_collect($path, $budgetUntil);
+            $freed += $sub['freed'];
+
+            if (! $sub['complete']) {
+                return ['freed' => $freed, 'complete' => false];
+            }
+        } else {
+            $size = @filesize($path) ?: 0;
+            @unlink($path);
+            $freed += $size;
         }
     }
 
-    return $size;
+    @rmdir($dir);
+
+    return ['freed' => $freed, 'complete' => true];
 }
 
 /**
@@ -794,6 +873,13 @@ if (PHP_SAPI !== 'cli' || isset($_SERVER['RUNNER_HTTP'])) {
             if (! rd_authorize($topo, $key)) {
                 $payload = ['ok' => false, 'error' => 'unauthorized'];
             } else {
+                // Long-running actions (prune/install/recover) walk thousands of
+                // files; shared hosts cap max_execution_time at 30s. Lift the
+                // limit best-effort — internal budgets handle hosts that block it.
+                if (function_exists('set_time_limit')) {
+                    @set_time_limit(600);
+                }
+
                 $payload = match ($action) {
                     'status' => rd_action_status($topo),
                     'recover' => rd_action_recover($topo),

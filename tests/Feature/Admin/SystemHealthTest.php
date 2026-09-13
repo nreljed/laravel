@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
+use Nreljed\Platform\Services\CoreVersionService;
 use Nreljed\Platform\Services\SystemHealthService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
@@ -402,5 +403,64 @@ class SystemHealthTest extends TestCase
         $ran = fn ($process) => is_string($process->command) ? $process->command : implode(' ', $process->command);
         Process::assertRanTimes(fn ($process) => str_contains($ran($process), 'describe'), 2);
         Process::assertRanTimes(fn ($process) => str_contains($ran($process), 'porcelain'), 1);
+    }
+
+    public function test_measure_tree_skips_deploy_artifacts(): void
+    {
+        $probe = new class(new CoreVersionService) extends SystemHealthService
+        {
+            public function probeMeasure(string $path): array
+            {
+                return $this->measureTree($path);
+            }
+        };
+
+        $tree = storage_path('app/health-probe-'.getmypid());
+        File::makeDirectory($tree, 0755, true);
+
+        try {
+            File::put($tree.'/legit.txt', str_repeat('a', 100));
+            File::put($tree.'/deploy-'.str_repeat('f', 13).'.zip', str_repeat('b', 2000));
+            File::makeDirectory($tree.'/deploy-staging-abc123', 0755, true);
+            File::put($tree.'/deploy-staging-abc123/vendor', str_repeat('c', 5000));
+
+            [$size, $count] = $probe->probeMeasure($tree);
+
+            $this->assertSame(1, $count);
+            $this->assertSame(100, $size);
+        } finally {
+            File::deleteDirectory($tree);
+        }
+    }
+
+    public function test_measure_tree_caps_walk_budget(): void
+    {
+        $probe = new class(new CoreVersionService) extends SystemHealthService
+        {
+            public function probeMeasure(string $path): array
+            {
+                return $this->measureTree(path: $path);
+            }
+        };
+
+        Config::set('core.health_max_walk_files', 5);
+
+        $tree = storage_path('app/health-probe-'.getmypid());
+        File::makeDirectory($tree, 0755, true);
+
+        try {
+            for ($i = 1; $i <= 20; $i++) {
+                File::put($tree.'/file-'.$i.'.txt', str_repeat('x', 10));
+            }
+
+            [$size, $count] = $probe->probeMeasure($tree);
+
+            $this->assertGreaterThanOrEqual(5, $count);
+            $this->assertLessThan(20, $count);
+            $this->assertSame($count * 10, $size);
+        } finally {
+            File::deleteDirectory($tree);
+            Config::set('core.health_max_walk_files', 5000);
+        }
     }
 }
