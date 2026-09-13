@@ -26,6 +26,8 @@ on:
           - status
           - recover
           - install
+          - logs
+          - health
       version:
         description: "Release tag to record as .deployed-version (install only); empty = leave marker untouched"
         required: false
