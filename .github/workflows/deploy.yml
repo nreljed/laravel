@@ -183,8 +183,15 @@ jobs:
           if poll_check; then
             echo "push-deploy OK (check path)"
           elif [ "$RELEASE_LAYOUT" = "1" ]; then
-            echo "release-layout host — skipping in-place upload; deploy-runner release-install will perform the atomic flip"
-            exit 1
+            echo "release-layout host — in-place deploy disabled; dispatching deploy-runner release-install"
+            gh workflow run restore.yml \
+              --repo "${{ github.repository }}" \
+              -f action=release-install \
+              -f version="$VER"
+            echo "restore.yml release-install dispatched for $VER (runs on the next free runner)"
+            echo "This job is done; restore.yml owns the atomic flip. Watch it with:"
+            echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
+            exit 0
           else
             echo "check path did not confirm $VER, uploading deploy.zip directly"
             UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
@@ -203,8 +210,15 @@ jobs:
               if confirm_deployed; then
                 echo "push-deploy OK (confirmed after upload)"
               elif [ "$RELEASE_LAYOUT" = "1" ]; then
-                echo "release-layout host — in-place upload cannot confirm; deploy-runner release-install will perform the atomic flip"
-                exit 1
+                echo "release-layout host — in-place upload cannot confirm; dispatching deploy-runner release-install"
+                gh workflow run restore.yml \
+                  --repo "${{ github.repository }}" \
+                  -f action=release-install \
+                  -f version="$VER"
+                echo "restore.yml release-install dispatched for $VER (runs on the next free runner)"
+                echo "This job is done; restore.yml owns the atomic flip. Watch it with:"
+                echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
+                exit 0
               else
                 echo "Deploy not confirmed after upload. Release created at:"
                 echo "https://github.com/${{ github.repository }}/releases/tag/$VER"
@@ -250,15 +264,18 @@ jobs:
           fi
 
       - name: Fallback to deploy-runner auto-repair
-        # When the check/upload path could not confirm the deploy (release-layout
-        # host where in-place is disabled, app wedged, vendor half-swapped,
-        # /deploy/* unreachable), hand control to the standalone runner
-        # workflow. It stages runner.php via FTP (plus deploy.zip for
-        # release-install) and invokes recover (heal stranded backup) then
-        # release-install (atomic Capistrano-style flip of a deploy.zip it
-        # fetches via FTP/staged at the project root) — no File Manager needed.
-        # release-install resumes while extraction is partial. This step FAILS
-        # if release-install does not confirm, surfacing a real deploy result.
+        # When the check/upload path could not confirm the deploy (app wedged,
+        # vendor half-swapped, /deploy/* unreachable, non-release-layout
+        # upload failure), hand control to the standalone runner workflow. It
+        # stages runner.php via FTP (plus deploy.zip for release-install) and
+        # invokes recover (heal stranded backup) then release-install (atomic
+        # Capistrano-style flip of a deploy.zip it fetches via FTP/staged at
+        # the project root) — no File Manager needed. release-install resumes
+        # while extraction is partial.
+        #
+        # NOTE: dispatch is fire-and-forget. restore.yml runs on the same
+        # self-hosted runner; this job MUST end before those runs can start,
+        # so we never wait on them here (would deadlock on a queued run).
         if: failure()
         continue-on-error: false
         shell: bash
@@ -266,37 +283,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           VER="v${{ needs.package.outputs.version }}"
-          echo "push-deploy failed — dispatching restore.yml (action=recover, then release-install) for $VER"
+          echo "push-deploy failed — dispatching restore.yml (recover, then release-install) for $VER"
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
             -f action=recover
-          RECOVER_RUN_ID=""
-          for i in $(seq 1 10); do
-            RECOVER_RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null)
-            [ -n "$RECOVER_RUN_ID" ] && break
-            sleep 5
-          done
-          echo "Watching restore.yml run $RECOVER_RUN_ID (recover)"
-          gh run watch "$RECOVER_RUN_ID" --repo "${{ github.repository }}" --exit-status >/dev/null 2>&1 || true
-          echo "recover done — dispatching release-install for $VER; waiting for the atomic flip"
           gh workflow run restore.yml \
             --repo "${{ github.repository }}" \
             -f action=release-install \
             -f version="$VER"
-          RELEASE_INSTALL_RUN_ID=""
-          for i in $(seq 1 10); do
-            RELEASE_INSTALL_RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow restore.yml --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null)
-            if [ -n "$RELEASE_INSTALL_RUN_ID" ] && [ "$RELEASE_INSTALL_RUN_ID" != "$RECOVER_RUN_ID" ]; then
-              break
-            fi
-            RELEASE_INSTALL_RUN_ID=""
-            sleep 5
-          done
-          if [ -n "$RELEASE_INSTALL_RUN_ID" ]; then
-            echo "Watching restore.yml run $RELEASE_INSTALL_RUN_ID (release-install)"
-            gh run watch "$RELEASE_INSTALL_RUN_ID" --repo "${{ github.repository }}" --exit-status
-          else
-            echo "Could not resolve the release-install run id after dispatch. Watch manually with:"
-            echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
-            exit 1
-          fi
+          echo "restore.yml dispatched (recover + release-install) for $VER — runs on the next free runner."
+          echo "Watch it with:"
+          echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
