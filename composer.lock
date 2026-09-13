@@ -3312,16 +3312,16 @@
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.43",
+            "version": "0.1.44",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/platform.git",
-                "reference": "f18ffde8bda7c8d1e6be9662a328800c96796011"
+                "reference": "b97119ed25a0215010f3ad4a49df2f93322cb5ec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/f18ffde8bda7c8d1e6be9662a328800c96796011",
-                "reference": "f18ffde8bda7c8d1e6be9662a328800c96796011",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/b97119ed25a0215010f3ad4a49df2f93322cb5ec",
+                "reference": "b97119ed25a0215010f3ad4a49df2f93322cb5ec",
                 "shasum": ""
             },
             "require": {
@@ -3367,10 +3367,10 @@
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
             "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.43",
+                "source": "https://github.com/nreljed/platform/tree/v0.1.44",
                 "issues": "https://github.com/nreljed/platform/issues"
             },
-            "time": "2026-09-13T02:50:38+00:00"
+            "time": "2026-09-13T03:08:57+00:00"
         },
         {
             "name": "nunomaduro/termwind",
