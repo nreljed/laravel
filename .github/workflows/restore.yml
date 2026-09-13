@@ -110,15 +110,27 @@ jobs:
           FTP_PORT="${{ secrets.FTP_PORT || '21' }}"
           # FTP home is the Laravel project root — upload deploy.zip to root so
           # the runner's home/ resolves it (same home-root quirk as deploy.yml).
+          # Large FTP transfers on this host can stall — retry with backoff and
+          # fail fast on a hung data connection instead of blocking the job.
           FTP_URL="ftp://${{ secrets.FTP_SERVER }}:$FTP_PORT/deploy.zip"
-          if curl -s -T deploy.zip --ftp-create-dirs \
-            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
-            "$FTP_URL"; then
-            echo "deploy.zip uploaded to project root"
-          else
-            echo "FTP upload of deploy.zip failed"
-            exit 1
-          fi
+          for attempt in 1 2 3; do
+            echo "[ftp-upload $attempt/3] staging deploy.zip via FTP..."
+            if curl -s -T deploy.zip --ftp-create-dirs \
+              --connect-timeout 30 --max-time 240 \
+              --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+              "$FTP_URL"; then
+              echo "deploy.zip uploaded to project root"
+              break
+            fi
+            code=$?
+            echo "FTP upload of deploy.zip failed (curl exit $code)"
+            if [ "$attempt" -lt 3 ]; then
+              echo "retrying in $((attempt * 20))s..."
+              sleep "$((attempt * 20))"
+            else
+              exit 1
+            fi
+          done
 
       - name: Invoke runner action
         shell: bash
