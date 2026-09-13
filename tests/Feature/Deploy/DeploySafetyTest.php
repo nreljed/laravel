@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Deploy;
 
+use Illuminate\Process\Factory;
+use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -201,6 +203,47 @@ class DeploySafetyTest extends TestCase
         }
     }
 
+    public function test_install_zip_falls_back_to_shell_when_proc_open_is_disabled(): void
+    {
+        if (! str_contains(
+            (string) File::get(base_path('vendor/nreljed/platform/src/Deploy/Services/DeployService.php')),
+            'proc_open'
+        )) {
+            $this->markTestSkipped('bootCheck proc_open fallback not present in pinned vendor copy.');
+        }
+
+        // Simulate the host disabling proc_open: swap the Process factory (the
+        // facade resolves Factory::class) with a partial mock whose pending
+        // process throws the exact LogicException Symfony raises when proc_open
+        // is unavailable. core bootCheck must catch it and fall back.
+        $pending = \Mockery::mock(PendingProcess::class)->makePartial();
+        $pending->shouldReceive('run')->andThrow(
+            new \LogicException('The Process class relies on proc_open, which is not available on your PHP installation.')
+        );
+        $factory = \Mockery::mock(Factory::class)->makePartial();
+        $factory->shouldReceive('newPendingProcess')->andReturn($pending);
+        Process::swap($factory);
+
+        $zipPath = $this->buildMinimalZip('no-proc-open', includeMarker: 'deployed-marker.txt');
+
+        $output = [];
+        $zipFiles = [];
+        $service = app(DeployService::class);
+
+        try {
+            $result = $service->installZipFile($zipPath, $zipFiles, $output);
+
+            $this->assertTrue($result, implode(PHP_EOL, $output));
+            $this->assertTrue(File::exists($this->sandbox.'/deployed-marker.txt'), 'Release files were not swapped in.');
+            $this->assertTrue(File::exists($this->sandbox.'/vendor/autoload.php'), 'Staged vendor was not installed.');
+
+            $bootLines = collect($output)->filter(fn (string $line) => str_contains($line, 'Boot check passed'));
+            $this->assertGreaterThan(0, $bootLines->count(), 'Expected a fallback boot-check line: '.implode(PHP_EOL, $output));
+        } finally {
+            File::delete($zipPath);
+        }
+    }
+
     /**
      * Build a tiny deploy-style zip (vendor/autoload.php + artisan anchor) so
      * the staged-tree validation has something real to look at.
@@ -215,6 +258,17 @@ class DeploySafetyTest extends TestCase
         $zip->addFromString('artisan', "<?php\n require __DIR__.'/vendor/autoload.php';\n");
         $zip->addFromString('vendor/autoload.php', "<?php\n // minimal staged autoload\n");
         $zip->addFromString('README.md', "test release: $suffix\n");
+
+        // Structural boot-check skeleton (used when the host blocks proc_open).
+        foreach ([
+            'bootstrap/app.php' => "<?php\n // app\n",
+            'bootstrap/providers.php' => "<?php\n return [];\n",
+            'public/index.php' => "<?php\n require __DIR__.'/../vendor/autoload.php';\n",
+            'config/app.php' => "<?php\n return [];\n",
+            'routes/web.php' => "<?php\n\n",
+        ] as $path => $contents) {
+            $zip->addFromString($path, $contents);
+        }
 
         if ($includeMarker !== '') {
             $zip->addFromString($includeMarker, date('c')."\n");
