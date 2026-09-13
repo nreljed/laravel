@@ -12,6 +12,7 @@ declare(strict_types=1);
  * Usage (HTTP, after CI or an operator uploads this file to the web root):
  *
  *   https://<site>/runner.php?key=<DEPLOY_TOKEN>&action=status
+ *   ...&action=recover | install | health | logs
  *
  * Auth: the key must hash_equals the DEPLOY_TOKEN read from the nearest
  * ancestor `artisan` + `.env` directory. Env values are read only for
@@ -558,6 +559,69 @@ function rd_action_health(array $topo): array
     ];
 }
 
+/**
+ * Tail the app's own Laravel log plus the environment log channel, and stop
+ * before any cached manifests get rewritten. Read-only: never touches files.
+ *
+ * @return array<string, mixed>
+ */
+function rd_action_logs(array $topo): array
+{
+    $root = $topo['root'];
+    $output = [];
+    $logDir = $root.'/storage/logs';
+
+    $sources = glob($logDir.'/laravel-*.log') ?: [];
+
+    if (is_file($logDir.'/laravel.log')) {
+        array_unshift($sources, $logDir.'/laravel.log');
+    }
+
+    $output[] = 'log_dir: '.$logDir.' ('.(is_dir($logDir) ? 'exists' : 'MISSING').')';
+
+    if ($sources === []) {
+        $output[] = 'No log files found under storage/logs';
+
+        return ['ok' => true, 'action' => 'logs', 'status' => 'no_logs', 'output' => $output];
+    }
+
+    $output[] = 'sources: '.implode(', ', array_map('basename', $sources));
+
+    $tail = [];
+    $last = end($sources) ?: $logDir.'/laravel.log';
+
+    if (@filesize($last) > 512 * 1024) {
+        $handle = fopen($last, 'r');
+        if ($handle) {
+            fseek($handle, -512 * 1024, SEEK_END);
+            $chunk = fread($handle, 512 * 1024);
+            fclose($handle);
+            $tail = array_slice(preg_split('/\r\n|\r|\n/', (string) $chunk), -80);
+        }
+    } else {
+        $tail = array_slice(file($last) ?: [], -80);
+    }
+
+    $tail = array_map('trim', $tail);
+
+    // Drop noisy/predictable success lines to keep the answer readable.
+    $noise = [
+        'local.INFO: Command [cache:clear] executed successfully.',
+        '#0 {main}',
+    ];
+    $filtered = array_values(array_filter(
+        $tail,
+        fn (string $line): bool => $line !== '' && ! in_array($line, $noise, true)
+    ));
+
+    $output[] = '--- tail of '.basename($last).' (last '.count($filtered).' lines) ---';
+    foreach ($filtered as $line) {
+        $output[] = $line;
+    }
+
+    return ['ok' => true, 'action' => 'logs', 'status' => 'ok', 'output' => $output];
+}
+
 // --- HTTP entry point (skipped under tests that include this file) ---
 if (PHP_SAPI !== 'cli' || isset($_SERVER['RUNNER_HTTP'])) {
     if (! defined('DEPLOY_RUNNER_HTTP_ENTRY')) {
@@ -586,6 +650,7 @@ if (PHP_SAPI !== 'cli' || isset($_SERVER['RUNNER_HTTP'])) {
                     'recover' => rd_action_recover($topo),
                     'install' => rd_action_install($topo, (string) ($_GET['version'] ?? $_POST['version'] ?? '')),
                     'health' => rd_action_health($topo),
+                    'logs' => rd_action_logs($topo),
                     default => ['ok' => false, 'error' => "unknown-action: {$action}"],
                 };
             }

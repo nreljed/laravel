@@ -195,4 +195,22 @@ class DeployRunnerTest extends TestCase
         $this->assertFalse($status['deploy_zip']['exists']);
         $this->assertIsArray($status['capabilities']);
     }
+
+    public function test_logs_tail_laravel_log_without_touching_trees(): void
+    {
+        $logDir = $this->sandbox.'/storage/logs';
+        File::makeDirectory($logDir, 0755, true);
+        for ($i = 1; $i <= 5; $i++) {
+            File::append($logDir.'/laravel.log', "line-$i-sample\n");
+        }
+
+        $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];
+        $result = \rd_action_logs($topo);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('ok', $result['status']);
+        $joined = implode("\n", $result['output']);
+        $this->assertStringContainsString('line-5-sample', $joined);
+        $this->assertStringContainsString('line-1-sample', $joined);
+    }
 }
