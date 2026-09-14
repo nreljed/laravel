@@ -95,7 +95,18 @@ jobs:
           # git exits non-zero when the tag is absent; swallow it and reset
           # LASTEXITCODE so the runner's implicit "exit $LASTEXITCODE" passes.
           git ls-remote --exit-code origin "refs/tags/v$ver" *> $null
-          $skip = if ($LASTEXITCODE -eq 0) { "true" } else { "false" }
+          $skip = "false"
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output "tag v$ver already exists - incrementing patch to find next free version"
+            $seg = $ver.Split('.')
+            $major = [int]$seg[0]; $minor = [int]$seg[1]; $patch = [int]$seg[2]
+            do {
+              $patch += 1
+              $ver = "$major.$minor.$patch"
+              git ls-remote --exit-code origin "refs/tags/v$ver" *> $null
+            } while ($LASTEXITCODE -eq 0)
+            Write-Output "Resolved to v$ver"
+          }
           $global:LASTEXITCODE = 0
           echo "version=$ver" >> $env:GITHUB_OUTPUT
           echo "skip=$skip" >> $env:GITHUB_OUTPUT
