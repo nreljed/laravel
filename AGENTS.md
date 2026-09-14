@@ -492,8 +492,18 @@ pull_request → pr.yml
   2. **Poll `/deploy/check`** (8 × 45s) — accept `"deployed"` or `"current"` matching the release tag
   3. **Fallback `/deploy/upload`** only if check didn't confirm, then re-confirm via check (response can be lost mid-extract)
   4. **FTP fallback** (`continue-on-error`) — DirectAdmin account (`laravel@tunispromo.tn`), home IS the project root, uploads `deploy.zip` to root. Skips itself when `FTP_*` secrets are unset.
-- Resilience: if CI is blocked by the host's security layer (datacenter IPs), the server's
-  scheduled `deploy:auto` (every 5 min) picks the release up itself within ~5 minutes.
+- Resilience: if CI is blocked by the host's security layer (datacenter IPs):
+  - **Release-layout host (this app since 2026-09):** `deploy:auto` is a **no-op** —
+    `DeployService::check()` returns `release-layout` and refuses the in-place swap. The net
+    is the CI-side scheduled `Deploy Runner (Auto-Repair)` workflow (or manual
+    `workflow_dispatch`), which runs the runner's `release-install`.
+  - **Host cron runs the app scheduler only** (not deploy logic): `* * * * * <php>
+<home>/current/artisan schedule:run` — must target the `current` symlink, never a
+    legacy root `artisan`.
+  - **`.env` backups**: `/deploy/env` snapshots `.env` → `.env.backup.<ts>` and prunes to
+    `deploy.env_backup_retention` (default 5). On release-layout hosts they land inside the
+    active release dir (pruned by `release-cleanup`); root `.env.backup.*` are legacy residue
+    (archived 2026-09-14 to `legacy-root-env-backups-2026-09-14/`).
 
 **pr.yml** (pull_request to main):
 
