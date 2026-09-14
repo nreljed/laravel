@@ -68,6 +68,45 @@ class DeployRunnerTest extends TestCase
         $this->assertSame('', \rd_env_get($env, 'MISSING'));
     }
 
+    public function test_rrmdir_never_follows_directory_symlinks(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $base = $this->sandbox;
+        File::makeDirectory($base.'/target', 0755, true);
+        File::put($base.'/target/precious.txt', 'keep me');
+
+        File::makeDirectory($base.'/victim', 0755, true);
+        symlink($base.'/target', $base.'/victim/storage');
+        File::put($base.'/victim/remove-me.txt', 'bye');
+
+        $this->assertTrue(\rd_rrmdir($base.'/victim'));
+        $this->assertFalse(File::isDirectory($base.'/victim'), 'victim dir fully removed');
+        $this->assertTrue(File::isFile($base.'/target/precious.txt'), 'symlink target contents untouched');
+    }
+
+    public function test_list_releases_orders_by_embedded_timestamp_not_mtime(): void
+    {
+        $rel = $this->sandbox.'/releases';
+        foreach (['2026-09-14T17-57-39Z-v0.26.7', '2026-09-13T20-41-41Z-v0.26.2', '2026-09-14T18-00-00Z-v0.26.8'] as $dir) {
+            File::makeDirectory($rel.'/'.$dir, 0755, true);
+        }
+
+        // Newest release is touched LAST in prod (finalize rename), so set the
+        // latest-embedded one old — the sort must use the name, not mtime.
+        touch($rel.'/2026-09-14T18-00-00Z-v0.26.8', time() - 3600);
+        touch($rel.'/2026-09-13T20-41-41Z-v0.26.2', time());
+        touch($rel.'/2026-09-14T17-57-39Z-v0.26.7', time() - 1800);
+
+        $list = \rd_list_releases($this->sandbox);
+
+        $this->assertSame([
+            '2026-09-14T18-00-00Z-v0.26.8',
+            '2026-09-14T17-57-39Z-v0.26.7',
+            '2026-09-13T20-41-41Z-v0.26.2',
+        ], $list);
+    }
+
     public function test_authorize_requires_exact_token(): void
     {
         $topo = ['root' => $this->sandbox, 'home' => $this->sandbox];

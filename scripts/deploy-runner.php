@@ -165,7 +165,7 @@ function rd_resolve_symlink(string $link, string $home): string
  */
 function rd_list_releases(string $home): array
 {
-    $byMtime = [];
+    $ranked = [];
 
     foreach (glob($home.'/releases/*', GLOB_ONLYDIR) ?: [] as $dir) {
         $name = basename($dir);
@@ -173,12 +173,37 @@ function rd_list_releases(string $home): array
             continue;
         }
 
-        $byMtime[$name] = (int) @filemtime($dir);
+        $ranked[$name] = rd_release_sort_key($name, $dir);
     }
 
-    arsort($byMtime);
+    uksort($ranked, static function (string $a, string $b) use ($ranked): int {
+        return $ranked[$b] <=> $ranked[$a];
+    });
 
-    return array_keys($byMtime);
+    return array_keys($ranked);
+}
+
+/**
+ * Stable sort key for a release dir. The directory name embeds an ISO
+ * timestamp prefix (<home>/releases/<ts>-v<version>), which fingerprints the
+ * exact deploy moment regardless of mtime — a gutted/cleaned dir gets a fresh
+ * mtime but must NOT rank as newer than a real full release. Use the embedded
+ * timestamp when present; fall back to mtime only for legacy names without one
+ * (then consistent ordering still matters, so integer mtimes stay comparable).
+ */
+function rd_release_sort_key(string $name, string $dir): int
+{
+    if (preg_match('/^\d{4}-\d{2}-\d{2}T(\d{2}-\d{2}-\d{2})Z/i', $name, $m) === 1) {
+        // Dir names use dashes in the time too (2026-09-14T17-57-39Z): convert
+        // just the time separators so strtotime parses a valid ISO datetime.
+        $iso = substr($m[0], 0, 11).str_replace('-', ':', $m[1]);
+        $ts = strtotime($iso);
+        if ($ts !== false) {
+            return $ts;
+        }
+    }
+
+    return (int) @filemtime($dir);
 }
 
 /**
@@ -272,6 +297,12 @@ function rd_clear_bootstrap_cache(string $root): array
  */
 function rd_rrmdir(string $dir): bool
 {
+    if (is_link($dir)) {
+        // The target itself is a symlink (release's storage/.env link) — unlink
+        // the link, never descend into the SHARED resource it points at.
+        return @unlink($dir);
+    }
+
     if (! is_dir($dir)) {
         return false;
     }
@@ -285,7 +316,11 @@ function rd_rrmdir(string $dir): bool
 
         $path = $dir.'/'.$item;
 
-        if (is_dir($path)) {
+        if (is_link($path)) {
+            // Never follow symlinks — releases link shared storage/.env, so
+            // a descent would delete the SHARED resources for every release.
+            @unlink($path);
+        } elseif (is_dir($path)) {
             rd_rrmdir($path);
         } else {
             @unlink($path);
@@ -1099,8 +1134,7 @@ function rd_action_release_cleanup(array $topo, int $keep = 3): array
         $path = $home.'/releases/'.$name;
         $version = is_file($path.'/.deployed-version') ? trim((string) file_get_contents($path.'/.deployed-version')) : '';
         $output[] = 'Deleting old release '.$name.($version !== '' ? ' ('.$version.')' : '').'...';
-        rd_rrmdir($path);
-        $removed++;
+        $removed += (int) rd_rrmdir($path);
         $output[] = 'Deleted '.$name;
     }
 
@@ -1424,6 +1458,15 @@ function rd_action_prune(array $topo, ?int $budgetSeconds = null): array
  */
 function rd_rrmdir_collect(string $dir, float $budgetUntil = 0.0): array
 {
+    if (is_link($dir)) {
+        // Target is a symlink (release/stage storage/.env link): unlink the
+        // link only. Never descend — it points at SHARED resources.
+        $size = @filesize($dir) ?: 0;
+        @unlink($dir);
+
+        return ['freed' => $size, 'complete' => true];
+    }
+
     if (! is_dir($dir)) {
         return ['freed' => 0, 'complete' => true];
     }
@@ -1437,7 +1480,14 @@ function rd_rrmdir_collect(string $dir, float $budgetUntil = 0.0): array
 
         $path = $dir.'/'.$item;
 
-        if (is_dir($path)) {
+        if (is_link($path)) {
+            // Never follow symlinks — a staged release / release dir links back
+            // to the SHARED storage + .env; a descent would delete the shared
+            // resources every release depends on.
+            $size = @filesize($path) ?: 0;
+            @unlink($path);
+            $freed += $size;
+        } elseif (is_dir($path)) {
             if ($budgetUntil > 0 && microtime(true) > $budgetUntil) {
                 return ['freed' => $freed, 'complete' => false];
             }
