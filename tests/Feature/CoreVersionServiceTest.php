@@ -3,143 +3,104 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
 use Nreljed\Platform\Services\CoreVersionService;
 use Tests\TestCase;
 
 class CoreVersionServiceTest extends TestCase
 {
-    protected string $jsonPath;
+    private const PACKAGE = 'nreljed/platform';
 
-    protected string $shaPath;
-
-    protected function setUp(): void
+    /**
+     * @return array{version: string|null, reference: string|null}
+     */
+    private function installedState(): array
     {
-        parent::setUp();
+        $installedJson = base_path('vendor/composer/installed.json');
+        $lockJson = base_path('composer.lock');
 
-        $suffix = getmypid();
-        $this->jsonPath = storage_path("app/core-{$suffix}.json");
-        $this->shaPath = storage_path("app/core-{$suffix}.sha");
+        $meta = json_decode((string) file_get_contents($installedJson), true);
+        foreach ($meta['packages'] ?? [] as $package) {
+            if (($package['name'] ?? null) === self::PACKAGE) {
+                return [
+                    'version' => $package['version'] ?? null,
+                    'reference' => $package['source']['reference'] ?? $package['dist']['reference'] ?? null,
+                    'url' => $package['source']['url'] ?? $package['dist']['url'] ?? null,
+                ];
+            }
+        }
 
-        Config::set('core.json_path', $this->jsonPath);
-        Config::set('core.sha_path', $this->shaPath);
+        $lock = json_decode((string) file_get_contents($lockJson), true);
+        foreach (array_merge($lock['packages'] ?? [], $lock['packages-dev'] ?? []) as $package) {
+            if (($package['name'] ?? null) === self::PACKAGE) {
+                return [
+                    'version' => $package['version'] ?? null,
+                    'reference' => $package['source']['reference'] ?? $package['dist']['reference'] ?? null,
+                    'url' => $package['source']['url'] ?? $package['dist']['url'] ?? null,
+                ];
+            }
+        }
 
-        File::delete([$this->jsonPath, $this->shaPath]);
+        return ['version' => null, 'reference' => null, 'url' => null];
     }
 
-    protected function tearDown(): void
+    public function test_info_reads_authoritative_install_state(): void
     {
-        File::delete([$this->jsonPath, $this->shaPath]);
+        $state = $this->installedState();
+        $this->assertNotNull($state['version'], 'nreljed/platform must be installed');
 
-        parent::tearDown();
-    }
-
-    public function test_info_reads_from_core_json_when_present(): void
-    {
-        File::put($this->jsonPath, json_encode([
-            'name' => 'platform',
-            'version' => '1.2.3',
-            'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
-            'repo' => 'nreljed/platform',
-        ]));
-
-        $service = new CoreVersionService;
-        $info = $service->info();
+        $info = (new CoreVersionService)->info();
 
         $this->assertSame('platform', $info['name']);
-        $this->assertSame('1.2.3', $info['version']);
-        $this->assertSame('50e9c0fcf28d365295c46af725da4822456c3574', $info['sha']);
+        $this->assertSame($state['version'], $info['version']);
+        $this->assertSame($state['reference'], $info['sha']);
         $this->assertSame('nreljed/platform', $info['repo']);
-        $this->assertSame('50e9c0f', $service->shortSha());
-        $this->assertSame(
-            'https://github.com/nreljed/platform/commit/50e9c0fcf28d365295c46af725da4822456c3574',
-            $service->commitUrl()
-        );
     }
 
-    public function test_commit_url_uses_recorded_repo_when_set(): void
+    public function test_short_sha_truncates_to_seven_characters(): void
     {
-        File::put($this->jsonPath, json_encode([
-            'name' => 'platform',
-            'version' => '1.2.3',
-            'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
-            'repo' => 'nreljed/laravel',
-        ]));
+        $sha = (new CoreVersionService)->info()['sha'];
 
-        $service = new CoreVersionService;
+        if ($sha === null) {
+            $this->markTestSkipped('Installed platform package has no resolved commit reference');
+        }
 
-        $this->assertSame(
-            'https://github.com/nreljed/laravel/commit/50e9c0fcf28d365295c46af725da4822456c3574',
-            $service->commitUrl()
-        );
+        $this->assertSame(substr($sha, 0, 7), (new CoreVersionService)->shortSha());
     }
 
-    public function test_commit_url_defaults_to_core_repo_when_unrecorded(): void
+    public function test_commit_url_points_to_platform_repo(): void
     {
-        File::put($this->shaPath, '50e9c0fcf28d365295c46af725da4822456c3574'.PHP_EOL);
+        $sha = (new CoreVersionService)->info()['sha'];
 
-        $service = new CoreVersionService;
+        if ($sha === null) {
+            $this->markTestSkipped('Installed platform package has no resolved commit reference');
+        }
 
         $this->assertSame(
-            'https://github.com/nreljed/platform/commit/50e9c0fcf28d365295c46af725da4822456c3574',
-            $service->commitUrl()
+            'https://github.com/nreljed/platform/commit/'.$sha,
+            (new CoreVersionService)->commitUrl()
         );
-    }
-
-    public function test_info_falls_back_to_legacy_core_sha_marker(): void
-    {
-        File::put($this->shaPath, '50e9c0fabcd1234567890'.PHP_EOL);
-
-        $info = (new CoreVersionService)->info();
-
-        $this->assertSame('platform', $info['name']);
-        $this->assertSame('50e9c0fabcd1234567890', $info['sha']);
-    }
-
-    public function test_info_returns_null_sha_when_unrecorded(): void
-    {
-        $info = (new CoreVersionService)->info();
-
-        $expectedVersion = json_decode(
-            (string) file_get_contents(base_path('vendor/nreljed/platform/composer.json')),
-            true
-        )['version'];
-
-        $this->assertSame('platform', $info['name']);
-        $this->assertSame($expectedVersion, $info['version']);
-        $this->assertNull($info['sha']);
     }
 
     public function test_core_version_command_prints_table(): void
     {
-        File::put($this->jsonPath, json_encode([
-            'name' => 'platform',
-            'version' => '2.0.0',
-            'sha' => 'abcdef0123456789',
-        ]));
+        $state = $this->installedState();
 
         $this->artisan('core:version')
             ->expectsOutputToContain('platform')
-            ->expectsOutputToContain('2.0.0')
-            ->expectsOutputToContain('abcdef0')
+            ->expectsOutputToContain($state['version'])
             ->assertExitCode(0);
     }
 
     public function test_core_version_command_prints_json(): void
     {
-        File::put($this->jsonPath, json_encode([
-            'name' => 'platform',
-            'version' => '2.0.0',
-            'sha' => 'abcdef0123456789',
-        ]));
+        $state = $this->installedState();
 
         $code = Artisan::call('core:version', ['--format' => 'json']);
 
         $output = Artisan::output();
         $this->assertSame(0, $code);
         $this->assertStringContainsString('"name": "platform"', $output);
-        $this->assertStringContainsString('"version": "2.0.0"', $output);
-        $this->assertStringContainsString('"sha": "abcdef0123456789"', $output);
+        $this->assertStringContainsString('"version": "'.$state['version'].'"', $output);
+        $this->assertStringContainsString('"repo": "nreljed/platform"', $output);
     }
 }

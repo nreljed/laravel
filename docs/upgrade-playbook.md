@@ -101,5 +101,6 @@ repo). The product repo, not this app, is the source of truth.
    - If a manual recovery button (cron-deploy.yml) fails fast, check its explicit `shell: bash`
      (self-hosted default is pwsh; Bash syntax parse-errors silently).
 
-6. DONE WHEN: every consumer's /deploy/check reports the new core version in core.json.
+6. DONE WHEN: every consumer's /deploy/check reports the new core version in the `core` block
+   (resolved from vendor/composer/installed.json + composer.lock — no build-time record anymore).
 ```

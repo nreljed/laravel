@@ -714,7 +714,7 @@ if (\file_exists($versionFile)) {
 }
 
 // ===================================================================
-// 14. Package Versions (platform + modules)
+// 14. Platform Core & Modules (installed state — authoritative)
 // ===================================================================
 
 $pkgGithubToken = '';
@@ -739,55 +739,40 @@ if (\file_exists($appComposerJson)) {
     }
 }
 
-// Read composer.lock for installed nreljed/* references
-$lockRefByPkg = [];
+// Authoritative install state: vendor/composer/installed.json (what Composer
+// actually installed), falling back to composer.lock for any nreljed/* package
+// absent from the installed list.
+$installed = [];    // name => installed version
+$lockRefByPkg = []; // name => commit reference
+$installedJsonPath = $appRoot.'/vendor/composer/installed.json';
+if (\file_exists($installedJsonPath)) {
+    $instData = \json_decode((string) file_get_contents($installedJsonPath), true);
+    foreach (($instData['packages'] ?? []) as $instPkg) {
+        if (! isset($instPkg['name']) || ! \str_starts_with($instPkg['name'], 'nreljed/')) {
+            continue;
+        }
+        $installed[$instPkg['name']] = $instPkg['version'] ?? null;
+        $lockRefByPkg[$instPkg['name']] = $instPkg['source']['reference'] ?? ($instPkg['dist']['reference'] ?? null);
+    }
+}
 $lockPath = $appRoot.'/composer.lock';
 if (\file_exists($lockPath)) {
     $lockData = \json_decode((string) file_get_contents($lockPath), true);
-    foreach (($lockData['packages'] ?? []) as $lockPkg) {
-        if (isset($lockPkg['name'], $lockPkg['version']) && \str_starts_with($lockPkg['name'], 'nreljed/')) {
-            $lockRefByPkg[$lockPkg['name']] = [
-                'version' => $lockPkg['version'],
-                'reference' => $lockPkg['source']['reference'] ?? ($lockPkg['dist']['reference'] ?? null),
-            ];
-        }
-    }
-}
-
-// Read storage/app/core.json (build-time recorded platform identity)
-$coreJsonPath = $appRoot.'/storage/app/core.json';
-$coreJson = null;
-if (\file_exists($coreJsonPath)) {
-    $coreJson = \json_decode((string) file_get_contents($coreJsonPath), true);
-}
-
-// Discover installed nreljed/* packages from vendor directory
-$vendorDir = $appRoot.'/vendor/nreljed';
-$installed = [];
-if (\is_dir($vendorDir)) {
-    $dirs = @\scandir($vendorDir) ?: [];
-    foreach ($dirs as $dir) {
-        if ($dir === '.' || $dir === '..') {
+    foreach (\array_merge($lockData['packages'] ?? [], $lockData['packages-dev'] ?? []) as $lockPkg) {
+        if (! isset($lockPkg['name']) || ! \str_starts_with($lockPkg['name'], 'nreljed/')) {
             continue;
         }
-        $pkgJson = $vendorDir.'/'.$dir.'/composer.json';
-        if (\file_exists($pkgJson)) {
-            $meta = \json_decode((string) file_get_contents($pkgJson), true);
-            if (isset($meta['name']) && isset($meta['version'])) {
-                $installed[$meta['name']] = $meta['version'];
-            }
-        }
+        $installed[$lockPkg['name']] ??= $lockPkg['version'] ?? null;
+        $lockRefByPkg[$lockPkg['name']] ??= $lockPkg['source']['reference'] ?? ($lockPkg['dist']['reference'] ?? null);
     }
 }
 
-// Map package names to GitHub repos
+// Map package names to GitHub repos (auto-discovering any nreljed/* module)
 $repoMap = [
     'nreljed/platform' => 'nreljed/platform',
     'nreljed/blog' => 'nreljed/blog',
 ];
-
-// Auto-discover modules: any nreljed/*-module or project-specific packages
-foreach ($installed as $pkg => $ver) {
+foreach (\array_keys($installed) as $pkg) {
     if (! isset($repoMap[$pkg])) {
         $repoMap[$pkg] = $pkg;
     }
@@ -797,46 +782,29 @@ foreach ($installed as $pkg => $ver) {
 $latestCache = [];
 $pkgGitHubHeaders = "User-Agent: debug.php\r\nAccept: application/vnd.github+json\r\n";
 
-// Show the constraint for each required nreljed/* package
-foreach ($requireConstraints as $pkg => $constraint) {
+// Platform Core first, then each module — same two checks per package
+foreach ($repoMap as $pkg => $repo) {
+    $group = $pkg === 'nreljed/platform' ? 'core' : 'modules';
     $installedVer = $installed[$pkg] ?? null;
+    $constraint = $requireConstraints[$pkg] ?? null;
+    $shortRef = ($lockRefByPkg[$pkg] ?? null) !== null ? \substr($lockRefByPkg[$pkg], 0, 7) : null;
+
     $isDev = $installedVer !== null
         && (\str_contains($installedVer, 'dev')
             || $installedVer === '@dev'
             || \str_starts_with($installedVer, '9999999'));
 
-    $constraintOk = $installedVer !== null && $isDev === false;
-    $detail = $installedVer ?? 'NOT INSTALLED';
-    if (! $constraintOk && $isDev) {
-        $detail .= ' (dev build)';
+    if ($constraint !== null) {
+        $constraintOk = $installedVer !== null && $isDev === false;
+        $detail = $installedVer ?? 'NOT INSTALLED';
+        if ($isDev) {
+            $detail .= ' (dev build)';
+        }
+        check($group, "Required: $pkg", $constraintOk, "constraint: $constraint — installed: $detail");
     }
-    check('packages', "Required: $pkg", $constraintOk, "constraint: $constraint — installed: $detail");
-}
-
-// Check core.json build-time record (platform only)
-if ($coreJson !== null) {
-    $coreName = $coreJson['name'] ?? 'unknown';
-    $coreVersion = $coreJson['version'] ?? 'unknown';
-    $coreSha = $coreJson['sha'] ?? null;
-    $coreDetail = 'repo: '.($coreJson['repo'] ?? $coreName)." — version: $coreVersion";
-    $coreDetail .= $coreSha !== null ? ' — sha: '.\substr($coreSha, 0, 7) : ' — sha: none';
-    $shaRecorded = $coreSha !== null && $coreSha !== '';
-    check('packages', 'core.json', $shaRecorded, $coreDetail);
-} elseif (isset($requireConstraints['nreljed/platform'])) {
-    check('packages', 'core.json', false, 'storage/app/core.json missing — build-time platform record not written');
-}
-
-// Per-package: installed version vs latest release
-foreach ($repoMap as $pkg => $repo) {
-    $installedVer = $installed[$pkg] ?? null;
-    $lockEntry = $lockRefByPkg[$pkg] ?? null;
-    $lockRef = $lockEntry['reference'] ?? null;
-    $shortRef = $lockRef !== null ? \substr($lockRef, 0, 7) : null;
-
-    $label = "Latest: $pkg";
 
     if ($installedVer === null) {
-        check('packages', $label, false, 'Package not installed');
+        check($group, "Latest: $pkg", false, 'Package not installed');
 
         continue;
     }
@@ -869,18 +837,18 @@ foreach ($repoMap as $pkg => $repo) {
         $latestNorm = \ltrim($latestVer, 'v');
         if ($installedNorm === $latestNorm) {
             $detail .= " — latest ($latestVer)";
-            check('packages', $label, true, $detail);
+            check($group, "Latest: $pkg", true, $detail);
         } else {
             // Semantic comparison: try version_compare, fall back to string
             $behind = \version_compare($installedNorm, $latestNorm, '<');
             $detail .= $behind
                 ? " — BEHIND: $latestVer available"
                 : " ahead of release $latestVer";
-            check('packages', $label, ! $behind, $detail);
+            check($group, "Latest: $pkg", ! $behind, $detail);
         }
     } else {
         $detail .= ' — latest: (GitHub API unreachable)';
-        check('packages', $label, true, $detail);
+        check($group, "Latest: $pkg", true, $detail);
     }
 }
 

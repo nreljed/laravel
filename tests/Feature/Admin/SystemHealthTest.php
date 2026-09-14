@@ -30,7 +30,6 @@ class SystemHealthTest extends TestCase
         Cache::flush();
         Config::set('deploy.version_path', base_path('.deployed-version-'.getmypid()));
         File::delete(config('deploy.version_path'));
-        File::delete([storage_path('app/core.json'), storage_path('app/core.sha')]);
     }
 
     public function test_admin_can_view_system_health(): void
@@ -271,48 +270,55 @@ class SystemHealthTest extends TestCase
         $this->assertFalse($env['is_production']);
     }
 
-    public function test_refresh_includes_core_package_when_recorded(): void
+    public function test_refresh_includes_core_package_from_install_state(): void
     {
         Http::fake();
 
-        $jsonFile = storage_path('app/core.json');
-        File::put($jsonFile, json_encode([
-            'name' => 'platform',
-            'version' => '1.2.3',
-            'sha' => '50e9c0fcf28d365295c46af725da4822456c3574',
-            'repo' => 'nreljed/platform',
-        ]));
+        $installed = json_decode(
+            (string) file_get_contents(base_path('vendor/composer/installed.json')),
+            true
+        );
+        $meta = collect($installed['packages'] ?? [])
+            ->firstWhere('name', 'nreljed/platform');
+        $this->assertNotNull($meta, 'nreljed/platform must be installed');
 
-        try {
-            $response = $this->actingAs($this->admin())
-                ->post(route('dashboard.admin.system-health.refresh'));
-
-            $response->assertOk();
-            $response->assertJsonPath('core_package.name', 'platform');
-            $response->assertJsonPath('core_package.version', '1.2.3');
-            $response->assertJsonPath('core_package.sha', '50e9c0fcf28d365295c46af725da4822456c3574');
-            $response->assertJsonPath('core_package.short', '50e9c0f');
-            $response->assertJsonPath('core_package.repo', 'nreljed/platform');
-            $response->assertJsonPath('core_package.url', 'https://github.com/nreljed/platform/commit/50e9c0fcf28d365295c46af725da4822456c3574');
-            $response->assertJsonPath('core_package.is_dev', false);
-        } finally {
-            File::delete($jsonFile);
-        }
-    }
-
-    public function test_refresh_core_package_sha_is_null_when_unrecorded(): void
-    {
-        Http::fake();
+        $version = $meta['version'];
+        $sha = $meta['source']['reference'] ?? $meta['dist']['reference'] ?? null;
+        $this->assertNotNull($sha, 'installed platform must carry a commit reference');
 
         $response = $this->actingAs($this->admin())
             ->post(route('dashboard.admin.system-health.refresh'));
 
         $response->assertOk();
-        $response->assertJsonPath('core_package.sha', null);
-        $response->assertJsonPath('core_package.short', null);
-        $response->assertJsonPath('core_package.url', null);
-        // Model B: no core.json/core.sha marker, but the install is a pinned
-        // VCS build (^0.1 with a stamped version) — NOT a dev build.
+        $response->assertJsonPath('core_package.name', 'platform');
+        $response->assertJsonPath('core_package.version', $version);
+        $response->assertJsonPath('core_package.sha', $sha);
+        $response->assertJsonPath('core_package.short', substr($sha, 0, 7));
+        $response->assertJsonPath('core_package.repo', 'nreljed/platform');
+        $response->assertJsonPath('core_package.url', 'https://github.com/nreljed/platform/commit/'.$sha);
+        $response->assertJsonPath('core_package.is_dev', false);
+    }
+
+    public function test_refresh_resolves_core_reference_from_installed_state(): void
+    {
+        Http::fake();
+
+        $lock = json_decode((string) file_get_contents(base_path('composer.lock')), true);
+        $meta = collect(array_merge($lock['packages'] ?? [], $lock['packages-dev'] ?? []))
+            ->firstWhere('name', 'nreljed/platform');
+        $this->assertNotNull($meta, 'nreljed/platform must be in composer.lock');
+
+        $sha = $meta['source']['reference'] ?? $meta['dist']['reference'] ?? null;
+        $this->assertNotNull($sha, 'locked platform must carry a commit reference');
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('dashboard.admin.system-health.refresh'));
+
+        $response->assertOk();
+        // The SHA is now ground truth from composer.lock/installed.json — no
+        // build-time marker exists to go missing (Model B is retired).
+        $response->assertJsonPath('core_package.sha', $sha);
+        $response->assertJsonPath('core_package.short', substr($sha, 0, 7));
         $response->assertJsonPath('core_package.is_dev', false);
         $response->assertJsonPath('core_latest_version.found', false);
         $response->assertJsonPath('core_latest_version.skipped', true);
