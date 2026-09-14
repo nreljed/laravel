@@ -714,7 +714,178 @@ if (\file_exists($versionFile)) {
 }
 
 // ===================================================================
-// 14. Summary
+// 14. Package Versions (platform + modules)
+// ===================================================================
+
+$pkgGithubToken = '';
+if (\file_exists($envPath)) {
+    $envRaw = \file_get_contents($envPath);
+    if (\preg_match('/^GITHUB_TOKEN\s*=\s*"?([^"\r\n]+)"?\s*$/m', $envRaw, $m)) {
+        $pkgGithubToken = \trim($m[1]);
+    }
+}
+
+// Read the app's require constraints for nreljed/* packages
+$appComposerJson = $appRoot.'/composer.json';
+$requireConstraints = [];
+if (\file_exists($appComposerJson)) {
+    $appMeta = \json_decode((string) file_get_contents($appComposerJson), true);
+    if (isset($appMeta['require'])) {
+        foreach ($appMeta['require'] as $pkg => $constraint) {
+            if (\str_starts_with($pkg, 'nreljed/')) {
+                $requireConstraints[$pkg] = $constraint;
+            }
+        }
+    }
+}
+
+// Read composer.lock for installed nreljed/* references
+$lockRefByPkg = [];
+$lockPath = $appRoot.'/composer.lock';
+if (\file_exists($lockPath)) {
+    $lockData = \json_decode((string) file_get_contents($lockPath), true);
+    foreach (($lockData['packages'] ?? []) as $lockPkg) {
+        if (isset($lockPkg['name'], $lockPkg['version']) && \str_starts_with($lockPkg['name'], 'nreljed/')) {
+            $lockRefByPkg[$lockPkg['name']] = [
+                'version' => $lockPkg['version'],
+                'reference' => $lockPkg['source']['reference'] ?? ($lockPkg['dist']['reference'] ?? null),
+            ];
+        }
+    }
+}
+
+// Read storage/app/core.json (build-time recorded platform identity)
+$coreJsonPath = $appRoot.'/storage/app/core.json';
+$coreJson = null;
+if (\file_exists($coreJsonPath)) {
+    $coreJson = \json_decode((string) file_get_contents($coreJsonPath), true);
+}
+
+// Discover installed nreljed/* packages from vendor directory
+$vendorDir = $appRoot.'/vendor/nreljed';
+$installed = [];
+if (\is_dir($vendorDir)) {
+    $dirs = @\scandir($vendorDir) ?: [];
+    foreach ($dirs as $dir) {
+        if ($dir === '.' || $dir === '..') {
+            continue;
+        }
+        $pkgJson = $vendorDir.'/'.$dir.'/composer.json';
+        if (\file_exists($pkgJson)) {
+            $meta = \json_decode((string) file_get_contents($pkgJson), true);
+            if (isset($meta['name']) && isset($meta['version'])) {
+                $installed[$meta['name']] = $meta['version'];
+            }
+        }
+    }
+}
+
+// Map package names to GitHub repos
+$repoMap = [
+    'nreljed/platform' => 'nreljed/platform',
+    'nreljed/blog' => 'nreljed/blog',
+];
+
+// Auto-discover modules: any nreljed/*-module or project-specific packages
+foreach ($installed as $pkg => $ver) {
+    if (! isset($repoMap[$pkg])) {
+        $repoMap[$pkg] = $pkg;
+    }
+}
+
+// Fetch latest release for each package (with GITHUB_TOKEN when available)
+$latestCache = [];
+$pkgGitHubHeaders = "User-Agent: debug.php\r\nAccept: application/vnd.github+json\r\n";
+
+// Show the constraint for each required nreljed/* package
+foreach ($requireConstraints as $pkg => $constraint) {
+    $installedVer = $installed[$pkg] ?? null;
+    $isDev = $installedVer !== null
+        && (\str_contains($installedVer, 'dev')
+            || $installedVer === '@dev'
+            || \str_starts_with($installedVer, '9999999'));
+
+    $constraintOk = $installedVer !== null && $isDev === false;
+    $detail = $installedVer ?? 'NOT INSTALLED';
+    if (! $constraintOk && $isDev) {
+        $detail .= ' (dev build)';
+    }
+    check('packages', "Required: $pkg", $constraintOk, "constraint: $constraint — installed: $detail");
+}
+
+// Check core.json build-time record (platform only)
+if ($coreJson !== null) {
+    $coreName = $coreJson['name'] ?? 'unknown';
+    $coreVersion = $coreJson['version'] ?? 'unknown';
+    $coreSha = $coreJson['sha'] ?? null;
+    $coreDetail = 'repo: '.($coreJson['repo'] ?? $coreName)." — version: $coreVersion";
+    $coreDetail .= $coreSha !== null ? ' — sha: '.\substr($coreSha, 0, 7) : ' — sha: none';
+    $shaRecorded = $coreSha !== null && $coreSha !== '';
+    check('packages', 'core.json', $shaRecorded, $coreDetail);
+} elseif (isset($requireConstraints['nreljed/platform'])) {
+    check('packages', 'core.json', false, 'storage/app/core.json missing — build-time platform record not written');
+}
+
+// Per-package: installed version vs latest release
+foreach ($repoMap as $pkg => $repo) {
+    $installedVer = $installed[$pkg] ?? null;
+    $lockEntry = $lockRefByPkg[$pkg] ?? null;
+    $lockRef = $lockEntry['reference'] ?? null;
+    $shortRef = $lockRef !== null ? \substr($lockRef, 0, 7) : null;
+
+    $label = "Latest: $pkg";
+
+    if ($installedVer === null) {
+        check('packages', $label, false, 'Package not installed');
+
+        continue;
+    }
+
+    // Fetch latest release (only once per repo, with timeout + optional auth)
+    if (! isset($latestCache[$repo])) {
+        $latestCache[$repo] = null;
+        $ghApi = "https://api.github.com/repos/$repo/releases/latest";
+        $hdrs = $pkgGitHubHeaders;
+        if ($pkgGithubToken !== '') {
+            $hdrs .= "Authorization: Bearer $pkgGithubToken\r\n";
+        }
+        $opts = ['http' => ['method' => 'GET', 'header' => $hdrs, 'timeout' => 5]];
+        $ctx = @\stream_context_create($opts);
+        $raw = @\file_get_contents($ghApi, false, $ctx);
+        if ($raw) {
+            $data = \json_decode($raw, true);
+            $latestCache[$repo] = $data['tag_name'] ?? null;
+        }
+    }
+
+    $latestVer = $latestCache[$repo];
+    $detail = "installed: $installedVer";
+    if ($shortRef !== null) {
+        $detail .= " (ref $shortRef)";
+    }
+
+    if ($latestVer !== null) {
+        $installedNorm = \ltrim($installedVer, 'v');
+        $latestNorm = \ltrim($latestVer, 'v');
+        if ($installedNorm === $latestNorm) {
+            $detail .= " — latest ($latestVer)";
+            check('packages', $label, true, $detail);
+        } else {
+            // Semantic comparison: try version_compare, fall back to string
+            $behind = \version_compare($installedNorm, $latestNorm, '<');
+            $detail .= $behind
+                ? " — BEHIND: $latestVer available"
+                : " ahead of release $latestVer";
+            check('packages', $label, ! $behind, $detail);
+        }
+    } else {
+        $detail .= ' — latest: (GitHub API unreachable)';
+        check('packages', $label, true, $detail);
+    }
+}
+
+// ===================================================================
+// 15. Summary
 // ===================================================================
 $total = \count($results['checks']);
 $passed = \count(\array_filter($results['checks'], fn ($c) => $c['passed']));
