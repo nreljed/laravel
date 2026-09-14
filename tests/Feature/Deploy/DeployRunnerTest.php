@@ -526,6 +526,80 @@ class DeployRunnerTest extends TestCase
         $this->assertSame('<?php v2', File::get($home.'/public/index.php'));
     }
 
+    public function test_release_install_auto_prunes_to_keep3(): void
+    {
+        $this->requiresSymlinkCapability();
+
+        $home = $this->sandbox;
+        $rel = $home.'/releases';
+
+        // Bootstrap release layout with three releases (r1 oldest … r3 newest).
+        foreach (['r1', 'r2', 'r3'] as $i => $name) {
+            File::makeDirectory($rel.'/'.$name, 0755, true);
+            File::put($rel.'/'.$name.'/.deployed-version', 'v0.'.($i + 1).'.0');
+            File::put($rel.'/'.$name.'/public/index.php', '<?php '.$name);
+            touch($rel.'/'.$name, time() - (3 - $i) * 3600);
+        }
+        symlink('releases/r3', $home.'/current');
+        symlink('releases/r3/public', $home.'/public');
+        File::put($home.'/.env', "DEPLOY_TOKEN='secret-token'\n");
+        File::makeDirectory($home.'/storage/app/public', 0755, true);
+
+        // Install a fourth release.
+        $zipPath = $home.'/deploy.zip';
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, ZipArchive::CREATE);
+        $zip->addFromString('artisan', "<?php\n");
+        $zip->addFromString('bootstrap/app.php', "<?php\n");
+        $zip->addFromString('vendor/autoload.php', "<?php\n");
+        $zip->addFromString('public/index.php', '<?php v4');
+        $zip->close();
+
+        $topo = ['root' => $rel.'/r3', 'home' => $home, 'layout' => 'release'];
+        $result = \rd_action_release_install($topo, 'v0.4.0');
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertSame('installed', $result['status']);
+
+        $list = \rd_list_releases($home);
+        $this->assertCount(3, $list, 'install auto-prunes to keep=3');
+        $this->assertFalse(File::isDirectory($rel.'/r1'), 'oldest release pruned');
+        $this->assertTrue(File::isDirectory($rel.'/r2'));
+        $this->assertTrue(File::isDirectory($rel.'/r3'));
+        $this->assertSame('v0.4.0', trim((string) File::get($home.'/releases/'.$list[0].'/.deployed-version')), 'newest release kept');
+    }
+
+    public function test_release_cleanup_prunes_stale_legacy_webroot_backups(): void
+    {
+        $home = $this->sandbox;
+        $rel = $home.'/releases';
+
+        foreach (['r2', 'r1'] as $i => $name) {
+            File::makeDirectory($rel.'/'.$name, 0755, true);
+            File::put($rel.'/'.$name.'/file.txt', 'x');
+            touch($rel.'/'.$name, time() - $i * 3600);
+        }
+
+        // Stale legacy webroot backup older than a day.
+        $stale = $home.'/public.legacy-20260901T000000Z';
+        File::makeDirectory($stale, 0755, true);
+        File::put($stale.'/index.php', '<?php stale');
+        touch($stale, time() - 90000);
+
+        // Fresh legacy webroot backup (recent migration) must survive.
+        $fresh = $home.'/public.legacy-20260914T000000Z';
+        File::makeDirectory($fresh, 0755, true);
+        File::put($fresh.'/index.php', '<?php fresh');
+        touch($fresh, time() - 60);
+
+        $topo = ['root' => $home, 'home' => $home, 'layout' => 'release'];
+        $result = \rd_action_release_cleanup($topo, 2);
+
+        $this->assertTrue($result['ok'], implode("\n", $result['output']));
+        $this->assertFalse(File::isDirectory($stale), 'stale legacy webroot pruned');
+        $this->assertTrue(File::isDirectory($fresh), 'fresh legacy webroot kept');
+    }
+
     public function test_release_rollback_returns_to_previous_release(): void
     {
         $this->requiresSymlinkCapability();

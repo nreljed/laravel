@@ -32,9 +32,11 @@ declare(strict_types=1);
  *                      `current` + webroot `public` symlinks. First run on a
  *                      legacy host migrates the in-place public/ dir aside.
  *                      Resumable: partial extracts continue on re-invoke.
+ *                      Auto-prunes to keep the newest 3 releases.
  *   release-rollback - flip current/public back to the previous release (or
  *                      restore the legacy in-place webroot backup).
- *   release-cleanup  - retain the newest N releases, delete older ones.
+ *   release-cleanup  - retain the newest N releases, delete older ones
+ *                      (+ stale public.legacy-* migration backups).
  *   health           - quick liveness probe (JSON with app-visible markers).
  *   prune            - remove stale deploy artifacts under storage/app (aborted-stage
  *                      leaves: deploy-*.zip downloads + deploy-staging-* trees). Keeps
@@ -924,6 +926,9 @@ function rd_action_release_install(array $topo, string $version = ''): array
         return ['ok' => false, 'action' => 'release-install', 'status' => 'finalize_failed', 'output' => $output];
     }
 
+    // Guarantee newest mtime so release-cleanup keeps this release over older ones.
+    @touch($releaseDir);
+
     // --- Flip `public` webroot symlink ---
     if ($layout === 'release') {
         $tmp = $home.'/.public.'.uniqid('', true);
@@ -975,6 +980,14 @@ function rd_action_release_install(array $topo, string $version = ''): array
     $output[] = 'Removed '.$zipPath.' (release installed).';
 
     file_put_contents($home.'/.deployed-version', $version);
+
+    // Auto-prune old releases so history stays bounded (keep=3) instead of
+    // growing forever. Idempotent; partial results merge into install output.
+    $cleanup = rd_action_release_cleanup($topo, 3);
+    $output[] = 'release-cleanup (keep '.$cleanup['keep'].'): '.$cleanup['removed'].' removed, '.count(rd_list_releases($home)).' remaining'.($cleanup['partial'] ? ' (partial — will continue next install)' : '');
+    if (! empty($cleanup['output'])) {
+        $output = array_merge($output, $cleanup['output']);
+    }
 
     return ['ok' => true, 'action' => 'release-install', 'status' => 'installed', 'release' => $releaseName, 'output' => $output];
 }
@@ -1098,6 +1111,25 @@ function rd_action_release_cleanup(array $topo, int $keep = 3): array
         if ((int) @filemtime($stale) < $cutoff && rd_rrmdir($stale)) {
             $output[] = 'Cleared stale staging dir '.basename($stale);
             @unlink($stale.'.progress');
+        }
+    }
+
+    // Legacy webroot backups (public.legacy-*, migration leftovers) are dead
+    // weight once the release layout is established: rollback uses previous
+    // releases, so a legacy dir is only a last-ditch fallback while NO release
+    // exists. Prune them once releases are present and the dir is old enough
+    // that no in-flight migration could still need it.
+    if ($list !== []) {
+        $legacyDirs = glob($home.'/public.legacy-*', GLOB_ONLYDIR) ?: [];
+        foreach ($legacyDirs as $legacyDir) {
+            if ($legacyDir === $home.'/public' || is_link($legacyDir)) {
+                continue;
+            }
+            if ((int) @filemtime($legacyDir) < $cutoff) {
+                if (rd_rrmdir($legacyDir)) {
+                    $output[] = 'Pruned legacy webroot backup '.basename($legacyDir);
+                }
+            }
         }
     }
 
