@@ -3308,10 +3308,6 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.1",
-                "issues": "https://github.com/nreljed/blog/issues"
-            },
             "time": "2026-09-15T16:00:25+00:00"
         },
         {

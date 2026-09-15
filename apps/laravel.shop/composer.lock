@@ -3558,16 +3558,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.0",
+            "version": "0.1.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863"
+                "reference": "bd4f87f07a24e4d69d949190959266f5136c4afa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/fbafc42f909a39721914d32ef60f02e7e52cc863",
-                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/bd4f87f07a24e4d69d949190959266f5136c4afa",
+                "reference": "bd4f87f07a24e4d69d949190959266f5136c4afa",
                 "shasum": ""
             },
             "require": {
@@ -3607,11 +3607,7 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.0",
-                "issues": "https://github.com/nreljed/blog/issues"
-            },
-            "time": "2026-09-12T20:22:01+00:00"
+            "time": "2026-09-15T16:00:25+00:00"
         },
         {
             "name": "nreljed/platform",
