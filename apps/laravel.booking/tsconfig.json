@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["../../packages/platform/resources/js/*"],
+      "@dashboard": ["../../packages/platform/resources/js"],
+      "@dashboard/*": ["../../packages/platform/resources/js/*"],
+      "@blog": ["../../packages/blog/src/Resources/js"],
+      "@blog/*": ["../../packages/blog/src/Resources/js/*"],
+      "@dashboard-themes": ["../../packages/platform/resources/themes"],
+      "@dashboard-themes/*": ["../../packages/platform/resources/themes/*"],
+      "@booking": ["../../packages/booking-module/src/Booking/Resources/js"],
+      "@booking/*": ["../../packages/booking-module/src/Booking/Resources/js/*"],
+      "@properties": ["../../packages/booking-module/src/Properties/Resources/js"],
+      "@properties/*": ["../../packages/booking-module/src/Properties/Resources/js/*"],
+      "@nreljed/platform/*": ["../../packages/platform/resources/js/*"],
+      "@nreljed/blog/*": ["../../packages/blog/src/Resources/js/*"]
+    }
+  },
+  "include": [
+    "resources/js/**/*.ts",
+    "resources/js/**/*.tsx",
+    "resources/js/**/*.d.ts",
+    "../../packages/platform/resources/js/**/*.d.ts",
+    "../../packages/platform/resources/themes/**/*.d.ts",
+    "../../packages/blog/src/Resources/js/**/*.d.ts",
+    "../../packages/booking-module/src/**/Resources/js/**/*.d.ts"
+  ]
+}

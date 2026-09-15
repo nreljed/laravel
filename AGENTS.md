@@ -38,6 +38,23 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
   copy of core — package repo only.
 - `composer.lock` is the pin of record — commit it whenever core updates.
 
+> **Workspace (2026-09-14 — supersedes the frontend-vendor consumption)** — this repo's root is
+> now a **pnpm workspace**: `packages/*` (platform, blog, shop-module, booking-module) +
+> `apps/*` (laravel.shop, laravel.booking brought in; the mono app stays at root for now).
+> The frontend kit is consumed as **workspace packages** (`@nreljed/platform`, `@nreljed/blog`)
+> symlinked from `node_modules` → `packages/*` — NOT vendor. The single `pnpm-lock.yaml` at the
+> root is the npm pin of record. `tsconfig.json` `paths` map `@nreljed/platform/*` →
+> `packages/platform/resources/js/*` and `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`
+> (TS can't resolve the packages' `./*` wildcard `exports`); the packages' `.d.ts` globs are in
+> `include` because `packages/platform/.../types/global.d.ts` ships the ambient `route` global +
+> the `@inertiajs/core` PageProps augmentation the whole app relies on.
+> **Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
+> into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0` and
+> `allowBuilds:` live **top-level in `pnpm-workspace.yaml`**; there is deliberately no `.npmrc`
+> and no `pnpm` field in `package.json` (pnpm 11 ignores both). The drift guard
+> (`scripts/check-platform-consistency.js`) now reads pnpm-lock importer versions for workspace
+> apps and `package-lock.json` for any remaining npm apps, plus each app's `composer.lock`.
+
 ## Tech Stack
 
 | Layer         | Technology                    | Version                           |
@@ -68,7 +85,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 - `next-themes` `<ThemeProvider>` for dark mode
 - `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
-- Aliases `@`, `@dashboard` → `vendor/nreljed/platform/resources/js` (PLATFORM frontend); `@blog` → `vendor/nreljed/blog/src/Resources/js` (Blog feature frontend); `@test-posts` → `app/TestPosts/Resources/js` — see `vite.config.js`, `tsconfig.json`, `vitest.config.js`
+- Aliases (workspace-mapped in `tsconfig.json`, NOT vite): `@nreljed/platform/*` → `packages/platform/resources/js/*`; `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`; `@test-posts` → `app/TestPosts/Resources/js` (still a vite alias). The legacy vendor aliases (`@`, `@dashboard`, `@blog`) are gone — package sources import each other via `@nreljed/*` and relative paths
 - `asChild` / `Slot` pattern is standard for component composition
 
 ## Architecture
@@ -150,20 +167,22 @@ routes/                             # APP-only routes (most routing lives in the
 > live globally at `~/.config/opencode/skills/` — they describe the platform
 > package, not this app. App/project conventions stay in this repo's `.agents/skills/`.
 
-> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
+> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@nreljed/blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
 
 > **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `page-config.ts` builds its own explicit pageMap:
 > `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*`, `blog/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. The client entry (`app.tsx`) imports `pageConfig` — never duplicate the config block.
 
 > **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
 
-> **Frontend dependency management** — the core package ships a `package.json` with `peerDependencies` declaring every runtime npm package it imports (React, Inertia, Lexical, Radix, shadcn, etc.). Consuming apps must install these as direct dependencies. The core also ships `vite.dedupe.js` — a canonical list of package names that must be added to Vite's `resolve.dedupe` to prevent duplicate bundles when multiple packages (platform, blog, shop-module, etc.) share the same dependencies. Consuming apps import it (this repo wires it in `vite.config.js`):
->
-> ```js
-> import { packageDedupes } from "./vendor/nreljed/platform/vite.dedupe.js";
-> ```
->
-> When adding a new npm dependency to the core's frontend, update both the core's `package.json` (peerDependencies) and the core's `vite.dedupe.js`.
+> **Frontend dependency management (workspace era)** — each package's `package.json` declares
+> `peerDependencies` for every runtime npm package it imports (React, Inertia, Lexical, Base UI,
+> shadcn, etc.) and consumes apps declare them as direct dependencies. Resolution parity
+> between apps is guaranteed by the **single root `pnpm-lock.yaml`** (workspace members cannot
+> drift from siblings) — the old per-app `package-lock.json` + `vite.dedupe.js` setup is gone.
+> To add a runtime npm dependency to a package, update that package's `package.json` peers AND
+> list it as a direct dependency in every app that imports it; then `pnpm install` once at the
+> root and commit the lockfile. Run `pnpm workspace <name> add <pkg>` / `pnpm -w add <pkg>`
+> to modify the root/workspace manifests cleanly.
 
 > **Core development model (vcs install — do NOT hand-edit vendor)** — everything under
 > `vendor/nreljed/platform` is a Composer vcs install (dist zip pinned by
@@ -439,12 +458,13 @@ so choosing the runner is a variable flip, not a code change:
 ## Commands
 
 ```bash
+pnpm install             # workspace install (single root pnpm-lock.yaml — the npm pin of record)
 npm run build            # tsc + vite build (production)
 npm run dev              # Vite dev server with HMR
 npm run typecheck        # tsc --noEmit
 npm run lint             # ESLint
 npm run format:check     # Prettier check
-npm run test             # Vitest frontend tests
+npm run test             # Vitest frontend tests (app shell + TestPosts only)
 npm run check:ci         # Full CI pipeline (lint + typecheck + format + test + pint + phpunit)
 vendor/bin/pint          # Laravel Pint (PSR-12)
 php artisan test         # PHPUnit
@@ -454,6 +474,18 @@ php artisan migrate      # Run migrations
 php artisan permissions:list          # List all permissions
 php artisan app:create-admin           # Bootstrap/update admin user
 ```
+
+The pre-commit hook (lint-staged) is **scoped to mono-owned files only** — `resources/js/**`,
+`app/**` for TS/TSX eslint+prettier, and `{app,bootstrap,config,database,routes,tests,resources}/**`
+for Pint. `packages/**` and `apps/**` are excluded from the root lint-staged AND root ESLint
+(`eslint.config.js` `ignores`) — those trees are owned by their own repos/apps and run their own
+toolchains (shop/booking `check:ci`, package repo CIs). Never widen the catch-all back to `*.{ts,tsx}`
+/ `*.php` or the root hook will reformat foreign package sources.
+
+Also useful: `pnpm -w update <pkg>` (roll a `^` range forward in the workspace lock),
+`pnpm workspace <name> add <pkg>` (per-package manifest change), `pnpm approve-builds`
+(add postinstall scripts to `allowBuilds` in `pnpm-workspace.yaml` — pnpm 11 blocks them
+by default and ignores the `package.json` `pnpm` field).
 
 ## Deployment
 

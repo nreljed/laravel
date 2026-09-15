@@ -1,0 +1,54 @@
+{
+    "name": "nreljed/shop-module",
+    "description": "E-commerce shop feature for the Nreljed dashboard platform (products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks, storefront).",
+    "version": "0.1.39",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Nreljed"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "laravel/framework": "^13.0",
+        "nreljed/platform": "^0.1",
+        "stripe/stripe-php": "^20.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nreljed\\ShopModule\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nreljed\\ShopModule\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Nreljed\\ShopModule\\ShopServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/nreljed/platform.git"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

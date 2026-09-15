@@ -1,7 +1,12 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import PublicLayout from "@/Layouts/PublicLayout";
+import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
 import { MapPin, Calendar, ArrowLeft } from "lucide-react";
-import { Map, MapTileLayer, MapMarker, MapZoomControl } from "@/Components/shared/map";
+import {
+  Map,
+  MapTileLayer,
+  MapMarker,
+  MapZoomControl,
+} from "@nreljed/platform/Components/shared/map";
 
 interface Author {
   id: number;

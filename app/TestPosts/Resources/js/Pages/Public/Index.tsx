@@ -1,6 +1,6 @@
 import { Link } from "@inertiajs/react";
-import PublicLayout from "@/Layouts/PublicLayout";
-import PaginationLinks from "@/Components/shared/pagination-links";
+import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
+import PaginationLinks from "@nreljed/platform/Components/shared/pagination-links";
 import { MapPin } from "lucide-react";
 
 interface Author {

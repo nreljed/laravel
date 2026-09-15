@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/playwright-mcp/main/config.schema.json",
+  "browser": {
+    "browserName": "chromium",
+    "isolated": true
+  },
+  "server": {
+    "allowedHosts": ["*"]
+  },
+  "capabilities": ["core", "network", "storage", "testing"],
+  "imageResponses": "omit",
+  "timeouts": {
+    "action": 10000,
+    "navigation": 30000,
+    "expect": 10000
+  },
+  "outputDir": "./storage/debug/playwright-output",
+  "outputMaxSize": 52428800,
+  "snapshot": {
+    "mode": "full"
+  }
+}

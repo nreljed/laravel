@@ -1,8 +1,8 @@
 import { Link } from "@inertiajs/react";
 import { ArrowRight, Clock, Mail, MapPin, MessageSquareText } from "lucide-react";
-import PublicLayout from "@/Layouts/PublicLayout";
-import { Button } from "@/Components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
+import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
+import { Button } from "@nreljed/platform/Components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
 
 const channels = [
   {

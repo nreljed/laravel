@@ -1,0 +1,24 @@
+@import "tailwindcss" source(none);
+@source "../";
+@source "../../../../packages/platform/resources/js/";
+@source "../../../../packages/platform/resources/themes/";
+@source "../../../../packages/blog/src/Resources/js/";
+@source "../../../../packages/booking-module/src/**/Resources/js/";
+
+@import "tw-animate-css";
+@import "../../../../packages/platform/resources/css/core.css";
+
+/* Booking-specific tokens — everything else (colors, sidebar, link, cell fills,
+   map markers, radii, font, prose/editor/code-block styling) lives in
+   core.css. */
+:root {
+  --warning: oklch(0.84 0.16 84);
+}
+
+.dark {
+  --warning: oklch(0.7 0.14 75);
+}
+
+@theme inline {
+  --color-warning: var(--warning);
+}

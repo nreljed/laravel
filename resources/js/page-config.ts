@@ -1,6 +1,6 @@
-import type { FoundationAppConfig, PageImport } from "@dashboard/app";
-import { registerBlogPages } from "@blog/pages";
-import { registerCoreTemplates } from "@dashboard/dashboard";
+import type { FoundationAppConfig, PageImport } from "@nreljed/platform/app";
+import { registerBlogPages } from "@nreljed/blog/pages";
+import { registerCoreTemplates } from "@nreljed/platform/dashboard";
 
 /**
  * Single source of truth for the page resolution map.

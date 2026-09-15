@@ -1,13 +1,9 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { platformAliases } from "./vendor/nreljed/platform/platform.aliases.js";
-import { blogAliases } from "./vendor/nreljed/blog/blog.aliases.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Model B: platform/blog are vendor dependencies — their tests live in the
-// package repos (nreljed/platform, nreljed/blog), not here.
+// Model A post-workspace: platform/blog are workspace packages (packages/*) —
+// consumed via the pnpm symlink + their package.json exports. The app vitest
+// suite only covers app shell + TestPosts; package tests live in packages/*.
 export default defineConfig({
     test: {
         environment: "jsdom",
@@ -21,9 +17,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            ...platformAliases(),
-            ...blogAliases(),
-            "@test-posts": path.resolve(__dirname, "./app/TestPosts/Resources/js"),
+            "@test-posts": path.resolve(import.meta.dirname, "./app/TestPosts/Resources/js"),
         },
     },
 });

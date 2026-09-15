@@ -1,0 +1,23 @@
+{
+  "name": "@nreljed/shop-module",
+  "version": "0.1.39",
+  "description": "Shop feature for the Nreljed dashboard platform — products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks and storefront frontend kit.",
+  "license": "proprietary",
+  "type": "module",
+  "exports": {
+    "./shop-aliases": "./shop.aliases.js"
+  },
+  "peerDependencies": {
+    "@inertiajs/core": "^3.0.0",
+    "@inertiajs/react": "^3.0.0",
+    "@tanstack/react-table": "^9.2.3",
+    "lucide-react": "^1.44.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ziggy-js": "^2.6.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

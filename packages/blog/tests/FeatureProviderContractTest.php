@@ -1,0 +1,118 @@
+<?php
+
+namespace Nreljed\Blog\Tests;
+
+use Nreljed\Blog\BlogServiceProvider;
+use Nreljed\Platform\Concerns\InteractsWithFeatures;
+use Nreljed\Platform\Contracts\FeatureProvider;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use ReflectionMethod;
+
+/**
+ * Structural contract test for the FeatureProvider interface. Deliberately
+ * does not boot the framework (package tests run without an application), so
+ * it validates method signatures and trait coverage via reflection only.
+ *
+ * Mirrors the platform kernel's FeatureProviderContractTest.
+ */
+final class FeatureProviderContractTest extends TestCase
+{
+    public function test_interface_declares_the_full_capability_surface(): void
+    {
+        $expected = [
+            'dependencies',
+            'description',
+            'enabled',
+            'getAnalyticsSeries',
+            'getComposerPackage',
+            'getContentDescription',
+            'getDashboardData',
+            'getDeactivationNotice',
+            'getEmailTemplates',
+            'getGalleryConfig',
+            'getHealthChecks',
+            'getMediaSubdirectory',
+            'getMetaFormattingConfig',
+            'getNavGroupLabel',
+            'getNavItems',
+            'getNotificationTypes',
+            'getOrphanMediaTargets',
+            'getProfileFieldsConfig',
+            'getProfileSections',
+            'getRepeaterConfig',
+            'getScheduledTasks',
+            'getSettingsGroups',
+            'getSettingsRoute',
+            'getSettingsSection',
+            'getSharedData',
+            'getSitemapUrls',
+            'hasSettings',
+            'name',
+            'onDisable',
+            'onUserDelete',
+            'permissions',
+            'slug',
+            'version',
+        ];
+
+        $interface = new ReflectionClass(FeatureProvider::class);
+
+        $actual = array_map(
+            fn (ReflectionMethod $method) => $method->getName(),
+            $interface->getMethods(),
+        );
+        sort($actual);
+
+        $this->assertSame($expected, $actual, 'FeatureProvider interface surface drifted from contract.');
+    }
+
+    public function test_interacts_with_features_trait_covers_every_optional_interface_method(): void
+    {
+        $trait = new ReflectionClass(InteractsWithFeatures::class);
+        $traitMethods = array_map(fn (ReflectionMethod $method) => $method->getName(), $trait->getMethods());
+
+        $interfaceMethods = array_map(
+            fn (ReflectionMethod $method) => $method->getName(),
+            (new ReflectionClass(FeatureProvider::class))->getMethods(),
+        );
+
+        // name() and slug() are deliberately mandatory per provider.
+        $optional = array_values(array_diff($interfaceMethods, ['name', 'slug']));
+
+        foreach ($optional as $method) {
+            $this->assertContains(
+                $method,
+                $traitMethods,
+                "InteractsWithFeatures must provide a default for interface method $method"
+            );
+        }
+    }
+
+    public function test_provider_implements_the_full_contract(): void
+    {
+        $provider = new ReflectionClass(BlogServiceProvider::class);
+
+        $this->assertTrue($provider->implementsInterface(FeatureProvider::class));
+
+        foreach ((new ReflectionClass(FeatureProvider::class))->getMethods() as $method) {
+            $this->assertTrue(
+                $provider->hasMethod($method->getName()),
+                'BlogServiceProvider must implement '.$method->getName().'()'
+            );
+        }
+    }
+
+    public function test_contract_copy_is_byte_identical_to_the_interface(): void
+    {
+        $reflect = new ReflectionClass(FeatureProvider::class);
+        $installed = file_get_contents($reflect->getFileName());
+        $local = file_get_contents(dirname(__DIR__).'/src/Contracts/FeatureProvider.php');
+
+        $this->assertSame(
+            hash('sha256', (string) $installed),
+            hash('sha256', (string) $local),
+            'src/Contracts/FeatureProvider.php must stay byte-identical to the platform contract.'
+        );
+    }
+}

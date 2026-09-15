@@ -1,0 +1,34 @@
+{
+  "name": "@nreljed/blog",
+  "version": "0.1.0",
+  "description": "Blog feature for the Nreljed dashboard platform — posts, categories, tags, public blog and SEO generation frontend kit.",
+  "license": "proprietary",
+  "type": "module",
+  "exports": {
+    "./pages": "./src/Resources/js/pages.ts",
+    "./blog-aliases": "./blog.aliases.js",
+    "./*": "./src/Resources/js/*"
+  },
+  "peerDependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@inertiajs/core": "^3.0.0",
+    "@inertiajs/react": "^3.0.0",
+    "@tanstack/react-table": "^9.2.3",
+    "lucide-react": "^1.44.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^3.10.1",
+    "ziggy-js": "^2.6.2"
+  },
+  "peerDependenciesMeta": {
+    "recharts": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

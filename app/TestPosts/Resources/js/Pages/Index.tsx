@@ -1,15 +1,15 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { Plus, FileText } from "lucide-react";
 import { useMemo, useCallback } from "react";
-import { toast } from "@/Components/ui/toast";
+import { toast } from "@nreljed/platform/Components/ui/toast";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AppTableFeatures } from "@/lib/table-features";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { DataTable } from "@/Components/ui/data-table";
-import { DataTableColumnHeader } from "@/Components/ui/data-table-column-header";
-import { Button } from "@/Components/ui/button";
-import { Badge } from "@/Components/ui/badge";
-import { ActionCell } from "@/Components/shared/action-cell";
+import type { AppTableFeatures } from "@nreljed/platform/lib/table-features";
+import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
+import { DataTable } from "@nreljed/platform/Components/ui/data-table";
+import { DataTableColumnHeader } from "@nreljed/platform/Components/ui/data-table-column-header";
+import { Button } from "@nreljed/platform/Components/ui/button";
+import { Badge } from "@nreljed/platform/Components/ui/badge";
+import { ActionCell } from "@nreljed/platform/Components/shared/action-cell";
 import {
   Empty,
   EmptyContent,
@@ -17,7 +17,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/Components/ui/empty";
+} from "@nreljed/platform/Components/ui/empty";
 
 interface TestPost {
   id: number;

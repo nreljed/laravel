@@ -1,16 +1,22 @@
 import { Head, useForm } from "@inertiajs/react";
-import { toast } from "@/Components/ui/toast";
+import { toast } from "@nreljed/platform/Components/ui/toast";
 import { FileText, Image } from "lucide-react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
-import { Input } from "@/Components/ui/input";
-import { Textarea } from "@/Components/ui/textarea";
-import { Label } from "@/Components/ui/label";
-import PublishSection from "@/Components/shared/publish-section";
-import { GalleryUploader } from "@/Components/shared/gallery-uploader";
-import { MapSectionInner } from "@/Components/shared/map";
-import type { AddressData } from "@/lib/geocoding";
-import type { ServerGalleryImage } from "@/types/gallery";
+import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@nreljed/platform/Components/ui/card";
+import { Input } from "@nreljed/platform/Components/ui/input";
+import { Textarea } from "@nreljed/platform/Components/ui/textarea";
+import { Label } from "@nreljed/platform/Components/ui/label";
+import PublishSection from "@nreljed/platform/Components/shared/publish-section";
+import { GalleryUploader } from "@nreljed/platform/Components/shared/gallery-uploader";
+import { MapSectionInner } from "@nreljed/platform/Components/shared/map";
+import type { AddressData } from "@nreljed/platform/lib/geocoding";
+import type { ServerGalleryImage } from "@nreljed/platform/types/gallery";
 
 interface TestPost {
   id: number;

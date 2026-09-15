@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /deploy
+Disallow: /api
+
+Sitemap: /sitemap.xml

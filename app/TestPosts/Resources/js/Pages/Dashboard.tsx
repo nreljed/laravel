@@ -1,10 +1,10 @@
 import { usePage, Link, Head } from "@inertiajs/react";
 import { Plus, List, FileCheck, CheckCircle2 } from "lucide-react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
-import { Button } from "@/Components/ui/button";
-import { Badge } from "@/Components/ui/badge";
-import type { PageProps } from "@/types";
+import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
+import { Button } from "@nreljed/platform/Components/ui/button";
+import { Badge } from "@nreljed/platform/Components/ui/badge";
+import type { PageProps } from "@nreljed/platform/types";
 
 interface TestPostStats {
   total: number;

@@ -11,7 +11,6 @@
 /public/hot
 /public/storage
 /bootstrap/ssr/*
-/packages/
 /.phpunit.result.cache
 /phpunit.xml
 vendor-bin
@@ -22,6 +21,11 @@ composer.phar
 /storage/temp/
 /storage/phpstan/
 /PLAN.md
+
+# Workspace packages are first-class source (tracked); ignore only their install output
+packages/*/node_modules/
+packages/*/vendor/
+packages/**/dist/
 
 # Debug/temp files (root only)
 /*.txt

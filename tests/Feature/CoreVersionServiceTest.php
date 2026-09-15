@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class CoreVersionServiceTest extends TestCase
 {
-    private const PACKAGE = 'nreljed/platform';
+    private const string PACKAGE = 'nreljed/platform';
 
     /**
      * @return array{version: string|null, reference: string|null}
