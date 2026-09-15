@@ -3544,20 +3544,24 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.1",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
             "time": "2026-09-15T16:00:25+00:00"
         },
         {
             "name": "nreljed/booking-module",
-            "version": "0.1.39",
+            "version": "0.1.40",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/booking-module.git",
-                "reference": "b5639230aeb8b3ef02669434f70a3e232d0f8378"
+                "reference": "ec9b4ad9ff9f085bd87b6ccc08e4d115308d8280"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/booking-module/zipball/b5639230aeb8b3ef02669434f70a3e232d0f8378",
-                "reference": "b5639230aeb8b3ef02669434f70a3e232d0f8378",
+                "url": "https://api.github.com/repos/nreljed/booking-module/zipball/ec9b4ad9ff9f085bd87b6ccc08e4d115308d8280",
+                "reference": "ec9b4ad9ff9f085bd87b6ccc08e4d115308d8280",
                 "shasum": ""
             },
             "require": {
@@ -3599,10 +3603,10 @@
             ],
             "description": "Booking & properties feature for the Nreljed dashboard platform (property listings, availability calendar, bookings pipeline, guest portal, iCal sync, payments).",
             "support": {
-                "source": "https://github.com/nreljed/booking-module/tree/v0.1.39",
+                "source": "https://github.com/nreljed/booking-module/tree/v0.1.40",
                 "issues": "https://github.com/nreljed/booking-module/issues"
             },
-            "time": "2026-09-12T21:19:49+00:00"
+            "time": "2026-09-15T17:09:04+00:00"
         },
         {
             "name": "nreljed/platform",

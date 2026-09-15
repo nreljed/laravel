@@ -3607,6 +3607,10 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.1",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
             "time": "2026-09-15T16:00:25+00:00"
         },
         {
@@ -3673,16 +3677,16 @@
         },
         {
             "name": "nreljed/shop-module",
-            "version": "0.1.39",
+            "version": "0.1.40",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/shop-module.git",
-                "reference": "e7f6950b6d37e4b081b40aad70890d7613f13fc3"
+                "reference": "336173abff8fd7a78b2a1b974f74dd207f2bc1df"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/e7f6950b6d37e4b081b40aad70890d7613f13fc3",
-                "reference": "e7f6950b6d37e4b081b40aad70890d7613f13fc3",
+                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/336173abff8fd7a78b2a1b974f74dd207f2bc1df",
+                "reference": "336173abff8fd7a78b2a1b974f74dd207f2bc1df",
                 "shasum": ""
             },
             "require": {
@@ -3725,10 +3729,10 @@
             ],
             "description": "E-commerce shop feature for the Nreljed dashboard platform (products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks, storefront).",
             "support": {
-                "source": "https://github.com/nreljed/shop-module/tree/v0.1.39",
+                "source": "https://github.com/nreljed/shop-module/tree/v0.1.40",
                 "issues": "https://github.com/nreljed/shop-module/issues"
             },
-            "time": "2026-09-12T21:19:49+00:00"
+            "time": "2026-09-15T17:09:03+00:00"
         },
         {
             "name": "nunomaduro/termwind",
