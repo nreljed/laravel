@@ -2,16 +2,16 @@
 
 The e-commerce domain package for the Laravel dashboard. Ships as a standalone
 Composer package (`nreljed/shop-module`) so the host app stays generic — the same
-pattern as [`nreljed/dashboard-core`](https://github.com/nreljed/dashboard-core).
+pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 
 **Namespace:** `Nreljed\ShopModule\` (PSR-4 → `src/`)
 **Feature slug:** `shop`
-**Dependencies:** `nreljed/dashboard-core` ^0.1, laravel/framework ^13.0, PHP ^8.4
+**Dependencies:** `nreljed/platform` ^0.1, laravel/framework ^13.0, PHP ^8.4
 
 > **Where the docs live:** this `docs/` folder is the authoritative reference for the
 > Shop **domain** (products, orders, coupons, shipping, taxes, storefront, …). The
 > shared **platform** (feature-provider contract, deploy endpoints, notifications,
-> blog, AI) is documented in [`dashboard-core/docs/`](https://github.com/nreljed/dashboard-core/tree/main/docs)
+> blog, AI) is documented in [`platform/docs/`](https://github.com/nreljed/platform/tree/main/docs)
 > — this package builds on it but does not re-document it.
 
 ## Table of Contents
@@ -45,7 +45,7 @@ pattern as [`nreljed/dashboard-core`](https://github.com/nreljed/dashboard-core)
 
 ## Related Docs
 
-- **Host integration / page registration:** see `dashboard-core/docs/architecture.md`
-  (feature providers, `config/core.php`, Vite aliases, page globs).
+- **Host integration / page registration:** see `platform/docs/architecture.md`
+  (feature providers, `config/features.php`, Vite aliases, page globs).
 - **Deploy pipeline:** both apps ship the same canonical check-first deploy flow —
-  see `dashboard-core/docs/deploy.md`.
+  see `platform/docs/deploy.md`.

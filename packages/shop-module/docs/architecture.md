@@ -1,6 +1,6 @@
 # Architecture
 
-How the Shop module plugs into the dashboard-core platform and a host app.
+How the Shop module plugs into the `nreljed/platform` platform and a host app.
 
 ## Package Layout
 
@@ -38,13 +38,13 @@ and does four things:
 2. **Provider** — auto-discovered through Laravel's `extra.laravel.providers`
    package auto-discovery list (or registered in `bootstrap/providers.php`).
 3. **Feature registration** — the provider class is added to the `features` array
-   in `config/core.php`, so the core `FeatureRegistry` aggregates its nav,
+   in `config/features.php`, so the core `FeatureRegistry` aggregates its nav,
    permissions, email templates, notification types, gallery config, shared data,
    and dashboard data.
 4. **Frontend** — see below.
 
 `ShopServiceProvider` implements
-`Nreljed\DashboardCore\Contracts\FeatureProvider` via `InteractsWithFeatures`.
+`Nreljed\Platform\Contracts\FeatureProvider` via `InteractsWithFeatures`.
 
 ### FeatureProvider capabilities
 
@@ -83,13 +83,13 @@ aggregation and breaks partial reloads.
 
 ## Frontend wiring (host)
 
-- **Vite alias:** `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`
-  (installed via Composer VCS; production alias points at the vendor copy).
-- **Page registration:** the host glob-imports `@shop/Pages/**/*.tsx` with
+- **Vite alias:** `@nreljed/shop-module` → `packages/shop-module/src/Resources/js/`
+  (workspace symlink; standalone VCS installs use `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`).
+- **Page registration:** the host glob-imports `@nreljed/shop-module/Pages/**/*.tsx` with
   `projectPrefix: "shop"`, so pages render under `shop/*` Inertia component keys.
 - **Tailwind:** the host's `resources/css/app.css` uses `@source` directives; the
   shop JS must be included (currently
-  `@source "../../vendor/nreljed/shop-module/src/Resources/js/"`). Because Tailwind
+  `@source "../../../../packages/shop-module/src/Resources/js/"`). Because Tailwind
   config uses `source(none)`, a missing `@source` silently drops every shop utility
   class.
 - **TypeScript:** the package JS is currently excluded from the host `tsconfig`
@@ -113,4 +113,4 @@ Host boot
 ```
 
 `schedule:publish` (scheduled products/posts/properties) lives in the core
-`dashboard-core` package, not here.
+`platform` package, not here.

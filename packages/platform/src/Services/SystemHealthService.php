@@ -540,7 +540,10 @@ class SystemHealthService
             ];
         }
 
-        if ($deployed['exists'] && $latest['found'] && $deployed['version'] !== $latest['version']) {
+        if ($deployed['exists']
+            && $latest['found']
+            && $this->normalizeVersion((string) $deployed['version'])
+                !== $this->normalizeVersion((string) $latest['version'])) {
             $recommendations[] = [
                 'severity' => 'info',
                 'title' => 'New version available',
@@ -605,6 +608,15 @@ class SystemHealthService
             $bytes >= 1024 => round($bytes / 1024, 2).' KB',
             default => $bytes.' B',
         };
+    }
+
+    /**
+     * Normalize a version string for comparison, mirroring the frontend's
+     * normalizeVersion() so backend recommendations agree with the UI.
+     */
+    protected function normalizeVersion(string $version): string
+    {
+        return (string) preg_replace('/^v/i', '', trim($version));
     }
 
     public function convertToMegabytes(string $value): int
@@ -970,14 +982,64 @@ class SystemHealthService
 
         $fullDescribe = $this->execGit(['describe', '--tags', '--match', 'v[0-9]*']) ?? $describe;
         $status = $this->execGit(['status', '--porcelain']);
+        $short = $this->execGit(['rev-parse', '--short', 'HEAD']);
+        $repo = config('deploy.github_repo', 'nreljed/laravel');
 
         return [
             'exists' => true,
             'version' => $describe,
             'origin' => 'git',
             'describe' => $fullDescribe,
-            'is_dirty' => $status !== null && $status !== '',
+            'short' => $short,
+            'url' => $short !== null ? 'https://github.com/'.$repo.'/commit/'.$short : null,
+            'is_dirty' => $this->statusIsDirty($status),
         ];
+    }
+
+    /**
+     * Decide whether the working tree differs from the last tagged build.
+     * Paths listed in core.health_git_status_exclude (e.g. workspace sibling
+     * trees like apps/ and packages/ inside a monorepo) are ignored so the
+     * status reflects the app's own files, not neighbouring projects.
+     */
+    protected function statusIsDirty(?string $status): bool
+    {
+        if ($status === null || $status === '') {
+            return false;
+        }
+
+        $exclude = (array) config('core.health_git_status_exclude', []);
+        if ($exclude === []) {
+            return true;
+        }
+
+        foreach (preg_split('/\R/', $status) ?: [] as $line) {
+            $line = rtrim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            // porcelain format: "XY <path>" — the first line may have lost its
+            // leading index-column space to trim(), so take 2 status chars and
+            // ltrim the separator.
+            $path = str_replace('\\', '/', ltrim(substr($line, 2)));
+            $path = explode(' -> ', $path)[0];
+
+            $ignored = false;
+            foreach ($exclude as $prefix) {
+                $root = rtrim($prefix, '/');
+                if ($path === $root || str_starts_with($path, $root.'/')) {
+                    $ignored = true;
+                    break;
+                }
+            }
+
+            if (! $ignored) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

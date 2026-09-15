@@ -17,16 +17,16 @@
 
 ## Where Components Live
 
-Components do NOT live in this repo (host). They are vendored into `vendor/` from the `nreljed/dashboard-core` composer package:
+Components do NOT live in this repo (host). They are vendored into `vendor/` from the `nreljed/platform` composer package:
 
-| Location                                                           | Contents                              |
-| ------------------------------------------------------------------ | ------------------------------------- |
-| `vendor/nreljed/dashboard-core/resources/js/Components/ui/`        | 67 shadcn/ui primitives (all Base UI) |
-| `vendor/nreljed/dashboard-core/resources/js/Components/shared/`    | App-shared components                 |
-| `vendor/nreljed/dashboard-core/resources/js/Components/dashboard/` | KpiCard, charts, tables               |
-| `vendor/nreljed/shop-module/src/Resources/js/`                     | Shop feature pages/components         |
+| Location                                                     | Contents                              |
+| ------------------------------------------------------------ | ------------------------------------- |
+| `vendor/nreljed/platform/resources/js/Components/ui/`        | 67 shadcn/ui primitives (all Base UI) |
+| `vendor/nreljed/platform/resources/js/Components/shared/`    | App-shared components                 |
+| `vendor/nreljed/platform/resources/js/Components/dashboard/` | KpiCard, charts, tables               |
+| `vendor/nreljed/shop-module/src/Resources/js/`               | Shop feature pages/components         |
 
-Editing UI components = package change → PR in `nreljed/dashboard-core` → tag → release → `core-update` fan-out. NEVER edit `vendor/` directly.
+Editing UI components = package change → PR in `nreljed/platform` → tag → release → `core-update` fan-out. NEVER edit `vendor/` directly.
 
 ## Dependency Versions
 
@@ -97,7 +97,7 @@ This is a BREAKING CHANGE from the old sonner API: `toast.success("msg")` → `t
 
 ### Design tokens
 
-- Token source of truth: `vendor/nreljed/dashboard-core/resources/css/core.css` — imported into `resources/css/app.css` AFTER `@import "tailwindcss"`. Per-app overrides live in the host `app.css` (`--warning` etc.).
+- Token source of truth: `vendor/nreljed/platform/resources/css/core.css` — imported into `resources/css/app.css` AFTER `@import "tailwindcss"`. Per-app overrides live in the host `app.css` (`--warning` etc.).
 - `@theme inline` maps `--color-*` → Tailwind utilities. Includes `--warning`, `--status-{success,error,info}` + foreground tokens.
 - Radius: multiplicative scale via `--radius` (`calc(var(--radius) * 0.6)` etc.).
 - No `--overlay` token in this app (unlike Project-WP). Overlays use `bg-black/10`.

@@ -25,7 +25,7 @@ apps keep only domain-specific code on top.
 
 ```json
 {
-  "repositories": [{ "type": "path", "url": "C:/Users/nrelj/Local Sites/dashboard-core" }]
+  "repositories": [{ "type": "path", "url": "C:/Users/nrelj/Local Sites/platform" }]
 }
 ```
 

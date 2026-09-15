@@ -1,9 +1,9 @@
 ---
 name: base-ui-shadcn
-description: "Develops UI components using Base UI and shadcn/ui with Tailwind CSS v4. Activates when creating or modifying React UI components, shadcn/ui primitives, Base UI components, Tailwind utility classes, dark mode theming, CSS variables, or when working with the design system, color tokens, or responsive layouts. Also activates for the critical dark mode text rule, the Base UI toast API, and component styling patterns in the dashboard-core / shop-module Laravel stack."
+description: "Develops UI components using Base UI and shadcn/ui with Tailwind CSS v4. Activates when creating or modifying React UI components, shadcn/ui primitives, Base UI components, Tailwind utility classes, dark mode theming, CSS variables, or when working with the design system, color tokens, or responsive layouts. Also activates for the critical dark mode text rule, the Base UI toast API, and component styling patterns in the platform / shop-module Laravel stack."
 ---
 
-# Base UI + shadcn/ui Development (Laravel / dashboard-core)
+# Base UI + shadcn/ui Development (Laravel / platform)
 
 ## When to Apply
 
@@ -85,7 +85,7 @@ Every one of these elements needs an explicit text color class:
 
 The core `Components/ui/toast.tsx` wraps `@base-ui/react/toast` via
 `createToastManager()`. The core shell mounts a single `<Toaster />`. Use it
-from ANY page component (dashboard-core OR shop-module):
+from ANY page component (platform OR shop-module):
 
 ```tsx
 import { toast } from "@/Components/ui/toast";
@@ -124,16 +124,17 @@ Before creating any new page or component, verify:
 
 ### Token source of truth
 
-`vendor/nreljed/dashboard-core/resources/css/core.css` — imported into the
+`packages/platform/resources/css/core.css` — imported into the
 host `resources/css/app.css` AFTER `@import "tailwindcss"` + `@source` globs:
 
 ```css
 @import "tailwindcss" source(none);
 @source "../";
-@source "../../vendor/nreljed/shop-module/src/Resources/js/";
-@source "../../vendor/nreljed/dashboard-core/resources/js/";
+@source "../../../../packages/shop-module/src/Resources/js/";
+@source "../../../../packages/platform/resources/js/";
+@source "../../../../packages/blog/src/Resources/js/";
 @import "tw-animate-css";
-@import "../../vendor/nreljed/dashboard-core/resources/css/core.css";
+@import "../../../../packages/platform/resources/css/core.css";
 ```
 
 All values use `oklch()`. `@theme inline` maps `--color-*` → Tailwind utilities.
@@ -283,7 +284,9 @@ Class-based. `.dark` is toggled on `<html>` by `next-themes` `<ThemeProvider>`.
 
 ### Source scanning
 
-Tailwind source globs live in the HOST `app.css` (`@source`), covering host JS plus both vendored packages. When a new JS dir is added in dashboard-core/shop-module, ensure the app's `@source` glob includes it.
+Tailwind source globs live in the HOST `app.css` (`@source`), covering host JS plus all
+workspace packages. When a new JS dir is added in platform/shop-module, ensure the app's
+`@source` glob includes it.
 
 ### Animation library
 

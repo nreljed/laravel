@@ -11,44 +11,40 @@ vendor/bin/pint          # Laravel Pint (PSR-12)
 php artisan migrate      # Run migrations
 ```
 
-## Package Local Development (dashboard-core / shop-module)
+## Package Local Development (workspace)
 
-This app is a thin consumer of two private Composer packages:
+This app is a **workspace member** of the `laravel` monorepo. All PHP packages
+resolve from **path repos** (`../../packages/*`) for local dev; flip to VCS
+before production pushes. Frontend resolves via **pnpm workspace symlinks**
+(`@nreljed/*`) — not vendor.
 
-| Package                  | Source-of-truth repo            | Local checkout                              |
-| ------------------------ | ------------------------------- | ------------------------------------------- |
-| `nreljed/dashboard-core` | `nreljed/dashboard-core` (repo) | `C:\Users\nrelj\Local Sites\dashboard-core` |
-| `nreljed/shop-module`    | `nreljed/shop-module` (repo)    | `C:\Users\nrelj\Local Sites\shop-module`    |
+| Package               | Composer              | Workspace checkout           |
+| --------------------- | --------------------- | ---------------------------- |
+| `nreljed/platform`    | `nreljed/platform`    | `../../packages/platform`    |
+| `nreljed/blog`        | `nreljed/blog`        | `../../packages/blog`        |
+| `nreljed/shop-module` | `nreljed/shop-module` | `../../packages/shop-module` |
 
 **Where to edit what:**
 
-- **Package feature code** (models, controllers, services, routes, migrations, policies, package frontend pages) → edit in the **package repo**, NOT `app/`. Changes release via a semver tag in the package repo, then the app's `core-update.yml` / `shop-update.yml` picks them up automatically.
-- **Cross-package orchestration / host glue** (`GenerateDemoData`, `config/features.php` provider list, public pages, the `/`→storefront route override) → edit in `app/`, deploy via the normal `deploy.yml` pipeline.
+- **Package feature code** (models, controllers, services, routes, migrations,
+  policies, package frontend pages) → edit in the **package workspace checkout**
+  (`packages/*`), then release via a semver tag in the package repo — this app's
+  update workflow picks it up automatically.
+- **Host glue** (`GenerateDemoData`, `config/features.php` provider list, public
+  pages, the `/`→storefront route override) → edit in `app/`, deploy via the
+  workspace deploy pipeline.
 
-**Never edit `vendor/`.** `vendor/nreljed/*` is a Composer-managed copy/checkout; edits there are lost on the next install and bypass peer review. The current dev loop keeps `vendor/nreljed/dashboard-core` in sync with the local `C:\Users\nrelj\Local Sites\dashboard-core` checkout — the vendor copy must mirror the local repo.
+**Never edit `vendor/` or `apps/*/packages`** — the workspace checkout (`packages/*`)
+is the source of truth for local dev, mirrored into the app via the path repo.
+After editing a package, refresh the app's dependency:
 
-### The "edit a package and see it in the app" loop
-
-1. Open the package repo (e.g. `C:\Users\nrelj\Local Sites\dashboard-core`).
-2. Make your change in a feature branch there.
-3. Sync it into this app's `vendor/nreljed/<pkg>` (copy the changed files, or `composer update nreljed/<pkg>` if you've tagged a version).
-4. Run the app + `php artisan test` against it.
-5. When green, commit + push the package branch, tag `vX.Y.Z` → the app auto-updates via the update workflows.
-
-### Optional: Composer path repos (faster iterate loop)
-
-For instant edits without the copy step, point Composer at the local clones instead of VCS:
-
-```json
-"repositories": [
-    { "type": "path", "url": "../dashboard-core" },   // local-only; NOT for CI
-    { "type": "path", "url": "../shop-module" },
-    { "type": "vcs", "url": "https://github.com/nreljed/dashboard-core.git" },
-    { "type": "vcs", "url": "https://github.com/nreljed/shop-module.git" }
-]
+```bash
+composer update nreljed/platform nreljed/blog nreljed/shop-module
+npm run build   # frontend reads the workspace symlink tree directly
 ```
 
-Then `composer update nreljed/dashboard-core nreljed/shop-module`. This symlinks `vendor/nreljed/*` → the local repos so every save is live. **Do not commit path repos into the app's `composer.json`** — CI/production must use VCS only. Keep path repos as a local, uncommitted modification, or manage them out-of-band. Both local packages declare an explicit `version` field (`0.1.29`, `0.1.8`) so they satisfy the host's `^0.1` constraint.
+Package changes release through their own repo (tag `vX.Y.Z`) — see the root
+`../../AGENTS.md` dev loop.
 
 ## Module Commands
 

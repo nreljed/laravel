@@ -386,12 +386,10 @@ class SystemHealthTest extends TestCase
 
     public function test_deployed_version_falls_back_to_git_describe_locally(): void
     {
-        // Symfony renders the git commandline differently on Windows (full
-        // path to git.EXE) and Linux (bare `git`), so match on distinctive
-        // substrings instead of a `git*` prefix.
         Process::fake([
             '*--abbrev=0*' => Process::result(output: 'v0.8.1'),
             '*describe*' => Process::result(output: 'v0.8.1-5-g612ad63'),
+            '*rev-parse*' => Process::result(output: '612ad63'),
             '*porcelain*' => Process::result(output: ''),
         ]);
 
@@ -404,11 +402,14 @@ class SystemHealthTest extends TestCase
             ->where('deployed_version.origin', 'git')
             ->where('deployed_version.describe', 'v0.8.1-5-g612ad63')
             ->where('deployed_version.is_dirty', false)
+            ->where('deployed_version.short', '612ad63')
+            ->where('deployed_version.url', 'https://github.com/nreljed/laravel/commit/612ad63')
         );
 
         $ran = fn ($process) => is_string($process->command) ? $process->command : implode(' ', $process->command);
         Process::assertRanTimes(fn ($process) => str_contains($ran($process), 'describe'), 2);
         Process::assertRanTimes(fn ($process) => str_contains($ran($process), 'porcelain'), 1);
+        Process::assertRanTimes(fn ($process) => str_contains($ran($process), 'rev-parse'), 1);
     }
 
     public function test_measure_tree_skips_deploy_artifacts(): void
@@ -467,6 +468,68 @@ class SystemHealthTest extends TestCase
         } finally {
             File::deleteDirectory($tree);
             Config::set('core.health_max_walk_files', 5000);
+        }
+    }
+
+    public function test_git_dirty_status_ignores_excluded_paths(): void
+    {
+        Config::set('core.health_git_status_exclude', ['apps/', 'packages/']);
+
+        Process::fake([
+            '*--abbrev=0*' => Process::result(output: 'v1.0.0'),
+            '*describe*' => Process::result(output: 'v1.0.0'),
+            '*rev-parse*' => Process::result(output: 'abc1234'),
+            '*porcelain*' => Process::result(output: " M apps/laravel.booking/sql/local.sql\n?? apps/laravel.booking/.envrc\n"),
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.admin.system-health'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->where('deployed_version.is_dirty', false)
+        );
+    }
+
+    public function test_git_dirty_status_reports_unfiltered_changes(): void
+    {
+        Config::set('core.health_git_status_exclude', ['apps/', 'packages/']);
+
+        Process::fake([
+            '*--abbrev=0*' => Process::result(output: 'v1.0.0'),
+            '*describe*' => Process::result(output: 'v1.0.0'),
+            '*rev-parse*' => Process::result(output: 'abc1234'),
+            '*porcelain*' => Process::result(output: " M app/Providers/AppServiceProvider.php\n"),
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.admin.system-health'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->where('deployed_version.is_dirty', true)
+        );
+    }
+
+    public function test_modules_report_origin_and_composer_version(): void
+    {
+        Http::fake();
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('dashboard.admin.system-health.refresh'));
+
+        $response->assertOk();
+        $modules = collect($response->json('modules'));
+
+        $posts = $modules->firstWhere('slug', 'posts');
+        if ($posts) {
+            $this->assertSame('package', $posts['origin']);
+            $this->assertSame('nreljed/blog', $posts['package']);
+        }
+
+        $publicSite = $modules->firstWhere('slug', 'public-site');
+        if ($publicSite) {
+            $this->assertSame('platform', $publicSite['origin']);
         }
     }
 }

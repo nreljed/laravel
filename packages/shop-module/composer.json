@@ -38,17 +38,14 @@
             ]
         }
     },
-    "config": {
+    "scripts": {
+    "test": "phpunit"
+  },
+  "config": {
         "allow-plugins": {
             "php-http/discovery": true
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/nreljed/platform.git"
-        }
-    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }

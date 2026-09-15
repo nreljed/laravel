@@ -484,6 +484,7 @@ class FeatureRegistry
                 'description' => $provider->description(),
                 'version' => $provider->version(),
                 'package' => $provider->getComposerPackage(),
+                'origin' => $this->resolveProviderOrigin($provider),
                 'dependencies' => $provider->dependencies(),
                 'enabled' => $provider->enabled(),
                 'has_settings' => $provider->hasSettings(),
@@ -491,6 +492,53 @@ class FeatureRegistry
             ],
             array_values($this->providers),
         ));
+    }
+
+    /**
+     * Classify where a feature's source lives so the system health page can
+     * distinguish genuinely platform-bundled features from project-owned
+     * features and standalone composer packages. A feature whose provider
+     * resolves from packages/platform is a workspace copy of the platform
+     * itself and still counts as bundled.
+     */
+    protected function resolveProviderOrigin(FeatureProvider $provider): string
+    {
+        $package = $provider->getComposerPackage();
+
+        if ($package !== null && $package !== '') {
+            return 'package';
+        }
+
+        try {
+            $file = (new \ReflectionClass($provider))->getFileName() ?: '';
+        } catch (\ReflectionException) {
+            return 'unknown';
+        }
+
+        $file = str_replace('\\', '/', $file);
+        $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
+
+        if (str_starts_with($file, $base.'vendor/nreljed/platform/')) {
+            return 'platform';
+        }
+
+        if (str_starts_with($file, $base.'packages/platform/')) {
+            return 'platform';
+        }
+
+        if (str_starts_with($file, $base.'vendor/')) {
+            return 'package';
+        }
+
+        if (str_starts_with($file, $base.'packages/')) {
+            return 'workspace';
+        }
+
+        if (str_starts_with($file, $base.'app/')) {
+            return 'project';
+        }
+
+        return 'unknown';
     }
 
     /**

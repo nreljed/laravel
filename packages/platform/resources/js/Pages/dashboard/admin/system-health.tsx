@@ -182,6 +182,7 @@ interface ModuleItem {
   enabled: boolean;
   version: string | null;
   package: string | null;
+  origin: "platform" | "package" | "workspace" | "project" | "unknown" | string;
   composer_version: string | null;
 }
 interface CronItem {
@@ -201,6 +202,8 @@ interface DeployedVersion {
   file_path?: string;
   origin?: "deployed" | "git";
   describe?: string;
+  short?: string;
+  url?: string;
   is_dirty?: boolean;
 }
 interface LatestVersion {
@@ -567,8 +570,22 @@ export default function SystemHealth(props: SystemHealthProps) {
           ? [
               L(
                 props.deployed_version.origin === "git" ? "Git HEAD" : "Deployed",
-                props.deployed_version.version ?? "?",
+                props.deployed_version.origin === "git"
+                  ? (props.deployed_version.describe ??
+                      props.deployed_version.version ??
+                      "?")
+                  : (props.deployed_version.version ?? "?"),
               ),
+              ...(props.deployed_version.origin === "git" &&
+              props.deployed_version.short &&
+              props.deployed_version.url
+                ? [
+                    L(
+                      "Git Commit",
+                      `${props.deployed_version.short} ${props.deployed_version.url}`,
+                    ),
+                  ]
+                : []),
             ]
           : []),
         L("Latest", props.latest_version.found ? (props.latest_version.version ?? "?") : "Unknown"),
@@ -592,7 +609,11 @@ export default function SystemHealth(props: SystemHealthProps) {
                 `Module ${m.name}${m.package ? ` (${m.package})` : ""}`,
                 m.composer_version
                   ? `v${m.composer_version}`
-                  : "bundled",
+                  : m.origin === "project"
+                    ? "project feature"
+                    : m.origin === "package"
+                      ? "standalone package"
+                      : "bundled in platform",
               ),
             )
           : []),
@@ -823,14 +844,33 @@ export default function SystemHealth(props: SystemHealthProps) {
                     </p>
                     <p className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold">
                       {props.deployed_version.exists ? (
-                        <span className="font-mono">{props.deployed_version.version}</span>
+                        <span className="font-mono">
+                          {props.deployed_version.origin === "git"
+                            ? (props.deployed_version.describe ??
+                              props.deployed_version.version)
+                            : props.deployed_version.version}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">not recorded</span>
                       )}
                       {props.deployed_version.origin === "git" && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <GitBranch className="h-3.5 w-3.5" />
-                          Git HEAD{props.deployed_version.is_dirty ? " · dirty" : " · clean"}
+                          Git HEAD
+                          {props.deployed_version.short &&
+                          props.deployed_version.url ? (
+                            <a
+                              href={props.deployed_version.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-mono text-primary hover:underline"
+                            >
+                              {props.deployed_version.short}
+                            </a>
+                          ) : null}
+                          {props.deployed_version.is_dirty
+                            ? " · dirty"
+                            : " · clean"}
                         </span>
                       )}
                     </p>
@@ -1001,7 +1041,12 @@ export default function SystemHealth(props: SystemHealthProps) {
                             </p>
                           ) : (
                             <p className="text-[11px] text-muted-foreground">
-                              bundled in platform
+                              {module.origin === "project"
+                                ? "project feature"
+                                : module.origin === "package" ||
+                                    module.origin === "workspace"
+                                  ? "standalone package"
+                                  : "bundled in platform"}
                             </p>
                           )}
                         </div>
@@ -1009,7 +1054,14 @@ export default function SystemHealth(props: SystemHealthProps) {
                           {module.composer_version ? (
                             <span className="font-mono text-sm">v{module.composer_version}</span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">bundled</span>
+                            <span className="text-sm text-muted-foreground">
+                              {module.origin === "project"
+                                ? "app code"
+                                : module.origin === "package" ||
+                                    module.origin === "workspace"
+                                  ? "unversioned"
+                                  : "bundled"}
+                            </span>
                           )}
                         </div>
                       </div>

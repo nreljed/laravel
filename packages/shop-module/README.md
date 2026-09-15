@@ -30,7 +30,7 @@ public storefront.
 |-------------|---------|
 | PHP | ^8.4 |
 | laravel/framework | ^13.0 |
-| nreljed/dashboard-core | ^0.1 |
+| nreljed/platform | ^0.1 |
 | barryvdh/laravel-dompdf | ^3.1 (order invoices) |
 | stripe/stripe-php | ^20.0 (Stripe payments) |
 
@@ -47,7 +47,7 @@ php artisan migrate
    e.g. `COMPOSER_AUTH`).
 2. **Provider:** register `Nreljed\ShopModule\ShopServiceProvider` in `bootstrap/providers.php`.
 3. **Feature registration:** add the provider class to the `features` array in
-   `config/core.php` so the core `FeatureRegistry` aggregates its nav, permissions, email
+   `config/features.php` so the core `FeatureRegistry` aggregates its nav, permissions, email
    templates, notification types, gallery config, and dashboard data.
 4. **Migrations / views / config:** auto-loaded —
    `loadMigrationsFrom(__DIR__.'/../database/migrations')`,
@@ -55,7 +55,8 @@ php artisan migrate
 
 ### Frontend wiring (host)
 
-- **Vite alias:** `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`.
+- **Vite alias (workspace):** `@nreljed/shop-module` → `packages/shop-module/src/Resources/js/`.
+  Standalone VCS installs keep the legacy vendor alias `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`.
 - **Page registration:** the host glob-imports `@shop/Pages/**/*.tsx` with
   `projectPrefix: "shop"`, so pages render under `shop/*` Inertia component keys.
 - **Tailwind:** include the shop JS dir via `@source` — a missing `@source` silently strips

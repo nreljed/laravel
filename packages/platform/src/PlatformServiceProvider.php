@@ -137,6 +137,7 @@ class PlatformServiceProvider extends ServiceProvider
             Console\Commands\DeployAuto::class,
             Console\Commands\ListPermissions::class,
             Console\Commands\MakeFeature::class,
+            Console\Commands\PlatformInstall::class,
             Console\Commands\PurgeNotifications::class,
             Console\Commands\PruneAuditLogs::class,
         ]);

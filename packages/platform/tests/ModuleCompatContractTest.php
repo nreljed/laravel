@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
  * module's checkout (sibling of the core repo by default, overridable via the
  * CORE_MODULE_PATHS env — semicolon separated absolute paths) and asserts:
  *
- *   - the module declares nreljed/dashboard-core with a caret-zero (^0.x)
+ *   - the module declares nreljed/platform with a caret-zero (^0.x)
  *     constraint,
  *   - the CURRENT core release satisfies that constraint — a core minor bump
  *     therefore must ship together with the modules updating their ranges,

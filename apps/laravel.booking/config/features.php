@@ -3,6 +3,7 @@
 use Nreljed\Blog\BlogServiceProvider;
 use Nreljed\BookingModule\Booking\BookingServiceProvider;
 use Nreljed\BookingModule\Properties\PropertiesServiceProvider;
+use Nreljed\Platform\Ai\AiServiceProvider;
 use Nreljed\Platform\PublicSite\PublicSiteServiceProvider;
 
 return [
@@ -21,6 +22,7 @@ return [
     'providers' => [
         PublicSiteServiceProvider::class,
         BlogServiceProvider::class,
+        AiServiceProvider::class,
         BookingServiceProvider::class,
         PropertiesServiceProvider::class,
     ],
@@ -41,6 +43,7 @@ return [
     'enabled' => [
         'public-site' => true,
         'posts' => true,
+        'ai' => true,
         'bookings' => true,
         'properties' => true,
     ],

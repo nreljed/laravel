@@ -46,6 +46,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Health Git Status Exclude
+    |--------------------------------------------------------------------------
+    |
+    | Top-level path prefixes (relative to the app root) ignored when the
+    | system health page derives the git "dirty" flag. In a monorepo/workspace
+    | the consuming app is one member among many (e.g. packages/ and apps/),
+    | so changes in sibling trees should not mark the app's build dirty.
+    |
+    */
+
+    'health_git_status_exclude' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | Settings Groups
     |--------------------------------------------------------------------------
     |
