@@ -199,8 +199,8 @@ clsx + tailwind-merge):
 export { cn } from "cn";
 ```
 
-Consumers install it as a direct dependency; the core `vite.dedupe.js` includes `cn` in the
-canonical dedupe list. Never import from `clsx` or `tailwind-merge` directly.
+Consumers install it as a direct dependency (it's in the workspace `peerDependencies` set).
+Never import from `clsx` or `tailwind-merge` directly.
 
 `cva` (class-variance-authority) is still used for variant components — only clsx and
 tailwind-merge were replaced by `cn`.
@@ -309,4 +309,4 @@ The select column always renders; bulk actions bar appears when rows are selecte
 | `resources/js/Components/ui/data-table.tsx`     | Unified DataTable (defaultPageSize etc.) |
 | `resources/css/core.css`                        | Shared design tokens — apps override     |
 | `components.json`                               | `style: "base-vega"` (Base UI registry)  |
-| `vite.dedupe.js`                                | Canonical dedupe list (includes `cn`)    |
+| `package.json` `exports`                        | `./app`, `./dashboard`, `./*` workspace map |

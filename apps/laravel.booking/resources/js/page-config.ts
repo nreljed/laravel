@@ -1,8 +1,8 @@
-import type { FoundationAppConfig, PageImport } from "@dashboard/app";
-import { registerCoreTemplates } from "@dashboard/dashboard";
-import { registerBlogPages } from "@blog/pages";
-import { registerBookingPages } from "@booking/pages";
-import { registerPropertiesPages } from "@properties/pages";
+import type { FoundationAppConfig, PageImport } from "@nreljed/platform/app";
+import { registerCoreTemplates } from "@nreljed/platform/dashboard";
+import { registerBlogPages } from "@nreljed/blog/pages";
+import { registerBookingPages } from "@nreljed/booking-module/booking/pages";
+import { registerPropertiesPages } from "@nreljed/booking-module/properties/pages";
 
 /**
  * Host-owned public pages under ./Pages/** (public/welcome, public/about,

@@ -26,17 +26,17 @@ Activate this skill when:
 
 The host repo (`shop-laravel`) is a THIN SHELL. All UI components, CSS tokens
 (`core.css`), and dashboard/blog/account pages live in the
-`nreljed/dashboard-core` composer package; shop pages live in
-`nreljed/shop-module`. Both install into `vendor/` and map through Vite
-aliases:
+`nreljed/platform` composer package (installed into `vendor/`); the frontend
+maps through pnpm workspace symlinks (`@nreljed/*`), not vendor aliases:
 
-- `@` / `@dashboard` → `vendor/nreljed/dashboard-core/resources/js`
-- `@shop` → `vendor/nreljed/shop-module/src/Resources/js`
+- `@nreljed/platform` → `packages/platform/resources/js`
+- `@nreljed/blog` → `packages/blog/src/Resources/js`
+- `@nreljed/shop-module` → `packages/shop-module/src/Resources/js`
 
 **NEVER edit `vendor/`.** Edit the package checkout, commit, tag, release —
 the `core-update.yml` / `shop-update.yml` fan-out bumps `composer.lock` in the
-app. Local dev typecheck/build reads the live `vendor/` tree, so after
-`composer update` the new code is active without a dev server.
+app. Local dev typecheck/build reads the workspace symlink tree, so after
+`pnpm install` the new code is active without a dev server.
 
 ---
 

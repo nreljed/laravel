@@ -5,9 +5,6 @@ import tailwindcss from '@tailwindcss/vite';
 import inertia from '@inertiajs/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { platformAliases } from '../../packages/platform/platform.aliases.js';
-import { blogAliases } from '../../packages/blog/blog.aliases.js';
-import { packageDedupes } from '../../packages/platform/vite.dedupe.js';
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,7 +18,6 @@ export default defineConfig({
                 'resources/js/**',
                 'app/**/Resources/js/**',
                 '../../packages/booking-module/src/**/Resources/js/**',
-                '../../packages/platform/resources/themes/**',
                 '../../packages/platform/resources/js/**',
                 '../../packages/blog/src/Resources/js/**',
             ],
@@ -31,17 +27,13 @@ export default defineConfig({
         tailwindcss(),
     ],
     resolve: {
-        dedupe: packageDedupes,
         alias: {
-            ...platformAliases(),
-            ...blogAliases(),
-            '@dashboard-themes': path.resolve(__dirname, '../../packages/platform/resources/themes'),
-            '@booking': path.resolve(__dirname, '../../packages/booking-module/src/Booking/Resources/js'),
-            '@properties': path.resolve(__dirname, '../../packages/booking-module/src/Properties/Resources/js'),
-            '@nreljed/platform': path.resolve(__dirname, '../../packages/platform/resources/js'),
             '@nreljed/platform/*': path.resolve(__dirname, '../../packages/platform/resources/js'),
-            '@nreljed/blog': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
             '@nreljed/blog/*': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
+            '@nreljed/booking-module/booking': path.resolve(__dirname, '../../packages/booking-module/src/Booking/Resources/js'),
+            '@nreljed/booking-module/booking/*': path.resolve(__dirname, '../../packages/booking-module/src/Booking/Resources/js'),
+            '@nreljed/booking-module/properties': path.resolve(__dirname, '../../packages/booking-module/src/Properties/Resources/js'),
+            '@nreljed/booking-module/properties/*': path.resolve(__dirname, '../../packages/booking-module/src/Properties/Resources/js'),
         },
     },
     build: {
@@ -52,7 +44,6 @@ export default defineConfig({
                 manualChunks(id) {
                     if (id.includes('Components/ui/')) return 'ui-kit';
                     if (id.includes('node_modules/react')) return 'react-vendor';
-                    if (id.includes('node_modules/@base-ui')) return 'baseui-vendor';
                     if (id.includes('node_modules/lucide-react')) return 'icons-vendor';
                     if (id.includes('node_modules/@inertiajs')) return 'inertia-vendor';
                     if (id.includes('node_modules/leaflet')) return 'leaflet-vendor';
@@ -61,6 +52,7 @@ export default defineConfig({
                     if (id.includes('node_modules/@zxcvbn-ts')) return 'zxcvbn-vendor';
                     if (id.includes('node_modules/react-phone-number-input') || id.includes('node_modules/libphonenumber-js')) return 'phone-vendor';
                     if (id.includes('node_modules/react-hook-form')) return 'forms-vendor';
+                    if (id.includes('node_modules/@base-ui')) return 'baseui-vendor';
                 },
             },
         },

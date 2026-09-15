@@ -48,10 +48,11 @@ The provider is auto-discovered via `extra.laravel.providers`. Publish config wi
 
 ## Frontend wiring
 
-Import `platformAliases()` from `platform.aliases.js` into `vite.config.js` + `tsconfig.json`,
-add the JS dir to Tailwind `@source`, and build your page map in `app.tsx` with
-`registerCoreTemplates()` (see [docs/frontend.md](docs/frontend.md)). Core never auto-registers
-pages.
+Consume the workspace package (`@nreljed/platform: "workspace:*"` in a pnpm workspace), wire
+its source aliases (`@nreljed/platform` + `@nreljed/platform/*`) into `vite.config.js` +
+`tsconfig.json`, add the JS dir to Tailwind `@source`, and build your page map in `app.tsx`
+with `registerCoreTemplates()` (see [docs/frontend.md](docs/frontend.md)). Core never
+auto-registers pages.
 
 ## Tests
 

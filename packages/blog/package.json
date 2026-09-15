@@ -6,7 +6,6 @@
   "type": "module",
   "exports": {
     "./pages": "./src/Resources/js/pages.ts",
-    "./blog-aliases": "./blog.aliases.js",
     "./*": "./src/Resources/js/*"
   },
   "peerDependencies": {

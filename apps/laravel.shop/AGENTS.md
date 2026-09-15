@@ -124,7 +124,7 @@ routes/
 
 - **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`, `notificationUnreadCount`, `flash`, `userMode`, `canSwitchMode`, `sharedData` (from FeatureRegistry), `featureNavItems` (with `groupLabel`), `userCapabilities`, `repeaterConfigs`, `profileFieldConfigs`, `emailSettings`, `brand`, `impersonating`
 - **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`
-- **Component imports**: Use `@/Components/...` alias (NOT `@/components/...`) — Windows case-insensitive FS workaround; use `@shop` for Shop modules. There is NO `@blog` alias — Blog pages come from the core package glob
+- **Component imports**: Use `@/Components/...` alias (NOT `@/components/...`) — Windows case-insensitive FS workaround. Package sources resolve via `@nreljed/*` workspace aliases (platform, blog, shop-module) — there are no `@shop`/`@dashboard`/`@blog` aliases anymore
 - **No ShadCN `asChild`**: Avoid `Slot` pattern when possible; use plain `<Link>` instead
 - **Authorization**: Route groups use `permission:{slug}` middleware. Individual create/edit/delete actions are authorized via Policy + `$this->authorize()` in controllers or FormRequest `authorize()`
 - **Policies**: Registered in `AppServiceProvider` via `Gate::policy()`
@@ -166,11 +166,13 @@ Each feature provider self-loads its own routes from its own `Routes/` directory
 - Shop JSON API: the package registers `api.*` routes (products/orders/categories, `auth:sanctum`) — the host's `routes/api.php` does NOT require shop files
 
 ### Frontend Page Loading
-Inertia pages are loaded via Vite glob imports:
-- Core dashboard/admin/account/auth pages: `registerCoreTemplates()` in `resources/js/app.tsx` (globs `vendor/nreljed/dashboard-core/resources/js/Pages` + in-core feature pages under `src/*/Resources/js/Pages` — Blog included)
-- Shop pages: `import.meta.glob("@shop/Pages/**/*.tsx")` → registered under `shop/*` page keys (`projectPrefix: "shop"`)
+Inertia pages are loaded from workspace package kits spread in `page-config.ts`:
+- Core dashboard/admin/account/auth pages: `registerCoreTemplates()` (platform `@nreljed/platform/dashboard`)
+- Blog pages: `registerBlogPages()` (`@nreljed/blog/pages` → `posts/*` + `blog/*`)
+- Shop pages: `registerShopPages()` (`@nreljed/shop-module/pages` → `shop/*`)
+- Host-local forked marketing pages: `localPages` (glob `./Pages/**/*.tsx`) + `pageOverrides` (`public/about|services|contact` → `./public/*`)
 
-Alias mappings: `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`; `@`/`@dashboard` → `vendor/nreljed/dashboard-core/resources/js/`
+Alias mappings (workspace symlinks, NOT vendor): `@nreljed/platform` → `packages/platform/resources/js`; `@nreljed/blog` → `packages/blog/src/Resources/js`; `@nreljed/shop-module` → `packages/shop-module/src/Resources/js`
 
 ## Dev Environment
 

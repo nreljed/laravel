@@ -5,7 +5,9 @@
   "license": "proprietary",
   "type": "module",
   "exports": {
-    "./shop-aliases": "./shop.aliases.js"
+    "./pages": "./src/Resources/js/pages.ts",
+    "./icons": "./src/Resources/js/icons.ts",
+    "./*": "./src/Resources/js/*"
   },
   "peerDependencies": {
     "@inertiajs/core": "^3.0.0",

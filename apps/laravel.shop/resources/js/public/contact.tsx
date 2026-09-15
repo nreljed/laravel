@@ -1,9 +1,9 @@
 import { usePage } from "@inertiajs/react";
 import type { LucideIcon } from "lucide-react";
 import { Clock, Mail, MapPin, Phone, Send } from "lucide-react";
-import PublicLayout from "@/Layouts/PublicLayout";
-import { Button } from "@/Components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/Components/ui/card";
+import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
+import { Button } from "@nreljed/platform/Components/ui/button";
+import { Card, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
 
 interface ContactPageProps {
   email?: string;

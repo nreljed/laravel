@@ -396,6 +396,9 @@ importers:
       '@nreljed/blog':
         specifier: workspace:*
         version: link:../../packages/blog
+      '@nreljed/booking-module':
+        specifier: workspace:*
+        version: link:../../packages/booking-module
       '@nreljed/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -700,6 +703,9 @@ importers:
       '@nreljed/platform':
         specifier: workspace:*
         version: link:../../packages/platform
+      '@nreljed/shop-module':
+        specifier: workspace:*
+        version: link:../../packages/shop-module
       '@shadcn/react':
         specifier: ^0.3.1
         version: 0.3.1(@types/react@19.3.0)(react@19.3.0)

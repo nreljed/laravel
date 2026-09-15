@@ -1,4 +1,4 @@
-import PublicLayout from "@/Layouts/PublicLayout";
+import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
 import { Head } from "@inertiajs/react";
 
 export default function Contact() {

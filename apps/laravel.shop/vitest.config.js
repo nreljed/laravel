@@ -1,8 +1,6 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { platformAliases } from "../../packages/platform/platform.aliases.js";
-import { blogAliases } from "../../packages/blog/blog.aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,10 +28,12 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            ...platformAliases(),
-            ...blogAliases(),
-            "@dashboard-themes": path.resolve(__dirname, "../../packages/platform/resources/themes"),
-            "@shop": path.resolve(__dirname, "../../packages/shop-module/src/Resources/js"),
+            "@nreljed/platform": path.resolve(__dirname, "../../packages/platform/resources/js"),
+            "@nreljed/platform/*": path.resolve(__dirname, "../../packages/platform/resources/js"),
+            "@nreljed/blog": path.resolve(__dirname, "../../packages/blog/src/Resources/js"),
+            "@nreljed/blog/*": path.resolve(__dirname, "../../packages/blog/src/Resources/js"),
+            "@nreljed/shop-module": path.resolve(__dirname, "../../packages/shop-module/src/Resources/js"),
+            "@nreljed/shop-module/*": path.resolve(__dirname, "../../packages/shop-module/src/Resources/js"),
         },
     },
 });

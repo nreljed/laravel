@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import { SiteHeader } from "@/Components/frontend/SiteHeader";
-import { SiteFooter } from "@/Components/frontend/SiteFooter";
+import { SiteHeader } from "@nreljed/platform/Components/frontend/SiteHeader";
+import { SiteFooter } from "@nreljed/platform/Components/frontend/SiteFooter";
 
 export default function Welcome() {
   const { props } = usePage();

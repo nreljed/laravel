@@ -2,8 +2,6 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { platformAliases } from "../../packages/platform/platform.aliases.js";
-import { blogAliases } from "../../packages/blog/blog.aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,16 +34,10 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            ...platformAliases(),
-            ...blogAliases(),
-            "@booking": path.resolve(
-                __dirname,
-                "../../packages/booking-module/src/Booking/Resources/js"
-            ),
-            "@properties": path.resolve(
-                __dirname,
-                "../../packages/booking-module/src/Properties/Resources/js"
-            ),
+            "@nreljed/platform/*": path.resolve(__dirname, "../../packages/platform/resources/js"),
+            "@nreljed/blog/*": path.resolve(__dirname, "../../packages/blog/src/Resources/js"),
+            "@nreljed/booking-module/booking/*": path.resolve(__dirname, "../../packages/booking-module/src/Booking/Resources/js"),
+            "@nreljed/booking-module/properties/*": path.resolve(__dirname, "../../packages/booking-module/src/Properties/Resources/js"),
         },
     },
 });

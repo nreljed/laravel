@@ -33,8 +33,9 @@ features, custom dashboard pages).
    [README](https://github.com/nreljed/platform#readme) for both setups).
 2. Provider is auto-discovered via `extra.laravel.providers`.
 3. `php artisan vendor:publish --tag=core-config` to publish config.
-4. Wire the frontend: `@dashboard` alias in `vite.config.js` + `tsconfig.json`, Tailwind
-   `@source`, and `registerCoreTemplates()` in the app's `app.tsx` (see [Frontend](frontend.md)).
+4. Wire the frontend: `@nreljed/platform` workspace package aliases in `vite.config.js` +
+   `tsconfig.json`, Tailwind `@source`, and `registerCoreTemplates()` in the app's `app.tsx`
+   (see [Frontend](frontend.md)).
 5. Register feature providers in `config/features.php` `providers`, then
    `php artisan permissions:sync`.
 

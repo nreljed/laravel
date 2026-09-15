@@ -120,9 +120,7 @@ src/
     Notifications/ Observers/ Policies/ Providers/
     Rules/ Services/ Support/ Traits/
     Support/FoundationCheck.php     # Boundary fence monitor
-  package.json                      # npm peerDependencies + vite.dedupe.js (canonical dedupe list)
-  platform.aliases.js               # Self-locating @dashboard/@ aliases + refresh globs
-  vite.dedupe.js                    # resolve.dedupe list — apps wire: import { packageDedupes } from "./vendor/nreljed/platform/vite.dedupe.js"
+  package.json                      # npm peerDependencies + exports map (./app, ./dashboard, ./*)
   core-manifest.json                # Boundary fence manifest (app_owned_files, forbidden paths, overridable config)
   docs/                             # architecture, feature-provider, frontend, theme, modules, deploy, commands
   tests/                            # core test suite (runs in core CI; consumers opt-in via core's phpunit.xml.dist)
@@ -133,7 +131,6 @@ vendor/nreljed/blog/                # BLOG feature package (composer vcs, standa
   database/migrations/              # 11 posts/categories/tags migrations (CANONICAL — apps must not re-own these)
   src/Resources/js/                 # Blog frontend (@blog) — pages.ts exports registerBlogPages()
   package.json                      # npm peerDependencies
-  blog.aliases.js                   # Self-locating @blog alias + refresh globs
   tests/                            # Structural/contract suite (blog CI; apps keep their own integration tests)
   scripts/frontend-boundary-check.php
 app/                                # APP shell (thin — most logic lives in the platform/blog packages)

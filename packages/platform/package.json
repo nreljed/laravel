@@ -7,8 +7,6 @@
   "exports": {
     "./app": "./resources/js/app.tsx",
     "./dashboard": "./resources/js/dashboard.ts",
-    "./vite-dedupes": "./vite.dedupe.js",
-    "./platform-aliases": "./platform.aliases.js",
     "./*": "./resources/js/*"
   },
   "peerDependencies": {

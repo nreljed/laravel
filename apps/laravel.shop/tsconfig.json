@@ -15,16 +15,9 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@dashboard/*": ["../../packages/platform/resources/js/*"],
-      "@blog": ["../../packages/blog/src/Resources/js"],
-      "@blog/*": ["../../packages/blog/src/Resources/js/*"],
-      "@dashboard-themes": ["../../packages/platform/resources/themes"],
-      "@dashboard-themes/*": ["../../packages/platform/resources/themes/*"],
-      "@/*": ["../../packages/platform/resources/js/*"],
-      "@shop": ["../../packages/shop-module/src/Resources/js"],
-      "@shop/*": ["../../packages/shop-module/src/Resources/js/*"],
       "@nreljed/platform/*": ["../../packages/platform/resources/js/*"],
-      "@nreljed/blog/*": ["../../packages/blog/src/Resources/js/*"]
+      "@nreljed/blog/*": ["../../packages/blog/src/Resources/js/*"],
+      "@nreljed/shop-module/*": ["../../packages/shop-module/src/Resources/js/*"]
     }
   },
   "include": [
@@ -32,7 +25,6 @@
     "resources/js/**/*.tsx",
     "resources/js/**/*.d.ts",
     "../../packages/platform/resources/js/**/*.d.ts",
-    "../../packages/platform/resources/themes/**/*.d.ts",
     "../../packages/blog/src/Resources/js/**/*.d.ts",
     "../../packages/shop-module/src/Resources/js/**/*.d.ts"
   ]

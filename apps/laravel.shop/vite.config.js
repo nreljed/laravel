@@ -5,9 +5,6 @@ import tailwindcss from '@tailwindcss/vite';
 import inertia from '@inertiajs/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { platformAliases } from '../../packages/platform/platform.aliases.js';
-import { blogAliases } from '../../packages/blog/blog.aliases.js';
-import { packageDedupes } from '../../packages/platform/vite.dedupe.js';
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,7 +18,6 @@ export default defineConfig({
                 'resources/js/**',
                 'app/**/Resources/js/**',
                 '../../packages/shop-module/src/Resources/js/**',
-                '../../packages/platform/resources/themes/**',
                 '../../packages/platform/resources/js/**',
                 '../../packages/blog/src/Resources/js/**',
             ],
@@ -31,16 +27,13 @@ export default defineConfig({
         tailwindcss(),
     ],
     resolve: {
-        dedupe: packageDedupes,
         alias: {
-            ...platformAliases(),
-            ...blogAliases(),
-            '@dashboard-themes': path.resolve(__dirname, '../../packages/platform/resources/themes'),
-            '@shop': path.resolve(__dirname, '../../packages/shop-module/src/Resources/js'),
             '@nreljed/platform': path.resolve(__dirname, '../../packages/platform/resources/js'),
             '@nreljed/platform/*': path.resolve(__dirname, '../../packages/platform/resources/js'),
             '@nreljed/blog': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
             '@nreljed/blog/*': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
+            '@nreljed/shop-module': path.resolve(__dirname, '../../packages/shop-module/src/Resources/js'),
+            '@nreljed/shop-module/*': path.resolve(__dirname, '../../packages/shop-module/src/Resources/js'),
         },
     },
     build: {

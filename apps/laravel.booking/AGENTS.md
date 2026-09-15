@@ -94,14 +94,14 @@ app/                          # Core Laravel application
     Models/               # Product, Order, Cart, Coupon, Shipping*, TaxRate, Webhook, etc.
     Controllers/          # CartController, CheckoutController, OrdersController, ProductsController, etc.
     Services/             # InventoryService, CheckoutService, CouponService, ShippingService, TaxService, WebhookService, CurrencyService
-    Resources/js/Pages/   # Inertia page components (aliased as @shop/Pages/...)
-    Resources/js/components/  # Module-specific React components (aliased as @shop/components/...)
+    Resources/js/Pages/   # Inertia page components (resolved via @nreljed/booking-module/booking/...)
+    Resources/js/components/  # Module-specific React components (resolved via @nreljed/booking-module/booking/...)
     database/migrations/  # Shop-specific migrations
   Blog/                   # Blog domain (namespace App\Blog)
     BlogServiceProvider.php   # Registers nav, permissions, email templates, notification types, shared data
     Models/               # Post, PostCategory, PostTag, ContentBlock
     Controllers/          # PostController, PostCategoryController, PostTagController
-    Resources/js/Pages/   # Inertia page components (aliased as @blog/Pages/...)
+    Resources/js/Pages/   # Inertia page components (resolved via @nreljed/booking-module/properties/...)
     database/migrations/  # Blog-specific migrations
 database/
   migrations/             # Core app migrations (settings, roles, permissions, users, etc.)
@@ -157,7 +157,7 @@ routes/
 
 - **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`, `notificationUnreadCount`, `flash`, `userMode`, `canSwitchMode`, `sharedData` (from FeatureRegistry), `featureNavItems` (with `groupLabel`), `userCapabilities`, `repeaterConfigs`, `profileFieldConfigs`, `emailSettings`, `brand`, `impersonating`
 - **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`
-- **Component imports**: Use `@/Components/...` alias (NOT `@/components/...`) — Windows case-insensitive FS workaround; use `@shop` for Shop modules, `@blog` for Blog modules
+- **Component imports**: Use `@/Components/...` alias (NOT `@/components/...`) — Windows case-insensitive FS workaround. Package sources resolve via `@nreljed/*` workspace aliases (platform, blog, booking-module/scoped `booking/` + `properties/`) — there are no `@shop`/`@blog`/`@booking` aliases anymore
 - **No ShadCN `asChild`**: Avoid `Slot` pattern when possible; use plain `<Link>` instead
 - **Authorization**: Route groups use `permission:{slug}` middleware. Individual create/edit/delete actions are authorized via Policy + `$this->authorize()` in controllers or FormRequest `authorize()`
 - **Policies**: Registered in `AppServiceProvider` via `Gate::policy()`
@@ -189,11 +189,13 @@ Each service provider implements provider methods (`name()`, `slug()`, `version(
 Routes are loaded via conventional route files (`routes/shop.php`, `routes/blog.php`, `routes/shop-api.php`, `routes/api.php`), loaded by the providers' `boot()` method or directly via `bootstrap/app.php`. No more `HasRoutes` trait or `ModuleInterface`.
 
 ### Frontend Page Loading
-Inertia pages are loaded via Vite glob imports in `app.tsx`:
-- `@shop/Pages/**/*.tsx` → registered under `shop/*` page keys
-- `@blog/Pages/**/*.tsx` → registered under `blog/*` page keys
+Inertia pages are loaded from workspace package kits spread in `page-config.ts`:
+- `registerCoreTemplates()` (`@nreljed/platform/dashboard`) + `registerBlogPages()` (`@nreljed/blog/pages`)
+- Booking pages: `registerBookingPages()` (`@nreljed/booking-module/booking/pages` → `booking/*`)
+- Properties pages: `registerPropertiesPages()` (`@nreljed/booking-module/properties/pages` → `properties/*`)
+- Host-local pages: `localPages` glob (`./Pages/**/*.tsx`)
 
-Alias mappings: `@shop` → `app/Shop/Resources/js/`, `@blog` → `app/Blog/Resources/js/`
+Alias mappings (workspace symlinks, NOT vendor): `@nreljed/booking-module/booking/*` → `packages/booking-module/src/Booking/Resources/js/*`, `@nreljed/booking-module/properties/*` → `packages/booking-module/src/Properties/Resources/js/*`; `@nreljed/platform` → `packages/platform/resources/js`; `@nreljed/blog` → `packages/blog/src/Resources/js`
 
 ## Dev Environment
 
