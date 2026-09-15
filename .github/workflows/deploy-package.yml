@@ -54,6 +54,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "26"
+          pnpm-version: "11"
 
       - name: Determine version
         id: version
@@ -145,7 +146,7 @@ jobs:
         run: php artisan migrate --force
 
       - name: Install npm dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Check core dependency parity
         run: npm run check:core-deps
@@ -214,7 +215,7 @@ jobs:
             Remove-Item "$cacheDir\packages.php", "$cacheDir\services.php" -Force -ErrorAction SilentlyContinue
           }
           $items = @(
-            "artisan", "composer.json", "composer.lock", "package.json", "package-lock.json",
+            "artisan", "composer.json", "composer.lock", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
             "app", "bootstrap", "config", "database", "public", "resources", "routes",
             "storage", "vendor", "deploy.php"
           )
