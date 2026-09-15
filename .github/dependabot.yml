@@ -8,7 +8,7 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-ignore:
+    ignore:
       # @typescript-eslint has no TypeScript 7 support yet - see AGENTS.md
       # "Known Blockers". Bumping to 7.x breaks the ESLint pipeline.
       - dependency-name: "typescript"
@@ -20,6 +20,10 @@ ignore:
         versions: [">=0.50.0"]
       - dependency-name: "@lexical/*"
         versions: [">=0.50.0"]
+      # cn is a required core peer (^0.2.6). App-level bumps to 0.3.x fail
+      # the check-core-deps parity gate. Platform controls the cn version.
+      - dependency-name: "cn"
+        versions: [">=0.3.0"]
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -27,7 +31,7 @@ ignore:
           - "minor"
           - "patch"
 
-  # Composer ecosystem intentionally removed — nreljed/* private VCS deps
+  # Composer ecosystem intentionally removed - nreljed/* private VCS deps
   # break dependabot auth, and package updates are handled by core-update.yml.
 
   # GitHub Actions themselves
