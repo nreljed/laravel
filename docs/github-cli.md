@@ -44,7 +44,7 @@ gh secret delete SECRET_NAME -R nreljed/laravel
 | ---------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
 | `APP_KEY`        | Laravel encryption key (`base64:...`)                                                                                 | `gh secret set APP_KEY -b "$(...)"`     |
 | `DEPLOY_TOKEN`   | Server-side deploy authentication (matches `app.deploy_token` in this server's `.env`)                                | `gh secret set DEPLOY_TOKEN -b "..."`   |
-| `GH_TOKEN`       | **ONE unified fine-grained PAT** covering all four repos (`laravel`, `laravel.shop`, `dashboard-core`, `shop-module`) | `gh secret set GH_TOKEN -b "..."`       |
+| `GH_TOKEN`       | **ONE unified fine-grained PAT** covering all seven repos (`laravel`, `laravel.shop`, `laravel.booking`, `platform`, `blog`, `shop-module`, `booking-module`) | `gh secret set GH_TOKEN -b "..."`       |
 | `DB_DATABASE`    | Production MySQL database                                                                                             | `gh secret set DB_DATABASE -b "..."`    |
 | `DB_USERNAME`    | Production MySQL user                                                                                                 | `gh secret set DB_USERNAME -b "..."`    |
 | `DB_PASSWORD`    | Production MySQL password                                                                                             | `gh secret set DB_PASSWORD -b "..."`    |
@@ -56,9 +56,9 @@ gh secret delete SECRET_NAME -R nreljed/laravel
 | `FTP_USERNAME`   | DirectAdmin FTP user (`laravel@tunispromo.tn`)                                                                        | `gh secret set FTP_USERNAME -b "..."`   |
 | `FTP_PASSWORD`   | DirectAdmin FTP password                                                                                              | `gh secret set FTP_PASSWORD -b "..."`   |
 
-> **Unified `GH_TOKEN` design**: Composer VCS-clones the private repos (`dashboard-core` +
+> **Unified `GH_TOKEN` design**: Composer VCS-clones the private package repos (`platform`, `blog`,
 > `shop-module`) in the same install, but `COMPOSER_AUTH` accepts only ONE token per host —
-> so a single fine-grained PAT covers all four repos and is stored as `GH_TOKEN` in BOTH
+> so a single fine-grained PAT covers all seven repos and is stored as `GH_TOKEN` in BOTH
 > `nreljed/laravel` and `nreljed/laravel.shop`, and in BOTH servers' `.env`. The deploy
 > workflow's "Push GITHUB_TOKEN to server .env" step keeps server copies fresh on every deploy.
 > Never create per-repo tokens; always reuse the one unified PAT.
@@ -136,19 +136,18 @@ gh workflow run deploy.yml
 gh run list --workflow=deploy.yml
 ```
 
-## Core Package Publish (this repo only)
+## Core Package Development (platform — separate repo)
 
-Pushing to `main` touching `packages/dashboard-core/**` triggers `core-publish.yml`:
-
-- Mirrors `packages/dashboard-core` → `nreljed/dashboard-core` (via `scripts/core-publish.php`, LF-normalized clone)
-- Bumps patch/minor (git-cliff), tags, and releases the package
-- Dispatches `core-updated` to consumers (Shop, Booking)
-
-Verify a publish:
+> The `packages/dashboard-core` subtree-split + `core-publish.yml` model is **gone** (2026-08-24).
+> `nreljed/platform` is the standalone product repo and the single source of truth. Develop core via
+> PRs in `nreljed/platform`; tag `vX.Y.Z` → core CI auto-creates the GitHub Release → dispatches
+> `core-updated` to consumers. Apps pull with `composer update nreljed/platform && npm run build`.
 
 ```bash
-gh run list --workflow=core-publish.yml -R nreljed/laravel   # run history
-gh release list -R nreljed/dashboard-core                     # published package tags
+gh pr create -R nreljed/platform            # develop in the platform clone
+gh release create vX.Y.Z -R nreljed/platform  # (or push a tag; CI auto-releases)
+gh run list --workflow=ci.yml -R nreljed/platform   # run history
+gh release list -R nreljed/platform                    # published platform tags
 ```
 
 ## Forking Checklist

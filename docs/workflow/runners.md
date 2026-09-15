@@ -36,14 +36,14 @@ The `|| 'self-hosted'` fallback means a missing/unset variable degrades safely t
 today's behavior (no job can silently land in the wrong place).
 
 **Reusable workflows (`workflow_call`)** resolve `vars` against the **calling**
-repo — `consumer-ci.yml` lives in `dashboard-core` but reads `RUNNER_CI` from the
+repo — `consumer-ci.yml` lives in `platform` but reads `RUNNER_CI` from the
 consumer (laravel/shop/booking), so each consumer must have the variable set.
 All 7 repos carry both variables.
 
 ## Current state (as of 2026-09-12)
 
 - `RUNNER_CI = self-hosted` and `RUNNER_PACKAGE = self-hosted` on **all** repos:
-  nreljed/laravel, laravel.shop, laravel.booking, dashboard-core, shop-module,
+  nreljed/laravel, laravel.shop, laravel.booking, platform, blog, shop-module,
   booking-module, Project-WP.
 - All `runs-on:` lines reference the vars (audited — zero literal `self-hosted`
   remain in workflow files).

@@ -4,8 +4,8 @@
 > [`runners.md`](runners.md) (runner placement: self-hosted default, cloud switch
 > via `RUNNER_CI`/`RUNNER_PACKAGE`), and the `deploy` skill
 > (`~/.config/opencode/skills/deploy/SKILL.md`). Server-side
-> `DeployController`/`DeployService`/`deploy:auto` all ship from `nreljed/dashboard-core`
-> (see `docs/core-dashboard-package.md` §7.1).
+> `DeployController`/`DeployService`/`deploy:auto` all ship from `nreljed/platform`
+> (see `docs/core-dashboard-package.md` §7.1 — the platform package section).
 
 ## CI/CD Pipeline
 
@@ -76,7 +76,7 @@ check/upload path cannot confirm a deploy.
 ## Endpoints
 
 All deploy endpoints are token-protected, CSRF-exempt, and rate-limited
-(5 requests per 1 minute per IP). Defined in `packages/dashboard-core/routes/web.php`.
+(5 requests per 1 minute per IP). Defined in `vendor/nreljed/platform/routes/web.php`.
 
 | Endpoint               | Method   | Purpose                                                                    |
 | ---------------------- | -------- | -------------------------------------------------------------------------- |
@@ -109,7 +109,7 @@ is required, so use with caution.
 | Secret                                                      | Purpose                                                                                 |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `DEPLOY_TOKEN`                                              | Per-repo, must match `config('app.deploy_token')` on that server                        |
-| `GH_TOKEN`                                                  | **ONE unified** fine-grained PAT (Contents: Read+Write on all 4 repos) — never per-repo |
+| `GH_TOKEN`                                                  | **ONE unified** fine-grained PAT (apps Read+Write, package repos Read) — never per-repo |
 | `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`               | Production MySQL                                                                        |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`             | Initial admin bootstrap                                                                 |
 | `FTP_SERVER` / `FTP_PORT` / `FTP_USERNAME` / `FTP_PASSWORD` | DirectAdmin FTP fallback (`laravel@tunispromo.tn`, home = project root)                 |
