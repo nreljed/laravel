@@ -102,16 +102,16 @@
   "prefer-stable": true,
   "repositories": [
     {
-      "type": "path",
-      "url": "../../packages/platform"
+      "type": "vcs",
+      "url": "https://github.com/nreljed/platform.git"
     },
     {
-      "type": "path",
-      "url": "../../packages/blog"
+      "type": "vcs",
+      "url": "https://github.com/nreljed/blog.git"
     },
     {
-      "type": "path",
-      "url": "../../packages/booking-module"
+      "type": "vcs",
+      "url": "https://github.com/nreljed/booking-module.git"
     }
   ]
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "959e9f014406729029e3005e955e3df4",
+    "content-hash": "3fe4c263495530754fdef8d46a06e6db",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3496,10 +3496,16 @@
         {
             "name": "nreljed/blog",
             "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/blog.git",
+                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../packages/blog",
-                "reference": "3dab020281c99d3123672b006755b5d41f9c0818"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -3538,17 +3544,21 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "transport-options": {
-                "relative": true
-            }
+            "time": "2026-09-12T20:22:01+00:00"
         },
         {
             "name": "nreljed/booking-module",
             "version": "0.1.39",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/booking-module.git",
+                "reference": "b5639230aeb8b3ef02669434f70a3e232d0f8378"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../packages/booking-module",
-                "reference": "aea67e057ca84ab5d29ab8e53fc1a90efd3aa079"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/booking-module/zipball/b5639230aeb8b3ef02669434f70a3e232d0f8378",
+                "reference": "b5639230aeb8b3ef02669434f70a3e232d0f8378",
+                "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -3588,17 +3598,25 @@
                 }
             ],
             "description": "Booking & properties feature for the Nreljed dashboard platform (property listings, availability calendar, bookings pipeline, guest portal, iCal sync, payments).",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/booking-module/tree/v0.1.39",
+                "issues": "https://github.com/nreljed/booking-module/issues"
+            },
+            "time": "2026-09-12T21:19:49+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.48",
+            "version": "0.1.49",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/platform.git",
+                "reference": "7a61346a54f7dbf56f876227e277181fc0047c72"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../packages/platform",
-                "reference": "bd4095273cc2e4599eff9dc31a77d5d92122322b"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/7a61346a54f7dbf56f876227e277181fc0047c72",
+                "reference": "7a61346a54f7dbf56f876227e277181fc0047c72",
+                "shasum": ""
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3642,9 +3660,7 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "transport-options": {
-                "relative": true
-            }
+            "time": "2026-09-15T13:25:45+00:00"
         },
         {
             "name": "nunomaduro/termwind",

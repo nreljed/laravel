@@ -10,16 +10,16 @@
   "license": "MIT",
   "repositories": [
     {
-      "type": "path",
-      "url": "../../packages/platform"
+      "type": "vcs",
+      "url": "https://github.com/nreljed/platform.git"
     },
     {
-      "type": "path",
-      "url": "../../packages/blog"
+      "type": "vcs",
+      "url": "https://github.com/nreljed/blog.git"
     },
     {
-      "type": "path",
-      "url": "../../packages/shop-module"
+      "type": "vcs",
+      "url": "https://github.com/nreljed/shop-module.git"
     }
   ],
   "require": {

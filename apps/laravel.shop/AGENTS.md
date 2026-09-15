@@ -18,8 +18,7 @@ This app is the live demo/deploy target for the **shop-module** package:
 | blog        | `nreljed/blog`        | `@nreljed/blog`        | Posts CMS                                |
 | shop-module | `nreljed/shop-module` | `@nreljed/shop-module` | E-commerce: products, orders, storefront |
 
-- All PHP packages resolve from **path repos** (`../../packages/*`) for local
-  dev; flip to VCS before production pushes.
+- All PHP packages resolve from **vcs repos** (`github.com/nreljed/*`); pinned by `composer.lock` as the standalone apps are.
 - Frontend resolves via **pnpm workspace symlinks** (`@nreljed/*`) — not vendor.
 - **Never edit `vendor/` or `packages/*` from this app** — package changes go
   through their own repos/PRs.

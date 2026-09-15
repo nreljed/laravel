@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5f8703fd204156a294579d2ea2ff0221",
+    "content-hash": "4320d2ca282be16fa0a582d7ceb0ba05",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3559,10 +3559,16 @@
         {
             "name": "nreljed/blog",
             "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/blog.git",
+                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../packages/blog",
-                "reference": "3dab020281c99d3123672b006755b5d41f9c0818"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "reference": "fbafc42f909a39721914d32ef60f02e7e52cc863",
+                "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -3601,17 +3607,25 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.0",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
+            "time": "2026-09-12T20:22:01+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.48",
+            "version": "0.1.49",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/platform.git",
+                "reference": "7a61346a54f7dbf56f876227e277181fc0047c72"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../packages/platform",
-                "reference": "bd4095273cc2e4599eff9dc31a77d5d92122322b"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/7a61346a54f7dbf56f876227e277181fc0047c72",
+                "reference": "7a61346a54f7dbf56f876227e277181fc0047c72",
+                "shasum": ""
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3655,17 +3669,25 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.49",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
+            "time": "2026-09-15T13:25:45+00:00"
         },
         {
             "name": "nreljed/shop-module",
             "version": "0.1.39",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/shop-module.git",
+                "reference": "e7f6950b6d37e4b081b40aad70890d7613f13fc3"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../packages/shop-module",
-                "reference": "390f75f53b40f5e5e474fe12ce678611ae2ec726"
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/e7f6950b6d37e4b081b40aad70890d7613f13fc3",
+                "reference": "e7f6950b6d37e4b081b40aad70890d7613f13fc3",
+                "shasum": ""
             },
             "require": {
                 "barryvdh/laravel-dompdf": "^3.1",
@@ -3706,9 +3728,11 @@
                 }
             ],
             "description": "E-commerce shop feature for the Nreljed dashboard platform (products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks, storefront).",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/nreljed/shop-module/tree/v0.1.39",
+                "issues": "https://github.com/nreljed/shop-module/issues"
+            },
+            "time": "2026-09-12T21:19:49+00:00"
         },
         {
             "name": "nunomaduro/termwind",

@@ -21,8 +21,7 @@ This app is the live demo/deploy target for the **booking-module** package:
 - **booking-module ships two sub-domains** with two providers and two page kits:
   - `Nreljed\BookingModule\Booking\BookingServiceProvider` → `@nreljed/booking-module/booking/*`
   - `Nreljed\BookingModule\Properties\PropertiesServiceProvider` → `@nreljed/booking-module/properties/*`
-- All PHP packages resolve from **path repos** (`../../packages/*`) for local
-  dev; flip to VCS before production pushes.
+- All PHP packages resolve from **vcs repos** (`github.com/nreljed/*`); pinned by `composer.lock` as the standalone apps are.
 - Frontend resolves via **pnpm workspace symlinks** (`@nreljed/*`) — not vendor.
 - **Never edit `vendor/` or `packages/*` from this app** — package changes go
   through their own repos/PRs.
