@@ -1,5 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
-import PublicLayout from "@/Layouts/PublicLayout";
+import PublicLayout from "../../../../js/Layouts/PublicLayout";
 
 export default function Welcome() {
   const { props } = usePage();

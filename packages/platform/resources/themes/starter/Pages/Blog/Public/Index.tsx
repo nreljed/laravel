@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import PublicLayout from "@/Layouts/PublicLayout";
-import { Badge } from "@/Components/ui/badge";
-import PaginationLinks from "@/Components/shared/pagination-links";
+import PublicLayout from "../../../../../js/Layouts/PublicLayout";
+import { Badge } from "../../../../../js/Components/ui/badge";
+import PaginationLinks from "../../../../../js/Components/shared/pagination-links";
 
 interface Author {
   id: number;

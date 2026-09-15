@@ -1,11 +1,11 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useEffect } from "react";
 import { Eye, Pencil } from "lucide-react";
-import PublicLayout from "@/Layouts/PublicLayout";
-import { Badge } from "@/Components/ui/badge";
-import ProseContent from "@/Components/blog/ProseContent";
-import { useAuth } from "@/hooks/use-auth";
-import { highlightAllCodeBlocks } from "@/lib/shiki-highlight";
+import PublicLayout from "../../../../../js/Layouts/PublicLayout";
+import { Badge } from "../../../../../js/Components/ui/badge";
+import ProseContent from "../../../../../js/Components/blog/ProseContent";
+import { useAuth } from "../../../../../js/hooks/use-auth";
+import { highlightAllCodeBlocks } from "../../../../../js/lib/shiki-highlight";
 
 interface Author {
   id: number;
