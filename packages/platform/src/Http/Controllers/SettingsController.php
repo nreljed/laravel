@@ -19,6 +19,7 @@ use Nreljed\Platform\Models\IpAccessRule;
 use Nreljed\Platform\Models\Role;
 use Nreljed\Platform\Services\AuditService;
 use Nreljed\Platform\Services\DatabaseMaintenanceService;
+use Nreljed\Platform\Services\EmailSettingsService;
 use Nreljed\Platform\Services\NotificationTypeRegistry;
 use Nreljed\Platform\Services\SettingsService;
 
@@ -89,7 +90,23 @@ class SettingsController extends Controller
 
     public function email(): Response
     {
-        return $this->renderPage('dashboard/admin/settings/email');
+        $emailSettings = [];
+        $emailTemplates = [];
+
+        try {
+            $emailSettings = app(EmailSettingsService::class)->forFrontend();
+        } catch (\Exception) {
+        }
+
+        try {
+            $emailTemplates = app(EmailSettingsController::class)->getTemplates();
+        } catch (\Throwable) {
+        }
+
+        return $this->renderPage('dashboard/admin/settings/email', [
+            'emailSettings' => $emailSettings,
+            'emailTemplates' => $emailTemplates,
+        ]);
     }
 
     public function maintenance(): Response

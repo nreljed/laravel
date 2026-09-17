@@ -4,12 +4,11 @@ namespace Nreljed\Platform\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\AlwaysProp;
+use Inertia\Inertia;
 use Inertia\Middleware;
-use Nreljed\Platform\Http\Controllers\EmailSettingsController;
 use Nreljed\Platform\Models\Notification;
 use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Services\DatabaseMaintenanceService;
-use Nreljed\Platform\Services\EmailSettingsService;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Nreljed\Platform\Services\NotificationService;
 use Nreljed\Platform\Services\PermissionCacheService;
@@ -114,9 +113,7 @@ class HandleInertiaRequests extends Middleware
                     }
                 },
             ],
-            'modules' => $this->getModules(...),
-            'emailSettings' => $this->getEmailSettings(...),
-            'emailTemplates' => $this->getEmailTemplates(...),
+            'modules' => Inertia::optional($this->getModules(...)),
             'brand' => [
                 'logo' => fn () => self::safeSetting('app_logo', ''),
                 'favicon' => fn () => self::safeSetting('app_favicon', ''),
@@ -218,15 +215,6 @@ class HandleInertiaRequests extends Middleware
         }
     }
 
-    protected function getEmailSettings(): array
-    {
-        try {
-            return app(EmailSettingsService::class)->forFrontend();
-        } catch (\Exception) {
-            return [];
-        }
-    }
-
     private function getUserCapabilities($user): array
     {
         $slugs = [];
@@ -249,15 +237,6 @@ class HandleInertiaRequests extends Middleware
             'isAdmin' => $user->isAdmin(),
             'can' => $permissions,
         ];
-    }
-
-    protected function getEmailTemplates(): array
-    {
-        try {
-            return app(EmailSettingsController::class)->getTemplates();
-        } catch (\Throwable) {
-            return [];
-        }
     }
 
     protected static function safeSetting(string $key, mixed $default = null): mixed
