@@ -1,8 +1,11 @@
 # Blog Feature
 
-`Nreljed\Platform\Blog` is the in-core example of a self-contained feature provider —
-registered in `config/features.php` `providers` by default. Use it as the reference for building a
-new feature (see [Feature Provider](feature-provider.md)).
+`Nreljed\Blog` is the self-contained blog feature provider shipped as the
+[`nreljed/blog`](https://github.com/nreljed/blog) package (slug `posts`).
+Consuming apps register `BlogServiceProvider` in `config/features.php`
+`providers` (and `bootstrap/providers.php`); it is the reference
+`FeatureProvider` for building a new feature (see
+[Feature Provider](feature-provider.md)).
 
 ## Models
 

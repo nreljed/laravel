@@ -32,7 +32,7 @@ class SeoGenerationController extends Controller
             return response()->json(['seo' => $seo]);
         } catch (MissingAiProviderException) {
             return response()->json([
-                'message' => 'No AI provider configured. Please add an API key in Account â†’ AI Keys.',
+                'message' => 'No AI provider configured. Please add an API key in Account → AI Keys.',
             ], 422);
         }
     }
