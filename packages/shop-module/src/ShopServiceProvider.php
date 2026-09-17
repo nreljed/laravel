@@ -2,7 +2,10 @@
 
 namespace Nreljed\ShopModule;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -47,6 +50,11 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
 
     public function boot(): void
     {
+        // Limiters are registered in boot(): RateLimiter::for() resolves the
+        // cache facade, which must not happen during the provider register()
+        // phase (cache bindings aren't available until all providers register).
+        $this->configureRateLimiting();
+
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'shop');
 
@@ -62,6 +70,25 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             Commands\ReleaseExpiredHolds::class,
             Commands\ShopProductSeed::class,
         ]);
+
+        // Stripe posts webhooks without a CSRF token — authenticity is the
+        // cryptographic Stripe-Signature header (StripeService::verifyWebhook).
+        PreventRequestForgery::except(['store/webhook/stripe']);
+    }
+
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('store', function () {
+            return Limit::perMinute((int) config('shop.rate_limiting.store', 60))->by('ip');
+        });
+
+        RateLimiter::for('store-mutations', function () {
+            return Limit::perMinute((int) config('shop.rate_limiting.mutations', 30))->by('ip');
+        });
+
+        RateLimiter::for('store-webhook', function () {
+            return Limit::perMinute((int) config('shop.rate_limiting.webhook', 10))->by('ip');
+        });
     }
 
     protected function loadRoutes(): void
@@ -81,8 +108,8 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ->prefix('/admin/shop')->name('admin.shop.')
             ->group(__DIR__.'/Routes/admin.php');
 
-        // Public storefront / guest routes (no auth)
-        Route::middleware(['web'])
+        // Public storefront / guest routes (no auth) — base rate limit on the surface
+        Route::middleware(['web', 'throttle:store'])
             ->group(function () {
                 $p = __DIR__.'/Routes/';
                 require $p.'store-checkout.php';

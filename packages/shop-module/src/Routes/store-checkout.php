@@ -5,13 +5,13 @@ use Nreljed\ShopModule\Http\Controllers\CheckoutController;
 use Nreljed\ShopModule\Http\Controllers\StripeWebhookController;
 
 Route::get('/store/checkout', [CheckoutController::class, 'index'])->name('store.checkout.index');
-Route::post('/store/checkout', [CheckoutController::class, 'store'])->name('store.checkout.store');
+Route::post('/store/checkout', [CheckoutController::class, 'store'])->name('store.checkout.store')->middleware('throttle:store-mutations');
 Route::get('/store/checkout/confirmation/{order}', [CheckoutController::class, 'confirmation'])->name('store.checkout.confirmation');
-Route::post('/store/checkout/payment-intent', [CheckoutController::class, 'createPaymentIntent'])->name('store.checkout.payment-intent');
+Route::post('/store/checkout/payment-intent', [CheckoutController::class, 'createPaymentIntent'])->name('store.checkout.payment-intent')->middleware('throttle:store-mutations');
 
 // Guest registration from order (signed URL)
 Route::get('/store/order/{order}/register', [CheckoutController::class, 'registerFromOrder'])->name('store.checkout.register-from-order');
-Route::post('/store/order/{order}/register', [CheckoutController::class, 'storeRegisterFromOrder'])->name('store.checkout.store-register');
+Route::post('/store/order/{order}/register', [CheckoutController::class, 'storeRegisterFromOrder'])->name('store.checkout.store-register')->middleware('throttle:store-mutations');
 
-// Stripe webhook (no auth)
-Route::post('/store/webhook/stripe', [StripeWebhookController::class, 'handle'])->name('store.webhook.stripe');
+// Stripe webhook (no auth, CSRF-exempt, signature-verified, tight rate limit)
+Route::post('/store/webhook/stripe', [StripeWebhookController::class, 'handle'])->name('store.webhook.stripe')->middleware('throttle:store-webhook');

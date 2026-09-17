@@ -39,6 +39,15 @@ return [
         'default_country' => env('CHECKOUT_DEFAULT_COUNTRY', ''),
     ],
 
+    'rate_limiting' => [
+        // Baseline for the guest storefront surface (browse pages).
+        'store' => (int) env('STORE_RATE_LIMIT', 60),
+        // Cart/checkout/wishlist/notify mutations.
+        'mutations' => (int) env('STORE_MUTATIONS_RATE_LIMIT', 30),
+        // Stripe webhook intake (signature-verified, server-to-server).
+        'webhook' => (int) env('STORE_WEBHOOK_RATE_LIMIT', 10),
+    ],
+
     'tax' => [
         'prices_include_tax' => env('SHOP_PRICES_INCLUDE_TAX', false),
         'based_on' => env('SHOP_TAX_BASED_ON', 'billing'),
