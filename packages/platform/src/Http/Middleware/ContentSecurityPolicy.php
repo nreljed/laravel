@@ -17,12 +17,18 @@ class ContentSecurityPolicy
 
         $response = $next($request);
 
-        if (! app()->environment('production')) {
+        // Skip only in local development unless explicitly enabled (e.g. staging
+        // and other non-prod environments still get the policy). In production it
+        // always applies.
+        if (app()->environment('local') && ! config('core.csp_enabled', false)) {
             return $response;
         }
 
         $csp = $this->buildPolicy($nonce);
         $response->headers->set('Content-Security-Policy', $csp);
+
+        $endpoint = config('app.url').'/csp-report';
+        $response->headers->set('Reporting-Endpoints', sprintf('csp-endpoint="%s"', $endpoint));
 
         return $response;
     }
@@ -44,7 +50,7 @@ class ContentSecurityPolicy
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
-            'report-uri /csp-report',
+            'report-to csp-endpoint',
         ];
 
         return implode('; ', $directives);

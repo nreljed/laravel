@@ -46,6 +46,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Content Security Policy
+    |--------------------------------------------------------------------------
+    |
+    | The CSP middleware sends the Content-Security-Policy header everywhere
+    | except local development, where it is skipped unless this flag is on.
+    | Set CSP_ENABLED=true to force the policy in local (or any) environment.
+    |
+    */
+
+    'csp_enabled' => env('CSP_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Health Git Status Exclude
     |--------------------------------------------------------------------------
     |

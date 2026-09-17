@@ -61,7 +61,13 @@ require __DIR__.'/../src/Deploy/Routes/web.php';
 // CSP Report Endpoint — receives violation reports
 // ═══════════════════════════════════════════════════
 Route::post('/csp-report', function (Request $request) {
-    report(new Exception('CSP Violation: '.$request->input('csp-report.effective-directive', 'unknown')));
+    $body = $request->input('body', $request->input('csp-report', []));
+
+    $directive = data_get($body, 'effectiveDirective')
+        ?? data_get($body, 'effective-directive')
+        ?? 'unknown';
+
+    report(new Exception('CSP Violation: '.$directive));
 
     return response()->json(['status' => 'ok']);
 })->middleware('throttle:30,1')->name('csp.report');
