@@ -17,6 +17,7 @@
     "paths": {
       "@nreljed/blog/*": ["./packages/blog/src/Resources/js/*"],
       "@nreljed/platform/*": ["./packages/platform/resources/js/*"],
+      "@nreljed/platform/themes/*": ["./packages/platform/resources/themes/*"],
       "@test-posts": ["./app/TestPosts/Resources/js"],
       "@test-posts/*": ["./app/TestPosts/Resources/js/*"]
     }

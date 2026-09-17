@@ -38,8 +38,19 @@ createFoundationApp(config);
 ```
 
 Routes + controllers stay in core (they render `public/*`, `dashboard/*`, …) — only the page
-component swaps. Feature packages register their pages via `import.meta.glob("@shop/Pages/**/*.tsx")`
-with `projectPrefix: "shop"` (see the Shop package docs).
+component swaps. Feature packages register their own admin page kits via their registry
+exports (`@nreljed/blog/pages` → `registerBlogPages()`, `@nreljed/shop-module/pages` →
+`registerShopPages()`, …); their **public/template pages are theme-owned and ship in the
+starter theme or the app, never in the module**.
+
+### Starter Theme (fork-me)
+
+`@nreljed/platform/themes/starter` exports `registerStarterThemePages()` — the opt-in,
+**never auto-registered** template kit (public marketing + `blog/public/*`). Consuming apps
+either spread it into `basePages`, or fork the `Pages/` tree into the project (the normal
+path, see `resources/themes/starter/README.md`). Public pages **must never** be added to the
+core `resources/js/Pages` kit — that table is a contract (see
+`tests/FrontendPageInventoryContractTest.php`).
 
 ## Directory Layout
 
@@ -68,15 +79,22 @@ resources/js/
 
 ## Core Page Kit (`Pages/`)
 
-| Area        | Pages                                                                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Auth        | `Auth/{Login,Register,RegisterClosed,Forgot-Password,Reset-Password,Verify-Email,Confirm-Password,Email-Verified}`                                                                                                                    |
-| Dashboard   | `dashboard/{index,stats}`, `dashboard/notifications/{index,quick-send-section,system-status-cards,test}`                                                                                                                              |
-| Account     | `dashboard/account/{profile,security,notifications,advanced,integrations}`                                                                                                                                                            |
-| Admin       | `dashboard/admin/{users/{index,form,sessions},roles/{index,form},permissions/manage,audit-logs/index,settings/{general,security,registration,email,notifications,maintenance,ip-access,dev},system-health,database-maintenance,logs}` |
-| Public blog | `Blog/Public/{Index,Show}`                                                                                                                                                                                                            |
-| Developer   | `dashboard/developer/style-guide`                                                                                                                                                                                                     |
-| Errors      | `Error.tsx`                                                                                                                                                                                                                           |
+| Area      | Pages                                                                                                                                                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth      | `Auth/{Login,Register,RegisterClosed,Forgot-Password,Reset-Password,Verify-Email,Confirm-Password,Email-Verified}`                                                                                                                    |
+| Dashboard | `dashboard/{index,stats}`, `dashboard/notifications/{index,quick-send-section,system-status-cards,test}`                                                                                                                              |
+| Account   | `dashboard/account/{profile,security,notifications,advanced,integrations}`                                                                                                                                                            |
+| Admin     | `dashboard/admin/{users/{index,form,sessions},roles/{index,form},permissions/manage,audit-logs/index,settings/{general,security,registration,email,notifications,maintenance,ip-access,dev},system-health,database-maintenance,logs}` |
+| Developer | `dashboard/developer/style-guide`                                                                                                                                                                                                     |
+| Errors    | `Error.tsx`                                                                                                                                                                                                                           |
+
+> **Theme-owned pages are NOT core pages.** `public/*` (welcome/about/
+> services/contact), `blog/public/*` (Index/Show), and `shop/storefront/*`
+> are **project-owned overrides** — they live in the app's `resources/js/Pages`
+> (or the fork-me starter theme, `@nreljed/platform/themes/starter`), never in
+> core `resources/js/Pages`. The platform only ships the control-panel kit
+> above; controllers still render `public/*`, `blog/*`, `shop/storefront/*`
+> and the app swaps the page component via `pageOverrides`.
 
 ## Key Patterns
 
