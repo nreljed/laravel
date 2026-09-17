@@ -244,11 +244,25 @@ jobs:
         # Creating the release here (instead of uploading an Actions artifact)
         # keeps deploy.zip in release storage, which is NOT billed against the
         # 0.5GB Actions artifact quota that kept failing on the free plan.
-        uses: softprops/action-gh-release@v3
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          tag_name: "v${{ steps.version.outputs.version }}"
-          name: "v${{ steps.version.outputs.version }}"
-          body_path: release-notes.md
-          files: deploy.zip
-          fail_on_unmatched_files: true
+        #
+        # Use `gh` CLI instead of softprops/action-gh-release: GitHub's
+        # uploads.github.com began rejecting the action's streamed upload body
+        # ("Error creating asset temp dir") on 2026-09-17, while gh's
+        # Content-Length upload succeeds. On a failed rerun, the tag/release
+        # may already exist with 0 or partial assets, so delete and recreate.
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          $VER = "v${{ steps.version.outputs.version }}"
+          if (-not (Test-Path deploy.zip)) {
+            throw "deploy.zip does not exist - create it before releasing"
+          }
+          gh release create $VER deploy.zip --title $VER --notes-file release-notes.md *> $null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "Release $VER already exists (prior failed run) - deleting and recreating"
+            gh release delete $VER --yes --cleanup-tag 2>$null
+            gh release create $VER deploy.zip --title $VER --notes-file release-notes.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed (exit $LASTEXITCODE)" }
+          Write-Output "Release ready: https://github.com/${{ github.repository }}/releases/tag/$VER"
