@@ -1,12 +1,13 @@
 {
   "name": "@nreljed/platform",
-  "version": "0.1.48",
+  "version": "0.1.50",
   "description": "SaaS platform kernel — React frontend for Laravel dashboards, admin panels, auth, settings, media, deploy, and AI.",
   "license": "proprietary",
   "type": "module",
   "exports": {
     "./app": "./resources/js/app.tsx",
     "./dashboard": "./resources/js/dashboard.ts",
+    "./themes/*": "./resources/themes/*",
     "./*": "./resources/js/*"
   },
   "peerDependencies": {
