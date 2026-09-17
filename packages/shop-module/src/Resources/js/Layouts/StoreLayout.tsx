@@ -1,9 +1,23 @@
 import { PropsWithChildren } from "react";
 import { SiteFooter } from "@nreljed/platform/Components/frontend/SiteFooter";
+import { resolveStorefrontLayout } from "@nreljed/platform/lib/storefront-layout";
 import { StoreHeader } from "../components/StoreHeader";
 import CurrencySwitcher from "../components/CurrencySwitcher";
 
+/**
+ * The storefront layout seam. Pages in this module import this component
+ * (unchanged); it defers to the chrome a white-label app registered via
+ * `registerStorefrontLayout()` (their own `Layouts/StoreLayout.tsx`), falling
+ * back to the module's default store chrome (currency topbar + store header +
+ * footer) when none is registered.
+ */
 export default function StoreLayout({ children }: PropsWithChildren) {
+  const AppLayout = resolveStorefrontLayout();
+
+  if (AppLayout) {
+    return <AppLayout>{children}</AppLayout>;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <div className="border-b bg-muted/40">
