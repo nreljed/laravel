@@ -7,6 +7,8 @@ use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Admin\AuditLogController;
 use Nreljed\Platform\Http\Controllers\Admin\BulkUserController;
 use Nreljed\Platform\Http\Controllers\Admin\DatabaseMaintenanceController;
+use Nreljed\Platform\Http\Controllers\Admin\DeployHistoryController;
+use Nreljed\Platform\Http\Controllers\Admin\DeployStatusController;
 use Nreljed\Platform\Http\Controllers\Admin\FeatureController;
 use Nreljed\Platform\Http\Controllers\Admin\ImpersonationController;
 use Nreljed\Platform\Http\Controllers\Admin\IpAccessRuleController;
@@ -191,6 +193,21 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
         Route::get('/database', [DatabaseMaintenanceController::class, 'index'])->name('database');
         Route::post('/database/reset', [DatabaseMaintenanceController::class, 'reset'])->name('database.reset');
         Route::post('/database/reseed', [DatabaseMaintenanceController::class, 'reseed'])->name('database.reseed');
+    });
+
+    // Deploy history (read-only releases list) - env-gated at controller level, permission-gated
+    Route::middleware('permission:manage-deploy-history')->group(function () {
+        Route::prefix('/deploy')->name('deploy.')->group(function () {
+            Route::get('/history', [DeployHistoryController::class, 'index'])->name('history');
+        });
+
+        // Deploy status (live progress + health poll) - permission-gated, env-gated at controller level
+        Route::middleware('permission:view-deploy-status')->group(function () {
+            Route::prefix('/deploy')->name('deploy.')->group(function () {
+                Route::get('/status', [DeployStatusController::class, 'index'])->name('status');
+                Route::get('/status/data', [DeployStatusController::class, 'check'])->name('status.data');
+            });
+        });
     });
 
     // Settings (general, registration, notifications, security, branding, IP rules)
