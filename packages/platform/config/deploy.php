@@ -67,6 +67,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Full .env Overwrite
+    |--------------------------------------------------------------------------
+    |
+    | The DANGEROUS `/deploy/env`-style full-content overwrite (`updateEnv`)
+    | is not routed and is additionally locked behind this opt-in flag. Flip
+    | it only if a future pipeline genuinely needs to replace the whole file;
+    | the values-based endpoint (`updateEnvValues`) is the supported path.
+    |
+    */
+
+    'allow_full_env_overwrite' => env('DEPLOY_ALLOW_FULL_ENV_OVERWRITE', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Deploy Marker Paths
     |--------------------------------------------------------------------------
     |

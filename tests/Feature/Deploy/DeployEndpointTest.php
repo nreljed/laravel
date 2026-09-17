@@ -172,4 +172,26 @@ class DeployEndpointTest extends TestCase
         $this->assertNotNull($admin);
         $this->assertTrue($admin->isAdmin());
     }
+
+    public function test_env_values_rejects_reserved_keys(): void
+    {
+        $response = $this->postJson('/deploy/env', [
+            'token' => $this->token,
+            'values' => ['APP_DEBUG' => 'true'],
+        ]);
+
+        $response->assertStatus(403);
+        $response->assertJson(['error' => 'Setting APP_DEBUG cannot be modified via this endpoint.']);
+    }
+
+    public function test_env_values_rejects_session_lifetime_key(): void
+    {
+        $response = $this->postJson('/deploy/env', [
+            'token' => $this->token,
+            'values' => ['SESSION_LIFETIME' => '1'],
+        ]);
+
+        $response->assertStatus(403);
+        $response->assertJson(['error' => 'Setting SESSION_LIFETIME cannot be modified via this endpoint.']);
+    }
 }

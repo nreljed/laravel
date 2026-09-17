@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Nreljed\Platform\Deploy\Middleware\VerifyDeployToken;
 use Nreljed\Platform\Http\Middleware\AdminMiddleware;
 use Nreljed\Platform\Http\Middleware\CheckIpAccess;
 use Nreljed\Platform\Http\Middleware\CheckMaintenanceMode;
@@ -202,6 +203,7 @@ class PlatformServiceProvider extends ServiceProvider
         $router->aliasMiddleware('maintenance', CheckMaintenanceMode::class);
         $router->aliasMiddleware('session-lifetime', ConfigureSessionLifetime::class);
         $router->aliasMiddleware('ip-access', CheckIpAccess::class);
+        $router->aliasMiddleware('deploy-token', VerifyDeployToken::class);
 
         $webMiddleware = [
             ConfigureSessionLifetime::class,
@@ -220,9 +222,6 @@ class PlatformServiceProvider extends ServiceProvider
         PreventRequestForgery::except([
             'dashboard/account/avatar',
             'deploy/*',
-            'api/notifications/unread-count',
-            'api/notifications/recent',
-            'api/notifications/',
             'csp-report',
         ]);
     }

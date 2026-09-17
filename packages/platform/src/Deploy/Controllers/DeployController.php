@@ -14,14 +14,15 @@ class DeployController extends Controller
 {
     public function __construct(private readonly DeployService $deployService) {}
 
-    protected function verifyToken(Request $request): void
+    /**
+     * Environment keys that must never be mutated through the deploy endpoints.
+     * Covers the app secret, the deploy token itself, and app-semantics keys
+     * CI workflows cannot legitimately need to push (CI only pushes
+     * GITHUB_TOKEN via updateEnvValues).
+     */
+    protected function forbiddenEnvKeys(): array
     {
-        $token = $request->input('token');
-        $expected = config('deploy.token');
-
-        if (! $expected || ! hash_equals((string) $expected, (string) $token)) {
-            abort(403, 'Invalid or missing deploy token.');
-        }
+        return ['APP_KEY', 'DEPLOY_TOKEN', 'APP_DEBUG', 'SESSION_ENCRYPT', 'SESSION_LIFETIME'];
     }
 
     /**
@@ -70,7 +71,10 @@ class DeployController extends Controller
 
     public function updateEnv(Request $request)
     {
-        $this->verifyToken($request);
+
+        if (! config('deploy.allow_full_env_overwrite', false)) {
+            return response()->json(['error' => 'Full .env overwrite is disabled.'], 403);
+        }
 
         $content = $request->input('content');
 
@@ -87,8 +91,7 @@ class DeployController extends Controller
             return response()->json(['error' => 'Content exceeds maximum allowed lines (200)'], 400);
         }
 
-        $forbiddenKeys = ['APP_KEY', 'DEPLOY_TOKEN'];
-        foreach ($forbiddenKeys as $key) {
+        foreach ($this->forbiddenEnvKeys() as $key) {
             if (preg_match('/^'.preg_quote($key, '/').'\s*=/m', $content)) {
                 return response()->json(['error' => "Setting {$key} cannot be modified via this endpoint."], 403);
             }
@@ -107,7 +110,6 @@ class DeployController extends Controller
 
     public function updateEnvValues(Request $request)
     {
-        $this->verifyToken($request);
 
         $values = $request->input('values');
 
@@ -115,7 +117,6 @@ class DeployController extends Controller
             return response()->json(['error' => 'No values provided'], 400);
         }
 
-        $forbiddenKeys = ['APP_KEY', 'DEPLOY_TOKEN'];
         $safe = [];
 
         foreach ($values as $key => $value) {
@@ -123,7 +124,7 @@ class DeployController extends Controller
             if ($key === '' || preg_match('/\s/', $key)) {
                 return response()->json(['error' => "Invalid environment key: {$key}"], 400);
             }
-            if (in_array($key, $forbiddenKeys, true)) {
+            if (in_array($key, $this->forbiddenEnvKeys(), true)) {
                 return response()->json(['error' => "Setting {$key} cannot be modified via this endpoint."], 403);
             }
             $safe[$key] = $value === null ? '' : (string) $value;
@@ -168,7 +169,7 @@ class DeployController extends Controller
 
     public function cacheClear(Request $request)
     {
-        $this->verifyToken($request);
+
         set_time_limit(300);
 
         $output = [];
@@ -216,7 +217,7 @@ class DeployController extends Controller
 
     public function migrate(Request $request)
     {
-        $this->verifyToken($request);
+
         set_time_limit(120);
 
         $output = [];
@@ -235,7 +236,7 @@ class DeployController extends Controller
 
     public function resetDatabase(Request $request, DatabaseMaintenanceService $service)
     {
-        $this->verifyToken($request);
+
         set_time_limit(300);
 
         if ($request->input('confirm') !== 'RESET') {
@@ -257,7 +258,7 @@ class DeployController extends Controller
 
     public function createAdmin(Request $request)
     {
-        $this->verifyToken($request);
+
         set_time_limit(60);
 
         $password = $request->input('password');
@@ -285,7 +286,7 @@ class DeployController extends Controller
 
     public function upload(Request $request)
     {
-        $this->verifyToken($request);
+
         set_time_limit(300);
 
         if (! $request->hasFile('file')) {
@@ -433,7 +434,6 @@ class DeployController extends Controller
 
     public function check(Request $request)
     {
-        $this->verifyToken($request);
 
         // If a file was uploaded directly (CI fallback), bypass GitHub API entirely
         if ($request->hasFile('file')) {
