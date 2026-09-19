@@ -79,8 +79,6 @@ class ConfigRoleCatalogTest extends TestCase
             'manage-audit-logs',
             'export-audit-logs',
             'manage-email-settings',
-            'manage-deploy-history',
-            'view-deploy-status',
         ];
 
         foreach (Permission::pluck('slug') as $slug) {
