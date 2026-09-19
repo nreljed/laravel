@@ -100,7 +100,6 @@ final class NotificationTypeRegistryTest extends TestCase
 
     /**
      * @param  array<int, mixed>  $args
-     * @return mixed
      */
     private function invokeProtected(string $method, array $args): mixed
     {

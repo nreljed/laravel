@@ -1,7 +1,7 @@
 <?php
 
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Nreljed\Platform\PublicSite\Controllers\PublicController;
 
 /*
