@@ -1,6 +1,15 @@
 import { Link, usePage } from "@inertiajs/react";
 import { cn } from "../../lib/utils";
-import { User, Shield, Bell, Puzzle, AlertTriangle, Menu, type LucideIcon } from "lucide-react";
+import {
+  User,
+  Shield,
+  Bell,
+  Puzzle,
+  AlertTriangle,
+  Database,
+  Menu,
+  type LucideIcon,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Button } from "../ui/button";
 
@@ -36,7 +45,10 @@ const NAV_ITEMS: NavCategory[] = [
   },
   {
     label: "Account",
-    items: [{ icon: AlertTriangle, label: "Advanced", route: "dashboard.account.page.advanced" }],
+    items: [
+      { icon: Database, label: "Backup & Restore", route: "dashboard.account.page.data" },
+      { icon: AlertTriangle, label: "Advanced", route: "dashboard.account.page.advanced" },
+    ],
   },
 ];
 
@@ -47,6 +59,7 @@ function getActiveRoute(url: string): string {
   if (url.includes("/security")) return "dashboard.account.page.security";
   if (url.includes("/notifications")) return "dashboard.account.page.notifications";
   if (url.includes("/integrations")) return "dashboard.account.page.integrations";
+  if (url.includes("/data")) return "dashboard.account.page.data";
   if (url.includes("/advanced")) return "dashboard.account.page.advanced";
   return "dashboard.account.page.profile";
 }

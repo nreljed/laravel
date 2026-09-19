@@ -21,13 +21,16 @@ final class FeatureProviderContractTest extends TestCase
     public function test_interface_declares_the_full_capability_surface(): void
     {
         $expected = [
+            'dataBackupSummary',
             'dependencies',
             'description',
             'enabled',
+            'exportDataBackup',
             'getAnalyticsSeries',
             'getComposerPackage',
             'getContentDescription',
             'getDashboardData',
+            'getDataBackupCapabilities',
             'getDeactivationNotice',
             'getEmailTemplates',
             'getGalleryConfig',
@@ -48,6 +51,7 @@ final class FeatureProviderContractTest extends TestCase
             'getSharedData',
             'getSitemapUrls',
             'hasSettings',
+            'importDataBackup',
             'name',
             'onDisable',
             'onUserDelete',

@@ -8,8 +8,9 @@ features, custom dashboard pages).
 - **Namespace:** `Nreljed\Platform`
 - **Package:** `nreljed/platform`
 - **Source:** [`nreljed/platform`](https://github.com/nreljed/platform)
-- **Features:** Blog (`Nreljed\Platform\Blog`) ships in-core; the Shop feature is a
-  separate package (`nreljed/shop-module`, see its own `docs/`)
+- **Features:** Blog ships as a separate package (`nreljed/blog`, see its own
+  `docs/`); Shop and Booking are also separate packages (`nreljed/shop-module`,
+  `nreljed/booking-module`). This package owns the platform kernel only.
 
 ## Modules
 
@@ -37,7 +38,8 @@ features, custom dashboard pages).
    `tsconfig.json`, Tailwind `@source`, and `registerCoreTemplates()` in the app's `app.tsx`
    (see [Frontend](frontend.md)).
 5. Register feature providers in `config/features.php` `providers`, then
-   `php artisan permissions:sync`.
+   `php artisan db:seed --class=RolesAndPermissionsSeeder` to grant their
+   permissions to roles.
 
 ## Config
 

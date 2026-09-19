@@ -2,7 +2,9 @@
 
 namespace Nreljed\Platform\Contracts;
 
+use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Support\ContentDescription;
+use Nreljed\Platform\Support\DataBackupCapability;
 use Nreljed\Platform\Support\SettingsSection;
 
 /**
@@ -199,4 +201,45 @@ interface FeatureProvider
      * functionality is unavailable. Return null for no notice.
      */
     public function getDeactivationNotice(): ?string;
+
+    /**
+     * Return the data backup capabilities this feature exposes to the account
+     * "Data" area. Each capability declares one module the user can back up
+     * and/or restore, e.g. `new DataBackupCapability('posts', 'Posts, categories and tags')`.
+     *
+     * The account Data page aggregates these from every enabled provider so
+     * users can see exactly which modules support backup and which support
+     * restore. Behaviour lives in exportDataBackup() / importDataBackup().
+     *
+     * @return array<int, DataBackupCapability>
+     */
+    public function getDataBackupCapabilities(): array;
+
+    /**
+     * Build the user-owned data payload for the given capability key, ready
+     * to be serialized into a downloadable backup file.
+     *
+     * Implementations MUST scope strictly to the authenticated user's own
+     * records so a backup only ever contains that user's data.
+     *
+     * @return array<string, mixed> data payload (usually a list of records)
+     */
+    public function exportDataBackup(string $key, User $user): array;
+
+    /**
+     * Replace this user's data for the given capability key with the
+     * contents of a previously exported backup file. The provider decides
+     * what "replace" means for its records (e.g. restore owned rows, delete
+     * owned rows absent from the file). Shared/non-owned resources must not
+     * be deleted.
+     *
+     * @return int number of records restored/imported
+     */
+    public function importDataBackup(string $key, User $user, array $data): int;
+
+    /**
+     * Count of the user's own records in the given capability's module,
+     * shown on the account Data page ("N records").
+     */
+    public function dataBackupSummary(string $key, User $user): int;
 }

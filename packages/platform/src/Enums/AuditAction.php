@@ -28,6 +28,8 @@ enum AuditAction: string
     case RolePermissionChanged = 'role_permission_changed';
     case DatabaseReset = 'database_reset';
     case DatabaseReseed = 'database_reseed';
+    case DataExported = 'data_exported';
+    case DataRestored = 'data_restored';
 
     public function severity(): string
     {
@@ -53,11 +55,13 @@ enum AuditAction: string
             self::PermissionAssigned,
             self::SettingsChanged,
             self::ProfileUpdate,
-            self::AccountCreated => 'warning',
+            self::AccountCreated,
+            self::DataRestored => 'warning',
 
             self::Login,
             self::Logout,
-            self::ImpersonationStop => 'info',
+            self::ImpersonationStop,
+            self::DataExported => 'info',
         };
     }
 }

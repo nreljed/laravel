@@ -1,7 +1,7 @@
 {
   "name": "nreljed/platform",
   "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-  "version": "0.1.50",
+    "version": "0.1.54",
   "type": "library",
   "license": "proprietary",
   "authors": [
@@ -17,6 +17,7 @@
     "laravel/framework": "^13.0",
     "laravel/sanctum": "^4.0",
     "minishlink/web-push": "^11.0",
+    "sentry/sentry-laravel": "^4.27",
     "tightenco/ziggy": "^2.6"
   },
   "require-dev": {

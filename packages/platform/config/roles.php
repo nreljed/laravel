@@ -52,8 +52,6 @@ return [
         ['name' => 'Manage Media', 'slug' => 'media.manage', 'description' => 'View and delete media uploaded by any user', 'group' => 'Administration'],
         ['name' => 'Export Audit Logs', 'slug' => 'export-audit-logs', 'description' => 'Export audit log data as CSV', 'group' => 'Administration'],
         ['name' => 'Manage Email Settings', 'slug' => 'manage-email-settings', 'description' => 'Configure email settings', 'group' => 'Administration'],
-        ['name' => 'Manage Deploy History', 'slug' => 'manage-deploy-history', 'description' => 'View deployed release history', 'group' => 'Administration'],
-        ['name' => 'View Deploy Status', 'slug' => 'view-deploy-status', 'description' => 'View live deploy status and progress', 'group' => 'Administration'],
     ],
 
     /*
@@ -148,8 +146,6 @@ return [
                 '!manage-audit-logs',
                 '!export-audit-logs',
                 '!manage-email-settings',
-                '!manage-deploy-history',
-                '!view-deploy-status',
             ],
         ],
 

@@ -3,6 +3,7 @@
 namespace Nreljed\Platform\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\AlwaysProp;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -107,9 +108,13 @@ class HandleInertiaRequests extends Middleware
             'features' => [
                 'databaseMaintenanceEnabled' => function () {
                     try {
-                        return app(DatabaseMaintenanceService::class)->isEnabled();
+                        return Cache::remember(
+                            'app_features.database_maintenance_enabled',
+                            300,
+                            fn (): bool => app(DatabaseMaintenanceService::class)->isEnabled(),
+                        );
                     } catch (\Throwable) {
-                        return (bool) config('database_maintenance.enabled', true);
+                        return false;
                     }
                 },
             ],

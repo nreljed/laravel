@@ -14,7 +14,6 @@ platform/ (vcs install root, composer nreljed/platform)
 ├── src/
 │   ├── PlatformServiceProvider.php  # boot: routes, schedules, middleware, rate limits, policies
 │   ├── Ai/                 # AI agents (BYOK) + provider models
-│   ├── Blog/               # Blog feature (self-contained feature provider)
 │   ├── Concerns/           # InteractsWithFeatures, UserDataTrait
 │   ├── Console/Commands/   # artisan commands
 │   ├── Contracts/FeatureProvider.php
@@ -27,7 +26,7 @@ platform/ (vcs install root, composer nreljed/platform)
 │   ├── Models/             # User, Role, Permission, Setting, Notification, ...
 │   ├── Notifications/      # AppNotification + auth notifications
 │   ├── Observers/          # UserObserver (avatar, audit)
-│   ├── Policies/           # Post, Role, AiProvider policies
+│   ├── Policies/           # Role, AiProvider policies
 │   ├── Providers/PermissionGateServiceProvider.php
 │   ├── PublicSite/         # PublicController (about/services/contact)
 │   ├── Services/           # 24 services (settings, mail, notifications, feature registry, ...)

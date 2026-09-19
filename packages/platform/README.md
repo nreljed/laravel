@@ -1,8 +1,9 @@
 # platform
 
 Shared dashboard platform for Laravel applications — dashboard, admin panel, auth, account,
-notifications, settings, email, blog, AI (BYOK), and the unified deploy pipeline. Consuming
-apps keep only domain-specific code on top.
+notifications, settings, email, AI (BYOK), and the unified deploy pipeline. Consuming
+apps keep only domain-specific code on top (public pages, domain features, custom
+dashboard pages). Blog, shop and booking features ship as separate packages.
 
 ## Docs
 
@@ -13,11 +14,10 @@ apps keep only domain-specific code on top.
 | [feature-provider.md](docs/feature-provider.md) | `FeatureProvider` contract + `FeatureRegistry`  |
 | [deploy.md](docs/deploy.md)                     | Unified server-side deploy pipeline             |
 | [commands.md](docs/commands.md)                 | Artisan commands                                |
-| [notifications.md](docs/notifications.md)       | In-app, push, email channels + templates        |
-| [settings.md](docs/settings.md)                 | DB-backed settings service                      |
-| [blog.md](docs/blog.md)                         | Blog feature (in-core provider)                 |
-| [ai.md](docs/ai.md)                             | BYOK AI agents (Laravel AI)                     |
-| [frontend.md](docs/frontend.md)                 | React/Inertia frontend kit                      |
+| [notifications.md](docs/notifications.md)   | In-app, push, email channels + templates        |
+| [settings.md](docs/settings.md)             | DB-backed settings service                       |
+| [ai.md](docs/ai.md)                         | BYOK AI agents (Laravel AI)                      |
+| [frontend.md](docs/frontend.md)             | React/Inertia frontend kit                       |
 
 ## Installation
 

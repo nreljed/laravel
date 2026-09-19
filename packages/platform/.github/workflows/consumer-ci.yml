@@ -85,7 +85,11 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "26"
-          cache: ${{ vars.RUNNER_CI != 'self-hosted' && 'npm' || '' }}
+          # Cache pnpm workspaces (pinned by the root pnpm-lock.yaml) and npm
+          # apps (package-lock.json) from the calling repo accordingly. pnpm is
+          # NOT installed here: setup-node@v7 has no pnpm-version input — the
+          # install step below bootstraps it when a pnpm workspace is detected.
+          cache: ${{ vars.RUNNER_CI != 'self-hosted' && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
 
       - name: Cache Composer dependencies (GitHub-hosted only)
         if: vars.RUNNER_CI != 'self-hosted'
@@ -100,7 +104,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json', 'pnpm-lock.yaml') }}
           restore-keys: npm-${{ runner.os }}-
 
       - name: Create .env + SQLite database
@@ -128,6 +132,10 @@ jobs:
           case "${PINNED}" in
             dev-*|9999999-*|'@dev') echo "dev build pinned — skipping fleet check"; exit 0 ;;
           esac
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "no GH_TOKEN (e.g. Dependabot PR) — skipping fleet check"
+            exit 0
+          fi
           LATEST=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "User-Agent: fleet-check" \
             "https://api.github.com/repos/nreljed/platform/releases/latest" 2>/dev/null \
             | php -r '$d=json_decode(stream_get_contents(STDIN),true);echo $d["tag_name"]??"";')
@@ -151,7 +159,13 @@ jobs:
         run: php artisan key:generate && php artisan migrate --force
 
       - name: Install npm dependencies
-        run: npm ci --legacy-peer-deps
+        run: |
+          if [ -f pnpm-workspace.yaml ] || [ -f pnpm-lock.yaml ]; then
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+            pnpm install --frozen-lockfile
+          else
+            npm ci --legacy-peer-deps
+          fi
 
       - name: Check core dependency parity
         run: npm run check:core-deps
@@ -160,7 +174,12 @@ jobs:
         run: npm run check:platform-consistency
 
       - name: npm audit
-        run: npm audit --audit-level=high
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm audit --audit-level=high
+          else
+            npm audit --audit-level=high
+          fi
 
       - name: ESLint
         if: ${{ !inputs.skip-npm-tests }}

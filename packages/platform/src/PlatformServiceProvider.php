@@ -12,6 +12,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -35,6 +36,7 @@ use Nreljed\Platform\Notifications\VerifyEmail as CustomVerifyEmail;
 use Nreljed\Platform\Observers\UserObserver;
 use Nreljed\Platform\Policies\RolePolicy;
 use Nreljed\Platform\Services\ContentRegistry;
+use Nreljed\Platform\Services\CoreVersionService;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Nreljed\Platform\Services\FormattingService;
 use Nreljed\Platform\Services\MailerConfigurator;
@@ -48,6 +50,7 @@ class PlatformServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/core.php', 'core');
         $this->mergeConfigFrom(__DIR__.'/../config/roles.php', 'roles');
         $this->mergeConfigFrom(__DIR__.'/../config/database-maintenance.php', 'database_maintenance');
+        $this->mergeConfigFrom(__DIR__.'/../config/database-backup.php', 'database_backup');
         $this->mergeConfigFrom(__DIR__.'/../config/admin.php', 'admin');
         $this->mergeConfigFrom(__DIR__.'/../config/deploy.php', 'deploy');
         $this->mergeConfigFrom(__DIR__.'/../config/features.php', 'features');
@@ -87,6 +90,7 @@ class PlatformServiceProvider extends ServiceProvider
 
         $this->configureMailer();
         $this->configureNotifications();
+        $this->configureErrorReporting();
 
         Notification::creating(function (Notification $notification) {
             $data = $notification->data;
@@ -106,6 +110,7 @@ class PlatformServiceProvider extends ServiceProvider
                 __DIR__.'/../config/core.php' => config_path('core.php'),
                 __DIR__.'/../config/roles.php' => config_path('roles.php'),
                 __DIR__.'/../config/database-maintenance.php' => config_path('database-maintenance.php'),
+                __DIR__.'/../config/database-backup.php' => config_path('database-backup.php'),
                 __DIR__.'/../config/admin.php' => config_path('admin.php'),
                 __DIR__.'/../config/deploy.php' => config_path('deploy.php'),
                 __DIR__.'/../config/features.php' => config_path('features.php'),
@@ -135,6 +140,7 @@ class PlatformServiceProvider extends ServiceProvider
             Console\Commands\CoreVersion::class,
             Console\Commands\CreateAdmin::class,
             Console\Commands\CreateRole::class,
+            Console\Commands\DatabaseBackup::class,
             Console\Commands\DeployAuto::class,
             Console\Commands\ListPermissions::class,
             Console\Commands\MakeFeature::class,
@@ -146,14 +152,18 @@ class PlatformServiceProvider extends ServiceProvider
 
     protected function configureSchedules(): void
     {
-        if (! config('deploy.auto_enabled', true)) {
-            return;
-        }
-
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
-            $schedule->command('deploy:auto')
-                ->everyFiveMinutes()
-                ->withoutOverlapping();
+            if (config('deploy.auto_enabled', true)) {
+                $schedule->command('deploy:auto')
+                    ->everyFiveMinutes()
+                    ->withoutOverlapping();
+            }
+
+            if (config('database_backup.enabled', true)) {
+                $schedule->command('database:backup')
+                    ->dailyAt(config('database_backup.schedule', '03:17'))
+                    ->withoutOverlapping();
+            }
         });
     }
 
@@ -191,6 +201,43 @@ class PlatformServiceProvider extends ServiceProvider
 
             return $notification->toMail($notifiable);
         });
+    }
+
+    /**
+     * Optional Sentry error/performance monitoring, gated so the app boots
+     * perfectly fine without the package or a DSN.
+     *
+     * Wiring is a no-op unless BOTH conditions hold: the
+     * sentry/sentry-laravel package is installed (class_exists gate — CI/offline
+     * installs without it are unaffected) AND a DSN is configured via
+     * SENTRY_LARAVEL_DSN (or legacy SENTRY_DSN). When active, the release is
+     * pinned to the app/core version so errors group per deploy.
+     */
+    protected function configureErrorReporting(): void
+    {
+        if (! class_exists(\Sentry\Laravel\ServiceProvider::class)) {
+            return;
+        }
+
+        $dsn = (string) config('sentry.dsn', env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')));
+
+        if ($dsn === '') {
+            return;
+        }
+
+        $release = (string) env('SENTRY_RELEASE');
+        if ($release === '') {
+            $release = (string) $this->app->make(CoreVersionService::class)->info()['version'];
+        }
+
+        Config::set('sentry.release', $release !== '' ? $release : null);
+
+        // Performance tracing is opt-in: SENTRY_TRACES_SAMPLE_RATE (0.0–1.0)
+        // is the sample rate, defaulting to disabled (0.0) so a bare DSN never
+        // increases request volume/cost without an explicit choice.
+        $tracesRate = filter_var(env('SENTRY_TRACES_SAMPLE_RATE', 0.0), FILTER_VALIDATE_FLOAT);
+
+        Config::set('sentry.traces_sample_rate', $tracesRate === false ? 0.0 : max(0.0, min(1.0, $tracesRate)));
     }
 
     protected function configureMiddleware(): void

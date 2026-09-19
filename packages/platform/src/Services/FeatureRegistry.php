@@ -4,6 +4,7 @@ namespace Nreljed\Platform\Services;
 
 use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Support\DataBackupCapability;
 
 class FeatureRegistry
 {
@@ -388,6 +389,67 @@ class FeatureRegistry
         }
 
         return $notices;
+    }
+
+    /**
+     * Every data backup capability declared by enabled providers, paired with
+     * its owning provider. The account "Data" page renders one entry per
+     * capability, and the export/restore endpoints resolve by capability key.
+     *
+     * Keys are expected to be globally unique across enabled providers; a
+     * duplicate key fails loudly so the module list can never be ambiguous.
+     *
+     * @return list<array{provider: FeatureProvider, capability: DataBackupCapability}>
+     */
+    public function getDataBackupModules(): array
+    {
+        return $this->remember('data_backup_modules', function () {
+            $modules = [];
+
+            foreach ($this->enabledProviders() as $provider) {
+                foreach ($provider->getDataBackupCapabilities() as $capability) {
+                    $key = $capability->getKey();
+
+                    if ($key === '') {
+                        throw new \RuntimeException(
+                            "Feature [{$provider->slug()}] declared a data backup capability with an empty key."
+                        );
+                    }
+
+                    // Fail loudly on ambiguity instead of silently serving the
+                    // wrong provider for export/restore.
+                    foreach ($modules as $existing) {
+                        if ($existing['capability']->getKey() === $key) {
+                            throw new \RuntimeException(
+                                "Duplicate data backup capability key [{$key}] declared by features "
+                                ."[{$existing['provider']->slug()}] and [{$provider->slug()}]."
+                            );
+                        }
+                    }
+
+                    $modules[] = ['provider' => $provider, 'capability' => $capability];
+                }
+            }
+
+            return $modules;
+        });
+    }
+
+    /**
+     * Resolve a data backup capability key to its provider + capability pair,
+     * or null when no enabled provider declares it.
+     *
+     * @return array{provider: FeatureProvider, capability: DataBackupCapability}|null
+     */
+    public function resolveDataBackupModule(string $key): ?array
+    {
+        foreach ($this->getDataBackupModules() as $module) {
+            if ($module['capability']->getKey() === $key) {
+                return $module;
+            }
+        }
+
+        return null;
     }
 
     public function getAllSettingsRoutes(): array

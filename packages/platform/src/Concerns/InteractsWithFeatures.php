@@ -2,6 +2,8 @@
 
 namespace Nreljed\Platform\Concerns;
 
+use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Services\FeatureSettingsService;
 use Nreljed\Platform\Services\PackageVersionService;
 use Nreljed\Platform\Support\ContentDescription;
@@ -216,5 +218,29 @@ trait InteractsWithFeatures
     public function getDeactivationNotice(): ?string
     {
         return null;
+    }
+
+    public function getDataBackupCapabilities(): array
+    {
+        return [];
+    }
+
+    public function exportDataBackup(string $key, User $user): array
+    {
+        throw new \InvalidArgumentException(
+            "Data export capability [{$key}] is not supported by feature [{$this->slug()}]."
+        );
+    }
+
+    public function importDataBackup(string $key, User $user, array $data): int
+    {
+        throw new \InvalidArgumentException(
+            "Data restore capability [{$key}] is not supported by feature [{$this->slug()}]."
+        );
+    }
+
+    public function dataBackupSummary(string $key, User $user): int
+    {
+        return 0;
     }
 }

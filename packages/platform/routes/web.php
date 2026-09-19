@@ -4,11 +4,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Nreljed\Platform\Http\Controllers\AccountDataController;
 use Nreljed\Platform\Http\Controllers\Admin\AuditLogController;
 use Nreljed\Platform\Http\Controllers\Admin\BulkUserController;
 use Nreljed\Platform\Http\Controllers\Admin\DatabaseMaintenanceController;
-use Nreljed\Platform\Http\Controllers\Admin\DeployHistoryController;
-use Nreljed\Platform\Http\Controllers\Admin\DeployStatusController;
 use Nreljed\Platform\Http\Controllers\Admin\FeatureController;
 use Nreljed\Platform\Http\Controllers\Admin\ImpersonationController;
 use Nreljed\Platform\Http\Controllers\Admin\IpAccessRuleController;
@@ -167,6 +166,11 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::put('/address', [UserAccountController::class, 'updateAddress'])->name('dashboard.account.address');
         Route::post('/avatar', [AvatarController::class, 'upload'])->name('dashboard.account.avatar.upload');
         Route::delete('/avatar', [AvatarController::class, 'destroy'])->name('dashboard.account.avatar.destroy');
+
+        // Data backup & restore (user-owned, per-module self-service)
+        Route::get('/data', [AccountDataController::class, 'index'])->name('dashboard.account.page.data');
+        Route::get('/data/export/{module}', [AccountDataController::class, 'export'])->name('dashboard.account.data.export');
+        Route::post('/data/restore/{module}', [AccountDataController::class, 'restore'])->middleware('throttle:10,1')->name('dashboard.account.data.restore');
     });
 
     // Media uploads (auth + verified)
@@ -199,21 +203,6 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
         Route::get('/database', [DatabaseMaintenanceController::class, 'index'])->name('database');
         Route::post('/database/reset', [DatabaseMaintenanceController::class, 'reset'])->name('database.reset');
         Route::post('/database/reseed', [DatabaseMaintenanceController::class, 'reseed'])->name('database.reseed');
-    });
-
-    // Deploy history (read-only releases list) - env-gated at controller level, permission-gated
-    Route::middleware('permission:manage-deploy-history')->group(function () {
-        Route::prefix('/deploy')->name('deploy.')->group(function () {
-            Route::get('/history', [DeployHistoryController::class, 'index'])->name('history');
-        });
-
-        // Deploy status (live progress + health poll) - permission-gated, env-gated at controller level
-        Route::middleware('permission:view-deploy-status')->group(function () {
-            Route::prefix('/deploy')->name('deploy.')->group(function () {
-                Route::get('/status', [DeployStatusController::class, 'index'])->name('status');
-                Route::get('/status/data', [DeployStatusController::class, 'check'])->name('status.data');
-            });
-        });
     });
 
     // Settings (general, registration, notifications, security, branding, IP rules)

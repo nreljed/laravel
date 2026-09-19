@@ -5,6 +5,7 @@ namespace Nreljed\Platform\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -129,6 +130,7 @@ class SettingsController extends Controller
         $enabled = $request->boolean('enabled');
 
         SettingsService::set('database_maintenance_enabled', $enabled ? '1' : '0');
+        Cache::forget('app_features.database_maintenance_enabled');
 
         AuditService::log(AuditAction::SettingsChanged, $request->user()->id, [
             'changed_keys' => ['database_maintenance_enabled'],

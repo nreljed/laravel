@@ -8,7 +8,6 @@ import {
   BreadcrumbSeparator,
 } from "../../../../Components/ui/breadcrumb";
 import { AdminSettingsNav } from "../../../../Components/settings/AdminSettingsNav";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../../Components/ui/card";
 import { Badge } from "../../../../Components/ui/badge";
 import { Button } from "../../../../Components/ui/button";
 import { Switch } from "../../../../Components/ui/switch";
@@ -16,6 +15,8 @@ import { Label } from "../../../../Components/ui/label";
 import { Field } from "../../../../Components/ui/field";
 import { Alert, AlertDescription, AlertTitle } from "../../../../Components/ui/alert";
 import { CurrentPasswordInput } from "../../../../Components/shared/current-password-input";
+import { SettingsAccordionItem } from "../../../../Components/shared/settings-accordion";
+import { toast } from "../../../../Components/ui/toast";
 import { ShieldAlert, TerminalSquare } from "lucide-react";
 
 interface DeveloperSettingsProps {
@@ -32,9 +33,22 @@ export default function DeveloperSettings({
     password: "",
   });
 
+  const hasPendingChange = data.enabled !== databaseMaintenanceEnabled;
+
   const save = () => {
+    const enabling = data.enabled;
+
     post(route("dashboard.admin.settings.dev.database-maintenance-toggle"), {
       preserveScroll: true,
+      onSuccess: () =>
+        toast.add({
+          title: enabling
+            ? "Database maintenance UI enabled."
+            : "Database maintenance UI disabled.",
+          type: "success",
+        }),
+      onError: () =>
+        toast.add({ title: "Failed to save changes.", type: "error" }),
       onFinish: () => reset("password"),
     });
   };
@@ -74,19 +88,18 @@ export default function DeveloperSettings({
               </p>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TerminalSquare className="h-4 w-4 text-muted-foreground" />
-                  Database Maintenance UI
-                </CardTitle>
-                <CardDescription>
-                  Controls access to the destructive database maintenance page (reset / reseed).
-                  Changes apply instantly, persist across deploys, require your current password,
-                  and are recorded in the audit log.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <SettingsAccordionItem
+              value="database-maintenance"
+              icon={TerminalSquare}
+              title="Database Maintenance UI"
+              description={
+                databaseMaintenanceEnabled
+                  ? "Enabled — Administration → Database Maintenance is accessible. Changes require your current password and are audited."
+                  : "Disabled — the page is hidden. Changes require your current password and are audited."
+              }
+              defaultOpen
+            >
+              <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="space-y-1">
                     <Label htmlFor="database_maintenance_enabled" className="font-medium">
@@ -117,24 +130,27 @@ export default function DeveloperSettings({
                   </Alert>
                 )}
 
-                <Field data-invalid={!!errors.password}>
-                  <CurrentPasswordInput
-                    value={data.password}
-                    onChange={(e) => setData("password", e.target.value)}
-                    error={errors.password}
-                    disabled={processing}
-                    showForgotPasswordLink={false}
-                    showHelpText={false}
-                  />
-                </Field>
-
-                <div className="flex justify-end">
-                  <Button onClick={save} disabled={processing || data.password.length === 0}>
-                    {processing ? "Saving..." : "Save changes"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                {hasPendingChange && (
+                  <>
+                    <Field data-invalid={!!errors.password}>
+                      <CurrentPasswordInput
+                        value={data.password}
+                        onChange={(e) => setData("password", e.target.value)}
+                        error={errors.password}
+                        disabled={processing}
+                        showForgotPasswordLink={false}
+                        showHelpText={false}
+                      />
+                    </Field>
+                    <div className="flex justify-end">
+                      <Button onClick={save} disabled={processing || data.password.length === 0}>
+                        {processing ? "Saving..." : "Save changes"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </SettingsAccordionItem>
           </div>
         </div>
       </div>

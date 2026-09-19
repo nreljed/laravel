@@ -41,9 +41,13 @@ jobs:
         shell: bash
         run: find src tests -name "*.php" -print0 | xargs -0 -n1 php -l > /dev/null && echo "lint OK"
 
+      - name: Validate composer.json + lock sync
+        shell: bash
+        run: composer validate --no-check-all
+
       - name: Install dependencies
         shell: bash
-        run: composer install --prefer-dist --no-interaction --no-progress
+        run: composer install --prefer-dist --no-interaction --no-scripts --no-progress
 
       - name: Run tests
         shell: bash

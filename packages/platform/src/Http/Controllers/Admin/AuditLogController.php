@@ -277,6 +277,12 @@ class AuditLogController extends Controller
                 ? "$actor reset the database and reseeded it (media purge enabled)"
                 : "$actor reset the database and reseeded it",
             AuditAction::DatabaseReseed->value => "$actor re-ran the seeders (no data wiped)",
+            AuditAction::DataExported->value => isset($ctx['module'])
+                ? "$actor exported their {$ctx['module']} data"
+                : "$actor exported their data",
+            AuditAction::DataRestored->value => isset($ctx['module'])
+                ? "$actor restored their {$ctx['module']} data"
+                : "$actor restored their data",
             default => "$actor performed $action",
         };
     }

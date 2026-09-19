@@ -1,6 +1,6 @@
 # Feature Provider
 
-Self-contained features (Blog in-core, Shop as a separate package) are discovered through a
+Self-contained features (Blog, Shop, Booking — each a separate package) are discovered through a
 single contract aggregated by the `FeatureRegistry`. Adding a feature requires **no core
 edits** — just register its service provider in `config/features.php` `providers`.
 
@@ -30,7 +30,7 @@ method). Only `name()` and `slug()` are mandatory to implement yourself.
 | `getProfileFieldsConfig(): array`  | Extra account profile fields                                                |
 | `getEmailTemplates(): array`       | Email template registry entries (sample data for the simulator)             |
 | `getNotificationTypes(): array`    | Notification types with channels + defaults                                 |
-| `permissions(): array`             | Permission slugs for `permissions:sync`                                     |
+| `permissions(): array`             | Permission slugs granted to roles by `RolesAndPermissionsSeeder`            |
 | `onUserDelete(int $userId): void`  | Cleanup hook when a user is deleted                                         |
 
 ## FeatureRegistry
@@ -63,7 +63,9 @@ a mirror in the host):
 5. **Permission slugs are scoped** to the feature prefix (e.g. `shop.orders.view`). Generic
    admin permissions (no dot) are reserved for core.
 6. Register the provider class in `config/features.php` `providers` and run
-   `php artisan permissions:sync`.
+   `php artisan db:seed --class=RolesAndPermissionsSeeder` (idempotent,
+   config-catalog backed — it creates the provider's permissions and maps them
+   onto the default roles).
 7. Self-load own routes + migrations from the provider's `boot()` (see `BlogServiceProvider`).
 
 ## Routes

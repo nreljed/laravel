@@ -13,8 +13,6 @@ import {
   Beaker,
   FlaskConical,
   Database,
-  History,
-  Rocket,
 } from "lucide-react";
 import { usePage } from "@inertiajs/react";
 import { NavMain, type NavItem } from "../navigation/nav-main";
@@ -115,18 +113,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: safeRoute("dashboard.admin.database"),
       icon: Database,
       permission: "manage-options",
-    },
-    {
-      title: "Deploy History",
-      url: safeRoute("dashboard.admin.deploy.history"),
-      icon: History,
-      permission: "manage-deploy-history",
-    },
-    {
-      title: "Deploy Status",
-      url: safeRoute("dashboard.admin.deploy.status"),
-      icon: Rocket,
-      permission: "view-deploy-status",
     },
   ];
 

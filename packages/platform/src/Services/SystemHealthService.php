@@ -86,7 +86,7 @@ class SystemHealthService
             'modules' => app()->bound(FeatureRegistry::class)
                 ? $this->resolveModules(app(FeatureRegistry::class)->getAll())
                 : [],
-            'features' => [
+            'feature_checks' => [
                 'valid' => $featureIssues === [],
                 'issue_count' => count($featureIssues),
                 'issues' => $featureIssues,
