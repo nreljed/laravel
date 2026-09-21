@@ -23,10 +23,15 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
+// Sibling dirs are repo-relative so this check is portable: standalone repos
+// (no apps/ subtree) find only their own root and skip; the monorepo resolves
+// all three and enforces parity. Never hardcode machine paths here — CI runs
+// on self-hosted AND GitHub-hosted runners.
+const repoRoot = path.resolve(__dirname, '..');
 const defaultDirs = {
-    mono: 'C:\\Users\\nrelj\\Local Sites\\laravel\\app',
-    shop: 'C:\\Users\\nrelj\\Local Sites\\laravel\\app\\apps\\laravel.shop',
-    booking: 'C:\\Users\\nrelj\\Local Sites\\laravel\\app\\apps\\laravel.booking',
+    mono: repoRoot,
+    shop: path.join(repoRoot, 'apps', 'laravel.shop'),
+    booking: path.join(repoRoot, 'apps', 'laravel.booking'),
 };
 
 const apps = [
