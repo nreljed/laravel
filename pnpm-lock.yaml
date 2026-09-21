@@ -935,6 +935,9 @@ importers:
 
   packages/blog:
     dependencies:
+      '@atlaskit/pragmatic-drag-and-drop':
+        specifier: ^2.0.1 || ^3.0.0
+        version: 3.1.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -944,15 +947,66 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.3.0)
+      '@floating-ui/react':
+        specifier: ^0.27.20
+        version: 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/core':
         specifier: ^3.0.0
         version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.0.0
         version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@lexical/code':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/code-shiki':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/dragon':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/extension':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/history':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/html':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/link':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/list':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/markdown':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/overflow':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/react':
+        specifier: ^0.49.0
+        version: 0.49.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(yjs@13.6.32)
+      '@lexical/rich-text':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/selection':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/table':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
+      '@lexical/utils':
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      lexical:
+        specifier: ^0.49.0
+        version: 0.49.0(typescript@6.0.3)
       lucide-react:
         specifier: ^1.44.0
         version: 1.45.0(react@19.3.0)
