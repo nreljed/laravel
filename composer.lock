@@ -3319,16 +3319,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.1",
+            "version": "0.1.2",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "bd4f87f07a24e4d69d949190959266f5136c4afa"
+                "reference": "9ee757aa13a9883b102bb356794cd2135dab75ea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/bd4f87f07a24e4d69d949190959266f5136c4afa",
-                "reference": "bd4f87f07a24e4d69d949190959266f5136c4afa",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/9ee757aa13a9883b102bb356794cd2135dab75ea",
+                "reference": "9ee757aa13a9883b102bb356794cd2135dab75ea",
                 "shasum": ""
             },
             "require": {
@@ -3369,23 +3369,23 @@
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
             "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.1",
+                "source": "https://github.com/nreljed/blog/tree/v0.1.2",
                 "issues": "https://github.com/nreljed/blog/issues"
             },
-            "time": "2026-09-15T16:00:25+00:00"
+            "time": "2026-09-21T18:01:02+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.54",
+            "version": "0.1.57",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/platform.git",
-                "reference": "ba293d8014f1cb695ef8553ef593d6071c88f8c7"
+                "reference": "b803a13b93471e90b260081490e0fc9e4faa6e3f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/ba293d8014f1cb695ef8553ef593d6071c88f8c7",
-                "reference": "ba293d8014f1cb695ef8553ef593d6071c88f8c7",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/b803a13b93471e90b260081490e0fc9e4faa6e3f",
+                "reference": "b803a13b93471e90b260081490e0fc9e4faa6e3f",
                 "shasum": ""
             },
             "require": {
@@ -3432,10 +3432,10 @@
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
             "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.54",
+                "source": "https://github.com/nreljed/platform/tree/v0.1.57",
                 "issues": "https://github.com/nreljed/platform/issues"
             },
-            "time": "2026-09-19T15:51:16+00:00"
+            "time": "2026-09-21T19:18:44+00:00"
         },
         {
             "name": "nunomaduro/termwind",
