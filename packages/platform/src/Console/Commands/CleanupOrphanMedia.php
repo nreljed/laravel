@@ -5,8 +5,8 @@ namespace Nreljed\Platform\Console\Commands;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Nreljed\Platform\Services\FeatureRegistry;
 

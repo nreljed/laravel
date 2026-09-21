@@ -136,7 +136,7 @@ final class FoundationCheckTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $manifest
+     * @param  array<string, mixed>  $manifest
      */
     private function writeManifest(array $manifest): void
     {

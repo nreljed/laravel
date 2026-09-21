@@ -232,7 +232,7 @@ class AiService
 
             $lastByProvider[$provider] ??= [
                 'last_model' => $log->model ?: null,
-                    'last_run_at' => $log->created_at->toDateTimeString(),
+                'last_run_at' => $log->created_at->toDateTimeString(),
                 'last_latency_ms' => $log->latency_ms,
                 'last_error' => $log->error,
             ];
