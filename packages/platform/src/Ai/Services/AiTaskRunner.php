@@ -69,7 +69,6 @@ class AiTaskRunner
                     throw $e;
                 }
                 usleep(($this->delaySeconds($attempts)) * 1_000_000);
-
                 continue;
             } catch (Throwable $e) {
                 $this->recordError($user, $resolved['provider'], $e);
@@ -85,7 +84,6 @@ class AiTaskRunner
             $response->usage->completionTokens,
             $this->elapsedMs($start),
         );
-
         return $response;
     }
 
@@ -122,7 +120,6 @@ class AiTaskRunner
                 $this->elapsedMs($start),
             );
         });
-
         return $stream;
     }
 
@@ -141,7 +138,6 @@ class AiTaskRunner
                 $this->capMessage($exceeded),
             );
         }
-
         return new QueuedAgentResponse(dispatch(new InvokeAiTask(
             userId: $user->id,
             agentClass: $agent::class,
@@ -166,7 +162,6 @@ class AiTaskRunner
             "ai.providers.{$resolved['provider']}.key",
             $resolved['key'],
         );
-
         return [
             'provider' => $resolved['provider'],
             'model' => $resolved['model'],
@@ -199,6 +194,9 @@ class AiTaskRunner
         }
     }
 
+    /**
+     * @param  string  $provider
+     */
     private function recordError(User $user, string $provider, Throwable $e): void
     {
         $this->aiService->recordError($user, $provider, $e->getMessage());
@@ -213,7 +211,6 @@ class AiTaskRunner
         if (! empty($exceeded['tokens'])) {
             $parts[] = 'daily token limit';
         }
-
         return 'Your AI daily '.implode(' and ', $parts).' has been reached.';
     }
 

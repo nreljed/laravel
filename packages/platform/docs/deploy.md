@@ -137,7 +137,30 @@ Empty (default) means any IP that knows the token may call the endpoints.
 | `POST`       | `/deploy/migrate`      | Run migrations only.                                                                                                                                                                                                                                                                                                                                                                |
 | `POST`       | `/deploy/create-admin` | Bootstrap/refresh the admin user (reads `X-Admin-Email/Name/Password` headers).                                                                                                                                                                                                                                                                                                     |
 | `GET`/`POST` | `/deploy/cache-clear`  | Emergency: `migrate:fresh` + cache clear + re-seed.                                                                                                                                                                                                                                                                                                                                 |
-| `POST`       | `/deploy/reset`        | Full database reset (re-seed).                                                                                                                                                                                                                                                                                                                                                      |
+| `POST`       | `/deploy/reset`        | Full database reset (re-seed).                                                                                                                                                                                                                                                                                                                                                       |
+
+### `/deploy/check` response (SBOM)
+
+Every response produced by `DeployService::result()` (all `/deploy/check` statuses +
+`deploy:auto`) carries version identity for the running install, sourced at runtime from
+`vendor/composer/installed.json` (the authoritative Composer install state — never
+build-time snapshots):
+
+```json
+"core":     { "name": "platform", "version": "0.1.57", "sha": "<commit>", "repo": "nreljed/platform" },
+"bundled": [
+    { "name": "nreljed/blog",        "version": "v0.9.0",   "sha": "<commit>", "repo": "nreljed/blog" },
+    { "name": "nreljed/platform",    "version": "v0.1.57",  "sha": "<commit>", "repo": "nreljed/platform" }
+]
+```
+
+- `core` — the platform package itself (`CoreVersionService::info()`), present on every
+  pin version.
+- `bundled` — every installed `nreljed/*` package, sorted by name
+  (`CoreVersionService::bundled()` → `fromInstalledJson()`). Added in platform **v0.1.58**;
+  consumers on older pins see only `core`.
+- Use it to confirm exactly which engine/feature package versions a deployed release
+  actually carries.
 
 ## CI/CD Flow (GitHub Actions)
 

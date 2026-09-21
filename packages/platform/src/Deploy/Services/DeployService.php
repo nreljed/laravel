@@ -50,7 +50,7 @@ class DeployService
      * it so deploys keep working even when CI cannot reach the host (e.g. the
      * hosting firewall blocks datacenter IPs).
      *
-     * @return array{status: string, message: string, tag: string|null, output: array<int, string>, core: array<string, mixed>, status_code: int}
+     * @return array{status: string, message: string, tag: string|null, output: array<int, string>, core: array<string, mixed>, bundled: array<int, array{name: string, version: string|null, sha: string|null, repo: string}>, status_code: int}
      */
     public function check(): array
     {
@@ -651,7 +651,7 @@ class DeployService
     }
 
     /**
-     * @return array{status: string, message: string, tag: string|null, output: array<int, string>, core: array<string, mixed>, status_code: int}
+     * @return array{status: string, message: string, tag: string|null, output: array<int, string>, core: array<string, mixed>, bundled: array<int, array{name: string, version: string|null, sha: string|null, repo: string}>, status_code: int}
      */
     private function result(string $status, string $message, ?string $tag = null, array $output = [], int $statusCode = 200): array
     {
@@ -661,6 +661,7 @@ class DeployService
             'tag' => $tag,
             'output' => $output,
             'core' => $this->coreVersion->info(),
+            'bundled' => $this->coreVersion->bundled(),
             'status_code' => $statusCode,
         ];
     }
