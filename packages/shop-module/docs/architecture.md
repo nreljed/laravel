@@ -19,7 +19,7 @@ shop-module/
     ├── Models/                   # 29 Eloquent models
     ├── Policies/                 # 9 authorization policies
     ├── Requests/                 # FormRequests (validation)
-    ├── Resources/js/Pages/       # Inertia React pages (@shop/Pages/...)
+    ├── Resources/js/Pages/       # Inertia React pages (@nreljed/shop-module/Pages/...)
     ├── Routes/                   # 11 route files, self-loaded
     ├── Services/                 # 14 domain services
     ├── Support/                  # Countries (ISO 3166 map)
@@ -37,8 +37,8 @@ and does four things:
    ```
 2. **Provider** — auto-discovered through Laravel's `extra.laravel.providers`
    package auto-discovery list (or registered in `bootstrap/providers.php`).
-3. **Feature registration** — the provider class is added to the `features` array
-   in `config/features.php`, so the core `FeatureRegistry` aggregates its nav,
+3. **Feature registration** — the provider class is added to the `providers` array
+   in `config/features.php`, so the platform `FeatureRegistry` aggregates its nav,
    permissions, email templates, notification types, gallery config, shared data,
    and dashboard data.
 4. **Frontend** — see below.
@@ -83,18 +83,20 @@ aggregation and breaks partial reloads.
 
 ## Frontend wiring (host)
 
-- **Vite alias:** `@nreljed/shop-module` → `packages/shop-module/src/Resources/js/`
-  (workspace symlink; standalone VCS installs use `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`).
-- **Page registration:** the host glob-imports `@nreljed/shop-module/Pages/**/*.tsx` with
-  `projectPrefix: "shop"`, so pages render under `shop/*` Inertia component keys.
+- **Vite alias:** `@nreljed/shop-module` → `vendor/nreljed/shop-module/src/Resources/js/`
+  (installed via Composer VCS; production alias points at the vendor copy; also in
+  `tsconfig.json` paths).
+- **Page registration:** the host imports `registerShopPages()` from
+  `@nreljed/shop-module/pages` and spreads it into its page map under `shop/*`
+  Inertia component keys. The legacy `@shop` glob scheme is superseded.
 - **Tailwind:** the host's `resources/css/app.css` uses `@source` directives; the
   shop JS must be included (currently
-  `@source "../../../../packages/shop-module/src/Resources/js/"`). Because Tailwind
+  `@source "../../vendor/nreljed/shop-module/src/Resources/js/"`). Because Tailwind
   config uses `source(none)`, a missing `@source` silently drops every shop utility
   class.
-- **TypeScript:** the package JS is currently excluded from the host `tsconfig`
-  `include` (parity with the pre-extraction state; ~150 pre-existing TS errors live
-  in these files). `@shop` path mapping is in place for when that is tackled.
+- **TypeScript:** the package JS is excluded from the host `tsconfig` `include` for
+  parity with the pre-extraction state; the `@nreljed/shop-module` path mapping is
+  the future-proof entry point.
 
 ## Boot order
 
@@ -112,5 +114,5 @@ Host boot
        commands() → 5 commands
 ```
 
-`schedule:publish` (scheduled products/posts/properties) lives in the core
-`platform` package, not here.
+`schedule:publish` (scheduled products/posts/properties) lives in the
+`nreljed/blog` package, not here.

@@ -2,8 +2,9 @@
 
 ## Permissions
 
-All permissions are declared in `ShopServiceProvider::permissions()` and synced to the DB via
-`php artisan permissions:sync`. They are consumed by:
+All permissions are declared in `ShopServiceProvider::permissions()` and granted to
+roles by `php artisan db:seed --class=RolesAndPermissionsSeeder` (idempotent,
+config-catalog backed). They are consumed by:
 
 - the `permission:{slug}` route middleware (admin groups),
 - `$this->authorize()` calls inside controllers,
@@ -61,7 +62,7 @@ For a `PUT /dashboard/shop/products/{product}` request:
 ## Adding a New Permission
 
 1. Add the slug to `ShopServiceProvider::permissions()`.
-2. Run `php artisan permissions:sync`.
+2. Run `php artisan db:seed --class=RolesAndPermissionsSeeder`.
 3. Reference it in a policy and call `$this->authorize(...)` in the controller.
 
 ## Related

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Jobs;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Nreljed\Blog\Database\Factories\PostFactory;
 use Nreljed\Blog\Jobs\GenerateSeoForPost;
 use Nreljed\Platform\Ai\Agents\SeoAgent;
 use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 

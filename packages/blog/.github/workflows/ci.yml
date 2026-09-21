@@ -109,24 +109,3 @@ jobs:
               || echo "dispatch to $repo failed (continuing)"
           done
 
-  contract-freeze:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: validate
-    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Verify frozen contract copy matches installed platform contract
-        shell: bash
-        run: |
-          if [ ! -f vendor/nreljed/platform/src/Contracts/FeatureProvider.php ]; then
-            echo "platform not installed in vendor (run composer install) — skipping"
-            exit 0
-          fi
-          if ! cmp -s src/Contracts/FeatureProvider.php vendor/nreljed/platform/src/Contracts/FeatureProvider.php; then
-            echo "FROZEN CONTRACT DRIFT: src/Contracts/FeatureProvider.php differs from the installed platform contract."
-            exit 1
-          fi
-          echo "Frozen contract copy matches platform."

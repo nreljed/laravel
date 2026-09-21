@@ -26,6 +26,8 @@ CI workflow that pushes the release.
 | `env_backup_retention` | `env('DEPLOY_ENV_BACKUP_RETENTION', 5)` | Max `.env.backup.<ts>` snapshots kept beside `.env` (see below)                                        |
 | `boot_check`         | `env('DEPLOY_BOOT_CHECK', true)`        | Boot-check the staged release (`php artisan --version`) before swapping it live                         |
 | `boot_check_timeout` | `90`                                    | Seconds allowed for the staged boot check before it is treated as failed                               |
+| `ip_allowlist`       | `env('DEPLOY_IP_ALLOWLIST', '')`        | Comma-separated IPs/CIDRs allowed to call `/deploy/*`; empty = allow any IP that knows the token       |
+| `allow_query_token`  | `env('DEPLOY_ALLOW_QUERY_TOKEN', true)` | Accept `?token=` in the URL (legacy fallback). `false` = header only (see below)                       |
 | `install_root`       | `base_path()`                           | Live install root the release swaps into (overridable so safety tests run in a sandbox)                |
 
 > The `deploy:auto` schedule is registered by `PlatformServiceProvider::configureSchedules()`
@@ -114,8 +116,18 @@ live `.env` to `.env.backup.<timestamp>` **before** writing, then prunes to the 
 ## HTTP Endpoints
 
 All endpoints are CSRF-exempt (see `configureMiddleware()` → `PreventRequestForgery::except`)
-and token-gated via `DeployController::verifyToken()`. Grouped with `maintenance` middleware +
+and token-gated via `VerifyDeployToken`. Grouped with `maintenance` middleware +
 `throttle:5,1`.
+
+**Token transport:** the token is read from the `Authorization: Bearer` header first.
+While `deploy.allow_query_token` is `true` (default) the legacy `?token=` query string is
+also accepted so consumers can migrate incrementally; set `DEPLOY_ALLOW_QUERY_TOKEN=false`
+per server once every workflow sends the header, which keeps the token out of access logs
+and the `Referer` header.
+
+**IP allowlist:** set `DEPLOY_IP_ALLOWLIST="<ip|/cidr>,..."` on a server to restrict
+`/deploy/*` to known CI/runner egress IPs (uses `Symfony\Component\HttpFoundation\IpUtils`).
+Empty (default) means any IP that knows the token may call the endpoints.
 
 | Method       | Path                   | Purpose                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

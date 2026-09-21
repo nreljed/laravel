@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Blog;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Permission;
 use Nreljed\Platform\Models\User;
 use Tests\Concerns\CreatesTestUsers;

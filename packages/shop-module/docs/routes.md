@@ -243,7 +243,7 @@ All routes run with `web`, `auth`, `verified`.
 | POST | `/store/webhook/stripe` | `store.webhook.stripe` |
 
 > `store.webhook.stripe` is excluded from CSRF verification in the host
-> (`PreventRequestForgery::except` in `PlatformServiceProvider`).
+> (`PreventRequestForgery::except` in `DashboardCoreServiceProvider`).
 
 ### Wishlist (`store-wishlist.php`)
 

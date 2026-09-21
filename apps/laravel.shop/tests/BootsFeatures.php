@@ -3,7 +3,7 @@
 namespace Tests;
 
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Permission;
 use Nreljed\Platform\Models\Role;
 use Nreljed\Platform\Services\FeatureRegistry;

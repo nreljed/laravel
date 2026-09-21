@@ -2,13 +2,18 @@
 
 namespace Nreljed\ShopModule\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nreljed\Platform\Models\User;
+use Nreljed\ShopModule\Database\Factories\CartFactory;
 
 class Cart extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['user_id', 'session_id', 'shipping_address', 'billing_address', 'coupon_code', 'discount', 'applied_coupons'];
 
     protected $casts = [
@@ -19,6 +24,11 @@ class Cart extends Model
     ];
 
     protected $appends = ['subtotal', 'total'];
+
+    protected static function newFactory(): Factory
+    {
+        return CartFactory::new();
+    }
 
     public function user(): BelongsTo
     {

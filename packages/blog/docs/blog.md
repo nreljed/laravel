@@ -47,8 +47,9 @@ middleware + `PostPolicy` (`viewAny`/`create`/`update`/`delete`, owner-or-admin 
   `Tags/Index.tsx`.
 - **Public pages**: `Blog/Public/Index.tsx`, `Blog/Public/Show.tsx` — rendered under the
   host's `PublicLayout`.
-- **Editor**: Lexical-based rich text editor (`resources/js/Components/editor/`) with image,
-  layout columns, tables, YouTube embeds, slash commands, and TOC.
+- **Editor**: Lexical-based rich text editor (`src/Resources/js/Components/editor/`) with image,
+  layout columns, tables, YouTube embeds, slash commands, and TOC. See
+  [Lexical Editor](lexical/index.md) for the full editor documentation.
 - **Notification types**: `post.published`, `post.scheduled` (in_app, default on).
 - **Dashboard**: `getDashboardData()` (total/published/draft) + `getAnalyticsSeries()` (29-day
   new-post series).

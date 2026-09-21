@@ -93,6 +93,13 @@ class MediaController extends Controller
         $canManageAny = $this->canManageAny($user);
 
         if (! $media) {
+            // Unrecorded files (manual seeds, shared assets) are only removed
+            // by managers — mirroring the cleanup() gate — so a regular user
+            // can never destroy files they do not own via the path fallback.
+            if (! $canManageAny) {
+                abort(403, 'You are not allowed to delete this file.');
+            }
+
             app(MediaService::class)->delete($request->path);
 
             return response()->json(['success' => true]);

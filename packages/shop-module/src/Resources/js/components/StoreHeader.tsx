@@ -1,7 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import { Menu, X, ShoppingCart } from "lucide-react";
-import type { PageProps } from "@nreljed/platform/types";
 import { Button } from "@nreljed/platform/Components/ui/button";
 import { Separator } from "@nreljed/platform/Components/ui/separator";
 import { BrandLogo } from "@nreljed/platform/Components/frontend/BrandLogo";
@@ -16,12 +15,15 @@ interface CartData {
     items: CartItem[];
 }
 
-interface StoreSharedData {
-    cart?: CartData;
+interface PageProps {
+    sharedData?: {
+        cart?: CartData;
+    };
+    brand?: { logo?: string; favicon?: string; name?: string };
 }
 
 export function StoreHeader() {
-    const { props } = usePage<PageProps<{ sharedData?: StoreSharedData }>>();
+    const { props } = usePage<PageProps>();
     const brand = props.brand || {};
     const cart = props.sharedData?.cart || { items: [] };
     const itemCount = (cart.items || []).reduce((sum, item) => sum + item.quantity, 0);

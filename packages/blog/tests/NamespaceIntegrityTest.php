@@ -25,12 +25,6 @@ final class NamespaceIntegrityTest extends TestCase
         foreach ($this->phpFiles() as $file) {
             $relative = str_replace('\\', '/', substr($file, strlen($this->root.'/')));
 
-            // The frozen FeatureProvider contract copy intentionally keeps the
-            // Nreljed\Platform\Contracts namespace (byte-identical reference).
-            if (str_starts_with($relative, 'src/Contracts/')) {
-                continue;
-            }
-
             $content = file_get_contents($file);
 
             if (preg_match('/(?<!Blog)(?<!Platform)App\\\\[A-Za-z_]/', (string) $content)) {
@@ -48,10 +42,9 @@ final class NamespaceIntegrityTest extends TestCase
         foreach ($this->phpFiles() as $file) {
             $relative = str_replace('\\', '/', substr($file, strlen($this->root.'/')));
 
-            // Route definition files, anonymous-class migrations and the
-            // frozen contract copy are intentionally outside the package root
-            // namespace.
-            if (preg_match('#(^|/)Routes/|/database/migrations/#', $relative) || str_starts_with($relative, 'src/Contracts/')) {
+            // Route definition files and anonymous-class migrations are
+            // intentionally outside the package root namespace.
+            if (preg_match('#(^|/)Routes/|/database/migrations/#', $relative)) {
                 continue;
             }
 
@@ -77,7 +70,7 @@ final class NamespaceIntegrityTest extends TestCase
             $relative = substr($file, strlen($this->root.'/src/'));
             $relative = str_replace('\\', '/', $relative);
 
-            if (str_contains($relative, 'Database/Factories/') || str_starts_with($relative, 'Contracts/')) {
+            if (str_contains($relative, 'Database/Factories/')) {
                 continue;
             }
 
@@ -124,21 +117,15 @@ final class NamespaceIntegrityTest extends TestCase
         );
     }
 
-    public function test_frozen_contract_copy_matches_the_kernel_contract(): void
+    public function test_does_not_ship_a_contract_copy(): void
     {
-        $installed = $this->root.'/vendor/nreljed/platform/src/Contracts/FeatureProvider.php';
+        $copy = $this->root.'/src/Contracts/FeatureProvider.php';
 
-        if (! is_file($installed)) {
-            $this->markTestSkipped('platform not installed in vendor (run composer install)');
-        }
-
-        $local = (string) file_get_contents($this->root.'/src/Contracts/FeatureProvider.php');
-        $remote = (string) file_get_contents($installed);
-
-        $this->assertSame(
-            hash('sha256', $remote),
-            hash('sha256', $local),
-            'src/Contracts/FeatureProvider.php must stay byte-identical to the installed platform contract.'
+        $this->assertFileDoesNotExist(
+            $copy,
+            'The FeatureProvider contract belongs to the platform kernel only. '
+            .'Shipping a copy redeclares Nreljed\Platform\Contracts\FeatureProvider and '
+            .'risks an autoload collision. Remove src/Contracts/FeatureProvider.php.'
         );
     }
 

@@ -1,9 +1,11 @@
 # Frontend
 
 Shop pages live inside the package under `src/Resources/js/` and are registered into the host
-bundle through **Vite glob imports** (`import.meta.glob('@shop/Pages/**/*.tsx')` in the host
-`app.tsx`, with `projectPrefix: 'shop'`). The `@shop` alias maps to
-`vendor/nreljed/shop-module/src/Resources/js/`.
+bundle through the **`pages.ts` kit**: the host imports `registerShopPages()` from
+`@nreljed/shop-module/pages` and spreads it into its `page-config` map under the `shop/*`
+keys. The `@nreljed/shop-module` alias maps to
+`vendor/nreljed/shop-module/src/Resources/js/` (wired in `vite.config.js` + `tsconfig.json`).
+The legacy `@shop` glob scheme is superseded.
 
 ## Directory Layout
 
@@ -135,6 +137,6 @@ controls (same fetch+reload pattern).
 
 ## Related
 
-- [Architecture](architecture.md) — how the host wires `@shop`, page globs, and Tailwind.
+- [Architecture](architecture.md) — how the host wires `@nreljed/shop-module`, page registration, and Tailwind.
 - [Controllers](controllers.md) — the Inertia responses behind each page.
 - [Settings](settings.md) — `Settings/Index.tsx` and the `shopSettings`/`currencyFormat` props.

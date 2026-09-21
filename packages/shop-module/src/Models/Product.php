@@ -3,6 +3,8 @@
 namespace Nreljed\ShopModule\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,9 +12,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nreljed\Platform\Services\MediaService;
+use Nreljed\ShopModule\Database\Factories\ProductFactory;
 
 class Product extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
     protected $fillable = [
@@ -70,6 +74,11 @@ class Product extends Model
     ];
 
     protected $appends = ['active_price', 'on_sale', 'is_in_stock'];
+
+    protected static function newFactory(): Factory
+    {
+        return ProductFactory::new();
+    }
 
     public function getActivePriceAttribute(): float
     {

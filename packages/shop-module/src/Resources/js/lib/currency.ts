@@ -1,5 +1,4 @@
 import { usePage } from "@inertiajs/react";
-import type { PageProps } from "@nreljed/platform/types";
 
 export interface CurrencyInfo {
     code: string;
@@ -17,11 +16,13 @@ interface CurrencyFormat {
     decimals: number;
 }
 
-interface CurrencySharedData {
-    currencies?: CurrencyInfo[];
-    selectedCurrency?: string;
-    currencyPosition?: string;
-    currencyFormat?: CurrencyFormat;
+interface PageWithCurrency {
+    sharedData?: {
+        currencies?: CurrencyInfo[];
+        selectedCurrency?: string;
+        currencyPosition?: string;
+        currencyFormat?: CurrencyFormat;
+    };
 }
 
 function round(value: number, decimals: number): number {
@@ -46,7 +47,7 @@ const FALLBACK_FORMAT: CurrencyFormat = {
 };
 
 export function useCurrency() {
-    const { props } = usePage<PageProps<{ sharedData?: CurrencySharedData }>>();
+    const { props } = usePage<PageWithCurrency>();
     const shared = props.sharedData ?? {};
     const currencies = shared.currencies ?? [];
     const selectedCode = shared.selectedCurrency;
@@ -67,7 +68,7 @@ export function useCurrency() {
 
     const formatNumber = (value: number, decimals: number): string => {
         const [intPart, decPart] = value.toFixed(decimals).split(".");
-        const grouped = (intPart ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, formatSettings.thousands_separator);
+        const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, formatSettings.thousands_separator);
         return decPart ? `${grouped}${formatSettings.decimal_separator}${decPart}` : grouped;
     };
 

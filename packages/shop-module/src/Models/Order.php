@@ -2,14 +2,19 @@
 
 namespace Nreljed\ShopModule\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Nreljed\Platform\Models\User;
+use Nreljed\ShopModule\Database\Factories\OrderFactory;
 
 class Order extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'order_number', 'user_id', 'status',
         'subtotal', 'tax_total', 'shipping_total', 'discount_total', 'total', 'total_refunded',
@@ -36,6 +41,11 @@ class Order extends Model
         'total_refunded' => 'decimal:2',
         'applied_coupons' => 'array',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return OrderFactory::new();
+    }
 
     protected static function boot(): void
     {

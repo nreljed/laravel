@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Deploy;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\User;
 use Tests\TestCase;
 

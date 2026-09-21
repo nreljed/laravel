@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Admin;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Mockery;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Exceptions\DatabaseMaintenanceException;
 use Nreljed\Platform\Services\DatabaseMaintenanceService;
 use Tests\Concerns\CreatesTestUsers;

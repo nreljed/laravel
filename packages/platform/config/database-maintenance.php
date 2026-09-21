@@ -1,9 +1,7 @@
 <?php
 
-use Database\Seeders\BlogContentSeeder;
-use Database\Seeders\DemoUsersSeeder;
-use Database\Seeders\RolesAndPermissionsSeeder;
-use Database\Seeders\SettingsSeeder;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
+use Nreljed\Platform\Database\Seeders\SettingsSeeder;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,9 +30,13 @@ return [
     | only — production stays clean). Non-baseline groups are demo content and
     | are only re-run on reset when explicitly requested (`with_demo`).
     |
+    | This package ships only its own owning seeders. Demo-tier groups are
+    | application content (demo users, blog posts, products, ...) — consuming
+    | apps override this array in their published config to point at their
+    | seeders, exactly like the baseline groups here.
+    |
     | Keys must be stable slugs — they are stored in audit logs and sent by the
-    | frontend/GitHub Action. Consuming apps override this array in their own
-    | published config to point at their seeders.
+    | frontend/GitHub Action. Do not rename them after deployment.
     |
     */
 
@@ -42,26 +44,16 @@ return [
         'roles' => [
             'class' => RolesAndPermissionsSeeder::class,
             'label' => 'Roles & Permissions',
+            'description' => 'Re-creates all core roles and their permission assignments. Safe to re-run.',
             'destructive' => false,
             'baseline' => true,
         ],
         'settings' => [
             'class' => SettingsSeeder::class,
             'label' => 'Settings',
+            'description' => 'Restores the default site settings (general, registration, security, email, formatting, ...). Safe to re-run.',
             'destructive' => false,
             'baseline' => true,
-        ],
-        'demo_users' => [
-            'class' => DemoUsersSeeder::class,
-            'label' => 'Demo users',
-            'destructive' => false,
-            'baseline' => false,
-        ],
-        'blog' => [
-            'class' => BlogContentSeeder::class,
-            'label' => 'Blog content',
-            'destructive' => true,
-            'baseline' => false,
         ],
     ],
 ];

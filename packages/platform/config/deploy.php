@@ -122,6 +122,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Deploy Endpoint IP Allowlist
+    |--------------------------------------------------------------------------
+    |
+    | Optional CIDR allowlist restricting the /deploy/* endpoints to known
+    | CI/runner IPs. Empty by default (any IP may call the endpoints once it
+    | knows the token). Set DEPLOY_IP_ALLOWLIST="1.2.3.4,10.0.0.0/8" on the
+    | server to lock deploy writes to your CI egress IPs. Each value is a
+    | single IP or CIDR; requests from non-listed IPs are rejected with 403.
+    |
+    */
+
+    'ip_allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('DEPLOY_IP_ALLOWLIST', ''))))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Query-String Token Fallback
+    |--------------------------------------------------------------------------
+    |
+    | Historically the /deploy/* endpoints accepted `?token=` on the URL,
+    | which can leak into proxy/access logs and the Referer header. The
+    | middleware prefers the `Authorization: Bearer` header and only falls
+    | back to the query string while this flag is on. Default true so every
+    | consumer keeps deploying unchanged during migration; flip
+    | DEPLOY_ALLOW_QUERY_TOKEN=false in each server `.env` after every
+    | consumer workflow has switched to the header (see docs/deploy.md).
+    |
+    */
+
+    'allow_query_token' => (bool) env('DEPLOY_ALLOW_QUERY_TOKEN', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Install Root
     |--------------------------------------------------------------------------
     |

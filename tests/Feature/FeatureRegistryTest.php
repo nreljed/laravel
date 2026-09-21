@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Tests\TestCase;
 

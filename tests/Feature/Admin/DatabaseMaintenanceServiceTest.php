@@ -4,9 +4,9 @@ namespace Tests\Feature\Admin;
 
 use Database\Seeders\BlogContentSeeder;
 use Database\Seeders\DemoUsersSeeder;
-use Database\Seeders\RolesAndPermissionsSeeder;
-use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
+use Nreljed\Platform\Database\Seeders\SettingsSeeder;
 use Nreljed\Platform\Exceptions\DatabaseMaintenanceException;
 use Nreljed\Platform\Services\DatabaseMaintenanceService;
 use Tests\TestCase;

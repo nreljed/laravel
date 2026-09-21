@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Console;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\AuditLog;
 use Nreljed\Platform\Models\Setting;
 use Nreljed\Platform\Models\User;

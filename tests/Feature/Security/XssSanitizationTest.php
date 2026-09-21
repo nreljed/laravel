@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Security;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Nreljed\Blog\Models\Post;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Services\HtmlSanitizer;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;

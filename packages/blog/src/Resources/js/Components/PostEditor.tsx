@@ -5,7 +5,7 @@ import type { ViewportSize } from "./PostEditorToolbar";
 
 // Lazy load Lexical editor
 const Editor = lazy(async () => {
-  const module = await import("@nreljed/platform/Components/editor");
+  const module = await import("./editor");
   return { default: module.RichTextEditor };
 });
 

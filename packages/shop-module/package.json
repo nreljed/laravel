@@ -1,13 +1,11 @@
 {
   "name": "@nreljed/shop-module",
-  "version": "0.1.39",
+  "version": "0.1.42",
   "description": "Shop feature for the Nreljed dashboard platform — products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks and storefront frontend kit.",
   "license": "proprietary",
   "type": "module",
   "exports": {
-    "./pages": "./src/Resources/js/pages.ts",
-    "./icons": "./src/Resources/js/icons.ts",
-    "./*": "./src/Resources/js/*"
+    "./shop-aliases": "./shop.aliases.js"
   },
   "peerDependencies": {
     "@inertiajs/core": "^3.0.0",

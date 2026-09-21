@@ -11,7 +11,7 @@ pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 > **Where the docs live:** this `docs/` folder is the authoritative reference for the
 > Shop **domain** (products, orders, coupons, shipping, taxes, storefront, …). The
 > shared **platform** (feature-provider contract, deploy endpoints, notifications,
-> blog, AI) is documented in [`platform/docs/`](https://github.com/nreljed/platform/tree/main/docs)
+> AI) is documented in [`nreljed/platform/docs/`](https://github.com/nreljed/platform/tree/main/docs)
 > — this package builds on it but does not re-document it.
 
 ## Table of Contents
@@ -37,7 +37,7 @@ pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 | **Models** | 29 (see [Data Model](data-model.md)) |
 | **Services** | 14 (see [Services](services.md)) |
 | **Policies** | 9 (see [Permissions](permissions.md)) |
-| **Commands** | 5 (`shop:release-expired-holds`, `shop:abandoned-cart-process`, `shop:process-pending-webhooks`, `shop:process-scheduled-sales`, `shop:product-seed`) |
+| **Commands** | 4 (`shop:release-expired-holds`, `shop:abandoned-cart-process`, `shop:process-pending-webhooks`, `shop:process-scheduled-sales`) |
 | **Email templates** | 7 (order-confirmation, order-shipped, order-invoice, low-stock-alert, cart-recovery-1h/24h/72h) |
 | **Notification types** | 4 (`order.placed`, `order.status_changed`, `low_stock`, `product.stock_changed`) |
 | **Migrations** | 58, auto-loaded |
@@ -45,7 +45,7 @@ pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 
 ## Related Docs
 
-- **Host integration / page registration:** see `platform/docs/architecture.md`
-  (feature providers, `config/features.php`, Vite aliases, page globs).
-- **Deploy pipeline:** both apps ship the same canonical check-first deploy flow —
-  see `platform/docs/deploy.md`.
+- **Host integration / page registration:** see `nreljed/platform/docs/architecture.md`
+  (feature providers, `config/features.php`, Vite aliases, page maps).
+- **Deploy pipeline:** all apps ship the same canonical check-first deploy flow —
+  see `nreljed/platform/docs/deploy.md`.

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useForm } from "@inertiajs/react";
 import { Download, RefreshCw, FileJson, CheckCircle2, Database } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../ui/accordion";
@@ -21,7 +21,6 @@ export interface DataModule {
 }
 
 function ModuleRestoreForm({ module }: { module: DataModule }) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm({
@@ -38,7 +37,6 @@ function ModuleRestoreForm({ module }: { module: DataModule }) {
       preserveScroll: true,
       onSuccess: () => {
         form.reset();
-        setSelectedFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
         toast.add({ title: `${module.label} restored successfully.`, type: "success" });
       },
@@ -71,7 +69,6 @@ function ModuleRestoreForm({ module }: { module: DataModule }) {
           className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/20"
           onChange={(e) => {
             const file = e.target.files?.[0] ?? null;
-            setSelectedFile(file);
             form.setData("backup", file);
           }}
         />

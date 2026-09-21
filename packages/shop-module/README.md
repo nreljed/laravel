@@ -39,7 +39,7 @@ public storefront.
 ```bash
 composer config repositories.shop vcs https://github.com/nreljed/shop-module.git
 composer require nreljed/shop-module:^0.1
-php artisan permissions:sync
+php artisan db:seed --class=RolesAndPermissionsSeeder
 php artisan migrate
 ```
 
@@ -47,7 +47,7 @@ php artisan migrate
    e.g. `COMPOSER_AUTH`).
 2. **Provider:** register `Nreljed\ShopModule\ShopServiceProvider` in `bootstrap/providers.php`.
 3. **Feature registration:** add the provider class to the `features` array in
-   `config/features.php` so the core `FeatureRegistry` aggregates its nav, permissions, email
+   `config/core.php` so the core `FeatureRegistry` aggregates its nav, permissions, email
    templates, notification types, gallery config, and dashboard data.
 4. **Migrations / views / config:** auto-loaded —
    `loadMigrationsFrom(__DIR__.'/../database/migrations')`,
@@ -55,10 +55,10 @@ php artisan migrate
 
 ### Frontend wiring (host)
 
-- **Vite alias (workspace):** `@nreljed/shop-module` → `packages/shop-module/src/Resources/js/`.
-  Standalone VCS installs keep the legacy vendor alias `@shop` → `vendor/nreljed/shop-module/src/Resources/js/`.
-- **Page registration:** the host glob-imports `@shop/Pages/**/*.tsx` with
-  `projectPrefix: "shop"`, so pages render under `shop/*` Inertia component keys.
+- **Vite alias:** `@nreljed/shop-module` → `vendor/nreljed/shop-module/src/Resources/js/` (also in `tsconfig.json` paths).
+- **Page registration:** the host imports `registerShopPages()` from `@nreljed/shop-module/pages`
+  and spreads it into its page map, so pages render under `shop/*` Inertia component keys. The
+  legacy `@shop` glob scheme is superseded.
 - **Tailwind:** include the shop JS dir via `@source` — a missing `@source` silently strips
   every shop utility class from the built CSS.
 
@@ -73,7 +73,7 @@ npm run build
 
 # Quality gate
 vendor/bin/pint
-php artisan permissions:sync
+php artisan db:seed --class=RolesAndPermissionsSeeder
 php artisan test
 npm run typecheck
 ```

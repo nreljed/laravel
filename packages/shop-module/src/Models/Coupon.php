@@ -3,14 +3,19 @@
 namespace Nreljed\ShopModule\Models;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nreljed\Platform\Models\User;
+use Nreljed\ShopModule\Database\Factories\CouponFactory;
 
 class Coupon extends Model
 {
+    use HasFactory;
+
     public const TYPES = [
         'percentage',
         'fixed',
@@ -45,6 +50,11 @@ class Coupon extends Model
         'starts_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
+
+    protected static function newFactory(): Factory
+    {
+        return CouponFactory::new();
+    }
 
     public function creator(): BelongsTo
     {

@@ -7,10 +7,11 @@ return [
     | Database Backups
     |--------------------------------------------------------------------------
     |
-    | Controls the automatic `database:backup` schedule and the token-protected
-    | `/deploy/backup` endpoint. Backups are gzipped dump files stored under
-    | the configured directory (default <storage>/app/backups) and pruned to
-    | the retention count after each run.
+    | Controls the automatic `database:backup` schedule. Backups are gzipped
+    | dump files stored under the configured directory (default <storage>/app/
+    | backups) and pruned to the retention count after each run.
+    | (The old `/deploy/backup` HTTP endpoint was removed — the CLI command is
+    | the supported path.)
     |
     */
 

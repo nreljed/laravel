@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Notifications;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\NotificationPreference;
 use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\NotificationService;

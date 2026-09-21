@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Security;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Services\MediaService;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;

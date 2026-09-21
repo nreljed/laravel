@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Auth;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Setting;
 use Nreljed\Platform\Models\User;
 use Tests\TestCase;

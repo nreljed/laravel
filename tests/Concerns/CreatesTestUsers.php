@@ -2,7 +2,7 @@
 
 namespace Tests\Concerns;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Role;
 use Nreljed\Platform\Models\User;
 

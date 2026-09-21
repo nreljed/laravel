@@ -123,7 +123,7 @@ class AiHttpClient
             return ['success' => false, 'error' => "Unsupported provider: {$provider}"];
         }
 
-        $model ??= self::DEFAULT_MODELS[$provider] ?? null;
+        $model ??= self::DEFAULT_MODELS[$provider];
         [$headers, $body] = $this->buildPayload($provider, $apiKey, $model, $prompt, $systemPrompt, $maxTokens);
         $url = $this->buildUrl($provider, $model);
 

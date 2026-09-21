@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Admin;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Env;
@@ -11,6 +10,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Services\CoreVersionService;
 use Nreljed\Platform\Services\SystemHealthService;
 use Tests\Concerns\CreatesTestUsers;
@@ -50,6 +50,18 @@ class SystemHealthTest extends TestCase
             ->has('mail.mailer')
             ->has('recommendations')
             ->has('latest_version')
+        );
+    }
+
+    public function test_system_health_page_keeps_shared_database_maintenance_feature(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard.admin.system-health'));
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('dashboard/admin/system-health')
+            ->has('features.databaseMaintenanceEnabled')
         );
     }
 
@@ -303,13 +315,23 @@ class SystemHealthTest extends TestCase
     {
         Http::fake();
 
-        $lock = json_decode((string) file_get_contents(base_path('composer.lock')), true);
-        $meta = collect(array_merge($lock['packages'] ?? [], $lock['packages-dev'] ?? []))
-            ->firstWhere('name', 'nreljed/platform');
-        $this->assertNotNull($meta, 'nreljed/platform must be in composer.lock');
+        // The installed platform identity is resolved from the authoritative
+        // install state (vendor/composer/installed.json), falling back to
+        // composer.lock — mirroring CoreVersionService::info().
+        $installed = json_decode((string) file_get_contents(base_path('vendor/composer/installed.json')), true);
+        $installedMeta = collect($installed['packages'] ?? [])->firstWhere('name', 'nreljed/platform');
 
-        $sha = $meta['source']['reference'] ?? $meta['dist']['reference'] ?? null;
-        $this->assertNotNull($sha, 'locked platform must carry a commit reference');
+        $sha = $installedMeta['source']['reference'] ?? $installedMeta['dist']['reference'] ?? null;
+
+        if ($sha === null) {
+            $lock = json_decode((string) file_get_contents(base_path('composer.lock')), true);
+            $meta = collect(array_merge($lock['packages'] ?? [], $lock['packages-dev'] ?? []))
+                ->firstWhere('name', 'nreljed/platform');
+
+            $sha = $meta['source']['reference'] ?? $meta['dist']['reference'] ?? null;
+        }
+
+        $this->assertNotNull($sha, 'installed platform must carry a commit reference');
 
         $response = $this->actingAs($this->admin())
             ->post(route('dashboard.admin.system-health.refresh'));

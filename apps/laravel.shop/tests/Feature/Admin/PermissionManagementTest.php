@@ -3,9 +3,9 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Permission;
 use Nreljed\Platform\Models\Role;
 use Tests\TestCase;

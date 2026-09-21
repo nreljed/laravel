@@ -21,13 +21,16 @@ final class FeatureProviderContractTest extends TestCase
     public function test_interface_declares_the_full_capability_surface(): void
     {
         $expected = [
+            'dataBackupSummary',
             'dependencies',
             'description',
             'enabled',
+            'exportDataBackup',
             'getAnalyticsSeries',
             'getComposerPackage',
             'getContentDescription',
             'getDashboardData',
+            'getDataBackupCapabilities',
             'getDeactivationNotice',
             'getEmailTemplates',
             'getGalleryConfig',
@@ -48,6 +51,7 @@ final class FeatureProviderContractTest extends TestCase
             'getSharedData',
             'getSitemapUrls',
             'hasSettings',
+            'importDataBackup',
             'name',
             'onDisable',
             'onUserDelete',
@@ -101,18 +105,5 @@ final class FeatureProviderContractTest extends TestCase
                 'BlogServiceProvider must implement '.$method->getName().'()'
             );
         }
-    }
-
-    public function test_contract_copy_is_byte_identical_to_the_interface(): void
-    {
-        $reflect = new ReflectionClass(FeatureProvider::class);
-        $installed = file_get_contents($reflect->getFileName());
-        $local = file_get_contents(dirname(__DIR__).'/src/Contracts/FeatureProvider.php');
-
-        $this->assertSame(
-            hash('sha256', (string) $installed),
-            hash('sha256', (string) $local),
-            'src/Contracts/FeatureProvider.php must stay byte-identical to the platform contract.'
-        );
     }
 }

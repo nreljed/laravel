@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Http\Controllers\RecoveryController;
 use Nreljed\Platform\Models\RecoveryToken;
 use Nreljed\Platform\Models\Setting;

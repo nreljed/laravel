@@ -137,8 +137,11 @@ class DeploySafetyTest extends TestCase
             $this->assertTrue(File::exists($this->sandbox.'/vendor/autoload.php'), 'Staged vendor was not installed.');
             $this->assertSame("<?php\n // minimal staged autoload\n", File::get($this->sandbox.'/vendor/autoload.php'));
 
-            $this->assertEmpty(File::glob($this->stagingDir), 'Staging dir leaked after success.');
-            $this->assertEmpty(File::glob($this->stagingDir.'-vendor-backup'), 'Vendor backup survived a success.');
+            // The atomic swap is self-contained in 0.1.54: the pre-swap vendor
+            // backup is discarded inside swapStagedIntoPlace() once the staged
+            // tree is fully activated (auto-repair via recoverStrandedBackup()
+            // covers interrupted runs) — no staging or backup residue may stay.
+            $this->assertEmpty(File::glob($this->stagingDir), 'Staging dir or vendor backup leaked after success.');
         } finally {
             File::delete($zipPath);
         }

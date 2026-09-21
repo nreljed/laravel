@@ -23,7 +23,7 @@ src/
   Contracts/                 # Frozen copy of the platform FeatureProvider contract
   Controllers/ Models/ Requests/ Routes/ Services/
   Observers/ Policies/ Jobs/ Console/Commands/ Database/Factories/
-  Resources/js               # Frontend kit — app aliases '@blog' here
+  Resources/js               # Frontend kit — exports registerBlogPages(); apps alias '@nreljed/blog' here
   Resources/views/email      # posts:: email templates
 database/migrations/         # Posts tables
 tests/                       # Structural + contract tests (no framework boot)
@@ -39,6 +39,8 @@ tests/                       # Structural + contract tests (no framework boot)
 
 ## Frontend aliases
 
-Apps wire `@blog` → `vendor/nreljed/blog/src/Resources/js` via the shipped
-`blog.aliases.js` helper, then spread `registerBlogPages()` from
-`@blog/pages` into their page map under the `posts/` prefix.
+Apps wire `@nreljed/blog` → `vendor/nreljed/blog/src/Resources/js` in their
+`vite.config.js` + `tsconfig.json` (`@nreljed/blog` and `@nreljed/blog/*`), then
+spread `registerBlogPages()` from `@nreljed/blog/pages` into their page map
+under the `posts/` prefix. The legacy `@blog` / `blog.aliases.js` scheme is
+superseded — consumers use the `@nreljed/*` namespace with platform/blog aliases.

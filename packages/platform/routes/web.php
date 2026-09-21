@@ -173,8 +173,8 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::post('/data/restore/{module}', [AccountDataController::class, 'restore'])->middleware('throttle:10,1')->name('dashboard.account.data.restore');
     });
 
-    // Media uploads (auth + verified)
-    Route::prefix('/dashboard')->group(function () {
+    // Media uploads (auth + verified) — throttled because image processing is CPU/memory heavy
+    Route::prefix('/dashboard')->middleware('throttle:60,1')->group(function () {
         Route::get('/media', [MediaController::class, 'index'])->name('dashboard.media.index');
         Route::post('/media', [MediaController::class, 'upload'])->name('dashboard.media.upload');
         Route::delete('/media', [MediaController::class, 'destroy'])->name('dashboard.media.destroy');

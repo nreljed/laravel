@@ -2,11 +2,10 @@
 
 namespace Tests\Feature\Console;
 
-use Database\Factories\TestPostFactory;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Nreljed\Blog\Database\Factories\PostFactory;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\User;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
@@ -27,50 +26,50 @@ class CleanupOrphanMediaCommandTest extends TestCase
     {
         $admin = $this->admin();
 
-        TestPostFactory::new()->create([
+        PostFactory::new()->create([
             'user_id' => $admin->id,
-            'featured_image' => '/storage/test-posts/kept.webp',
+            'featured_image' => '/storage/posts/kept.webp',
         ]);
 
-        Storage::disk('public')->put('test-posts/kept.webp', 'content');
-        Storage::disk('public')->put('test-posts/orphan.webp', 'content');
+        Storage::disk('public')->put('posts/kept.webp', 'content');
+        Storage::disk('public')->put('posts/orphan.webp', 'content');
 
         $this->artisan('core:cleanup-orphan-media')
             ->expectsOutputToContain('Deleted 1 orphan file(s).')
             ->assertSuccessful();
 
-        $this->assertTrue(Storage::disk('public')->exists('test-posts/kept.webp'));
-        $this->assertFalse(Storage::disk('public')->exists('test-posts/orphan.webp'));
+        $this->assertTrue(Storage::disk('public')->exists('posts/kept.webp'));
+        $this->assertFalse(Storage::disk('public')->exists('posts/orphan.webp'));
     }
 
     public function test_dry_run_does_not_delete_files(): void
     {
-        Storage::disk('public')->put('test-posts/orphan.webp', 'content');
+        Storage::disk('public')->put('posts/orphan.webp', 'content');
 
         $this->artisan('core:cleanup-orphan-media', ['--dry-run' => true])
             ->expectsOutputToContain('Would delete 1 orphan file(s).')
             ->assertSuccessful();
 
-        $this->assertTrue(Storage::disk('public')->exists('test-posts/orphan.webp'));
+        $this->assertTrue(Storage::disk('public')->exists('posts/orphan.webp'));
     }
 
     public function test_reports_no_orphans_when_all_files_referenced(): void
     {
         $admin = $this->admin();
 
-        TestPostFactory::new()->create([
+        PostFactory::new()->create([
             'user_id' => $admin->id,
-            'featured_image' => '/storage/test-posts/kept.webp',
+            'featured_image' => '/storage/posts/kept.webp',
         ]);
 
-        Storage::disk('public')->put('test-posts/kept.webp', 'content');
+        Storage::disk('public')->put('posts/kept.webp', 'content');
 
         $this->artisan('core:cleanup-orphan-media')
-            ->expectsOutputToContain('No orphans found in test-posts/')
+            ->expectsOutputToContain('No orphans found in posts/')
             ->expectsOutputToContain('Deleted 0 orphan file(s).')
             ->assertSuccessful();
 
-        $this->assertTrue(Storage::disk('public')->exists('test-posts/kept.webp'));
+        $this->assertTrue(Storage::disk('public')->exists('posts/kept.webp'));
     }
 
     public function test_deletes_orphan_avatar_files_and_keeps_referenced(): void

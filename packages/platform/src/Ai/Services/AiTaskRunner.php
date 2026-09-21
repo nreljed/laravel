@@ -8,6 +8,7 @@ use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\QueuedAgentResponse;
 use Laravel\Ai\Responses\StreamableAgentResponse;
 use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
+use Nreljed\Platform\Ai\Jobs\InvokeAiTask;
 use Nreljed\Platform\Models\User;
 use Throwable;
 
@@ -44,20 +45,16 @@ class AiTaskRunner
         ?int $timeout = null,
     ): AgentResponse {
         $resolved = $this->prepare($agent, $user, $providerName);
-
         $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
         if ($exceeded !== null) {
             throw new \RuntimeException(
                 $this->capMessage($exceeded),
             );
         }
-
         $attempts = 0;
-
         while (true) {
             $attempts++;
             $start = microtime(true);
-
             try {
                 $response = $agent->prompt(
                     $prompt,
@@ -69,16 +66,13 @@ class AiTaskRunner
             } catch (RateLimitedException $e) {
                 if ($attempts >= AiService::MAX_RATE_LIMIT_ATTEMPTS) {
                     $this->recordError($user, $resolved['provider'], $e);
-
                     throw $e;
                 }
-
                 usleep(($this->delaySeconds($attempts)) * 1_000_000);
 
                 continue;
             } catch (Throwable $e) {
                 $this->recordError($user, $resolved['provider'], $e);
-
                 throw $e;
             }
         }
@@ -105,28 +99,26 @@ class AiTaskRunner
         ?string $providerName = null,
     ): StreamableAgentResponse {
         $resolved = $this->prepare($agent, $user, $providerName);
-
         $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
         if ($exceeded !== null) {
-            throw new \RuntimeException($this->capMessage($exceeded));
+            throw new \RuntimeException(
+                $this->capMessage($exceeded),
+            );
         }
-
         $start = microtime(true);
-
         $stream = $agent->stream(
             $prompt,
             provider: $resolved['provider'],
             model: $resolved['model'],
         );
-
         $stream->then(function ($response) use ($user, $agent, $resolved, $start): void {
             $usage = $response->usage ?? null;
             $this->logUsage(
                 $user,
                 $agent,
                 $resolved,
-                $usage?->promptTokens ?? 0,
-                $usage?->completionTokens ?? 0,
+                $usage->promptTokens ?? 0,
+                $usage->completionTokens ?? 0,
                 $this->elapsedMs($start),
             );
         });
@@ -143,18 +135,19 @@ class AiTaskRunner
         string $prompt,
         ?string $providerName = null,
     ): QueuedAgentResponse {
-        $resolved = $this->prepare($agent, $user, $providerName);
-
         $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
         if ($exceeded !== null) {
-            throw new \RuntimeException($this->capMessage($exceeded));
+            throw new \RuntimeException(
+                $this->capMessage($exceeded),
+            );
         }
 
-        return $agent->queue(
-            $prompt,
-            provider: $resolved['provider'],
-            model: $resolved['model'],
-        );
+        return new QueuedAgentResponse(dispatch(new InvokeAiTask(
+            userId: $user->id,
+            agentClass: $agent::class,
+            prompt: $prompt,
+            providerName: $providerName,
+        )));
     }
 
     /**
@@ -163,11 +156,16 @@ class AiTaskRunner
      *
      * @return array{provider: string, model: string|null}
      */
-    private function prepare(Agent $agent, User $user, ?string $providerName): array
-    {
+    private function prepare(
+        Agent $agent,
+        User $user,
+        ?string $providerName,
+    ): array {
         $resolved = $this->aiService->resolveForUser($user, $providerName);
-
-        config()->set("ai.providers.{$resolved['provider']}.key", $resolved['key']);
+        config()->set(
+            "ai.providers.{$resolved['provider']}.key",
+            $resolved['key'],
+        );
 
         return [
             'provider' => $resolved['provider'],
@@ -175,7 +173,9 @@ class AiTaskRunner
         ];
     }
 
-    /** @param  array{provider: string, model: string|null}  $resolved */
+    /**
+     * Record usage (and last-error on failure) best-effort — never blocks.
+     */
     private function logUsage(
         User $user,
         Agent $agent,
@@ -188,7 +188,7 @@ class AiTaskRunner
             $this->aiService->logUsage(
                 user: $user,
                 agentClass: $agent::class,
-                provider: $resolved['provider'] ?? 'unknown',
+                provider: $resolved['provider'],
                 model: $resolved['model'] ?? '',
                 inputTokens: $inputTokens,
                 outputTokens: $outputTokens,
@@ -199,7 +199,6 @@ class AiTaskRunner
         }
     }
 
-    /** @param  array{provider: string}  $resolved */
     private function recordError(User $user, string $provider, Throwable $e): void
     {
         $this->aiService->recordError($user, $provider, $e->getMessage());

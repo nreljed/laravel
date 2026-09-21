@@ -15,8 +15,10 @@ use Nreljed\Platform\Deploy\Controllers\DeployController;
 |
 | Token auth is enforced centrally by the `deploy-token` middleware on the
 | whole group so future endpoints cannot silently skip it. The token is read
-| from the `token` request input (query or JSON body) or an `Authorization:
-| Bearer` header, compared constant-time against config('deploy.token').
+| from the `Authorization: Bearer` header — with a config-gated `?token=`
+| fallback until consumers migrate (see config/deploy.php) — and compared
+| constant-time against config('deploy.token'). Optional CIDR allowlist via
+| DEPLOY_IP_ALLOWLIST.
 |
 */
 
@@ -26,7 +28,6 @@ Route::middleware('deploy-token')->group(function () {
     Route::match(['get', 'post'], '/deploy/check', [DeployController::class, 'check'])->middleware('throttle:5,1');
     Route::post('/deploy/migrate', [DeployController::class, 'migrate'])->middleware('throttle:5,1');
     Route::post('/deploy/create-admin', [DeployController::class, 'createAdmin'])->middleware('throttle:5,1');
-    Route::post('/deploy/backup', [DeployController::class, 'backup'])->middleware('throttle:5,1');
     Route::post('/deploy/env', [DeployController::class, 'updateEnvValues'])->middleware('throttle:5,1');
     Route::post('/deploy/reset', [DeployController::class, 'resetDatabase'])->middleware('throttle:5,1');
 });

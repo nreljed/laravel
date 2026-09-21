@@ -66,7 +66,7 @@ class AiService
             'user_id' => $user->id,
             'agent_class' => $agentClass,
             'provider' => $provider,
-            'model' => $model ?? '',
+            'model' => $model,
             'input_tokens' => max(0, $inputTokens),
             'output_tokens' => max(0, $outputTokens),
             'cost_cents' => $costCents,
@@ -135,8 +135,8 @@ class AiService
         $setting = $user->aiUsageSetting;
 
         return [
-            'requests' => $setting?->cap_requests ?? AiUsageSetting::DEFAULT_CAP_REQUESTS,
-            'tokens' => $setting?->cap_tokens ?? AiUsageSetting::DEFAULT_CAP_TOKENS,
+            'requests' => $setting->cap_requests ?? AiUsageSetting::DEFAULT_CAP_REQUESTS,
+            'tokens' => $setting->cap_tokens ?? AiUsageSetting::DEFAULT_CAP_TOKENS,
         ];
     }
 
@@ -232,7 +232,7 @@ class AiService
 
             $lastByProvider[$provider] ??= [
                 'last_model' => $log->model ?: null,
-                'last_run_at' => $log->created_at?->toDateTimeString(),
+                'last_run_at' => $log->created_at->toDateTimeString(),
                 'last_latency_ms' => $log->latency_ms,
                 'last_error' => $log->error,
             ];

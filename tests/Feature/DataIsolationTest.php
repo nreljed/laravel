@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Database\Factories\TestPostFactory;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\Blog\Database\Factories\PostFactory;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\NotificationPreference;
 use Nreljed\Platform\Models\Permission;
 use Nreljed\Platform\Models\Role;
@@ -72,68 +72,68 @@ class DataIsolationTest extends TestCase
         $response->assertInertia(fn ($page) => $page->where('preferences', []));
     }
 
-    public function test_non_owner_cannot_update_another_users_test_post(): void
+    public function test_non_owner_cannot_update_another_users_post(): void
     {
-        $role = $this->createTestEditorRole();
+        $role = $this->createPostEditorRole();
         $editor = $this->createUserWithRole($role->slug);
         $otherUser = $this->regularUser();
 
-        $ownPost = TestPostFactory::new()->create(['user_id' => $editor->id]);
-        $otherPost = TestPostFactory::new()->create(['user_id' => $otherUser->id]);
+        $ownPost = PostFactory::new()->create(['user_id' => $editor->id]);
+        $otherPost = PostFactory::new()->create(['user_id' => $otherUser->id]);
 
-        $response = $this->actingAs($editor)->put(route('dashboard.test-posts.update', $otherPost), [
+        $response = $this->actingAs($editor)->put(route('dashboard.posts.update', $otherPost), [
             'title' => 'Hijacked Title',
             'content' => 'Hijacked content',
             'status' => 'published',
         ]);
 
         $response->assertStatus(403);
-        $this->assertDatabaseHas('test_posts', [
+        $this->assertDatabaseHas('posts', [
             'id' => $otherPost->id,
             'title' => $otherPost->title,
         ]);
 
-        $response = $this->actingAs($editor)->put(route('dashboard.test-posts.update', $ownPost), [
+        $response = $this->actingAs($editor)->put(route('dashboard.posts.update', $ownPost), [
             'title' => 'Own Title',
             'content' => 'Own content',
             'status' => 'published',
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('test_posts', [
+        $this->assertDatabaseHas('posts', [
             'id' => $ownPost->id,
             'title' => 'Own Title',
         ]);
     }
 
-    public function test_non_owner_cannot_delete_another_users_test_post(): void
+    public function test_non_owner_cannot_delete_another_users_post(): void
     {
-        $role = $this->createTestEditorRole();
+        $role = $this->createPostEditorRole();
         $editor = $this->createUserWithRole($role->slug);
         $otherUser = $this->regularUser();
 
-        $ownPost = TestPostFactory::new()->create(['user_id' => $editor->id]);
-        $otherPost = TestPostFactory::new()->create(['user_id' => $otherUser->id]);
+        $ownPost = PostFactory::new()->create(['user_id' => $editor->id]);
+        $otherPost = PostFactory::new()->create(['user_id' => $otherUser->id]);
 
-        $response = $this->actingAs($editor)->delete(route('dashboard.test-posts.destroy', $otherPost));
+        $response = $this->actingAs($editor)->delete(route('dashboard.posts.destroy', $otherPost));
 
         $response->assertStatus(403);
-        $this->assertDatabaseHas('test_posts', ['id' => $otherPost->id]);
+        $this->assertDatabaseHas('posts', ['id' => $otherPost->id]);
 
-        $response = $this->actingAs($editor)->delete(route('dashboard.test-posts.destroy', $ownPost));
+        $response = $this->actingAs($editor)->delete(route('dashboard.posts.destroy', $ownPost));
 
         $response->assertRedirect();
-        $this->assertDatabaseMissing('test_posts', ['id' => $ownPost->id]);
+        $this->assertDatabaseMissing('posts', ['id' => $ownPost->id]);
     }
 
-    private function createTestEditorRole(): Role
+    private function createPostEditorRole(): Role
     {
         $role = Role::firstOrCreate(
-            ['slug' => 'test_editor'],
-            ['name' => 'Test Editor', 'description' => 'Can manage test posts']
+            ['slug' => 'post_editor'],
+            ['name' => 'Post Editor', 'description' => 'Can manage own posts']
         );
         $role->permissions()->sync(
-            Permission::whereIn('slug', ['test-posts.view', 'test-posts.create', 'test-posts.edit', 'test-posts.delete'])->pluck('id')
+            Permission::whereIn('slug', ['posts.view', 'posts.create', 'posts.edit', 'posts.delete'])->pluck('id')
         );
 
         return $role;

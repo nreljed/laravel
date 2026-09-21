@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Setting;
 use Nreljed\Platform\Services\DatabaseMaintenanceService;
 use Nreljed\Platform\Services\SettingsService;

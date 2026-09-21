@@ -173,6 +173,11 @@ class RoleController extends Controller
 
     public function duplicate(Request $request, Role $role, PermissionCacheService $cache): RedirectResponse
     {
+        if ($role->isSystem()) {
+            return redirect()->route('dashboard.admin.roles.index')
+                ->with('flash', ['error' => 'System roles are managed by the config catalog and cannot be duplicated.']);
+        }
+
         $newRole = Role::create([
             'name' => 'Copy of '.$role->name,
             'slug' => $this->uniqueSlug('copy-of-'.$role->slug),

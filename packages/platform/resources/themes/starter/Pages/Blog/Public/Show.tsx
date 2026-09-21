@@ -46,6 +46,17 @@ interface BlogShowProps {
   preview?: boolean;
 }
 
+/** OWASP-safe inline JSON: escape <, > and U+2028/2029 so a "</script>"
+ *  inside any field can never terminate the script tag, while keeping the
+ *  JSON semantics identical. */
+function escapeJsonLd(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 export default function BlogShow({ post, preview = false }: BlogShowProps) {
   const pageProps = usePage().props as Record<string, unknown>;
   const appUrl = (pageProps.app_url as string) || "";
@@ -97,7 +108,7 @@ export default function BlogShow({ post, preview = false }: BlogShowProps) {
         <script
           type="application/ld+json"
           nonce={cspNonce}
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: escapeJsonLd(jsonLd) }}
         />
       </Head>
 

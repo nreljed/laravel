@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Performance;
 
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Nreljed\Blog\Database\Factories\PostFactory;
+use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Services\DashboardService;
 use Nreljed\Platform\Services\SettingsService;
 use Tests\Concerns\CreatesTestUsers;
