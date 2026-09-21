@@ -205,6 +205,22 @@ routes/                             # APP-only routes (most routing lives in the
 > - Consumer CI clones the private repo via `COMPOSER_AUTH` using `secrets.GH_TOKEN` —
 >   that token needs **Contents: Read** on `nreljed/platform`.
 
+## Versioning & `/deploy/check` SBOM
+
+- **App version** (`v0.x.y` here / laravel.shop / laravel.booking) = a release artifact
+  (whole tree + vendor + `deploy.zip`); **package version** (`v0.1.x` on `nreljed/platform`
+  and feature packages) = an engine bundle consumers pin via Composer. The two series are
+  intentionally decoupled — a package release only notifies consumers, it deploys nothing.
+- **`composer.lock` is the pin of record** — commit it on every package bump; the CI
+  release records it so a release's SBOM is reproducible from git history.
+- Every `/deploy/check` / `deploy:auto` response carries a `core` envelope (platform
+  `name`/`version`/`sha`/`repo`, resolved from `vendor/composer/installed.json`); platform
+  `>= v0.1.58` adds `bundled` (every installed `nreljed/*` package) — the runtime SBOM.
+- Update chain: package tag → core CI auto-release + `repository_dispatch`
+  (`core-updated`/`blog-updated`) → consumer `core-update.yml` (dispatch + weekly cron +
+  manual) → validated **lock-only PR** (PAT-merged) → push → deploy. Full detail:
+  `docs/workflow/deploy.md` § Versions & Update Chain.
+
 ## Feature Architecture
 
 Each feature is self-contained and registered via `FeatureRegistry`.

@@ -104,6 +104,66 @@ curl -X POST "https://laravel.tunispromo.tn/deploy/create-admin?token=TOKEN&pass
 **Note:** The current password becomes `password` immediately — no current password check
 is required, so use with caution.
 
+## Versions & Update Chain
+
+### App version vs package version
+
+- **App versions** (`v<x.y.z>` tags on this repo, laravel.shop, laravel.booking) identify a
+  **release artifact**: the whole app tree + `vendor/` snapshot + `deploy.zip`. They are what
+  `.deployed-version` and `/deploy/check` report as the deploy tag.
+- **Package versions** (`v0.1.x` on `nreljed/platform`, plus `nreljed/blog`, `nreljed/shop-module`,
+  `nreljed/booking-module`) identify a **bundle** of engine/feature code that consumers copy in
+  via Composer. Packages never ship standalone — only through consumer app releases.
+- There is intentionally no coupling between the two series. An app release does not bump
+  package versions; a package release does not deploy anything by itself (it only notifies
+  consumers).
+
+### composer.lock = pin of record
+
+`composer.lock` (per app/monorepo root) is the **pin of record** for which package versions a
+release will run. Never rely on `composer.json` ranges — they are floors, not pins. Commit
+`composer.lock` every time a package bumps. The CI `release` job also records the pinned
+package versions so a release's SBOM is reproducible from git history.
+
+### SBOM-ish report from `/deploy/check`
+
+Every `/deploy/check` (and `deploy:auto`) response includes a `core` envelope reporting the
+**installed platform package**, resolved at runtime from the authoritative install state
+`vendor/composer/installed.json` (never build-time snapshots):
+
+```json
+"core": { "name": "platform", "version": "0.1.57", "sha": "<commit>", "repo": "nreljed/platform" }
+```
+
+As of platform `v0.1.58` the envelope also includes `bundled` — every installed `nreljed/*`
+package (`name`, `version`, `sha`, `repo`) read from the same installed.json, i.e. the
+runtime SBOM of the deploy. Use it to confirm exactly which engine feature code a release
+actually carries. Consumers at older pins see only `core` (platform identity).
+
+### Full update chain
+
+Package change → consumer deploy, end to end:
+
+1. **Package tag** — bump `version` in the package's `composer.json` + `package.json`
+   (must match — core CI fails the release job on mismatch), tag `v0.x.y`, push. The
+   package's CI validates then auto-creates the GitHub Release (`--generate-notes`,
+   git-cliff from commit history).
+2. **Dispatch** — the core `release` job POSTs `repository_dispatch` `core-updated`
+   (`blog-updated` for blog) to `nreljed/laravel`, `nreljed/laravel.shop`,
+   `nreljed/laravel.booking` with the new version.
+3. **Update pull** — each consumer's `core-update.yml` runs on the dispatch **and** on a
+   weekly cron fallback (Mon 09:00 UTC, plus manual
+   `gh workflow run core-update.yml -R <consumer>`). It runs
+   `composer update nreljed/platform nreljed/blog` (private vcs repos authenticated via the
+   unified `GH_TOKEN`), **validates the exact tree** (full CI suite on self-hosted runner),
+   opens a **lock-only PR** and squash-merges it with the PAT (a `github.token` merge would
+   emit no `push` event — deploys would never fire).
+4. **CI → deploy** — the merge pushes `main`, the normal deploy pipeline runs, and the
+   release carries the new `composer.lock` (pin of record).
+
+After this monorepo's package mirror sync, `packages/*` snapshots must match the released
+tag for path-repo/dev consumers.
+
 ## GitHub Secrets
 
 | Secret                                                      | Purpose                                                                                 |
