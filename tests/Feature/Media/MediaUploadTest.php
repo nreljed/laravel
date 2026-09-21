@@ -5,6 +5,7 @@ namespace Tests\Feature\Media;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Nreljed\Platform\Models\Media;
 use Tests\Concerns\CreatesTestUsers;
 use Tests\TestCase;
 
@@ -69,9 +70,21 @@ class MediaUploadTest extends TestCase
         $response->assertJsonValidationErrors('file');
     }
 
-    public function test_authenticated_user_can_delete_media(): void
+    public function test_authenticated_user_can_delete_own_recorded_media(): void
     {
         $user = $this->regularUser();
+        $media = Media::create([
+            'user_id' => $user->id,
+            'folder' => 'media',
+            'path' => 'media/to-delete.webp',
+            'url' => '/storage/media/to-delete.webp',
+            'filename' => 'to-delete.webp',
+            'title' => 'To delete',
+            'mime_type' => 'image/webp',
+            'size' => 10,
+            'width' => 8,
+            'height' => 8,
+        ]);
         Storage::disk('public')->put('media/to-delete.webp', 'content');
 
         $response = $this->actingAs($user)->deleteJson(route('dashboard.media.destroy'), [
@@ -80,7 +93,7 @@ class MediaUploadTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['success' => true]);
-        $this->assertFalse(Storage::disk('public')->exists('media/to-delete.webp'));
+        $this->assertNull($media->fresh());
     }
 
     public function test_delete_requires_path(): void
@@ -95,10 +108,10 @@ class MediaUploadTest extends TestCase
 
     public function test_delete_rejects_path_traversal(): void
     {
-        $user = $this->regularUser();
+        $admin = $this->admin();
         Storage::disk('public')->put('media/keep.webp', 'content');
 
-        $response = $this->actingAs($user)->deleteJson(route('dashboard.media.destroy'), [
+        $response = $this->actingAs($admin)->deleteJson(route('dashboard.media.destroy'), [
             'path' => '../media/keep.webp',
         ]);
 
@@ -108,14 +121,27 @@ class MediaUploadTest extends TestCase
 
     public function test_delete_rejects_absolute_path(): void
     {
-        $user = $this->regularUser();
+        $admin = $this->admin();
         Storage::disk('public')->put('media/keep.webp', 'content');
 
-        $response = $this->actingAs($user)->deleteJson(route('dashboard.media.destroy'), [
+        $response = $this->actingAs($admin)->deleteJson(route('dashboard.media.destroy'), [
             'path' => '/media/keep.webp',
         ]);
 
         $response->assertOk();
         $this->assertTrue(Storage::disk('public')->exists('media/keep.webp'));
+    }
+
+    public function test_regular_user_cannot_delete_unrecorded_file(): void
+    {
+        $user = $this->regularUser();
+        Storage::disk('public')->put('media/shared.webp', 'content');
+
+        $response = $this->actingAs($user)->deleteJson(route('dashboard.media.destroy'), [
+            'path' => 'media/shared.webp',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertTrue(Storage::disk('public')->exists('media/shared.webp'));
     }
 }

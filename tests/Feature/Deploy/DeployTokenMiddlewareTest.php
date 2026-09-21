@@ -52,14 +52,15 @@ class DeployTokenMiddlewareTest extends TestCase
 
     public function test_authorization_bearer_does_not_leak_when_token_present_in_body(): void
     {
-        // The public `token` input must win even if a stale Bearer header exists.
+        // Bearer-first contract: a stale Bearer header is rejected even when
+        // the body carries the correct token, so `?token=`/body fallback can
+        // never bypass a broken header (v0.1.57 deploy-token hardening).
         $response = $this->withToken('stale-bearer-token')
             ->postJson('/deploy/create-admin', [
                 'token' => $this->token,
                 'password' => 'short',
             ]);
 
-        $response->assertStatus(400);
-        $response->assertJson(['error' => 'Password must be at least 8 characters']);
+        $response->assertStatus(403);
     }
 }
