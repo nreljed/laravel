@@ -10,6 +10,37 @@ what remains open. New sessions append at the top.
 
 ---
 
+## 2026-09-22 — v0.1.58 release: `/deploy/check` SBOM gains `bundled` package listing
+
+What was released and why: Phase 4 (versioning + update flow) of the platform-modernization
+plan. DeployService/core version reporting (`CoreVersionService`) now lists every installed
+`nreljed/*` package under a new `bundled` key in the `/deploy/check` response, so the SBOM
+records all engine packages, not just the platform kernel.
+
+- `da0cb20` feat(deploy): `CoreVersionService::bundled()` + `fromInstalledJson()` (reads
+  `vendor/composer/installed.json`); `DeployService::result()` returns `bundled`; new
+  framework-free contract test `tests/CoreVersionServiceContractTest.php`.
+- `d98f06d` chore(release): bump manifests (composer.json + package.json + composer.lock
+  content-hash) to 0.1.58.
+
+### Verified (byte-true, trusted git + gh)
+- CI run `35665148940` at head `d98f06d` — `conclusion=success` (validate, Create GitHub
+  Release, Contract-frozen gate, Notify consumers).
+- Release `v0.1.58` published `2026-09-21T22:59:39Z` (`--generate-notes`; tree diff vs
+  `v0.1.57` is exactly the 7 files above).
+- `core-updated` dispatched to laravel/laravel.shop/laravel.booking; mono automation run
+  `35665439244` success — root lock-only PR (#68) merged (root `composer.lock` 0.1.58).
+- Mono mirror synced to the released tree + app locks at 0.1.58;
+  `check-platform-consistency` OK — 12 composer + 25 npm keys identical across all apps.
+- Platform suite green at release head: 67 tests / 204 assertions.
+
+### Remains open
+- Consumer `apps/*` composer.lock re-sync for 0.1.58 was performed manually in the mono
+  (no per-app automation); confirm the app deploys picked the SBOM change.
+- Session-history has no entries for v0.1.56 / v0.1.57 (gap predates this session).
+
+---
+
 ## 2026-09-20 — v0.1.55 release: BYOK AiTaskRunner repair + lock-sync (continuation)
 
 What was released and why: the tag-vs-manifest version-consistency gate (`ci.yml`,
