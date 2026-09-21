@@ -24,7 +24,6 @@ class ConfigRoleCatalogTest extends TestCase
         $this->assertDatabaseHas('permissions', ['slug' => 'manage-users', 'name' => 'Manage Users']);
         $this->assertDatabaseHas('permissions', ['slug' => 'manage-options']);
         $this->assertDatabaseHas('permissions', ['slug' => 'posts.view']);
-        $this->assertDatabaseHas('permissions', ['slug' => 'test-posts.view']);
     }
 
     public function test_seeder_creates_roles_from_config_with_expected_permissions(): void
@@ -41,14 +40,12 @@ class ConfigRoleCatalogTest extends TestCase
         $this->assertTrue($editor->hasPermission('posts.delete'));
         $this->assertTrue($editor->hasPermission('posts.categories.manage'));
         $this->assertTrue($editor->hasPermission('posts.tags.manage'));
-        $this->assertTrue($editor->hasPermission('test-posts.delete'));
         $this->assertFalse($editor->hasPermission('manage-users'));
         $this->assertFalse($editor->hasPermission('manage-email-settings'));
 
         $author = Role::where('slug', 'author')->first();
         $this->assertTrue($author->hasPermission('posts.edit'));
         $this->assertTrue($author->hasPermission('posts.delete'));
-        $this->assertTrue($author->hasPermission('test-posts.delete'));
         $this->assertFalse($author->hasPermission('posts.manage'));
         $this->assertFalse($author->hasPermission('posts.categories.manage'));
         $this->assertFalse($author->hasPermission('posts.tags.manage'));

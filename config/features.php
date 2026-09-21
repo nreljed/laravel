@@ -1,6 +1,5 @@
 <?php
 
-use App\TestPosts\TestPostsServiceProvider;
 use Nreljed\Blog\BlogServiceProvider;
 use Nreljed\Platform\Ai\AiServiceProvider;
 use Nreljed\Platform\PublicSite\PublicSiteServiceProvider;
@@ -22,7 +21,6 @@ return [
         PublicSiteServiceProvider::class,
         BlogServiceProvider::class,
         AiServiceProvider::class,
-        TestPostsServiceProvider::class,
     ],
 
     /*
@@ -40,7 +38,6 @@ return [
         'public-site' => true,
         'posts' => true,
         'ai' => true,
-        'test-posts' => true,
     ],
 
 ];

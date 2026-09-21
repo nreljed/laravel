@@ -36,7 +36,7 @@ $service->purge($retentionDays = 90);
 
 ### Notification Types (via FeatureServiceProvider)
 
-Feature service providers implement `getNotificationTypes()`. `NotificationTypeRegistry` (via `FeatureRegistry::getAllNotificationTypes()`) aggregates them — providers: `BlogServiceProvider`, `TestPostsServiceProvider`.
+Feature service providers implement `getNotificationTypes()`. `NotificationTypeRegistry` (via `FeatureRegistry::getAllNotificationTypes()`) aggregates them — providers: `BlogServiceProvider`.
 
 ```php
 // In BlogServiceProvider::getNotificationTypes()

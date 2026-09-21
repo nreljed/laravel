@@ -85,7 +85,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 - `next-themes` `<ThemeProvider>` for dark mode
 - `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
-- Aliases (workspace-mapped in `tsconfig.json`, NOT vite): `@nreljed/platform/*` → `packages/platform/resources/js/*`; `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`; `@test-posts` → `app/TestPosts/Resources/js` (still a vite alias). The legacy vendor aliases (`@`, `@dashboard`, `@blog`) are gone — package sources import each other via `@nreljed/*` and relative paths
+- Aliases (workspace-mapped in `tsconfig.json`, NOT vite): `@nreljed/platform/*` → `packages/platform/resources/js/*`; `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`. The legacy vendor aliases (`@`, `@dashboard`, `@blog`) are gone — package sources import each other via `@nreljed/*` and relative paths
 - `asChild` / `Slot` pattern is standard for component composition
 
 ## Architecture
@@ -135,10 +135,8 @@ vendor/nreljed/blog/                # BLOG feature package (composer vcs, standa
   scripts/frontend-boundary-check.php
 app/                                # APP shell (thin — most logic lives in the platform/blog packages)
   Http/Controllers/Controller.php   # Base controller
-  Policies/TestPostPolicy.php
   Providers/AppServiceProvider.php
   Providers/TelescopeServiceProvider.php
-  TestPosts/                        # PROJECT feature demo (FeatureProvider: provider, controllers, models, routes, Resources/js, migration)
 resources/js/                       # APP shell (master) — entry point + project-owned THEME
   app.tsx                           # Entry — imports pageConfig, calls createFoundationApp()
   page-config.ts                    # SINGLE SOURCE OF TRUTH for page resolution — buildPageMap(base + project + overrides)
@@ -164,7 +162,7 @@ routes/                             # APP-only routes (most routing lives in the
 > live globally at `~/.config/opencode/skills/` — they describe the platform
 > package, not this app. App/project conventions stay in this repo's `.agents/skills/`.
 
-> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@nreljed/blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`, then adds `@test-posts` pages under the `testposts/` prefix. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
+> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@nreljed/blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`. Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
 
 > **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `page-config.ts` builds its own explicit pageMap:
 > `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*`, `blog/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. The client entry (`app.tsx`) imports `pageConfig` — never duplicate the config block.
@@ -461,7 +459,7 @@ npm run dev              # Vite dev server with HMR
 npm run typecheck        # tsc --noEmit
 npm run lint             # ESLint
 npm run format:check     # Prettier check
-npm run test             # Vitest frontend tests (app shell + TestPosts only)
+npm run test             # Vitest frontend tests (app shell + package workspaces)
 npm run check:ci         # Full CI pipeline (lint + typecheck + format + test + pint + phpunit)
 vendor/bin/pint          # Laravel Pint (PSR-12)
 php artisan test         # PHPUnit
@@ -657,9 +655,6 @@ tests/
       ContentSecurityPolicyTest.php      # CSP headers (4 tests)
       ConfigureSessionLifetimeTest.php   # DB-driven session timeout (3 tests)
       MaintenanceBypassTest.php, IpAccessControlTest.php, PasswordComplexityTest.php
-    TestPosts/
-      TestPostCrudTest.php        # CRUD, title, slug (7 tests)
-      TestPostFeaturedImageTest.php, TestPostImageUploadTest.php, TestPostGalleryE2ETest.php, TestPostBulkActionTest.php
     DataIsolationTest.php         # HTTP-level data isolation checks
     FeatureRegistryTest.php       # Singleton, nav items, permissions (5 tests)
 ```

@@ -40,7 +40,6 @@ class CoreConfigMergeTest extends TestCase
         $featureClasses = array_map(class_basename(...), $features);
 
         $this->assertContains('BlogServiceProvider', $featureClasses, 'Blog should be registered as a feature.');
-        $this->assertContains('TestPostsServiceProvider', $featureClasses, 'TestPosts should be registered as an app-owned feature.');
     }
 
     public function test_feature_registry_resolves_all_configured_providers(): void
@@ -49,7 +48,7 @@ class CoreConfigMergeTest extends TestCase
         $all = $registry->getAll();
 
         $this->assertIsArray($all);
-        $this->assertGreaterThanOrEqual(2, count($all), 'Registry should resolve at least Blog and TestPosts providers.');
+        $this->assertGreaterThanOrEqual(2, count($all), 'Registry should resolve at least Blog and PublicSite providers.');
 
         foreach ($all as $feature) {
             $this->assertArrayHasKey('name', $feature);
@@ -104,7 +103,6 @@ class CoreConfigMergeTest extends TestCase
 
         $this->assertIsArray($orphanMedia);
         $this->assertArrayHasKey('avatars', $orphanMedia, 'Core avatars model should be in orphan_media config.');
-        $this->assertArrayHasKey('test-posts', $orphanMedia, 'App-owned TestPost model should be in orphan_media config.');
 
         $registry = app(FeatureRegistry::class);
         $targets = $registry->getAllOrphanMediaTargets();

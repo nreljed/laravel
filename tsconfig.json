@@ -17,18 +17,13 @@
     "paths": {
       "@nreljed/blog/*": ["./packages/blog/src/Resources/js/*"],
       "@nreljed/platform/*": ["./packages/platform/resources/js/*"],
-      "@nreljed/platform/themes/*": ["./packages/platform/resources/themes/*"],
-      "@test-posts": ["./app/TestPosts/Resources/js"],
-      "@test-posts/*": ["./app/TestPosts/Resources/js/*"]
+      "@nreljed/platform/themes/*": ["./packages/platform/resources/themes/*"]
     }
   },
   "include": [
     "resources/js/**/*.ts",
     "resources/js/**/*.tsx",
     "resources/js/**/*.d.ts",
-    "app/TestPosts/Resources/js/**/*.ts",
-    "app/TestPosts/Resources/js/**/*.tsx",
-    "app/TestPosts/Resources/js/**/*.d.ts",
     "packages/platform/resources/js/**/*.d.ts",
     "packages/blog/src/Resources/js/**/*.d.ts"
   ]

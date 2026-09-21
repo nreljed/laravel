@@ -112,8 +112,7 @@ items, dashboard data and frontend pages.
 
 NEW features ship as packages or `app/` domains wired through
 `config/features.php` `providers` (see the feature-architecture skill /
-platform docs). `app/TestPosts/` is a project demo of the `FeatureProvider`
-contract.
+platform docs).
 
 ## Development Commands
 

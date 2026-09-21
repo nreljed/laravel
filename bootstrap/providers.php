@@ -2,7 +2,6 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\TelescopeServiceProvider;
-use App\TestPosts\TestPostsServiceProvider;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
 use Nreljed\Blog\BlogServiceProvider;
 use Nreljed\Platform\Ai\AiServiceProvider;
@@ -17,7 +16,6 @@ return array_filter([
     AiServiceProvider::class,
     PermissionGateServiceProvider::class,
     AppServiceProvider::class,
-    TestPostsServiceProvider::class,
     class_exists(TelescopeApplicationServiceProvider::class)
         ? TelescopeServiceProvider::class
         : null,

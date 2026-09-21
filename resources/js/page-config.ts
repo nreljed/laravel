@@ -15,8 +15,6 @@ export const pageConfig: FoundationAppConfig = {
     ...registerCoreTemplates(),
     ...registerBlogPages(),
   },
-  projectPages: import.meta.glob("@test-posts/Pages/**/*.tsx") as Record<string, PageImport>,
-  projectPrefix: "testposts",
   pageOverrides: {
     // Project-owned THEME pages — override core's template pages, applied last.
     // Marketing site:

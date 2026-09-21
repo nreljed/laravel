@@ -48,8 +48,6 @@ Never call `Storage::delete()` directly with user input — always route through
 | ----------------------------------------------------------- | ------ | ----------------- |
 | `POST dashboard/posts/upload-image` (`upload-image`)        | POST   | `posts.create`    |
 | `DELETE dashboard/posts/delete-image` (`delete-image`)      | DELETE | `posts.edit`      |
-| `POST dashboard/test-posts/upload-image` (`upload-image`)   | POST   | test-posts access |
-| `DELETE dashboard/test-posts/delete-image` (`delete-image`) | DELETE | test-posts access |
 
 Controllers call `app(MediaService::class)` directly (e.g. `PostController::uploadImage`).
 
@@ -88,7 +86,6 @@ Post content is sanitized server-side via `HtmlSanitizer` in `PostController`:
 
 - `tests/Feature/Media/MediaUploadTest.php` — upload/destroy happy paths, validation failures (9 tests)
 - `tests/Feature/Security/MediaPathTraversalTest.php` — traversal + absolute-path rejection (4 tests)
-- `tests/Feature/TestPosts/TestPostImageUploadTest.php` — test-post variant
 
 ## Key Rules
 

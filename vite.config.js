@@ -26,9 +26,7 @@ export default defineConfig({
         tailwindcss(),
     ],
     resolve: {
-        alias: {
-            '@test-posts': path.resolve(__dirname, './app/TestPosts/Resources/js'),
-        },
+        alias: {},
     },
     build: {
         chunkSizeWarningLimit: 1700,
