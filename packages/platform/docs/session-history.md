@@ -10,6 +10,44 @@ what remains open. New sessions append at the top.
 
 ---
 
+## 2026-09-22 — v0.1.60 fix release: `/deploy/check` actually serializes `bundled` (v0.1.59 was a no-op bump)
+
+What happened and why: verifing the v0.1.58 release live exposed that `DeployController::check()`
+dropped the `bundled` key that `DeployService::result()` populates — `/deploy/check` returned
+`core` but `bundled: null`, so the SBOM feature was dead at the HTTP surface even though the
+service layer carried it. Runtime check on `laravel.local` proved it (`bundled` absent at 0.1.58).
+
+- `bfad916` chore(release): bump to **0.1.59** — this was a **mistake**: my controller edit was
+  made in the mono mirror (`packages/platform`), NOT the platform source, so v0.1.59 shipped
+  version-only churn with no behavior change. It propagated harmlessly (0.1.59 → 0.1.60 trains).
+- `067498e` fix(deploy): serializes `bundled` in **every** `/deploy/check` branch (deployed,
+  current, release-layout, locked, no-release + error 500). Bump to **0.1.60** (real fix release).
+- `aecf7f0` chore(style): Pint-normalize source under default preset + add `Laravel Pint (style
+  gate)` to platform CI validate (the mono mirror was normalized by CI `pint --test` pressure;
+  normalizing at the source + gating prevent mirror-sync drift).
+
+### Verified (byte-true, trusted git + gh)
+- Platform CI: validate green on `aecf7f0` (incl. new Pint gate) and tag runs for v0.1.59
+  (`35724693301`) + v0.1.60 (`35725918392`) — release + Contract-frozen gate + consumers notified.
+- Mono mirror re-synced from the v0.1.60 released tree (source now pint-clean ⇒ no drift) +
+  `apps/**/composer.lock` re-pinned to 0.1.60; `check-platform-consistency` OK (12 composer +
+  25 npm keys identical); `vendor/bin/pint --test` passed.
+- Runtime smoke on `laravel.local` (DEPLOY_TOKEN set in local `.env` exactly like CI does on
+  servers, removed afterward): `GET /deploy/check` → HTTP 200, `core: 0.1.60`, and
+  `bundled` lists `nreljed/platform 0.1.60 (sha 067498e)` + `nreljed/blog 0.1.2 (sha 9ee757a)`.
+- Regression net added: `tests/Feature/Deploy/DeployEndpointTest::test_check_returns_current_when_version_matches`
+  now asserts the `bundled` block shape + `nreljed/platform` presence.
+- All three hosts deployed + green on 0.1.60: mono `35729262325`, shop `35727113772`, booking
+  `35726838342`. Shop + booking root locks at 0.1.60 (confirmed via GitHub API).
+
+### Remains open
+- Same gap as v0.1.58: consumer `apps/*` composer.lock re-sync is manual in the mono (no
+  per-app automation); shop + booking roots self-update via core-update PRs.
+- 0.1.59 exists as a version-only release (no behavior) — harmless but skews the changelog;
+  release notes for it say only the manifest bump.
+
+---
+
 ## 2026-09-22 — v0.1.58 release: `/deploy/check` SBOM gains `bundled` package listing
 
 What was released and why: Phase 4 (versioning + update flow) of the platform-modernization
