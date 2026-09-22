@@ -137,6 +137,16 @@ class DeployEndpointTest extends TestCase
                 'status' => 'current',
                 'tag' => 'v1.2.3',
             ]);
+            // Regression: /deploy/check must surface the bundled SBOM block
+            // (DeployController dropped it until v0.1.60).
+            $response->assertJsonStructure([
+                'status',
+                'bundled' => ['*' => ['name', 'version', 'sha', 'repo']],
+            ]);
+            $bundled = collect($response->json('bundled'))->keyBy('name');
+            $this->assertTrue($bundled->has('nreljed/platform'), 'bundled SBOM must list nreljed/platform');
+            $this->assertSame('nreljed/platform', $bundled['nreljed/platform']['repo']);
+            $this->assertNotNull($bundled['nreljed/platform']['sha']);
         } finally {
             File::delete($versionFile);
             File::delete(config('deploy.lock_path'));
