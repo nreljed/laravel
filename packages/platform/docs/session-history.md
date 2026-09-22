@@ -9,6 +9,35 @@ Each entry records: date, scope, what changed (with commit SHAs), what was verif
 what remains open. New sessions append at the top.
 
 ---
+## 2026-09-22 - v0.1.61 fix release: `SystemHealthService` storage-dir recommendation crash
+
+What happened and why: verifying the shop-module at the mono app exposed that
+`SystemHealthService::getRecommendations()` reads `$dir['path']` on every storage-dir
+entry, but `getStorageInfo()` results never included a `path` key (`name`/`exists`/
+`writable`/`file_count`/`size` only). Any missing or unwritable monitored dir
+(`storage/framework/cache|sessions` on a fresh checkout, `public/build` pre-build)
+threw `ErrorException: Undefined array key "path"` — the admin health dashboard 500s
+instead of surfacing a "Directory not writable" recommendation. Triggered in the mono
+app when the missing storage dirs were exercised by `SystemHealthTest`.
+
+Fix: `getStorageInfo()` now includes `path` in each dir result row; the health-check
+crash is gone and the recommendation correctly reports the offending path.
+
+- `src/Services/SystemHealthService.php` — added `'path' => $dir['path']` to the dir
+  results rows (the only behavioral change).
+- Manifests bumped to **0.1.61** (composer.json + package.json + composer.lock
+  content-hash regenerated via `composer update --lock`).
+
+### Verified (byte-true, trusted git + gh)
+- Platform suite green at head: 67 tests / 204 assertions; `vendor/bin/pint --test`
+  clean on the edited file; `php -l` clean.
+- The crash reproducer (fresh app missing `storage/framework/cache` + `sessions`) now
+  renders health with the critical recommendation instead of 500.
+
+### Remains open
+- App-side bumps to 0.1.61 land via the consumer `core-updated` flow / core-update PRs.
+
+---
 
 ## 2026-09-22 — v0.1.60 fix release: `/deploy/check` actually serializes `bundled` (v0.1.59 was a no-op bump)
 

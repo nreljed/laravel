@@ -11,9 +11,15 @@ use Nreljed\ShopModule\Models\Attribute;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
+use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\PriceResolver;
 
 class StorefrontController extends Controller
 {
+    public function __construct(
+        protected CurrencyService $currencyService,
+        protected PriceResolver $priceResolver,
+    ) {}
     public function index()
     {
         return Inertia::render('shop/storefront/home', [
@@ -60,6 +66,8 @@ class StorefrontController extends Controller
         $priceRange = ['min' => (float) $product->price, 'max' => (float) $product->price];
         $defaultVariation = null;
 
+        $currency = $this->currencyService->storefrontCode();
+
         if ($product->type === 'variable') {
             $variations = $product->variations()
                 ->visible()
@@ -80,11 +88,41 @@ class StorefrontController extends Controller
                 ])->values(),
             ])->values();
 
-            $priceRange = $product->price_range;
             $defaultVariation = $product->getDefaultVariation();
         }
 
+        foreach ($product->groupedItems as $child) {
+            $this->priceResolver->hydrate($child, $currency);
+        }
+
+        foreach ($variations as $variation) {
+            $this->priceResolver->hydrate($variation, $currency);
+        }
+
+        $this->priceResolver->hydrate($product, $currency);
+
+        if ($defaultVariation !== null) {
+            $this->priceResolver->hydrate($defaultVariation, $currency);
+        }
+
         $related = $this->relatedProducts($product);
+
+        foreach ($related as $relatedProduct) {
+            $this->priceResolver->hydrate($relatedProduct, $currency);
+        }
+
+        if ($product->type === 'variable' && $variations->isNotEmpty()) {
+            $activePrices = $variations
+                ->pluck('active_price')
+                ->filter(fn ($p) => $p !== null)
+                ->map(fn ($p) => (float) $p);
+
+            if ($activePrices->isNotEmpty()) {
+                $priceRange = ['min' => $activePrices->min(), 'max' => $activePrices->max()];
+            }
+        } else {
+            $priceRange = ['min' => (float) $product->price, 'max' => (float) $product->price];
+        }
 
         return Inertia::render('shop/storefront/productdetail', [
             'product' => $product,
@@ -141,12 +179,17 @@ class StorefrontController extends Controller
             }
         }
 
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', (float) $request->min_price);
-        }
+        if ($request->filled('min_price') || $request->filled('max_price')) {
+            $from = $this->currencyService->storefrontCode();
+            $to = $this->currencyService->defaultCode();
 
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', (float) $request->max_price);
+            if ($request->filled('min_price')) {
+                $query->where('price', '>=', $this->currencyService->convert((float) $request->min_price, $from, $to));
+            }
+
+            if ($request->filled('max_price')) {
+                $query->where('price', '<=', $this->currencyService->convert((float) $request->max_price, $from, $to));
+            }
         }
     }
 
@@ -166,6 +209,13 @@ class StorefrontController extends Controller
         };
 
         $products = $query->orderBy($sortField, $sortDir)->paginate(12)->withQueryString();
+
+        $currency = $this->currencyService->storefrontCode();
+        $default = $this->currencyService->defaultCode();
+
+        foreach ($products as $product) {
+            $this->priceResolver->hydrate($product, $currency);
+        }
 
         $categories = ProductCategory::select('id', 'name', 'slug')
             ->whereHas('products')
@@ -207,13 +257,25 @@ class StorefrontController extends Controller
         $minPrice = Product::where('status', 'published')->min('price');
         $maxPrice = Product::where('status', 'published')->max('price');
 
+        $priceRange = [
+            (float) ($minPrice ?? 0),
+            (float) ($maxPrice ?? 1000),
+        ];
+
+        if ($currency !== $default) {
+            $priceRange = [
+                $this->currencyService->convert($priceRange[0], $default, $currency),
+                $this->currencyService->convert($priceRange[1], $default, $currency),
+            ];
+        }
+
         $data = [
             'products' => $products,
             'categories' => $categories,
             'brands' => $brands,
             'attributeFilters' => $attributeFilters,
             'filters' => $request->only(['search', 'category', 'brand', 'attribute_terms', 'min_price', 'max_price', 'sort']),
-            'priceRange' => [(float) ($minPrice ?? 0), (float) ($maxPrice ?? 1000)],
+            'priceRange' => $priceRange,
         ];
 
         if (! empty($options['activeCategory'])) {
@@ -237,6 +299,16 @@ class StorefrontController extends Controller
             ->latest()
             ->take(8)
             ->get();
+
+        $currency = $this->currencyService->storefrontCode();
+
+        foreach ($featured as $product) {
+            $this->priceResolver->hydrate($product, $currency);
+        }
+
+        foreach ($newArrivals as $product) {
+            $this->priceResolver->hydrate($product, $currency);
+        }
 
         $categoryGrid = ProductCategory::withCount(['products' => fn ($q) => $q->where('status', 'published')])
             ->where('is_active', true)

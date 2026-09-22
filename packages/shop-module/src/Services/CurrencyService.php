@@ -31,6 +31,11 @@ class CurrencyService
         return $row ? Currency::hydrate([$row])->first() : null;
     }
 
+    public function defaultCode(): string
+    {
+        return $this->getDefaultCurrency()?->code ?? 'EUR';
+    }
+
     public function convert(float $amount, string $fromCode, string $toCode): float
     {
         if ($fromCode === $toCode) {
@@ -58,6 +63,33 @@ class CurrencyService
     {
         Cache::forget('currencies.active.v2');
         Cache::forget('currencies.default.v2');
+    }
+
+    /**
+     * Resolve the storefront-display currency the same way the shared
+     * `selectedCurrency` does: session choice (if active), else Accept-Language
+     * detection, else the default currency.
+     */
+    public function storefrontCode(): string
+    {
+        $code = session('selected_currency');
+
+        if ($code && ($currency = $this->getByCode($code)) && $currency->is_active) {
+            return $currency->code;
+        }
+
+        if (! $code) {
+            $active = $this->getActiveCurrencies()->pluck('code')->all();
+            $detected = $this->detectFromAcceptLanguage(request()->header('Accept-Language'), $active);
+
+            if ($detected && $detected !== $this->defaultCode()) {
+                session(['selected_currency' => $detected]);
+
+                return $detected;
+            }
+        }
+
+        return $this->defaultCode();
     }
 
     public function detectFromAcceptLanguage(?string $acceptLanguage, array $activeCodes = []): ?string

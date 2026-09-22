@@ -4,9 +4,11 @@ namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Models\Webhook;
 use Nreljed\ShopModule\Services\WebhookService;
 
@@ -38,7 +40,7 @@ class WebhooksController extends Controller
             'name' => 'required|string|max:255',
             'url' => 'required|url|max:2048',
             'events' => 'required|array|min:1',
-            'events.*' => 'string',
+            'events.*' => ['string', Rule::in(WebhookEvents::all())],
             'headers' => 'nullable|array',
             'timeout' => 'integer|min:1|max:60',
             'retry_attempts' => 'integer|min:0|max:10',
@@ -58,7 +60,7 @@ class WebhooksController extends Controller
             'name' => 'required|string|max:255',
             'url' => 'required|url|max:2048',
             'events' => 'required|array|min:1',
-            'events.*' => 'string',
+            'events.*' => ['string', Rule::in(WebhookEvents::all())],
             'headers' => 'nullable|array',
             'timeout' => 'integer|min:1|max:60',
             'retry_attempts' => 'integer|min:0|max:10',
@@ -94,8 +96,8 @@ class WebhooksController extends Controller
     {
         $this->authorize('update', $webhook);
 
-        $this->webhookService->dispatchAndWait($webhook, 'test.ping', [
-            'event' => 'test.ping',
+        $this->webhookService->dispatchAndWait($webhook, WebhookEvents::WEBHOOK_TEST, [
+            'event' => WebhookEvents::WEBHOOK_TEST,
             'data' => [
                 'message' => 'Test webhook from CostBreaker 360',
                 'timestamp' => now()->toISOString(),

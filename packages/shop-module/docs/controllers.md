@@ -25,6 +25,7 @@ registered policies.
 | `ShippingZonesController` | `Controllers/ShippingZonesController.php` | Shipping zone CRUD with method assignment |
 | `TaxRatesController` | `Controllers/TaxRatesController.php` | Tax rate CRUD |
 | `WebhooksController` | `Controllers/WebhooksController.php` | Webhook CRUD + test |
+| `ShipmentsController` | `Controllers/ShipmentsController.php` | Per-order shipment create/list + ship/deliver/tracking |
 | `StripeWebhookController` | `Controllers/StripeWebhookController.php` | Stripe event listener |
 | `StorefrontController` | `Controllers/StorefrontController.php` | Guest storefront (grid, detail, category) |
 | `ReportsController` | `Controllers/ReportsController.php` | Sales reports, top products |
@@ -233,7 +234,15 @@ All authorized via `ShippingMethodPolicy` / `ShippingZonePolicy` / `TaxRatePolic
 | `show()` | `GET /webhooks/{webhook}` | View webhook | `shop.webhooks.manage` |
 | `update()` | `PUT /webhooks/{webhook}` | Update webhook | `shop.webhooks.manage` |
 | `destroy()` | `DELETE /webhooks/{webhook}` | Delete webhook | `shop.webhooks.manage` |
-| `test()` | `POST /webhooks/{webhook}/test` | Fire test event | `shop.webhooks.manage` |
+| `test()` | `POST /webhooks/{webhook}/test` | Fire `webhook.test` synchronously | `shop.webhooks.manage` |
+
+## ShipmentsController
+
+| Method | Route | Purpose | Access |
+|--------|-------|---------|--------|
+| `index()` | `GET /orders/{order}/shipments` | List shipments for an order | `shop.shipments.manage` |
+| `store()` | `POST /orders/{order}/shipments` | Create a shipment (with item quantities) | `shop.shipments.manage` |
+| `update()` | `PUT /shipments/{shipment}` | Mark shipped/delivered or update tracking | `shop.shipments.manage` |
 
 ## StorefrontController
 

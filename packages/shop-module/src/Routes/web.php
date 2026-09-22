@@ -14,6 +14,7 @@ use Nreljed\ShopModule\Http\Controllers\ProductSeoController;
 use Nreljed\ShopModule\Http\Controllers\ProductVariationsController;
 use Nreljed\ShopModule\Http\Controllers\ReportsController;
 use Nreljed\ShopModule\Http\Controllers\ReviewsController;
+use Nreljed\ShopModule\Http\Controllers\ShipmentsController;
 use Nreljed\ShopModule\Http\Controllers\ShippingMethodsController;
 use Nreljed\ShopModule\Http\Controllers\ShippingZonesController;
 use Nreljed\ShopModule\Http\Controllers\ShopDashboardController;
@@ -71,6 +72,11 @@ Route::delete('/orders/{order}/notes/{note}', [OrdersController::class, 'destroy
 
 // Draft order conversion
 Route::post('/orders/{order}/convert-from-draft', [OrdersController::class, 'convertFromDraft'])->name('orders.convert-from-draft');
+
+// Shipments
+Route::get('/orders/{order}/shipments', [ShipmentsController::class, 'index'])->name('shipments.index');
+Route::post('/orders/{order}/shipments', [ShipmentsController::class, 'store'])->name('shipments.store');
+Route::put('/shipments/{shipment}', [ShipmentsController::class, 'update'])->name('shipments.update');
 
 // Order search (JSON)
 Route::get('/orders/search/products', [OrdersController::class, 'searchProducts'])->name('orders.search-products');

@@ -1,6 +1,6 @@
 # Services
 
-The 14 domain services. Constructor injection everywhere (Laravel container);
+The 18 domain services. Constructor injection everywhere (Laravel container);
 business logic lives in services, not controllers or models.
 
 | Service | Purpose |
@@ -81,15 +81,32 @@ runs right after order creation to prevent overselling.
 ## WebhookService
 
 - `dispatch(string $event, array $payload)` — fans out to all active webhooks
-  subscribed to the event; each send runs through the queue with HMAC-SHA256
-  signature in `X-Webhook-Signature`, logged to `webhook_calls`, auto-deactivated
-  after consecutive failures.
-- Webhook **events** are plain strings (not centrally enumerated):
-  `order.created`, `order.status_changed`, `order.refunded`,
-  `product.stock_changed`, `product.low_stock`, plus `order.placed`,
-  `order.updated`, `order.cancelled`, `product.created`, `product.updated`,
-  `product.deleted`, `customer.created`, `customer.updated`, `webhook.test` fired
-  from controllers.
+  subscribed to the event; each send enqueues a `SendWebhook` job (queued,
+  unique per call), HMAC-SHA256 signature in `X-Webhook-Signature`, logged to
+  `webhook_calls`, auto-deactivated after 10 consecutive failures.
+- `dispatchAndWait(Webhook, string $event, array $payload)` — synchronous,
+  single attempt; used by the "send test" button.
+- `processPending()` — safety net re-queuing pending deliveries for the
+  `webhooks:process` command.
+- Webhook **events** are centrally enumerated in `Events/WebhookEvents.php`:
+  `order.placed`, `order.updated`, `order.cancelled`, `order.refunded`,
+  `order.status_changed`, `product.created`, `product.updated`,
+  `product.deleted`, `customer.created`, `customer.updated`,
+  `product.stock_changed`, `product.low_stock`, `shipment.created`,
+  `shipment.shipped`, `shipment.delivered`, `webhook.test`;
+  controller store/update validation restricts subscriptions to this catalog.
+
+## ShipmentService
+
+- `createForOrder(Order $order, ?array $itemQuantities, ?array $options, ?int $createdBy)`
+  — creates a `shipment` + `shipment_items` snapshots, generates `SHP-*`
+  shipment number, fires `shipment.created`.
+- `markShipped(Shipment, ?carrier, ?trackingNumber)` — sets status `shipped` +
+  `shipped_at`, fires `shipment.shipped`.
+- `markDelivered(Shipment)` — sets status `delivered` + `delivered_at`, fires
+  `shipment.delivered`.
+- `updateTracking(Shipment, carrier, trackingNumber, ?url)` — fires the matching
+  shipped/delivered event if tracking changes on an already-shipped shipment.
 
 ## AbandonedCartService
 

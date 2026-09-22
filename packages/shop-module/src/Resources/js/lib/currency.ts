@@ -25,11 +25,6 @@ interface PageWithCurrency {
     };
 }
 
-function round(value: number, decimals: number): number {
-    const factor = 10 ** decimals;
-    return Math.round((value + Number.EPSILON) * factor) / factor;
-}
-
 const FALLBACK_CURRENCY: CurrencyInfo = {
     code: "EUR",
     name: "Euro",
@@ -58,13 +53,6 @@ export function useCurrency() {
         currencies.find((c) => c.is_default) ??
         currencies[0] ??
         FALLBACK_CURRENCY;
-
-    const convert = (amount: number | string | null | undefined): number => {
-        const value = Number(amount);
-        if (!Number.isFinite(value)) return 0;
-        const rate = active.exchange_rate ?? 1;
-        return rate === 1 ? value : round(value * rate, active.decimal_places ?? 2);
-    };
 
     const formatNumber = (value: number, decimals: number): string => {
         const [intPart, decPart] = value.toFixed(decimals).split(".");
@@ -95,8 +83,10 @@ export function useCurrency() {
         }
     };
 
+    // Amounts are already resolved to the selected currency server-side;
+    // money() only formats.
     const money = (amount: number | string | null | undefined): string =>
-        format(convert(amount));
+        format(amount);
 
-    return { currencies, selectedCode, active, convert, format, money };
+    return { currencies, selectedCode, active, format, money };
 }

@@ -8,7 +8,7 @@ How the Shop module plugs into the `nreljed/platform` platform and a host app.
 shop-module/
 ├── composer.json                 # PSR-4: Nreljed\ShopModule\ → src/
 ├── config/shop.php               # merged as config('shop')
-├── database/migrations/          # 57 migrations, auto-loaded
+├── database/migrations/          # 62 migrations, auto-loaded
 ├── resources/views/email/templates/  # 7 blade templates (auto-location)
 └── src/
     ├── Commands/                 # 5 artisan commands
@@ -16,12 +16,12 @@ shop-module/
     │   ├── Controllers/          # admin + storefront + api controllers
     │   │   └── Api/              # public REST controllers (Sanctum)
     │   ├── Resources/            # API resource transformers
-    ├── Models/                   # 29 Eloquent models
-    ├── Policies/                 # 9 authorization policies
+    ├── Models/                   # 32 Eloquent models
+    ├── Policies/                 # 10 authorization policies
     ├── Requests/                 # FormRequests (validation)
     ├── Resources/js/Pages/       # Inertia React pages (@nreljed/shop-module/Pages/...)
     ├── Routes/                   # 11 route files, self-loaded
-    ├── Services/                 # 14 domain services
+    ├── Services/                 # 18 domain services
     ├── Support/                  # Countries (ISO 3166 map)
     └── ShopServiceProvider.php
 ```
@@ -51,7 +51,7 @@ and does four things:
 | Contract method | What Shop provides |
 |-----------------|---------------------|
 | `name()`, `slug()`, `version()`, `dependencies()` | `Shop` / `shop` / `1.0.0` |
-| `permissions()` | 16 permissions (see [Permissions](permissions.md)) |
+| `permissions()` | 17 permissions (see [Permissions](permissions.md)) |
 | `getNavItems()` | Full **Shop** group for managers, **My Account** group for customers |
 | `getNavGroupLabel()` | Group heading "Manage Shop" / "My Account" |
 | `getDashboardData()` | KPI block: products, published, orders, pending, low stock |
@@ -64,7 +64,7 @@ and does four things:
 | `getSharedData()` | Lazy-closure shared props (below) |
 | `onUserDelete($userId)` | Orphans orders (`user_id` → null) instead of deleting |
 
-The provider also: registers 9 policies via `Gate::policy()`, registers 5 artisan
+The provider also: registers 10 policies via `Gate::policy()`, registers 5 artisan
 commands, self-loads all routes (11 files — no host `routes/shop*.php`), and
 registers `ShopService` as a singleton.
 

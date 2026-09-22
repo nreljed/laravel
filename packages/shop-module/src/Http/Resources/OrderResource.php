@@ -4,6 +4,7 @@ namespace Nreljed\ShopModule\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Nreljed\ShopModule\Services\CurrencyService;
 
 class OrderResource extends JsonResource
 {
@@ -18,7 +19,7 @@ class OrderResource extends JsonResource
             'tax_total' => (float) ($this->tax_total ?? 0),
             'discount_total' => (float) ($this->discount_total ?? 0),
             'total' => (float) $this->total,
-            'currency' => $this->currency ?? 'USD',
+            'currency' => $this->currency ?? app(CurrencyService::class)->defaultCode(),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'customer_name' => $this->customer_name,

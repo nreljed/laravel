@@ -26,6 +26,7 @@ use Nreljed\ShopModule\Requests\AdjustStockRequest;
 use Nreljed\ShopModule\Requests\ImportProductRequest;
 use Nreljed\ShopModule\Requests\StoreProductRequest;
 use Nreljed\ShopModule\Services\InventoryService;
+use Nreljed\ShopModule\Services\WebhookService;
 
 class ProductsController extends Controller
 {
@@ -35,11 +36,18 @@ class ProductsController extends Controller
 
     protected MediaService $mediaService;
 
-    public function __construct(NotificationService $notificationService, InventoryService $inventoryService, MediaService $mediaService)
-    {
+    protected WebhookService $webhookService;
+
+    public function __construct(
+        NotificationService $notificationService,
+        InventoryService $inventoryService,
+        MediaService $mediaService,
+        ?WebhookService $webhookService = null,
+    ) {
         $this->notificationService = $notificationService;
         $this->inventoryService = $inventoryService;
         $this->mediaService = $mediaService;
+        $this->webhookService = $webhookService ?? app(WebhookService::class);
     }
 
     public function index(Request $request)
@@ -126,6 +134,11 @@ class ProductsController extends Controller
         if (! empty($validated['downloads'])) {
             $this->syncDownloads($product, $validated['downloads']);
         }
+
+        $this->webhookService->dispatch(
+            \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_CREATED,
+            ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
+        );
 
         return redirect()->route('dashboard.shop.products.index')
             ->with('status', 'Product created successfully.');
@@ -229,6 +242,11 @@ class ProductsController extends Controller
             $this->notifyLowStock($product);
         }
 
+        $this->webhookService->dispatch(
+            \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_UPDATED,
+            ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
+        );
+
         return redirect()->route('dashboard.shop.products.index')
             ->with('status', 'Product updated successfully.');
     }
@@ -238,6 +256,11 @@ class ProductsController extends Controller
         $this->authorize('delete', $product);
 
         $product->delete();
+
+        $this->webhookService->dispatch(
+            \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_DELETED,
+            ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
+        );
 
         return redirect()->route('dashboard.shop.products.index')
             ->with('status', 'Product deleted.');

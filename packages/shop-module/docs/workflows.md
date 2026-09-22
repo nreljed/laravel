@@ -182,7 +182,8 @@ WebhookLog written (response code/body, duration, success)
 Events: `order.placed`, `order.updated`, `order.cancelled`, `order.refunded`,
 `order.status_changed`, `product.created`, `product.updated`, `product.deleted`,
 `customer.created`, `customer.updated`, `product.stock_changed`, `product.low_stock`,
-`webhook.test`. `webhooks:process` drains the pending queue every minute.
+`shipment.created`, `shipment.shipped`, `shipment.delivered`, `webhook.test`.
+`webhooks:process` drains/re-queues the pending queue every minute.
 
 ## Notifications
 

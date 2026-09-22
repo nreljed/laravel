@@ -14,7 +14,7 @@ class Cart extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'session_id', 'shipping_address', 'billing_address', 'coupon_code', 'discount', 'applied_coupons'];
+    protected $fillable = ['user_id', 'session_id', 'shipping_address', 'billing_address', 'coupon_code', 'discount', 'applied_coupons', 'currency'];
 
     protected $casts = [
         'shipping_address' => 'array',

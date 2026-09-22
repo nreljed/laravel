@@ -11,6 +11,7 @@ class Webhook extends Model
     protected $fillable = [
         'name', 'url', 'secret', 'events', 'is_active',
         'headers', 'timeout', 'retry_attempts', 'retry_delay',
+        'consecutive_failures',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class Webhook extends Model
             'timeout' => 'integer',
             'retry_attempts' => 'integer',
             'retry_delay' => 'integer',
+            'consecutive_failures' => 'integer',
         ];
     }
 

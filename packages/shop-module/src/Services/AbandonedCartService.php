@@ -91,7 +91,7 @@ class AbandonedCartService
                 'cartUrl' => $recoveryUrl,
                 'items' => $items,
                 'itemCount' => count($items),
-                'subtotal' => number_format((float) $cart->subtotal, 2).' EUR',
+                'subtotal' => number_format((float) $cart->subtotal, 2).' '.($cart->currency ?? app(CurrencyService::class)->defaultCode()),
                 'siteName' => config('app.name'),
             ],
         );

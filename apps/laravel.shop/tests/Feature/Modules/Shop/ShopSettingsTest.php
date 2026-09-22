@@ -178,6 +178,8 @@ class ShopSettingsTest extends TestCase
         $cart = $this->makeCart($user);
 
         // Free shipping coupon applied to the cart (subtotal 50 < free_above 60).
+        // The free_shipping coupon folds the shipping cost (5) into the discount,
+        // so the taxable base is 50 - 5 = 45 (Decision A: tax on post-discount subtotal).
         ShippingMethod::query()->update(['free_above' => 60]);
         $coupon = Coupon::create([
             'code' => 'FREESHIP',
@@ -197,7 +199,7 @@ class ShopSettingsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('freeShippingApplied', true)
-                ->where('estimatedTax.base', 50));
+                ->where('estimatedTax.base', 45));
     }
 
     public function test_checkout_summary_estimates_tax_with_shipping_when_enabled(): void

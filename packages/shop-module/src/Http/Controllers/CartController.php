@@ -12,13 +12,17 @@ use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductVariation;
 use Nreljed\ShopModule\Services\CouponService;
+use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\InventoryService;
+use Nreljed\ShopModule\Services\QuoteService;
 
 class CartController extends Controller
 {
     public function __construct(
         protected CouponService $couponService,
         protected InventoryService $inventoryService,
+        protected CurrencyService $currencyService,
+        protected QuoteService $quoteService,
     ) {}
 
     public function index(Request $request)
@@ -40,23 +44,32 @@ class CartController extends Controller
 
         $appliedCodes = collect($cart->applied_coupons ?? [])->pluck('code')->filter()->values()->all();
 
-        // Fold eligible auto-discount amounts into the displayed totals so the
-        // cart summary matches what checkout actually charges.
-        if ($cart->items->isNotEmpty() && $autoDiscounts->isNotEmpty()) {
-            $appliedModels = Coupon::whereIn('id', collect($cart->applied_coupons ?? [])->pluck('coupon_id'))->get();
-            $eligible = $appliedModels->merge(
-                $autoDiscounts->filter(fn ($c) => ! $appliedModels->contains('id', $c->id))
-            );
+        // Single source of truth for the displayed totals — matches checkout.
+        $quote = $this->quoteService->quote(
+            $cart,
+            null,
+            null,
+            null,
+            $request->user()?->id,
+        );
 
-            $stack = $this->couponService->calculateStackedDiscount(
-                $eligible, $cart->subtotal, null, $cart->items
-            );
+        $cart->discount = $quote['discount_total'];
+        $cart->currency = $quote['currency'];
 
-            $cart->discount = $stack['total_discount'];
+        $default = $this->currencyService->defaultCode();
+        $display = $this->currencyService->storefrontCode();
+
+        if ($display !== $default) {
+            foreach ($cart->items as $item) {
+                $item->unit_price = $this->currencyService->convert((float) $item->unit_price, $default, $display);
+            }
+            $cart->discount = $this->currencyService->convert((float) $quote['discount_total'], $default, $display);
+            $cart->currency = $display;
         }
 
         return Inertia::render('shop/storefront/shoppingcart', [
             'cart' => $cart,
+            'quote' => $quote,
             'autoDiscounts' => $autoDiscounts->map(fn ($c) => [
                 'id' => $c->id,
                 'code' => $c->code,
@@ -65,8 +78,8 @@ class CartController extends Controller
                     'free_shipping' => 'Free Shipping',
                     'percentage' => "{$c->value}% off",
                     'percentage_product' => "{$c->value}% off selected products",
-                    'fixed' => number_format((float) $c->value, 2).' EUR off',
-                    'fixed_product' => number_format((float) $c->value, 2).' EUR off selected products',
+                    'fixed' => $this->formatAmount((float) $c->value).' off',
+                    'fixed_product' => $this->formatAmount((float) $c->value).' off selected products',
                     'buy_x_get_y' => 'Buy '.($c->buy_qty ?: 2).' get '.($c->free_qty ?: 1).' free',
                     'tiered' => 'Quantity discounts',
                     default => $c->code,
@@ -142,6 +155,7 @@ class CartController extends Controller
                 'product_variation_id' => $validated['variant_id'] ?? null,
                 'quantity' => $validated['quantity'],
                 'unit_price' => $unitPrice,
+                'currency' => $this->currencyService->defaultCode(),
                 'variant_label' => $validated['variant_label'] ?? null,
             ]);
         }
@@ -284,12 +298,17 @@ class CartController extends Controller
     protected function getCart(Request $request): Cart
     {
         if ($user = $request->user()) {
-            return Cart::firstOrCreate(['user_id' => $user->id]);
+            return Cart::firstOrCreate(['user_id' => $user->id], ['currency' => $this->currencyService->defaultCode()]);
         }
 
         $sessionId = $request->session()->getId();
 
-        return Cart::firstOrCreate(['session_id' => $sessionId]);
+        return Cart::firstOrCreate(['session_id' => $sessionId], ['currency' => $this->currencyService->defaultCode()]);
+    }
+
+    protected function formatAmount(float $amount): string
+    {
+        return $this->currencyService->format($amount, $this->currencyService->defaultCode());
     }
 
     protected function touchLastActivity(Cart $cart): void

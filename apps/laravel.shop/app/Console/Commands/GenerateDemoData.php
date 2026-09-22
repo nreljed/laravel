@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Nreljed\Blog\Models\Post;
 use Nreljed\Blog\Models\PostCategory;
 use Nreljed\Blog\Models\PostTag;
+use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\CouponUsage;
 use Nreljed\ShopModule\Models\Order;
@@ -19,10 +20,15 @@ use Nreljed\ShopModule\Models\OrderItem;
 use Nreljed\ShopModule\Models\OrderNote;
 use Nreljed\ShopModule\Models\OrderRefund;
 use Nreljed\ShopModule\Models\Product;
+use Nreljed\ShopModule\Models\ProductPrice;
 use Nreljed\ShopModule\Models\ProductReview;
+use Nreljed\ShopModule\Models\Shipment;
 use Nreljed\ShopModule\Models\ShippingMethod;
 use Nreljed\ShopModule\Models\StockAdjustment;
 use Nreljed\ShopModule\Models\TaxRate;
+use Nreljed\ShopModule\Models\Webhook;
+use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\PriceResolver;
 
 class GenerateDemoData extends Command
 {
@@ -134,7 +140,10 @@ class GenerateDemoData extends Command
         $this->createShippingMethods();
         $this->createTaxRates();
         $this->createCoupons();
+        $this->createProductPrices();
         $this->createOrders();
+        $this->createShipments();
+        $this->createWebhooks();
         $this->createProductReviews();
         $this->createStockHistory();
         $this->createBlogPosts();
@@ -607,7 +616,7 @@ class GenerateDemoData extends Command
         foreach ($scenario['items'] as $itemData) {
             $product = $itemData['product'];
             $qty = $itemData['qty'];
-            $price = $product->active_price ?? $product->price ?? 29.99;
+            $price = $this->resolvePrice($product);
             $lineTotal = $price * $qty;
             $subtotal += $lineTotal;
 
@@ -821,6 +830,155 @@ class GenerateDemoData extends Command
             ],
             default => $flow,
         };
+    }
+
+    private function createProductPrices(): void
+    {
+        $this->info('Syncing product price ledger...');
+
+        $currencyCode = app(CurrencyService::class)->defaultCode();
+        $count = 0;
+
+        foreach ($this->products as $product) {
+            ProductPrice::updateOrCreate(
+                ['product_id' => $product->id, 'product_variation_id' => null, 'currency' => $currencyCode, 'min_quantity' => 1],
+                [
+                    'price' => $product->price ?? 0,
+                    'compare_price' => $product->compare_price,
+                    'sale_price' => $product->sale_price,
+                ]
+            );
+            $count++;
+
+            foreach ($product->variations as $variation) {
+                ProductPrice::updateOrCreate(
+                    ['product_id' => $product->id, 'product_variation_id' => $variation->id, 'currency' => $currencyCode, 'min_quantity' => 1],
+                    [
+                        'price' => $variation->price ?? 0,
+                        'compare_price' => $variation->compare_price,
+                        'sale_price' => $variation->sale_price,
+                    ]
+                );
+                $count++;
+            }
+        }
+
+        $this->line($count.' product_prices ledger rows synced.');
+    }
+
+    private function createShipments(): void
+    {
+        $this->info('Creating shipments...');
+
+        $carriers = ['DHL Express', 'FedEx', 'Aramex', 'UPS', 'Tunisair Cargo'];
+        $orders = Order::with('items')->whereNotNull('shipped_at')->get();
+        $created = 0;
+
+        foreach ($orders as $order) {
+            if ($order->shipments()->count() > 0) {
+                continue;
+            }
+
+            $shippedAt = $order->shipped_at;
+            $daysSince = $shippedAt ? $shippedAt->diffInDays(now()) : 0;
+            $status = $daysSince >= 3 && ! in_array($order->status, ['cancelled', 'refunded']) ? 'delivered' : 'shipped';
+            $carrier = $carriers[array_rand($carriers)];
+            $trackingNumber = strtoupper($carrier[0]).rand(1000, 9999).'-'.Str::upper(Str::random(6));
+
+            $shipment = $order->shipments()->create([
+                'carrier' => $carrier,
+                'tracking_number' => $trackingNumber,
+                'tracking_url' => $trackingNumber ? 'https://track.example.com/'.$trackingNumber : null,
+                'status' => $status,
+                'shipped_at' => $shippedAt,
+                'delivered_at' => $status === 'delivered' ? $shippedAt?->copy()->addDays(2) : null,
+                'notes' => 'Demo shipment generated from order fulfillment.',
+                'created_by' => $this->adminUser->id,
+            ]);
+
+            foreach ($order->items as $item) {
+                $shipment->items()->create([
+                    'order_item_id' => $item->id,
+                    'product_name' => $item->product_name,
+                    'product_sku' => $item->product_sku,
+                    'quantity' => $item->quantity,
+                ]);
+            }
+
+            $created++;
+        }
+
+        $this->line($created.' shipments created.');
+    }
+
+    private function createWebhooks(): void
+    {
+        $this->info('Creating webhook endpoints...');
+
+        $eventCatalog = WebhookEvents::all();
+
+        $endpoints = [
+            [
+                'name' => 'Demo Order Hook',
+                'url' => 'https://demo.example.com/webhooks/orders',
+                'events' => [
+                    WebhookEvents::ORDER_PLACED,
+                    WebhookEvents::ORDER_UPDATED,
+                    WebhookEvents::ORDER_STATUS_CHANGED,
+                    WebhookEvents::ORDER_REFUNDED,
+                    WebhookEvents::SHIPMENT_CREATED,
+                    WebhookEvents::SHIPMENT_SHIPPED,
+                ],
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Demo Product Sync Hook',
+                'url' => 'https://demo.example.com/webhooks/products',
+                'events' => [
+                    WebhookEvents::PRODUCT_CREATED,
+                    WebhookEvents::PRODUCT_UPDATED,
+                    WebhookEvents::PRODUCT_STOCK_CHANGED,
+                    WebhookEvents::PRODUCT_LOW_STOCK,
+                ],
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Demo ERP Endpoint',
+                'url' => 'https://erp.example.com/webhooks/shop',
+                'events' => $eventCatalog,
+                'is_active' => false,
+            ],
+        ];
+
+        foreach ($endpoints as $data) {
+            Webhook::firstOrCreate(
+                ['name' => $data['name']],
+                [
+                    'url' => $data['url'],
+                    'secret' => Str::random(32),
+                    'events' => $data['events'],
+                    'is_active' => $data['is_active'],
+                    'headers' => ['X-Demo-Origin' => 'shop-demo-generator'],
+                    'timeout' => 10,
+                    'retry_attempts' => 3,
+                    'retry_delay' => 10,
+                    'consecutive_failures' => 0,
+                ]
+            );
+        }
+
+        $this->line(count($endpoints).' webhook endpoints created.');
+    }
+
+    private function resolvePrice(Product $product): float
+    {
+        if ($product->type === 'variable') {
+            $price = $product->variations()->active()->min('active_price');
+
+            return (float) ($price ?? 0);
+        }
+
+        return (float) app(PriceResolver::class)->activePrice($product);
     }
 
     private function createProductReviews(): void
@@ -1180,6 +1338,9 @@ class GenerateDemoData extends Command
 
         // Delete demo users
         User::whereIn('id', $demoUsers)->delete();
+
+        // Delete demo webhook endpoints (cascades to webhook_calls)
+        Webhook::where('name', 'LIKE', 'Demo %')->delete();
     }
 
     private function getCounts(): array
@@ -1190,6 +1351,8 @@ class GenerateDemoData extends Command
             'Shipping Methods' => count($this->shippingMethods),
             'Tax Rates' => count($this->taxRates),
             'Orders' => Order::count(),
+            'Shipments' => Shipment::count(),
+            'Webhooks' => Webhook::count(),
             'Blog Posts' => Post::count(),
         ];
     }

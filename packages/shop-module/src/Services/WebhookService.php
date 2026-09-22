@@ -3,6 +3,7 @@
 namespace Nreljed\ShopModule\Services;
 
 use Illuminate\Support\Facades\Http;
+use Nreljed\ShopModule\Jobs\SendWebhook;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Webhook;
 use Nreljed\ShopModule\Models\WebhookCall;
@@ -14,16 +15,23 @@ class WebhookService
         $webhooks = Webhook::active()->get()->filter(fn (Webhook $w) => $w->handlesEvent($event));
 
         foreach ($webhooks as $webhook) {
-            $this->createAndSend($webhook, $event, $payload);
+            $call = WebhookCall::create([
+                'webhook_id' => $webhook->id,
+                'event' => $event,
+                'payload' => $payload,
+                'max_attempts' => $webhook->retry_attempts,
+            ]);
+
+            SendWebhook::dispatch(
+                $call->id,
+                $webhook->id,
+                $webhook->retry_attempts,
+                $webhook->retry_delay,
+            );
         }
     }
 
     public function dispatchAndWait(Webhook $webhook, string $event, array $payload): WebhookCall
-    {
-        return $this->createAndSend($webhook, $event, $payload);
-    }
-
-    protected function createAndSend(Webhook $webhook, string $event, array $payload): WebhookCall
     {
         $call = WebhookCall::create([
             'webhook_id' => $webhook->id,
@@ -32,14 +40,26 @@ class WebhookService
             'max_attempts' => $webhook->retry_attempts,
         ]);
 
-        $this->send($call, $webhook);
+        $success = $this->send($call, $webhook);
+
+        $call->update([
+            'status' => $success ? 1 : 2,
+            'completed_at' => now(),
+        ]);
 
         return $call;
     }
 
-    public function send(WebhookCall $call, ?Webhook $webhook = null): void
+    /**
+     * Perform a single delivery attempt and record the outcome.
+     *
+     * Returns whether the endpoint answered with a 2xx. Retries and the
+     * permanent-failure path are owned by the `SendWebhook` queue job; the
+     * manual "test" button uses `dispatchAndWait()` for one synchronous shot.
+     */
+    public function send(WebhookCall $call, ?Webhook $webhook = null): bool
     {
-        $webhook ??= $call->webhook;
+        $webhook ??= Webhook::find($call->webhook_id);
 
         $call->increment('attempts');
 
@@ -65,10 +85,12 @@ class WebhookService
             ]);
 
             if ($response->successful()) {
-                $call->update(['status' => 1]);
-            } else {
-                $this->handleFailure($call, $webhook);
+                $this->recordSuccess($webhook);
+
+                return true;
             }
+
+            return false;
         } catch (\Exception $e) {
             $call->update([
                 'response_status' => 0,
@@ -76,26 +98,17 @@ class WebhookService
                 'completed_at' => now(),
             ]);
 
-            $this->handleFailure($call, $webhook);
+            return false;
         }
     }
 
-    protected function handleFailure(WebhookCall $call, Webhook $webhook): void
-    {
-        if ($call->shouldRetry()) {
-            $delay = $webhook->retry_delay * $call->attempts;
-            $call->update([
-                'scheduled_at' => now()->addSeconds($delay),
-                'status' => 0,
-            ]);
-        } else {
-            $call->update(['status' => 2]);
-        }
-    }
-
+    /**
+     * Safety net for `webhooks:process`: re-queues any delivery that is still
+     * pending (no running job, or a lost job) so a real queue retries it.
+     */
     public function processPending(): int
     {
-        $processed = 0;
+        $requeued = 0;
 
         $pending = WebhookCall::where('status', 0)
             ->where('scheduled_at', '<=', now())
@@ -105,27 +118,44 @@ class WebhookService
             ->get();
 
         foreach ($pending as $call) {
-            if ($call->webhook) {
-                $this->send($call);
-                $processed++;
+            $webhook = Webhook::find($call->webhook_id);
+
+            if (! $webhook || ! $webhook->is_active) {
+                continue;
             }
+
+            SendWebhook::dispatch(
+                $call->id,
+                $webhook->id,
+                $webhook->retry_attempts,
+                $webhook->retry_delay,
+            );
+
+            $requeued++;
         }
 
-        return $processed;
+        return $requeued;
     }
 
-    public function dispatchOrderCreated(Order $order): void
+    protected function recordSuccess(Webhook $webhook): void
     {
-        $this->dispatch('order.created', [
-            'event' => 'order.created',
+        if ($webhook->consecutive_failures > 0) {
+            $webhook->update(['consecutive_failures' => 0]);
+        }
+    }
+
+    public function dispatchOrderPlaced(Order $order): void
+    {
+        $this->dispatch(\Nreljed\ShopModule\Events\WebhookEvents::ORDER_PLACED, [
+            'event' => \Nreljed\ShopModule\Events\WebhookEvents::ORDER_PLACED,
             'data' => $this->buildOrderPayload($order),
         ]);
     }
 
     public function dispatchOrderStatusChanged(Order $order, string $oldStatus): void
     {
-        $this->dispatch('order.status_changed', [
-            'event' => 'order.status_changed',
+        $this->dispatch(\Nreljed\ShopModule\Events\WebhookEvents::ORDER_STATUS_CHANGED, [
+            'event' => \Nreljed\ShopModule\Events\WebhookEvents::ORDER_STATUS_CHANGED,
             'data' => array_merge($this->buildOrderPayload($order), [
                 'previous_status' => $oldStatus,
             ]),
@@ -134,11 +164,19 @@ class WebhookService
 
     public function dispatchOrderRefunded(Order $order, float $amount): void
     {
-        $this->dispatch('order.refunded', [
-            'event' => 'order.refunded',
+        $this->dispatch(\Nreljed\ShopModule\Events\WebhookEvents::ORDER_REFUNDED, [
+            'event' => \Nreljed\ShopModule\Events\WebhookEvents::ORDER_REFUNDED,
             'data' => array_merge($this->buildOrderPayload($order), [
                 'refund_amount' => $amount,
             ]),
+        ]);
+    }
+
+    public function dispatchShipment(string $event, array $payload): void
+    {
+        $this->dispatch($event, [
+            'event' => $event,
+            'data' => $payload,
         ]);
     }
 
@@ -153,7 +191,7 @@ class WebhookService
             'shipping_total' => (float) ($order->shipping_total ?? 0),
             'tax_total' => (float) ($order->tax_total ?? 0),
             'discount_total' => (float) ($order->discount_total ?? 0),
-            'currency' => $order->currency ?? 'USD',
+            'currency' => $order->currency ?? app(CurrencyService::class)->defaultCode(),
             'customer_name' => $order->customer_name,
             'customer_email' => $order->customer_email,
             'created_at' => $order->created_at?->toISOString(),

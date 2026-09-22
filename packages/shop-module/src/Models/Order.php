@@ -14,11 +14,10 @@ use Nreljed\ShopModule\Database\Factories\OrderFactory;
 class Order extends Model
 {
     use HasFactory;
-
     protected $fillable = [
         'order_number', 'user_id', 'status',
         'subtotal', 'tax_total', 'shipping_total', 'discount_total', 'total', 'total_refunded',
-        'currency', 'payment_method', 'payment_status',
+        'currency', 'exchange_rate', 'payment_method', 'payment_status',
         'notes', 'billing_address', 'shipping_address',
         'customer_email', 'customer_phone', 'customer_name',
         'processed_by', 'paid_at', 'shipped_at', 'refunded_at', 'refund_amount', 'refund_notes',
@@ -32,6 +31,7 @@ class Order extends Model
         'shipping_total' => 'decimal:2',
         'discount_total' => 'decimal:2',
         'total' => 'decimal:2',
+        'exchange_rate' => 'float',
         'billing_address' => 'array',
         'shipping_address' => 'array',
         'paid_at' => 'datetime',
@@ -85,6 +85,11 @@ class Order extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(OrderNote::class);
+    }
+
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
     }
 
     public function scopeStatus($query, string $status)

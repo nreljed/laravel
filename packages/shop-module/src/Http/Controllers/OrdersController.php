@@ -172,6 +172,10 @@ class OrdersController extends Controller
         $this->orderActionService->created($order, $request->user()->id);
         $this->orderActionService->log($order, 'status_set', null, $order->status, $request->user()->id);
 
+        if ($order->status !== 'draft') {
+            $this->webhookService->dispatchOrderPlaced($order);
+        }
+
         $flash = ($order->status === 'draft') ? 'Draft order created.' : 'Order created successfully.';
 
         return redirect()->route('dashboard.shop.orders.show', $order->id)
@@ -335,13 +339,13 @@ class OrdersController extends Controller
         if ($order->user) {
             $notification = new AppNotification('order.status_changed', [
                 'title' => 'Refund issued for '.$order->order_number,
-                'message' => 'A refund of '.number_format($totalRefund, 2).' EUR has been processed.',
+                'message' => 'A refund of '.number_format($totalRefund, 2).' '.$order->currency.' has been processed.',
                 'module' => 'Shop',
                 'link' => route('dashboard.shop.orders.show', $order->id, false),
                 'orderId' => $order->id,
                 'orderNumber' => $order->order_number,
                 'customerName' => $order->customer_name,
-                'orderTotal' => number_format((float) $order->total, 2).' EUR',
+                'orderTotal' => number_format((float) $order->total, 2).' '.$order->currency,
                 'orderStatus' => $order->fresh()->status,
                 'orderUrl' => route('dashboard.shop.orders.show', $order->id, false),
             ]);
@@ -402,7 +406,7 @@ class OrdersController extends Controller
                 'oldStatus' => $oldStatus,
                 'newStatus' => $newStatus,
                 'customerName' => $order->customer_name,
-                'orderTotal' => number_format((float) $order->total, 2).' EUR',
+                'orderTotal' => number_format((float) $order->total, 2).' '.$order->currency,
                 'orderStatus' => ucfirst($newStatus),
                 'orderUrl' => route('dashboard.shop.orders.show', $order->id, false),
             ];
@@ -412,6 +416,13 @@ class OrdersController extends Controller
 
         $this->orderActionService->statusChanged($order, $oldStatus, $newStatus);
         $this->webhookService->dispatchOrderStatusChanged($order, $oldStatus);
+
+        if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
+            $this->webhookService->dispatch(
+                \Nreljed\ShopModule\Events\WebhookEvents::ORDER_CANCELLED,
+                ['order_id' => $order->id, 'order_number' => $order->order_number],
+            );
+        }
 
         return redirect()->back()->with('status', 'Order status updated.');
     }

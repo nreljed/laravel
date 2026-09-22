@@ -39,6 +39,15 @@ return [
         'default_country' => env('CHECKOUT_DEFAULT_COUNTRY', ''),
     ],
 
+    'payments' => [
+        'default' => env('SHOP_PAYMENT_METHOD_DEFAULT', 'stripe'),
+        'provisional_draft_status' => 'draft',
+        'drivers' => [
+            'stripe' => \Nreljed\ShopModule\Payments\StripePaymentDriver::class,
+            'manual' => \Nreljed\ShopModule\Payments\ManualPaymentDriver::class,
+        ],
+    ],
+
     'tax' => [
         'prices_include_tax' => env('SHOP_PRICES_INCLUDE_TAX', false),
         'based_on' => env('SHOP_TAX_BASED_ON', 'billing'),

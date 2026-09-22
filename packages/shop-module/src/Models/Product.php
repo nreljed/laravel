@@ -356,6 +356,11 @@ class Product extends Model
         return $this->hasMany(ProductVariation::class);
     }
 
+    public function priceRows(): HasMany
+    {
+        return $this->hasMany(ProductPrice::class)->whereNull('product_variation_id');
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);

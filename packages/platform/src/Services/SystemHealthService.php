@@ -1337,6 +1337,7 @@ class SystemHealthService
             $totalSize += $size;
 
             $results[] = [
+                'path' => $dir['path'],
                 'name' => $dir['name'],
                 'exists' => $exists,
                 'writable' => $writable,

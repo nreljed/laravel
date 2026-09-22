@@ -2,6 +2,29 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [Unreleased]
+
+### Added
+
+- **Shipments (0.3)** — `shipments` + `shipment_items` tables, `Shipment`/`ShipmentItem` models with `Order::shipments()` relation, `ShipmentService` (createForOrder / markShipped / markDelivered / updateTracking), `ShipmentsController` + `ShipmentPolicy`, `shop.shipments.manage` permission, `shipment.created` / `shipment.shipped` / `shipment.delivered` webhook events, and an admin Inertia page under `/dashboard/shop/orders/{order}/shipments`.
+- **Queued webhooks (0.4)** — deliveries now run through a real `SendWebhook` queue job (`ShouldQueue` + unique per call, per-webhook `retry_attempts` / `retry_delay` backoff); `WebhookService::dispatch()` enqueues, `dispatchAndWait()` stays synchronous for the test button, `processPending()` re-queues lost deliveries. Webhook endpoints auto-deactivate after 10 consecutive failures (`webhooks.consecutive_failures` column).
+- **Event catalog (0.4)** — `Events/WebhookEvents.php` centralizes the 16 event names; controller store/update validation whitelists against it; wired `order.placed` (checkout + manual order), `order.cancelled`, `product.created/updated/deleted`, `customer.created` (checkout account), and renamed the test ping to `webhook.test`.
+
+### Changed
+
+- Docs synced with the shipped behaviour (`workflows.md`, `services.md`, `data-model.md`, `architecture.md`, `routes.md`, `controllers.md`, `permissions.md`, `index.md`); counts updated to 32 models, 18 services, 10 policies, 17 permissions, 62 migrations.
+
+## [0.1.44] - 2026-09-22
+
+### Fixed
+
+- **`product_prices` migration (0.1.43 regression)** - the `CREATE TABLE` emitted two identical `product_prices_currency_index` indexes (once from the `currency` column and once from the explicit `index()`), which aborted real `php artisan migrate` runs on SQLite ("index already exists") and MySQL ("Duplicate key name"). The redundant explicit index is removed.
+- **`product_prices` backfill (0.1.43 regression)** - the seed `INSERT` wrote into the `price_scope` stored generated column, which SQLite and MySQL both reject. The backfill now omits `price_scope` and lets the generated column normalize it (`COALESCE(product_variation_id, 0)`).
+
+### Added
+
+- **Migration smoke check** - `scripts/migration-check.php` boots the package migrations against a real sqlite connection and enforces clean `up()` execution for all 62 migrations; wired into CI so migration regressions are caught before release.
+
 ## [0.1.8] - 2026-09-07
 
 ### Changed

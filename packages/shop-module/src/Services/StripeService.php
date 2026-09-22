@@ -27,7 +27,7 @@ class StripeService
         return config('services.stripe.key', env('STRIPE_KEY', ''));
     }
 
-    public function createPaymentIntent(Order $order, string $currency = 'usd'): PaymentIntent
+    public function createPaymentIntent(Order $order, string $currency = 'eur'): PaymentIntent
     {
         return PaymentIntent::create([
             'amount' => $this->toCents($order->total, $currency),
@@ -58,7 +58,7 @@ class StripeService
         ];
 
         if ($amount !== null) {
-            $params['amount'] = $this->toCents($amount, $order->currency ?? 'usd');
+            $params['amount'] = $this->toCents($amount, $order->currency ?? app(CurrencyService::class)->defaultCode());
         }
 
         return Refund::create($params);

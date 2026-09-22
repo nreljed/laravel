@@ -5,12 +5,12 @@ namespace Nreljed\ShopModule\Http\Controllers;
 use Illuminate\Http\Request;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\ShopModule\Models\Order;
-use Nreljed\ShopModule\Services\StripeService;
+use Nreljed\ShopModule\Services\PaymentManager;
 
 class StripeWebhookController extends Controller
 {
     public function __construct(
-        protected StripeService $stripeService,
+        protected PaymentManager $paymentManager,
     ) {}
 
     public function handle(Request $request)
@@ -19,7 +19,7 @@ class StripeWebhookController extends Controller
         $sigHeader = $request->header('Stripe-Signature');
 
         try {
-            $event = $this->stripeService->verifyWebhook($payload, $sigHeader);
+            $event = $this->paymentManager->driver('stripe')->verifyWebhook($payload, $sigHeader);
         } catch (\Exception $e) {
             return response('Webhook signature verification failed.', 400);
         }

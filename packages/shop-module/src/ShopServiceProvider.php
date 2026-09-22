@@ -16,6 +16,7 @@ use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductReview;
+use Nreljed\ShopModule\Models\Shipment;
 use Nreljed\ShopModule\Models\ShippingMethod;
 use Nreljed\ShopModule\Models\ShippingZone;
 use Nreljed\ShopModule\Models\TaxRate;
@@ -26,11 +27,13 @@ use Nreljed\ShopModule\Policies\CurrencyPolicy;
 use Nreljed\ShopModule\Policies\OrderPolicy;
 use Nreljed\ShopModule\Policies\ProductPolicy;
 use Nreljed\ShopModule\Policies\ProductReviewPolicy;
+use Nreljed\ShopModule\Policies\ShipmentPolicy;
 use Nreljed\ShopModule\Policies\ShippingMethodPolicy;
 use Nreljed\ShopModule\Policies\ShippingZonePolicy;
 use Nreljed\ShopModule\Policies\TaxRatePolicy;
 use Nreljed\ShopModule\Policies\WebhookPolicy;
 use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\PaymentManager;
 use Nreljed\ShopModule\Services\ShopService;
 use Nreljed\ShopModule\Services\ShopSettingsService;
 
@@ -41,6 +44,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
     public function register(): void
     {
         $this->app->singleton(ShopService::class);
+        $this->app->singleton(PaymentManager::class, fn () => new PaymentManager(config('shop.payments', [])));
 
         $this->mergeConfigFrom(__DIR__.'/../config/shop.php', 'shop');
     }
@@ -108,6 +112,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         Gate::policy(Coupon::class, CouponPolicy::class);
         Gate::policy(Currency::class, CurrencyPolicy::class);
         Gate::policy(ProductReview::class, ProductReviewPolicy::class);
+        Gate::policy(Shipment::class, ShipmentPolicy::class);
         Gate::policy(ShippingMethod::class, ShippingMethodPolicy::class);
         Gate::policy(ShippingZone::class, ShippingZonePolicy::class);
         Gate::policy(TaxRate::class, TaxRatePolicy::class);
@@ -280,25 +285,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                     ->all();
             },
             'selectedCurrency' => function () {
-                $currencyService = app(CurrencyService::class);
-                $code = session('selected_currency');
-
-                if ($code && ($currency = $currencyService->getByCode($code)) && $currency->is_active) {
-                    return $currency->code;
-                }
-
-                if (! $code) {
-                    $active = $currencyService->getActiveCurrencies()->pluck('code')->all();
-                    $detected = $currencyService->detectFromAcceptLanguage(request()->header('Accept-Language'), $active);
-
-                    if ($detected && $detected !== ($currencyService->getDefaultCurrency()?->code ?? 'EUR')) {
-                        session(['selected_currency' => $detected]);
-
-                        return $detected;
-                    }
-                }
-
-                return $currencyService->getDefaultCurrency()?->code ?? 'EUR';
+                return app(CurrencyService::class)->storefrontCode();
             },
             'currencyPosition' => function () {
                 try {
@@ -394,6 +381,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ['slug' => 'shop.coupons.manage', 'name' => 'Manage Coupons', 'description' => 'Create, edit, and delete coupons.'],
             ['slug' => 'shop.reviews.moderate', 'name' => 'Moderate Reviews', 'description' => 'Approve, reject, and delete product reviews.'],
             ['slug' => 'shop.shipping.manage', 'name' => 'Manage Shipping', 'description' => 'Manage shipping methods and zones.'],
+            ['slug' => 'shop.shipments.manage', 'name' => 'Manage Shipments', 'description' => 'Create and update order shipments.'],
             ['slug' => 'shop.taxes.manage', 'name' => 'Manage Taxes', 'description' => 'Manage tax rates.'],
             ['slug' => 'shop.webhooks.manage', 'name' => 'Manage Webhooks', 'description' => 'Configure and manage webhook endpoints.'],
             ['slug' => 'shop.currencies.manage', 'name' => 'Manage Currencies', 'description' => 'Manage store currencies.'],

@@ -1,6 +1,6 @@
 # Data Model
 
-29 Eloquent models across the e-commerce domain.
+32 Eloquent models across the e-commerce domain.
 
 ## Products & Taxonomy
 
@@ -89,8 +89,10 @@ cart page).
 | Model | Table | Notes |
 |-------|-------|-------|
 | `Currency` | `currencies` | Multi-currency with exchange rates |
-| `Webhook` | `webhooks` | Outbound webhooks, HMAC-SHA256 signing |
+| `Webhook` | `webhooks` | Outbound webhooks, HMAC-SHA256 signing; `consecutive_failures` auto-deactivates at 10 |
 | `WebhookCall` | `webhook_calls` | Webhook delivery log |
+| `Shipment` | `shipments` | Order fulfillment: carrier, tracking, `pending` → `shipped` → `delivered` (`shipped_at`/`delivered_at`) |
+| `ShipmentItem` | `shipment_items` | Per-shipment snapshot of shipped order items |
 | `StockAdjustment` | `stock_adjustments` | Inventory audit trail (who/what/why) |
 | `Wishlist` | `wishlists` | Per-user saved products |
 | `BackInStockSubscription` | `back_in_stock_subscriptions` | "Notify me" requests |

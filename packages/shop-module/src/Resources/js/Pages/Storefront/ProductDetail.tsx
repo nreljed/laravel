@@ -250,7 +250,7 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
 export default function StorefrontShow() {
     const { props } = usePage<ShowPage & { wishlistIds: number[] }>()
     const { product, related, variations, attributes, priceRange, defaultVariation, visibleAttributes, wishlistIds } = props
-    const { money, convert, selectedCode } = useCurrency()
+    const { money, selectedCode } = useCurrency()
     const [quantity, setQuantity] = useState(product.min_quantity || 1)
     const [addingToCart, setAddingToCart] = useState(false)
     const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null)
@@ -455,7 +455,7 @@ export default function StorefrontShow() {
                     {ogImage && <meta property="og:image" content={ogImage} />}
                     <meta property="og:type" content="product" />
                     <meta property="og:url" content={canonicalUrl} />
-                    <meta property="product:price:amount" content={convert(selectedVariation ? Number(selectedVariation.active_price ?? selectedVariation.price ?? 0) : product.active_price).toFixed(2)} />
+                    <meta property="product:price:amount" content={Number(selectedVariation ? selectedVariation.active_price ?? selectedVariation.price ?? 0 : product.active_price).toFixed(2)} />
                     <meta property="product:price:currency" content={selectedCode ?? 'EUR'} />
                     <meta property="product:availability" content={inStock ? 'in stock' : 'out of stock'} />
                     <meta name="twitter:card" content="summary_large_image" />

@@ -55,6 +55,9 @@ jobs:
       - name: Frontend boundary check
         run: php scripts/frontend-boundary-check.php
 
+      - name: Migration check (sqlite)
+        run: php scripts/migration-check.php
+
       - name: Run tests
         run: php vendor/bin/phpunit
 

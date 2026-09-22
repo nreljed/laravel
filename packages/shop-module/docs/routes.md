@@ -170,6 +170,7 @@ Route::middleware(['api'])->prefix('/api')->group(function () {
 | Tax Rates | `tax-rates.index/store/update/destroy/toggle-active` |
 | Currencies | `currencies.index/store/update/destroy/toggle-active` |
 | Webhooks | `webhooks.index/store/update/destroy/toggle-active/test/calls` |
+| Shipments | `shipments.index/store/update` (scoped under `/orders/{order}/shipments`, update by `/{shipment}`) |
 
 ## Admin Settings (`admin.shop.*` — `admin.php`)
 

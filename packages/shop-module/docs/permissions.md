@@ -24,6 +24,7 @@ config-catalog backed). They are consumed by:
 | `shop.coupons.manage` | Manage Coupons | Coupons CRUD |
 | `shop.reviews.moderate` | Moderate Reviews | Review approve/reject/destroy |
 | `shop.shipping.manage` | Manage Shipping | Shipping methods + zones CRUD |
+| `shop.shipments.manage` | Manage Shipments | Per-order shipment create/update (ship/deliver/tracking) |
 | `shop.taxes.manage` | Manage Taxes | Tax rates CRUD |
 | `shop.webhooks.manage` | Manage Webhooks | Webhooks CRUD + test |
 | `shop.currencies.manage` | Manage Currencies | Currencies CRUD + toggle-active |
@@ -49,6 +50,7 @@ Controllers call `$this->authorize(...)` in every mutation/read action. Note the
 | `ShippingZonePolicy` | `ShippingZone` | `viewAny` (`shop.view`), manage (`shop.shipping.manage`) |
 | `TaxRatePolicy` | `TaxRate` | `viewAny` (`shop.view`), manage (`shop.taxes.manage`) |
 | `WebhookPolicy` | `Webhook` | `viewAny` (`shop.view`), manage (`shop.webhooks.manage`) |
+| `ShipmentPolicy` | `Shipment` | `viewAny`/`view`/`create`/`update`/`delete` — `shop.shipments.manage` |
 
 ## How Access is Enforced (example chain)
 

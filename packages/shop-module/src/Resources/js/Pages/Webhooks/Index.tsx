@@ -16,13 +16,22 @@ import { toast } from "@nreljed/platform/Components/ui/toast";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@nreljed/platform/Components/ui/pagination'
 
 const EVENT_OPTIONS = [
-    { value: 'order.created', label: 'Order Created' },
-    { value: 'order.status_changed', label: 'Order Status Changed' },
+    { value: 'order.placed', label: 'Order Placed' },
+    { value: 'order.updated', label: 'Order Updated' },
+    { value: 'order.cancelled', label: 'Order Cancelled' },
     { value: 'order.refunded', label: 'Order Refunded' },
+    { value: 'order.status_changed', label: 'Order Status Changed' },
+    { value: 'product.created', label: 'Product Created' },
     { value: 'product.updated', label: 'Product Updated' },
+    { value: 'product.deleted', label: 'Product Deleted' },
+    { value: 'customer.created', label: 'Customer Created' },
+    { value: 'customer.updated', label: 'Customer Updated' },
     { value: 'product.stock_changed', label: 'Product Stock Changed' },
     { value: 'product.low_stock', label: 'Low Stock Alert' },
-    { value: 'customer.created', label: 'Customer Created' },
+    { value: 'shipment.created', label: 'Shipment Created' },
+    { value: 'shipment.shipped', label: 'Shipment Shipped' },
+    { value: 'shipment.delivered', label: 'Shipment Delivered' },
+    { value: 'webhook.test', label: 'Webhook Test' },
 ]
 
 export default function Index() {

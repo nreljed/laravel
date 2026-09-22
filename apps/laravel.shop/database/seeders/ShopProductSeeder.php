@@ -16,9 +16,11 @@ use Nreljed\ShopModule\Models\ProductAttribute;
 use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductDownload;
+use Nreljed\ShopModule\Models\ProductPrice;
 use Nreljed\ShopModule\Models\ProductReview;
 use Nreljed\ShopModule\Models\ProductTag;
 use Nreljed\ShopModule\Models\ProductVariation;
+use Nreljed\ShopModule\Services\CurrencyService;
 
 class ShopProductSeeder extends Seeder
 {
@@ -35,6 +37,7 @@ class ShopProductSeeder extends Seeder
         $attributeData = $this->createAttributes();
 
         $this->createProducts($adminId, $brands, $categories, $tags, $attributeData);
+        $this->createProductPrices();
         $this->createReviews($adminId);
     }
 
@@ -710,6 +713,45 @@ class ShopProductSeeder extends Seeder
                 ProductDownload::firstOrCreate(
                     ['product_id' => $themesPack->id, 'name' => $dlData['name']],
                     $dlData
+                );
+            }
+        }
+    }
+
+    private function createProductPrices(): void
+    {
+        $defaultCurrency = app(CurrencyService::class)->defaultCode();
+
+        $products = Product::with('variations')->get();
+
+        foreach ($products as $product) {
+            ProductPrice::updateOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'product_variation_id' => null,
+                    'currency' => $defaultCurrency,
+                    'min_quantity' => 1,
+                ],
+                [
+                    'price' => $product->price ?? 0,
+                    'compare_price' => $product->compare_price,
+                    'sale_price' => $product->sale_price,
+                ]
+            );
+
+            foreach ($product->variations as $variation) {
+                ProductPrice::updateOrCreate(
+                    [
+                        'product_id' => $product->id,
+                        'product_variation_id' => $variation->id,
+                        'currency' => $defaultCurrency,
+                        'min_quantity' => 1,
+                    ],
+                    [
+                        'price' => $variation->price ?? 0,
+                        'compare_price' => $variation->compare_price,
+                        'sale_price' => $variation->sale_price,
+                    ]
                 );
             }
         }

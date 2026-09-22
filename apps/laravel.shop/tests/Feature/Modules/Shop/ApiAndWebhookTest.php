@@ -4,6 +4,7 @@ namespace Tests\Feature\Modules\Shop;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\Webhook;
 use Nreljed\ShopModule\Services\WebhookService;
@@ -81,7 +82,7 @@ class ApiAndWebhookTest extends TestCase
         $response = $this->post(route('dashboard.shop.webhooks.store'), [
             'name' => 'Test Webhook',
             'url' => 'https://example.com/hook',
-            'events' => ['order.created', 'order.status_changed'],
+            'events' => ['order.placed', 'order.status_changed'],
         ]);
 
         $response->assertSessionHas('flash.success');
@@ -97,7 +98,7 @@ class ApiAndWebhookTest extends TestCase
         $response = $this->put(route('dashboard.shop.webhooks.update', $webhook->id), [
             'name' => 'Updated Webhook',
             'url' => 'https://example.com/hook-v2',
-            'events' => ['order.created'],
+            'events' => ['order.placed'],
         ]);
         $response->assertSessionHas('flash.success');
         $this->assertDatabaseHas('webhooks', ['name' => 'Updated Webhook']);
@@ -115,22 +116,24 @@ class ApiAndWebhookTest extends TestCase
 
     public function test_webhook_test_ping(): void
     {
+        Http::fake(['https://example.com/*' => Http::response('ok', 200)]);
+
         $this->actingAs($this->admin);
 
         $webhook = Webhook::create([
             'name' => 'Ping Test',
             'url' => 'https://example.com/hook',
-            'events' => ['test.ping'],
+            'events' => ['webhook.test'],
             'is_active' => true,
         ]);
 
-        // We expect this to fail (URL unreachable) but the call should be created
+        // We expect this to succeed (URL faked) and the call should be created
         $response = $this->post(route('dashboard.shop.webhooks.test', $webhook->id));
         $response->assertSessionHas('flash.success');
 
         $this->assertDatabaseHas('webhook_calls', [
             'webhook_id' => $webhook->id,
-            'event' => 'test.ping',
+            'event' => 'webhook.test',
         ]);
     }
 
@@ -152,6 +155,8 @@ class ApiAndWebhookTest extends TestCase
 
     public function test_webhook_service_dispatches_to_active_webhooks(): void
     {
+        Http::fake(['https://example.com/*' => Http::response('ok', 200)]);
+
         $webhook = Webhook::create([
             'name' => 'Service Test',
             'url' => 'https://example.com/hook',
@@ -200,6 +205,8 @@ class ApiAndWebhookTest extends TestCase
 
     public function test_webhook_process_pending_command(): void
     {
+        Http::fake(['https://example.com/*' => Http::response('ok', 200)]);
+
         $webhook = Webhook::create([
             'name' => 'Process Test',
             'url' => 'https://example.com/hook',

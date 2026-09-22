@@ -18,31 +18,29 @@ use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\MailService;
 use Nreljed\Platform\Services\NotificationService;
 use Nreljed\ShopModule\Models\Cart;
-use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\Order;
-use Nreljed\ShopModule\Models\OrderItem;
 use Nreljed\ShopModule\Services\CartMergeService;
 use Nreljed\ShopModule\Services\CheckoutService;
-use Nreljed\ShopModule\Services\CouponService;
 use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\PaymentManager;
+use Nreljed\ShopModule\Services\QuoteService;
 use Nreljed\ShopModule\Services\ShippingService;
 use Nreljed\ShopModule\Services\ShopSettingsService;
-use Nreljed\ShopModule\Services\StripeService;
-use Nreljed\ShopModule\Services\TaxService;
+use Nreljed\ShopModule\Services\WebhookService;
 
 class CheckoutController extends Controller
 {
     public function __construct(
         protected NotificationService $notificationService,
         protected MailService $mailService,
-        protected CouponService $couponService,
         protected ShippingService $shippingService,
-        protected TaxService $taxService,
-        protected StripeService $stripeService,
+        protected PaymentManager $paymentManager,
         protected CurrencyService $currencyService,
         protected CartMergeService $cartMergeService,
         protected CheckoutService $checkoutService,
         protected ShopSettingsService $shopSettings,
+        protected QuoteService $quoteService,
+        protected ?WebhookService $webhookService = null,
     ) {}
 
     public function index(Request $request)
@@ -68,65 +66,63 @@ class CheckoutController extends Controller
 
         $shippingMethods = $this->shippingService->getAvailableMethods($billingAddress);
 
-        $defaultCurrency = $this->currencyService->getDefaultCurrency();
-
-        // Effective shipping total for the default (pre-selected) method, mirroring
-        // CheckoutService::processCheckout: apply free_above, then free_shipping coupons.
+        // Single source of truth for checkout math — the same quote the
+        // persist path stores on the order.
         $selectedShipping = $shippingMethods->first();
-        $shippingTotal = $selectedShipping ? (float) $selectedShipping->price : 0;
-        $freeAbove = $selectedShipping?->free_above;
-        if ($freeAbove !== null && (float) $cart->subtotal >= (float) $freeAbove) {
-            $shippingTotal = 0;
-        }
-
-        $freeShippingApplied = false;
-
-        // Fold eligible coupons (applied + auto-discounts) into the displayed
-        // totals so the checkout summary matches what checkout actually charges.
-        if ($cart->items->isNotEmpty()) {
-            $appliedIds = collect($cart->applied_coupons ?? [])
-                ->pluck('coupon_id')
-                ->filter()
-                ->unique();
-            $appliedModels = Coupon::whereIn('id', $appliedIds)->get();
-            $eligible = $appliedModels->merge(
-                $this->couponService->getAutoDiscounts($cart->subtotal)
-                    ->filter(fn ($c) => ! $appliedModels->contains('id', $c->id))
-            );
-
-            if ($eligible->isNotEmpty()) {
-                $stack = $this->couponService->calculateStackedDiscount(
-                    $eligible, $cart->subtotal, $shippingTotal, $cart->items
-                );
-
-                $cart->discount = $stack['total_discount'];
-
-                foreach ($stack['breakdown'] as $b) {
-                    if ($b['type'] === 'free_shipping') {
-                        $freeShippingApplied = true;
-                        $shippingTotal = 0;
-                    }
-                }
-            }
-        }
-
-        $taxResult = $this->taxService->calculate(
-            (float) $cart->subtotal,
+        $quote = $this->quoteService->quote(
+            $cart,
+            $selectedShipping,
             $billingAddress,
             $shippingAddress,
-            $shippingTotal,
+            $user?->id,
         );
+
+        $cart->discount = $quote['discount_total'];
+        $cart->currency = $quote['currency'];
+
+        // Display-only conversion: cart/shipping/tax figures are served in the
+        // storefront's selected currency, but the order persists in the
+        // default (cart) currency.
+        $default = $this->currencyService->defaultCode();
+        $display = $this->currencyService->storefrontCode();
+
+        if ($display !== $default) {
+            foreach ($cart->items as $item) {
+                $item->unit_price = $this->currencyService->convert((float) $item->unit_price, $default, $display);
+            }
+            $cart->discount = $this->currencyService->convert((float) $quote['discount_total'], $default, $display);
+            $cart->currency = $display;
+
+            foreach ($shippingMethods as $method) {
+                $method->price = $this->currencyService->convert((float) $method->price, $default, $display);
+                if ($method->free_above !== null) {
+                    $method->free_above = $this->currencyService->convert((float) $method->free_above, $default, $display);
+                }
+            }
+
+            $tax = $quote['tax'];
+            if (isset($tax['tax_total'])) {
+                $tax['tax_total'] = $this->currencyService->convert((float) $tax['tax_total'], $default, $display);
+            }
+            foreach ($tax['breakdown'] ?? [] as $i => $row) {
+                if (isset($row['amount'])) {
+                    $tax['breakdown'][$i]['amount'] = $this->currencyService->convert((float) $row['amount'], $default, $display);
+                }
+            }
+        } else {
+            $tax = $quote['tax'];
+        }
 
         return Inertia::render('shop/orders/checkout', [
             'cart' => $cart,
             'shippingMethods' => $shippingMethods,
             'userBillingAddress' => $billingAddress,
             'userShippingAddress' => $shippingAddress,
-            'stripeKey' => $this->stripeService->getPublishableKey(),
-            'currency' => $defaultCurrency?->code ?? 'USD',
-            'estimatedTax' => $taxResult,
+            'stripeKey' => $this->paymentManager->has('stripe') ? ($this->paymentManager->driver('stripe')->getPublishableKey() ?? '') : '',
+            'currency' => $display,
+            'estimatedTax' => $tax,
             'freeShippingThreshold' => $shippingMethods->min('free_above'),
-            'freeShippingApplied' => $freeShippingApplied,
+            'freeShippingApplied' => $quote['free_shipping_applied'],
         ]);
     }
 
@@ -239,10 +235,30 @@ class CheckoutController extends Controller
 
                 event(new Registered($user));
                 Auth::login($user);
+
+                $this->webhookService?->dispatch(
+                    \Nreljed\ShopModule\Events\WebhookEvents::CUSTOMER_CREATED,
+                    [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ],
+                );
             }
         }
 
-        $order = $this->checkoutService->processCheckout($cart, $validated, $user);
+        $provisionalOrder = null;
+
+        if (($validated['payment_method'] ?? '') === 'stripe' && ! empty($validated['stripe_payment_intent_id'] ?? '')) {
+            $provisionalOrder = Order::where('payment_intent_id', $validated['stripe_payment_intent_id'])
+                ->where('payment_method', 'stripe')
+                ->where('status', config('shop.payments.provisional_draft_status', 'draft'))
+                ->first();
+        }
+
+        $order = $this->checkoutService->processCheckout($cart, $validated, $user, $provisionalOrder);
+
+        $this->webhookService?->dispatchOrderPlaced($order);
 
         // Merge any lingering session cart into user cart
         if ($user) {
@@ -256,7 +272,7 @@ class CheckoutController extends Controller
             'link' => route('dashboard.shop.orders.show', $order->id, false),
             'orderId' => $order->id,
             'orderNumber' => $order->order_number,
-            'orderTotal' => number_format((float) $order->total, 2).' EUR',
+            'orderTotal' => number_format((float) $order->total, 2).' '.$order->currency,
             'orderStatus' => ucfirst($order->status),
             'orderUrl' => route('dashboard.shop.orders.show', $order->id, false),
             'customerName' => $order->customer_name,
@@ -301,49 +317,43 @@ class CheckoutController extends Controller
         $user = $request->user();
 
         $order = DB::transaction(function () use ($cart, $user) {
-            $subtotal = $cart->subtotal;
-            $shippingMethod = null;
-            $shippingTotal = 0;
+            $quote = $this->quoteService->quote(
+                $cart,
+                $this->shippingService->getAvailableMethods($user?->billing_address ?? $cart->billing_address)->first(),
+                $user?->billing_address ?? $cart->billing_address,
+                $user?->shipping_address ?? $cart->shipping_address,
+                $user?->id,
+            );
 
-            $order = Order::create([
+            return Order::create([
                 'user_id' => $user?->id,
                 'customer_email' => $user?->email ?? 'pending@checkout.com',
                 'customer_name' => $user?->name ?? 'Pending',
-                'subtotal' => $subtotal,
-                'total' => $subtotal,
-                'status' => 'pending',
+                'subtotal' => $quote['subtotal'],
+                'discount_total' => $quote['discount_total'],
+                'shipping_total' => $quote['shipping_total'],
+                'tax_total' => $quote['tax']['tax_total'],
+                'total' => $quote['total'],
+                'currency' => $quote['currency'],
+                'exchange_rate' => $quote['exchange_rate'],
+                'status' => config('shop.payments.provisional_draft_status', 'draft'),
                 'payment_method' => 'stripe',
                 'payment_status' => 'pending',
+                'applied_coupons' => $quote['coupons']->map(fn ($c) => [
+                    'coupon_id' => $c->id,
+                    'code' => $c->code,
+                    'type' => $c->type,
+                ])->toArray(),
             ]);
-
-            foreach ($cart->items as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'product_variation_id' => $item->product_variation_id,
-                    'product_sku' => $item->variation?->sku ?? $item->product->sku,
-                    'unit_price' => $item->unit_price,
-                    'quantity' => $item->quantity,
-                    'subtotal' => $item->unit_price * $item->quantity,
-                    'total' => $item->unit_price * $item->quantity,
-                    'variant_label' => $item->variant_label,
-                    'image_url' => $item->variation?->image_url ?? $item->product->thumbnail_url,
-                ]);
-            }
-
-            return $order;
         });
 
-        $currency = $this->currencyService->getDefaultCurrency();
-
         try {
-            $intent = $this->stripeService->createPaymentIntent($order, $currency?->code ?? 'usd');
+            $result = $this->paymentManager->driver('stripe')->createPaymentIntent($order, $order->currency);
 
-            $order->update(['payment_intent_id' => $intent->id]);
+            $order->update(['payment_intent_id' => $result->id]);
 
             return response()->json([
-                'clientSecret' => $intent->client_secret,
+                'clientSecret' => $result->clientSecret,
                 'orderId' => $order->id,
             ]);
         } catch (\Exception $e) {
@@ -356,10 +366,10 @@ class CheckoutController extends Controller
     protected function getCart(Request $request): Cart
     {
         if ($user = $request->user()) {
-            return Cart::firstOrCreate(['user_id' => $user->id]);
+            return Cart::firstOrCreate(['user_id' => $user->id], ['currency' => $this->currencyService->defaultCode()]);
         }
 
-        return Cart::firstOrCreate(['session_id' => $request->session()->getId()]);
+        return Cart::firstOrCreate(['session_id' => $request->session()->getId()], ['currency' => $this->currencyService->defaultCode()]);
     }
 
     public function registerFromOrder(Request $request, Order $order)

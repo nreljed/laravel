@@ -132,6 +132,7 @@ return [
                 'shop.coupons.manage',
                 'shop.reviews.moderate',
                 'shop.shipping.manage',
+                'shop.shipments.manage',
                 'shop.taxes.manage',
                 'shop.webhooks.manage',
                 'shop.currencies.manage',

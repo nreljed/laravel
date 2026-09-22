@@ -31,7 +31,7 @@ class CouponService
                 throw ValidationException::withMessages(['coupon' => 'This coupon has reached its usage limit.']);
             }
             if ($coupon->min_order_amount && $subtotal < (float) $coupon->min_order_amount) {
-                throw ValidationException::withMessages(['coupon' => 'Minimum order amount of '.number_format((float) $coupon->min_order_amount, 2).' EUR not met.']);
+                throw ValidationException::withMessages(['coupon' => 'Minimum order amount of '.number_format((float) $coupon->min_order_amount, 2).' '.app(CurrencyService::class)->defaultCode().' not met.']);
             }
             throw ValidationException::withMessages(['coupon' => 'This coupon cannot be applied.']);
         }

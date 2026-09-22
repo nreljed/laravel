@@ -7,9 +7,16 @@ use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\Wishlist;
+use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\PriceResolver;
 
 class WishlistController extends Controller
 {
+    public function __construct(
+        protected CurrencyService $currencyService,
+        protected PriceResolver $priceResolver,
+    ) {}
+
     public function index()
     {
         $productIds = Wishlist::where('user_id', auth()->id())
@@ -20,6 +27,12 @@ class WishlistController extends Controller
             ->with('categories')
             ->paginate(12)
             ->withQueryString();
+
+        $currency = $this->currencyService->storefrontCode();
+
+        foreach ($products as $product) {
+            $this->priceResolver->hydrate($product, $currency);
+        }
 
         return Inertia::render('shop/wishlist/index', [
             'products' => $products,
