@@ -7,6 +7,7 @@ use LogicException;
 use Nreljed\ShopModule\Contracts\PaymentDriver;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Payments\ManualPaymentDriver;
+use Nreljed\ShopModule\Payments\PaymentIntentResult;
 use Nreljed\ShopModule\Services\PaymentManager;
 use PHPUnit\Framework\TestCase;
 
@@ -167,9 +168,9 @@ final class FakeDriver implements PaymentDriver
         return 'pk_test_fake';
     }
 
-    public function createPaymentIntent(Order $order, string $currency = 'eur'): \Nreljed\ShopModule\Payments\PaymentIntentResult
+    public function createPaymentIntent(Order $order, string $currency = 'eur'): PaymentIntentResult
     {
-        return new \Nreljed\ShopModule\Payments\PaymentIntentResult(
+        return new PaymentIntentResult(
             id: 'pi_fake',
             clientSecret: 'pi_fake_secret_abc',
         );

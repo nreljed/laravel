@@ -1,5 +1,8 @@
 <?php
 
+use Nreljed\ShopModule\Payments\ManualPaymentDriver;
+use Nreljed\ShopModule\Payments\StripePaymentDriver;
+
 return [
     'currency_symbol' => env('SHOP_CURRENCY_SYMBOL', '€'),
 
@@ -43,8 +46,8 @@ return [
         'default' => env('SHOP_PAYMENT_METHOD_DEFAULT', 'stripe'),
         'provisional_draft_status' => 'draft',
         'drivers' => [
-            'stripe' => \Nreljed\ShopModule\Payments\StripePaymentDriver::class,
-            'manual' => \Nreljed\ShopModule\Payments\ManualPaymentDriver::class,
+            'stripe' => StripePaymentDriver::class,
+            'manual' => ManualPaymentDriver::class,
         ],
     ],
 
