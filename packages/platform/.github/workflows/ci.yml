@@ -53,6 +53,13 @@ jobs:
         shell: bash
         run: php vendor/phpunit/phpunit/phpunit
 
+      - name: Laravel Pint (style gate)
+        # Consumers run `vendor/bin/pint --test` repo-wide (consumer-ci.yml),
+        # so this package's source must stay Pint-clean under the default preset
+        # or mirror syncs fail their CI. Requires vendor, so runs after Install.
+        shell: bash
+        run: vendor/bin/pint --test
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: validate

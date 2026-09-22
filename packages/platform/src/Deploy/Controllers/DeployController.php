@@ -450,11 +450,13 @@ class DeployController extends Controller
                 'tag' => $result['tag'],
                 'output' => $result['output'],
                 'core' => $result['core'],
+                'bundled' => $result['bundled'],
             ]),
             'current' => response()->json([
                 'status' => 'current',
                 'tag' => $result['tag'],
                 'core' => $result['core'],
+                'bundled' => $result['bundled'],
             ]),
             'release-layout' => response()->json([
                 'status' => 'release-layout',
@@ -462,11 +464,16 @@ class DeployController extends Controller
                 'message' => $result['message'],
                 'output' => $result['output'],
                 'core' => $result['core'],
+                'bundled' => $result['bundled'],
             ]),
-            'locked' => response()->json(['status' => 'locked']),
+            'locked' => response()->json([
+                'status' => 'locked',
+                'bundled' => $result['bundled'],
+            ]),
             'no-release' => response()->json([
                 'status' => 'no-release',
                 'core' => $result['core'],
+                'bundled' => $result['bundled'],
             ]),
             default => $this->errorResponse($result),
         };
@@ -482,6 +489,7 @@ class DeployController extends Controller
                 'status' => 'error',
                 'error' => $result['message'],
                 'output' => $result['output'],
+                'bundled' => $result['bundled'],
             ], 500);
         }
 
