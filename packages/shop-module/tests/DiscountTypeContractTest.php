@@ -202,7 +202,7 @@ final class DiscountTypeContractTest extends TestCase
     private function coupon(array $attributes): Coupon
     {
         return new Coupon(array_merge([
-            'code' => 'T-' . strtoupper((string) random_int(1000, 9999)),
+            'code' => 'T-'.strtoupper((string) random_int(1000, 9999)),
             'type' => 'percentage',
             'value' => 0,
             'is_active' => true,

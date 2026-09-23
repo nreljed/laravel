@@ -1,14 +1,14 @@
 <?php
 
+use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
-use Illuminate\Contracts\Config\Repository as ConfigContract;
 use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Connectors\ConnectionFactory;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Events\Dispatcher;
-use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Schema;
 
 $root = dirname(__DIR__);
@@ -37,7 +37,7 @@ $container->singleton(DispatcherContract::class, function () {
 $container->instance('events', $container->make(DispatcherContract::class));
 
 $container->singleton('config', function () {
-    $config = new Illuminate\Config\Repository([]);
+    $config = new Repository([]);
     $config->set('database.default', 'sqlite');
     $config->set('database.connections.sqlite', [
         'driver' => 'sqlite',

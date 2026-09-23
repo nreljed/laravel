@@ -3,6 +3,7 @@
 namespace Nreljed\ShopModule\Services;
 
 use Illuminate\Support\Facades\Http;
+use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Jobs\SendWebhook;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Webhook;
@@ -146,16 +147,16 @@ class WebhookService
 
     public function dispatchOrderPlaced(Order $order): void
     {
-        $this->dispatch(\Nreljed\ShopModule\Events\WebhookEvents::ORDER_PLACED, [
-            'event' => \Nreljed\ShopModule\Events\WebhookEvents::ORDER_PLACED,
+        $this->dispatch(WebhookEvents::ORDER_PLACED, [
+            'event' => WebhookEvents::ORDER_PLACED,
             'data' => $this->buildOrderPayload($order),
         ]);
     }
 
     public function dispatchOrderStatusChanged(Order $order, string $oldStatus): void
     {
-        $this->dispatch(\Nreljed\ShopModule\Events\WebhookEvents::ORDER_STATUS_CHANGED, [
-            'event' => \Nreljed\ShopModule\Events\WebhookEvents::ORDER_STATUS_CHANGED,
+        $this->dispatch(WebhookEvents::ORDER_STATUS_CHANGED, [
+            'event' => WebhookEvents::ORDER_STATUS_CHANGED,
             'data' => array_merge($this->buildOrderPayload($order), [
                 'previous_status' => $oldStatus,
             ]),
@@ -164,8 +165,8 @@ class WebhookService
 
     public function dispatchOrderRefunded(Order $order, float $amount): void
     {
-        $this->dispatch(\Nreljed\ShopModule\Events\WebhookEvents::ORDER_REFUNDED, [
-            'event' => \Nreljed\ShopModule\Events\WebhookEvents::ORDER_REFUNDED,
+        $this->dispatch(WebhookEvents::ORDER_REFUNDED, [
+            'event' => WebhookEvents::ORDER_REFUNDED,
             'data' => array_merge($this->buildOrderPayload($order), [
                 'refund_amount' => $amount,
             ]),
