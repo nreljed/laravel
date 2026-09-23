@@ -8,7 +8,7 @@ How the Shop module plugs into the `nreljed/platform` platform and a host app.
 shop-module/
 ├── composer.json                 # PSR-4: Nreljed\ShopModule\ → src/
 ├── config/shop.php               # merged as config('shop')
-├── database/migrations/          # 62 migrations, auto-loaded
+├── database/migrations/          # 63 migrations, auto-loaded
 ├── resources/views/email/templates/  # 7 blade templates (auto-location)
 └── src/
     ├── Commands/                 # 5 artisan commands

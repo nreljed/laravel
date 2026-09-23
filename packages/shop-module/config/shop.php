@@ -1,21 +1,5 @@
 <?php
 
-use Nreljed\ShopModule\Payments\ManualPaymentDriver;
-use Nreljed\ShopModule\Payments\StripePaymentDriver;
-use Nreljed\ShopModule\Pipelines\Cart\PersistLine;
-use Nreljed\ShopModule\Pipelines\Cart\ResolveUnitPrice;
-use Nreljed\ShopModule\Pipelines\Cart\ValidatePurchaseQuantity;
-use Nreljed\ShopModule\Pipelines\Cart\ValidateVariant;
-use Nreljed\ShopModule\Pipelines\CartLines\BuildOrderItemAttributes;
-use Nreljed\ShopModule\Pipelines\Checkout\BuildQuote;
-use Nreljed\ShopModule\Pipelines\Checkout\ClearCart;
-use Nreljed\ShopModule\Pipelines\Checkout\CreateOrder;
-use Nreljed\ShopModule\Pipelines\Checkout\CreateOrderItems;
-use Nreljed\ShopModule\Pipelines\Checkout\RecordCouponUsage;
-use Nreljed\ShopModule\Pipelines\Checkout\RecordInventory;
-use Nreljed\ShopModule\Pipelines\Checkout\ResolveShippingMethod;
-use Nreljed\ShopModule\Pipelines\Checkout\ValidateStock;
-
 return [
     'currency_symbol' => env('SHOP_CURRENCY_SYMBOL', '€'),
 
@@ -43,7 +27,7 @@ return [
     'storefront' => [
         'hero' => [
             'title' => env('STORE_HERO_TITLE', 'Welcome to our store'),
-            'subtitle' => env('STORE_HERO_SUBTITLE', 'Discover quality products hand-picked for you. Free shipping on orders over 50 EUR.'),
+            'subtitle' => env('STORE_HERO_SUBTITLE', 'Discover quality products hand-picked for you. Free shipping on qualifying orders.'),
             'cta_label' => env('STORE_HERO_CTA', 'Shop now'),
         ],
     ],
@@ -57,23 +41,23 @@ return [
 
     'pipelines' => [
         'cart' => [
-            ValidateVariant::class,
-            ResolveUnitPrice::class,
-            ValidatePurchaseQuantity::class,
-            PersistLine::class,
+            \Nreljed\ShopModule\Pipelines\Cart\ValidateVariant::class,
+            \Nreljed\ShopModule\Pipelines\Cart\ResolveUnitPrice::class,
+            \Nreljed\ShopModule\Pipelines\Cart\ValidatePurchaseQuantity::class,
+            \Nreljed\ShopModule\Pipelines\Cart\PersistLine::class,
         ],
         'cart_lines' => [
-            BuildOrderItemAttributes::class,
+            \Nreljed\ShopModule\Pipelines\CartLines\BuildOrderItemAttributes::class,
         ],
         'checkout' => [
-            ValidateStock::class,
-            ResolveShippingMethod::class,
-            BuildQuote::class,
-            CreateOrder::class,
-            RecordCouponUsage::class,
-            CreateOrderItems::class,
-            RecordInventory::class,
-            ClearCart::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\ValidateStock::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\ResolveShippingMethod::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\BuildQuote::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\CreateOrder::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\RecordCouponUsage::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\CreateOrderItems::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\RecordInventory::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\ClearCart::class,
         ],
     ],
 
@@ -81,8 +65,8 @@ return [
         'default' => env('SHOP_PAYMENT_METHOD_DEFAULT', 'stripe'),
         'provisional_draft_status' => 'draft',
         'drivers' => [
-            'stripe' => StripePaymentDriver::class,
-            'manual' => ManualPaymentDriver::class,
+            'stripe' => \Nreljed\ShopModule\Payments\StripePaymentDriver::class,
+            'manual' => \Nreljed\ShopModule\Payments\ManualPaymentDriver::class,
         ],
     ],
 

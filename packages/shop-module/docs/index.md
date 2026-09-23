@@ -40,7 +40,7 @@ pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 | **Commands** | 4 (`shop:release-expired-holds`, `shop:abandoned-cart-process`, `shop:process-pending-webhooks`, `shop:process-scheduled-sales`) |
 | **Email templates** | 7 (order-confirmation, order-shipped, order-invoice, low-stock-alert, cart-recovery-1h/24h/72h) |
 | **Notification types** | 4 (`order.placed`, `order.status_changed`, `low_stock`, `product.stock_changed`) |
-| **Migrations** | 62, auto-loaded |
+| **Migrations** | 63, auto-loaded |
 | **Shared props** | `currencies`, `selectedCurrency`, `currencyPosition`, `cart`, `wishlistIds`, `shopSettings`, `currencyFormat` |
 
 ## Related Docs

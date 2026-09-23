@@ -19,6 +19,7 @@ interface CouponData {
   min_order_amount: string; max_discount: string;
   usage_limit: string; per_user_limit: string;
   is_active: boolean; is_automatic: boolean; auto_discount_label: string;
+  customer_group_id: string | null; exclude_sale_items: boolean;
   buy_qty: string; free_qty: string; free_product_id: string;
   tiers: Tier[];
   starts_at: string; expires_at: string;
@@ -30,9 +31,10 @@ interface CouponData {
 interface Props {
   coupon: (CouponData & { usages_count?: number; total_discount_given?: number; last_used_at?: string }) | null;
   products: Product[];
+  currency: string;
 }
 
-export default function CouponForm({ coupon, products }: Props) {
+export default function CouponForm({ coupon, products, currency }: Props) {
   const isEdit = !!coupon?.id;
 
   const form = useForm({
@@ -46,6 +48,8 @@ export default function CouponForm({ coupon, products }: Props) {
     is_active: coupon?.is_active ?? true,
     is_automatic: coupon?.is_automatic ?? false,
     auto_discount_label: coupon?.auto_discount_label || "",
+    customer_group_id: coupon?.customer_group_id?.toString() || "",
+    exclude_sale_items: coupon?.exclude_sale_items ?? false,
     buy_qty: coupon?.buy_qty?.toString() || "",
     free_qty: coupon?.free_qty?.toString() || "",
     free_product_id: coupon?.free_product_id?.toString() || "",
@@ -141,8 +145,9 @@ export default function CouponForm({ coupon, products }: Props) {
                         : form.data.type === "percentage_product"
                           ? "(% per product)"
                           : form.data.type === "fixed_product"
-                            ? "(EUR per product)"
-                            : "(EUR)"}
+                          ? `(${currency} per product)`
+                          : `(${currency})`}
+                    
                     </Label>
                     <Input id="value" type="number" step="0.01" min="0" value={form.data.value}
                       onChange={(e) => form.setData("value", e.target.value)}
@@ -332,7 +337,7 @@ export default function CouponForm({ coupon, products }: Props) {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Discount Given</p>
                   <p className="text-2xl font-bold">
-                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }).format(coupon?.total_discount_given ?? 0)}
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(coupon?.total_discount_given ?? 0)}
                   </p>
                 </div>
                 <div>

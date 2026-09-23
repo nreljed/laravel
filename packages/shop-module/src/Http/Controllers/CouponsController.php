@@ -8,6 +8,7 @@ use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\CouponUsage;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Requests\StoreCouponRequest;
+use Nreljed\ShopModule\Services\CurrencyService;
 
 class CouponsController extends Controller
 {
@@ -30,6 +31,7 @@ class CouponsController extends Controller
         return Inertia::render('shop/coupons/form', [
             'coupon' => null,
             'products' => $this->productOptions(),
+            'currency' => $this->defaultCurrencyCode(),
         ]);
     }
 
@@ -40,6 +42,7 @@ class CouponsController extends Controller
         $validated = $request->validated();
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['is_automatic'] = $request->boolean('is_automatic', false);
+        $validated['exclude_sale_items'] = $request->boolean('exclude_sale_items', false);
         if ($validated['type'] === 'free_shipping') {
             $validated['value'] = 0;
         }
@@ -74,6 +77,7 @@ class CouponsController extends Controller
                 'last_used_at' => $lastUsed?->created_at,
             ]),
             'products' => $this->productOptions(),
+            'currency' => $this->defaultCurrencyCode(),
         ]);
     }
 
@@ -85,6 +89,11 @@ class CouponsController extends Controller
         ])->values()->all();
     }
 
+    protected function defaultCurrencyCode(): string
+    {
+        return app(CurrencyService::class)->defaultCode();
+    }
+
     public function update(StoreCouponRequest $request, Coupon $coupon)
     {
         $this->authorize('update', $coupon);
@@ -92,6 +101,7 @@ class CouponsController extends Controller
         $validated = $request->validated();
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['is_automatic'] = $request->boolean('is_automatic', false);
+        $validated['exclude_sale_items'] = $request->boolean('exclude_sale_items', false);
         if ($validated['type'] === 'free_shipping') {
             $validated['value'] = 0;
         }

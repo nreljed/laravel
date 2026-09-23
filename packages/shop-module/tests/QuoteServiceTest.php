@@ -291,9 +291,11 @@ final class QuoteServiceTest extends TestCase
                 private array $validateMap,
                 private array $throwOn,
                 private Collection $autoDiscounts,
-            ) {}
+            ) {
+                parent::__construct();
+            }
 
-            public function validateAndApply(string $code, float $subtotal, ?int $userId = null): Coupon
+            public function validateAndApply(string $code, float $subtotal, ?int $userId = null, ?int $customerGroupId = null): Coupon
             {
                 if (in_array($code, $this->throwOn, true)) {
                     throw $this->invalid();
@@ -306,7 +308,7 @@ final class QuoteServiceTest extends TestCase
                 return $this->validateMap[$code];
             }
 
-            public function getAutoDiscounts(float $subtotal): Collection
+            public function getAutoDiscounts(float $subtotal, ?int $customerGroupId = null): Collection
             {
                 return $this->autoDiscounts;
             }

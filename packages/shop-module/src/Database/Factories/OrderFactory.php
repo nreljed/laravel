@@ -3,7 +3,6 @@
 namespace Nreljed\ShopModule\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Nreljed\Platform\Models\User;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Services\CurrencyService;
 
@@ -22,7 +21,7 @@ class OrderFactory extends Factory
         $subtotal = fake()->randomFloat(2, 20, 800);
 
         return [
-            'user_id' => User::factory(),
+            'user_id' => \Nreljed\Platform\Models\User::factory(),
             'status' => 'pending',
             'subtotal' => $subtotal,
             'tax_total' => round($subtotal * 0.2, 2),

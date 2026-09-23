@@ -4,12 +4,20 @@ namespace Nreljed\ShopModule\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
+use Nreljed\ShopModule\Discounts\DiscountManager;
 use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\CouponUsage;
 
 class CouponService
 {
-    public function validateAndApply(string $code, float $subtotal, ?int $userId = null): Coupon
+    protected DiscountManager $discountManager;
+
+    public function __construct(?DiscountManager $discountManager = null)
+    {
+        $this->discountManager = $discountManager ?? DiscountManager::defaults();
+    }
+
+    public function validateAndApply(string $code, float $subtotal, ?int $userId = null, ?int $customerGroupId = null): Coupon
     {
         $coupon = Coupon::where('code', $code)->first();
 
@@ -17,7 +25,7 @@ class CouponService
             throw ValidationException::withMessages(['coupon' => 'Invalid coupon code.']);
         }
 
-        if (! $coupon->isValid($subtotal)) {
+        if (! $coupon->isValid($subtotal, $customerGroupId)) {
             if (! $coupon->is_active) {
                 throw ValidationException::withMessages(['coupon' => 'This coupon is no longer active.']);
             }
@@ -29,6 +37,9 @@ class CouponService
             }
             if ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
                 throw ValidationException::withMessages(['coupon' => 'This coupon has reached its usage limit.']);
+            }
+            if ($coupon->customer_group_id !== null && (int) $coupon->customer_group_id !== (int) $customerGroupId) {
+                throw ValidationException::withMessages(['coupon' => 'This coupon is only available to your customer group.']);
             }
             if ($coupon->min_order_amount && $subtotal < (float) $coupon->min_order_amount) {
                 throw ValidationException::withMessages(['coupon' => 'Minimum order amount of '.number_format((float) $coupon->min_order_amount, 2).' '.app(CurrencyService::class)->defaultCode().' not met.']);
@@ -51,10 +62,14 @@ class CouponService
 
     public function calculateDiscount(Coupon $coupon, float $subtotal, ?float $shippingCost = null, ?Collection $lineItems = null): float
     {
-        return $coupon->calculateDiscount($subtotal, $shippingCost, $lineItems);
+        $driver = $this->discountManager->driver($coupon->type);
+
+        return $driver
+            ? $driver->calculate($coupon, $subtotal, $shippingCost, $lineItems)
+            : $coupon->calculateDiscount($subtotal, $shippingCost, $lineItems);
     }
 
-    public function getAutoDiscounts(float $subtotal): Collection
+    public function getAutoDiscounts(float $subtotal, ?int $customerGroupId = null): Collection
     {
         return Coupon::where('is_automatic', true)
             ->where('is_active', true)
@@ -69,8 +84,15 @@ class CouponService
                     ->orWhere('min_order_amount', '<=', $subtotal)
                     ->orWhere('type', 'free_shipping');
             })
+            ->where(function ($q) use ($customerGroupId) {
+                $q->whereNull('customer_group_id');
+
+                if ($customerGroupId !== null) {
+                    $q->orWhere('customer_group_id', $customerGroupId);
+                }
+            })
             ->get()
-            ->filter(fn (Coupon $coupon) => $coupon->isValid($subtotal));
+            ->filter(fn (Coupon $coupon) => $coupon->isValid($subtotal, $customerGroupId));
     }
 
     public function validateStack(Coupon $newCoupon, array $existingCoupons, float $subtotal): void
@@ -98,13 +120,15 @@ class CouponService
         $breakdown = [];
 
         foreach ($coupons as $coupon) {
-            $discount = $coupon->type === 'free_shipping'
-                ? (float) ($shippingCost ?? 0)
+            $driver = $this->discountManager->driver($coupon->type);
+
+            $discount = $driver
+                ? $driver->calculate($coupon, $runningSubtotal, $shippingCost, $lineItems)
                 : $coupon->calculateDiscount($runningSubtotal, $shippingCost, $lineItems);
 
             // Subtotal-scoped coupons reduce the running subtotal; line-item-scoped
             // coupons (BOGOF, product-specific) are independent of the remainder.
-            if (in_array($coupon->type, ['percentage', 'fixed', 'tiered'], true)) {
+            if ($driver !== null && $driver->reducesSubtotal()) {
                 $runningSubtotal = max(0, $runningSubtotal - $discount);
             }
 

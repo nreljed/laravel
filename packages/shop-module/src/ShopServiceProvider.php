@@ -9,6 +9,7 @@ use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
 use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Services\SettingsService;
+use Nreljed\ShopModule\Discounts\DiscountManager;
 use Nreljed\ShopModule\Models\Cart;
 use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\Currency;
@@ -45,6 +46,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
     {
         $this->app->singleton(ShopService::class);
         $this->app->singleton(PaymentManager::class, fn () => new PaymentManager(config('shop.payments', [])));
+        $this->app->singleton(DiscountManager::class, fn () => DiscountManager::defaults());
 
         $this->mergeConfigFrom(__DIR__.'/../config/shop.php', 'shop');
     }

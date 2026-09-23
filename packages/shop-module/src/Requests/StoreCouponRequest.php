@@ -27,6 +27,8 @@ class StoreCouponRequest extends FormRequest
             'is_active' => 'boolean',
             'is_automatic' => 'boolean',
             'auto_discount_label' => 'nullable|string|max:255',
+            'customer_group_id' => 'nullable|integer|min:1',
+            'exclude_sale_items' => 'boolean',
             'buy_qty' => 'nullable|integer|min:1',
             'free_qty' => 'nullable|integer|min:1',
             'free_product_id' => 'nullable|exists:products,id',

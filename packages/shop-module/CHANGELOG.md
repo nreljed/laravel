@@ -4,6 +4,30 @@ All notable changes to `nreljed/shop-module` are documented in this file, based 
 
 ## [Unreleased]
 
+## [0.1.46] - 2026-09-23
+
+### Added
+
+- **Discount scope on coupons** - `coupons` gets `customer_group_id` (nullable FK to `customer_groups`,
+  additive) and `exclude_sale_items` (boolean) via migration 63, backed by fillable/casts on `Coupon`
+  and `registerOrUpdateCoupons` passed through `CouponService::validateAndApply`/`getAutoDiscounts`.
+- **DiscountManager + type drivers** - `DiscountManager` (singleton via `ShopServiceProvider`,
+  `DiscountManager::defaults()`) resolves driver pipelines from `config/shop.php` `discounts` with
+  driver filter/calc gates. Drivers under `src/Discounts/Types` implement `DiscountType` and share
+  line-item scoping in `LineItemType`: `PercentageDiscount` (inherent/contextual), `FixedDiscount`,
+  `FreeShippingDiscount`, `BuyXGetYDiscount` (incl. stacked `max_discount`), `FixedProductDiscount`,
+  `PercentageProductDiscount`, `TieredDiscount` (bracket stepping), `ProductScopedDiscount`
+  (price-scoped product coupons).
+- **Coupon validation contracts** - generated validation
+  messages via `registerValidatorFacade()` in the golden test (DB-free, container-agnostic), customer
+  group + exclude-sale matching, sale-item exclusion in line-item drivers, currency-aware config
+  defaults (hero subtitle + `config/shop.php`) and Form labels.
+- **PR 6 scope + coverage** - `DiscountManager` singleton wiring, contract tests for 8 drivers,
+  pipeline order continuity (`cart`/`cart_lines` untouched), migration count 63 in docs, 27-test
+  discount/contract suite green (122 total), `no hardcoded EUR` in Form when currency prop present.
+
+## [0.1.46] - 2026-09-23
+
 ## [0.1.45] - 2026-09-23
 
 ### Added

@@ -17,7 +17,6 @@ use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\MailService;
 use Nreljed\Platform\Services\NotificationService;
-use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Models\Cart;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Services\CartMergeService;
@@ -238,7 +237,7 @@ class CheckoutController extends Controller
                 Auth::login($user);
 
                 $this->webhookService?->dispatch(
-                    WebhookEvents::CUSTOMER_CREATED,
+                    \Nreljed\ShopModule\Events\WebhookEvents::CUSTOMER_CREATED,
                     [
                         'id' => $user->id,
                         'name' => $user->name,
