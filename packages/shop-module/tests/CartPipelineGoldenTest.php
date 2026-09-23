@@ -5,12 +5,11 @@ namespace Nreljed\ShopModule\Tests;
 use Illuminate\Database\ConnectionResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Schema\Grammars\SQLiteGrammar;
 use Illuminate\Database\Schema\Builder as SchemaBuilder;
+use Illuminate\Database\Schema\Grammars\SQLiteGrammar;
 use Illuminate\Database\SQLiteConnection;
 use Illuminate\Pipeline\Pipeline;
 use Nreljed\ShopModule\Models\Cart;
-use Nreljed\ShopModule\Models\CartItem;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductVariation;
 use Nreljed\ShopModule\Pipelines\Cart\PersistLine;
@@ -20,8 +19,8 @@ use Nreljed\ShopModule\Pipelines\Cart\ValidateVariant;
 use Nreljed\ShopModule\Pipelines\CartContext;
 use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\InventoryService;
-use PHPUnit\Framework\TestCase;
 use PDO;
+use PHPUnit\Framework\TestCase;
 
 final class CartPipelineGoldenTest extends TestCase
 {
