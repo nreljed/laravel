@@ -3555,16 +3555,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.2",
+            "version": "0.1.3",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "9ee757aa13a9883b102bb356794cd2135dab75ea"
+                "reference": "25d440ec5246cb982ddf744119a8afc7ab743732"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/9ee757aa13a9883b102bb356794cd2135dab75ea",
-                "reference": "9ee757aa13a9883b102bb356794cd2135dab75ea",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/25d440ec5246cb982ddf744119a8afc7ab743732",
+                "reference": "25d440ec5246cb982ddf744119a8afc7ab743732",
                 "shasum": ""
             },
             "require": {
@@ -3604,11 +3604,7 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.2",
-                "issues": "https://github.com/nreljed/blog/issues"
-            },
-            "time": "2026-09-21T18:01:02+00:00"
+            "time": "2026-09-22T23:55:58+00:00"
         },
         {
             "name": "nreljed/booking-module",
