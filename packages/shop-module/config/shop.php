@@ -1,8 +1,5 @@
 <?php
 
-use Nreljed\ShopModule\Payments\ManualPaymentDriver;
-use Nreljed\ShopModule\Payments\StripePaymentDriver;
-
 return [
     'currency_symbol' => env('SHOP_CURRENCY_SYMBOL', '€'),
 
@@ -42,12 +39,34 @@ return [
         'default_country' => env('CHECKOUT_DEFAULT_COUNTRY', ''),
     ],
 
+    'pipelines' => [
+        'cart' => [
+            \Nreljed\ShopModule\Pipelines\Cart\ValidateVariant::class,
+            \Nreljed\ShopModule\Pipelines\Cart\ResolveUnitPrice::class,
+            \Nreljed\ShopModule\Pipelines\Cart\ValidatePurchaseQuantity::class,
+            \Nreljed\ShopModule\Pipelines\Cart\PersistLine::class,
+        ],
+        'cart_lines' => [
+            \Nreljed\ShopModule\Pipelines\CartLines\BuildOrderItemAttributes::class,
+        ],
+        'checkout' => [
+            \Nreljed\ShopModule\Pipelines\Checkout\ValidateStock::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\ResolveShippingMethod::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\BuildQuote::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\CreateOrder::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\RecordCouponUsage::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\CreateOrderItems::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\RecordInventory::class,
+            \Nreljed\ShopModule\Pipelines\Checkout\ClearCart::class,
+        ],
+    ],
+
     'payments' => [
         'default' => env('SHOP_PAYMENT_METHOD_DEFAULT', 'stripe'),
         'provisional_draft_status' => 'draft',
         'drivers' => [
-            'stripe' => StripePaymentDriver::class,
-            'manual' => ManualPaymentDriver::class,
+            'stripe' => \Nreljed\ShopModule\Payments\StripePaymentDriver::class,
+            'manual' => \Nreljed\ShopModule\Payments\ManualPaymentDriver::class,
         ],
     ],
 

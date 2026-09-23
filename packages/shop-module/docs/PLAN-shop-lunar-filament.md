@@ -86,7 +86,7 @@ Tests: contract-style (existing pattern) + `QuoteService` golden matrix (stackin
 - [x] PR 2 — `product_prices` + `PriceResolver` + server-side storefront currency
 - [x] PR 3 — `PaymentManager` + single-provisional-order Stripe flow
 - [x] PR 4 — Shipments + queued webhooks + event catalog + docs sync
-- [ ] PR 5 — Cart/checkout pipelines (golden tests first)
+- [x] PR 5 — Cart/checkout pipelines (golden tests first) — `config/shop.php` `pipelines` (`cart`/`cart_lines`/`checkout`), `src/Pipelines/` contexts + 13 pipes, `CheckoutService` → stateless orchestrator, `CartController::addItem` wired through `pipelines.cart`; contract + golden tests (96 green), docs synced.
 - [ ] PR 6 — DiscountType contract + 7 types extracted
 - [ ] PR 7 — order_statuses/transitions tables + numbering generator
 - [ ] PR 8 — Tax zones/classes v2 + per-line snapshots
@@ -96,9 +96,3 @@ Tests: contract-style (existing pattern) + `QuoteService` golden matrix (stackin
 - [ ] PR 12 — Platform schema kit (ResourceIndex/ResourceForm/field registry)
 - [ ] PR 13–N — Resource conversions wave by wave
 - [ ] Final — generator + `adminResources()` + PHPStan + indexes
-
-## 10. Operations log — blog v0.1.3 idempotency fix (2026-09-23)
-- **Prod wedge (pre-existing drift):** `migrate --force` aborted on duplicate column `post_tags.order` (`1060`) before shop-module `product_prices` ever applied — blog migrations were kernel-era, so prod's `migrations` table never recorded `2026_07_26_000003_add_order_…` while the column already existed.
-- **Fix:** all 11 `nreljed/blog` migrations made idempotent (`hasTable`/`hasColumn`/`hasIndex` guards + guarded `dropColumn`s) in **v0.1.3** (commit `25d440e`). Same-source mirrors synced into this repo.
-- **Deploy reality (now documented):** `release-install` flips symlinks **without** running migrations — post-flip the app 500s (missing `product_prices`) and the release-install run's "Wait for app health" step fails by design. Run the `migrate` action right after every release-install that has pending migrations; `/deploy/migrate` runs `Artisan::call('migrate --force')` in-process and returns `{"status":"ok",…}`.
-- **Repair already applied on prod:** v0.14.1 active, `migrate` run OK, homepage HTTP 200, runner status OK. Seeded products do not exist on prod (seeders only run on fresh `migrate:fresh`) — storefront product URLs correctly 404 until a future seed.

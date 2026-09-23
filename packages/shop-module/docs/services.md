@@ -7,7 +7,7 @@ business logic lives in services, not controllers or models.
 |---------|---------|
 | `ShopService` | Singleton; dashboard stats (uses `Order::distinct('user_id')` — the core User model has **no** `orders()` relation) |
 | `InventoryService` | Central stock mutations: `adjust()` (Product or ProductVariation), `recordSaleForOrder()`, `recordRefundForOrder()`, manual adjust, history, low-stock + stock-changed webhooks |
-| `CheckoutService` | Checkout orchestration: validate stock, record sale, tax, coupon, convert cart, send notifications |
+| `CheckoutService` | Stateless checkout orchestrator: runs the `shop.pipelines.checkout` pipeline inside `DB::transaction`; `processCheckout()` returns the created `Order` |
 | `CouponService` | `validateAndApply()`, `calculateDiscount()`, `calculateStackedDiscount()`, `recordUsage()`, `getAutoDiscounts()`, `validateStack()` — applies auto-discounts at checkout |
 | `OrderStatusService` | 10 statuses + transition map + `canTransition()`/`validateTransition()` |
 | `OrderActionService` | Order timeline entries (created/status changed/refunded/edited/notes) |
@@ -19,6 +19,27 @@ business logic lives in services, not controllers or models.
 | `AbandonedCartService` | Abandonment detection + 3-step email sequence with signed recovery URLs |
 | `ShopSettingsService` | Typed DB-backed settings getters over `settings` group `shop` (`baseCountry()`, `guestCheckoutEnabled()`, `currencyFormat()`, `isCountryAllowed()`, …) |
 | `StripeService` | Stripe PaymentIntent creation/confirmation/refunds |
+
+## Pipelines
+
+Cross-cutting flows are composed as Laravel pipelines rather than services. Each
+context class is a plain data bag passed through the ordered pipe list from
+`config/shop.php` `pipelines` (a pipe returns the context after its step, or hacks
+the context to stop the chain).
+
+- `CartContext` — `{ cart, product, variation, quantity, existingItem, variantLabel,
+  totalQuantity, unitPrice?, error? }`, run by `CartController::addItem` through
+  `pipelines.cart`.
+- `CartLineContext` — `{ item, order, currency, attributes }`; fed to each cart
+  line by `CreateOrderItems` via `pipelines.cart_lines` to assemble
+  `OrderItem::create()` payloads.
+- `CheckoutContext` — `{ cart, validated, user, provisionalOrder }` plus public
+  `shippingMethod` / `quote` / `order` slots; run by `CheckoutService::processCheckout()`
+  through `pipelines.checkout`.
+
+Checkout pipes (in run order): `ValidateStock`, `ResolveShippingMethod`, `BuildQuote`,
+`CreateOrder`, `RecordCouponUsage`, `CreateOrderItems`, `RecordInventory`, `ClearCart`.
+A pipe returning a non-context value short-circuits the chain.
 
 ## InventoryService
 
@@ -38,9 +59,10 @@ Central stock management — **all stock mutations go through this service.**
 **Variation support:** `adjust()` accepts `Product|ProductVariation`.
 `StockAdjustment` has an optional `variation_id` FK.
 
-**Integration:** `CheckoutService::checkout()`, `OrdersController::updateStatus()`,
+**Integration:** `CheckoutService::processCheckout()`, `OrdersController::updateStatus()`,
 `OrdersController::refund()`, `ReleaseExpiredHolds` command. `recordSaleForOrder()`
-runs right after order creation to prevent overselling.
+runs right after order creation (via the `RecordInventory` checkout pipe) to prevent
+overselling.
 
 ## CouponService
 

@@ -6,16 +6,14 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\ConnectionResolver;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\SQLiteConnection;
 use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Jobs\SendWebhook;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Shipment;
 use Nreljed\ShopModule\Models\ShipmentItem;
-use PDO;
 use PHPUnit\Framework\TestCase;
+use PDO;
 
 /**
  * Public-contract tests for PR 4 (queued webhooks + shipments). No database
@@ -34,7 +32,6 @@ final class WebhookAndShipmentContractTest extends TestCase
         $resolver->setDefaultConnection('default');
         Model::setConnectionResolver($resolver);
     }
-
     public function test_event_catalog_is_unique(): void
     {
         $events = WebhookEvents::all();
@@ -101,9 +98,9 @@ final class WebhookAndShipmentContractTest extends TestCase
     {
         $shipment = new Shipment(['id' => 1]);
 
-        $this->assertInstanceOf(BelongsTo::class, $shipment->order());
-        $this->assertInstanceOf(HasMany::class, $shipment->items());
-        $this->assertInstanceOf(BelongsTo::class, $shipment->creator());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $shipment->order());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $shipment->items());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $shipment->creator());
     }
 
     public function test_shipment_status_helpers(): void
@@ -125,14 +122,14 @@ final class WebhookAndShipmentContractTest extends TestCase
     {
         $item = new ShipmentItem(['id' => 1]);
 
-        $this->assertInstanceOf(BelongsTo::class, $item->shipment());
-        $this->assertInstanceOf(BelongsTo::class, $item->orderItem());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $item->shipment());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $item->orderItem());
     }
 
     public function test_order_exposes_shipments_relation(): void
     {
         $order = new Order(['id' => 1]);
 
-        $this->assertInstanceOf(HasMany::class, $order->shipments());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $order->shipments());
     }
 }

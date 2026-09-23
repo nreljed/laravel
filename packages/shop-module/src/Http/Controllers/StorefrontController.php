@@ -20,7 +20,6 @@ class StorefrontController extends Controller
         protected CurrencyService $currencyService,
         protected PriceResolver $priceResolver,
     ) {}
-
     public function index()
     {
         return Inertia::render('shop/storefront/home', [

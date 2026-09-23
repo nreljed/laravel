@@ -3,6 +3,7 @@
 namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Pipeline\Pipeline;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
@@ -11,6 +12,7 @@ use Nreljed\ShopModule\Models\CartItem;
 use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductVariation;
+use Nreljed\ShopModule\Pipelines\CartContext;
 use Nreljed\ShopModule\Services\CouponService;
 use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\InventoryService;
@@ -101,32 +103,9 @@ class CartController extends Controller
         $product = Product::findOrFail($validated['product_id']);
 
         $variation = null;
-        $unitPrice = $product->price;
-
         if (! empty($validated['variant_id'])) {
             $variation = ProductVariation::findOrFail($validated['variant_id']);
-            if ($variation->product_id !== $product->id) {
-                return response()->json(['error' => 'Variant does not belong to this product.'], 422);
-            }
-            if (! $variation->isVisible()) {
-                return response()->json(['error' => 'This variant is not available for purchase.'], 422);
-            }
-            if ($variation->usesParentStock()) {
-                if (! $product->isInStock()) {
-                    return response()->json(['error' => 'This variant is out of stock.'], 422);
-                }
-            } elseif ($variation->managesOwnStock() && $variation->stock_quantity <= 0 && $variation->backorders === 'no') {
-                return response()->json(['error' => 'This variant is out of stock.'], 422);
-            }
-            $unitPrice = $variation->effective_price ?? $product->price;
         }
-
-        if (! $product->isInStock() && ! $variation) {
-            return response()->json(['error' => 'Product is out of stock.'], 422);
-        }
-
-        $totalQty = $validated['quantity'];
-        $existingItem = null;
 
         $cart = $this->getCart($request);
 
@@ -135,29 +114,21 @@ class CartController extends Controller
             ->where('product_variation_id', $validated['variant_id'] ?? null)
             ->first();
 
-        if ($existingItem) {
-            $totalQty += $existingItem->quantity;
-        }
+        $context = (new Pipeline(app()))
+            ->send(new CartContext(
+                cart: $cart,
+                product: $product,
+                variation: $variation,
+                quantity: $validated['quantity'],
+                existingItem: $existingItem,
+                variantLabel: $validated['variant_label'] ?? null,
+                totalQuantity: $validated['quantity'] + ($existingItem?->quantity ?? 0),
+            ))
+            ->through(config('shop.pipelines.cart'))
+            ->thenReturn();
 
-        if ($product->sold_individually && $totalQty > 1) {
-            return response()->json(['error' => 'This product can only be purchased one at a time.'], 422);
-        }
-
-        if (! $this->inventoryService->validateStock($product, $totalQty, $variation)) {
-            return response()->json(['error' => 'Requested quantity exceeds available stock.'], 422);
-        }
-
-        if ($existingItem) {
-            $existingItem->update(['quantity' => $totalQty]);
-        } else {
-            $cart->items()->create([
-                'product_id' => $product->id,
-                'product_variation_id' => $validated['variant_id'] ?? null,
-                'quantity' => $validated['quantity'],
-                'unit_price' => $unitPrice,
-                'currency' => $this->currencyService->defaultCode(),
-                'variant_label' => $validated['variant_label'] ?? null,
-            ]);
+        if ($context->error !== null) {
+            return response()->json(['error' => $context->error], 422);
         }
 
         $this->touchLastActivity($cart);

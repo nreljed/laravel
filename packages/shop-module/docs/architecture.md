@@ -17,6 +17,7 @@ shop-module/
     │   │   └── Api/              # public REST controllers (Sanctum)
     │   ├── Resources/            # API resource transformers
     ├── Models/                   # 32 Eloquent models
+    ├── Pipelines/                # context classes + ordered pipe steps (cart, cart_lines, checkout)
     ├── Policies/                 # 10 authorization policies
     ├── Requests/                 # FormRequests (validation)
     ├── Resources/js/Pages/       # Inertia React pages (@nreljed/shop-module/Pages/...)
@@ -25,6 +26,14 @@ shop-module/
     ├── Support/                  # Countries (ISO 3166 map)
     └── ShopServiceProvider.php
 ```
+
+## Pipelines
+
+Multi-step flows (cart add, cart-line build, checkout) are composed as Laravel
+pipelines instead of controller/service recursion. `config/shop.php` `pipelines`
+declares each ordered step list; a shared context class is passed through, and
+each step mutates the context (or returns a value to short-circuit, e.g. an error).
+See [Services](services.md) for the context shapes and the checkout step order.
 
 ## Registration
 

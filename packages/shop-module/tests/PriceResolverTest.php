@@ -309,8 +309,7 @@ final class PriceResolverTest extends TestCase
     {
         $currencyService = $this->fakeCurrencyService($map['default']);
 
-        return new class($map['rows'], $currencyService) extends PriceResolver
-        {
+        return new class($map['rows'], $currencyService) extends PriceResolver {
             /** @var array<string, ProductPrice> */
             private array $rows;
 

@@ -114,12 +114,15 @@ and folded into checkout totals.
    └─ currency / taxes / shipping applied
         │
         ▼
-CheckoutService::checkout()  (DB::transaction)
-   ├─ create Order (status pending)
-   ├─ apply coupon + auto-discounts
-   ├─ TaxService::calculate()  (tax_based_on, inc-tax back-calc, tax_shipping)
-   ├─ ShippingService::getAvailableMethods()  (zone match → override prices, else base country)
-   └─ InventoryService::recordSaleForOrder()  (stock hold)
+CheckoutService::processCheckout()  → pipelines.checkout (DB::transaction)
+   ├─ ValidateStock           (localized insufficient-stock message)
+   ├─ ResolveShippingMethod   (zone match → override prices, else base country)
+   ├─ BuildQuote              (TaxService::calculate — tax_based_on, inc-tax back-calc, tax_shipping)
+   ├─ CreateOrder             (status pending; auto-discounts folded)
+   ├─ RecordCouponUsage       (CouponUsage row + used_count++)
+   ├─ CreateOrderItems        (pipelines.cart_lines per line → OrderItem::create)
+   ├─ RecordInventory         (InventoryService::recordSaleForOrder — stock hold)
+   └─ ClearCart               (converted_to_order_id set on the cart)
         │
         ▼
 order.placed notification + order-confirmation email (MailService, guest-safe)
@@ -127,6 +130,10 @@ order.placed notification + order-confirmation email (MailService, guest-safe)
         ▼
 confirmation page → optional account creation via signed /store/order/{order}/register
 ```
+
+Cart adds go through `pipelines.cart` (`ValidateVariant → ResolveUnitPrice →
+ValidatePurchaseQuantity → PersistLine`); a pipe returning a non-context value
+short-circuits with the existing 422 JSON `{ error }`.
 
 ## Inventory / Stock
 

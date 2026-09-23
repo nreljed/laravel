@@ -4,15 +4,13 @@ All notable changes to `nreljed/shop-module` are documented in this file, based 
 
 ## [Unreleased]
 
+## [0.1.45] - 2026-09-23
+
 ### Added
 
-- **Shipments (0.3)** — `shipments` + `shipment_items` tables, `Shipment`/`ShipmentItem` models with `Order::shipments()` relation, `ShipmentService` (createForOrder / markShipped / markDelivered / updateTracking), `ShipmentsController` + `ShipmentPolicy`, `shop.shipments.manage` permission, `shipment.created` / `shipment.shipped` / `shipment.delivered` webhook events, and an admin Inertia page under `/dashboard/shop/orders/{order}/shipments`.
-- **Queued webhooks (0.4)** — deliveries now run through a real `SendWebhook` queue job (`ShouldQueue` + unique per call, per-webhook `retry_attempts` / `retry_delay` backoff); `WebhookService::dispatch()` enqueues, `dispatchAndWait()` stays synchronous for the test button, `processPending()` re-queues lost deliveries. Webhook endpoints auto-deactivate after 10 consecutive failures (`webhooks.consecutive_failures` column).
-- **Event catalog (0.4)** — `Events/WebhookEvents.php` centralizes the 16 event names; controller store/update validation whitelists against it; wired `order.placed` (checkout + manual order), `order.cancelled`, `product.created/updated/deleted`, `customer.created` (checkout account), and renamed the test ping to `webhook.test`.
-
-### Changed
-
-- Docs synced with the shipped behaviour (`workflows.md`, `services.md`, `data-model.md`, `architecture.md`, `routes.md`, `controllers.md`, `permissions.md`, `index.md`); counts updated to 32 models, 18 services, 10 policies, 17 permissions, 62 migrations.
+- **Cart + Cart Lines pipelines** — `config/shop.php` `pipelines.cart` (`ValidateVariant → ResolveUnitPrice → ValidatePurchaseQuantity → PersistLine`) and `pipelines.cart_lines` (`BuildOrderItemAttributes`), with `CartContext` / `CartLineContext` and pipe classes under `src/Pipelines/Cart` and `src/Pipelines/CartLines`. `CartController::addItem` now runs the cart pipeline (validation, unit price, quantity limits, persist) instead of inline logic; exact 422 behaviours and 404s are preserved.
+- **Checkout pipeline** — `config/shop.php` `pipelines.checkout` (`ValidateStock → ResolveShippingMethod → BuildQuote → CreateOrder → RecordCouponUsage → CreateOrderItems → RecordInventory → ClearCart`) with `CheckoutContext` and pipe classes under `src/Pipelines/Checkout`. `CheckoutService` is now a stateless orchestrator (no constructor): `processCheckout()` runs the pipeline, then the order transaction (`validateStock`, `findOrFail`) moved inside `DB::transaction`.
+- **Pipeline golden/contract tests** — `PipelinesContractTest` (config order, class existence, context shapes) plus `CartPipelineGoldenTest` and `CheckoutPipelineGoldenTest` covering all cart 422 branches, unit-price resolution, persist (create/update), stock-message localization, build-quote arg capture, coupon usage order, and order-item attribute assembly.
 
 ## [0.1.44] - 2026-09-22
 
@@ -24,6 +22,18 @@ All notable changes to `nreljed/shop-module` are documented in this file, based 
 ### Added
 
 - **Migration smoke check** - `scripts/migration-check.php` boots the package migrations against a real sqlite connection and enforces clean `up()` execution for all 62 migrations; wired into CI so migration regressions are caught before release.
+
+## [0.1.43] - 2026-09-22
+
+### Added
+
+- **Shipments (0.3)** — `shipments` + `shipment_items` tables, `Shipment`/`ShipmentItem` models with `Order::shipments()` relation, `ShipmentService` (createForOrder / markShipped / markDelivered / updateTracking), `ShipmentsController` + `ShipmentPolicy`, `shop.shipments.manage` permission, `shipment.created` / `shipment.shipped` / `shipment.delivered` webhook events, and an admin Inertia page under `/dashboard/shop/orders/{order}/shipments`.
+- **Queued webhooks (0.4)** — deliveries now run through a real `SendWebhook` queue job (`ShouldQueue` + unique per call, per-webhook `retry_attempts` / `retry_delay` backoff); `WebhookService::dispatch()` enqueues, `dispatchAndWait()` stays synchronous for the test button, `processPending()` re-queues lost deliveries. Webhook endpoints auto-deactivate after 10 consecutive failures (`webhooks.consecutive_failures` column).
+- **Event catalog (0.4)** — `Events/WebhookEvents.php` centralizes the 16 event names; controller store/update validation whitelists against it; wired `order.placed` (checkout + manual order), `order.cancelled`, `product.created/updated/deleted`, `customer.created` (checkout account), and renamed the test ping to `webhook.test`.
+
+### Changed
+
+- Docs synced with the shipped behaviour (`workflows.md`, `services.md`, `data-model.md`, `architecture.md`, `routes.md`, `controllers.md`, `permissions.md`, `index.md`); counts updated to 32 models, 18 services, 10 policies, 17 permissions, 62 migrations.
 
 ## [0.1.8] - 2026-09-07
 
