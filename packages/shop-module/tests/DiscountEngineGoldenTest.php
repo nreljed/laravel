@@ -7,8 +7,8 @@ use Illuminate\Database\ConnectionResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Schema\Builder as SchemaBuilder;
 use Illuminate\Database\Schema\Grammars\SQLiteGrammar;
+use Illuminate\Database\Schema\Builder as SchemaBuilder;
 use Illuminate\Database\SQLiteConnection;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Translation\ArrayLoader;
@@ -18,8 +18,8 @@ use Illuminate\Validation\ValidationException;
 use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Services\CouponService;
-use PDO;
 use PHPUnit\Framework\TestCase;
+use PDO;
 
 /**
  * Golden matrix for the product-scoped + group-aware discount behaviours that
@@ -269,7 +269,7 @@ final class DiscountEngineGoldenTest extends TestCase
         $attributes['id'] = $attributes['id'] ?? $this->nextCouponId++;
 
         $coupon = new Coupon(array_merge([
-            'code' => 'T-'.strtoupper((string) random_int(1000, 9999)),
+            'code' => 'T-' . strtoupper((string) random_int(1000, 9999)),
             'type' => 'percentage',
             'value' => 0,
             'is_active' => true,

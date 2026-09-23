@@ -10,7 +10,6 @@ use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\NotificationService;
-use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\OrderNote;
 use Nreljed\ShopModule\Models\Product;
@@ -420,7 +419,7 @@ class OrdersController extends Controller
 
         if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
             $this->webhookService->dispatch(
-                WebhookEvents::ORDER_CANCELLED,
+                \Nreljed\ShopModule\Events\WebhookEvents::ORDER_CANCELLED,
                 ['order_id' => $order->id, 'order_number' => $order->order_number],
             );
         }

@@ -18,7 +18,7 @@ use Nreljed\ShopModule\Services\WebhookService;
  * retries and acceleration come from the per-webhook `retry_attempts` /
  * `retry_delay` configuration through Laravel's queue backoff.
  */
-class SendWebhook implements ShouldBeUnique, ShouldQueue
+class SendWebhook implements ShouldQueue, ShouldBeUnique
 {
     use Queueable;
 

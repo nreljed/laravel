@@ -15,7 +15,6 @@ use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\MediaService;
 use Nreljed\Platform\Services\NotificationService;
 use Nreljed\Platform\Services\UploadProfiles;
-use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Models\Attribute;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductAttribute;
@@ -137,7 +136,7 @@ class ProductsController extends Controller
         }
 
         $this->webhookService->dispatch(
-            WebhookEvents::PRODUCT_CREATED,
+            \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_CREATED,
             ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
         );
 
@@ -244,7 +243,7 @@ class ProductsController extends Controller
         }
 
         $this->webhookService->dispatch(
-            WebhookEvents::PRODUCT_UPDATED,
+            \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_UPDATED,
             ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
         );
 
@@ -259,7 +258,7 @@ class ProductsController extends Controller
         $product->delete();
 
         $this->webhookService->dispatch(
-            WebhookEvents::PRODUCT_DELETED,
+            \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_DELETED,
             ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
         );
 
