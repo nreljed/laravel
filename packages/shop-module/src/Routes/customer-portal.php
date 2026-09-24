@@ -3,12 +3,20 @@
 use Illuminate\Support\Facades\Route;
 use Nreljed\ShopModule\Http\Controllers\CartController;
 use Nreljed\ShopModule\Http\Controllers\CheckoutController;
+use Nreljed\ShopModule\Http\Controllers\MyAddressController;
 use Nreljed\ShopModule\Http\Controllers\MyOrderController;
 
 Route::prefix('my')->name('my.')->group(function () {
     // My Orders
     Route::get('/orders', [MyOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [MyOrderController::class, 'show'])->name('orders.show');
+
+    // My Addresses
+    Route::get('/addresses', [MyAddressController::class, 'index'])->name('addresses.index');
+    Route::post('/addresses', [MyAddressController::class, 'store'])->name('addresses.store');
+    Route::put('/addresses/{address}', [MyAddressController::class, 'update'])->name('addresses.update');
+    Route::delete('/addresses/{address}', [MyAddressController::class, 'destroy'])->name('addresses.destroy');
+    Route::post('/addresses/{address}/primary', [MyAddressController::class, 'setPrimary'])->name('addresses.set-primary');
 
     // My Cart
     Route::get('/cart', [CartController::class, 'page'])->name('cart.index');

@@ -87,12 +87,19 @@ Tests: contract-style (existing pattern) + `QuoteService` golden matrix (stackin
 - [x] PR 3 — `PaymentManager` + single-provisional-order Stripe flow
 - [x] PR 4 — Shipments + queued webhooks + event catalog + docs sync
 - [x] PR 5 — Cart/checkout pipelines (golden tests first) — `config/shop.php` `pipelines` (`cart`/`cart_lines`/`checkout`), `src/Pipelines/` contexts + 13 pipes, `CheckoutService` → stateless orchestrator, `CartController::addItem` wired through `pipelines.cart`; contract + golden tests (96 green), docs synced.
-- [ ] PR 6 — DiscountType contract + 7 types extracted
-- [ ] PR 7 — order_statuses/transitions tables + numbering generator
-- [ ] PR 8 — Tax zones/classes v2 + per-line snapshots
-- [ ] PR 9 — Customer/Group/Address entities + backfill + portal addresses
+- [x] PR 6 — DiscountType contract + 7 types extracted
+- [x] PR 7 — order_statuses/transitions tables + numbering generator
+- [x] PR 8 — Tax zones/classes v2 + per-line snapshots
+  - PR 8A (SHIPPED v0.1.48): tax class/zone contract tree — `TaxClassContract`/`TaxClassType` + 3 types (Standard/Reduced/Zero), `TaxZoneContract`/`TaxZoneType`, `TaxManager` registry, composer 0.1.48, tag + GH release + mono mirror (7 tracked, lint-clean) + consumer require 0.1.48. Green.
+  - PR 8B (SHIPPED v0.1.49): per-line snapshots — `PerLineTaxSnapshot` VO, `TaxClassManager`/`TaxZoneManager` registries, `Zones/{Eu,Us,Nz}`, `PerLineTaxResolver` (country/state → zone, basis-point rounding, class/zone rate precedence, migration adds `tax_class_code`/`tax_zone_code`/`tax_rate_snapshot`), golden test green (4 tests), full suite 126 green (310 assertions), composer 0.1.49, tag + GH release + mono mirror + consumer require 0.1.49. Green.
+- [x] PR 9 — Customer/Group/Address entities + backfill + portal addresses
+  - PR 9A (SHIPPED v0.1.50): customer contract subtree seed - `CustomerContract`/`CustomerType` + composer 0.1.50, tag v0.1.50 + GH release + GH release # + mono mirror + consumer require 0.1.50. CONTRACT SEED ONLY; entities/backfill + portal addresses = PR 9B (NOT shipped), PR 9 box stays unticked. Green.
+  - PR 9B.1 (local): `CustomerManager` registry + `RegisterCustomer`/`ResolveCustomer` contracts + golden test green (v0.1.52 marker). Green.
+  - PR 9B.2 (local): customer entity package — `RegisteredCustomer`/`WholesaleCustomerGroup`/`CustomerAddressEntity` entities + address `code()` contract (+ `label()` type-fix commit) + migration `2026_09_24_000000_create_customer_tables_and_backfill` (`customers`, `customer_user`, `customer_addresses`, `customer_groups` + wholesale seed, backfills 18 orders → 2 customers/2 pivots/36 addresses, additive). migration-check 65/65, suite 126 green (313 assert), browser-verified storefront (0 console errors). v0.1.53 marker.
+  - PR 9B.3 (local, browser-verified): portal `/dashboard/my/addresses` — Eloquent `Customer`/`CustomerAddress`/`CustomerGroup`/`CustomerUser` models, `MyAddressController` (index/store/update/destroy/set-primary, inline validation, 403-gated), routes `dashboard.my.addresses.*`, React `Pages/My/Addresses/Index.tsx` (auto-registered `shop/my/addresses/index`, AuthenticatedLayout, Card/Empty/Badge/NativeSelect). Browser: login as Emma → 18 backfilled addresses list, add (Rue de la Liberté), set-primary (clears prior primaries), delete all green; DB restored (18/18/9 primaries); 0 console errors. Also fixed pre-existing consumer `tsc` break: `StoreHeader`/`currency.ts` usePage prop interfaces now `extends PageProps`. PR 9 box ticked; ship step pending (composer bump + tag + GH release + mono mirror + consumer require — confirm with user).
 - [ ] PR 10 — Scheduled publishing + product fields + group pricing
 - [ ] PR 11 — Catalog extras (hierarchy, aliases, relations, barcodes)
 - [ ] PR 12 — Platform schema kit (ResourceIndex/ResourceForm/field registry)
 - [ ] PR 13–N — Resource conversions wave by wave
 - [ ] Final — generator + `adminResources()` + PHPStan + indexes
+

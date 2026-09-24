@@ -1,4 +1,5 @@
 import { usePage } from "@inertiajs/react";
+import type { PageProps } from "@inertiajs/core";
 
 export interface CurrencyInfo {
     code: string;
@@ -16,7 +17,7 @@ interface CurrencyFormat {
     decimals: number;
 }
 
-interface PageWithCurrency {
+interface PageWithCurrency extends PageProps {
     sharedData?: {
         currencies?: CurrencyInfo[];
         selectedCurrency?: string;
@@ -56,7 +57,7 @@ export function useCurrency() {
 
     const formatNumber = (value: number, decimals: number): string => {
         const [intPart, decPart] = value.toFixed(decimals).split(".");
-        const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, formatSettings.thousands_separator);
+        const grouped = String(intPart).replace(/\B(?=(\d{3})+(?!\d))/g, formatSettings.thousands_separator);
         return decPart ? `${grouped}${formatSettings.decimal_separator}${decPart}` : grouped;
     };
 
