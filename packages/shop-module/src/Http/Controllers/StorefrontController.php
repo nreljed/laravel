@@ -3,7 +3,9 @@
 namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
@@ -86,7 +88,8 @@ class StorefrontController extends Controller
 
         $attributes = [];
         $variations = collect();
-        $priceRange = ['min' => (float) $product->price, 'max' => (float) $product->price];
+        $defaultRange = $product->price_range;
+        $priceRange = ['min' => (float) $defaultRange['min'], 'max' => (float) $defaultRange['max']];
         $defaultVariation = null;
 
         $currency = $this->currencyService->storefrontCode();
@@ -144,7 +147,11 @@ class StorefrontController extends Controller
                 $priceRange = ['min' => $activePrices->min(), 'max' => $activePrices->max()];
             }
         } else {
-            $priceRange = ['min' => (float) $product->price, 'max' => (float) $product->price];
+            // Variable products use the variation prices above; everything else -
+            // grouped bundles in particular, which own no price - uses the model's
+            // derived range, which falls back to the bundled item prices.
+            $range = $product->price_range;
+            $priceRange = ['min' => (float) $range['min'], 'max' => (float) $range['max']];
         }
 
         return Inertia::render('shop/storefront/productdetail', [
@@ -177,6 +184,45 @@ class StorefrontController extends Controller
         return Product::published()
             ->whereIn('catalog_visibility', ['visible', 'catalog'])
             ->with('groupedItems:id,name,slug,price,thumbnail_url');
+    }
+
+    /**
+     * Bounds for the catalog price filter.
+     *
+     * The raw `price` column is 0 on variable and grouped parents, so deriving
+     * the bounds from it advertised a catalog starting at 0. Take the floor and
+     * ceiling across every price a shopper can actually pay: simple product
+     * prices, the cached variation ranges, and the bundled items' own prices.
+     *
+     * @return array{min: float, max: float}
+     */
+    protected function effectivePriceBounds(): array
+    {
+        $lows = [
+            (float) (Product::published()->where('price', '>', 0)->min('price') ?? 0),
+            (float) (Product::published()->whereNotNull('min_variation_price')->min('min_variation_price') ?? 0),
+        ];
+
+        $highs = [
+            (float) (Product::published()->max('price') ?? 0),
+            (float) (Product::published()->whereNotNull('max_variation_price')->max('max_variation_price') ?? 0),
+        ];
+
+        $bundledItems = fn (): QueryBuilder => DB::table('product_grouped_products as links')
+            ->join('products as child', 'child.id', '=', 'links.product_id')
+            ->whereIn('links.group_product_id', Product::published()->select('products.id'))
+            ->where('child.price', '>', 0);
+
+        $lows[] = (float) ($bundledItems()->min('child.price') ?? 0);
+        $highs[] = (float) ($bundledItems()->max('child.price') ?? 0);
+
+        $lows = array_values(array_filter($lows, fn (float $low): bool => $low > 0));
+        $high = max($highs);
+
+        return [
+            'min' => $lows === [] ? 0.0 : min($lows),
+            'max' => $high > 0 ? $high : 1000.0,
+        ];
     }
 
     protected function applyFilters(Builder $query, Request $request): void
@@ -279,12 +325,11 @@ class StorefrontController extends Controller
             ])
             ->values();
 
-        $minPrice = Product::published()->min('price');
-        $maxPrice = Product::published()->max('price');
+        $bounds = $this->effectivePriceBounds();
 
         $priceRange = [
-            (float) ($minPrice ?? 0),
-            (float) ($maxPrice ?? 1000),
+            $bounds['min'],
+            $bounds['max'],
         ];
 
         if ($currency !== $default) {

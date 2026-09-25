@@ -2,6 +2,22 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.62]
+
+### Fixed
+
+- **A grouped product no longer opens at 0.00.** `ProductDetail` special-cased bundles onto the
+  external-product branch and read `product.price`, which is 0, so the headline advertised the bundle
+  as free while the items listed directly beneath it showed their real prices. Bundles now headline
+  the range of their items (`29.00 - 39.00`) rather than a fake strike-through discount.
+- **The product page's `priceRange` prop resolves for grouped products.** The non-variable fallback
+  seeded it from `product.price`, so a bundle arrived with a `{0, 0}` range. It now reads the model's
+  derived `price_range`.
+- **The catalog price filter no longer starts at 0.00.** The slider bounds were aggregated from the
+  raw `price` column, which is 0 on every variable and grouped parent, so the panel advertised a
+  catalog running from 0. They now span every price a shopper can actually pay: simple product
+  prices, cached variation ranges, and bundled item prices.
+
 ## [0.1.61]
 
 ### Fixed

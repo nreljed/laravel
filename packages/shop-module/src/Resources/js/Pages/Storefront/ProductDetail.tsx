@@ -208,8 +208,18 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
 }) {
     const { money } = useCurrency();
     const displayPrice = useMemo(() => {
-        if (isExternal || isGrouped) {
-            return { current: product.price, original: null, compareAt: null };
+        if (isExternal) {
+            return { current: product.price, original: null, compareAt: null, rangeMax: null as number | null };
+        }
+        if (isGrouped) {
+            // A bundle has no price of its own; headline the range of its items.
+            const min = priceRange.min;
+            return {
+                current: min,
+                original: null,
+                compareAt: null,
+                rangeMax: priceRange.max > min ? priceRange.max : null,
+            };
         }
         if (selectedVariation) {
             const active = selectedVariation.active_price ?? selectedVariation.price ?? 0;
@@ -218,17 +228,18 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
                 current: parseFloat(String(active)),
                 original: hasVarSale ? parseFloat(selectedVariation.price) : null,
                 compareAt: !hasVarSale && selectedVariation.compare_price ? parseFloat(selectedVariation.compare_price) : null,
+                rangeMax: null,
             };
         }
         if (isVariable) {
             return priceRange.min < priceRange.max
-                ? { current: priceRange.min, original: priceRange.max, compareAt: null }
-                : { current: priceRange.min, original: null, compareAt: null };
+                ? { current: priceRange.min, original: priceRange.max, compareAt: null, rangeMax: null }
+                : { current: priceRange.min, original: null, compareAt: null, rangeMax: null };
         }
         if (product.on_sale) {
-            return { current: product.active_price, original: product.price, compareAt: null };
+            return { current: product.active_price, original: product.price, compareAt: null, rangeMax: null };
         }
-        return { current: product.price, original: null, compareAt: (product.compare_price && product.compare_price > product.price) ? product.compare_price : null };
+        return { current: product.price, original: null, compareAt: (product.compare_price && product.compare_price > product.price) ? product.compare_price : null, rangeMax: null };
     }, [selectedVariation, product, priceRange, isVariable, isExternal, isGrouped]);
 
     const wasPrice = displayPrice.original ?? displayPrice.compareAt ?? null;
@@ -238,7 +249,9 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
     return (
         <div className="flex items-baseline gap-3">
             <span className={cn("text-3xl font-bold tracking-tight", hasSale && "text-destructive")}>
-                {money(displayPrice.current)}
+                {displayPrice.rangeMax !== null
+                    ? `${money(displayPrice.current)} – ${money(displayPrice.rangeMax)}`
+                    : money(displayPrice.current)}
             </span>
             {hasSale && (
                 <>

@@ -127,6 +127,75 @@ class ListingPriceRangeTest extends TestCase
         );
     }
 
+    /**
+     * The product page headline had its own special case that returned
+     * `product.price` for a bundle, which is 0, so a grouped product opened at
+     * 0.00 even though its items were listed right below at their real prices.
+     */
+    public function test_grouped_detail_page_headline_uses_the_derived_range(): void
+    {
+        $controller = (string) file_get_contents(
+            dirname(__DIR__).'/src/Http/Controllers/StorefrontController.php'
+        );
+        $this->assertStringNotContainsString(
+            "\$priceRange = ['min' => (float) \$product->price, 'max' => (float) \$product->price];",
+            $controller,
+            'the non-variable priceRange fallback must use the model range, not the parent price'
+        );
+        $this->assertStringContainsString(
+            '$range = $product->price_range;',
+            $controller,
+            'the non-variable priceRange fallback must read price_range so bundles resolve their item prices'
+        );
+
+        $page = (string) file_get_contents(
+            dirname(__DIR__).'/src/Resources/js/Pages/Storefront/ProductDetail.tsx'
+        );
+        $this->assertStringNotContainsString(
+            'if (isExternal || isGrouped) {',
+            $page,
+            'a grouped product must not be grouped with external products on the parent-price branch'
+        );
+        $this->assertStringContainsString(
+            'rangeMax: priceRange.max > min ? priceRange.max : null',
+            $page,
+            'a grouped product must headline the range of its bundled items'
+        );
+    }
+
+    /**
+     * The catalog price filter advertised a catalog starting at 0 because it
+     * aggregated the raw `price` column, which is 0 on every variable and
+     * grouped parent.
+     */
+    public function test_catalog_filter_bounds_span_every_payable_price(): void
+    {
+        $controller = (string) file_get_contents(
+            dirname(__DIR__).'/src/Http/Controllers/StorefrontController.php'
+        );
+
+        $this->assertStringNotContainsString(
+            "Product::published()->min('price')",
+            $controller,
+            'the filter bounds must not aggregate the raw price column, which is 0 on variable and grouped parents'
+        );
+        $this->assertStringContainsString(
+            'effectivePriceBounds',
+            $controller,
+            'the filter bounds must come from effectivePriceBounds()'
+        );
+        $this->assertStringContainsString(
+            "'min_variation_price'",
+            $controller,
+            'the bounds must consider cached variation ranges'
+        );
+        $this->assertStringContainsString(
+            'product_grouped_products',
+            $controller,
+            'the bounds must consider the prices of bundled items'
+        );
+    }
+
     public function test_listing_card_renders_the_range_instead_of_the_raw_price(): void
     {
         $this->assertProductRenderersUseDisplayPrice(
