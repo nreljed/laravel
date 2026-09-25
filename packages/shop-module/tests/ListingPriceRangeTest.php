@@ -101,22 +101,62 @@ class ListingPriceRangeTest extends TestCase
         );
     }
 
-    public function test_listing_card_renders_the_range_instead_of_the_raw_price(): void
+    /**
+     * The related-products rail and the wishlist grid render their own price
+     * markup instead of reusing ProductCard, so each needs the eager load for
+     * the appended range to resolve without a query per row.
+     */
+    public function test_related_and_wishlist_queries_eager_load_grouped_items(): void
     {
-        $source = (string) file_get_contents(
-            dirname(__DIR__).'/src/Resources/js/components/storefront/ProductCard.tsx'
+        $storefront = (string) file_get_contents(
+            dirname(__DIR__).'/src/Http/Controllers/StorefrontController.php'
+        );
+        $this->assertMatchesRegularExpression(
+            '/function relatedProducts.*?->with\(\s*[\'"]groupedItems/s',
+            $storefront,
+            'relatedProducts() must eager-load groupedItems'
         );
 
-        $this->assertStringNotContainsString(
-            '{money(product.price)}</span>',
-            $source,
-            'the card must not render the raw product price, which is 0 for variable and grouped products'
+        $wishlist = (string) file_get_contents(
+            dirname(__DIR__).'/src/Http/Controllers/WishlistController.php'
         );
         $this->assertStringContainsString(
-            'displayPrice(product, money)',
-            $source,
-            'the card must render displayPrice(), which falls back to the derived range'
+            'groupedItems',
+            $wishlist,
+            'the wishlist grid must eager-load groupedItems'
         );
+    }
+
+    public function test_listing_card_renders_the_range_instead_of_the_raw_price(): void
+    {
+        $this->assertProductRenderersUseDisplayPrice(
+            'src/Resources/js/components/storefront/ProductCard.tsx',
+            ['{money(product.price)}</span>']
+        );
+        $this->assertProductRenderersUseDisplayPrice(
+            'src/Resources/js/Pages/Storefront/ProductDetail.tsx',
+            ['{money(r.price)}']
+        );
+        $this->assertProductRenderersUseDisplayPrice(
+            'src/Resources/js/Pages/Wishlist/Index.tsx',
+            ['{money(product.price)}']
+        );
+    }
+
+    /**
+     * @param  array<int, string>  $forbidden
+     */
+    private function assertProductRenderersUseDisplayPrice(string $relativePath, array $forbidden): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__).'/'.$relativePath);
+
+        foreach ($forbidden as $needle) {
+            $this->assertStringNotContainsString(
+                $needle,
+                $source,
+                "{$relativePath} must not render a raw product price, which is 0 for variable and grouped products"
+            );
+        }
     }
 
     private function variation(float $activePrice, bool $isActive): ProductVariation

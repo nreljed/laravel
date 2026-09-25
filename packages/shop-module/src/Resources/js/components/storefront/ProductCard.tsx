@@ -27,7 +27,10 @@ export interface Product {
     low_stock_threshold: number;
 }
 
-function displayPrice(product: Product, money: (amount: number | string | null | undefined) => string): string {
+export function displayPrice(
+    product: { price: number; price_range: { min: number | null; max: number | null } | null },
+    money: (amount: number | string | null | undefined) => string,
+): string {
     const range = product.price_range;
 
     // Variable and grouped parents carry no price of their own, so fall back to

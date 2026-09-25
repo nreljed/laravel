@@ -6,10 +6,12 @@ import { useCurrency } from '../../lib/currency'
 import { Button } from '@nreljed/platform/Components/ui/button'
 import { Card, CardContent } from '@nreljed/platform/Components/ui/card'
 import { WishlistButton } from '../../components/WishlistButton'
+import { displayPrice } from '../../components/storefront/ProductCard'
 
 interface ProductItem {
   id: number; name: string; slug: string;
   price: number; thumbnail_url: string | null;
+  price_range: { min: number | null; max: number | null } | null;
   categories: { id: number; name: string; slug: string }[];
 }
 
@@ -79,7 +81,7 @@ export default function WishlistIndex() {
                   <Link href={route('store.show', product.id)}>
                     <p className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors">{product.name}</p>
                   </Link>
-                  <p className="text-sm font-bold mt-1">{money(product.price)}</p>
+                  <p className="text-sm font-bold mt-1">{displayPrice(product, money)}</p>
                   <Button size="sm" className="w-full mt-2" onClick={() => router.visit(route('store.show', product.id))}>
                     <ShoppingCart className="h-3.5 w-3.5 mr-1" /> View Product
                   </Button>

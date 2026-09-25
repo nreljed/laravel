@@ -360,7 +360,9 @@ class StorefrontController extends Controller
     {
         $categoryIds = $product->categories()->pluck('product_categories.id');
 
-        $related = Product::published()
+        $withBundles = fn ($q) => $q->with('groupedItems:id,name,slug,price,thumbnail_url');
+
+        $related = $withBundles(Product::published())
             ->where('id', '!=', $product->id)
             ->when($categoryIds->isNotEmpty(), fn ($q) => $q->whereHas('categories', fn ($c) => $c->whereIn('product_categories.id', $categoryIds)))
             ->inRandomOrder()
@@ -368,7 +370,7 @@ class StorefrontController extends Controller
             ->get();
 
         if ($related->count() < 4) {
-            $extra = Product::published()
+            $extra = $withBundles(Product::published())
                 ->where('id', '!=', $product->id)
                 ->whereNotIn('id', $related->pluck('id'))
                 ->inRandomOrder()

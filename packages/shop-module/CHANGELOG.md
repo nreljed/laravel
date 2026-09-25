@@ -2,6 +2,17 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.61]
+
+### Fixed
+
+- **The related-products rail and the wishlist grid no longer show 0.00.** Both render their own price
+  markup instead of reusing `ProductCard`, so 0.1.60 fixed the homepage, featured and catalog grids
+  but left the same raw `price` render on the product page's "You might also like" section and on
+  `/store/wishlist`. All three surfaces now share the `displayPrice()` helper.
+- **`relatedProducts()` and the wishlist query eager-load `groupedItems`.** Neither went through
+  `baseQuery()`, so a grouped product in those lists resolved its price range with a query per row.
+
 ## [0.1.60]
 
 ### Fixed

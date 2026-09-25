@@ -26,7 +26,7 @@ class WishlistController extends Controller
 
         $products = Product::whereIn('id', $productIds)
             ->published()
-            ->with('categories')
+            ->with(['categories', 'groupedItems:id,name,slug,price,thumbnail_url'])
             ->paginate(12)
             ->withQueryString();
 

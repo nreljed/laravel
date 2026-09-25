@@ -11,6 +11,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@n
 import { StarRating } from '../../components/StarRating'
 import { WishlistButton } from '../../components/WishlistButton'
 import { AttributeSelector } from '../../components/AttributeSelector'
+import { displayPrice } from '../../components/storefront/ProductCard'
 import { useCurrency } from '../../lib/currency'
 import { cn } from '@nreljed/platform/lib/utils'
 import { toast } from '@nreljed/platform/Components/ui/toast'
@@ -48,6 +49,7 @@ interface GalleryImage {
 interface ProductDetail {
     id: number; name: string; slug: string; short_description: string | null; description: string | null;
     price: number; compare_price: number | null; active_price: number; on_sale: boolean; sku: string | null;
+    price_range: { min: number | null; max: number | null } | null;
     stock_quantity: number; track_stock: boolean; backorders: string; stock_status: string | null;
     incoming_stock: number | null; low_stock_threshold: number;
     type: string;
@@ -783,7 +785,7 @@ export default function StorefrontShow() {
                                         </div>
                                         <CardContent className="p-3 space-y-1">
                                             <p className="text-sm font-medium line-clamp-2">{r.name}</p>
-                                            <p className="text-sm font-bold">{money(r.price)}</p>
+                                            <p className="text-sm font-bold">{displayPrice(r, money)}</p>
                                         </CardContent>
                                     </Card>
                                 </Link>
