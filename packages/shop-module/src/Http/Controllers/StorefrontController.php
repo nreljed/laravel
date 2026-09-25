@@ -11,6 +11,7 @@ use Nreljed\ShopModule\Models\Attribute;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
+use Nreljed\ShopModule\Models\ProductFieldValue;
 use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\PriceResolver;
 
@@ -48,6 +49,7 @@ class StorefrontController extends Controller
             'variationAttributes.attribute.terms',
             'productAttributes' => fn ($q) => $q->where('visible', true)->orderBy('position')->with('attribute.terms'),
             'downloads' => fn ($q) => $q->orderBy('sort_order'),
+            'productFieldValues.field',
             'groupedItems' => fn ($q) => $q->select('products.id', 'name', 'slug', 'price', 'thumbnail_url'),
         ]);
 
@@ -61,6 +63,15 @@ class StorefrontController extends Controller
                     'swatch_value' => $t['swatch_value'] ?? null,
                 ])->values(),
             ])->values();
+
+        $specifications = $product->productFieldValues
+            ->filter(fn (ProductFieldValue $value) => $value->field?->show_on_storefront)
+            ->map(fn (ProductFieldValue $value) => [
+                'name' => $value->field->name,
+                'value' => $value->formattedValue(),
+            ])
+            ->filter(fn (array $specification) => $specification['value'] !== null)
+            ->values();
 
         $attributes = [];
         $variations = collect();
@@ -133,6 +144,7 @@ class StorefrontController extends Controller
             'priceRange' => $priceRange,
             'defaultVariation' => $defaultVariation,
             'visibleAttributes' => $visibleAttributes,
+            'specifications' => $specifications,
         ]);
     }
 

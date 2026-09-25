@@ -14,6 +14,7 @@ registered policies.
 | `TagsController` | `Controllers/TagsController.php` | Product tag CRUD + JSON inline creation |
 | `BrandsController` | `Controllers/BrandsController.php` | Brand CRUD with image/logo + JSON inline creation |
 | `AttributesController` | `Controllers/AttributesController.php` | Attribute + term CRUD, `listTerms` JSON |
+| `ProductFieldsController` | `Controllers/ProductFieldsController.php` | Custom product field definitions (CRUD + reorder) |
 | `CategoriesController` | `Controllers/CategoriesController.php` | Product category CRUD |
 | `OrdersController` | `Controllers/OrdersController.php` | Order CRUD, status, refund, export, invoice, notes, draft conversion, search |
 | `CustomersController` | `Controllers/CustomersController.php` | Customer list, show, export |

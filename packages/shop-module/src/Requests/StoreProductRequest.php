@@ -3,6 +3,8 @@
 namespace Nreljed\ShopModule\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+use Nreljed\ShopModule\Models\ProductField;
 
 class StoreProductRequest extends FormRequest
 {
@@ -85,6 +87,9 @@ class StoreProductRequest extends FormRequest
             'downloads.*.file' => 'required|string',
             'downloads.*.download_limit' => 'nullable|integer|min:-1',
             'downloads.*.download_expiry' => 'nullable|integer|min:0',
+            'product_field_values' => 'nullable|array|max:100',
+            'product_field_values.*.product_field_id' => 'required|integer|distinct',
+            'product_field_values.*.value' => 'nullable',
         ];
 
         if ($type === 'variable') {
@@ -108,9 +113,50 @@ class StoreProductRequest extends FormRequest
 
         $rules['images'] = 'nullable|array';
         $rules['images.*.url'] = 'required_with:images|string';
-        $rules['images.*.path'] = 'required_with:images|string';
+        $rules['images.*.path'] = 'nullable|string';
         $rules['thumbnail_url'] = 'nullable|string';
 
         return $rules;
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $fields = ProductField::active()->get()->keyBy('id');
+
+                foreach ($this->input('product_field_values', []) as $position => $entry) {
+                    if (! is_array($entry)) {
+                        continue;
+                    }
+
+                    $key = 'product_field_values.'.$position.'.value';
+                    $value = $entry['value'] ?? null;
+                    $field = $fields->get((int) ($entry['product_field_id'] ?? 0));
+
+                    if (! $field) {
+                        if (ProductField::normalizeValue('text', $value) !== null) {
+                            $validator->errors()->add($key, 'This field is no longer available.');
+                        }
+
+                        continue;
+                    }
+
+                    if (ProductField::normalizeValue($field->type, $value) === null) {
+                        if ($field->is_required) {
+                            $validator->errors()->add($key, $field->name.' is required.');
+                        }
+
+                        continue;
+                    }
+
+                    $reason = ProductField::valueError($field->type, $field->optionValues(), $value);
+
+                    if ($reason !== null) {
+                        $validator->errors()->add($key, ucfirst($reason).'.');
+                    }
+                }
+            },
+        ];
     }
 }

@@ -10,6 +10,7 @@ use Nreljed\ShopModule\Http\Controllers\CurrenciesController;
 use Nreljed\ShopModule\Http\Controllers\CustomersController;
 use Nreljed\ShopModule\Http\Controllers\OrdersController;
 use Nreljed\ShopModule\Http\Controllers\ProductsController;
+use Nreljed\ShopModule\Http\Controllers\ProductFieldsController;
 use Nreljed\ShopModule\Http\Controllers\ProductSeoController;
 use Nreljed\ShopModule\Http\Controllers\ProductVariationsController;
 use Nreljed\ShopModule\Http\Controllers\ReportsController;
@@ -125,6 +126,13 @@ Route::delete('/attributes/{attribute}/terms/{term}', [AttributesController::cla
 Route::get('/attributes/{attribute}/terms', [AttributesController::class, 'listTerms'])->name('attributes.terms');
 Route::post('/attributes/{attribute}/terms/reorder', [AttributesController::class, 'reorderTerms'])->name('attributes.terms.reorder');
 Route::post('/attributes/reorder', [AttributesController::class, 'reorder'])->name('attributes.reorder');
+
+// Product fields
+Route::get('/product-fields', [ProductFieldsController::class, 'index'])->name('product-fields.index');
+Route::post('/product-fields', [ProductFieldsController::class, 'store'])->name('product-fields.store');
+Route::post('/product-fields/reorder', [ProductFieldsController::class, 'reorder'])->name('product-fields.reorder');
+Route::put('/product-fields/{productField}', [ProductFieldsController::class, 'update'])->name('product-fields.update');
+Route::delete('/product-fields/{productField}', [ProductFieldsController::class, 'destroy'])->name('product-fields.destroy');
 
 // Coupons
 Route::get('/coupons', [CouponsController::class, 'index'])->name('coupons.index');

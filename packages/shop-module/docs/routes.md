@@ -159,6 +159,16 @@ Route::middleware(['api'])->prefix('/api')->group(function () {
 | DELETE | `/attributes/{attribute}/terms/{term}` | `attributes.terms.destroy` |
 | POST | `/attributes/{attribute}/terms/reorder` | `attributes.terms.reorder` |
 
+### Product Fields
+
+| Method | URI | Name |
+|--------|-----|------|
+| GET | `/product-fields` | `product-fields.index` |
+| POST | `/product-fields` | `product-fields.store` |
+| POST | `/product-fields/reorder` | `product-fields.reorder` |
+| PUT | `/product-fields/{productField}` | `product-fields.update` |
+| DELETE | `/product-fields/{productField}` | `product-fields.destroy` |
+
 ### Coupons, Reviews, Shipping, Tax, Currencies, Webhooks
 
 | Resource | Routes |

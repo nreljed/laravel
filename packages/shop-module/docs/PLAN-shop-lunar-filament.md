@@ -98,16 +98,27 @@ Tests: contract-style (existing pattern) + `QuoteService` golden matrix (stackin
   - PR 9B.2 (local): customer entity package — `RegisteredCustomer`/`WholesaleCustomerGroup`/`CustomerAddressEntity` entities + address `code()` contract (+ `label()` type-fix commit) + migration `2026_09_24_000000_create_customer_tables_and_backfill` (`customers`, `customer_user`, `customer_addresses`, `customer_groups` + wholesale seed, backfills 18 orders → 2 customers/2 pivots/36 addresses, additive). migration-check 65/65, suite 126 green (313 assert), browser-verified storefront (0 console errors). v0.1.53 marker.
   - PR 9B.3 (local, browser-verified): portal `/dashboard/my/addresses` — Eloquent `Customer`/`CustomerAddress`/`CustomerGroup`/`CustomerUser` models, `MyAddressController` (index/store/update/destroy/set-primary, inline validation, 403-gated), routes `dashboard.my.addresses.*`, React `Pages/My/Addresses/Index.tsx` (auto-registered `shop/my/addresses/index`, AuthenticatedLayout, Card/Empty/Badge/NativeSelect). Browser: login as Emma → 18 backfilled addresses list, add (Rue de la Liberté), set-primary (clears prior primaries), delete all green; DB restored (18/18/9 primaries); 0 console errors. Also fixed pre-existing consumer `tsc` break: `StoreHeader`/`currency.ts` usePage prop interfaces now `extends PageProps`. PR 9 box ticked; ship step pending (composer bump + tag + GH release + mono mirror + consumer require — confirm with user).
 - [ ] PR 10 — Scheduled publishing + product fields + group pricing
-  - PR 10A (local, browser-verified): scheduled publishing — `products.unpublish_at` (migration 66, additive)
+  - PR 10A (SHIPPED v0.1.56): scheduled publishing — `products.unpublish_at` (migration 66, additive)
     + time-aware `Product::published()` scope + `isVisibleOnStorefront()` storefront show gate
     + `shop:publish-scheduled` command (future→published on publish_date, published→archived on unpublish_at)
     + scheduler entry + storefront/wishlist/sitemap gates switched to `published()` + Auto-Unpublish
     Section (Switch + DateTimePicker, default +7d) + `scheduled {date}`/`unpublishes {date}` index cues.
     `ScheduledPublishingContractTest` (5 tests), suite 132 green (322 assert), migration-check 66/66,
     boundary check OK, consumer tsc+build green, browser-verified (form section + storefront 404 gate +
-    command promotion). Consumer scheduler entry added (`shop:publish-scheduled` -> everyMinute). Ship
-    step pending (composer/package bump + tag + GH release + consumer require + mono mirror).
-  - PR 10B (pending): custom product fields — `product_fields` + `product_field_values`, admin manager + storefront Specs.
+    command promotion). Consumer scheduler entry added (`shop:publish-scheduled` -> everyMinute). Shipped
+    v0.1.56 (tag + GH release + consumer require 0.1.56 + mono mirror; prod HTTP 200).
+  - PR 10B (local): custom product fields — `product_fields` + `product_field_values` (additive migrations 67+68, unique per product/field, cascades)
+    + `ProductField`/`ProductFieldValue` models with shared `normalizeValue()`/`valueError()` type contract
+    + `ProductFieldsController` + `ProductFieldPolicy` + `StoreProductFieldRequest` (after() hook: select needs options, unique option values, typed defaults)
+    + admin manager page `Pages/ProductFields/Index.tsx` (dnd reorder, type-aware options/default editor, active/required/storefront switches)
+    + product form Custom Fields section (prefilled from `default_value`, per-field type inputs, required/type errors surfaced)
+    + storefront Specifications accordion (`StorefrontController` `specifications` prop, storefront-flagged filled values only).
+    `ProductFieldsContractTest` (21 tests, incl. migration up/down + unique index, duplicate-slug rejection,
+    remote-image rule), suite 155 green (378 assert), migration-check 68/68, boundary check OK (61 files).
+    Browser pass fixed 3 defects: duplicate name 500 (derived-slug collision now a `name` validation error),
+    stale manager list (localData re-syncs from the refreshed prop), and a pre-existing
+    `images.*.path` `required_with` rule that blocked saving any product with remote/seeded images.
+    Ship step pending (composer/package bump + tag + GH release + consumer require + mono mirror).
   - PR 10C (pending): customer-group pricing — `product_prices.customer_group_id` + precedence in `PriceResolver`.
 - [ ] PR 11 — Catalog extras (hierarchy, aliases, relations, barcodes)
 - [ ] PR 12 — Platform schema kit (ResourceIndex/ResourceForm/field registry)

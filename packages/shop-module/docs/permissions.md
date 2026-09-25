@@ -42,6 +42,7 @@ Controllers call `$this->authorize(...)` in every mutation/read action. Note the
 | Policy | Model | Abilities |
 |--------|-------|-----------|
 | `ProductPolicy` | `Product` | `viewAny`, `view`, `create`, `update`, `delete` — permission-based |
+| `ProductFieldPolicy` | `ProductField` | `viewAny` (`shop.view`), `create`/`update`/`delete` (product create/edit/delete permissions) |
 | `OrderPolicy` | `Order` | `viewAny`, `view`, `create`, `update` — permission-based |
 | `CouponPolicy` | `Coupon` | `viewAny` (`shop.view`), manage (`shop.coupons.manage`) |
 | `CurrencyPolicy` | `Currency` | `viewAny` / manage (`shop.currencies.manage`) |

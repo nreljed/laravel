@@ -336,6 +336,11 @@ class Product extends Model
         return $this->hasMany(ProductAttribute::class)->orderBy('position');
     }
 
+    public function productFieldValues(): HasMany
+    {
+        return $this->hasMany(ProductFieldValue::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function variationAttributes(): HasMany
     {
         return $this->hasMany(ProductAttribute::class)->where('variation', true)->orderBy('position');

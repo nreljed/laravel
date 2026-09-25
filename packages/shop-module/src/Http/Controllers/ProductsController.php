@@ -21,6 +21,7 @@ use Nreljed\ShopModule\Models\ProductAttribute;
 use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductDownload;
+use Nreljed\ShopModule\Models\ProductField;
 use Nreljed\ShopModule\Models\ProductTag;
 use Nreljed\ShopModule\Requests\AdjustStockRequest;
 use Nreljed\ShopModule\Requests\ImportProductRequest;
@@ -94,6 +95,8 @@ class ProductsController extends Controller
             'attributes' => Attribute::with('terms')->orderBy('sort_order')->get(),
             'variations' => [],
             'productAttributes' => [],
+            'productFields' => $this->activeProductFields(),
+            'productFieldValues' => [],
             'allProducts' => Product::select('id', 'name', 'sku', 'type', 'price')->orderBy('name')->get(),
         ]);
     }
@@ -135,6 +138,8 @@ class ProductsController extends Controller
             $this->syncDownloads($product, $validated['downloads']);
         }
 
+        $this->syncProductFieldValues($product, $validated['product_field_values'] ?? []);
+
         $this->webhookService->dispatch(
             \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_CREATED,
             ['product_id' => $product->id, 'name' => $product->name, 'sku' => $product->sku],
@@ -168,7 +173,7 @@ class ProductsController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->load('categories', 'tags', 'brands', 'variations', 'productAttributes', 'groupedItems', 'downloads');
+        $product->load('categories', 'tags', 'brands', 'variations', 'productAttributes', 'groupedItems', 'downloads', 'productFieldValues');
 
         return Inertia::render('shop/products/form', [
             'product' => $product,
@@ -178,6 +183,11 @@ class ProductsController extends Controller
             'attributes' => Attribute::with('terms')->orderBy('sort_order')->get(),
             'variations' => $product->variations()->orderBy('sort_order')->get(),
             'productAttributes' => $product->productAttributes,
+            'productFields' => $this->activeProductFields(),
+            'productFieldValues' => $product->productFieldValues->map(fn ($value) => [
+                'product_field_id' => $value->product_field_id,
+                'value' => $value->value,
+            ])->values(),
             'allProducts' => Product::select('id', 'name', 'sku', 'type', 'price')
                 ->where('id', '!=', $product->id)
                 ->orderBy('name')
@@ -236,6 +246,10 @@ class ProductsController extends Controller
 
         if (isset($validated['downloads'])) {
             $this->syncDownloads($product, $validated['downloads']);
+        }
+
+        if (isset($validated['product_field_values'])) {
+            $this->syncProductFieldValues($product, $validated['product_field_values']);
         }
 
         if ($product->wasChanged(['stock_quantity', 'low_stock_threshold', 'track_stock']) && $product->isLowStock()) {
@@ -777,6 +791,53 @@ class ProductsController extends Controller
             ->toArray();
 
         $product->globalAttributes()->sync($globalIds);
+    }
+
+    protected function syncProductFieldValues(Product $product, array $values): void
+    {
+        $fields = $this->activeProductFields()->keyBy('id');
+        $existing = $product->productFieldValues()->get()->keyBy('product_field_id');
+        $keepFieldIds = [];
+
+        foreach (array_values($values) as $position => $entry) {
+            $field = $fields->get((int) ($entry['product_field_id'] ?? 0));
+
+            if (! $field) {
+                continue;
+            }
+
+            $value = ProductField::normalizeValue($field->type, $entry['value'] ?? null);
+            $current = $existing->get($field->id);
+
+            if ($value === null) {
+                $current?->delete();
+
+                continue;
+            }
+
+            if ($current) {
+                $current->update(['value' => $value, 'sort_order' => $position]);
+            } else {
+                $current = $product->productFieldValues()->create([
+                    'product_field_id' => $field->id,
+                    'value' => $value,
+                    'sort_order' => $position,
+                ]);
+            }
+
+            $keepFieldIds[] = $field->id;
+        }
+
+        $deleteIds = $existing->except($keepFieldIds)->pluck('id');
+
+        if ($deleteIds->isNotEmpty()) {
+            $product->productFieldValues()->whereIn('id', $deleteIds)->delete();
+        }
+    }
+
+    private function activeProductFields()
+    {
+        return ProductField::active()->orderBy('sort_order')->orderBy('id')->get();
     }
 
     public function adjustStock(AdjustStockRequest $request, Product $product)

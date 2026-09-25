@@ -15,6 +15,8 @@
 | `Attribute` | `attributes` | Global attributes with `display_type` (text/color/image/button) |
 | `AttributeTerm` | `attribute_terms` | Attribute values with optional `swatch_value` |
 | `ProductAttribute` | `product_attributes` | Product↔attribute join with `visible`/`variation` flags |
+| `ProductField` | `product_fields` | Admin-defined spec fields (`type` text/textarea/number/boolean/date/select, `options`, `default_value`, `is_required`, `is_active`, `show_on_storefront`, `sort_order`) |
+| `ProductFieldValue` | `product_field_values` | One filled value per product/field (unique on `product_id`+`product_field_id`, JSON `value`, cascades on product/field delete) |
 | `ProductVariation` | `product_variations` | One row per attribute-term combination |
 | `ProductVariationAttributeTerm` | `product_variation_attribute_term` | Queryable pivot (source of truth) |
 

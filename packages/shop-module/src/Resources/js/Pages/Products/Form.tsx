@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -42,6 +42,13 @@ interface ProductAttributeItem {
   options: string[] | null;
   tempId?: string; // frontend-only tracking
 }
+interface ProductFieldDef {
+  id: number; name: string; slug: string; type: string; description: string | null;
+  options: { value: string; label: string | null }[] | null;
+  default_value: string | boolean | number | null;
+  is_required: boolean; is_active: boolean; show_on_storefront: boolean; sort_order: number;
+}
+interface ProductFieldValueItem { product_field_id: number; value: string | boolean | number | null }
 interface Variation { id: number; product_id: number; sku: string | null; price: string | null; stock_quantity: number; weight: string | null; length: string | null; width: string | null; height: string | null; is_active: boolean; image_url: string | null; attributes: { attribute_id: number; attribute_term_id: number; name: string }[] | null; sort_order: number }
 
 interface GroupedItem {
@@ -81,6 +88,7 @@ interface PageProps {
   product: Product | null; categories: Category[]; tags: Tag[]; brands: Brand[];
   attributes: Attribute[]; variations: Variation[];
   productAttributes?: ProductAttributeItem[]; flash?: { status?: string; error?: string };
+  productFields?: ProductFieldDef[]; productFieldValues?: ProductFieldValueItem[];
   allProducts?: SimpleProduct[];
 }
 
@@ -100,6 +108,7 @@ interface FormData {
   default_attributes: number[];
   meta_title: string; meta_description: string; og_image: string; focus_keyword: string; seo_metadata: unknown | null;
   product_attributes: ProductAttributeItem[];
+  product_field_values: ProductFieldValueItem[];
   grouped_items: { product_id: number; quantity: number; sort_order?: number; name?: string; sku?: string; price?: string | number }[];
   downloads: { id?: number; name: string; file: string; download_limit: number; download_expiry: number }[];
 }
@@ -121,6 +130,12 @@ export default function ProductsForm() {
   const attributes = props.attributes || [];
   const variations = props.variations || [];
   const initialProductAttrs = (props.productAttributes || []) as ProductAttributeItem[];
+  const productFields = props.productFields || [];
+  const initialFieldValues: ProductFieldValueItem[] = props.productFieldValues?.length
+    ? props.productFieldValues
+    : productFields
+        .filter((field) => field.default_value !== null && field.default_value !== undefined)
+        .map((field) => ({ product_field_id: field.id, value: field.default_value }));
   const allProducts = props.allProducts || [];
   const isEditing = !!product;
   const flash = useMemo(() => props.flash || {} as { status?: string; error?: string }, [props.flash]);
@@ -239,7 +254,25 @@ export default function ProductsForm() {
     focus_keyword: product?.seo?.focus_keyword || "",
     seo_metadata: product?.seo?.seo_metadata ?? null,
     product_attributes: initialProductAttrs,
+    product_field_values: initialFieldValues,
   });
+
+  const customFieldErrors = form.errors as Record<string, string | undefined>;
+
+  const customFieldString = (fieldId: number): string => {
+    const value = form.data.product_field_values.find((item) => item.product_field_id === fieldId)?.value;
+    return value === null || value === undefined ? "" : String(value);
+  };
+
+  const setCustomFieldValue = (fieldId: number, value: string) => {
+    const others = form.data.product_field_values.filter((item) => item.product_field_id !== fieldId);
+    form.setData("product_field_values", value === "" ? others : [...others, { product_field_id: fieldId, value }]);
+  };
+
+  const customFieldError = (fieldId: number): string | undefined => {
+    const index = form.data.product_field_values.findIndex((item) => item.product_field_id === fieldId);
+    return index === -1 ? undefined : customFieldErrors[`product_field_values.${index}.value`];
+  };
 
   const handleSeoChange = useCallback((field: string, value: string) => {
     if (field === "keyword") {
@@ -825,6 +858,69 @@ export default function ProductsForm() {
                     </div>
                   </SortableContext>
                 </DndContext>
+              </Section>
+
+              <Section title="Custom Fields" description="Product specifications managed from Product Fields." icon={SlidersHorizontal}>
+                {productFields.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No product fields yet.{" "}
+                    <Link href={route("dashboard.shop.product-fields.index")} className="underline underline-offset-2 hover:text-foreground">
+                      Create one
+                    </Link>
+                  </p>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {productFields.map((field) => {
+                      const inputId = `custom-field-${field.id}`;
+                      const value = customFieldString(field.id);
+                      const error = customFieldError(field.id);
+
+                      return (
+                        <SectionField
+                          key={field.id}
+                          label={field.is_required ? `${field.name} *` : field.name}
+                          htmlFor={inputId}
+                          description={field.description || undefined}
+                        >
+                          {field.type === "boolean" ? (
+                            <Switch
+                              id={inputId}
+                              checked={value === "1"}
+                              onCheckedChange={(checked) => setCustomFieldValue(field.id, checked ? "1" : "0")}
+                            />
+                          ) : field.type === "select" ? (
+                            <Select
+                              value={value || "__none"}
+                              onValueChange={(v) => setCustomFieldValue(field.id, v === "__none" ? "" : v)}
+                            >
+                              <SelectTrigger id={inputId}><SelectValue placeholder="Select..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none">—</SelectItem>
+                                {(field.options || [])
+                                  .filter((option) => option.value)
+                                  .map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label || option.value}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          ) : field.type === "textarea" ? (
+                            <Textarea id={inputId} value={value} onChange={(e) => setCustomFieldValue(field.id, e.target.value)} />
+                          ) : (
+                            <Input
+                              id={inputId}
+                              type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                              value={value}
+                              onChange={(e) => setCustomFieldValue(field.id, e.target.value)}
+                            />
+                          )}
+                          {error && <p className="text-sm text-destructive">{error}</p>}
+                        </SectionField>
+                      );
+                    })}
+                  </div>
+                )}
               </Section>
 
               <Section title="Inventory" description="Manage stock and identifiers" icon={Package}>

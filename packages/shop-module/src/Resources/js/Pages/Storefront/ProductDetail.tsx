@@ -75,6 +75,7 @@ interface ShowPage {
     priceRange: { min: number; max: number };
     defaultVariation: Variation | null;
     visibleAttributes: VisibleAttr[];
+    specifications?: { name: string; value: string }[];
 }
 
 function ProductGallery({ images, thumbnailUrl, productName, variationImageUrl }: { images: GalleryImage[]; thumbnailUrl: string | null; productName: string; variationImageUrl?: string | null }) {
@@ -249,7 +250,7 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
 
 export default function StorefrontShow() {
     const { props } = usePage<ShowPage & { wishlistIds: number[] }>()
-    const { product, related, variations, attributes, priceRange, defaultVariation, visibleAttributes, wishlistIds } = props
+    const { product, related, variations, attributes, priceRange, defaultVariation, visibleAttributes, specifications, wishlistIds } = props
     const { money, selectedCode } = useCurrency()
     const [quantity, setQuantity] = useState(product.min_quantity || 1)
     const [addingToCart, setAddingToCart] = useState(false)
@@ -646,6 +647,23 @@ export default function StorefrontShow() {
                                                                 ))}
                                                             </div>
                                                         </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            )}
+                            {specifications && specifications.length > 0 && (
+                                <AccordionItem value="specifications">
+                                    <AccordionTrigger>Specifications</AccordionTrigger>
+                                    <AccordionContent>
+                                        <table className="w-full text-sm">
+                                            <tbody>
+                                                {specifications.map((spec, i) => (
+                                                    <tr key={`${spec.name}-${i}`} className={i % 2 === 0 ? 'bg-muted/50' : ''}>
+                                                        <td className="py-2 px-3 font-medium text-muted-foreground w-1/3">{spec.name}</td>
+                                                        <td className="py-2 px-3">{spec.value}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>

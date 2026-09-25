@@ -21,6 +21,7 @@ src/Resources/js/
 │   ├── Tags/Index.tsx
 │   ├── Brands/Index.tsx
 │   ├── Attributes/Index.tsx
+│   ├── ProductFields/Index.tsx  # custom spec field definitions (dnd reorder, typed options/defaults)
 │   ├── Coupons/{Index,Form}.tsx
 │   ├── Reviews/Index.tsx
 │   ├── ShippingMethods/Index.tsx

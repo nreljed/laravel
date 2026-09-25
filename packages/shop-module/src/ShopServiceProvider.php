@@ -17,6 +17,7 @@ use Nreljed\ShopModule\Models\Currency;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductCategory;
+use Nreljed\ShopModule\Models\ProductField;
 use Nreljed\ShopModule\Models\ProductReview;
 use Nreljed\ShopModule\Models\Shipment;
 use Nreljed\ShopModule\Models\ShippingMethod;
@@ -27,6 +28,7 @@ use Nreljed\ShopModule\Models\Wishlist;
 use Nreljed\ShopModule\Policies\CouponPolicy;
 use Nreljed\ShopModule\Policies\CurrencyPolicy;
 use Nreljed\ShopModule\Policies\OrderPolicy;
+use Nreljed\ShopModule\Policies\ProductFieldPolicy;
 use Nreljed\ShopModule\Policies\ProductPolicy;
 use Nreljed\ShopModule\Policies\ProductReviewPolicy;
 use Nreljed\ShopModule\Policies\ShipmentPolicy;
@@ -131,6 +133,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
     protected function registerPolicies(): void
     {
         Gate::policy(Product::class, ProductPolicy::class);
+        Gate::policy(ProductField::class, ProductFieldPolicy::class);
         Gate::policy(Order::class, OrderPolicy::class);
         Gate::policy(Coupon::class, CouponPolicy::class);
         Gate::policy(Currency::class, CurrencyPolicy::class);
@@ -207,6 +210,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                     ['title' => 'Tags', 'url' => route('dashboard.shop.tags.index', [], false)],
                     ['title' => 'Brands', 'url' => route('dashboard.shop.brands.index', [], false)],
                     ['title' => 'Attributes', 'url' => route('dashboard.shop.attributes.index', [], false)],
+                    ['title' => 'Product Fields', 'url' => route('dashboard.shop.product-fields.index', [], false)],
                     ['title' => 'Customers', 'url' => route('dashboard.shop.customers.index', [], false)],
                     ['title' => 'Reports', 'url' => route('dashboard.shop.reports.index', [], false)],
                     ['title' => 'Coupons', 'url' => route('dashboard.shop.coupons.index', [], false)],
