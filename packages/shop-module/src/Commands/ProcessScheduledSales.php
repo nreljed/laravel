@@ -90,13 +90,6 @@ class ProcessScheduledSales extends Command
 
         $this->info("Processed {$updated} variation(s). Synced ".$affectedProductIds->count().' product(s).');
 
-        // G8: also clear price_hash for affected products
-        foreach ($affectedProductIds as $productId) {
-            DB::table('products')
-                ->where('id', $productId)
-                ->update(['price_hash' => null]);
-        }
-
         return Command::SUCCESS;
     }
 }

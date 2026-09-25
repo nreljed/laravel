@@ -2,6 +2,34 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.64]
+
+### Fixed
+
+- **A variable product with an unsynced price range is no longer invisible to the price filter.**
+  The filter read only the cached `min/max_variation_price` columns, which are resynced by the
+  variation model events and the scheduled-sales command. Any bulk price update that bypasses those
+  left the cache missing or stale, and a product with no trustworthy cache matched no window at all -
+  it silently vanished from every price filter. The filter now falls back to the live active
+  variations, so the cached columns are a fast path rather than a single point of failure.
+- **The catalog price bounds no longer depend on that same cache.** The slider advertised a range
+  derived only from the cached variation columns, so an unsynced product could sit outside the
+  advertised bounds and become impossible to reach with the filter. Active variation prices are now
+  counted alongside them.
+- **The scheduled-sales command no longer discards the range it just computed.** It called
+  `syncPriceRange()` and then immediately nulled `price_hash` on the same products, undoing the
+  freshness marker it had just set.
+
+### Added
+
+- **`tests/CatalogPriceFilterTest.php` exercises the catalog price SQL against a real database.** The
+  price tests so far asserted against source text, which cannot detect a query that is wrong at
+  runtime: an earlier revision of `effectivePriceBounds()` type-hinted a closure as the Eloquent
+  builder while `DB::table()` returns the query builder, so every catalog request returned a 500 while
+  the suite stayed green. These tests build the tables, insert products, variations, and bundles, and
+  assert on the ids the filter actually returns - covering overlap, the 0-price sentinel, open-ended
+  windows, inactive variations, and unsynced caches.
+
 ## [0.1.63]
 
 ### Fixed

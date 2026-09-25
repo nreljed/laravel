@@ -208,6 +208,17 @@ class StorefrontController extends Controller
             (float) (Product::published()->whereNotNull('max_variation_price')->max('max_variation_price') ?? 0),
         ];
 
+        // The cached variation columns are only as fresh as the last sync, so
+        // the live active variations are counted too.
+        $liveVariations = fn (): QueryBuilder => DB::table('product_variations as live')
+            ->whereIn('live.product_id', Product::published()->select('products.id'))
+            ->where('live.is_active', true)
+            ->whereNotNull('live.active_price')
+            ->where('live.active_price', '>', 0);
+
+        $lows[] = (float) ($liveVariations()->min('live.active_price') ?? 0);
+        $highs[] = (float) ($liveVariations()->max('live.active_price') ?? 0);
+
         $bundledItems = fn (): QueryBuilder => DB::table('product_grouped_products as links')
             ->join('products as child', 'child.id', '=', 'links.product_id')
             ->whereIn('links.group_product_id', Product::published()->select('products.id'))
@@ -293,16 +304,7 @@ class StorefrontController extends Controller
 
             // A variable product matches when its variation range overlaps.
             $window->orWhere(function (EloquentBuilder $variable) use ($floor, $ceiling) {
-                $variable->where('min_variation_price', '>', 0)
-                    ->whereNotNull('max_variation_price');
-
-                $this->rangeOverlaps(
-                    $variable,
-                    'min_variation_price',
-                    'max_variation_price',
-                    $floor,
-                    $ceiling
-                );
+                $this->applyVariationWindow($variable, $floor, $ceiling);
             });
 
             // A grouped product matches when any bundled item is in the window.
@@ -314,6 +316,42 @@ class StorefrontController extends Controller
                     ->where('item.price', '>', 0);
 
                 $this->priceWithin($sub, 'item.price', $floor, $ceiling);
+            });
+        });
+    }
+
+    /**
+     * Constrain a variable product by its variations.
+     *
+     * The cached `min/max_variation_price` columns are the fast path, but they
+     * are only resynced by the variation model events and the scheduled-sales
+     * command, so a bulk update that bypasses them can leave them missing or
+     * stale - and a product with no trustworthy cache would otherwise be
+     * dropped from every price filter. The live branch is the safety net.
+     */
+    protected function applyVariationWindow(EloquentBuilder $query, ?float $floor, ?float $ceiling): void
+    {
+        $query->where(function (EloquentBuilder $variations) use ($floor, $ceiling) {
+            $variations->where('min_variation_price', '>', 0)
+                ->whereNotNull('max_variation_price');
+
+            $this->rangeOverlaps(
+                $variations,
+                'min_variation_price',
+                'max_variation_price',
+                $floor,
+                $ceiling
+            );
+
+            $variations->orWhereExists(function (QueryBuilder $sub) use ($floor, $ceiling) {
+                $sub->selectRaw('1')
+                    ->from('product_variations as live')
+                    ->whereColumn('live.product_id', 'products.id')
+                    ->where('live.is_active', true)
+                    ->whereNotNull('live.active_price')
+                    ->where('live.active_price', '>', 0);
+
+                $this->priceWithin($sub, 'live.active_price', $floor, $ceiling);
             });
         });
     }
