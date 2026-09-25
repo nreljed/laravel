@@ -38,6 +38,34 @@ $container->instance('events', $container->make(DispatcherContract::class));
 
 $container->singleton('config', function () {
     $config = new Illuminate\Config\Repository([]);
+
+    // Default to in-memory sqlite. Set MIGRATION_CHECK_DB_HOST to point the
+    // same migrations at another driver instead — this check exists to catch
+    // schema that only one engine accepts, and running it on sqlite alone let a
+    // STORED-generated-column + foreign key combination ship that MySQL rejects
+    // (error 138), which broke a production deploy.
+    $host = getenv('MIGRATION_CHECK_DB_HOST') ?: null;
+
+    if ($host) {
+        $config->set('database.default', 'mysql');
+        $config->set('database.connections.mysql', [
+            'driver' => 'mysql',
+            'host' => $host,
+            'port' => getenv('MIGRATION_CHECK_DB_PORT') ?: '3306',
+            'database' => getenv('MIGRATION_CHECK_DB_DATABASE') ?: 'forge',
+            'username' => getenv('MIGRATION_CHECK_DB_USERNAME') ?: 'root',
+            'password' => getenv('MIGRATION_CHECK_DB_PASSWORD') ?: '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => 'InnoDB',
+            'foreign_key_constraints' => true,
+        ]);
+
+        return $config;
+    }
+
     $config->set('database.default', 'sqlite');
     $config->set('database.connections.sqlite', [
         'driver' => 'sqlite',
@@ -103,12 +131,14 @@ foreach ($migrations as $file) {
 
 DB::disconnect();
 
+$driver = getenv('MIGRATION_CHECK_DB_HOST') ? 'mysql' : 'sqlite';
+
 if ($failures > 0) {
-    fwrite(STDERR, "MIGRATION CHECK FAILED: {$failures} migration(s) cannot run against sqlite.\n");
+    fwrite(STDERR, "MIGRATION CHECK FAILED: {$failures} migration(s) cannot run against {$driver}.\n");
 
     exit(1);
 }
 
-echo 'MIGRATION CHECK OK: '.count($migrations).' migrations run cleanly against sqlite.'."\n";
+echo 'MIGRATION CHECK OK: '.count($migrations)." migrations run cleanly against {$driver}."."\n";
 
 exit(0);

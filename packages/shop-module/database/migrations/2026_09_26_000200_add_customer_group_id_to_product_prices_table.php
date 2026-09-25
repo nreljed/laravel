@@ -18,17 +18,29 @@ return new class extends Migration
      * `price_scope` exists: nullable columns are distinct in both SQLite and
      * MySQL, so NULL would otherwise let duplicate public rows in.
      *
-     * The table is rebuilt rather than altered. A STORED generated column
-     * cannot be added by `ALTER TABLE` on SQLite ("cannot add a STORED column"),
-     * and every app upgrading from 0.1.57 already has the table — so the fresh
-     * install path is the only one a from-scratch migration check exercises.
-     * The copy-then-swap below is identical on SQLite and MySQL, which keeps one
-     * code path instead of a per-driver branch. The unique index is added after
-     * the old table is dropped because index names are schema-global in SQLite.
+     * The table is rebuilt rather than altered. A generated column
+     * cannot be added by `ALTER TABLE` on SQLite, and every app upgrading
+     * from 0.1.57 already has the table — so the fresh install path is the only
+     * one a from-scratch migration check exercises. The copy-then-swap below is
+     * identical on SQLite and MySQL, which keeps one code path instead of a
+     * per-driver branch. The unique index is added after the old table is
+     * dropped because index names are schema-global in SQLite.
+     *
+     * The scope columns must be VIRTUAL rather than STORED: MySQL refuses a
+     * foreign key on the base column of a STORED generated column (error 138,
+     * reported as 1215 "Cannot add foreign key constraint"). `product_variation_id`
+     * and `customer_group_id` are both base columns and both need a real FK for
+     * cascade deletes, so STORED is unusable here. Verified on MySQL 8.0: the
+     * index still collapses NULL to 0, so a group override can coexist with the
+     * public row while a duplicate group row is still rejected.
      */
     public function up(): void
     {
         Schema::disableForeignKeyConstraints();
+
+        // A previous attempt on a host that rejected the generated columns can
+        // leave the staging table behind. Drop it so a retry starts clean.
+        Schema::dropIfExists('product_prices_group_scope');
 
         Schema::create('product_prices_group_scope', function (Blueprint $table) {
             $table->id();
@@ -39,8 +51,8 @@ return new class extends Migration
             // `group_scope`, which would make the group impossible to delete.
             // Deleting a group discards its overrides, which is the intent.
             $table->foreignId('customer_group_id')->nullable()->constrained('customer_groups')->cascadeOnDelete();
-            $table->unsignedBigInteger('price_scope')->storedAs('COALESCE(product_variation_id, 0)');
-            $table->unsignedBigInteger('group_scope')->storedAs('COALESCE(customer_group_id, 0)');
+            $table->unsignedBigInteger('price_scope')->virtualAs('COALESCE(product_variation_id, 0)');
+            $table->unsignedBigInteger('group_scope')->virtualAs('COALESCE(customer_group_id, 0)');
             $table->string('currency', 3)->index();
             $table->decimal('price', 12, 2)->default(0);
             $table->decimal('compare_price', 12, 2)->nullable();
@@ -73,11 +85,13 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
+        Schema::dropIfExists('product_prices_public_scope');
+
         Schema::create('product_prices_public_scope', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_variation_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('price_scope')->storedAs('COALESCE(product_variation_id, 0)');
+            $table->unsignedBigInteger('price_scope')->virtualAs('COALESCE(product_variation_id, 0)');
             $table->string('currency', 3)->index();
             $table->decimal('price', 12, 2)->default(0);
             $table->decimal('compare_price', 12, 2)->nullable();

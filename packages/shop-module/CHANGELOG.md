@@ -2,6 +2,37 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.59]
+
+### Fixed
+
+- **`product_prices` migrations now run on MySQL (production outage, hotfix for 0.1.58).** The
+  `price_scope` and `group_scope` generated columns were declared `STORED`, and MySQL refuses a
+  foreign key on the base column of a `STORED` generated column — error 138, surfaced as `1215
+  "Cannot add foreign key constraint"`. Because `product_prices` needs real cascade FKs on
+  `product_variation_id` and `customer_group_id`, the migration could not apply on MySQL at all.
+  Both columns are now `VIRTUAL`, which MySQL accepts and which behaves identically for the
+  lookup unique index: a public row and a group override still coexist, a duplicate group row is
+  still rejected, and deleting a group still cascades to its overrides. Verified on MySQL 8.0.35.
+- **Migration 10C is now retry-safe.** A host that rejected the generated columns could be left
+  with a partially created `product_prices_group_scope` staging table — MySQL commits DDL
+  implicitly, so the failed `ALTER` did not roll the `CREATE` back. `up()` and `down()` now
+  `dropIfExists` their staging table first, so re-running the migration starts clean.
+- The pre-existing `2026_09_22` `create_product_prices_table` migration carried the same
+  `STORED` + foreign key combination, so fresh MySQL installs were affected as well. Fixed there
+  too.
+
+### Added
+
+- **`scripts/migration-check.php` can target another driver.** Set `MIGRATION_CHECK_DB_HOST` (with
+  the optional `MIGRATION_CHECK_DB_PORT` / `_DATABASE` / `_USERNAME` / `_PASSWORD`) to run the
+  real migrations against MySQL instead of in-memory sqlite. The sqlite-only check is what let
+  0.1.58 ship green across 199 tests and 69 migration checks.
+- **`GeneratedColumnForeignKeyTest`** encodes the invariant that a table with a foreign key must
+  not use a `STORED` generated column, so the known case is caught even where no MySQL server is
+  configured. A CI step runs the MySQL migration check when the `MIGRATION_CHECK_DB_*` repository
+  variables are set.
+
 ## [Unreleased]
 
 ### Added

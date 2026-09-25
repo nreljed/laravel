@@ -23,8 +23,13 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_variation_id')->nullable()->constrained()->cascadeOnDelete();
             // Product-level rows (variation NULL) and variation-level rows
-            // must not collide: stored generated column normalizes NULL to 0.
-            $table->unsignedBigInteger('price_scope')->storedAs('COALESCE(product_variation_id, 0)');
+            // must not collide: the generated column normalizes NULL to 0.
+            // Must be VIRTUAL, not STORED — MySQL rejects a foreign key on the
+            // base column of a STORED generated column (error 138, surfaced as
+            // 1215 "Cannot add foreign key constraint"), and the line below
+            // needs exactly that FK. VIRTUAL is computed on read, which is fine
+            // for an index key.
+            $table->unsignedBigInteger('price_scope')->virtualAs('COALESCE(product_variation_id, 0)');
             $table->string('currency', 3)->index();
             $table->decimal('price', 12, 2)->default(0);
             $table->decimal('compare_price', 12, 2)->nullable();

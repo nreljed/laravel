@@ -18,6 +18,11 @@ jobs:
         shell: bash
     env:
       COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+      MIGRATION_CHECK_DB_HOST: ${{ vars.MIGRATION_CHECK_DB_HOST }}
+      MIGRATION_CHECK_DB_PORT: ${{ vars.MIGRATION_CHECK_DB_PORT }}
+      MIGRATION_CHECK_DB_DATABASE: ${{ vars.MIGRATION_CHECK_DB_DATABASE }}
+      MIGRATION_CHECK_DB_USERNAME: ${{ vars.MIGRATION_CHECK_DB_USERNAME }}
+      MIGRATION_CHECK_DB_PASSWORD: ${{ vars.MIGRATION_CHECK_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
 
@@ -56,6 +61,15 @@ jobs:
         run: php scripts/frontend-boundary-check.php
 
       - name: Migration check (sqlite)
+        run: php scripts/migration-check.php
+
+      # v0.1.58 shipped a migration that passed every sqlite test and then
+      # failed on the production MySQL deploy (STORED generated column + foreign
+      # key). This step runs the real migrations against a MySQL server when one
+      # is configured; GeneratedColumnForeignKeyTest covers the known case when
+      # it is not. Set the MIGRATION_CHECK_DB_* repository variables to enable.
+      - name: Migration check (mysql)
+        if: ${{ vars.MIGRATION_CHECK_DB_HOST != '' }}
         run: php scripts/migration-check.php
 
       - name: Run tests
