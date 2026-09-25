@@ -175,7 +175,8 @@ class StorefrontController extends Controller
     protected function baseQuery(): Builder
     {
         return Product::published()
-            ->whereIn('catalog_visibility', ['visible', 'catalog']);
+            ->whereIn('catalog_visibility', ['visible', 'catalog'])
+            ->with('groupedItems:id,name,slug,price,thumbnail_url');
     }
 
     protected function applyFilters(Builder $query, Request $request): void

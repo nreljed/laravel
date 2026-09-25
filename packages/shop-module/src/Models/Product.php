@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nreljed\Platform\Services\MediaService;
@@ -74,7 +75,7 @@ class Product extends Model
         'reviews_count' => 'integer',
     ];
 
-    protected $appends = ['active_price', 'on_sale', 'is_in_stock'];
+    protected $appends = ['active_price', 'on_sale', 'is_in_stock', 'price_range'];
 
     protected static function newFactory(): Factory
     {
@@ -275,12 +276,17 @@ class Product extends Model
     {
         if ($this->min_variation_price !== null && $this->max_variation_price !== null) {
             return [
-                'min' => $this->min_variation_price,
-                'max' => $this->max_variation_price,
+                'min' => (float) $this->min_variation_price,
+                'max' => (float) $this->max_variation_price,
             ];
         }
 
-        $prices = $this->variations()->active()->pluck('active_price')->filter()->map(fn ($p) => (float) $p);
+        $prices = $this->isVariable() ? $this->variationPrices() : collect();
+
+        // Grouped products own no price: their price comes from the bundled items.
+        if ($prices->isEmpty() && $this->isGrouped()) {
+            $prices = $this->groupedItemPrices();
+        }
 
         if ($prices->isEmpty()) {
             return ['min' => (float) $this->price, 'max' => (float) $this->price];
@@ -292,11 +298,39 @@ class Product extends Model
         ];
     }
 
+    /**
+     * Active variation prices, reusing an already-loaded relation to avoid N+1.
+     *
+     * @return \Illuminate\Support\Collection<int, float>
+     */
+    protected function variationPrices(): Collection
+    {
+        $prices = $this->relationLoaded('variations')
+            ? $this->variations->where('is_active', true)->pluck('active_price')
+            : $this->variations()->active()->pluck('active_price');
+
+        return $prices->filter()->map(fn ($p) => (float) $p)->values();
+    }
+
+    /**
+     * Bundled item prices for grouped products, reusing an already-loaded relation.
+     *
+     * @return \Illuminate\Support\Collection<int, float>
+     */
+    protected function groupedItemPrices(): Collection
+    {
+        $prices = $this->relationLoaded('groupedItems')
+            ? $this->groupedItems->pluck('price')
+            : $this->groupedItems()->pluck('products.price');
+
+        return $prices->filter()->map(fn ($p) => (float) $p)->values();
+    }
+
     public function getDisplayPriceAttribute(): string
     {
         $sym = config('shop.currency_symbol', '€');
 
-        if (! $this->isVariable()) {
+        if (! $this->isVariable() && ! $this->isGrouped()) {
             return $sym.number_format((float) $this->price, 2);
         }
 

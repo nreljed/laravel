@@ -11,6 +11,7 @@ export interface Product {
     name: string;
     slug: string;
     price: number;
+    price_range: { min: number | null; max: number | null } | null;
     compare_price: number | null;
     type: string;
     virtual: boolean;
@@ -24,6 +25,18 @@ export interface Product {
     backorders: string;
     stock_status: string | null;
     low_stock_threshold: number;
+}
+
+function displayPrice(product: Product, money: (amount: number | string | null | undefined) => string): string {
+    const range = product.price_range;
+
+    // Variable and grouped parents carry no price of their own, so fall back to
+    // the derived range instead of rendering a misleading 0.00.
+    if (!product.price && range && range.min !== null && range.max !== null && range.min > 0) {
+        return range.min === range.max ? money(range.min) : `${money(range.min)} – ${money(range.max)}`;
+    }
+
+    return money(product.price);
 }
 
 export function ProductCard({ product, wishlistIds }: { product: Product; wishlistIds: number[] }) {
@@ -81,7 +94,7 @@ export function ProductCard({ product, wishlistIds }: { product: Product; wishli
                     )}
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex items-center gap-2">
-                    <span className="text-lg font-bold">{money(product.price)}</span>
+                    <span className="text-lg font-bold">{displayPrice(product, money)}</span>
                     {product.compare_price && product.compare_price > product.price && (
                         <span className="text-sm text-muted-foreground line-through">{money(product.compare_price)}</span>
                     )}

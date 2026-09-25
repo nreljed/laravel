@@ -2,6 +2,26 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.60]
+
+### Fixed
+
+- **Variable and grouped products no longer advertise themselves as 0.00 in storefront listings.**
+  `ProductCard` rendered the raw `products.price` column, which is 0 for every variable and grouped
+  product - their real money lives on the variations or the bundled items - so the homepage and
+  catalog grids showed a free price while the product page displayed the correct amount. The card
+  now renders the derived range (`349.00 - 409.00` for the Redmi Note 13 Pro, `29.00 - 39.00` for
+  the Xiaomi Smart Life Bundle).
+- **`price_range` is now derived for grouped products.** The accessor only ever looked at
+  `product_variations`, which grouped products do not use, so it fell through to the parent price of
+  0. It now falls back to the bundled items when a grouped product has no variation price.
+- **`display_price` no longer returns 0.00 for grouped products** - it used the range for variable
+  products only.
+- **No N+1 from the appended `price_range`.** `price_range` is appended to the product payload, so
+  the accessor now runs on every serialization. It answers simple, digital, service and external
+  products straight from the parent price without touching the variations table, and the storefront
+  catalog query eager-loads `groupedItems` so bundled prices are fetched in one extra query.
+
 ## [0.1.59]
 
 ### Fixed
