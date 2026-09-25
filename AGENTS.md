@@ -493,6 +493,14 @@ for Pint. `packages/**` and `apps/**` are excluded from the root lint-staged AND
 toolchains (shop/booking `check:ci`, package repo CIs). Never widen the catch-all back to `*.{ts,tsx}`
 / `*.php` or the root hook will reformat foreign package sources.
 
+**Root Pint is boundary-scoped too** — the root `pint.json` sets `{"exclude": ["packages"]}`, which is
+what keeps `vendor/bin/pint` (root `pre-push` hook, `check:ci`, and CI's `Laravel Pint` step from
+`nreljed/platform/.github/workflows/consumer-ci.yml`) from touching `packages/*` mirrors. Those mirrors
+must stay **byte-identical to the released package tree** (the package repos own their formatting and
+their CIs don't run Pint), so a repo-wide Pint run would both break CI's `pint --test` and silently
+reformat ~100 mirror files on every push. Same boundary rule as lint-staged/ESLint above: add a new
+tool to the root hooks only if it is scoped to mono-owned paths.
+
 Also useful: `pnpm -w update <pkg>` (roll a `^` range forward in the workspace lock),
 `pnpm workspace <name> add <pkg>` (per-package manifest change), `pnpm approve-builds`
 (add postinstall scripts to `allowBuilds` in `pnpm-workspace.yaml` — pnpm 11 blocks them
