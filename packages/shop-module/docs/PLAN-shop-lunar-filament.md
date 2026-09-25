@@ -119,7 +119,26 @@ Tests: contract-style (existing pattern) + `QuoteService` golden matrix (stackin
     stale manager list (localData re-syncs from the refreshed prop), and a pre-existing
     `images.*.path` `required_with` rule that blocked saving any product with remote/seeded images.
     Ship step pending (composer/package bump + tag + GH release + consumer require + mono mirror).
-  - PR 10C (pending): customer-group pricing — `product_prices.customer_group_id` + precedence in `PriceResolver`.
+  - PR 10C (local): customer-group pricing — `product_prices.customer_group_id` (migration 69, table rebuild) + precedence in `PriceResolver`.
+    + `PriceLedgerService` is the single writer for public + group ledger rows; `SyncsPriceLedger` observer on Product/ProductVariation
+      (`created()` for inserts, `updated()` + `wasChanged(PRICE_ATTRIBUTES)` for updates) so no write path can drift the ledger.
+    + Group rows are gated by `CustomerGroup::allows_business_pricing` and reach shoppers through the `customer_user` pivot;
+      group rows cascade on group deletion, the public row (`group_scope = 0`) is excluded from that cascade.
+    + Precedence is currency-first: group requested -> public requested -> group default -> public default -> legacy columns.
+      Sale windows are evaluated at read time from `sale_from`/`sale_to`, so denormalized `active_price` writes stay out of the ledger.
+    + Admin: "Customer Group Prices" section in the product form (per-group price/sale/compare/min-qty, group picker, repeat sync,
+      duplicates prevented) + `StoreProductRequest` business-pricing validation. Product-level only; variable/external/grouped are gated out.
+    + Runtime: `ResolveUnitPrice` routes cart pricing through `activePrice()`/`CustomerPricingContext`, and `PersistLine` refreshes an
+      existing line. Storefront + wishlist hydration pass the shopper's group. Cart pages read the persisted `unit_price` (currency-converted only),
+      so a price change lands on a cart line at its next re-persist — pre-existing, price-type-agnostic behavior, deliberately unchanged here.
+    `CustomerGroupPricingContractTest` (44 tests, 83 assert), suite 199 green (461 assert), migration-check 69/69, boundary check OK (61 files).
+    Request-level coverage runs the real `StoreProductRequest` rules and `after()` hooks, so `distinct`, the business-pricing gate and the
+    `sale_price` form round-trip are all asserted rather than assumed; each was mutation-checked. Doing that surfaced a latent isolation leak —
+    booting `ProductField` leaked its slug-deriving `creating` hook into the next test class — fixed with a booted-model reset, and the `products`
+    fixture gained the `min_variation_price`/`max_variation_price`/`price_hash` columns that `ProductVariation`'s `saved` hook really writes.
+    Suite verified order-independent over repeated `--order-by=random` runs.
+    Browser-verified end to end: authored 700/899 as Wholesale -> storefront + cart resolved 700 -> removed the row -> storefront back to 899
+    -> re-added line re-persisted at 899; `shop:verify-price-ledger` reports the ledger in step. Ship step pending (tag + release).
 - [ ] PR 11 — Catalog extras (hierarchy, aliases, relations, barcodes)
 - [ ] PR 12 — Platform schema kit (ResourceIndex/ResourceForm/field registry)
 - [ ] PR 13–N — Resource conversions wave by wave

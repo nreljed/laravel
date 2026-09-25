@@ -17,11 +17,27 @@ use Nreljed\ShopModule\Models\ProductVariation;
  *   3. legacy `products.price` / `product_variations.price` columns
  *      (fallback only; every migrated row has a default-currency ledger entry)
  *
+ * PR 10C adds the customer-group dimension on top: when the shopper resolves
+ * to a group that is allowed business pricing, a group row is preferred over
+ * the public row. The chain is currency-first, then group:
+ *   1. group row for the requested currency
+ *   2. public row for the requested currency
+ *   3. group row for the default currency
+ *   4. public row for the default currency
+ *   5. legacy columns
+ *
+ * Currency before group is deliberate: a shopper viewing prices in USD must
+ * never be shown a group row denominated in the default currency, because the
+ * amount would then be labelled with the wrong currency.
+ *
  * The resolved value is the raw row (or a value-object view of it) so callers
  * can reuse the query once and derive price / compare / sale as needed.
  */
 class PriceResolver
 {
+    /** @var array<string, bool> connection name => whether the ledger exists */
+    protected array $ledgerExists = [];
+
     public function __construct(
         protected CurrencyService $currencyService,
     ) {}
@@ -29,18 +45,29 @@ class PriceResolver
     /**
      * Resolve the ledger price for a product or variation in a currency.
      *
+     * @param  int|null  $customerGroupId  group override to prefer, if any
      * @return array{
      *     price: float,
      *     compare_price: float|null,
      *     sale_price: float|null,
      *     currency: string,
-     *     source: 'product_prices'|'default_product_prices'|'legacy',
+     *     source: 'group_product_prices'|'product_prices'|'group_default_product_prices'|'default_product_prices'|'legacy',
      * }
      */
-    public function resolve(Product|ProductVariation $priceable, ?string $currencyCode = null): array
+    public function resolve(Product|ProductVariation $priceable, ?string $currencyCode = null, ?int $customerGroupId = null): array
     {
         $currency = $this->normalizeCurrency($currencyCode);
         $default = $this->currencyService->defaultCode();
+
+        // Currency first, then group: a shopper viewing prices in USD must
+        // never be shown a group row denominated in the default currency, so
+        // a row in the requested currency always beats a default-currency row
+        // regardless of which group authored it.
+        $row = $this->findRow($priceable, $currency, $customerGroupId);
+
+        if ($row) {
+            return $this->rowToView($row, $customerGroupId !== null ? 'group_product_prices' : 'product_prices');
+        }
 
         $row = $this->findRow($priceable, $currency);
 
@@ -49,10 +76,15 @@ class PriceResolver
         }
 
         if ($currency !== $default) {
-            $row = $this->findRow($priceable, $default);
+            $groupRow = $customerGroupId !== null ? $this->findRow($priceable, $default, $customerGroupId) : null;
+            $publicRow = $this->findRow($priceable, $default);
 
-            if ($row) {
-                return $this->rowToView($row, 'default_product_prices');
+            if ($groupRow) {
+                return $this->rowToView($groupRow, 'group_default_product_prices');
+            }
+
+            if ($publicRow) {
+                return $this->rowToView($publicRow, 'default_product_prices');
             }
         }
 
@@ -64,9 +96,9 @@ class PriceResolver
      * `Product::getActivePriceAttribute` / `ProductVariation::effective_price`
      * but against the ledger row resolution.
      */
-    public function activePrice(Product|ProductVariation $priceable, ?string $currencyCode = null): float
+    public function activePrice(Product|ProductVariation $priceable, ?string $currencyCode = null, ?int $customerGroupId = null): float
     {
-        $resolved = $this->resolve($priceable, $currencyCode);
+        $resolved = $this->resolve($priceable, $currencyCode, $customerGroupId);
 
         $sale = $resolved['sale_price'];
 
@@ -86,16 +118,16 @@ class PriceResolver
      * they stay correct; variations additionally carry a persisted
      * `active_price` column that is set explicitly.
      */
-    public function hydrate(Product|ProductVariation $priceable, ?string $currencyCode = null): void
+    public function hydrate(Product|ProductVariation $priceable, ?string $currencyCode = null, ?int $customerGroupId = null): void
     {
-        $resolved = $this->resolve($priceable, $currencyCode);
+        $resolved = $this->resolve($priceable, $currencyCode, $customerGroupId);
 
         $priceable->price = $resolved['price'];
         $priceable->compare_price = $resolved['compare_price'];
         $priceable->sale_price = $resolved['sale_price'];
 
         if ($priceable instanceof ProductVariation) {
-            $priceable->active_price = $this->activePrice($priceable, $currencyCode);
+            $priceable->active_price = $this->activePrice($priceable, $currencyCode, $customerGroupId);
         }
     }
 
@@ -104,20 +136,50 @@ class PriceResolver
         return strtoupper($currencyCode ?: $this->currencyService->defaultCode());
     }
 
-    protected function findRow(Product|ProductVariation $priceable, string $currency): ?ProductPrice
+    protected function findRow(Product|ProductVariation $priceable, string $currency, ?int $customerGroupId = null): ?ProductPrice
     {
-        if ($priceable instanceof ProductVariation) {
-            return ProductPrice::where('currency', $currency)
-                ->where('product_variation_id', $priceable->id)
-                ->orderBy('min_quantity')
-                ->first();
+        // The ledger can legitimately be absent (module installed with
+        // migrations off, or a package test harness with a minimal schema).
+        // Falling through to the legacy columns keeps the storefront serving
+        // prices instead of failing the request.
+        if (! $this->ledgerExists($priceable)) {
+            return null;
         }
 
-        return ProductPrice::where('currency', $currency)
-            ->where('product_id', $priceable->id)
-            ->whereNull('product_variation_id')
-            ->orderBy('min_quantity')
-            ->first();
+        $query = ProductPrice::query()
+            ->where('currency', $currency)
+            ->orderBy('min_quantity');
+
+        if ($priceable instanceof ProductVariation) {
+            $query->where('product_variation_id', $priceable->id);
+        } else {
+            $query->where('product_id', $priceable->id)->whereNull('product_variation_id');
+        }
+
+        if ($customerGroupId !== null) {
+            $query->where('customer_group_id', $customerGroupId);
+        } else {
+            $query->whereNull('customer_group_id');
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Whether the ledger table exists, memoised per instance (and per
+     * connection) for the lifetime of the resolver. The ledger can legitimately
+     * be absent: the module may be installed with migrations off, or a package
+     * test harness may build only a minimal schema. Falling through to the
+     * legacy columns keeps the storefront serving prices instead of failing the
+     * request.
+     */
+    protected function ledgerExists(Product|ProductVariation $priceable): bool
+    {
+        $connection = $priceable->getConnection();
+
+        return $this->ledgerExists[$connection->getName()] ??= $connection
+            ->getSchemaBuilder()
+            ->hasTable('product_prices');
     }
 
     protected function rowToView(ProductPrice $row, string $source): array

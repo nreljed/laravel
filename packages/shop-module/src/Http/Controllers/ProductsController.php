@@ -26,7 +26,9 @@ use Nreljed\ShopModule\Models\ProductTag;
 use Nreljed\ShopModule\Requests\AdjustStockRequest;
 use Nreljed\ShopModule\Requests\ImportProductRequest;
 use Nreljed\ShopModule\Requests\StoreProductRequest;
+use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\InventoryService;
+use Nreljed\ShopModule\Services\PriceLedgerService;
 use Nreljed\ShopModule\Services\WebhookService;
 
 class ProductsController extends Controller
@@ -98,6 +100,8 @@ class ProductsController extends Controller
             'productFields' => $this->activeProductFields(),
             'productFieldValues' => [],
             'allProducts' => Product::select('id', 'name', 'sku', 'type', 'price')->orderBy('name')->get(),
+            'groupPrices' => [],
+            'priceableGroups' => $this->priceableGroups(),
         ]);
     }
 
@@ -106,6 +110,10 @@ class ProductsController extends Controller
         $this->authorize('create', Product::class);
 
         $validated = $request->validated();
+
+        $groupPrices = $validated['group_prices'] ?? [];
+        unset($validated['group_prices']);
+
         $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
 
         $validated = $this->applyScheduleStatus($validated);
@@ -139,6 +147,8 @@ class ProductsController extends Controller
         }
 
         $this->syncProductFieldValues($product, $validated['product_field_values'] ?? []);
+
+        app(PriceLedgerService::class)->syncGroupRows($product, $groupPrices);
 
         $this->webhookService->dispatch(
             \Nreljed\ShopModule\Events\WebhookEvents::PRODUCT_CREATED,
@@ -192,6 +202,8 @@ class ProductsController extends Controller
                 ->where('id', '!=', $product->id)
                 ->orderBy('name')
                 ->get(),
+            'groupPrices' => app(PriceLedgerService::class)->groupRowsFor($product),
+            'priceableGroups' => $this->priceableGroups(),
         ]);
     }
 
@@ -200,6 +212,9 @@ class ProductsController extends Controller
         $this->authorize('update', $product);
 
         $validated = $request->validated();
+
+        $groupPrices = $validated['group_prices'] ?? null;
+        unset($validated['group_prices']);
 
         $validated = $this->applyScheduleStatus($validated);
 
@@ -250,6 +265,10 @@ class ProductsController extends Controller
 
         if (isset($validated['product_field_values'])) {
             $this->syncProductFieldValues($product, $validated['product_field_values']);
+        }
+
+        if ($groupPrices !== null) {
+            app(PriceLedgerService::class)->syncGroupRows($product, $groupPrices);
         }
 
         if ($product->wasChanged(['stock_quantity', 'low_stock_threshold', 'track_stock']) && $product->isLowStock()) {
@@ -838,6 +857,25 @@ class ProductsController extends Controller
     private function activeProductFields()
     {
         return ProductField::active()->orderBy('sort_order')->orderBy('id')->get();
+    }
+
+    /**
+     * Customer groups a product may carry an override price for. Only groups
+     * that actually allow business pricing are offered; a group that opts out
+     * must never be able to receive a group price by saving the form.
+     *
+     * @return array<int, array{id: int, code: string, label: string}>
+     */
+    private function priceableGroups(): array
+    {
+        return app(CustomerPricingContext::class)->priceableGroups()
+            ->map(fn ($group) => [
+                'id' => (int) $group->id,
+                'code' => (string) $group->code,
+                'label' => (string) ($group->label ?: $group->code),
+            ])
+            ->values()
+            ->all();
     }
 
     public function adjustStock(AdjustStockRequest $request, Product $product)

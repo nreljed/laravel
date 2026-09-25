@@ -19,6 +19,7 @@ use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductField;
 use Nreljed\ShopModule\Models\ProductReview;
+use Nreljed\ShopModule\Models\ProductVariation;
 use Nreljed\ShopModule\Models\Shipment;
 use Nreljed\ShopModule\Models\ShippingMethod;
 use Nreljed\ShopModule\Models\ShippingZone;
@@ -64,12 +65,14 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         }
 
         $this->registerPolicies();
+        $this->registerObservers();
         $this->commands([
             Commands\ProcessAbandonedCarts::class,
             Commands\ProcessPendingWebhooks::class,
             Commands\ProcessScheduledSales::class,
             Commands\PublishScheduledProducts::class,
             Commands\ReleaseExpiredHolds::class,
+            Commands\VerifyPriceLedger::class,
         ]);
 
         $this->configureSchedules();
@@ -128,6 +131,17 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                 require $p.'api.php';
                 require $p.'api-auth.php';
             });
+    }
+
+    /**
+     * Mirror saved product/variation prices into the `product_prices` ledger
+     * (PR 10C). Registered on the models rather than in each controller so no
+     * price write path can leave the ledger stale.
+     */
+    protected function registerObservers(): void
+    {
+        Product::observe(Observers\SyncsPriceLedger::class);
+        ProductVariation::observe(Observers\SyncsPriceLedger::class);
     }
 
     protected function registerPolicies(): void

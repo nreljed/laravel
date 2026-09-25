@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal, Users } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -61,6 +61,13 @@ interface DownloadItem {
   download_limit: number; download_expiry: number; sort_order: number;
 }
 
+interface PriceableGroup { id: number; code: string; label: string }
+
+interface GroupPriceRow {
+  customer_group_id: number; price: string; compare_price: string;
+  sale_price: string; min_quantity: string;
+}
+
 interface SimpleProduct {
   id: number; name: string; sku: string | null; type: string; price: string | null;
 }
@@ -90,6 +97,7 @@ interface PageProps {
   productAttributes?: ProductAttributeItem[]; flash?: { status?: string; error?: string };
   productFields?: ProductFieldDef[]; productFieldValues?: ProductFieldValueItem[];
   allProducts?: SimpleProduct[];
+  groupPrices?: GroupPriceRow[]; priceableGroups?: PriceableGroup[];
 }
 
 interface FormData {
@@ -111,6 +119,10 @@ interface FormData {
   product_field_values: ProductFieldValueItem[];
   grouped_items: { product_id: number; quantity: number; sort_order?: number; name?: string; sku?: string; price?: string | number }[];
   downloads: { id?: number; name: string; file: string; download_limit: number; download_expiry: number }[];
+  group_prices: {
+    customer_group_id: number; price: number;
+    compare_price: number | null; sale_price: number | null; min_quantity: number;
+  }[];
 }
 
 const minDate = new Date(Date.now() - 60000);
@@ -154,6 +166,16 @@ export default function ProductsForm() {
   );
   const [downloads, setDownloads] = useState<DownloadItem[]>(
     (product?.downloads || []).map((d, i) => ({ ...d, sort_order: d.sort_order ?? i }))
+  );
+  const priceableGroups = props.priceableGroups || [];
+  const [groupPrices, setGroupPrices] = useState<GroupPriceRow[]>(
+    (props.groupPrices || []).map((row) => ({
+      customer_group_id: row.customer_group_id,
+      price: row.price?.toString() ?? "",
+      compare_price: row.compare_price?.toString() ?? "",
+      sale_price: row.sale_price?.toString() ?? "",
+      min_quantity: row.min_quantity?.toString() ?? "1",
+    }))
   );
   const [searchProductTerm, setSearchProductTerm] = useState("");
   const [showProductPicker, setShowProductPicker] = useState(false);
@@ -255,6 +277,7 @@ export default function ProductsForm() {
     seo_metadata: product?.seo?.seo_metadata ?? null,
     product_attributes: initialProductAttrs,
     product_field_values: initialFieldValues,
+    group_prices: [],
   });
 
   const customFieldErrors = form.errors as Record<string, string | undefined>;
@@ -293,6 +316,19 @@ export default function ProductsForm() {
     form.setData("product_attributes", attrList);
     form.setData("grouped_items", groupedItems);
     form.setData("downloads", downloads);
+    form.setData(
+      "group_prices",
+      groupPrices
+        .filter((row) => row.customer_group_id && row.price !== "")
+        .map((row) => ({
+          ...row,
+          customer_group_id: Number(row.customer_group_id),
+          price: Number(row.price),
+          compare_price: row.compare_price === "" ? null : Number(row.compare_price),
+          sale_price: row.sale_price === "" ? null : Number(row.sale_price),
+          min_quantity: Number(row.min_quantity || 1),
+        }))
+    );
     const options = {
       preserveScroll: true,
       onError: (errs: Record<string, string>) => {
@@ -720,6 +756,147 @@ export default function ProductsForm() {
                 </div>
                 )}
               </Section>
+
+              {form.data.type !== "variable" && form.data.type !== "external" && form.data.type !== "grouped" && priceableGroups.length > 0 && (
+                <Section
+                  title="Customer Group Prices"
+                  description="Business customers in these groups see their own price instead of the regular price"
+                  icon={Users}
+                >
+                  <div className="space-y-4">
+                    {groupPrices.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No group overrides. Every customer sees the regular price above.
+                      </p>
+                    )}
+
+                    {groupPrices.map((row, idx) => {
+                      const usedByOthers = groupPrices
+                        .map((r) => r.customer_group_id)
+                        .filter((id) => id !== row.customer_group_id);
+                      const label = (g: PriceableGroup) => g.label || g.code;
+                      const current = priceableGroups.find((g) => g.id === row.customer_group_id);
+
+                      return (
+                        <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                          <div className="md:col-span-3 space-y-2">
+                            <Label className="text-xs">Customer Group</Label>
+                            <Select
+                              value={String(row.customer_group_id)}
+                              onValueChange={(value) =>
+                                setGroupPrices((prev) =>
+                                  prev.map((r, i) =>
+                                    i === idx ? { ...r, customer_group_id: Number(value) } : r
+                                  )
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue>
+                                  {current ? label(current) : "Select a group"}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {priceableGroups
+                                  .filter((g) => g.id === row.customer_group_id || !usedByOthers.includes(g.id))
+                                  .map((g) => (
+                                    <SelectItem key={g.id} value={String(g.id)}>
+                                      {label(g)}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="md:col-span-2 space-y-2">
+                            <Label className="text-xs" htmlFor={`group_price_${idx}`}>Price</Label>
+                            <Input
+                              id={`group_price_${idx}`}
+                              type="number" step="0.01" min="0" placeholder="0.00"
+                              value={row.price}
+                              onChange={(e) =>
+                                setGroupPrices((prev) =>
+                                  prev.map((r, i) => (i === idx ? { ...r, price: e.target.value } : r))
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="md:col-span-2 space-y-2">
+                            <Label className="text-xs" htmlFor={`group_sale_price_${idx}`}>Sale Price</Label>
+                            <Input
+                              id={`group_sale_price_${idx}`}
+                              type="number" step="0.01" min="0" placeholder="—"
+                              value={row.sale_price}
+                              onChange={(e) =>
+                                setGroupPrices((prev) =>
+                                  prev.map((r, i) => (i === idx ? { ...r, sale_price: e.target.value } : r))
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="md:col-span-2 space-y-2">
+                            <Label className="text-xs" htmlFor={`group_compare_price_${idx}`}>Compare At</Label>
+                            <Input
+                              id={`group_compare_price_${idx}`}
+                              type="number" step="0.01" min="0" placeholder="—"
+                              value={row.compare_price}
+                              onChange={(e) =>
+                                setGroupPrices((prev) =>
+                                  prev.map((r, i) => (i === idx ? { ...r, compare_price: e.target.value } : r))
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="md:col-span-1 space-y-2">
+                            <Label className="text-xs" htmlFor={`group_min_qty_${idx}`}>Min Qty</Label>
+                            <Input
+                              id={`group_min_qty_${idx}`}
+                              type="number" min="1" step="1"
+                              value={row.min_quantity}
+                              onChange={(e) =>
+                                setGroupPrices((prev) =>
+                                  prev.map((r, i) => (i === idx ? { ...r, min_quantity: e.target.value } : r))
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="md:col-span-2 flex justify-end">
+                            <Button
+                              type="button" variant="outline" size="sm"
+                              onClick={() =>
+                                setGroupPrices((prev) => prev.filter((_, i) => i !== idx))
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <Button
+                      type="button" variant="outline" size="sm"
+                      onClick={() => {
+                        const used = groupPrices.map((r) => r.customer_group_id);
+                        const next = priceableGroups.find((g) => !used.includes(g.id));
+                        if (!next) {
+                          toast.add({
+                            title: "Every available customer group already has a price",
+                            type: "info",
+                          });
+                          return;
+                        }
+                        setGroupPrices((prev) => [
+                          ...prev,
+                          { customer_group_id: next.id, price: "", compare_price: "", sale_price: "", min_quantity: "1" },
+                        ]);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Group Price
+                    </Button>
+                  </div>
+                </Section>
+              )}
 
               {form.data.type === "external" && (
                 <Section title="External Link" description="Link to external/affiliate product" icon={Globe}>

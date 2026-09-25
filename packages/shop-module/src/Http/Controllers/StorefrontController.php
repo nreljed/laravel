@@ -13,6 +13,7 @@ use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductFieldValue;
 use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\PriceResolver;
 
 class StorefrontController extends Controller
@@ -20,7 +21,17 @@ class StorefrontController extends Controller
     public function __construct(
         protected CurrencyService $currencyService,
         protected PriceResolver $priceResolver,
+        protected CustomerPricingContext $pricingContext,
     ) {}
+
+    /**
+     * Customer group whose price overrides apply to the current shopper, or
+     * null for public pricing (PR 10C).
+     */
+    protected function priceGroupId(): ?int
+    {
+        return $this->pricingContext->groupId();
+    }
 
     public function index()
     {
@@ -104,23 +115,23 @@ class StorefrontController extends Controller
         }
 
         foreach ($product->groupedItems as $child) {
-            $this->priceResolver->hydrate($child, $currency);
+            $this->priceResolver->hydrate($child, $currency, $this->priceGroupId());
         }
 
         foreach ($variations as $variation) {
-            $this->priceResolver->hydrate($variation, $currency);
+            $this->priceResolver->hydrate($variation, $currency, $this->priceGroupId());
         }
 
-        $this->priceResolver->hydrate($product, $currency);
+        $this->priceResolver->hydrate($product, $currency, $this->priceGroupId());
 
         if ($defaultVariation !== null) {
-            $this->priceResolver->hydrate($defaultVariation, $currency);
+            $this->priceResolver->hydrate($defaultVariation, $currency, $this->priceGroupId());
         }
 
         $related = $this->relatedProducts($product);
 
         foreach ($related as $relatedProduct) {
-            $this->priceResolver->hydrate($relatedProduct, $currency);
+            $this->priceResolver->hydrate($relatedProduct, $currency, $this->priceGroupId());
         }
 
         if ($product->type === 'variable' && $variations->isNotEmpty()) {
@@ -227,7 +238,7 @@ class StorefrontController extends Controller
         $default = $this->currencyService->defaultCode();
 
         foreach ($products as $product) {
-            $this->priceResolver->hydrate($product, $currency);
+            $this->priceResolver->hydrate($product, $currency, $this->priceGroupId());
         }
 
         $categories = ProductCategory::select('id', 'name', 'slug')
@@ -316,11 +327,11 @@ class StorefrontController extends Controller
         $currency = $this->currencyService->storefrontCode();
 
         foreach ($featured as $product) {
-            $this->priceResolver->hydrate($product, $currency);
+            $this->priceResolver->hydrate($product, $currency, $this->priceGroupId());
         }
 
         foreach ($newArrivals as $product) {
-            $this->priceResolver->hydrate($product, $currency);
+            $this->priceResolver->hydrate($product, $currency, $this->priceGroupId());
         }
 
         $categoryGrid = ProductCategory::withCount(['products' => fn ($q) => $q->published()])

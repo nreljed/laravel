@@ -13,7 +13,13 @@ class PersistLine
     public function handle(CartContext $context, Closure $next)
     {
         if ($context->existingItem) {
-            $context->existingItem->update(['quantity' => $context->totalQuantity]);
+            // Re-price the existing line as well as re-quantifying it: a
+            // customer-group price (or a price edit) must take effect on lines
+            // that were added before it existed.
+            $context->existingItem->update([
+                'quantity' => $context->totalQuantity,
+                'unit_price' => $context->unitPrice,
+            ]);
         } else {
             $context->cart->items()->create([
                 'product_id' => $context->product->id,

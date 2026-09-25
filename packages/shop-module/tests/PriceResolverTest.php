@@ -320,8 +320,16 @@ final class PriceResolverTest extends TestCase
                 parent::__construct($currencyService);
             }
 
-            protected function findRow(Product|ProductVariation $priceable, string $currency): ?ProductPrice
+            /**
+             * Rows are keyed by currency; a group lookup reads a
+             * `CURRENCY:GROUP_ID` key so group overrides can be faked.
+             */
+            protected function findRow(Product|ProductVariation $priceable, string $currency, ?int $customerGroupId = null): ?ProductPrice
             {
+                if ($customerGroupId !== null) {
+                    return $this->rows[$currency.':'.$customerGroupId] ?? null;
+                }
+
                 return $this->rows[$currency] ?? null;
             }
         };

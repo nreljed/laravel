@@ -4,6 +4,7 @@ namespace Nreljed\ShopModule\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Nreljed\ShopModule\Models\CustomerGroup;
 use Nreljed\ShopModule\Models\ProductField;
 
 class StoreProductRequest extends FormRequest
@@ -90,6 +91,12 @@ class StoreProductRequest extends FormRequest
             'product_field_values' => 'nullable|array|max:100',
             'product_field_values.*.product_field_id' => 'required|integer|distinct',
             'product_field_values.*.value' => 'nullable',
+            'group_prices' => 'nullable|array|max:50',
+            'group_prices.*.customer_group_id' => 'required|integer|exists:customer_groups,id|distinct',
+            'group_prices.*.price' => 'required|numeric|min:0',
+            'group_prices.*.compare_price' => 'nullable|numeric|min:0',
+            'group_prices.*.sale_price' => 'nullable|numeric|min:0',
+            'group_prices.*.min_quantity' => 'nullable|integer|min:1',
         ];
 
         if ($type === 'variable') {
@@ -154,6 +161,37 @@ class StoreProductRequest extends FormRequest
 
                     if ($reason !== null) {
                         $validator->errors()->add($key, ucfirst($reason).'.');
+                    }
+                }
+            },
+            function (Validator $validator): void {
+                $rows = $this->input('group_prices', []);
+
+                if (! is_array($rows) || $rows === []) {
+                    return;
+                }
+
+                $groups = CustomerGroup::query()
+                    ->whereIn('id', array_map(
+                        fn ($row) => (int) (is_array($row) ? ($row['customer_group_id'] ?? 0) : 0),
+                        $rows,
+                    ))
+                    ->pluck('allows_business_pricing', 'id');
+
+                foreach ($rows as $position => $row) {
+                    if (! is_array($row)) {
+                        continue;
+                    }
+
+                    $groupId = (int) ($row['customer_group_id'] ?? 0);
+                    $key = 'group_prices.'.$position.'.customer_group_id';
+
+                    if (! $groups->has($groupId)) {
+                        continue;
+                    }
+
+                    if (! $groups->get($groupId)) {
+                        $validator->errors()->add($key, 'This customer group does not allow business pricing.');
                     }
                 }
             },

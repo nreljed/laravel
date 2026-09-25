@@ -2,6 +2,7 @@
 
 namespace Nreljed\ShopModule\Tests;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\ConnectionResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -19,7 +20,9 @@ use Nreljed\ShopModule\Pipelines\Cart\ValidatePurchaseQuantity;
 use Nreljed\ShopModule\Pipelines\Cart\ValidateVariant;
 use Nreljed\ShopModule\Pipelines\CartContext;
 use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\InventoryService;
+use Nreljed\ShopModule\Services\PriceResolver;
 use PHPUnit\Framework\TestCase;
 use PDO;
 
@@ -115,7 +118,7 @@ final class CartPipelineGoldenTest extends TestCase
     {
         $context = $this->context(variation: $this->variation(['active_price' => 42.5]));
 
-        $result = (new Pipeline)->send($context)->through([new ResolveUnitPrice])->thenReturn();
+        $result = (new Pipeline)->send($context)->through([$this->resolveUnitPrice()])->thenReturn();
 
         $this->assertSame(42.5, $result->unitPrice);
     }
@@ -124,7 +127,7 @@ final class CartPipelineGoldenTest extends TestCase
     {
         $context = $this->context(variation: $this->variation(['active_price' => null, 'price' => 12.0]));
 
-        $result = (new Pipeline)->send($context)->through([new ResolveUnitPrice])->thenReturn();
+        $result = (new Pipeline)->send($context)->through([$this->resolveUnitPrice()])->thenReturn();
 
         $this->assertSame(12.0, $result->unitPrice);
     }
@@ -133,7 +136,7 @@ final class CartPipelineGoldenTest extends TestCase
     {
         $context = $this->context();
 
-        $result = (new Pipeline)->send($context)->through([new ResolveUnitPrice])->thenReturn();
+        $result = (new Pipeline)->send($context)->through([$this->resolveUnitPrice()])->thenReturn();
 
         $this->assertSame(10.0, $result->unitPrice);
     }
@@ -256,7 +259,7 @@ final class CartPipelineGoldenTest extends TestCase
             ->send($context)
             ->through([
                 new ValidateVariant,
-                new ResolveUnitPrice,
+                $this->resolveUnitPrice(),
                 new ValidatePurchaseQuantity($this->inventoryFake(true)),
                 new PersistLine($this->currencyFake()),
             ])
@@ -341,6 +344,30 @@ final class CartPipelineGoldenTest extends TestCase
                 return 'EUR';
             }
         };
+    }
+
+    /**
+     * A guest shopper: no customer group, so prices resolve as public prices.
+     */
+    private function pricingContextFake(?int $groupId = null): CustomerPricingContext
+    {
+        return new class($groupId) extends CustomerPricingContext
+        {
+            public function __construct(private ?int $groupId) {}
+
+            public function groupId(?Authenticatable $user = null): ?int
+            {
+                return $this->groupId;
+            }
+        };
+    }
+
+    private function resolveUnitPrice(?int $groupId = null): ResolveUnitPrice
+    {
+        return new ResolveUnitPrice(
+            new PriceResolver($this->currencyFake()),
+            $this->pricingContextFake($groupId),
+        );
     }
 
     private function spy(): object

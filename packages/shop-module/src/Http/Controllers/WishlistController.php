@@ -8,6 +8,7 @@ use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\Wishlist;
 use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\PriceResolver;
 
 class WishlistController extends Controller
@@ -15,6 +16,7 @@ class WishlistController extends Controller
     public function __construct(
         protected CurrencyService $currencyService,
         protected PriceResolver $priceResolver,
+        protected CustomerPricingContext $pricingContext,
     ) {}
 
     public function index()
@@ -29,9 +31,10 @@ class WishlistController extends Controller
             ->withQueryString();
 
         $currency = $this->currencyService->storefrontCode();
+        $groupId = $this->pricingContext->groupId();
 
         foreach ($products as $product) {
-            $this->priceResolver->hydrate($product, $currency);
+            $this->priceResolver->hydrate($product, $currency, $groupId);
         }
 
         return Inertia::render('shop/wishlist/index', [
