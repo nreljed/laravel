@@ -2,6 +2,7 @@
 
 namespace Nreljed\ShopModule;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -65,8 +66,28 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             Commands\ProcessAbandonedCarts::class,
             Commands\ProcessPendingWebhooks::class,
             Commands\ProcessScheduledSales::class,
+            Commands\PublishScheduledProducts::class,
             Commands\ReleaseExpiredHolds::class,
         ]);
+
+        $this->configureSchedules();
+    }
+
+    /**
+     * Self-register the shop schedules so every consumer gets them without
+     * adding entries to their own routes/console.php.
+     */
+    protected function configureSchedules(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            if (! Schema::hasTable('products')) {
+                return;
+            }
+
+            $schedule->command('shop:publish-scheduled')
+                ->everyMinute()
+                ->withoutOverlapping();
+        });
     }
 
     protected function loadRoutes(): void
@@ -547,7 +568,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         ];
 
         $publishedProducts = Product::query()
-            ->where('status', 'published')
+            ->published()
             ->whereIn('catalog_visibility', ['visible', 'catalog'])
             ->orderBy('updated_at', 'desc')
             ->get(['slug', 'updated_at']);
@@ -562,7 +583,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         }
 
         $categories = ProductCategory::query()
-            ->whereHas('products', fn ($q) => $q->where('status', 'published'))
+            ->whereHas('products', fn ($q) => $q->published())
             ->get(['slug']);
 
         foreach ($categories as $category) {
@@ -574,6 +595,17 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         }
 
         return $urls;
+    }
+
+    public function getScheduledTasks(): array
+    {
+        return [
+            [
+                'command' => Commands\PublishScheduledProducts::class,
+                'frequency' => 'every:1',
+                'description' => 'Promote due scheduled products to published and auto-unpublish expired ones.',
+            ],
+        ];
     }
 
     public function onUserDelete(int $userId): void

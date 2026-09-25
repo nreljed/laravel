@@ -39,6 +39,7 @@ class StoreProductRequest extends FormRequest
             'stock_status' => 'nullable|in:instock,outofstock,onbackorder',
             'status' => 'nullable|in:draft,published,publish,archived,future',
             'publish_date' => 'nullable|date|required_if:status,future',
+            'unpublish_at' => 'nullable|date',
             'type' => 'nullable|in:simple,variable,grouped,external,digital,service',
             'catalog_visibility' => 'nullable|in:visible,catalog,search,hidden',
             'virtual' => 'boolean',

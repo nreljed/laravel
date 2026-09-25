@@ -23,7 +23,7 @@ class WishlistController extends Controller
             ->pluck('product_id');
 
         $products = Product::whereIn('id', $productIds)
-            ->where('status', 'published')
+            ->published()
             ->with('categories')
             ->paginate(12)
             ->withQueryString();

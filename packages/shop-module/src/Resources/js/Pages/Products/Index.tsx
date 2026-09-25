@@ -38,6 +38,8 @@ interface ProductRow {
   price: number | null
   type: string
   status: string
+  publish_date: string | null
+  unpublish_at: string | null
   stock_quantity: number
   low_stock_threshold: number | null
   track_stock: boolean
@@ -219,7 +221,17 @@ export default function ProductsIndex() {
         cell: ({ row }) => {
           const s = row.original.status
           const variant = s === "published" ? "default" : s === "draft" ? "secondary" : "outline"
-          return <Badge variant={variant} className="text-xs capitalize">{s}</Badge>
+          const cue = s === "future" && row.original.publish_date
+            ? `scheduled ${new Date(row.original.publish_date).toLocaleDateString()}`
+            : s === "published" && row.original.unpublish_at
+              ? `unpublishes ${new Date(row.original.unpublish_at).toLocaleDateString()}`
+              : null
+          return (
+            <span className="flex flex-col gap-0.5">
+              <Badge variant={variant} className="text-xs capitalize w-fit">{s}</Badge>
+              {cue && <span className="text-[10px] text-muted-foreground">{cue}</span>}
+            </span>
+          )
         },
         className: "hidden lg:table-cell",
       },

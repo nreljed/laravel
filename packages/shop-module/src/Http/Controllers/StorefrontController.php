@@ -20,6 +20,7 @@ class StorefrontController extends Controller
         protected CurrencyService $currencyService,
         protected PriceResolver $priceResolver,
     ) {}
+
     public function index()
     {
         return Inertia::render('shop/storefront/home', [
@@ -37,7 +38,7 @@ class StorefrontController extends Controller
 
     public function show(Product $product)
     {
-        if ($product->status !== 'published') {
+        if (! $product->isVisibleOnStorefront()) {
             abort(404);
         }
 
@@ -150,7 +151,7 @@ class StorefrontController extends Controller
 
     protected function baseQuery(): Builder
     {
-        return Product::where('status', 'published')
+        return Product::published()
             ->whereIn('catalog_visibility', ['visible', 'catalog']);
     }
 
@@ -223,7 +224,7 @@ class StorefrontController extends Controller
             ->get();
 
         $brands = ProductBrand::where('is_active', true)
-            ->withCount(['products' => fn ($q) => $q->where('status', 'published')])
+            ->withCount(['products' => fn ($q) => $q->published()])
             ->orderBy('name')
             ->get()
             ->filter(fn ($b) => $b->products_count > 0)
@@ -237,7 +238,7 @@ class StorefrontController extends Controller
 
         $attributeFilters = Attribute::where('is_active', true)
             ->whereHas('terms')
-            ->whereHas('products', fn ($q) => $q->where('status', 'published'))
+            ->whereHas('products', fn ($q) => $q->published())
             ->with('terms')
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -254,8 +255,8 @@ class StorefrontController extends Controller
             ])
             ->values();
 
-        $minPrice = Product::where('status', 'published')->min('price');
-        $maxPrice = Product::where('status', 'published')->max('price');
+        $minPrice = Product::published()->min('price');
+        $maxPrice = Product::published()->max('price');
 
         $priceRange = [
             (float) ($minPrice ?? 0),
@@ -287,14 +288,14 @@ class StorefrontController extends Controller
 
     protected function homepageData(): array
     {
-        $featured = Product::where('status', 'published')
+        $featured = Product::published()
             ->whereIn('catalog_visibility', ['visible', 'catalog'])
             ->featured()
             ->latest()
             ->take(8)
             ->get();
 
-        $newArrivals = Product::where('status', 'published')
+        $newArrivals = Product::published()
             ->whereIn('catalog_visibility', ['visible', 'catalog'])
             ->latest()
             ->take(8)
@@ -310,7 +311,7 @@ class StorefrontController extends Controller
             $this->priceResolver->hydrate($product, $currency);
         }
 
-        $categoryGrid = ProductCategory::withCount(['products' => fn ($q) => $q->where('status', 'published')])
+        $categoryGrid = ProductCategory::withCount(['products' => fn ($q) => $q->published()])
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
@@ -335,7 +336,7 @@ class StorefrontController extends Controller
     {
         $categoryIds = $product->categories()->pluck('product_categories.id');
 
-        $related = Product::where('status', 'published')
+        $related = Product::published()
             ->where('id', '!=', $product->id)
             ->when($categoryIds->isNotEmpty(), fn ($q) => $q->whereHas('categories', fn ($c) => $c->whereIn('product_categories.id', $categoryIds)))
             ->inRandomOrder()
@@ -343,7 +344,7 @@ class StorefrontController extends Controller
             ->get();
 
         if ($related->count() < 4) {
-            $extra = Product::where('status', 'published')
+            $extra = Product::published()
                 ->where('id', '!=', $product->id)
                 ->whereNotIn('id', $related->pluck('id'))
                 ->inRandomOrder()

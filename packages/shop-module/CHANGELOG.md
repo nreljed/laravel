@@ -4,6 +4,21 @@ All notable changes to `nreljed/shop-module` are documented in this file, based 
 
 ## [Unreleased]
 
+### Added
+
+- **Scheduled publishing (PR 10A)** - `products` gets `unpublish_at` (nullable timestamp, additive)
+  via migration 66. `Product::published()` becomes time-aware (excludes `published` products whose
+  `unpublish_at` has passed) and a matching `isVisibleOnStorefront()` instance gate covers the
+  storefront show route. New `shop:publish-scheduled` command flips `future` → `published` when
+  `publish_date` arrives (clearing `publish_date`, dropping expired `unpublish_at` only when it has
+  passed) and auto-hides (`published` → `archived`) products whose `unpublish_at` has passed;
+  wired into the consumer scheduler. Storefront listings/brand withCount/attribute filters/
+  category withCount/featured/new arrivals/related/sitemaps and the wishlist now use the
+  time-aware `published()` scope. Admin Product form gains an "Auto-Unpublish" section
+  (Switch + DateTimePicker, default +7 days) and the Products index shows `scheduled {date}` /
+  `unpublishes {date}` status cues. `StoreProductRequest` accepts `unpublish_at` (nullable date).
+  Contract suite grew to 132 tests / 322 assertions (new `ScheduledPublishingContractTest`).
+
 ## [0.1.46] - 2026-09-23
 
 ### Added

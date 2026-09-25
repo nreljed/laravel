@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { ArrowLeft, Calendar, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -73,7 +73,7 @@ interface Product {
   is_taxable: boolean; tax_class: string | null; weight: number | null; length: number | null;
   width: number | null; height: number | null; thumbnail_url: string | null;
   images: { url: string; path: string }[] | null; categories: Category[]; tags: Tag[]; brands: Brand[];
-  publish_date: string | null; groupedItems?: GroupedItem[]; downloads?: DownloadItem[];
+  publish_date: string | null; unpublish_at: string | null; groupedItems?: GroupedItem[]; downloads?: DownloadItem[];
   seo?: { meta_title?: string | null; meta_description?: string | null; og_image?: string | null; focus_keyword?: string | null; seo_metadata?: unknown | null } | null;
 }
 
@@ -90,7 +90,7 @@ interface FormData {
   sale_price: string; sale_from: string | null; sale_to: string | null;
   sku: string; barcode: string; global_unique_id: string; vendor: string;
   stock_quantity: string; low_stock_threshold: string; incoming_stock: string; hold_stock_minutes: string;
-  stock_status: string; track_stock: boolean; backorders: string; status: string; publish_date: string | null;
+  stock_status: string; track_stock: boolean; backorders: string; status: string; publish_date: string | null; unpublish_at: string | null;
   type: string; catalog_visibility: string; virtual: boolean; downloadable: boolean;
   external_url: string; button_text: string;
   is_featured: boolean; sold_individually: boolean; min_quantity: string; max_quantity: string; menu_order: string;
@@ -105,6 +105,12 @@ interface FormData {
 }
 
 const minDate = new Date(Date.now() - 60000);
+
+const defaultUnpublishAt = () => {
+  const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString();
+};
 
 export default function ProductsForm() {
   const { props } = usePage<PageProps>();
@@ -203,6 +209,7 @@ export default function ProductsForm() {
     backorders: product?.backorders || "no",
     status: product?.status || "draft",
     publish_date: product?.publish_date || null,
+    unpublish_at: product?.unpublish_at || null,
     type: product?.type || "simple",
     catalog_visibility: product?.catalog_visibility || "visible",
     virtual: product?.virtual ?? false,
@@ -1191,6 +1198,28 @@ export default function ProductsForm() {
                 loading={form.processing}
                 cancelUrl={route("dashboard.shop.products.index")}
               />
+
+              <Section title="Auto-Unpublish" description="Optionally hide this product automatically on a date" icon={Clock}>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Enable scheduled unpublish</Label>
+                    <Switch
+                      checked={!!form.data.unpublish_at}
+                      onCheckedChange={(v) => form.setData("unpublish_at", v ? defaultUnpublishAt() : null)}
+                    />
+                  </div>
+                  {form.data.unpublish_at && (
+                    <SectionField label="Unpublish on" htmlFor="unpublish_at" description="The product will be hidden from the storefront at this time">
+                      <DateTimePicker
+                        value={form.data.unpublish_at ?? undefined}
+                        onChange={(d: string) => form.setData("unpublish_at", d)}
+                        disabled={form.processing}
+                        placeholder="Select date and time"
+                      />
+                    </SectionField>
+                  )}
+                </div>
+              </Section>
 
               <Section title="Catalog Visibility" description="Control where this product appears" icon={VisibilityIcon}>
                 <Select value={form.data.catalog_visibility} onValueChange={(v) => form.setData("catalog_visibility", v)}>

@@ -26,7 +26,7 @@ class Product extends Model
         'min_variation_price', 'max_variation_price', 'price_hash',
         'sku', 'barcode', 'global_unique_id', 'vendor', 'stock_quantity', 'incoming_stock', 'low_stock_threshold',
         'hold_stock_minutes', 'track_stock', 'backorders', 'stock_status',
-        'status', 'publish_date', 'type', 'catalog_visibility',
+        'status', 'publish_date', 'unpublish_at', 'type', 'catalog_visibility',
         'virtual', 'downloadable', 'external_url', 'button_text',
         'is_featured', 'sold_individually', 'min_quantity', 'max_quantity', 'menu_order',
         'is_taxable', 'tax_class',
@@ -46,6 +46,7 @@ class Product extends Model
         'sale_from' => 'datetime',
         'sale_to' => 'datetime',
         'publish_date' => 'datetime',
+        'unpublish_at' => 'datetime',
         'stock_quantity' => 'integer',
         'incoming_stock' => 'integer',
         'low_stock_threshold' => 'integer',
@@ -405,7 +406,26 @@ class Product extends Model
 
     public function scopePublished($query)
     {
-        return $query->where('status', 'published');
+        return $query->where('status', 'published')
+            ->where(function (Builder $q) {
+                $q->whereNull('unpublish_at')
+                    ->orWhere('unpublish_at', '>', now());
+            });
+    }
+
+    /**
+     * Instance-level storefront gate, mirroring the time-aware `published()`
+     * scope. Used by the storefront show route for already-loaded models
+     * (a scheduled auto-unpublish hides the product even before the cron
+     * runtime service flips its status.)
+     */
+    public function isVisibleOnStorefront(): bool
+    {
+        if ($this->status !== 'published') {
+            return false;
+        }
+
+        return $this->unpublish_at === null || $this->unpublish_at->gt(now());
     }
 
     public function scopeFeatured($query)
