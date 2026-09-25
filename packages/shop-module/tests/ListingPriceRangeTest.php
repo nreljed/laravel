@@ -196,6 +196,44 @@ class ListingPriceRangeTest extends TestCase
         );
     }
 
+    /**
+     * The price filter compared the raw `price` column directly, so a
+     * variable or grouped parent - both of which are 0 there - could never
+     * match, and filtering 300-500 returned an empty catalog for a product
+     * priced 349-409. Matching is now by overlap across every payable price.
+     */
+    public function test_price_filter_matches_by_overlap_not_the_raw_price_column(): void
+    {
+        $controller = (string) file_get_contents(
+            dirname(__DIR__).'/src/Http/Controllers/StorefrontController.php'
+        );
+
+        $this->assertStringNotContainsString(
+            "\$query->where('price', '>=',",
+            $controller,
+            'the filter must not compare the raw price column, which is 0 on variable and grouped parents'
+        );
+        $this->assertStringNotContainsString(
+            "\$query->where('price', '<=',",
+            $controller,
+            'the filter must not compare the raw price column, which is 0 on variable and grouped parents'
+        );
+        $this->assertStringContainsString(
+            'applyPriceWindow',
+            $controller,
+            'the filter must delegate to applyPriceWindow()'
+        );
+
+        foreach ([
+            "'price', '>', 0" => 'a parent price of 0 is the "no price" sentinel, not a match for a window starting at 0',
+            'min_variation_price' => 'variable products must match through their variation range',
+            'item.price' => 'grouped products must match through a bundled item price',
+            'rangeOverlaps' => 'a range must match by overlapping the window, not by containing it',
+        ] as $needle => $why) {
+            $this->assertStringContainsString($needle, $controller, $why);
+        }
+    }
+
     public function test_listing_card_renders_the_range_instead_of_the_raw_price(): void
     {
         $this->assertProductRenderersUseDisplayPrice(

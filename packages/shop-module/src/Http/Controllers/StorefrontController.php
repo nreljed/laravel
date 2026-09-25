@@ -2,7 +2,7 @@
 
 namespace Nreljed\ShopModule\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -179,7 +179,7 @@ class StorefrontController extends Controller
         ]);
     }
 
-    protected function baseQuery(): Builder
+    protected function baseQuery(): EloquentBuilder
     {
         return Product::published()
             ->whereIn('catalog_visibility', ['visible', 'catalog'])
@@ -225,11 +225,11 @@ class StorefrontController extends Controller
         ];
     }
 
-    protected function applyFilters(Builder $query, Request $request): void
+    protected function applyFilters(EloquentBuilder $query, Request $request): void
     {
         if ($request->filled('search')) {
             $q = $request->search;
-            $query->where(function (Builder $w) use ($q) {
+            $query->where(function (EloquentBuilder $w) use ($q) {
                 $w->where('name', 'like', "%{$q}%")
                     ->orWhere('description', 'like', "%{$q}%");
             });
@@ -254,17 +254,99 @@ class StorefrontController extends Controller
             $from = $this->currencyService->storefrontCode();
             $to = $this->currencyService->defaultCode();
 
-            if ($request->filled('min_price')) {
-                $query->where('price', '>=', $this->currencyService->convert((float) $request->min_price, $from, $to));
-            }
+            $floor = $request->filled('min_price')
+                ? $this->currencyService->convert((float) $request->min_price, $from, $to)
+                : null;
+            $ceiling = $request->filled('max_price')
+                ? $this->currencyService->convert((float) $request->max_price, $from, $to)
+                : null;
 
-            if ($request->filled('max_price')) {
-                $query->where('price', '<=', $this->currencyService->convert((float) $request->max_price, $from, $to));
-            }
+            $this->applyPriceWindow($query, $floor, $ceiling);
         }
     }
 
-    protected function renderCatalog(Request $request, Builder $query, array $options = [])
+    /**
+     * Match products whose payable prices overlap the requested window.
+     *
+     * Comparing the raw `price` column excluded variable and grouped products
+     * outright, because that column is 0 on both: a 300-500 window matched
+     * nothing at all, even for a product whose variations run 349-409. A
+     * product now matches when any price a shopper can pay for it falls inside
+     * the window - its own price, any of its variations, or any bundled item.
+     * With only one bound supplied the window is treated as open-ended.
+     */
+    protected function applyPriceWindow(EloquentBuilder $query, ?float $floor, ?float $ceiling): void
+    {
+        if ($floor === null && $ceiling === null) {
+            return;
+        }
+
+        $query->where(function (EloquentBuilder $window) use ($floor, $ceiling) {
+            // A simple product has exactly one payable price. `price = 0` is this
+            // codebase's "no price of its own" sentinel rather than "free", so
+            // it must not satisfy a window that happens to start at 0.
+            $window->orWhere(function (EloquentBuilder $simple) use ($floor, $ceiling) {
+                $simple->where('price', '>', 0);
+
+                $this->priceWithin($simple, 'price', $floor, $ceiling);
+            });
+
+            // A variable product matches when its variation range overlaps.
+            $window->orWhere(function (EloquentBuilder $variable) use ($floor, $ceiling) {
+                $variable->where('min_variation_price', '>', 0)
+                    ->whereNotNull('max_variation_price');
+
+                $this->rangeOverlaps(
+                    $variable,
+                    'min_variation_price',
+                    'max_variation_price',
+                    $floor,
+                    $ceiling
+                );
+            });
+
+            // A grouped product matches when any bundled item is in the window.
+            $window->orWhereExists(function (QueryBuilder $sub) use ($floor, $ceiling) {
+                $sub->selectRaw('1')
+                    ->from('product_grouped_products as links')
+                    ->join('products as item', 'item.id', '=', 'links.product_id')
+                    ->whereColumn('links.group_product_id', 'products.id')
+                    ->where('item.price', '>', 0);
+
+                $this->priceWithin($sub, 'item.price', $floor, $ceiling);
+            });
+        });
+    }
+
+    /** Constrain a single price to fall inside the window. */
+    protected function priceWithin(QueryBuilder|EloquentBuilder $query, string $column, ?float $floor, ?float $ceiling): void
+    {
+        if ($floor !== null) {
+            $query->where($column, '>=', $floor);
+        }
+
+        if ($ceiling !== null) {
+            $query->where($column, '<=', $ceiling);
+        }
+    }
+
+    /**
+     * Constrain a price *range* to overlap the window: the range's floor has to
+     * be at or below the ceiling, and its ceiling at or above the floor. An
+     * absent window bound is unconstrained.
+     */
+    protected function rangeOverlaps(EloquentBuilder $query, string $minColumn, string $maxColumn, ?float $floor, ?float $ceiling): void
+    {
+        if ($ceiling !== null) {
+            $query->where($minColumn, '<=', $ceiling);
+        }
+
+        if ($floor !== null) {
+            $query->where($maxColumn, '>=', $floor);
+        }
+    }
+
+    protected function renderCatalog(Request $request, EloquentBuilder $query, array $options = [])
     {
         $sortField = match ($request->sort) {
             'price_asc' => 'price',

@@ -2,6 +2,17 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.63]
+
+### Fixed
+
+- **The catalog price filter no longer drops variable and grouped products.** It compared the raw
+  `price` column, which is 0 on both types, so they could never satisfy a price window: filtering
+  `300-500` returned an empty catalog even for a product whose variations run 349-409. A product now
+  matches when any price a shopper can pay for it falls inside the window — its own price, any of its
+  variations, or any bundled item — so a range matches by *overlap* rather than containment. A parent
+  price of 0 is treated as "no price" and never matches a window that starts at 0.
+
 ## [0.1.62]
 
 ### Fixed
