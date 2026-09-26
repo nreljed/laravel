@@ -64,9 +64,37 @@ initialize a nested `.git` here — the mono tracks this tree.
 - Always run `npm run build` after code changes.
 - CSP middleware applies in production only.
 
+### There are two copies of this app — check before testing
+
+`C:\Users\nrelj\Local Sites\laravel.shop` is a **standalone copy that nothing
+serves**. It is not this workspace app, and results from it describe an app no
+visitor reaches. Both trees run `artisan` and both look plausible, which is
+exactly why it is worth ten seconds to confirm:
+
+```bash
+php artisan shop:env-check        # exits non-zero if this tree is not the served one
+php artisan shop:env-check --json # same, for tooling
+```
+
+It prints the resolved app path, marks which local site serves it, and flags
+any `nreljed/*` package installed from a local working tree rather than the
+released artifact. Two traps it covers:
+
+- **Wrong tree.** Only `apps/laravel.shop` (this one) is served.
+- **Wrong base.** A Composer `path` repository makes `composer update` reuse
+  the existing checkout and report success, so `vendor` holds a working tree
+  while the lock claims a release. `PackageLockParityTest` fails the build on
+  this; the command reports it.
+
+Frontend sources are read from `../../packages/shop-module`, not from
+`vendor/nreljed/shop-module` — another pair of trees worth keeping straight.
+PHP changes are authored in the separate `nreljed/shop-module` repository and
+released from there.
+
 ## Commands
 
 ```bash
+php artisan shop:env-check  # Verify this is the served tree + released packages
 npm run build                # tsc + vite build
 npm run typecheck            # tsc --noEmit
 php artisan migrate          # Run migrations
