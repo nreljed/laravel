@@ -15,6 +15,8 @@ class AttributesController extends Controller
 {
     public function index()
     {
+        $this->authorize('create', Product::class);
+
         $attributes = Attribute::with('terms')->orderBy('sort_order')->get();
 
         return Inertia::render('shop/attributes/index', [
@@ -78,6 +80,13 @@ class AttributesController extends Controller
 
     public function listTerms(Attribute $attribute)
     {
+        // This one is a JSON endpoint the variation and filter builders call as
+        // soon as the attribute screen mounts, so it was reachable by anything
+        // that cleared the route group's `shop.manage` gate without a check of
+        // its own. It reads the taxonomy, so it uses the same `create`-on-Product
+        // gate as every other action in this controller.
+        $this->authorize('create', Product::class);
+
         return response()->json($attribute->terms()->orderBy('sort_order')->get());
     }
 

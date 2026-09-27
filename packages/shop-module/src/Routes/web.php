@@ -55,13 +55,17 @@ Route::post('/products/{product}/variations/delete-bulk', [ProductVariationsCont
 Route::post('/products/{product}/variations/reorder', [ProductVariationsController::class, 'reorder'])->name('products.variations.reorder');
 
 // Orders
+// Literal segments must be registered before the `{order}` wildcard: Laravel
+// matches in declaration order, so `/orders/export` below `/orders/{order}`
+// resolves as an order lookup for the string "export" and 404s. The search
+// endpoints are hoisted for the same reason.
 Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
 Route::get('/orders/create', [OrdersController::class, 'create'])->name('orders.create');
+Route::get('/orders/export', [OrdersController::class, 'export'])->name('orders.export');
 Route::post('/orders', [OrdersController::class, 'storeAdmin'])->name('orders.store');
 Route::get('/orders/{order}', [OrdersController::class, 'show'])->name('orders.show');
 Route::get('/orders/{order}/edit', [OrdersController::class, 'edit'])->name('orders.edit');
 Route::put('/orders/{order}', [OrdersController::class, 'updateAdmin'])->name('orders.update');
-Route::get('/orders/export', [OrdersController::class, 'export'])->name('orders.export');
 Route::patch('/orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.update-status');
 Route::get('/orders/{order}/invoice', [OrdersController::class, 'invoice'])->name('orders.invoice');
 Route::post('/orders/{order}/mark-paid', [OrdersController::class, 'markAsPaid'])->name('orders.mark-paid');
@@ -93,9 +97,11 @@ Route::post('/checkout/payment-intent', [CheckoutController::class, 'createPayme
 Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
 
 // Customers
+// `/customers/export` before `/customers/{user}`: same wildcard trap as orders,
+// which made the customer export a dead link.
 Route::get('/customers', [CustomersController::class, 'index'])->name('customers.index');
-Route::get('/customers/{user}', [CustomersController::class, 'show'])->name('customers.show');
 Route::get('/customers/export', [CustomersController::class, 'export'])->name('customers.export');
+Route::get('/customers/{user}', [CustomersController::class, 'show'])->name('customers.show');
 
 // Categories
 Route::get('/categories', [CategoriesController::class, 'index'])->name('categories.index');

@@ -12,6 +12,13 @@ class CategoriesController extends Controller
 {
     public function index()
     {
+        // The route group's `shop.manage` is the outer boundary; every action
+        // here authorises individually so a permission split later does not
+        // silently expose the list. The other three use `create` on Product
+        // because a category is part of a product, so reading the taxonomy is
+        // the same gate as writing it.
+        $this->authorize('create', Product::class);
+
         $categories = ProductCategory::with('children')->orderBy('sort_order')->get();
 
         return Inertia::render('shop/categories/index', [

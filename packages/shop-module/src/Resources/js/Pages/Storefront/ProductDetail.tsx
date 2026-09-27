@@ -303,7 +303,13 @@ export default function StorefrontShow() {
                 setShowReviewForm(false)
                 reviewForm.reset()
             },
-            onError: () => toast.add({ title: 'Failed to submit review.', type: 'error' }),
+            onError: (errors) => {
+                // The controller rejects with a form-level `review` error
+                // (already reviewed, or no qualifying order). Surface the first
+                // message instead of a generic failure so the shopper knows why.
+                const first = Object.values(errors)[0]
+                if (first) toast.add({ title: first, type: 'error' })
+            },
         })
     }
 
@@ -877,6 +883,9 @@ export default function StorefrontShow() {
                                             <p className="text-sm text-destructive">{reviewForm.errors.content}</p>
                                         )}
                                     </div>
+                                    {reviewForm.errors.review && (
+                                        <p className="text-sm text-destructive">{reviewForm.errors.review}</p>
+                                    )}
                                     <div className="flex gap-2">
                                         <Button type="submit" disabled={reviewForm.processing}>
                                             {reviewForm.processing ? 'Submitting…' : 'Submit review'}

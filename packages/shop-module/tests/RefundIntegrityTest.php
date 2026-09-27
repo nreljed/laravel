@@ -257,10 +257,71 @@ final class RefundIntegrityTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'recordRefundForLines($order, $validated',
+            'recordRefundForLines($locked, $validated',
             $source,
             '`refund()` must restock the lines it was given; `recordRefundForOrder()` returns every line at full quantity.'
         );
+    }
+
+    /**
+     * The cap re-check runs inside a transaction, which reads as protection
+     * against a double refund. It is not, on its own: the transaction re-read
+     * the order with `refresh()` and nothing held a write lock, so under
+     * read-committed two refunds could read the same `total_refunded`, both
+     * pass the cap, and both write - the order ends up over-refunded with the
+     * status merely flipping to `refunded`. Only the row lock makes the second
+     * transaction wait for the first and re-read the committed total.
+     */
+    public function test_the_refund_action_locks_the_order_row_inside_the_transaction(): void
+    {
+        $body = $this->refundActionSource();
+
+        $this->assertStringContainsString(
+            'lockForUpdate()',
+            $body,
+            '`refund()` must lock the order row for the re-check to be authoritative.'
+        );
+
+        $this->assertStringNotContainsString(
+            '$order->refresh()',
+            $body,
+            'An unlocked re-read is exactly the race the lock replaces; keeping both invites a false sense of safety.'
+        );
+    }
+
+    public function test_the_lock_is_taken_before_the_remaining_amount_is_computed(): void
+    {
+        $body = $this->refundActionSource();
+
+        $lock = strpos($body, 'lockForUpdate()');
+        $cap = strpos($body, 'still refundable');
+
+        $this->assertIsInt($lock);
+        $this->assertIsInt($cap);
+        $this->assertLessThan(
+            $cap,
+            $lock,
+            'The lock has to be taken before the remaining amount is read, or the value being compared is still unlocked.'
+        );
+    }
+
+    /**
+     * Source of the `refund()` method, from its signature up to the next
+     * public method, so an unrelated `lockForUpdate()` elsewhere in the file
+     * cannot satisfy the assertion.
+     */
+    private function refundActionSource(): string
+    {
+        $source = (string) file_get_contents(
+            (new \ReflectionClass(\Nreljed\ShopModule\Http\Controllers\OrdersController::class))->getFileName()
+        );
+
+        $start = strpos($source, 'public function refund(');
+        $this->assertIsInt($start, 'OrdersController::refund() disappeared.');
+
+        $next = strpos($source, "\n    public function ", $start + 1);
+
+        return $next === false ? substr($source, $start) : substr($source, $start, $next - $start);
     }
 
     // ---------------------------------------------------------------------

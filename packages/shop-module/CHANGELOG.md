@@ -2,6 +2,51 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.67]
+
+### Fixed
+
+- **The orders and customers Export buttons work.** Both were registered *below* the
+  `/orders/{order}` and `/customers/{user}` wildcards. Laravel matches routes in declaration order, so
+  `GET /dashboard/shop/orders/export` resolved as an order lookup for the literal string "export",
+  bound nothing and returned 404 - as did the customers export. The products export had been placed
+  above `/products/{product}` and worked, which is why the two dead ones read as fine: `route:list`
+  reports every registered route with its controller and listed all three. Both literals are now
+  declared ahead of their wildcard.
+- **Five staff endpoints no longer ride the route group's permission alone.** The category list, the
+  attribute list, the raw attribute-term JSON, the product image upload and the SEO generation each
+  wrote or exposed something - a Media row, a product's meta, or a call on the caller's own AI key -
+  with no check of their own, relying entirely on the `/dashboard/shop` group's `shop.manage` gate.
+  Nearly every sibling action re-checks a policy, so a Shop Manager (which holds `shop.manage` and
+  `shop.products.edit` but not `shop.products.create`) could reach all five. They now authorise
+  individually: the taxonomy reads and the upload take `create` on Product, matching the other three
+  category and attribute actions, and the SEO generation takes `update`.
+
+### Changed
+
+- **`refund()` holds a row lock for the re-check it already performs.** The transaction re-read the
+  order with `refresh()` and nothing held a write lock, so under read-committed two refunds could read
+  the same `total_refunded`, both pass the "does this exceed the remaining total" check and both write
+  - leaving the order over-refunded with the status merely flipping to `refunded`. The row is now
+  locked, so the loser waits and re-reads the committed total. It is a no-op on SQLite, which
+  serialises writers anyway; the guarantee matters on the MySQL production database.
+- **The storefront review form shows why a submission was rejected.** The controller rejects with a
+  form-level `review` error (already reviewed, or no qualifying order) and the page reported a generic
+  "Failed to submit review." The first error message is now surfaced in the form and in the toast,
+  matching the pattern the other staff forms already use.
+
+### Added
+
+- **`tests/StaffRouteOrderAndAuthorizationTest.php` guards both faults.** It reads
+  `src/Routes/web.php` and asserts that no literal segment is declared after a wildcard that would
+  swallow it - comparing verbs as well as paths, because a `PUT /attributes/{attribute}/terms/{term}`
+  above a `POST .../terms/reorder` looks like a swallow and is not - and that each of the five staff
+  actions above carries its own `authorize()` call. Route-source assertions rather than HTTP requests,
+  because the package's own suite runs on a bare kernel where controller bodies never execute; the
+  behavioural half lives in the deploy app's `ShopStaffExportAndGateTest`.
+- **`RefundIntegrityTest` asserts the lock is taken before the amount is read**, and that the unlocked
+  `refresh()` it replaces is gone - keeping both would read as protection that does not exist.
+
 ## [0.1.64]
 
 ### Fixed

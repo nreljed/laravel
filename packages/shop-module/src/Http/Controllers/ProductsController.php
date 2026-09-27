@@ -594,6 +594,11 @@ class ProductsController extends Controller
 
     public function uploadImage(Request $request)
     {
+        // Writes a Media row against a product (and may be called before the
+        // product is saved, so entity_id can be null), which is why it carries
+        // its own check instead of relying on the route group's `shop.manage`.
+        $this->authorize('create', Product::class);
+
         Log::info('[GalleryUpload] uploadImage called', [
             'has_file' => $request->hasFile('file'),
             'file_name' => $request->file('file')?->getClientOriginalName(),

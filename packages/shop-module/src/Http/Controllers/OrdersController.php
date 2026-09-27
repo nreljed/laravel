@@ -320,9 +320,16 @@ class OrdersController extends Controller
         // transaction against a fresh read so two concurrent refunds cannot
         // both slip past.
         DB::transaction(function () use ($order, $validated, $userId, $totalRefund) {
-            $order->refresh();
+            // The lock is what makes that re-check authoritative. A plain
+            // refresh() still lets two transactions read the same
+            // total_refunded under read-committed and both write a refund;
+            // locking the row makes the loser wait and re-read the committed
+            // total, so the second refund sees the reduced remainder. It is a
+            // no-op on SQLite, which serialises writers anyway - the guarantee
+            // matters on the MySQL production database.
+            $locked = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
-            $remaining = round((float) $order->total - (float) $order->total_refunded, 2);
+            $remaining = round((float) $locked->total - (float) $locked->total_refunded, 2);
 
             if ($totalRefund > $remaining + 0.001) {
                 throw ValidationException::withMessages([
@@ -334,9 +341,9 @@ class OrdersController extends Controller
                 ]);
             }
 
-            $this->inventoryService->recordRefundForLines($order, $validated['items'], $userId);
+            $this->inventoryService->recordRefundForLines($locked, $validated['items'], $userId);
 
-            $order->refunds()->create([
+            $locked->refunds()->create([
                 'items' => $validated['items'],
                 'shipping_refund' => $validated['shipping_refund'] ?? 0,
                 'total' => $totalRefund,
@@ -344,12 +351,12 @@ class OrdersController extends Controller
                 'created_by' => $userId,
             ]);
 
-            $newTotalRefunded = (float) $order->total_refunded + $totalRefund;
-            $orderTotal = (float) $order->total;
+            $newTotalRefunded = (float) $locked->total_refunded + $totalRefund;
+            $orderTotal = (float) $locked->total;
 
             $updateData = [
                 'total_refunded' => $newTotalRefunded,
-                'payment_status' => $newTotalRefunded >= $orderTotal ? 'refunded' : $order->payment_status,
+                'payment_status' => $newTotalRefunded >= $orderTotal ? 'refunded' : $locked->payment_status,
             ];
 
             if ($newTotalRefunded >= $orderTotal) {
@@ -357,7 +364,10 @@ class OrdersController extends Controller
                 $updateData['refunded_at'] = now();
             }
 
-            $order->update($updateData);
+            $locked->update($updateData);
+
+            // The notification below reads the model the caller passed in.
+            $order->setRawAttributes($locked->getAttributes(), true);
         });
 
         $totalRefund = collect($validated['items'])->sum('amount') + (float) ($validated['shipping_refund'] ?? 0);
