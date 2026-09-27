@@ -5,6 +5,7 @@ namespace Nreljed\ShopModule\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductReview;
 use Nreljed\ShopModule\Requests\StoreReviewRequest;
@@ -55,7 +56,8 @@ class ReviewsController extends Controller
             return redirect()->back()->withErrors(['review' => 'You have already reviewed this product.']);
         }
 
-        $orderId = $request->user()->orders()
+        $orderId = Order::query()
+            ->where('user_id', $request->user()->id)
             ->whereHas('items', fn ($q) => $q->where('product_id', $product->id))
             ->where('status', 'completed')
             ->value('id');

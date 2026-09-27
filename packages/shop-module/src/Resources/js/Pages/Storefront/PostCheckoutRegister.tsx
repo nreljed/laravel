@@ -18,9 +18,21 @@ interface OrderData {
 interface Props {
   order: OrderData;
   email: string;
+  /**
+   * Pre-built by the server. This page is reached through a signed link, and
+   * assembling the URLs here from the order id alone dropped the signature -
+   * so the form submitted a URL that could only ever come back 401.
+   */
+  registerUrl: string;
+  confirmationUrl: string;
 }
 
-export default function RegisterFromOrder({ order, email }: Props) {
+export default function RegisterFromOrder({
+  order,
+  email,
+  registerUrl,
+  confirmationUrl,
+}: Props) {
   const { data, setData, post, processing, errors } = useForm({
     name: order.customer_name || "",
     password: "",
@@ -29,7 +41,7 @@ export default function RegisterFromOrder({ order, email }: Props) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    post(route("store.checkout.store-register", order.id), {
+    post(registerUrl, {
       preserveScroll: true,
     });
   };
@@ -38,7 +50,7 @@ export default function RegisterFromOrder({ order, email }: Props) {
     <StoreLayout>
       <Head title="Create Account" />
       <div className="mx-auto max-w-lg px-4 py-12 sm:px-6">
-        <Link href={route("store.checkout.confirmation", order.id)} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
+        <Link href={confirmationUrl} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to order confirmation
         </Link>

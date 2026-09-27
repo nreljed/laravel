@@ -3,8 +3,10 @@
 namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\ShopModule\Http\Resources\StorefrontProductResource;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\Wishlist;
 use Nreljed\ShopModule\Services\CurrencyService;
@@ -19,7 +21,7 @@ class WishlistController extends Controller
         protected CustomerPricingContext $pricingContext,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $productIds = Wishlist::where('user_id', auth()->id())
             ->pluck('product_id');
@@ -38,7 +40,12 @@ class WishlistController extends Controller
         }
 
         return Inertia::render('shop/wishlist/index', [
-            'products' => $products,
+            // The wishlist is a storefront page, so it gets the same allowlist
+            // as the catalog. A signed-in customer is not a merchant and has no
+            // business seeing `cost_price` either.
+            'products' => $products->through(
+                fn (Product $product) => StorefrontProductResource::make($product)->resolve($request)
+            ),
         ]);
     }
 

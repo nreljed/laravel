@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\ShopModule\Http\Resources\StorefrontProductResource;
+use Nreljed\ShopModule\Http\Resources\StorefrontVariationResource;
 use Nreljed\ShopModule\Models\Attribute;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductFieldValue;
+use Nreljed\ShopModule\Models\ProductReview;
 use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\PriceResolver;
@@ -35,10 +38,10 @@ class StorefrontController extends Controller
         return $this->pricingContext->groupId();
     }
 
-    public function index()
+    public function index(Request $request)
     {
         return Inertia::render('shop/storefront/home', [
-            'homepage' => $this->homepageData(),
+            'homepage' => $this->homepageData($request),
         ]);
     }
 
@@ -50,7 +53,7 @@ class StorefrontController extends Controller
         return $this->renderCatalog($request, $query);
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
         if (! $product->isVisibleOnStorefront()) {
             abort(404);
@@ -154,16 +157,56 @@ class StorefrontController extends Controller
             $priceRange = ['min' => (float) $range['min'], 'max' => (float) $range['max']];
         }
 
+        // Every one of these went to the browser as a raw model before, which
+        // published `cost_price` and the rest of the internal columns to
+        // anonymous shoppers. The allowlist resources are the storefront's
+        // contract with `ProductDetail.tsx`.
         return Inertia::render('shop/storefront/productdetail', [
-            'product' => $product,
-            'related' => $related,
-            'variations' => $variations,
+            'product' => StorefrontProductResource::make($product)->resolve($request),
+            'related' => StorefrontProductResource::collection($related)->resolve($request),
+            'variations' => StorefrontVariationResource::collection($variations)->resolve($request),
             'attributes' => $attributes,
             'priceRange' => $priceRange,
-            'defaultVariation' => $defaultVariation,
+            'defaultVariation' => $defaultVariation !== null
+                ? StorefrontVariationResource::make($defaultVariation)->resolve($request)
+                : null,
             'visibleAttributes' => $visibleAttributes,
             'specifications' => $specifications,
+            'userReview' => $this->currentUserReview($request, $product),
         ]);
+    }
+
+    /**
+     * The signed-in shopper's own review of this product, if any.
+     *
+     * The storefront shows approved reviews to everyone, so without this the
+     * page could not tell a shopper who had already reviewed from one who had
+     * not, and the form would invite a submission the controller then refuses
+     * as a duplicate.
+     */
+    private function currentUserReview(Request $request, Product $product): ?array
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $review = ProductReview::where('product_id', $product->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $review) {
+            return null;
+        }
+
+        return [
+            'id' => $review->id,
+            'rating' => $review->rating,
+            'title' => $review->title,
+            'content' => $review->content,
+            'is_approved' => $review->is_approved,
+        ];
     }
 
     public function category(Request $request, string $slug)
@@ -460,7 +503,11 @@ class StorefrontController extends Controller
         }
 
         $data = [
-            'products' => $products,
+            // `through()` rewrites each row but keeps the paginator's link
+            // metadata, so the grid's page controls survive the trim.
+            'products' => $products->through(
+                fn (Product $product) => StorefrontProductResource::make($product)->resolve($request)
+            ),
             'categories' => $categories,
             'brands' => $brands,
             'attributeFilters' => $attributeFilters,
@@ -475,7 +522,7 @@ class StorefrontController extends Controller
         return Inertia::render('shop/storefront/productgrid', $data);
     }
 
-    protected function homepageData(): array
+    protected function homepageData(Request $request): array
     {
         $featured = Product::published()
             ->whereIn('catalog_visibility', ['visible', 'catalog'])
@@ -515,8 +562,8 @@ class StorefrontController extends Controller
 
         return [
             'hero' => config('shop.storefront.hero'),
-            'featured' => $featured,
-            'newArrivals' => $newArrivals,
+            'featured' => StorefrontProductResource::collection($featured)->resolve($request),
+            'newArrivals' => StorefrontProductResource::collection($newArrivals)->resolve($request),
             'categories' => $categoryGrid,
         ];
     }

@@ -136,8 +136,10 @@ class CartController extends Controller
         return response()->json($cart->fresh()->load('items.product', 'items.variation'));
     }
 
-    public function updateItem(Request $request, CartItem $cartItem)
+    public function updateItem(Request $request, int $cartItem)
     {
+        $cartItem = $this->findOwnCartItem($request, $cartItem);
+
         $validated = $request->validate(['quantity' => 'required|integer|min:0']);
 
         if ($validated['quantity'] <= 0) {
@@ -162,8 +164,10 @@ class CartController extends Controller
         return response()->json($cartItem->cart->fresh()->load('items.product', 'items.variation'));
     }
 
-    public function removeItem(CartItem $cartItem)
+    public function removeItem(Request $request, int $cartItem)
     {
+        $cartItem = $this->findOwnCartItem($request, $cartItem);
+
         $cart = $cartItem->cart;
         $cartItem->delete();
 
@@ -264,6 +268,24 @@ class CartController extends Controller
         $this->touchLastActivity($cart);
 
         return response()->json($cart->fresh()->load('items.product', 'items.variation'));
+    }
+
+    /**
+     * Resolve a cart item strictly within the caller's own cart.
+     *
+     * Route-model binding resolved `CartItem` globally, so any shopper could
+     * PUT or DELETE another shopper's line by guessing its id, and the JSON
+     * response returned that stranger's cart contents and coupons alongside
+     * it. Scoping the lookup to the caller's cart closes both; a line outside
+     * it is a 404 rather than a 403, since its existence is itself private.
+     */
+    protected function findOwnCartItem(Request $request, int $cartItemId): CartItem
+    {
+        $item = $this->getCart($request)->items()->whereKey($cartItemId)->first();
+
+        abort_if($item === null, 404);
+
+        return $item;
     }
 
     protected function getCart(Request $request): Cart

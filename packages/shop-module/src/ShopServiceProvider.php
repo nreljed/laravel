@@ -102,13 +102,19 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ->prefix('/dashboard')->name('dashboard.')
             ->group(__DIR__.'/Routes/customer-portal.php');
 
-        // Admin management (auth + shop.view permission)
-        Route::middleware(['web', 'auth', 'verified', 'permission:shop.view'])
+        // Admin management.
+        //
+        // Gate on `shop.manage`, not `shop.view`: the base `user` role holds
+        // `shop.view` so customers see their order portal, which made every
+        // registered shopper eligible to enter this whole prefix. Actions are
+        // still authorised individually, so the group gate is the outer
+        // boundary rather than the only one.
+        Route::middleware(['web', 'auth', 'verified', 'permission:shop.manage'])
             ->prefix('/dashboard/shop')->name('dashboard.shop.')
             ->group(__DIR__.'/Routes/web.php');
 
-        // Admin shop settings (admin + shop.view permission)
-        Route::middleware(['web', 'auth', 'verified', 'admin', 'permission:shop.view'])
+        // Admin shop settings (admin + shop.manage permission)
+        Route::middleware(['web', 'auth', 'verified', 'admin', 'permission:shop.manage'])
             ->prefix('/admin/shop')->name('admin.shop.')
             ->group(__DIR__.'/Routes/admin.php');
 
@@ -192,7 +198,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             return null;
         }
 
-        if ($user->can('shop.products.create')) {
+        if ($user->can('shop.manage')) {
             return 'Manage Shop';
         }
 
@@ -211,13 +217,15 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             return [];
         }
 
-        // Admin/manager: show only Shop management
-        if ($user->can('shop.products.create')) {
+        // Shop staff: show only Shop management. Split on `shop.manage` rather
+        // than `shop.products.create` - shop_manager legitimately belongs here
+        // but cannot create products, and previously fell through to the
+        // customer branch and saw no management navigation at all.
+        if ($user->can('shop.manage')) {
             try {
                 $items = [
                     ['title' => 'Dashboard', 'url' => route('dashboard.shop.dashboard', [], false)],
                     ['title' => 'All Products', 'url' => route('dashboard.shop.products.index', [], false)],
-                    ['title' => 'Add Product', 'url' => route('dashboard.shop.products.create', [], false)],
                     ['title' => 'Orders', 'url' => route('dashboard.shop.orders.index', [], false)],
                     ['title' => 'Create Order', 'url' => route('dashboard.shop.orders.create', [], false)],
                     ['title' => 'Categories', 'url' => route('dashboard.shop.categories.index', [], false)],
@@ -236,6 +244,14 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                     ['title' => 'Webhooks', 'url' => route('dashboard.shop.webhooks.index', [], false)],
                 ];
 
+                // shop_manager can manage the shop but not create products,
+                // so do not offer it a link that will 403.
+                if ($user->can('shop.products.create')) {
+                    array_splice($items, 2, 0, [
+                        ['title' => 'Add Product', 'url' => route('dashboard.shop.products.create', [], false)],
+                    ]);
+                }
+
                 if ($user->isAdmin()) {
                     $items[] = ['title' => 'Settings', 'url' => route('admin.shop.settings.index', [], false)];
                 }
@@ -244,7 +260,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                     'title' => 'Shop',
                     'url' => route('dashboard.shop.dashboard', [], false),
                     'icon' => 'ShoppingCart',
-                    'permission' => 'shop.view',
+                    'permission' => 'shop.manage',
                     'module_slug' => 'Shop',
                     'showModeBadge' => false,
                     'items' => $items,
@@ -411,6 +427,7 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
     {
         return [
             ['slug' => 'shop.view', 'name' => 'View Shop', 'description' => 'View Shop section.'],
+            ['slug' => 'shop.manage', 'name' => 'Manage Shop', 'description' => 'Access the shop management area.'],
             ['slug' => 'shop.products.create', 'name' => 'Create Products', 'description' => 'Create new products.'],
             ['slug' => 'shop.products.edit', 'name' => 'Edit Products', 'description' => 'Edit existing products.'],
             ['slug' => 'shop.products.delete', 'name' => 'Delete Products', 'description' => 'Delete products.'],
@@ -628,7 +645,19 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
 
     public function onUserDelete(int $userId): void
     {
-        // Orphan orders — keep them, just null the user_id
+        // Orders outlive the account that placed them - they are the shop's
+        // record of what was sold and what was paid - so the rows stay and only
+        // the link to the account is dropped. The foreign key is `nullOnDelete`
+        // and would do this anyway; doing it explicitly keeps the behaviour
+        // independent of the schema, and covers hosts that soft-delete.
+        //
+        // Nulling `user_id` is only safe because a nulled order is no longer
+        // world-readable: `CheckoutController::authorizeOrderView()` requires
+        // the order's confirmation token rather than treating "no account" as
+        // permission. When the guard skipped orders with a null `user_id`,
+        // deleting an account silently turned a private order into a public
+        // one, which is why that guard had to be independent of `user_id` in
+        // the first place.
         Order::where('user_id', $userId)->update(['user_id' => null]);
     }
 }

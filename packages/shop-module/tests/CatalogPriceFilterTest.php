@@ -5,9 +5,11 @@ namespace Nreljed\ShopModule\Tests;
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Facade;
 use Nreljed\ShopModule\Http\Controllers\StorefrontController;
 use Nreljed\ShopModule\Models\Product;
+use Nreljed\ShopModule\Tests\Concerns\ProvidesAnonymousAuth;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -25,6 +27,8 @@ use PHPUnit\Framework\TestCase;
  */
 class CatalogPriceFilterTest extends TestCase
 {
+    use ProvidesAnonymousAuth;
+
     private static bool $booted = false;
 
     protected function setUp(): void
@@ -39,8 +43,6 @@ class CatalogPriceFilterTest extends TestCase
         Capsule::connection()->table('products')->delete();
         Capsule::connection()->table('product_variations')->delete();
         Capsule::connection()->table('product_grouped_products')->delete();
-
-        Model::unsetEventDispatcher();
     }
 
     private function bootDatabase(): void
@@ -58,11 +60,18 @@ class CatalogPriceFilterTest extends TestCase
         Facade::setFacadeApplication($container);
         Facade::clearResolvedInstances();
 
+        // `Product::creating()` stamps `slug` and reads the current user, so
+        // both the auth contract and the model dispatcher have to resolve.
+        $this->bindAnonymousAuth($container);
+        Model::setEventDispatcher(new Dispatcher($container));
+        Model::clearBootedModels();
+
         $schema = Capsule::schema();
 
         $schema->create('products', function ($table) {
             $table->increments('id');
             $table->string('name');
+            $table->string('slug')->nullable();
             $table->string('type')->default('simple');
             $table->decimal('price', 10, 2)->default(0);
             $table->decimal('min_variation_price', 10, 2)->nullable();

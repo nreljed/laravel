@@ -5,6 +5,7 @@ namespace Nreljed\ShopModule\Http\Controllers;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Platform\Models\User;
@@ -94,7 +95,7 @@ class OrdersController extends Controller
             ->orderBy('name')
             ->paginate(50);
 
-        $customers = User::whereHas('orders')
+        $customers = User::whereIn('id', Order::query()->select('user_id')->whereNotNull('user_id'))
             ->orWhere(function ($q) {
                 $q->whereNotNull('email');
             })
@@ -158,6 +159,12 @@ class OrdersController extends Controller
                 'shipping_address' => $validated['shipping_address'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'processed_by' => $request->user()->id,
+                // Staff-created orders skip the checkout pipe, which is where
+                // the token is normally issued. Without one here an order
+                // entered by hand (phone order, trade account) could never be
+                // opened by the customer it belongs to, and would silently
+                // become unreadable to anyone if that account went away.
+                'confirmation_token' => Order::newConfirmationToken(),
             ]);
 
             $order->items()->createMany($lineItems);
@@ -193,7 +200,7 @@ class OrdersController extends Controller
             ->orderBy('name')
             ->paginate(50);
 
-        $customers = User::whereHas('orders')
+        $customers = User::whereIn('id', Order::query()->select('user_id')->whereNotNull('user_id'))
             ->orWhere(function ($q) {
                 $q->whereNotNull('email');
             })
@@ -301,14 +308,33 @@ class OrdersController extends Controller
 
         $userId = $request->user()->id;
 
-        DB::transaction(function () use ($order, $validated, $userId) {
-            $totalRefund = (float) ($validated['shipping_refund'] ?? 0);
+        $totalRefund = (float) ($validated['shipping_refund'] ?? 0);
 
-            foreach ($validated['items'] as $item) {
-                $totalRefund += (float) $item['amount'];
+        foreach ($validated['items'] as $item) {
+            $totalRefund += (float) $item['amount'];
+        }
+
+        // `RefundOrderRequest` caps each line and the shipping, but the sum
+        // across lines can still exceed what is left to refund - two refunds
+        // of the same line each pass the per-line check. Re-checked inside the
+        // transaction against a fresh read so two concurrent refunds cannot
+        // both slip past.
+        DB::transaction(function () use ($order, $validated, $userId, $totalRefund) {
+            $order->refresh();
+
+            $remaining = round((float) $order->total - (float) $order->total_refunded, 2);
+
+            if ($totalRefund > $remaining + 0.001) {
+                throw ValidationException::withMessages([
+                    'items' => sprintf(
+                        'Refund of %s exceeds the %s still refundable on this order.',
+                        number_format($totalRefund, 2),
+                        number_format(max($remaining, 0), 2)
+                    ),
+                ]);
             }
 
-            $this->inventoryService->recordRefundForOrder($order, $userId);
+            $this->inventoryService->recordRefundForLines($order, $validated['items'], $userId);
 
             $order->refunds()->create([
                 'items' => $validated['items'],
@@ -546,12 +572,21 @@ class OrdersController extends Controller
 
     public function searchProducts(Request $request)
     {
-        $query = $request->get('q', '');
+        // Every other action here authorises individually; the route group's
+        // `shop.manage` gate is the outer boundary, not the only one. These two
+        // were the exceptions, and `searchCustomers` returns names and emails.
+        $this->authorize('viewAny', Order::class);
+
+        $query = $this->searchTerm($request);
+
+        if ($query === null) {
+            return response()->json([]);
+        }
 
         $products = Product::published()
             ->where(function ($q) use ($query) {
-                $q->where('name', 'like', '%'.$query.'%')
-                    ->orWhere('sku', 'like', '%'.$query.'%');
+                $q->where('name', 'like', $query)
+                    ->orWhere('sku', 'like', $query);
             })
             ->select('id', 'name', 'sku', 'price', 'stock_quantity', 'track_stock', 'thumbnail_url')
             ->orderBy('name')
@@ -571,11 +606,17 @@ class OrdersController extends Controller
 
     public function searchCustomers(Request $request)
     {
-        $query = $request->get('q', '');
+        $this->authorize('viewAny', Order::class);
+
+        $query = $this->searchTerm($request);
+
+        if ($query === null) {
+            return response()->json([]);
+        }
 
         $customers = User::where(function ($q) use ($query) {
-            $q->where('name', 'like', '%'.$query.'%')
-                ->orWhere('email', 'like', '%'.$query.'%');
+            $q->where('name', 'like', $query)
+                ->orWhere('email', 'like', $query);
         })
             ->select('id', 'name', 'email')
             ->orderBy('name')
@@ -588,5 +629,39 @@ class OrdersController extends Controller
             ]);
 
         return response()->json($customers);
+    }
+
+    /**
+     * The term these pickers interpolate into a `LIKE` pattern, or null when
+     * there is nothing to search for.
+     *
+     * The raw query string was used as-is, so a caller could send `%` and match
+     * every row - on `searchCustomers` that is the full user list, names and
+     * emails, in 20 rows.
+     *
+     * Wildcards are stripped rather than backslash-escaped on purpose. SQLite
+     * treats `\` in a `LIKE` pattern as an ordinary character unless the
+     * pattern carries an explicit `ESCAPE` clause, so an escaped term matches
+     * nothing at all there while working on MySQL - search would pass in
+     * production and return empty against SQLite. Stripping needs no clause and
+     * behaves identically on both engines; a shopper searching for a literal
+     * `%` still matches on the text around it.
+     *
+     * A term that is empty to begin with, or that was nothing but wildcards, is
+     * null rather than a bare `%`. Falling back to `%` there would leave the
+     * enumeration the stripping above exists to close, just behind a different
+     * character: these are lookup fields for attaching a specific line or
+     * customer, so having nothing to search for means having nothing to show.
+     */
+    private function searchTerm(Request $request): ?string
+    {
+        $term = mb_substr(trim((string) $request->get('q', '')), 0, 100);
+        $term = str_replace(['\\', '%', '_'], '', $term);
+
+        if (trim($term) === '') {
+            return null;
+        }
+
+        return '%'.$term.'%';
     }
 }

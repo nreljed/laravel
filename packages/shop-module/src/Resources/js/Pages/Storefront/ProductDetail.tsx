@@ -1,4 +1,4 @@
-﻿import { Link, router, usePage, Head } from '@inertiajs/react'
+﻿import { Link, router, usePage, Head, useForm } from '@inertiajs/react'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ArrowLeft, Minus, Plus, ShoppingBag, ShoppingCart, Star, Heart, ExternalLink, FileDown, Package, Expand, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import StoreLayout from '../../Layouts/StoreLayout'
@@ -13,6 +13,9 @@ import { WishlistButton } from '../../components/WishlistButton'
 import { AttributeSelector } from '../../components/AttributeSelector'
 import { displayPrice } from '../../components/storefront/ProductCard'
 import { useCurrency } from '../../lib/currency'
+import { useAuth } from '@nreljed/platform/hooks/use-auth'
+import { Input } from '@nreljed/platform/Components/ui/input'
+import { Textarea } from '@nreljed/platform/Components/ui/textarea'
 import { cn } from '@nreljed/platform/lib/utils'
 import { toast } from '@nreljed/platform/Components/ui/toast'
 
@@ -69,6 +72,10 @@ interface VisibleAttr {
     display_type?: string;
     terms: { name: string; swatch_value?: string | null }[];
 }
+interface UserReview {
+    id: number; rating: number; title: string | null; content: string | null; is_approved: boolean;
+}
+
 interface ShowPage {
     product: ProductDetail;
     related: ProductDetail[];
@@ -78,6 +85,7 @@ interface ShowPage {
     defaultVariation: Variation | null;
     visibleAttributes: VisibleAttr[];
     specifications?: { name: string; value: string }[];
+    userReview?: UserReview | null;
 }
 
 function ProductGallery({ images, thumbnailUrl, productName, variationImageUrl }: { images: GalleryImage[]; thumbnailUrl: string | null; productName: string; variationImageUrl?: string | null }) {
@@ -265,8 +273,9 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
 
 export default function StorefrontShow() {
     const { props } = usePage<ShowPage & { wishlistIds: number[] }>()
-    const { product, related, variations, attributes, priceRange, defaultVariation, visibleAttributes, specifications, wishlistIds } = props
+    const { product, related, variations, attributes, priceRange, defaultVariation, visibleAttributes, specifications, wishlistIds, userReview } = props
     const { money, selectedCode } = useCurrency()
+    const { isLoggedIn } = useAuth()
     const [quantity, setQuantity] = useState(product.min_quantity || 1)
     const [addingToCart, setAddingToCart] = useState(false)
     const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null)
@@ -274,6 +283,29 @@ export default function StorefrontShow() {
     const [notifyEmail, setNotifyEmail] = useState('')
     const [notifySent, setNotifySent] = useState(false)
     const [notifying, setNotifying] = useState(false)
+
+    // Review submission posts to the storefront route, not the dashboard one:
+    // `dashboard.shop.reviews.store` sits behind `permission:shop.manage`, so
+    // a shopper following it was met with a 403.
+    const [showReviewForm, setShowReviewForm] = useState(false)
+    const reviewForm = useForm({ rating: 0, title: '', content: '' })
+
+    const submitReview = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (reviewForm.data.rating === 0) {
+            toast.add({ title: 'Please select a rating.', type: 'error' })
+            return
+        }
+        reviewForm.post(route('store.reviews.store', product.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.add({ title: 'Review submitted and pending approval.', type: 'success' })
+                setShowReviewForm(false)
+                reviewForm.reset()
+            },
+            onError: () => toast.add({ title: 'Failed to submit review.', type: 'error' }),
+        })
+    }
 
     const handleNotify = async () => {
         if (!notifyEmail.trim() || notifying) return
@@ -752,34 +784,123 @@ export default function StorefrontShow() {
                 </div>
 
                 {/* Reviews Section */}
-                {product.reviews.length > 0 && (
-                    <section className="mt-16">
-                        <div className="flex items-center gap-4 mb-8">
-                            <h2 className="text-xl font-bold">Customer Reviews</h2>
+                <section className="mt-16">
+                    <div className="flex items-center gap-4 mb-8">
+                        <h2 className="text-xl font-bold">Customer Reviews</h2>
+                        {product.reviews_count > 0 && (
                             <Badge variant="secondary">{product.reviews_count} review{product.reviews_count !== 1 ? 's' : ''}</Badge>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
-                            {product.reviews.map((review) => (
-                                <Card key={review.id}>
-                                    <CardContent className="p-4 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                                                    {review.user?.name?.charAt(0).toUpperCase() ?? 'A'}
-                                                </div>
-                                                <span className="text-sm font-medium">{review.user?.name ?? 'Anonymous'}</span>
+                        )}
+                    </div>
+
+                    {product.reviews_count === 0 && !userReview && (
+                        <p className="text-sm text-muted-foreground">No reviews yet.</p>
+                    )}
+
+                    {product.reviews.length > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
+                        {product.reviews.map((review) => (
+                            <Card key={review.id}>
+                                <CardContent className="p-4 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                                                {review.user?.name?.charAt(0).toUpperCase() ?? 'A'}
                                             </div>
+                                            <span className="text-sm font-medium">{review.user?.name ?? 'Anonymous'}</span>
                                         </div>
-                                        <StarRating value={review.rating} size="sm" readonly />
-                                        {review.title && <p className="font-semibold text-sm">{review.title}</p>}
-                                        {review.content && <p className="text-sm text-muted-foreground">{review.content}</p>}
-                                        <p className="text-xs text-muted-foreground">{review.created_at}</p>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                    </div>
+                                    <StarRating value={review.rating} size="sm" readonly />
+                                    {review.title && <p className="font-semibold text-sm">{review.title}</p>}
+                                    {review.content && <p className="text-sm text-muted-foreground">{review.content}</p>}
+                                    <p className="text-xs text-muted-foreground">{review.created_at}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                    )}
+
+                    {/* Write a review. A shopper with no way to submit one is
+                        why this section used to stop at the display list. */}
+                    {userReview ? (
+                        <div className="mt-8 max-w-2xl">
+                            <h3 className="text-sm font-semibold mb-2">Your review</h3>
+                            <div className="flex items-center gap-3">
+                                <StarRating value={userReview.rating} size="sm" readonly />
+                                <span className="text-sm text-muted-foreground">
+                                    {userReview.is_approved ? 'Published' : 'Awaiting approval'}
+                                </span>
+                            </div>
+                            {userReview.title && <p className="font-semibold text-sm mt-2">{userReview.title}</p>}
+                            {userReview.content && <p className="text-sm text-muted-foreground">{userReview.content}</p>}
                         </div>
-                    </section>
-                )}
+                    ) : isLoggedIn ? (
+                        <div className="mt-8 max-w-2xl">
+                            {!showReviewForm ? (
+                                <Button variant="outline" onClick={() => setShowReviewForm(true)}>
+                                    Write a review
+                                </Button>
+                            ) : (
+                                <form onSubmit={submitReview} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <span className="text-sm font-medium">Your rating</span>
+                                        <div>
+                                            <StarRating
+                                                value={reviewForm.data.rating}
+                                                onChange={(value) => reviewForm.setData('rating', value)}
+                                                size="lg"
+                                            />
+                                        </div>
+                                        {reviewForm.errors.rating && (
+                                            <p className="text-sm text-destructive">{reviewForm.errors.rating}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Input
+                                            value={reviewForm.data.title}
+                                            onChange={(e) => reviewForm.setData('title', e.target.value)}
+                                            placeholder="Title (optional)"
+                                            maxLength={255}
+                                        />
+                                        {reviewForm.errors.title && (
+                                            <p className="text-sm text-destructive">{reviewForm.errors.title}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Textarea
+                                            value={reviewForm.data.content}
+                                            onChange={(e) => reviewForm.setData('content', e.target.value)}
+                                            placeholder="How was it?"
+                                            rows={4}
+                                            maxLength={5000}
+                                        />
+                                        {reviewForm.errors.content && (
+                                            <p className="text-sm text-destructive">{reviewForm.errors.content}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button type="submit" disabled={reviewForm.processing}>
+                                            {reviewForm.processing ? 'Submitting…' : 'Submit review'}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() => setShowReviewForm(false)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="mt-8 text-sm text-muted-foreground">
+                            <Link href={route('login')} className="underline">
+                                Sign in
+                            </Link>{' '}
+                            to write a review.
+                        </p>
+                    )}
+                </section>
 
                 {/* Related Products */}
                 {related.length > 0 && (

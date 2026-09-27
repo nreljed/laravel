@@ -190,6 +190,50 @@ class InventoryService
         }
     }
 
+    /**
+     * Restock only the lines a partial refund actually covered.
+     *
+     * `recordRefundForOrder()` returns every line at full quantity, which is
+     * right when an order is cancelled or its hold expires but wrong for a
+     * refund of one item out of three: the caller passed the specific lines and
+     * quantities, and returning the rest put unsold stock back on the shelf and
+     * inflated availability for products the customer kept.
+     *
+     * @param  array<int, array{order_item_id: int, quantity: int}>  $lines
+     */
+    public function recordRefundForLines(Order $order, array $lines, ?int $userId = null): void
+    {
+        $order->loadMissing('items.product', 'items.variation');
+
+        $quantities = [];
+
+        foreach ($lines as $line) {
+            $quantities[(int) $line['order_item_id']] = ($quantities[(int) $line['order_item_id']] ?? 0)
+                + max(0, (int) $line['quantity']);
+        }
+
+        foreach ($order->items as $item) {
+            $quantity = $quantities[$item->id] ?? 0;
+
+            if ($quantity <= 0 || ! $item->product) {
+                continue;
+            }
+
+            $variation = null;
+            if ($item->product_variation_id) {
+                $variation = $item->variation ?? ProductVariation::find($item->product_variation_id);
+            }
+
+            $this->recordRefund(
+                $item->product,
+                min($quantity, (int) $item->quantity),
+                $order->id,
+                $userId,
+                $variation
+            );
+        }
+    }
+
     public function manualAdjust(
         Product $product,
         int $quantity,

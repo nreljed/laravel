@@ -35,6 +35,14 @@ final class ManualPaymentDriver implements PaymentDriver
         throw new LogicException('The manual payment method does not create payment intents.');
     }
 
+    public function verifyPayment(string $paymentReference, Order $order): PaymentVerification
+    {
+        // There is no gateway to ask, so nothing can be confirmed here. Manual
+        // orders are reconciled by staff (or bank transfer), so they stay
+        // pending rather than being reported as paid or refused.
+        return PaymentVerification::pending('Manual payments are confirmed by staff.');
+    }
+
     public function verifyWebhook(string $payload, string $signature): array
     {
         throw new LogicException('The manual payment method has no webhooks.');

@@ -19,7 +19,6 @@ class ProductResource extends JsonResource
             'sku' => $this->sku,
             'stock_quantity' => (int) $this->stock_quantity,
             'track_stock' => (bool) $this->track_stock,
-            'status' => $this->status,
             'type' => $this->type,
             'categories' => $this->whenLoaded('categories', fn () => $this->categories->pluck('name')),
             'thumbnail_url' => $this->thumbnail_url,
@@ -27,6 +26,14 @@ class ProductResource extends JsonResource
             'reviews_count' => (int) ($this->reviews_count ?? 0),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+
+            // `status` was here, and `catalog_visibility` is deliberately
+            // absent. Both are editorial fields: this resource is only ever
+            // returned for products that are already published and browsable,
+            // so `status` could only ever read "published" while implying the
+            // caller had a say in it. Publishing the workflow state of a
+            // public feed invites clients to filter on it and reintroduces the
+            // leak `ProductsController` had just closed.
         ];
     }
 }

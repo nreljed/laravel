@@ -19,6 +19,7 @@ use Nreljed\Platform\Services\MailService;
 use Nreljed\Platform\Services\NotificationService;
 use Nreljed\ShopModule\Models\Cart;
 use Nreljed\ShopModule\Models\Order;
+use Nreljed\ShopModule\Payments\PaymentVerification;
 use Nreljed\ShopModule\Services\CartMergeService;
 use Nreljed\ShopModule\Services\CheckoutService;
 use Nreljed\ShopModule\Services\CurrencyService;
@@ -128,15 +129,63 @@ class CheckoutController extends Controller
 
     public function confirmation(Request $request, Order $order)
     {
-        if ($order->user_id && (! $request->user() || $order->user_id !== $request->user()->id)) {
-            abort(403);
-        }
+        $this->authorizeOrderView($request, $order);
 
         $order->load('items');
 
         return Inertia::render('shop/orders/confirmation', [
             'order' => $order,
         ]);
+    }
+
+    /**
+     * Decide whether this visitor may see this order.
+     *
+     * The page carries the shopper's name, email, phone, billing and shipping
+     * addresses and what they bought, and the guard used to be
+     * `if ($order->user_id && ...)`, which does nothing at all for a guest
+     * order. Combined with sequential ids that made every guest order
+     * world-readable to anyone who incremented a number - and it applied to
+     * member orders too, because the `user_id` foreign key is `nullOnDelete`,
+     * so deleting an account quietly turned a private order into a public one.
+     *
+     * Three things now grant access, in the order a caller is most likely to
+     * have them:
+     *
+     *  - being signed in as the shopper who placed it;
+     *  - holding the confirmation token issued when the order was created,
+     *    which is what the shopper's own browser and their inbox carry;
+     *  - a valid URL signature, for the flows that build links server-side.
+     *
+     * Shop staff are exempt: the same action backs the `/dashboard/shop`
+     * confirmation route, which already sits behind `permission:shop.manage`,
+     * and staff have to be able to open a customer's order. Without that
+     * exemption the owner check below would refuse them every member order.
+     *
+     * Note the token is deliberately not tied to `user_id`: an order outlives
+     * the account that placed it, and the owner still needs to reach it.
+     */
+    protected function authorizeOrderView(Request $request, Order $order): void
+    {
+        if ($order->belongsToUser($request->user())) {
+            return;
+        }
+
+        if ($request->user()?->can('shop.manage')) {
+            return;
+        }
+
+        $token = $request->query('token');
+
+        if ($order->hasValidConfirmationToken(is_string($token) ? $token : null)) {
+            return;
+        }
+
+        if ($request->hasValidSignature()) {
+            return;
+        }
+
+        abort(403);
     }
 
     public function store(Request $request)
@@ -250,13 +299,24 @@ class CheckoutController extends Controller
         $provisionalOrder = null;
 
         if (($validated['payment_method'] ?? '') === 'stripe' && ! empty($validated['stripe_payment_intent_id'] ?? '')) {
-            $provisionalOrder = Order::where('payment_intent_id', $validated['stripe_payment_intent_id'])
-                ->where('payment_method', 'stripe')
-                ->where('status', config('shop.payments.provisional_draft_status', 'draft'))
-                ->first();
+            $provisionalOrder = $this->findOwnProvisionalOrder($cart, $user, $validated['stripe_payment_intent_id']);
         }
 
         $order = $this->checkoutService->processCheckout($cart, $validated, $user, $provisionalOrder);
+
+        $verification = $this->verifyPayment($order, $validated);
+
+        if ($verification->isFailed()) {
+            $order->update(['payment_status' => 'failed']);
+
+            throw ValidationException::withMessages([
+                'payment_method' => $verification->reason ?? 'We could not confirm your payment. Please try again.',
+            ]);
+        }
+
+        if ($verification->isPaid()) {
+            $order->update(['payment_status' => 'paid', 'paid_at' => now()]);
+        }
 
         $this->webhookService?->dispatchOrderPlaced($order);
 
@@ -285,7 +345,10 @@ class CheckoutController extends Controller
             $registerUrl = URL::temporarySignedRoute(
                 'store.checkout.register-from-order',
                 now()->addDays(7),
-                ['order' => $order->id, 'email' => $order->customer_email],
+                // The order's confirmation token rides along as well. The
+                // signature stops working after a week, and a shopper reading
+                // this in their inbox later should not find the link dead.
+                ['order' => $order->id, 'email' => $order->customer_email, 'token' => $order->confirmation_token],
             );
 
             $notificationData['createAccountUrl'] = $registerUrl;
@@ -301,8 +364,43 @@ class CheckoutController extends Controller
         // Determine redirect route based on origin
         $redirectRoute = $this->resolveRedirectRoute($request, $user);
 
-        return redirect()->route($redirectRoute, $order->id)
-            ->with('flash', ['success' => 'Order placed successfully!']);
+        // Report what actually happened to the payment. Telling a shopper
+        // "placed successfully" while the order sits unpaid (manual transfer,
+        // an async method still clearing) is how the previous bug stayed
+        // invisible from the storefront side.
+        $flash = $order->payment_status === 'paid'
+            ? ['success' => 'Order placed successfully!']
+            : ['success' => 'Order received. We are confirming your payment — you will be emailed as soon as it clears.'];
+
+        // A guest has no session to identify them on the confirmation page, so
+        // the link has to carry the order's token or the redirect they are
+        // being sent to would refuse them. Members are identified by their
+        // session, so their URL stays clean.
+        return redirect()->route($redirectRoute, $this->confirmationRedirectParameters($order))
+            ->with('flash', $flash);
+    }
+
+    /**
+     * Route parameters for the post-checkout redirect.
+     *
+     * A guest has no session to identify them on the confirmation page, so
+     * their link has to carry the order's token - without it the very first
+     * thing that happens after a successful guest checkout is a 403 on their
+     * own order. Members are identified by their session, so their URL stays
+     * clean and does not leak the token into their address bar, history, or a
+     * shared screenshot of the page.
+     *
+     * @return array<string, mixed>
+     */
+    protected function confirmationRedirectParameters(Order $order): array
+    {
+        $parameters = ['order' => $order->id];
+
+        if (! $order->user_id) {
+            $parameters['token'] = $order->confirmation_token;
+        }
+
+        return $parameters;
     }
 
     public function createPaymentIntent(Request $request)
@@ -327,6 +425,7 @@ class CheckoutController extends Controller
 
             return Order::create([
                 'user_id' => $user?->id,
+                'cart_id' => $cart->id,
                 'customer_email' => $user?->email ?? 'pending@checkout.com',
                 'customer_name' => $user?->name ?? 'Pending',
                 'subtotal' => $quote['subtotal'],
@@ -363,6 +462,78 @@ class CheckoutController extends Controller
         }
     }
 
+    /**
+     * Find the draft order this checkout is allowed to claim.
+     *
+     * The lookup used to be a bare `where('payment_intent_id', ...)` with no
+     * ownership check, and `CreateOrder` then wrote the caller's cart,
+     * addresses and email onto whatever row it matched - so anyone who learned
+     * another shopper's intent could overwrite that stranger's draft order.
+     *
+     * The anchor is the cart: `getCart()` resolves it from the session or the
+     * authenticated user, so a draft created through `createPaymentIntent()`
+     * for this cart is provably this shopper's. A reference belonging to
+     * someone else simply matches nothing, and checkout proceeds on a fresh
+     * order - the gateway check in `verifyPayment()` is what stops that fresh
+     * order from being marked paid.
+     */
+    protected function findOwnProvisionalOrder(Cart $cart, ?User $user, string $paymentIntentId): ?Order
+    {
+        $query = Order::where('payment_intent_id', $paymentIntentId)
+            ->where('payment_method', 'stripe')
+            ->where('status', config('shop.payments.provisional_draft_status', 'draft'));
+
+        if (($draft = $query->where('cart_id', $cart->id)->first()) !== null) {
+            return $draft;
+        }
+
+        // Drafts created before `orders.cart_id` existed have no cart link, so
+        // fall back to the user for members. Guests get no fallback: there is
+        // nothing left to prove ownership with.
+        if (! $user) {
+            return null;
+        }
+
+        return $query->whereNull('cart_id')->where('user_id', $user->id)->first();
+    }
+
+    /**
+     * Ask the gateway what actually happened, and translate the answer into
+     * the order's payment state.
+     *
+     * Runs after the checkout transaction has committed: a remote gateway call
+     * must not be made while holding a database transaction open. Manual
+     * payments are not confirmed here at all - they are reconciled by staff -
+     * so they are left pending.
+     */
+    protected function verifyPayment(Order $order, array $validated): PaymentVerification
+    {
+        $method = (string) ($validated['payment_method'] ?? '');
+
+        if ($method === '' || $method === 'manual') {
+            return PaymentVerification::pending();
+        }
+
+        $reference = (string) ($validated['stripe_payment_intent_id'] ?? $order->payment_intent_id ?? '');
+
+        if ($reference === '') {
+            return PaymentVerification::failed('We could not confirm your payment. Please try again.');
+        }
+
+        try {
+            $driver = $this->paymentManager->driver($method);
+        } catch (\Throwable $e) {
+            return PaymentVerification::failed('That payment method is not available.');
+        }
+
+        try {
+            return $driver->verifyPayment($reference, $order);
+        } catch (\Throwable $e) {
+            // Never treat an unreachable gateway as a successful payment.
+            return PaymentVerification::pending('We are still confirming your payment.');
+        }
+    }
+
     protected function getCart(Request $request): Cart
     {
         if ($user = $request->user()) {
@@ -374,9 +545,7 @@ class CheckoutController extends Controller
 
     public function registerFromOrder(Request $request, Order $order)
     {
-        if (! $request->hasValidSignature()) {
-            abort(401, 'Invalid or expired registration link.');
-        }
+        $this->authorizeRegistrationLink($request, $order);
 
         if ($order->user_id) {
             return redirect()->route('login')->with('status', 'This order is already linked to an account.');
@@ -391,14 +560,91 @@ class CheckoutController extends Controller
         return Inertia::render('shop/storefront/postcheckoutregister', [
             'order' => $order->only(['id', 'order_number', 'customer_email', 'customer_name', 'total', 'status']),
             'email' => $email,
+            // Built here rather than in the page. The visitor arrived on a
+            // signed link, and both the form's action and the "back to order"
+            // link used to be assembled from the order id alone - which threw
+            // the signature away, so the form submitted a URL that could only
+            // ever come back 401.
+            'registerUrl' => $this->registerFormUrl($request, $order),
+            'confirmationUrl' => $this->orderConfirmationUrl($order),
         ]);
+    }
+
+    /**
+     * Guard the "create an account from your order" pages.
+     *
+     * Either proof works: the temporary signature the emailed link carries, or
+     * the order's confirmation token. The signature expires, the token does
+     * not, and a shopper who dismisses the prompt for a week should still be
+     * able to follow it - the token is exactly as unguessable as the
+     * signature, it simply does not have a timer on it.
+     */
+    protected function authorizeRegistrationLink(Request $request, Order $order): void
+    {
+        $token = $request->query('token');
+
+        if ($request->hasValidSignature()) {
+            return;
+        }
+
+        if ($order->hasValidConfirmationToken(is_string($token) ? $token : null)) {
+            return;
+        }
+
+        abort(401, 'Invalid or expired registration link.');
+    }
+
+    /**
+     * The guest-registration form action, preserving whatever proof the
+     * visitor arrived with.
+     */
+    protected function registerFormUrl(Request $request, Order $order): string
+    {
+        return route('store.checkout.store-register', array_merge(
+            ['order' => $order->id],
+            $this->orderAccessParams($request, $order),
+        ));
+    }
+
+    /**
+     * A link that proves the holder may see this order without an account.
+     */
+    protected function orderConfirmationUrl(Order $order): string
+    {
+        return route('store.checkout.confirmation', [
+            'order' => $order->id,
+            'token' => $order->confirmation_token,
+        ]);
+    }
+
+    /**
+     * The proof a visitor is carrying, forwarded so it survives navigation.
+     *
+     * The signature is passed through for links that are already signed, and
+     * the token for everything else - the token is issued at checkout and
+     * never expires, so a registration prompt the shopper opens a fortnight
+     * later is not a dead end just because a temporary signature lapsed.
+     *
+     * @return array<string, string>
+     */
+    protected function orderAccessParams(Request $request, Order $order): array
+    {
+        $params = ['token' => (string) $order->confirmation_token];
+
+        foreach (['signature', 'expires', 'email'] as $key) {
+            $value = $request->query($key);
+
+            if (is_string($value) && $value !== '') {
+                $params[$key] = $value;
+            }
+        }
+
+        return $params;
     }
 
     public function storeRegisterFromOrder(Request $request, Order $order)
     {
-        if (! $request->hasValidSignature()) {
-            abort(401, 'Invalid or expired registration link.');
-        }
+        $this->authorizeRegistrationLink($request, $order);
 
         if ($order->user_id) {
             return redirect()->route('login')->with('status', 'This order is already linked to an account.');

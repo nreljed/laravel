@@ -71,7 +71,14 @@ class StripeService
         return $event->toArray();
     }
 
-    protected function toCents(float $amount, string $currency = 'usd'): int
+    /**
+     * Convert a major-unit amount to the gateway's minor units.
+     *
+     * Public because verifying a payment means recomputing what the order
+     * should have been charged for and comparing it against what the intent
+     * actually captured - a private converter would leave the driver guessing.
+     */
+    public function toCents(float $amount, string $currency = 'usd'): int
     {
         $zeroDecimal = ['jpy', 'krw', 'vnd', 'clp', 'xof', 'xaf'];
 

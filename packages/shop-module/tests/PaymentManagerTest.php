@@ -175,6 +175,11 @@ final class FakeDriver implements PaymentDriver
         );
     }
 
+    public function verifyPayment(string $paymentReference, Order $order): \Nreljed\ShopModule\Payments\PaymentVerification
+    {
+        return \Nreljed\ShopModule\Payments\PaymentVerification::paid();
+    }
+
     public function verifyWebhook(string $payload, string $signature): array
     {
         return ['type' => 'payment_intent.succeeded'];

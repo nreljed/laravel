@@ -34,9 +34,15 @@ class CreateOrder
             'exchange_rate' => $quote['exchange_rate'],
             'status' => 'pending',
             'payment_method' => $validated['payment_method'],
-            'payment_status' => $validated['payment_method'] === 'stripe' ? 'paid' : 'pending',
+            // Every order is created unpaid. The browser chooses
+            // `payment_method` and reports the intent it was handed, so neither
+            // is evidence that money moved - marking stripe orders `paid` here
+            // let a shopper check out without paying. Payment state is
+            // applied afterwards by CheckoutService from the gateway's own
+            // answer (or by the signed webhook for async methods).
+            'payment_status' => 'pending',
             'payment_intent_id' => $validated['stripe_payment_intent_id'] ?? null,
-            'paid_at' => $validated['payment_method'] === 'stripe' ? now() : null,
+            'paid_at' => null,
             'billing_address' => $validated['billing_address'],
             'shipping_address' => $validated['shipping_address'],
             'applied_coupons' => $appliedCouponsSnapshot,
@@ -47,6 +53,20 @@ class CreateOrder
             $context->order = $context->provisionalOrder;
         } else {
             $context->order = Order::create($attributes);
+        }
+
+        // The confirmation link is the only thing that lets a shopper without
+        // an account see their own order, so every order needs one. Issued
+        // here, the single point every order passes through, rather than at
+        // each of the several places that link to an order.
+        //
+        // Generated only when absent: a reused provisional draft keeps the
+        // token it already had, so a link the shopper already has open never
+        // stops working part-way through checkout.
+        if (! $context->order->confirmation_token) {
+            $context->order->update([
+                'confirmation_token' => Order::newConfirmationToken(),
+            ]);
         }
 
         return $next($context);
