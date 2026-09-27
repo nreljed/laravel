@@ -4,6 +4,7 @@ namespace Nreljed\ShopModule\Tests;
 
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Pipelines\Cart\PersistLine;
+use Nreljed\ShopModule\Pipelines\Cart\ValidateProductAvailability;
 use Nreljed\ShopModule\Pipelines\Cart\ResolveUnitPrice;
 use Nreljed\ShopModule\Pipelines\Cart\ValidatePurchaseQuantity;
 use Nreljed\ShopModule\Pipelines\Cart\ValidateVariant;
@@ -17,6 +18,7 @@ use Nreljed\ShopModule\Pipelines\Checkout\CreateOrderItems;
 use Nreljed\ShopModule\Pipelines\Checkout\RecordCouponUsage;
 use Nreljed\ShopModule\Pipelines\Checkout\RecordInventory;
 use Nreljed\ShopModule\Pipelines\Checkout\ResolveShippingMethod;
+use Nreljed\ShopModule\Pipelines\Checkout\ValidateAvailability;
 use Nreljed\ShopModule\Pipelines\Checkout\ValidateStock;
 use Nreljed\ShopModule\Pipelines\CheckoutContext;
 use Nreljed\ShopModule\Services\CheckoutService;
@@ -39,6 +41,7 @@ final class PipelinesContractTest extends TestCase
     {
         $this->assertSame([
             'cart' => [
+                ValidateProductAvailability::class,
                 ValidateVariant::class,
                 ResolveUnitPrice::class,
                 ValidatePurchaseQuantity::class,
@@ -48,6 +51,7 @@ final class PipelinesContractTest extends TestCase
                 BuildOrderItemAttributes::class,
             ],
             'checkout' => [
+                ValidateAvailability::class,
                 ValidateStock::class,
                 ResolveShippingMethod::class,
                 BuildQuote::class,

@@ -91,6 +91,7 @@ class OrdersController extends Controller
         $this->authorize('create', Order::class);
 
         $products = Product::published()
+            ->reachable()
             ->select('id', 'name', 'sku', 'price', 'stock_quantity', 'track_stock', 'thumbnail_url')
             ->orderBy('name')
             ->paginate(50);
@@ -196,6 +197,7 @@ class OrdersController extends Controller
         $order->load('items');
 
         $products = Product::published()
+            ->reachable()
             ->select('id', 'name', 'sku', 'price', 'stock_quantity', 'track_stock', 'thumbnail_url')
             ->orderBy('name')
             ->paginate(50);
@@ -594,6 +596,7 @@ class OrdersController extends Controller
         }
 
         $products = Product::published()
+            ->reachable()
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', $query)
                     ->orWhere('sku', 'like', $query);

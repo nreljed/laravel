@@ -41,6 +41,7 @@ return [
 
     'pipelines' => [
         'cart' => [
+            \Nreljed\ShopModule\Pipelines\Cart\ValidateProductAvailability::class,
             \Nreljed\ShopModule\Pipelines\Cart\ValidateVariant::class,
             \Nreljed\ShopModule\Pipelines\Cart\ResolveUnitPrice::class,
             \Nreljed\ShopModule\Pipelines\Cart\ValidatePurchaseQuantity::class,
@@ -50,6 +51,7 @@ return [
             \Nreljed\ShopModule\Pipelines\CartLines\BuildOrderItemAttributes::class,
         ],
         'checkout' => [
+            \Nreljed\ShopModule\Pipelines\Checkout\ValidateAvailability::class,
             \Nreljed\ShopModule\Pipelines\Checkout\ValidateStock::class,
             \Nreljed\ShopModule\Pipelines\Checkout\ResolveShippingMethod::class,
             \Nreljed\ShopModule\Pipelines\Checkout\BuildQuote::class,

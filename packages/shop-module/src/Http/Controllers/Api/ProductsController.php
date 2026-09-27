@@ -10,15 +10,22 @@ use Nreljed\ShopModule\Models\Product;
 class ProductsController extends Controller
 {
     /**
-     * The catalog visibility values a shopper may browse.
+     * The catalog-visibility values this endpoint may return.
      *
-     * Mirrors the storefront's own filter. `search` exists so a product can be
-     * reachable by direct link without appearing in listings, and `hidden`
-     * keeps it out of the API entirely; neither belongs in a public feed.
+     * Mirrors the storefront's own rule, so the public feed and the shop can
+     * never disagree about what exists: a search-only product is findable by
+     * name, and a hidden one is absent from both. The list comes from the
+     * model rather than a copy of it here - that copy was the reason a value
+     * added to the database could be missing from one surface and not another.
      *
-     * @var list<string>
+     * @return list<string>
      */
-    private const BROWSABLE_VISIBILITY = ['visible', 'catalog'];
+    private function browsableVisibility(Request $request): array
+    {
+        return $this->searchTerm($request) !== null
+            ? Product::SEARCH_VISIBILITIES
+            : Product::LISTING_VISIBILITIES;
+    }
 
     public function index(Request $request)
     {
@@ -28,7 +35,7 @@ class ProductsController extends Controller
         // not, so a draft's name, description and price were readable before
         // it launched, and a scheduled product was readable before its date.
         $query = Product::published()
-            ->whereIn('catalog_visibility', self::BROWSABLE_VISIBILITY);
+            ->whereIn('catalog_visibility', $this->browsableVisibility($request));
 
         $search = $this->searchTerm($request);
 
@@ -97,7 +104,12 @@ class ProductsController extends Controller
         // Route-model binding resolves any product, published or not, so the
         // show endpoint leaked the same drafts the list endpoint did - one id
         // at a time instead of all at once.
-        if (! $product->isVisibleOnStorefront() || ! in_array($product->catalog_visibility, self::BROWSABLE_VISIBILITY, true)) {
+        //
+        // One gate, the same one the storefront page uses. This endpoint used
+        // to hold a second, narrower list, so a search-only product was
+        // readable in the shop and 404'd here: the same product, two different
+        // answers, depending on which URL a caller had.
+        if (! $product->isVisibleOnStorefront()) {
             abort(404);
         }
 

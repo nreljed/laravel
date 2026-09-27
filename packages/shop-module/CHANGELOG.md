@@ -2,6 +2,82 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.69]
+
+### Fixed
+
+- **`catalog_visibility` now means what its four values say.** `search` was written to the database
+  and offered by the admin form, then filtered out of every storefront query by a list that named
+  only `visible` and `catalog` - so a product set to it was unlistable *and* unfindable, which is the
+  opposite of the value. The storefront now widens to the search set only when a search term is
+  actually present, so a search-only product is findable by name and still cannot be browsed by
+  category or paged through. A browse with no term keeps the listing set.
+- **A `hidden` product is gone, not merely unlisted.** `StorefrontController::show()` gated on
+  publication state alone, so the catalog hid the product while its own page still rendered its name,
+  price, stock and reviews to anyone holding the link. `isVisibleOnStorefront()` - the predicate the
+  show route, the API's show endpoint and the purchasability rule now share - refuses `hidden`, which
+  404s the page. A search-only product is still reachable by direct link, because a shopper who
+  followed a link has to land somewhere.
+- **Related products, the homepage rails and the price bounds all carry a visibility rule.**
+  `relatedProducts()` used `Product::published()` with no visibility filter at all, so a hidden
+  product could be advertised on another product's page; the two homepage rails and the four price
+  -bound subqueries each repeated the literal list. All of them now read the model's `inListing()`.
+  The price bounds matter on their own: drawn from a hidden product priced at 5000, the slider
+  advertised a range with nothing in it.
+- **A withdrawn product can no longer be bought through the public cart or checkout.** `addItem()`
+  takes a bare `product_id` from an anonymous caller, and the cart pipeline checked the variant, the
+  price and the stock but never whether the shop still offered the product - so a draft or hidden
+  product could be added by id, sit in the basket and reach an order. `updateItem()` bypasses the
+  pipeline entirely, so the rule is restated there too, outside the removal branch. At checkout a
+  new `ValidateAvailability` step re-checks the basket, because a cart outlives the product in it;
+  stock was already re-checked there for the same reason.
+- **The public API and the storefront no longer disagree about the same product.** The API held its
+  own, narrower copy of the list and 404'd a search-only product the shop happily rendered, while the
+  storefront served a hidden one the API refused. One predicate now answers both, and the API's
+  listing takes the same search rule.
+- **`CatalogPriceFilterTest`'s hand-rolled `products` table gained the `catalog_visibility` column.**
+  A column missing from a hand-built schema does not fail loudly - the visibility scopes matched
+  nothing, the bounds collapsed to zero, and the test guarding them reported a number instead of a
+  schema gap.
+
+### Changed
+
+- **The admin product form describes what each value does.** The options were labelled "Visible
+  everywhere", "Catalog only", "Search only" and "Hidden", and two of the four were wrong about their
+  own product under the rules the storefront applied: `catalog` was in search results, and `search`
+  was reachable by direct link. They are now "Shop and search", "Shop, but not in search", "Search
+  only, not listed" and "Hidden everywhere", with a line under the select spelling out the
+  consequences - including that a hidden product cannot be bought.
+- **The staff product pickers (order create, order edit, product search) drop hidden products.**
+  `OrdersController`'s write path is deliberately left alone: recording a phone order for a withdrawn
+  product is real work, and refusing it needs a policy and an override rather than a query scope.
+  `WishlistController` takes the new `reachable()` set for the same reason the pickers do - a saved
+  list keeps a search-only product the customer chose, and loses a hidden one that would otherwise
+  link to a 404.
+
+### Added
+
+- **`Product` owns the vocabulary:** the four value constants, the `LISTING_VISIBILITIES` and
+  `SEARCH_VISIBILITIES` sets, and the `inListing()`, `inSearchResults()` and `reachable()` scopes.
+  Every surface that has to answer "may this shopper see this product?" read a private copy of the
+  list; a value added to one and not another disappeared from the shop with no error anywhere.
+- **`tests/CatalogVisibilityTest.php`** holds the four-value contract on the real schema - the
+  listing set, the search set, direct-link reachability, and that visibility never overrides
+  publication state - plus the two new pipeline steps, the config order they run in, and source
+  assertions that no surface keeps a private copy of the list or adds a `published()` query without
+  one. `PublicCatalogApiTest`'s "the API is stricter than the storefront" test is replaced by one
+  that pins the two endpoints agreeing, including the search-only and hidden cases that used to
+  differ.
+
+## [0.1.68]
+
+### Fixed
+
+- **Product SEO generation passes a product instance to the update gate.** `ProductPolicy::update()`
+  takes the model, and the controller was handed the class name, so the gate resolved
+  `ProductPolicy::update` as a static call on the policy and the request failed with a 500 on every
+  product form.
+
 ## [0.1.67]
 
 ### Fixed

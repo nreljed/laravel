@@ -47,7 +47,7 @@ class StorefrontController extends Controller
 
     public function products(Request $request)
     {
-        $query = $this->baseQuery();
+        $query = $this->baseQuery($this->visibilitiesFor($request));
         $this->applyFilters($query, $request);
 
         return $this->renderCatalog($request, $query);
@@ -213,7 +213,7 @@ class StorefrontController extends Controller
     {
         $category = ProductCategory::where('slug', $slug)->firstOrFail();
 
-        $query = $this->baseQuery()
+        $query = $this->baseQuery($this->visibilitiesFor($request))
             ->whereHas('categories', fn ($c) => $c->where('slug', $slug));
         $this->applyFilters($query, $request);
 
@@ -222,10 +222,31 @@ class StorefrontController extends Controller
         ]);
     }
 
-    protected function baseQuery(): EloquentBuilder
+    /**
+     * The catalog-visibility values a catalog page may show.
+     *
+     * A shopper who typed something is looking for a name, so the search-only
+     * products join the listing ones. Browse it any other way — the catalog
+     * page, a category, a link, an empty search box — and they stay out. The
+     * wider set is earned by the term, never by the URL, so a search-only
+     * product cannot be browsed by category or paged through.
+     *
+     * @return list<string>
+     */
+    protected function visibilitiesFor(Request $request): array
+    {
+        return $request->filled('search')
+            ? Product::SEARCH_VISIBILITIES
+            : Product::LISTING_VISIBILITIES;
+    }
+
+    /**
+     * @param  list<string>  $visibilities
+     */
+    protected function baseQuery(array $visibilities = Product::LISTING_VISIBILITIES): EloquentBuilder
     {
         return Product::published()
-            ->whereIn('catalog_visibility', ['visible', 'catalog'])
+            ->whereIn('catalog_visibility', $visibilities)
             ->with('groupedItems:id,name,slug,price,thumbnail_url');
     }
 
@@ -237,24 +258,29 @@ class StorefrontController extends Controller
      * ceiling across every price a shopper can actually pay: simple product
      * prices, the cached variation ranges, and the bundled items' own prices.
      *
+     * Scoped to the listing set, because these bounds describe the products the
+     * page can show. Counting a hidden or search-only product priced at 5000
+     * stretched the slider past anything browseable, and narrowing it to a
+     * range with no products in it produced an empty catalog page.
+     *
      * @return array{min: float, max: float}
      */
     protected function effectivePriceBounds(): array
     {
         $lows = [
-            (float) (Product::published()->where('price', '>', 0)->min('price') ?? 0),
-            (float) (Product::published()->whereNotNull('min_variation_price')->min('min_variation_price') ?? 0),
+            (float) (Product::published()->inListing()->where('price', '>', 0)->min('price') ?? 0),
+            (float) (Product::published()->inListing()->whereNotNull('min_variation_price')->min('min_variation_price') ?? 0),
         ];
 
         $highs = [
-            (float) (Product::published()->max('price') ?? 0),
-            (float) (Product::published()->whereNotNull('max_variation_price')->max('max_variation_price') ?? 0),
+            (float) (Product::published()->inListing()->max('price') ?? 0),
+            (float) (Product::published()->inListing()->whereNotNull('max_variation_price')->max('max_variation_price') ?? 0),
         ];
 
         // The cached variation columns are only as fresh as the last sync, so
         // the live active variations are counted too.
         $liveVariations = fn (): QueryBuilder => DB::table('product_variations as live')
-            ->whereIn('live.product_id', Product::published()->select('products.id'))
+            ->whereIn('live.product_id', Product::published()->inListing()->select('products.id'))
             ->where('live.is_active', true)
             ->whereNotNull('live.active_price')
             ->where('live.active_price', '>', 0);
@@ -264,7 +290,7 @@ class StorefrontController extends Controller
 
         $bundledItems = fn (): QueryBuilder => DB::table('product_grouped_products as links')
             ->join('products as child', 'child.id', '=', 'links.product_id')
-            ->whereIn('links.group_product_id', Product::published()->select('products.id'))
+            ->whereIn('links.group_product_id', Product::published()->inListing()->select('products.id'))
             ->where('child.price', '>', 0);
 
         $lows[] = (float) ($bundledItems()->min('child.price') ?? 0);
@@ -525,14 +551,14 @@ class StorefrontController extends Controller
     protected function homepageData(Request $request): array
     {
         $featured = Product::published()
-            ->whereIn('catalog_visibility', ['visible', 'catalog'])
+            ->inListing()
             ->featured()
             ->latest()
             ->take(8)
             ->get();
 
         $newArrivals = Product::published()
-            ->whereIn('catalog_visibility', ['visible', 'catalog'])
+            ->inListing()
             ->latest()
             ->take(8)
             ->get();
@@ -574,7 +600,7 @@ class StorefrontController extends Controller
 
         $withBundles = fn ($q) => $q->with('groupedItems:id,name,slug,price,thumbnail_url');
 
-        $related = $withBundles(Product::published())
+        $related = $withBundles(Product::published()->inListing())
             ->where('id', '!=', $product->id)
             ->when($categoryIds->isNotEmpty(), fn ($q) => $q->whereHas('categories', fn ($c) => $c->whereIn('product_categories.id', $categoryIds)))
             ->inRandomOrder()
@@ -582,7 +608,7 @@ class StorefrontController extends Controller
             ->get();
 
         if ($related->count() < 4) {
-            $extra = $withBundles(Product::published())
+            $extra = $withBundles(Product::published()->inListing())
                 ->where('id', '!=', $product->id)
                 ->whereNotIn('id', $related->pluck('id'))
                 ->inRandomOrder()

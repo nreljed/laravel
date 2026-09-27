@@ -26,8 +26,13 @@ class WishlistController extends Controller
         $productIds = Wishlist::where('user_id', auth()->id())
             ->pluck('product_id');
 
+        // A saved list, not a browse: a search-only product stays, because the
+        // customer chose it, but a hidden one goes. Leaving it here would show
+        // a card linking to a page that 404s, which reads as a broken shop
+        // rather than as an editor's decision.
         $products = Product::whereIn('id', $productIds)
             ->published()
+            ->reachable()
             ->with(['categories', 'groupedItems:id,name,slug,price,thumbnail_url'])
             ->paginate(12)
             ->withQueryString();

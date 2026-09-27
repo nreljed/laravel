@@ -133,6 +133,24 @@ const defaultUnpublishAt = () => {
   return d.toISOString();
 };
 
+/**
+ * What each `catalog_visibility` value actually does, in the words a shopkeeper
+ * would use.
+ *
+ * The option labels used to be "Visible everywhere", "Catalog only", "Search
+ * only" and "Hidden" - and two of the four were wrong about their own product.
+ * `catalog` is in search results, `search` is not only in search, and neither
+ * `search` nor `hidden` was reachable by direct link under the rules the
+ * storefront actually applied. Choosing a value meant guessing, which is how
+ * `search` came to be a setting that made a product unreachable.
+ */
+const CATALOG_VISIBILITY_HELP: Record<string, string> = {
+  visible: "Listed in the catalog, the homepage and its categories, found by search, and open at its own link. It can be bought.",
+  catalog: "Listed everywhere like a visible product, but kept out of search results. It can be bought.",
+  search: "Found by searching and open at its own link, but never listed in the catalog, the homepage or a category. It can still be bought.",
+  hidden: "Gone from the shop: no listings, no search results, its own page returns 404, and it cannot be added to a cart or bought.",
+};
+
 export default function ProductsForm() {
   const { props } = usePage<PageProps>();
   const product = props.product || null;
@@ -1494,18 +1512,23 @@ export default function ProductsForm() {
                 </div>
               </Section>
 
-              <Section title="Catalog Visibility" description="Control where this product appears" icon={VisibilityIcon}>
+              <Section
+                title="Catalog Visibility"
+                description="Where this product can be found, and whether it can be bought"
+                icon={VisibilityIcon}
+              >
                 <Select value={form.data.catalog_visibility} onValueChange={(v) => form.setData("catalog_visibility", v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="visible">Visible everywhere</SelectItem>
-                    <SelectItem value="catalog">Catalog only</SelectItem>
-                    <SelectItem value="search">Search only</SelectItem>
-                    <SelectItem value="hidden">Hidden</SelectItem>
+                    <SelectItem value="visible">Shop and search</SelectItem>
+                    <SelectItem value="catalog">Shop, but not in search</SelectItem>
+                    <SelectItem value="search">Search only, not listed</SelectItem>
+                    <SelectItem value="hidden">Hidden everywhere</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-sm text-muted-foreground">{CATALOG_VISIBILITY_HELP[form.data.catalog_visibility]}</p>
               </Section>
 
               <Section title="Featured Product" description="Highlight this product across the store" icon={Star}>

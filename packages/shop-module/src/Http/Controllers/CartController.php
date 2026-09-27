@@ -148,6 +148,14 @@ class CartController extends Controller
             $product = $cartItem->product;
             $variation = $cartItem->variation;
 
+            // An update that keeps the line in the cart is a purchase, so it
+            // carries the same availability rule the add path does. Dropping the
+            // line to zero above stays open - removing a withdrawn product is
+            // the one thing a shopper must always be able to do.
+            if ($product && ! $product->isPurchasable()) {
+                return response()->json(['error' => 'This product is no longer available.'], 422);
+            }
+
             if ($product && $product->sold_individually && $validated['quantity'] > 1) {
                 return response()->json(['error' => 'This product can only be purchased one at a time.'], 422);
             }

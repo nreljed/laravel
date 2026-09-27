@@ -77,6 +77,12 @@ class CatalogPriceFilterTest extends TestCase
             $table->decimal('min_variation_price', 10, 2)->nullable();
             $table->decimal('max_variation_price', 10, 2)->nullable();
             $table->string('status')->default('published');
+            // Mirrors the real migration, default included. A column left out of
+            // a hand-rolled table does not fail loudly: the storefront's
+            // visibility scopes simply match nothing, the bounds collapse to
+            // zero, and the test that was supposed to guard them reports a
+            // number instead of a schema gap.
+            $table->string('catalog_visibility')->default('visible');
             $table->timestamp('unpublish_at')->nullable();
             $table->softDeletes();
             $table->timestamps();

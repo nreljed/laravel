@@ -20,6 +20,38 @@ class Product extends Model
     use HasFactory;
     use SoftDeletes;
 
+    /**
+     * Storefront catalog visibility, mirroring WooCommerce's `catalog_visibility`
+     * so the four values mean what a shopkeeper already expects them to mean.
+     *
+     * They live here, on the model, because every surface that has to answer
+     * "may this shopper see this product?" used to carry its own copy of the
+     * list: the storefront catalog, the homepage rails, related products, the
+     * public JSON API. A value added to the database without being added to
+     * those lists disappeared from the shop with no error anywhere.
+     *
+     * The rules:
+     *  - `visible` — listed, searchable, and reachable by direct link.
+     *  - `catalog` — listed, searchable, and reachable by direct link.
+     *  - `search`  — searchable and reachable by direct link, never listed.
+     *  - `hidden`  — not listed, not searchable, and 404 on direct link.
+     *
+     * @var list<string>
+     */
+    public const VISIBLE = 'visible';
+    public const CATALOG = 'catalog';
+    public const SEARCH = 'search';
+    public const HIDDEN = 'hidden';
+
+    /** @var list<string> */
+    public const CATALOG_VISIBILITIES = [self::VISIBLE, self::CATALOG, self::SEARCH, self::HIDDEN];
+
+    /** @var list<string> */
+    public const LISTING_VISIBILITIES = [self::VISIBLE, self::CATALOG];
+
+    /** @var list<string> */
+    public const SEARCH_VISIBILITIES = [self::VISIBLE, self::CATALOG, self::SEARCH];
+
     protected $fillable = [
         'name', 'slug', 'description', 'short_description',
         'price', 'compare_price', 'cost_price', 'sale_price',
@@ -457,14 +489,96 @@ class Product extends Model
      * scope. Used by the storefront show route for already-loaded models
      * (a scheduled auto-unpublish hides the product even before the cron
      * runtime service flips its status.)
+     *
+     * The gate is "reachable by direct link", which is deliberately wider than
+     * "listed": a `search`-only product has no listing of its own, so a shopper
+     * who followed a link still has to land on something. `hidden` is the one
+     * value that is unreachable, because serving it would confirm the product
+     * exists at a URL an editor asked to keep out of the shop.
      */
     public function isVisibleOnStorefront(): bool
+    {
+        if (! $this->isPublishedNow()) {
+            return false;
+        }
+
+        return ! $this->isHiddenFromStorefront();
+    }
+
+    /**
+     * Whether the cart and checkout may sell this product.
+     *
+     * Same rule as the storefront gate today - a product a shopper cannot
+     * reach cannot be bought either - kept as its own name because the two
+     * answer different questions and will drift apart (a discontinued flag, a
+     * purchase-only audience). Every write path that turns a `product_id` into
+     * a line item must go through here: the storefront page 404ing is not a
+     * lock on the public cart endpoint.
+     */
+    public function isPurchasable(): bool
+    {
+        return $this->isVisibleOnStorefront();
+    }
+
+    public function isHiddenFromStorefront(): bool
+    {
+        return $this->catalog_visibility === self::HIDDEN;
+    }
+
+    protected function isPublishedNow(): bool
     {
         if ($this->status !== 'published') {
             return false;
         }
 
         return $this->unpublish_at === null || $this->unpublish_at->gt(now());
+    }
+
+    /**
+     * Restrict a query to products a shopper may browse in a listing.
+     *
+     * Covers the homepage rails, the catalog page and a category page. A
+     * search-only product belongs in none of them: it exists so a product can
+     * be found by name, not so it can appear under every category.
+     *
+     * @param  Builder  $query
+     */
+    public function scopeInListing($query)
+    {
+        return $query->whereIn('catalog_visibility', self::LISTING_VISIBILITIES);
+    }
+
+    /**
+     * Restrict a query to products a shopper may reach by URL.
+     *
+     * The set behind `isVisibleOnStorefront()`: everything except `hidden`. It
+     * is for surfaces that are neither a browse nor a search - a saved
+     * wishlist, a picker for staff taking a phone order - where the shopper (or
+     * the staff member) already knows which product they mean, and the question
+     * is only whether the shop still offers it.
+     *
+     * @param  Builder  $query
+     */
+    public function scopeReachable($query)
+    {
+        return $query->where(function (Builder $q) {
+            $q->whereNull('catalog_visibility')
+                ->orWhereNot('catalog_visibility', self::HIDDEN);
+        });
+    }
+
+    /**
+     * Restrict a query to products a shopper may find through a search.
+     *
+     * The listing set plus search-only products. A caller's search term is
+     * what earns the wider set; without one the caller belongs in
+     * `inListing()`.
+     *
+     * @param  Builder  $query
+     */
+    public function scopeInSearchResults($query)
+    {
+        return $query->whereIn('catalog_visibility', self::SEARCH_VISIBILITIES);
     }
 
     public function scopeFeatured($query)

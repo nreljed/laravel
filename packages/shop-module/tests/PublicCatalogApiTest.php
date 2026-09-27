@@ -189,33 +189,56 @@ final class PublicCatalogApiTest extends TestCase
     }
 
     /**
-     * The API is currently *stricter* than the storefront, and that gap is
-     * deliberate but unresolved.
+     * The API and the storefront page now answer the same question the same
+     * way, which is the whole point of putting the rule on the model.
      *
-     * `StorefrontController::show()` gates only on `isVisibleOnStorefront()`,
-     * which reads `status` and `unpublish_at` and ignores
-     * `catalog_visibility` entirely - so a direct link to a `search` or even
-     * `hidden` product is served. The API additionally requires the visibility
-     * to be browsable, so it 404s what the storefront would render.
+     * These two used to disagree in both directions, and each divergence was
+     * defensible in isolation: the storefront's `show()` read only `status` and
+     * `unpublish_at`, so it served a `hidden` product's page; the API held a
+     * narrower list of its own, so it 404'd a `search` product the storefront
+     * happily rendered. One product, two answers, decided by which URL a caller
+     * had - and a `search` value that no route would find it by.
      *
-     * The API is a machine-readable feed for third parties and a storefront
-     * page is a link a merchant chose to publish, so the stricter rule is the
-     * right one for a feed. But the storefront is the odd one out, and this
-     * test exists so the divergence is a decision on the record rather than an
-     * accident: `StorefrontController::show()` should adopt the same check.
+     * Reachable by link is now one predicate, `isVisibleOnStorefront()`, used by
+     * both. The two cases that used to differ are pinned from each side: a
+     * search-only product is served, a hidden one is not.
      */
-    public function test_the_api_is_stricter_than_the_storefront_show_route(): void
+    public function test_the_api_show_matches_the_storefront_show(): void
     {
-        $searchOnly = $this->product(['name' => 'Unlisted Thing', 'status' => 'published', 'catalog_visibility' => 'search']);
-        $live = $this->product(['name' => 'Live Thing', 'status' => 'published', 'catalog_visibility' => 'visible']);
+        $searchOnly = $this->product(['name' => 'Search Only Thing', 'status' => 'published', 'catalog_visibility' => 'search']);
+        $hidden = $this->product(['name' => 'Hidden Thing', 'status' => 'published', 'catalog_visibility' => 'hidden']);
 
-        $this->assertTrue(
-            $searchOnly->isVisibleOnStorefront(),
-            'Precondition: the storefront serves a direct link to a `search` product, because its show action never looks at catalog_visibility.'
+        foreach ([$searchOnly, $hidden] as $product) {
+            $expected = $product->isVisibleOnStorefront() ? 200 : 404;
+
+            $this->assertSame(
+                $expected,
+                $this->showStatus($product),
+                "The API's answer for a `{$product->catalog_visibility}` product disagrees with the storefront gate."
+            );
+        }
+
+        $this->assertSame(200, $this->showStatus($searchOnly), 'A search-only product is findable and reachable, or the value is dead.');
+        $this->assertSame(404, $this->showStatus($hidden), 'A hidden product must not be readable at its own URL, in the feed or in the shop.');
+    }
+
+    public function test_a_search_only_product_is_findable_through_the_api_too(): void
+    {
+        $this->product(['name' => 'Listed Thing', 'status' => 'published', 'catalog_visibility' => 'visible']);
+        $this->product(['name' => 'Needle In The Catalog', 'status' => 'published', 'catalog_visibility' => 'search']);
+        $this->product(['name' => 'Hidden Needle', 'status' => 'published', 'catalog_visibility' => 'hidden']);
+
+        $this->assertSame(
+            ['Needle In The Catalog'],
+            $this->listedNames(['search' => 'Needle']),
+            'A public feed answers a search the same way the shop does, so a search-only product is findable and a hidden one is not.'
         );
 
-        $this->assertNotFound(fn () => $this->show($searchOnly));
-        $this->assertSame(200, $this->showStatus($live));
+        $this->assertSame(
+            ['Listed Thing'],
+            $this->listedNames(),
+            'A listing carries the listing set. A search term is what earns the wider one, in the feed exactly as in the shop.'
+        );
     }
 
     // ---------------------------------------------------------------------
