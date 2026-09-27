@@ -64,12 +64,29 @@ initialize a nested `.git` here — the mono tracks this tree.
 - Always run `npm run build` after code changes.
 - CSP middleware applies in production only.
 
-### There are two copies of this app — check before testing
+### Two copies of this app — one is served, the other one ships
 
-`C:\Users\nrelj\Local Sites\laravel.shop` is a **standalone copy that nothing
-serves**. It is not this workspace app, and results from it describe an app no
-visitor reaches. Both trees run `artisan` and both look plausible, which is
-exactly why it is worth ten seconds to confirm:
+`C:\Users\nrelj\Local Sites\laravel.shop` is **not a disposable copy**. It is the
+standalone checkout of `github.com/nreljed/laravel.shop`, and its `main` branch
+is what CI tests, tags, releases, and deploys to production. The two trees have
+different jobs, and a change made in the wrong one either does not ship or does
+not show up on the local site:
+
+| Tree                        | Path                            | Owns                                                                                                                                        |
+| --------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Served tree** (this app)  | `laravel\app\apps\laravel.shop` | What you browse at `http://shop-laravel.local/`. The Local site's `{site}\app` is a junction to it. Its `vendor/` serves the local sqlite.  |
+| **Deploy tree** (canonical) | `laravel.shop`                  | The app's git source of record. App-owned config, tests and `composer.lock` are authoritative **here**; CI and production follow this tree. |
+
+So: author app changes in the **deploy tree** and commit there to ship them;
+make them in the served tree to see them on `shop-laravel.local`. When the two
+disagree, the deploy tree wins — the served tree is downstream of it, and a
+"fix" that only exists locally describes an app no visitor reaches. In
+particular `config/roles.php` and the `tests/Feature/Modules/Shop/` suite are
+canonical in the deploy tree; a local-only edit there is a pending sync, not a
+review finding.
+
+Both trees run `artisan`, both look plausible, and only one is served, so confirm
+which one you are in before trusting any result:
 
 ```bash
 php artisan shop:env-check        # exits non-zero if this tree is not the served one
@@ -80,7 +97,9 @@ It prints the resolved app path, marks which local site serves it, and flags
 any `nreljed/*` package installed from a local working tree rather than the
 released artifact. Two traps it covers:
 
-- **Wrong tree.** Only `apps/laravel.shop` (this one) is served.
+- **Wrong tree.** Only `apps/laravel.shop` is served. A test result from the
+  deploy tree is still valid evidence for production behaviour — it runs the
+  same released package — but it is not what `shop-laravel.local` is serving.
 - **Wrong base.** A Composer `path` repository makes `composer update` reuse
   the existing checkout and report success, so `vendor` holds a working tree
   while the lock claims a release. `PackageLockParityTest` fails the build on
