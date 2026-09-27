@@ -23,4 +23,8 @@ jobs:
       skip-npm-tests: ${{ inputs.skip-npm-tests || false }}
       php-tests-parallel: true
       pass-with-no-tests: true
+      # The called workflow cannot read this repo's `vars`, so the runner
+      # switch is handed over as inputs (see consumer-ci.yml's header).
+      runner: ${{ vars.RUNNER_CI || 'self-hosted' }}
+      hosted-runner: ${{ vars.RUNNER_CI != 'self-hosted' }}
     secrets: inherit
