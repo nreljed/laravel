@@ -44,10 +44,28 @@ interface ProductRow {
   low_stock_threshold: number | null
   track_stock: boolean
   thumbnail_url: string | null
+  catalog_visibility: string
   categories: Category[]
   tags: TagOrBrand[]
   brands: TagOrBrand[]
   is_featured: boolean
+}
+
+/**
+ * How each visibility reads on the staff list.
+ *
+ * The status column answers "is it published?" and the visibility column answers
+ * the completely separate question "is it in the store?". They can disagree in
+ * both directions - a published product can be `hidden`, and a `search`-only
+ * product is published, buyable and reachable but never appears on a grid - so
+ * collapsing them into one badge would hide exactly the state a staff member
+ * needs to see.
+ */
+const VISIBILITY_ROWS: Record<string, { label: string; variant: string; hint: string }> = {
+  visible: { label: "Visible", variant: "default", hint: "Listed, searchable and buyable" },
+  catalog: { label: "Catalog", variant: "default", hint: "Listed, searchable and buyable" },
+  search: { label: "Search only", variant: "secondary", hint: "Reachable and buyable, but never listed" },
+  hidden: { label: "Hidden", variant: "destructive", hint: "Not in the store at all" },
 }
 
 export default function ProductsIndex() {
@@ -236,6 +254,21 @@ export default function ProductsIndex() {
         className: "hidden lg:table-cell",
       },
       {
+        accessorKey: "catalog_visibility",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="In Store" />,
+        cell: ({ row }) => {
+          const key = row.original.catalog_visibility
+          const meta = VISIBILITY_ROWS[key] ?? { label: key, variant: "outline", hint: "" }
+          return (
+            <span className="flex flex-col gap-0.5" title={meta.hint}>
+              <Badge variant={meta.variant as never} className="text-xs w-fit">{meta.label}</Badge>
+              <span className="text-[10px] text-muted-foreground">{meta.hint}</span>
+            </span>
+          )
+        },
+        className: "hidden lg:table-cell",
+      },
+      {
         id: "actions",
         cell: ({ row }) => (
           <ActionCell
@@ -376,6 +409,18 @@ export default function ProductsIndex() {
             { label: "Draft", value: "draft" },
             { label: "Published", value: "published" },
             { label: "Archived", value: "archived" },
+          ]}
+          filters={[
+            {
+              key: "catalog_visibility",
+              title: "In Store",
+              options: [
+                { label: "Visible", value: "visible" },
+                { label: "Catalog", value: "catalog" },
+                { label: "Search only", value: "search" },
+                { label: "Hidden", value: "hidden" },
+              ],
+            },
           ]}
           bulkActions={[
             { label: "Publish", value: "publish", show: (s) => s.every((st) => st !== "published") },

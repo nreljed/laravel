@@ -16,6 +16,11 @@ interface CartItem {
   quantity: number;
   unit_price: string;
   variant_label: string | null;
+  /**
+   * Null once the product row is gone — a soft delete, or a basket that
+   * outlived its catalogue entry. The backend returns `null` rather than
+   * dropping the line, so the shopper can still remove it.
+   */
   product: {
     id: number;
     name: string;
@@ -27,7 +32,9 @@ interface CartItem {
     stock_quantity: number | null;
     track_stock: boolean;
     is_in_stock: boolean;
-  };
+  } | null;
+  /** Can this line still be bought? False once withdrawn, sold out or unpublished. */
+  available: boolean;
 }
 
 interface AppliedCoupon {
@@ -54,10 +61,16 @@ interface Props {
 export default function StorefrontCart({ cart }: Props) {
   const { money } = useCurrency();
   const [updating, setUpdating] = useState<Record<number, boolean>>({});
+  const [removingUnavailable, setRemovingUnavailable] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
 
   const appliedCoupons = cart.applied_coupons ?? [];
+
+  // Withdrawn or deleted lines are kept and flagged rather than dropped, so the
+  // shopper can see what is wrong and remove it. The backend refuses to sell
+  // them; this keeps the page from pretending the basket is fine.
+  const unavailableItems = cart.items.filter((item) => !item.available);
 
   const applyCoupon = async () => {
     if (!couponCode.trim() || couponApplying) return;
@@ -132,6 +145,28 @@ export default function StorefrontCart({ cart }: Props) {
     } catch {}
   };
 
+  /**
+   * Clear every withdrawn line in one go.
+   *
+   * The calls are awaited in sequence rather than fired together: the cart is
+   * session-scoped, so parallel deletes race each other's read of it and the
+   * last one to land wins with the others' lines still attached.
+   */
+  const removeUnavailableItems = async () => {
+    setRemovingUnavailable(true);
+    try {
+      for (const item of unavailableItems) {
+        await fetch(route("store.cart.remove-item", item.id), {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": getCsrfToken() },
+        });
+      }
+      reloadCart();
+    } finally {
+      setRemovingUnavailable(false);
+    }
+  };
+
   return (
     <StoreLayout>
       <Head title="Shopping Cart">
@@ -171,9 +206,9 @@ export default function StorefrontCart({ cart }: Props) {
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-4">
               {cart.items.map((item) => (
-                <Card key={item.id} className="hover:bg-muted/50 transition-colors">
+                <Card key={item.id} className={item.available ? "hover:bg-muted/50 transition-colors" : "border-destructive/40 bg-destructive/5"}>
                   <CardContent className="flex items-start gap-4 p-4">
-                    {item.product.thumbnail_url && (
+                    {item.product?.thumbnail_url && (
                       <img
                         src={item.product.thumbnail_url}
                         alt={item.product.name}
@@ -181,76 +216,91 @@ export default function StorefrontCart({ cart }: Props) {
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <span className="font-medium truncate block">{item.product.name}</span>
+                      <span className="font-medium truncate block">{item.product?.name ?? "Product no longer available"}</span>
                       {item.variant_label && (
                         <p className="text-xs text-muted-foreground mt-0.5">{item.variant_label}</p>
                       )}
-                      <div className="flex items-center gap-2 mt-1">
-                        {item.product.track_stock && (
-                          item.product.is_in_stock ? (
-                            item.product.stock_quantity !== null && item.product.stock_quantity <= 5 ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                                <AlertTriangle className="h-3 w-3" />
-                                Only {item.product.stock_quantity} left
-                              </span>
+                      {!item.available && (
+                        <p className="inline-flex items-center gap-1 text-xs text-destructive mt-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {item.product
+                            ? "No longer available — please remove it to continue"
+                            : "This product has been removed from the store"}
+                        </p>
+                      )}
+                      {item.available && item.product && (
+                        <div className="flex items-center gap-2 mt-1">
+                          {item.product.track_stock && (
+                            item.product.is_in_stock ? (
+                              item.product.stock_quantity !== null && item.product.stock_quantity <= 5 ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Only {item.product.stock_quantity} left
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  In stock
+                                </span>
+                              )
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                                <CheckCircle2 className="h-3 w-3" />
-                                In stock
+                              <span className="inline-flex items-center gap-1 text-xs text-destructive">
+                                <AlertTriangle className="h-3 w-3" />
+                                Out of stock
                               </span>
                             )
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-destructive">
-                              <AlertTriangle className="h-3 w-3" />
-                              Out of stock
-                            </span>
-                          )
-                        )}
-                      </div>
-                      {item.product.sku && (
+                          )}
+                        </div>
+                      )}
+                      {item.product?.sku && (
                         <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.product.sku}</p>
                       )}
                       <p className="text-sm font-medium mt-1">
                         {money(Number(item.unit_price))}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        disabled={updating[item.id]}
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
-                          if (!isNaN(val) && val >= 0) updateQuantity(item.id, val);
-                        }}
-                        className="w-14 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        disabled={updating[item.id]}
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {item.available && item.product && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          disabled={updating[item.id]}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            if (!isNaN(val) && val >= 0) updateQuantity(item.id, val);
+                          }}
+                          className="w-14 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          disabled={updating[item.id]}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                     <div className="text-right shrink-0 min-w-[80px]">
-                      <p className="font-medium tabular-nums">
-                        {money(Number(item.unit_price) * item.quantity)}
-                      </p>
+                      {item.available && item.product && (
+                        <p className="font-medium tabular-nums">
+                          {money(Number(item.unit_price) * item.quantity)}
+                        </p>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         className="text-destructive mt-1"
                         onClick={() => removeItem(item.id)}
+                        title="Remove from cart"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -325,12 +375,37 @@ export default function StorefrontCart({ cart }: Props) {
                       {money(cart.total)}
                     </span>
                   </div>
-                  <Link href={route("store.checkout.index")}>
-                    <Button className="w-full mt-2">
-                      Proceed to Checkout
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
+                  {unavailableItems.length > 0 ? (
+                    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5 mt-2">
+                      <p className="text-sm text-destructive flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>
+                          {unavailableItems.length === 1
+                            ? "1 item is no longer available. Remove it to continue."
+                            : `${unavailableItems.length} items are no longer available. Remove them to continue.`}
+                        </span>
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full"
+                        disabled={removingUnavailable}
+                        onClick={removeUnavailableItems}
+                      >
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                        {removingUnavailable
+                          ? "Removing…"
+                          : `Remove ${unavailableItems.length} unavailable item${unavailableItems.length > 1 ? "s" : ""}`}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Link href={route("store.checkout.index")}>
+                      <Button className="w-full mt-2">
+                        Proceed to Checkout
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             </div>

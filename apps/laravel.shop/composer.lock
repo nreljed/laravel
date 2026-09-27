@@ -943,7 +943,7 @@
             ],
             "authors": [
                 {
-                    "name": "Fran├ºois Zaninotto"
+                    "name": "François Zaninotto"
                 }
             ],
             "description": "Faker is a PHP library that generates fake data for you.",
@@ -1175,7 +1175,7 @@
                     "homepage": "https://github.com/Nyholm"
                 },
                 {
-                    "name": "M├írk S├ígi-Kaz├ír",
+                    "name": "Márk Sági-Kazár",
                     "email": "mark.sagikazar@gmail.com",
                     "homepage": "https://github.com/sagikazarmark"
                 },
@@ -3456,7 +3456,7 @@
                     "homepage": "https://nette.org/contributors"
                 }
             ],
-            "description": "­ƒôÉ Nette Schema: validating data structures against a given Schema.",
+            "description": "📐 Nette Schema: validating data structures against a given Schema.",
             "homepage": "https://nette.org",
             "keywords": [
                 "config",
@@ -3535,7 +3535,7 @@
                     "homepage": "https://nette.org/contributors"
                 }
             ],
-            "description": "­ƒøá  Nette Utils: lightweight utilities for string & array manipulation, image handling, safe JSON encoding/decoding, validation, slug or strong password generating etc.",
+            "description": "🛠  Nette Utils: lightweight utilities for string & array manipulation, image handling, safe JSON encoding/decoding, validation, slug or strong password generating etc.",
             "homepage": "https://nette.org",
             "keywords": [
                 "array",
@@ -3667,6 +3667,10 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.3",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
             "time": "2026-09-22T23:55:58+00:00"
         },
         {
@@ -3727,20 +3731,24 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.61",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
             "time": "2026-09-22T21:46:18+00:00"
         },
         {
             "name": "nreljed/shop-module",
-            "version": "0.1.70",
+            "version": "0.1.71",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/shop-module.git",
-                "reference": "6446101a463c35a4aaae70323d5522f3ae932432"
+                "reference": "ce718f72bb47154995010a490e7ff9dd9f0797d0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/6446101a463c35a4aaae70323d5522f3ae932432",
-                "reference": "6446101a463c35a4aaae70323d5522f3ae932432",
+                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/ce718f72bb47154995010a490e7ff9dd9f0797d0",
+                "reference": "ce718f72bb47154995010a490e7ff9dd9f0797d0",
                 "shasum": ""
             },
             "require": {
@@ -3783,7 +3791,11 @@
                 }
             ],
             "description": "E-commerce shop feature for the Nreljed dashboard platform (products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks, storefront).",
-            "time": "2026-09-27T21:56:46+00:00"
+            "support": {
+                "source": "https://github.com/nreljed/shop-module/tree/v0.1.71",
+                "issues": "https://github.com/nreljed/shop-module/issues"
+            },
+            "time": "2026-09-27T23:03:40+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -4007,7 +4019,7 @@
             ],
             "authors": [
                 {
-                    "name": "M├írk S├ígi-Kaz├ír",
+                    "name": "Márk Sági-Kazár",
                     "email": "mark.sagikazar@gmail.com"
                 }
             ],
@@ -4069,7 +4081,7 @@
                     "email": "geloen.eric@gmail.com"
                 },
                 {
-                    "name": "M├írk S├ígi-Kaz├ír",
+                    "name": "Márk Sági-Kazár",
                     "email": "mark.sagikazar@gmail.com",
                     "homepage": "https://sagikazarmark.hu"
                 }
@@ -4123,7 +4135,7 @@
                     "email": "joel.wurtz@gmail.com"
                 },
                 {
-                    "name": "M├írk S├ígi-Kaz├ír",
+                    "name": "Márk Sági-Kazár",
                     "email": "mark.sagikazar@gmail.com"
                 }
             ],
@@ -5576,7 +5588,7 @@
                     "email": "fabien@symfony.com"
                 },
                 {
-                    "name": "Jean-Fran├ºois Simon",
+                    "name": "Jean-François Simon",
                     "email": "jeanfrancois.simon@sensiolabs.com"
                 },
                 {
@@ -7444,7 +7456,7 @@
             ],
             "authors": [
                 {
-                    "name": "Gr├®goire Pineau",
+                    "name": "Grégoire Pineau",
                     "email": "lyrixx@lyrixx.info"
                 },
                 {
@@ -8103,7 +8115,7 @@
             ],
             "authors": [
                 {
-                    "name": "Gr├®goire Pineau",
+                    "name": "Grégoire Pineau",
                     "email": "lyrixx@lyrixx.info"
                 },
                 {
@@ -8883,7 +8895,7 @@
             ],
             "authors": [
                 {
-                    "name": "Th├®o FIDRY",
+                    "name": "Théo FIDRY",
                     "email": "theo.fidry@gmail.com"
                 }
             ],
@@ -9553,7 +9565,7 @@
             ],
             "authors": [
                 {
-                    "name": "P├ídraic Brady",
+                    "name": "Pádraic Brady",
                     "email": "padraic.brady@gmail.com",
                     "homepage": "https://github.com/padraic",
                     "role": "Author"

@@ -89,6 +89,8 @@ interface Order {
   subtotal: string;
   tax_total: string;
   shipping_total: string;
+  shipping_method_name: string | null;
+  shipping_method: string | null;
   discount_total: string;
   total: string;
   total_refunded: string;
@@ -338,10 +340,31 @@ export default function OrdersShow({ order, statuses, allowedTransitions }: Orde
               <td colSpan={3} className="text-right py-1 font-semibold">Subtotal</td>
               <td className="text-right py-1">{fmtCurrency(order.subtotal)}</td>
             </tr>
-            {Number(order.shipping_total) > 0 && (
+            {/* Shown when either there is a charge *or* a method was recorded.
+                Gating on the total alone hid the row for a free-shipping order
+                - exactly the orders where an operator is most likely to want to
+                confirm which service was picked, and the one case where a 0
+                looks like "nothing was recorded" when something was. Falls back
+                to the live relation name when the snapshot is somehow absent,
+                and marks the mismatch rather than silently showing one of them,
+                so a renamed or deleted method is visible instead of inferred. */}
+            {(Number(order.shipping_total) > 0 || order.shipping_method_name || order.shipping_method) && (
               <tr>
-                <td colSpan={3} className="text-right py-1">Shipping</td>
-                <td className="text-right py-1">{fmtCurrency(order.shipping_total)}</td>
+                <td colSpan={3} className="text-right py-1">
+                  Shipping
+                  {order.shipping_method_name && (
+                    <span className="text-muted-foreground text-xs"> · {order.shipping_method_name}</span>
+                  )}
+                  {order.shipping_method && order.shipping_method !== order.shipping_method_name && (
+                    <span className="text-muted-foreground text-xs">
+                      {" "}
+                      (now “{order.shipping_method}”)
+                    </span>
+                  )}
+                </td>
+                <td className="text-right py-1">
+                  {Number(order.shipping_total) > 0 ? fmtCurrency(order.shipping_total) : "Free"}
+                </td>
               </tr>
             )}
             <tr>
