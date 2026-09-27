@@ -170,14 +170,23 @@ class StorefrontCatalogVisibilityTest extends TestCase
                 'status' => $state === 'draft' ? 'draft' : 'published',
             ]);
 
-            $this->post(route('store.cart.add-item'), [
+            $response = $this->post(route('store.cart.add-item'), [
                 'product_id' => $product->id,
                 'quantity' => 1,
-            ])->assertStatus(422);
+            ]);
 
-            // Nothing reached the cart: `add-item` takes a bare product_id from
-            // an anonymous caller, so a 422 is the only thing standing between a
-            // withdrawn product and an order for it.
+            // 404, not 422. `add-item` takes a bare product_id from an
+            // anonymous caller, and `exists:products,id` used to answer 422 for
+            // a product that never existed while a withdrawn one cleared the
+            // rule and was refused later by the pipeline with different wording.
+            // Two different 422s is enough to walk the ids and learn what the
+            // shop is hiding, so a withdrawn product now has to be
+            // indistinguishable from a nonexistent one.
+            $response->assertStatus(404);
+            $response->assertJson(['error' => 'This product is no longer available.']);
+
+            // Nothing reached the cart, which is the part that actually matters:
+            // a withdrawn product must not become a line, let alone an order.
             $this->assertDatabaseMissing('cart_items', ['product_id' => $product->id]);
         }
     }

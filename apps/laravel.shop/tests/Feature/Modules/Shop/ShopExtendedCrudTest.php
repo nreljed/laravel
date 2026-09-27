@@ -4,6 +4,7 @@ namespace Tests\Feature\Modules\Shop;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nreljed\ShopModule\Events\WebhookEvents;
 use Nreljed\ShopModule\Models\Coupon;
 use Nreljed\ShopModule\Models\Currency;
 use Nreljed\ShopModule\Models\Product;
@@ -363,13 +364,42 @@ class ShopExtendedCrudTest extends TestCase
 
     public function test_webhook_store_rejects_invalid_events(): void
     {
-        $this->actingAs($this->admin)
+        // This test used to post the bad payload and assert nothing, so it was
+        // green whether the rule existed or not. `events.*` is closed with
+        // `Rule::in(WebhookEvents::all())` precisely so a typo or an invented
+        // event cannot register a hook that silently never fires (or, worse,
+        // one whose name collides with a real event added later). Pin both
+        // halves: the error names the offending entry, and nothing is stored.
+        $response = $this->actingAs($this->admin)
             ->post(route('dashboard.shop.webhooks.store'), [
                 'name' => 'Invalid Hook',
                 'url' => 'https://example.com/hook',
                 'secret' => 'sec',
                 'events' => ['invalid.event'],
             ]);
+
+        $response->assertSessionHasErrors('events.0');
+
+        $this->assertDatabaseMissing('webhooks', ['url' => 'https://example.com/hook']);
+    }
+
+    public function test_webhook_store_rejects_a_mix_of_valid_and_invalid_events(): void
+    {
+        // The mixed case is the one `Rule::in` on `events.*` is easy to get
+        // wrong - a whole-array rule would reject the pair, but so would a rule
+        // that only ever looked at the first entry. A partially valid payload
+        // has to be refused outright: a hook registered against one real event
+        // and one imaginary one looks configured and is not.
+        $this->actingAs($this->admin)
+            ->post(route('dashboard.shop.webhooks.store'), [
+                'name' => 'Half Hook',
+                'url' => 'https://example.com/half',
+                'secret' => 'sec',
+                'events' => [WebhookEvents::ORDER_PLACED, 'not.a.real.event'],
+            ])
+            ->assertSessionHasErrors('events.1');
+
+        $this->assertDatabaseMissing('webhooks', ['url' => 'https://example.com/half']);
     }
 
     public function test_webhook_update(): void
