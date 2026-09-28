@@ -255,6 +255,23 @@ class FeatureRegistry
         );
     }
 
+    /**
+     * Every declarative admin resource exposed by the enabled features.
+     *
+     * Memoized because the descriptors are config-shaped - a resource's key,
+     * label and route, with no per-user or live-DB state - which is the same
+     * condition the `remember` docblock requires. A feature toggled at runtime
+     * re-registers providers, so the cache is dropped with them.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllAdminResources(): array
+    {
+        return $this->remember('admin_resources', fn () => array_merge(
+            ...array_map(fn (FeatureProvider $provider) => $provider->getAdminResources(), $this->enabledProviders())
+        ));
+    }
+
     public function getAllGalleryConfigs(): array
     {
         return array_merge(

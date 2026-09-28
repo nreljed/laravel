@@ -215,6 +215,19 @@ trait InteractsWithFeatures
         return null;
     }
 
+    /**
+     * A feature with no admin resources - a pure backend or content feature -
+     * declares nothing rather than overriding this. The default is what makes
+     * adding the method to the interface non-breaking: a provider written
+     * against the previous version keeps working unchanged.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAdminResources(): array
+    {
+        return [];
+    }
+
     public function getDeactivationNotice(): ?string
     {
         return null;

@@ -21,6 +21,22 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 
+/**
+ * One faceted filter dropdown on a table toolbar.
+ *
+ * The single-filter props (`filterKey` / `filterTitle` / `filterOptions`) are
+ * the original API and still work; `filters` exists for tables that need to
+ * narrow on more than one column at a time - a product list asked to filter
+ * both publication state and whether the product is in the store, for
+ * instance. Two questions, two dropdowns, rather than making the second
+ * question unreachable.
+ */
+export type DataTableFilter = {
+  key: string;
+  title?: string;
+  options: { label: string; value: string }[];
+};
+
 interface DataTableToolbarProps<TData extends RowData> {
   table: ReactTable<AppTableFeatures, TData>;
   searchKey?: string;
@@ -28,6 +44,7 @@ interface DataTableToolbarProps<TData extends RowData> {
   filterOptions?: { label: string; value: string }[];
   filterKey?: string;
   filterTitle?: string;
+  filters?: DataTableFilter[];
   loading?: boolean;
   toolbarRight?: React.ReactNode;
 }
@@ -39,10 +56,25 @@ export function DataTableToolbar<TData extends RowData>({
   filterOptions,
   filterKey,
   filterTitle,
+  filters,
   loading = false,
   toolbarRight,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.state.columnFilters.length > 0;
+
+  // The legacy single filter is folded into the same list so there is one
+  // rendering path and no chance of the two disagreeing about "All". Built
+  // inline rather than memoised: it is two small objects, and this file
+  // deliberately imports no React runtime of its own.
+  const resolvedFilters: DataTableFilter[] = [];
+
+  if (filterKey && filterOptions?.length) {
+    resolvedFilters.push({ key: filterKey, title: filterTitle, options: filterOptions });
+  }
+
+  for (const filter of filters ?? []) {
+    if (filter.key && filter.options?.length) resolvedFilters.push(filter);
+  }
 
   return (
     <div
@@ -62,26 +94,27 @@ export function DataTableToolbar<TData extends RowData>({
             />
           </div>
         )}
-        {filterKey && filterOptions && (
+        {resolvedFilters.map((filter) => (
           <Select
-            value={(table.getColumn(filterKey)?.getFilterValue() as string) ?? ""}
+            key={filter.key}
+            value={(table.getColumn(filter.key)?.getFilterValue() as string) ?? ""}
             onValueChange={(value) => {
-              table.getColumn(filterKey)?.setFilterValue(value === "all" ? "" : value);
+              table.getColumn(filter.key)?.setFilterValue(value === "all" ? "" : value);
             }}
           >
             <SelectTrigger className="h-8 w-full sm:w-[150px]">
-              <SelectValue placeholder={filterTitle ?? "Filter"} />
+              <SelectValue placeholder={filter.title ?? "Filter"} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {filterOptions.map((opt) => (
+              {filter.options.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
+        ))}
         {isFiltered && (
           <Button
             variant="ghost"

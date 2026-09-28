@@ -89,12 +89,36 @@ function resolvePage(pageMap: Record<string, PageImport>) {
     };
 }
 
+/**
+ * Whether the current document is an Inertia response at all.
+ *
+ * The platform's error views (`resources/views/errors/minimal.blade.php`, and
+ * the maintenance page built on it) load this same entry with `@vite` so the
+ * font and the Tailwind classes resolve, but they are plain Blade: there is no
+ * `data-page` payload and there never will be. Handing that to Inertia is what
+ * produced `TypeError: Cannot read properties of null (reading 'component')` on
+ * every 404, in the console of a page that otherwise rendered correctly.
+ *
+ * The second check keeps a project that mounts Inertia on a custom element id
+ * booting: the mount point is what `@inertia` renders `data-page` onto, and
+ * looking for the attribute anywhere is a more reliable signal than agreeing on
+ * the id. A false negative here is silent and total - the whole app would fail
+ * to mount - so the guard is written to err towards booting.
+ */
+export function hasInertiaPage(doc: Document = document, id = "app"): boolean {
+    if (doc.getElementById(id)?.hasAttribute("data-page")) return true;
+
+    return doc.querySelector("[data-page]") !== null;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function FoundationShell({ App, props }: { App: any; props: any }) {
     return (
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <TooltipProvider>
-                <ErrorBoundary key={props.initialPage.url}>
+                {/* Belt and braces: if Inertia is ever booted without a page,
+                    the shell still renders instead of throwing on `.url`. */}
+                <ErrorBoundary key={props?.initialPage?.url ?? "foundation"}>
                     <App {...props} />
                 </ErrorBoundary>
                 <InertiaFlashListener />
@@ -105,6 +129,8 @@ function FoundationShell({ App, props }: { App: any; props: any }) {
 }
 
 export function createFoundationApp(config: FoundationAppConfig = {}): void {
+    if (!hasInertiaPage()) return;
+
     const pageMap = buildPageMap(config);
 
     createInertiaApp({

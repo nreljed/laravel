@@ -24,10 +24,16 @@
 # This is the single source of truth for the consumer validation pipeline.
 # Do not fork it into consumer repos — change it here and all consumers inherit.
 #
-# Runner switch (self-hosted ⇄ GitHub-hosted): `runs-on` reads the CALLING
-# repo's RUNNER_CI variable (workflow_call vars resolve from the caller).
-#   self-hosted    → local persistent runner (no cache steps — upload stall trap)
-#   ubuntu-latest  → GitHub-hosted Linux (cache steps re-enabled below)
+# Runner switch (self-hosted ⇄ GitHub-hosted): the CALLER passes its RUNNER_CI
+# variable in as the `runner` input, and derives `hosted-runner` from it. The
+# `vars` context is NOT available inside a called workflow — it is empty here,
+# so a `vars.RUNNER_CI` condition silently evaluated true and setup-php ran on
+# the shared Windows runner, where it rewrites C:\php\php.ini (it left it
+# 0 bytes, and every PHP job then failed on "the openssl extension is
+# required ... but is not available"). Inputs are the supported channel.
+#   self-hosted    → local persistent runner (no setup-php, no cache steps —
+#                    the cache upload stalls the persistent runner)
+#   ubuntu-latest  → GitHub-hosted Linux (setup-php + cache steps enabled)
 # RUNNER_PACKAGE exists for Windows-bound build jobs (deploy package) — not used here.
 name: Consumer CI Validation
 
@@ -54,13 +60,21 @@ on:
         description: "Skip the platform-core fleet version check (one core version for all apps)"
         type: boolean
         default: false
+      runner:
+        description: "Runner label for the validate job (the caller's RUNNER_CI variable)"
+        type: string
+        default: 'self-hosted'
+      hosted-runner:
+        description: "True when the job is on a GitHub-hosted runner: enables setup-php and the cache steps"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   validate:
-    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    runs-on: ${{ inputs.runner }}
     defaults:
       run:
         shell: bash
@@ -70,10 +84,11 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup PHP
-        # PHP 8.4 + composer are preinstalled on the self-hosted runner;
-        # setup-php only runs on GitHub-hosted Linux (php.ini rename not
-        # concurrency-safe on the shared Windows runners).
-        if: vars.RUNNER_CI != 'self-hosted'
+        # PHP 8.4 + composer are preinstalled on the self-hosted Windows
+        # runner, and setup-php is not safe there: it rewrites the shared
+        # C:\php\php.ini, which leaves every other PHP consumer on the box
+        # without openssl. Only GitHub-hosted runners need it.
+        if: inputs.hosted-runner
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -89,10 +104,10 @@ jobs:
           # apps (package-lock.json) from the calling repo accordingly. pnpm is
           # NOT installed here: setup-node@v7 has no pnpm-version input — the
           # install step below bootstraps it when a pnpm workspace is detected.
-          cache: ${{ vars.RUNNER_CI != 'self-hosted' && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
+          cache: ${{ inputs.hosted-runner && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
 
       - name: Cache Composer dependencies (GitHub-hosted only)
-        if: vars.RUNNER_CI != 'self-hosted'
+        if: inputs.hosted-runner
         uses: actions/cache@v6
         with:
           path: vendor
@@ -100,7 +115,7 @@ jobs:
           restore-keys: composer-${{ runner.os }}-
 
       - name: Cache npm dependencies (GitHub-hosted only)
-        if: vars.RUNNER_CI != 'self-hosted'
+        if: inputs.hosted-runner
         uses: actions/cache@v6
         with:
           path: node_modules

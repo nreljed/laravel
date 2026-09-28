@@ -140,7 +140,24 @@ Tests: contract-style (existing pattern) + `QuoteService` golden matrix (stackin
     Browser-verified end to end: authored 700/899 as Wholesale -> storefront + cart resolved 700 -> removed the row -> storefront back to 899
     -> re-added line re-persisted at 899; `shop:verify-price-ledger` reports the ledger in step. Ship step pending (tag + release).
 - [ ] PR 11 — Catalog extras (hierarchy, aliases, relations, barcodes)
-- [ ] PR 12 — Platform schema kit (ResourceIndex/ResourceForm/field registry)
+- [x] PR 12 — Platform schema kit (ResourceIndex/ResourceForm/field registry)
+  - PR 12 (SHIPPED platform v0.1.63): declarative resource layer + provider contract. `defineResource`
+    (`key`/`label`/`table`/`form`/`relations`), `relation()`, column/field/filter/action descriptors;
+    `toColumnDef` carries `align` into `meta.className` (TanStack v9 dropped `ColumnDef.className`).
+    `ResourceIndex` (DataTable wiring, generated edit/delete actions, confirm-before-destructive,
+    read-only tables get no action column), `ResourceForm` (Inertia `useForm`, sections, relations,
+    visible-field payload filter, serialize hooks, optional custom submit), field-type registry with 13
+    built-ins. Correctness fixes each worth stating: non-destructive routed actions render as a whole-item
+    Link (padding-inert-onSelect bug), `dynamic` with no render reports the missing control, `buildPayload`
+    skips `undefined` by value (seeded fields would otherwise null out optional columns), colSpan is a
+    static map (Tailwind scanner can't see interpolation), the table-less throw happens after every hook.
+    93 new tests; full frontend suite 190/190, typecheck + build clean. Phase 3.4 contract:
+    `FeatureProvider::getAdminResources(): array` + empty `InteractsWithFeatures` default + memoized
+    `FeatureRegistry::getAllAdminResources()` (key `admin_resources`), named `get*` to match the interface.
+    Platform CI green (contract-frozen gate passed), consumer overlay verified 653 mono + 548 shop + 126
+    booking tests green, then restored. Tag v0.1.63 + GH release + mono mirror synced byte-identical
+    (562 files, also fixed the inherited 0.1.61→0.1.63 mirror lag) + consumer composer.locks bumped +
+    consistency guard OK. Ship-step pending for the canonical laravel.shop core-update PR/deploy.
 - [ ] PR 13–N — Resource conversions wave by wave
 - [ ] Final — generator + `adminResources()` + PHPStan + indexes
 

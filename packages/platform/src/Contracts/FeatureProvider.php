@@ -196,6 +196,23 @@ interface FeatureProvider
     public function getSettingsSection(): ?SettingsSection;
 
     /**
+     * Return the declarative admin resources this feature exposes, e.g. its
+     * TaxRates, Currencies and Products. Each entry identifies one resource and
+     * the dashboard route that renders it; the declarative schema and runtime
+     * themselves live in the frontend (`resources/js/lib/resource-schema.ts`),
+     * so this method returns descriptors, not components.
+     *
+     * Named `getAdminResources` rather than the `adminResources` of the plan
+     * doc to match every other accessor on this interface.
+     *
+     * Aggregated by FeatureRegistry::getAllAdminResources() so a consumer can
+     * discover what a feature package offers without knowing its internals.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAdminResources(): array;
+
+    /**
      * Return an HTML notice displayed to admins on the module-management
      * page when this feature is disabled. Useful for explaining what
      * functionality is unavailable. Return null for no notice.
