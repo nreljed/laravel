@@ -35,7 +35,7 @@ function capturePayload(resource: ReturnType<typeof makeResource>, record?: Reso
     render(<ResourceForm resource={resource} record={record} action="/widgets" submit={submit} />);
     submitForm();
 
-    return submit.mock.calls[0][0] as ResourceRecord;
+    return submit.mock.calls[0]![0] as ResourceRecord;
 }
 
 
@@ -219,7 +219,7 @@ describe("ResourceForm custom submit", () => {
         submitForm();
 
         expect(submit).toHaveBeenCalledOnce();
-        expect(submit.mock.calls[0][0]).toEqual({ name: "Bolt" });
+        expect(submit.mock.calls[0]![0]).toEqual({ name: "Bolt" });
     });
 
     it("does not post on its own when a custom submit is supplied", () => {
@@ -257,8 +257,8 @@ describe("ResourceForm custom submit", () => {
         // from the form's own declaration rather than the call site. A
         // two-step "save then publish" that silently downgraded to POST would
         // be the bug this pins.
-        expect(typeof submit.mock.calls[0][1].post).toBe("function");
-        expect(submit.mock.calls[0][1].processing).toBe(false);
+        expect(typeof submit.mock.calls[0]![1].post).toBe("function");
+        expect(submit.mock.calls[0]![1].processing).toBe(false);
     });
 
     it("exposes the form's error and processing state to the custom submit", () => {
@@ -274,7 +274,7 @@ describe("ResourceForm custom submit", () => {
 
         submitForm();
 
-        const helpers = submit.mock.calls[0][1];
+        const helpers = submit.mock.calls[0]![1];
 
         expect(helpers.processing).toBe(false);
         expect(helpers.errors).toEqual({});

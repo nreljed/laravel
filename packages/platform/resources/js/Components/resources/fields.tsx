@@ -212,7 +212,7 @@ function BooleanInput({ field, id, name, disabled, value, setValue }: FieldContr
     );
 }
 
-function DateInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+function DateInput({ id, name, disabled, value, setValue }: FieldControlProps) {
     return (
         <Input
             id={id}
@@ -225,7 +225,7 @@ function DateInput({ field, id, name, disabled, value, setValue }: FieldControlP
     );
 }
 
-function DateTimeInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+function DateTimeInput({ id, name, disabled, value, setValue }: FieldControlProps) {
     // `datetime-local` wants `YYYY-MM-DDTHH:mm`; a database hands back
     // `YYYY-MM-DD HH:mm:ss`. Trimming to the first 16 characters handles the
     // space form, and the `T` swap handles the rest.
@@ -247,7 +247,7 @@ function DateTimeInput({ field, id, name, disabled, value, setValue }: FieldCont
  * A slug field shows the live preview a second input produces, because the
  * whole point of editing a slug is watching it change.
  */
-function SlugInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+function SlugInput({ id, name, disabled, value, setValue }: FieldControlProps) {
     return (
         <div className="space-y-2">
             <Input id={id} name={name} disabled={disabled} value={value == null ? "" : String(value)} onChange={(event) => setValue(event.target.value)} />
@@ -256,7 +256,7 @@ function SlugInput({ field, id, name, disabled, value, setValue }: FieldControlP
     );
 }
 
-function JsonInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+function JsonInput({ id, name, disabled, value, setValue }: FieldControlProps) {
     const [text, setText] = React.useState(() => (value == null ? "" : JSON.stringify(value, null, 2)));
     const [error, setError] = React.useState<string | undefined>(undefined);
 
@@ -296,7 +296,7 @@ function JsonInput({ field, id, name, disabled, value, setValue }: FieldControlP
     );
 }
 
-function MediaInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+function MediaInput({ id, name, disabled, value, setValue }: FieldControlProps) {
     const [preview, setPreview] = React.useState<string | null>(typeof value === "string" && value ? value : null);
 
     return (

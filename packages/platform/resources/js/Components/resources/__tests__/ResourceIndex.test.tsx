@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { CellData, ColumnDef } from "@tanstack/react-table";
 import { ResourceIndex } from "../ResourceIndex";
-import { defineResource, type ResourceRecord } from "../../../lib/resource-schema";
+import { defineResource, type ResourceDefinition, type ResourceRecord } from "../../../lib/resource-schema";
+import { AppTableFeatures } from "../../../lib/table-features";
 
 /**
  * ResourceIndex owns no data and no persistence, so what it is actually
@@ -47,11 +48,20 @@ const widgets: Widget[] = [
 
 function lastDataTableProps() {
     return dataTableSpy.mock.calls.at(-1)?.[0] as {
-        columns: ColumnDef<Widget>[];
+        columns: ColumnDef<AppTableFeatures, Widget, CellData>[];
         data: Widget[];
-        bulkActions?: { label: string; action: string }[];
+        bulkActions?: { label: string; value: string }[];
         onBulkAction?: unknown;
     };
+}
+
+/**
+ * Read the accessor key off a translated column. The `ColumnDef` union is
+ * optional on every member it has, so the strict consumer gate needs the
+ * column viewed through its observable fields rather than the union.
+ */
+function columnAccessor(column: ColumnDef<AppTableFeatures, Widget, CellData>) {
+    return String((column as unknown as { accessorKey?: string }).accessorKey);
 }
 
 beforeEach(() => {
@@ -66,21 +76,21 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
-function makeResource(overrides: Parameters<typeof defineResource>[0] = {}) {
-    return defineResource({
+function makeResource(overrides: Partial<ResourceDefinition<Widget>> = {}) {
+    return defineResource<Widget>({
         key: "shop/widget",
         label: "Widgets",
         singular: "widget",
         table: { columns: [{ name: "name" }] },
         ...overrides,
-    } as never);
+    });
 }
 
 describe("ResourceIndex translation", () => {
     it("passes the declared columns through", () => {
         render(<ResourceIndex resource={makeResource()} data={widgets} />);
 
-        const names = lastDataTableProps().columns.map((column) => String(column.accessorKey));
+        const names = lastDataTableProps().columns.map((column) => columnAccessor(column));
 
         expect(names).toContain("name");
     });
@@ -92,14 +102,16 @@ describe("ResourceIndex translation", () => {
 
         // Last, because a header click reorders and an action cell that can
         // migrate to first column looks like a bug.
-        expect(String(columns.at(-1)?.accessorKey)).toBe("_actions");
-        expect(columns.at(-1)?.enableSorting).toBe(false);
+        const last = columns.at(-1) as unknown as { accessorKey?: string; enableSorting?: boolean } | undefined;
+
+        expect(String(last?.accessorKey)).toBe("_actions");
+        expect(last?.enableSorting).toBe(false);
     });
 
     it("omits the action column for a read-only table", () => {
         render(<ResourceIndex resource={makeResource()} data={widgets} />);
 
-        expect(lastDataTableProps().columns.map((column) => String(column.accessorKey))).not.toContain("_actions");
+        expect(lastDataTableProps().columns.map((column) => columnAccessor(column))).not.toContain("_actions");
     });
 
     it("keeps the action column when the resource declares its own row actions", () => {
@@ -109,7 +121,7 @@ describe("ResourceIndex translation", () => {
 
         render(<ResourceIndex resource={resource} data={widgets} />);
 
-        expect(lastDataTableProps().columns.map((column) => String(column.accessorKey))).toContain("_actions");
+        expect(lastDataTableProps().columns.map((column) => columnAccessor(column))).toContain("_actions");
     });
 
     it("renders a custom cell from the declaration", () => {
@@ -119,20 +131,20 @@ describe("ResourceIndex translation", () => {
 
         render(<ResourceIndex resource={resource} data={widgets} />);
 
-        const column = lastDataTableProps().columns[0];
-        const rendered = (column.cell as (context: unknown) => unknown)({ row: { original: widgets[0] } });
+        const column = lastDataTableProps().columns[0]!;
+        const rendered = (column.cell as (context: unknown) => unknown)({ row: { original: widgets[0]! } });
 
         expect(rendered).toBe("#1");
     });
 
     it("forwards the declared bulk actions", () => {
         const resource = makeResource({
-            table: { columns: [{ name: "name" }], bulkActions: [{ label: "Delete", action: "delete" }] },
+            table: { columns: [{ name: "name" }], bulkActions: [{ label: "Delete", value: "delete" }] },
         });
 
         render(<ResourceIndex resource={resource} data={widgets} onBulkAction={() => undefined} />);
 
-        expect(lastDataTableProps().bulkActions).toEqual([{ label: "Delete", action: "delete" }]);
+        expect(lastDataTableProps().bulkActions).toEqual([{ label: "Delete", value: "delete" }]);
     });
 
     it("hides the create button when no create route is given", () => {
@@ -150,7 +162,7 @@ describe("ResourceIndex translation", () => {
     it("falls back to a generic new-item label without a singular", () => {
         render(
             <ResourceIndex
-                resource={defineResource({ key: "shop/thing", label: "Things", table: { columns: [] } } as never)}
+                resource={defineResource<Widget>({ key: "shop/thing", label: "Things", table: { columns: [] } })}
                 data={widgets}
                 createRoute="/things/create"
             />,
@@ -165,7 +177,7 @@ describe("ResourceIndex row actions", () => {
     function actionCellFor(
         resource: ReturnType<typeof makeResource>,
         props: Record<string, unknown> = {},
-        row: Widget = widgets[0],
+        row: Widget = widgets[0]!,
     ) {
         render(<ResourceIndex resource={resource} data={widgets} {...props} />);
 
@@ -200,7 +212,7 @@ describe("ResourceIndex row actions", () => {
 
         expect(item).not.toBeNull();
 
-        act(() => item?.props.onSelect({ preventDefault: () => undefined }));
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
 
         expect(onRowAction).toHaveBeenCalledOnce();
         expect(routerMock.delete).not.toHaveBeenCalled();
@@ -213,7 +225,7 @@ describe("ResourceIndex row actions", () => {
 
         expect(item).not.toBeNull();
 
-        act(() => item?.props.onSelect({ preventDefault: () => undefined }));
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
 
         // Selecting must only open the dialog. Deleting on click is the bug the
         // confirm step exists to prevent.
@@ -229,7 +241,7 @@ describe("ResourceIndex row actions", () => {
         const column = lastDataTableProps().columns.at(-1)!;
         const cell = (column.cell as (context: unknown) => unknown)({ row: { original: widgets[0] } });
 
-        act(() => findItem(cell, "Delete")?.props.onSelect({ preventDefault: () => undefined }));
+        act(() => findItem(cell, "Delete")?.props.onSelect?.({ preventDefault: () => undefined }));
 
         const confirm = screen.getByRole("button", { name: "Delete" });
 
@@ -259,8 +271,10 @@ describe("ResourceIndex row actions", () => {
     });
 });
 
-/** Depth-first search for the menu item carrying the given label. */
-function findItem(node: unknown, label: string): { props: Record<string, (...args: never[]) => void> } | null {
+/**
+ * Depth-first search for the menu item carrying the given label.
+ */
+function findItem(node: unknown, label: string): { props: { onSelect?: (event: { preventDefault: () => void }) => void } } | null {
     if (!node || typeof node !== "object") {
         return null;
     }

@@ -8,6 +8,7 @@ import {
     readPath,
     relation,
     toColumnDef,
+    type FieldDefinition,
     type ResourceRecord,
 } from "../resource-schema";
 
@@ -24,12 +25,20 @@ describe("defineResource", () => {
     });
 
     it("keeps declared row actions and relations attached", () => {
-        const rows = { key: "test/thing", label: "Things", rowActions: [{ label: "Archive" }], relations: [relation({ key: "children", component: () => null })] };
+        const rows = {
+            key: "test/thing",
+            label: "Things",
+            table: {
+                columns: [],
+                rowActions: [{ label: "Archive" }],
+            },
+            relations: [relation({ key: "children", component: () => null })],
+        };
 
-        const resource = defineResource(rows as never);
+        const resource = defineResource<ResourceRecord>(rows);
 
-        expect(resource.rowActions).toHaveLength(1);
-        expect(resource.relations?.[0].key).toBe("children");
+        expect(resource.table?.rowActions).toHaveLength(1);
+        expect(resource.relations?.[0]?.key).toBe("children");
     });
 });
 
@@ -42,10 +51,14 @@ describe("relation", () => {
 });
 
 describe("toColumnDef", () => {
+    /** Read a flag off a translated column; the `ColumnDef` union hides them. */
+    const flag = (column: ReturnType<typeof toColumnDef>, key: "accessorKey" | "enableSorting" | "enableHiding") =>
+        (column as unknown as Record<string, unknown>)[key];
+
     it("maps a declared name onto an accessorKey", () => {
         const column = toColumnDef({ name: "email" });
 
-        expect(column.accessorKey).toBe("email");
+        expect(flag(column, "accessorKey")).toBe("email");
     });
 
     it("carries alignment into the meta className, since TanStack v9 has no className", () => {
@@ -66,15 +79,15 @@ describe("toColumnDef", () => {
     it("defaults to sorting and hiding enabled", () => {
         const column = toColumnDef({ name: "email" });
 
-        expect(column.enableSorting).toBe(true);
-        expect(column.enableHiding).toBe(true);
+        expect(flag(column, "enableSorting")).toBe(true);
+        expect(flag(column, "enableHiding")).toBe(true);
     });
 
     it("honours sortable: false and hideable: false", () => {
         const column = toColumnDef({ name: "_actions", sortable: false, hideable: false });
 
-        expect(column.enableSorting).toBe(false);
-        expect(column.enableHiding).toBe(false);
+        expect(flag(column, "enableSorting")).toBe(false);
+        expect(flag(column, "enableHiding")).toBe(false);
     });
 
     it("passes the row and the resolved value to a custom cell", () => {
@@ -150,7 +163,11 @@ describe("isFieldVisible", () => {
     });
 
     it("honours visibleWhen", () => {
-        const field = { name: "reseller", type: "text", visibleWhen: (record: ResourceRecord) => record.kind === "business" };
+        const field: FieldDefinition = {
+            name: "reseller",
+            type: "text",
+            visibleWhen: (record: ResourceRecord) => record.kind === "business",
+        };
 
         expect(isFieldVisible(field, { kind: "business" })).toBe(true);
         expect(isFieldVisible(field, { kind: "consumer" })).toBe(false);

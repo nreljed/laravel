@@ -175,23 +175,23 @@ export interface ResourceSection {
  * it. A relation that is ordered declares its own reorder handler; the table
  * below does the parts every relation shares.
  */
-export interface ResourceRelation<TData extends ResourceRecord = ResourceRecord> {
+export interface ResourceRelation {
     /** React component rendered inside the parent's form. */
-    component: ComponentType<RelationProps<TData>>;
+    component: ComponentType<RelationProps>;
     /** Stable key, used for the section heading and for tests. */
     key: string;
     title?: string;
     description?: string;
 }
 
-export interface RelationProps<TData extends ResourceRecord = ResourceRecord> {
+export interface RelationProps {
     /** The parent record being edited. */
     record: ResourceRecord;
     /** Errors keyed the same way the parent's are. */
     errors: Record<string, string>;
 }
 
-export interface ResourceDefinition<TData extends ResourceRecord = ResourceRecord, TForm extends ResourceRecord = ResourceRecord> {
+export interface ResourceDefinition<TData extends ResourceRecord = ResourceRecord> {
     /** Unique key, e.g. "shop/products". Used for testids and registry lookups. */
     key: string;
     label: string;
@@ -200,7 +200,7 @@ export interface ResourceDefinition<TData extends ResourceRecord = ResourceRecor
     table?: ResourceTable<TData>;
     /** Form sections, in render order. */
     form?: ResourceSection[];
-    relations?: ResourceRelation<TData>[];
+    relations?: ResourceRelation[];
     /** Inertia route helpers, kept on the definition so a page declares them once. */
     routes?: {
         index?: string;
@@ -218,16 +218,14 @@ export interface ResourceDefinition<TData extends ResourceRecord = ResourceRecor
  * and every call site loses its row type, which is the whole reason a resource
  * would declare one.
  */
-export function defineResource<TData extends ResourceRecord = ResourceRecord, TForm extends ResourceRecord = ResourceRecord>(
-    definition: ResourceDefinition<TData, TForm>,
-): ResourceDefinition<TData, TForm> {
+export function defineResource<TData extends ResourceRecord = ResourceRecord>(
+    definition: ResourceDefinition<TData>,
+): ResourceDefinition<TData> {
     return definition;
 }
 
 /** Declare a relation table. See `ResourceRelation` for the ordering caveat. */
-export function relation<TData extends ResourceRecord = ResourceRecord>(
-    definition: ResourceRelation<TData>,
-): ResourceRelation<TData> {
+export function relation(definition: ResourceRelation): ResourceRelation {
     return definition;
 }
 

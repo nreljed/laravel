@@ -1,5 +1,6 @@
 import * as React from "react";
 import { router, useForm } from "@inertiajs/react";
+import type { FormDataType } from "@inertiajs/core";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { toast } from "../ui/toast";
@@ -23,7 +24,7 @@ import { flattenFields, isFieldVisible, readPath, type ResourceDefinition, type 
  * to remove.
  */
 export interface ResourceFormProps {
-    resource: ResourceDefinition<ResourceRecord, ResourceRecord>;
+    resource: ResourceDefinition<ResourceRecord>;
     /** Values to edit. Omit for a create form. */
     record?: ResourceRecord;
     /** HTTP verb. Defaults to POST; pass "put"/"patch" for an edit. */
@@ -44,6 +45,16 @@ export interface ResourceFormHelpers {
     clearErrors: (field?: string) => void;
     setError: (field: string, message: string) => void;
 }
+
+/**
+ * Inertia's `FormDataType` constraint requires every value to be form-encodable,
+ * but resource state is deliberately untyped (`unknown`). `FormDataType` of the
+ * untyped record degrades every value to `never`, which still satisfies the
+ * constraint. The actual values are never read through that index - downstream
+ * code reads `form.data` as a `ResourceRecord` (assignable through the
+ * `never` values) or the concrete seeded record.
+ */
+type ResourceFormState = FormDataType<ResourceRecord>;
 
 /**
  * Turn the visible fields into a payload.
@@ -120,7 +131,12 @@ export function ResourceForm({
         return seeded;
     });
 
-    const form = useForm<ResourceRecord>(defaults);
+    const form = useForm<ResourceFormState>(defaults as unknown as ResourceFormState);
+
+    // `ResourceFormState`'s index is `never`; values are only ever read or
+    // written through the untyped `ResourceRecord` view above it, so the form's
+    // setters are surfaced as accepting any value.
+    const setData = form.setData as unknown as (key: string, value: unknown) => void;
 
     const errorFor = (name: string) => form.errors[name];
 
@@ -135,7 +151,7 @@ export function ResourceForm({
                 post: (url, options) => form.submit(method, url, options),
                 processing: form.processing,
                 errors: form.errors,
-                clearErrors: form.clearErrors,
+                clearErrors: (field) => (field === undefined ? form.clearErrors() : form.clearErrors(field)),
                 setError: form.setError,
             });
 
@@ -176,8 +192,8 @@ export function ResourceForm({
                                             record: form.data,
                                             value: readPath(form.data, field.name),
                                             error: errorFor(field.name),
-                                            setValue: (value) => form.setData(field.name, value),
-                                            setField: (path, value) => form.setData(path, value),
+                                            setValue: (value) => setData(field.name, value),
+                                            setField: (path, value) => setData(path, value),
                                         }}
                                     />
                                 </div>
