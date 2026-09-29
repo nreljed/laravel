@@ -61,7 +61,7 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
     onBulkAction,
 }: ResourceIndexProps<TData>) {
     const table = resource.table;
-    const [confirming, setConfirming] = React.useState<{ title: string; description?: string; run: () => void } | null>(null);
+    const [confirming, setConfirming] = React.useState<{ title: string; description?: string; confirmLabel: string; run: () => void } | null>(null);
 
     const columns = React.useMemo(() => (table?.columns ?? []).map(toColumnDef), [table?.columns]);
 
@@ -69,23 +69,40 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
         (action: ResourceRowAction<TData>, row: TData) => {
             const execute = () => {
                 // The consuming page gets first refusal, because it is the only
-                // layer that knows whether this action is a DELETE, a POST, or a
-                // confirm-then-visit. A resource that guessed would be wrong
-                // about the first resource that needed a different verb.
+                // layer that knows whether this action is a synced mutation, a
+                // modal, or a raw Inertia call. A resource that guessed would
+                // be wrong about the first resource that needed a different
+                // verb.
                 if (onRowAction) {
                     onRowAction(action, row);
 
                     return;
                 }
 
-                if (action.destructive && destroyRoute) {
+                const method = action.method?.toLowerCase();
+
+                // The page-owned delete route stays the source of truth for the
+                // canonical destroy; a declared action carrying `destructive`
+                // without a destroyRoute prop still runs through its own verb.
+                if (action.destructive && destroyRoute && (method === undefined || method === "delete")) {
                     router.delete(destroyRoute(row), { preserveScroll: true });
 
                     return;
                 }
 
                 if (action.route) {
-                    router.get(action.route(row), { preserveScroll: true });
+                    const url = action.route(row);
+                    const options = { preserveScroll: true };
+
+                    if (method === "post") {
+                        router.post(url, {}, options);
+                    } else if (method === "put" || method === "patch") {
+                        router.put(url, {}, options);
+                    } else if (method === "delete") {
+                        router.delete(url, options);
+                    } else {
+                        router.get(url, options);
+                    }
                 }
             };
 
@@ -93,6 +110,16 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                 setConfirming({
                     title: `Delete this ${resource.singular ?? resource.label.toLowerCase().replace(/s$/, "")}?`,
                     description: "This cannot be undone.",
+                    confirmLabel: "Delete",
+                    run: execute,
+                });
+            } else if (action.confirm) {
+                // A confirmed action is not a destructive one: the copy comes
+                // from the declaration ("Approve this review?") because there is
+                // nothing "cannot be undone"-shaped to warn about.
+                setConfirming({
+                    title: action.confirm,
+                    confirmLabel: action.label,
                     run: execute,
                 });
             } else {
@@ -148,13 +175,16 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                                     </>
                                 );
 
-                                // A non-destructive action with a route is
-                                // navigation, so the whole row is the link. Leaving
-                                // it to `onSelect` instead meant clicking the item's
+                                // A non-destructive GET action is navigation, so
+                                // the whole row is the link. Leaving it to
+                                // `onSelect` instead meant clicking the item's
                                 // padding did nothing while clicking its text
-                                // navigated - the two halves of one item behaving
-                                // differently, which reads as a bug.
-                                if (action.route && !action.destructive) {
+                                // navigated - the two halves of one item
+                                // behaving differently, which reads as a bug. A
+                                // POST/PUT/DELETE action is not navigation and
+                                // always goes through `runAction`.
+                                const isGet = !action.method || action.method === "get";
+                                if (action.route && !action.destructive && isGet) {
                                     return (
                                         <DropdownMenuItem
                                             key={action.label}
@@ -243,7 +273,7 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                                 setConfirming(null);
                             }}
                         >
-                            Delete
+                            {confirming?.confirmLabel ?? "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

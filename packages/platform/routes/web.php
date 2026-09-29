@@ -12,6 +12,7 @@ use Nreljed\Platform\Http\Controllers\Admin\FeatureController;
 use Nreljed\Platform\Http\Controllers\Admin\ImpersonationController;
 use Nreljed\Platform\Http\Controllers\Admin\IpAccessRuleController;
 use Nreljed\Platform\Http\Controllers\Admin\PermissionController;
+use Nreljed\Platform\Http\Controllers\Admin\ResourceController;
 use Nreljed\Platform\Http\Controllers\Admin\RoleController;
 use Nreljed\Platform\Http\Controllers\Admin\SessionController;
 use Nreljed\Platform\Http\Controllers\Admin\UserController;
@@ -301,6 +302,11 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
         Route::get('/modules', [FeatureController::class, 'index'])->name('modules.index');
         Route::put('/modules', [FeatureController::class, 'update'])->name('modules.update');
     });
+
+    // Admin resource inventory — one page listing every descriptor declared
+    // by enabled features. The routes it links to live with the owning
+    // features; this page is an index, never a registry of CRUD endpoints.
+    Route::middleware(['admin', 'permission:manage-settings'])->get('/resources', [ResourceController::class, 'index'])->name('resources.index');
 });
 
 // ═══════════════════════════════════════════════════

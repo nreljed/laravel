@@ -15,18 +15,18 @@
         "skipLibCheck": true,
         "noEmit": true,
         "typeRoots": [
-            "../../../node_modules/@types"
+            "./node_modules/@types"
         ],
         "paths": {
             "@nreljed/platform/*": ["./resources/js/*"],
-            "ziggy-js": ["../../../node_modules/ziggy-js"],
-            "@inertiajs/core": ["../../../node_modules/@inertiajs/core"],
-            "@inertiajs/react": ["../../../node_modules/@inertiajs/react"],
-            "@inertiajs/vite": ["../../../node_modules/@inertiajs/vite"],
-            "react": ["../../../node_modules/@types/react/index.d.ts"],
-            "react/*": ["../../../node_modules/@types/react/*"],
-            "react-dom": ["../../../node_modules/@types/react-dom/index.d.ts"],
-            "react-dom/*": ["../../../node_modules/@types/react-dom/*"]
+            "ziggy-js": ["./node_modules/ziggy-js"],
+            "@inertiajs/core": ["./node_modules/@inertiajs/core"],
+            "@inertiajs/react": ["./node_modules/@inertiajs/react"],
+            "@inertiajs/vite": ["./node_modules/@inertiajs/vite"],
+            "react": ["./node_modules/@types/react/index.d.ts"],
+            "react/*": ["./node_modules/@types/react/*"],
+            "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
+            "react-dom/*": ["./node_modules/@types/react-dom/*"]
         }
     },
     "include": [

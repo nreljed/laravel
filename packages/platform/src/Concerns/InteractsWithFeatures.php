@@ -7,6 +7,7 @@ use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Services\FeatureSettingsService;
 use Nreljed\Platform\Services\PackageVersionService;
 use Nreljed\Platform\Support\ContentDescription;
+use Nreljed\Platform\Support\ResourceDefinition;
 use Nreljed\Platform\Support\SettingsSection;
 
 /**
@@ -221,7 +222,7 @@ trait InteractsWithFeatures
      * adding the method to the interface non-breaking: a provider written
      * against the previous version keeps working unchanged.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, ResourceDefinition>
      */
     public function getAdminResources(): array
     {

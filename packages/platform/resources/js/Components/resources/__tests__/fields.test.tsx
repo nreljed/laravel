@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { ResourceField, getFieldType, registerFieldType, registeredFieldTypes } from "../fields";
 import type { FieldContext, FieldDefinition, ResourceRecord } from "../../../lib/resource-schema";
 
@@ -38,6 +38,7 @@ describe("field type registry", () => {
         "media",
         "password",
         "hidden",
+        "relation",
     ])("has a built-in control for %s", (type) => {
         expect(getFieldType(type as never)?.control).toBeDefined();
     });
@@ -161,5 +162,117 @@ describe("ResourceField", () => {
         render(<ResourceField context={contextFor({ name: "colour", type: "dynamic" })} />);
 
         expect(screen.getByText(/No control registered for field type/)).toBeDefined();
+    });
+});
+
+describe("relation field", () => {
+    /** A relation context whose `setValue` is observable. */
+    function relationContext(field: FieldDefinition, value: unknown = []) {
+        const setValue = vi.fn();
+        const context: FieldContext = {
+            field,
+            record: { [field.name]: value } as ResourceRecord,
+            value,
+            setValue,
+            setField: () => undefined,
+        };
+
+        return { context, setValue };
+    }
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("renders the selected values as chips", () => {
+        const { context } = relationContext(
+            {
+                name: "events",
+                type: "relation",
+                label: "Events",
+                options: [
+                    { label: "Order created", value: "order.created" },
+                    { label: "Order paid", value: "order.paid" },
+                ],
+            },
+            ["order.paid"],
+        );
+
+        render(<ResourceField context={context} />);
+
+        expect(screen.getByText("Order paid")).toBeDefined();
+        // The unselected option is only a popup item, not a chip.
+        expect(screen.queryByText("Order created")).toBeNull();
+    });
+
+    it("lists the declared options and stores the picked values as scalars", async () => {
+        const { context, setValue } = relationContext({
+            name: "events",
+            type: "relation",
+            label: "Events",
+            options: [
+                { label: "Order created", value: "order.created" },
+                { label: "Order paid", value: "order.paid" },
+            ],
+        });
+
+        render(<ResourceField context={context} />);
+
+        fireEvent.mouseDown(screen.getByRole("combobox"));
+
+        const option = await screen.findByText("Order created");
+
+        fireEvent.click(option);
+
+        expect(setValue).toHaveBeenCalledWith(["order.created"]);
+    });
+
+    it("loads options from optionsUrl and hands the scalars to setValue", async () => {
+        const fetchSpy = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => [
+                { label: "T-Shirt", value: 1 },
+                { label: "Mug", value: 2 },
+            ],
+        });
+        vi.stubGlobal("fetch", fetchSpy);
+
+        const { context, setValue } = relationContext({
+            name: "product_ids",
+            type: "relation",
+            label: "Products",
+            optionsUrl: "/shop/products/options",
+        });
+
+        render(<ResourceField context={context} />);
+
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledWith("/shop/products/options", expect.objectContaining({ headers: expect.anything() }));
+        });
+
+        fireEvent.mouseDown(screen.getByRole("combobox"));
+
+        const option = await screen.findByText("T-Shirt");
+
+        fireEvent.click(option);
+
+        expect(setValue).toHaveBeenCalledWith([1]);
+    });
+
+    it("surfaces a failed options load without breaking the field", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Failed to load options (500)")));
+
+        const { context } = relationContext({
+            name: "product_ids",
+            type: "relation",
+            label: "Products",
+            optionsUrl: "/shop/products/options",
+        });
+
+        render(<ResourceField context={context} />);
+
+        const error = await screen.findByText("Failed to load options (500)");
+
+        expect(error).toBeDefined();
     });
 });

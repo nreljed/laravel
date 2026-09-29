@@ -3,7 +3,26 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { NativeSelect, NativeSelectOption } from "../ui/native-select";
 import { Switch } from "../ui/switch";
-import { humanizeFieldName, type FieldControlProps, type FieldContext, type FieldDefinition, type FieldType } from "../../lib/resource-schema";
+import {
+    Combobox,
+    ComboboxChips,
+    ComboboxChip,
+    ComboboxChipsInput,
+    ComboboxContent,
+    ComboboxList,
+    ComboboxItem,
+    ComboboxEmpty,
+    ComboboxValue,
+    useComboboxAnchor,
+} from "../ui/combobox";
+import {
+    humanizeFieldName,
+    type FieldControlProps,
+    type FieldContext,
+    type FieldDefinition,
+    type FieldOption,
+    type FieldType,
+} from "../../lib/resource-schema";
 
 /**
  * Built-in field controls, and the registry a consuming app extends.
@@ -197,6 +216,128 @@ function SelectInput({ field, id, name, disabled, value, setValue }: FieldContro
 }
 
 /**
+ * `relation` is the schema's multi-value picker: an array of ids or keys held
+ * in a searchable combobox and displayed as removable chips. Two option
+ * sources, one for each size the kit meets:
+ *
+ *  - `options` for a small, known list - webhook events, shipping methods;
+ *  - `optionsUrl` for a lazy GET endpoint returning `{ value, label }[]` -
+ *    the product/attribute pickers that would otherwise balloon the payload.
+ *
+ * The value is the raw scalar array, so `product_ids: [1, 4]` needs no
+ * `serialize`: the FormRequest validates the array as-is, and the bridge
+ * already resolved `optionsUrl` from its route name.
+ */
+type RelationItem = { value: string | number; label: string };
+
+function RelationInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+    const selected = React.useMemo(() => (Array.isArray(value) ? (value as Array<string | number>) : []), [value]);
+
+    const [options, setOptions] = React.useState<FieldOption[]>(field.options ?? []);
+    const [loaded, setLoaded] = React.useState<boolean>(Boolean(field.options));
+    const [loadError, setLoadError] = React.useState<string | undefined>(undefined);
+
+    React.useEffect(() => {
+        if (field.options || !field.optionsUrl) {
+            return;
+        }
+
+        let cancelled = false;
+
+        fetch(field.optionsUrl, {
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load options (${response.status})`);
+                }
+
+                return response.json();
+            })
+            .then((body) => {
+                if (cancelled) {
+                    return;
+                }
+
+                const rows = Array.isArray(body) ? body : Array.isArray(body?.options) ? body.options : [];
+
+                setOptions(rows as FieldOption[]);
+                setLoaded(true);
+            })
+            .catch((caught) => {
+                if (!cancelled) {
+                    setLoadError(caught instanceof Error ? caught.message : "Failed to load options");
+                    setLoaded(true);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [field.options, field.optionsUrl]);
+
+    const items = React.useMemo(
+        () => options.map((option) => ({ value: option.value, label: option.label }) as RelationItem),
+        [options],
+    );
+
+    const selectedItems = React.useMemo(
+        () => items.filter((item) => selected.some((entry) => String(entry) === String(item.value))),
+        [items, selected],
+    );
+
+    const anchorRef = useComboboxAnchor();
+    const label = field.label ?? humanizeFieldName(name);
+
+    return (
+        <div className="space-y-2">
+            <Combobox
+                items={items}
+                multiple
+                disabled={disabled}
+                value={selectedItems}
+                itemToStringLabel={(item) => item.label}
+                onValueChange={(next) => setValue((next as RelationItem[]).map((item) => item.value))}
+            >
+                <div ref={anchorRef}>
+                    <ComboboxChips aria-label={label} aria-invalid={loadError ? "true" : undefined}>
+                        <ComboboxValue>
+                            {(current) => (
+                                <>
+                                    {((current ?? []) as RelationItem[]).map((item) => (
+                                        <ComboboxChip key={String(item.value)} aria-label={item.label}>
+                                            {item.label}
+                                        </ComboboxChip>
+                                    ))}
+                                    <ComboboxChipsInput
+                                        id={id}
+                                        name={name}
+                                        disabled={disabled}
+                                        placeholder={field.placeholder}
+                                        className={selectedItems.length > 0 ? "w-24" : "w-full"}
+                                    />
+                                </>
+                            )}
+                        </ComboboxValue>
+                    </ComboboxChips>
+                </div>
+                <ComboboxContent anchor={anchorRef}>
+                    <ComboboxList>
+                        {(item: RelationItem) => (
+                            <ComboboxItem key={String(item.value)} value={item}>
+                                <span>{item.label}</span>
+                            </ComboboxItem>
+                        )}
+                    </ComboboxList>
+                    <ComboboxEmpty>{loaded ? "No options." : "Loading…"}</ComboboxEmpty>
+                </ComboboxContent>
+            </Combobox>
+            {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+        </div>
+    );
+}
+
+/**
  * A switch is a boolean, so it stores a boolean. A checkbox storing `"on"`
  * means every consumer downstream has to know which of the two conventions it
  * is holding, and the ones that guess wrong coerce `"off"` to `true`.
@@ -351,6 +492,7 @@ const BUILT_INS: Record<Exclude<FieldType, "dynamic">, FieldTypeRegistration> = 
     media: { control: MediaInput, initialValue: () => "" },
     password: { control: PasswordInput, initialValue: () => "" },
     hidden: { control: HiddenInput },
+    relation: { control: RelationInput, initialValue: () => [] },
 };
 
 for (const [type, registration] of Object.entries(BUILT_INS)) {

@@ -269,6 +269,76 @@ describe("ResourceIndex row actions", () => {
         expect(actionCellFor(resource, {}, { id: 2, name: "Nut" })).toBeNull();
         expect(collectLabels(actionCellFor(resource, {}, { id: 1, name: "Bolt" }))).toContain("Refund");
     });
+
+    it("keeps an explicit GET action a link", () => {
+        const resource = makeResource({
+            table: { columns: [], rowActions: [{ label: "Show", method: "get", route: (row) => `/widgets/${(row as Widget).id}` }] },
+        });
+
+        expect(findHref(actionCellFor(resource), "Show")).toBe("/widgets/1");
+    });
+
+    it("submits a POST row action through router.post", () => {
+        const resource = makeResource({
+            table: {
+                columns: [],
+                rowActions: [{ label: "Approve", method: "post", route: (row) => `/widgets/${(row as Widget).id}/approve` }],
+            },
+        });
+
+        const item = findItem(actionCellFor(resource), "Approve");
+
+        expect(item).not.toBeNull();
+
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+
+        expect(routerMock.post).toHaveBeenCalledWith("/widgets/1/approve", {}, { preserveScroll: true });
+    });
+
+    it("confirms a non-destructive action carrying confirm copy before running", () => {
+        const resource = makeResource({
+            table: {
+                columns: [],
+                rowActions: [
+                    {
+                        label: "Approve",
+                        confirm: "Approve widget 1?",
+                        method: "post",
+                        route: (row) => `/widgets/${(row as Widget).id}/approve`,
+                    },
+                ],
+            },
+        });
+
+        const item = findItem(actionCellFor(resource), "Approve");
+
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+
+        // Selecting only opens the dialog - none of it runs yet.
+        expect(routerMock.post).not.toHaveBeenCalled();
+        expect(document.body.textContent).toContain("Approve widget 1?");
+
+        const confirm = screen.getByRole("button", { name: "Approve" });
+
+        act(() => confirm.click());
+
+        expect(routerMock.post).toHaveBeenCalledWith("/widgets/1/approve", {}, { preserveScroll: true });
+    });
+
+    it("submits a declared DELETE action without a destroyRoute prop", () => {
+        const resource = makeResource({
+            table: {
+                columns: [],
+                rowActions: [{ label: "Hard delete", method: "delete", route: (row) => `/widgets/${(row as Widget).id}/purge` }],
+            },
+        });
+
+        const item = findItem(actionCellFor(resource), "Hard delete");
+
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+
+        expect(routerMock.delete).toHaveBeenCalledWith("/widgets/1/purge", { preserveScroll: true });
+    });
 });
 
 /**
