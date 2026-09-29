@@ -712,7 +712,23 @@ php artisan test --compact tests/Feature/Blog/       # All blog tests
 php artisan test --compact --filter=testName         # Specific test
 npm run test                                         # Vitest frontend tests
 npm run check:ci                                     # Full CI pipeline
+pnpm test:e2e                                        # Playwright e2e against APP_URL (defaults to 127.0.0.1:8000)
 ```
+
+### Browser E2E
+
+The workspace ships one Playwright harness at the repo root
+(`playwright.config.ts` + `e2e/`) usable against any served app — point
+`APP_URL` at the target site (e.g. `http://shop-laravel.local`,
+`http://laravel.local`, or a booking site) and run `pnpm test:e2e`.
+Login uses the demo admin (`nstudio.webdesign@gmail.com` / `azerty123/*`,
+override with `E2E_EMAIL`/`E2E_PASSWORD`). The shop admin smoke
+(`e2e/shop-admin-resources.spec.ts`) verifies the kernel resource pages
+render shop descriptors (customers/orders columns + the coupon product
+combobox) and needs seeded demo data. Install the browser once:
+`npm run test:e2e:install`. Agents authoring throwaway browser checks can
+also use the global `webapp-testing` skill (Python Playwright + output under
+`%TEMP%\opencode\playwright`).
 
 - `main` — production-ready
 - `beta` — active development
