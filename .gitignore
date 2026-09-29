@@ -21,6 +21,8 @@ composer.phar
 /storage/temp/
 /storage/phpstan/
 /PLAN.md
+/test-results/
+/playwright-report/
 
 # Workspace packages are first-class source (tracked); ignore only their install output
 packages/*/node_modules/
