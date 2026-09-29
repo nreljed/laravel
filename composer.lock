@@ -3432,13 +3432,10 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-<<<<<<< HEAD
             "support": {
                 "source": "https://github.com/nreljed/platform/tree/v0.1.70",
                 "issues": "https://github.com/nreljed/platform/issues"
             },
-=======
->>>>>>> 059b0ca (chore(mono): sync platform 0.1.70 + shop-module 0.1.75 mirrors and locks)
             "time": "2026-09-29T19:30:55+00:00"
         },
         {
