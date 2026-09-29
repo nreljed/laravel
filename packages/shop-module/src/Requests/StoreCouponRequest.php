@@ -13,7 +13,7 @@ class StoreCouponRequest extends FormRequest
 
     public function rules(): array
     {
-        $coupon = $this->route('coupon');
+        $coupon = $this->route('record');
         $couponId = $coupon?->id ?? 'NULL';
 
         return [

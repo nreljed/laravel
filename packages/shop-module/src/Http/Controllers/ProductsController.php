@@ -2,6 +2,7 @@
 
 namespace Nreljed\ShopModule\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,7 @@ use Nreljed\ShopModule\Models\ProductBrand;
 use Nreljed\ShopModule\Models\ProductCategory;
 use Nreljed\ShopModule\Models\ProductDownload;
 use Nreljed\ShopModule\Models\ProductField;
+use Nreljed\ShopModule\Models\ProductRelation;
 use Nreljed\ShopModule\Models\ProductTag;
 use Nreljed\ShopModule\Requests\AdjustStockRequest;
 use Nreljed\ShopModule\Requests\ImportProductRequest;
@@ -29,6 +31,7 @@ use Nreljed\ShopModule\Requests\StoreProductRequest;
 use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\InventoryService;
 use Nreljed\ShopModule\Services\PriceLedgerService;
+use Nreljed\ShopModule\Services\ProductSearch;
 use Nreljed\ShopModule\Services\WebhookService;
 
 class ProductsController extends Controller
@@ -40,6 +43,13 @@ class ProductsController extends Controller
     protected MediaService $mediaService;
 
     protected WebhookService $webhookService;
+
+    private ?ProductSearch $productSearch = null;
+
+    private function productSearch(): ProductSearch
+    {
+        return $this->productSearch ??= app(ProductSearch::class);
+    }
 
     public function __construct(
         NotificationService $notificationService,
@@ -59,11 +69,8 @@ class ProductsController extends Controller
 
         $query = Product::with('categories', 'tags', 'brands');
 
-        if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
-            });
+        if ($request->filled('search')) {
+            $this->productSearch()->applyTo($query, $this->productSearch()->term((string) $request->search), ['name', 'sku']);
         }
 
         if ($status = $request->get('status')) {
@@ -85,6 +92,23 @@ class ProductsController extends Controller
         ]);
     }
 
+    public function options(): JsonResponse
+    {
+        $this->authorize('viewAny', Product::class);
+
+        $products = Product::published()
+            ->reachable()
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku']);
+
+        return response()->json($products->map(fn (Product $product): array => [
+            'value' => $product->id,
+            'label' => ($product->sku !== null && $product->sku !== '')
+                ? $product->name.' ('.$product->sku.')'
+                : $product->name,
+        ])->all());
+    }
+
     public function create()
     {
         $this->authorize('create', Product::class);
@@ -102,6 +126,7 @@ class ProductsController extends Controller
             'allProducts' => Product::select('id', 'name', 'sku', 'type', 'price')->orderBy('name')->get(),
             'groupPrices' => [],
             'priceableGroups' => $this->priceableGroups(),
+            'relations' => [],
         ]);
     }
 
@@ -140,6 +165,10 @@ class ProductsController extends Controller
 
         if (! empty($validated['grouped_items'])) {
             $this->syncGroupedItems($product, $validated['grouped_items']);
+        }
+
+        if (! empty($validated['product_relations'])) {
+            $this->syncRelations($product, $validated['product_relations']);
         }
 
         if (! empty($validated['downloads'])) {
@@ -183,7 +212,7 @@ class ProductsController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->load('categories', 'tags', 'brands', 'variations', 'productAttributes', 'groupedItems', 'downloads', 'productFieldValues');
+        $product->load('categories', 'tags', 'brands', 'variations', 'productAttributes', 'groupedItems', 'downloads', 'productFieldValues', 'curatedRelations');
 
         return Inertia::render('shop/products/form', [
             'product' => $product,
@@ -202,6 +231,12 @@ class ProductsController extends Controller
                 ->where('id', '!=', $product->id)
                 ->orderBy('name')
                 ->get(),
+            'relations' => $product->curatedRelations->map(fn ($related) => [
+                'id' => $related->id,
+                'name' => $related->name,
+                'sku' => $related->sku,
+                'type' => $related->pivot?->type ?? ProductRelation::TYPE_CROSS_SELL,
+            ])->values(),
             'groupPrices' => app(PriceLedgerService::class)->groupRowsFor($product),
             'priceableGroups' => $this->priceableGroups(),
         ]);
@@ -257,6 +292,10 @@ class ProductsController extends Controller
 
         if (isset($validated['grouped_items'])) {
             $this->syncGroupedItems($product, $validated['grouped_items']);
+        }
+
+        if (isset($validated['product_relations'])) {
+            $this->syncRelations($product, $validated['product_relations']);
         }
 
         if (isset($validated['downloads'])) {
@@ -465,7 +504,7 @@ class ProductsController extends Controller
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
 
-            fputcsv($handle, ['name', 'slug', 'description', 'short_description', 'price', 'compare_price', 'cost_price', 'sku', 'barcode', 'global_unique_id', 'stock_quantity', 'low_stock_threshold', 'track_stock', 'backorders', 'stock_status', 'status', 'type', 'catalog_visibility', 'virtual', 'downloadable', 'external_url', 'button_text', 'is_featured', 'sold_individually', 'menu_order', 'weight', 'categories', 'tags']);
+            fputcsv($handle, ['name', 'slug', 'description', 'short_description', 'price', 'compare_price', 'cost_price', 'sku', 'barcode', 'global_unique_id', 'stock_quantity', 'low_stock_threshold', 'track_stock', 'backorders', 'stock_status', 'status', 'type', 'catalog_visibility', 'virtual', 'downloadable', 'external_url', 'button_text', 'is_featured', 'sold_individually', 'menu_order', 'weight', 'categories', 'tags', 'mpn']);
 
             Product::with('categories', 'tags')->chunk(200, function ($products) use ($handle) {
                 foreach ($products as $p) {
@@ -481,6 +520,7 @@ class ProductsController extends Controller
                         $p->menu_order, $p->weight,
                         $p->categories->pluck('name')->implode('|'),
                         $p->tags->pluck('name')->implode('|'),
+                        $p->mpn,
                     ]);
                 }
             });
@@ -532,6 +572,7 @@ class ProductsController extends Controller
                 'sold_individually' => $data[23] ?? '0',
                 'menu_order' => $data[24] ?? null,
                 'weight' => $data[25] ?? null,
+                'mpn' => $data[28] ?? '',
             ];
 
             $validator = Validator::make($rowData, [
@@ -689,6 +730,46 @@ class ProductsController extends Controller
         }
 
         $product->groupedItems()->sync($syncData);
+    }
+
+    /**
+     * Replace a product's curated cross-sell / up-sell links wholesale.
+     *
+     * Rebuilding rather than diffing keeps the editor trivial: the form submits
+     * the whole list, and `sort_order` is the position in it. Rows a merchant
+     * removed are simply gone after the rewrite, so the two intents never
+     * accumulate stale entries. Self-references and junk types are dropped -
+     * a 301-style self-link "upsells nothing" and can never be bought.
+     */
+    protected function syncRelations(Product $product, array $relations): void
+    {
+        ProductRelation::where('product_id', $product->id)->delete();
+
+        $sortOrder = 0;
+
+        foreach ($relations as $relation) {
+            if (! is_array($relation)) {
+                continue;
+            }
+
+            $relatedId = (int) ($relation['product_id'] ?? 0);
+            $type = (string) ($relation['type'] ?? '');
+
+            if (! in_array($type, ProductRelation::TYPES, true)) {
+                continue;
+            }
+
+            if ($relatedId <= 0 || $relatedId === $product->id) {
+                continue;
+            }
+
+            ProductRelation::create([
+                'product_id' => $product->id,
+                'related_product_id' => $relatedId,
+                'type' => $type,
+                'sort_order' => $sortOrder++,
+            ]);
+        }
     }
 
     protected function syncDownloads(Product $product, array $downloads): void

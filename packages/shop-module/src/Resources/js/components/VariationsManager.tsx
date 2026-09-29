@@ -77,6 +77,7 @@ interface VariationAttribute {
 
 interface Variation {
   id: number; product_id: number; sku: string | null; barcode: string | null;
+  global_unique_id: string | null; mpn: string | null;
   price: string | null; compare_price: string | null; sale_price: string | null;
   sale_from: string | null; sale_to: string | null;
   stock_quantity: number; incoming_stock: number; weight: string | null;
@@ -1066,6 +1067,16 @@ export function VariationsManager({
                         <Label className="text-xs">Barcode</Label>
                         <Input className="h-8 text-sm" value={drawerForm.barcode || ""}
                           onChange={(e) => setDrawerForm({ ...drawerForm, barcode: e.target.value })} />
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label className="text-xs">Global ID</Label>
+                        <Input className="h-8 text-sm" placeholder="GTIN/UPC/EAN/ISBN" value={drawerForm.global_unique_id || ""}
+                          onChange={(e) => setDrawerForm({ ...drawerForm, global_unique_id: e.target.value })} />
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label className="text-xs">MPN</Label>
+                        <Input className="h-8 text-sm" placeholder="Manufacturer Part No." value={drawerForm.mpn || ""}
+                          onChange={(e) => setDrawerForm({ ...drawerForm, mpn: e.target.value })} />
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">

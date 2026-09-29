@@ -7,6 +7,7 @@ use Illuminate\Pipeline\Pipeline;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\ShopModule\Http\Resources\CartResource;
 use Nreljed\ShopModule\Models\Cart;
 use Nreljed\ShopModule\Models\CartItem;
 use Nreljed\ShopModule\Models\Coupon;
@@ -30,9 +31,36 @@ class CartController extends Controller
     public function index(Request $request)
     {
         $cart = $this->getCart($request);
-        $cart->load('items.product', 'items.variation');
 
-        return response()->json($cart->load('items.product', 'items.variation'));
+        return response()->json($this->publicCart($request, $cart));
+    }
+
+    /**
+     * The shopper-visible shape of a cart.
+     *
+     * The cart lines used to be handed over as raw `items.product` models on a
+     * public route, which published `cost_price` and the rest of the product
+     * row. Every cart response now goes through here so there is one cart shape
+     * to reason about - not just the two read surfaces, but the five mutations
+     * that answer with the updated cart:
+     *
+     *  - `index` - the JSON feed the header badge polls,
+     *  - `page` - the cart page,
+     *  - `addItem`, `updateItem`, `removeItem`, `applyCoupon`, `removeCoupon`.
+     *
+     * The mutations were the ones that kept returning
+     * `$cart->fresh()->load('items.product', 'items.variation')` after the read
+     * surfaces had been trimmed, so the leak survived the first fix on exactly
+     * the responses a shopper triggers by clicking. Nothing reads those bodies -
+     * the storefront follows every one of them with `router.reload({ only:
+     * ["cart"] })` and reads only `res.ok` - but the allowlisted cart is
+     * returned anyway so no consumer can come to depend on the raw shape.
+     *
+     * @return array<string, mixed>
+     */
+    protected function publicCart(Request $request, Cart $cart): array
+    {
+        return CartResource::make($cart)->resolve($request);
     }
 
     public function page(Request $request)
@@ -70,7 +98,9 @@ class CartController extends Controller
         }
 
         return Inertia::render('shop/storefront/shoppingcart', [
-            'cart' => $cart,
+            // Built after the currency conversion above so the line prices the
+            // shopper sees are the ones that were just converted.
+            'cart' => $this->publicCart($request, $cart),
             'quote' => $quote,
             'autoDiscounts' => $autoDiscounts->map(fn ($c) => [
                 'id' => $c->id,
@@ -94,17 +124,54 @@ class CartController extends Controller
     public function addItem(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            // Deliberately only an integer, not `exists:products,id`. That rule
+            // made this guest-reachable endpoint a catalogue oracle: a product
+            // that never existed was refused by validation, while one an editor
+            // had deliberately hidden cleared the rule and was refused later by
+            // the pipeline's own wording. Two different 422s is enough to walk
+            // the ids and learn what the shop is hiding. The product is resolved
+            // through the storefront scopes below and a miss is a 404, which is
+            // the same answer the product page and the back-in-stock form give.
+            'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
-            'variant_id' => 'nullable|exists:product_variations,id',
+            // An integer, not `exists:product_variations,id`. That rule looked the
+            // variation up on its own, so this guest-reachable endpoint told an
+            // anonymous caller whether a given id was a variation *anywhere* in
+            // the shop - including one belonging to a hidden product. It is
+            // checked against the product below instead.
+            'variant_id' => 'nullable|integer',
             'variant_label' => 'nullable|string|max:255',
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
+        $product = Product::query()
+            ->published()
+            ->reachable()
+            ->find($validated['product_id']);
+
+        // A JSON 404 rather than `abort_if`, because every other branch of this
+        // endpoint answers with `response()->json()` and the storefront reads
+        // `data.error` off the failure to raise its toast. A bare `abort_if`
+        // renders an HTML 404 to a caller that sends JSON without an `Accept`
+        // header, and the message the shopper gets should not depend on that.
+        if ($product === null) {
+            return response()->json(['error' => 'This product is no longer available.'], 404);
+        }
 
         $variation = null;
         if (! empty($validated['variant_id'])) {
-            $variation = ProductVariation::findOrFail($validated['variant_id']);
+            // Scoped to the product, so a variation belonging to something else
+            // and a variation that does not exist both come back empty and are
+            // refused with the pipeline's own wording - one answer either way.
+            // Passing the miss on as `null` would have been worse: the pipeline
+            // reads a null variation as "no variant chosen" and would have
+            // quietly added the line as a plain product.
+            $variation = ProductVariation::query()
+                ->where('product_id', $product->id)
+                ->find($validated['variant_id']);
+
+            if ($variation === null) {
+                return response()->json(['error' => 'Variant does not belong to this product.'], 422);
+            }
         }
 
         $cart = $this->getCart($request);
@@ -133,7 +200,7 @@ class CartController extends Controller
 
         $this->touchLastActivity($cart);
 
-        return response()->json($cart->fresh()->load('items.product', 'items.variation'));
+        return response()->json($this->publicCart($request, $cart->fresh()));
     }
 
     public function updateItem(Request $request, int $cartItem)
@@ -169,7 +236,7 @@ class CartController extends Controller
 
         $this->touchLastActivity($cartItem->cart);
 
-        return response()->json($cartItem->cart->fresh()->load('items.product', 'items.variation'));
+        return response()->json($this->publicCart($request, $cartItem->cart->fresh()));
     }
 
     public function removeItem(Request $request, int $cartItem)
@@ -181,7 +248,7 @@ class CartController extends Controller
 
         $this->touchLastActivity($cart);
 
-        return response()->json($cart->fresh()->load('items.product', 'items.variation'));
+        return response()->json($this->publicCart($request, $cart->fresh()));
     }
 
     public function clear(Request $request)
@@ -238,7 +305,7 @@ class CartController extends Controller
 
         $this->touchLastActivity($cart);
 
-        return response()->json($cart->fresh()->load('items.product', 'items.variation'));
+        return response()->json($this->publicCart($request, $cart->fresh()));
     }
 
     public function removeCoupon(Request $request)
@@ -275,7 +342,7 @@ class CartController extends Controller
 
         $this->touchLastActivity($cart);
 
-        return response()->json($cart->fresh()->load('items.product', 'items.variation'));
+        return response()->json($this->publicCart($request, $cart->fresh()));
     }
 
     /**

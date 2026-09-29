@@ -17,6 +17,9 @@ use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\MailService;
 use Nreljed\Platform\Services\NotificationService;
+use Nreljed\ShopModule\Events\WebhookEvents;
+use Nreljed\ShopModule\Http\Resources\CartResource;
+use Nreljed\ShopModule\Http\Resources\StorefrontOrderResource;
 use Nreljed\ShopModule\Models\Cart;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Payments\PaymentVerification;
@@ -115,7 +118,12 @@ class CheckoutController extends Controller
         }
 
         return Inertia::render('shop/orders/checkout', [
-            'cart' => $cart,
+            // The allowlisted cart, not the model. This page had `items.product`
+            // loaded and rendered the cart raw, so every line published the
+            // merchant's `cost_price` and `price_hash` to a guest - the one
+            // public page still doing so after the cart was trimmed. Same
+            // resource the cart page uses, so the two cannot drift again.
+            'cart' => CartResource::make($cart)->resolve($request),
             'shippingMethods' => $shippingMethods,
             'userBillingAddress' => $billingAddress,
             'userShippingAddress' => $shippingAddress,
@@ -133,8 +141,12 @@ class CheckoutController extends Controller
 
         $order->load('items');
 
+        // An allowlist, not the model. The raw order published the columns this
+        // page has no business showing - the emailed `confirmation_token` that
+        // is the credential for opening it, the Stripe `payment_intent_id`, the
+        // staff `notes` and `refund_notes`, and `processed_by`.
         return Inertia::render('shop/orders/confirmation', [
-            'order' => $order,
+            'order' => StorefrontOrderResource::make($order)->resolve($request),
         ]);
     }
 
@@ -286,7 +298,7 @@ class CheckoutController extends Controller
                 Auth::login($user);
 
                 $this->webhookService?->dispatch(
-                    \Nreljed\ShopModule\Events\WebhookEvents::CUSTOMER_CREATED,
+                    WebhookEvents::CUSTOMER_CREATED,
                     [
                         'id' => $user->id,
                         'name' => $user->name,

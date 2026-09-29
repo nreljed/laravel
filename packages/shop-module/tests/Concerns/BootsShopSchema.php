@@ -6,22 +6,26 @@ use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Factory as AuthFactoryContract;
-use Illuminate\Contracts\Auth\Guard as GuardContract;
 use Illuminate\Contracts\Config\Repository as ConfigContract;
 use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
+use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Connectors\ConnectionFactory;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Events\Dispatcher;
+use Illuminate\Http\Request;
 use Illuminate\Http\Request as RequestMacro;
 use Illuminate\Support\Facades\DB as DFacade;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Contracts\Routing\ResponseFactory as ResponseFactory;
+use Illuminate\Translation\ArrayLoader;
+use Illuminate\Translation\Translator;
+use Illuminate\Validation\Factory as ValidationFactory;
+use Nreljed\ShopModule\Contracts\ProductSearchDriver;
+use Nreljed\ShopModule\Search\DatabaseProductSearchDriver;
+use Nreljed\ShopModule\Services\ProductSearch;
 use Nreljed\ShopModule\Tests\Support\StubResponseFactory;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -82,9 +86,24 @@ trait BootsShopSchema
 
         // `tempnam()` creates the bare name, so the `.sqlite` file the
         // connector checks for has to be materialised explicitly.
+        //
+        // The unlink has to cover the `.sqlite` path and not just the one
+        // `tempnam()` returned. `tempnam()` guarantees that *its* name is
+        // unused, but the `.sqlite` variant is a different file, and this
+        // harness leaks one of those per test class per run. `touch()` does not
+        // truncate, so a name that matches a leftover from an earlier run comes
+        // back already migrated and the very next `Schema::create('users')`
+        // dies with "table users already exists" - a failure that depends on
+        // how many runs happened to be lying around, which is the worst kind to
+        // meet in CI.
         $databasePath = tempnam(sys_get_temp_dir(), 'shop_schema_');
         unlink($databasePath);
         self::$databasePath = $databasePath.'.sqlite';
+
+        if (file_exists(self::$databasePath)) {
+            unlink(self::$databasePath);
+        }
+
         touch(self::$databasePath);
 
         $basePath = dirname(__DIR__, 2);
@@ -184,7 +203,29 @@ trait BootsShopSchema
             fn (string $content, int $status, array $headers) => $content
         ));
 
+        // Pipeline steps reject bad input with `ValidationException::withMessages()`,
+        // which builds its error bag off the container's validator. A stub
+        // factory is enough for that: no rules run, the messages are added
+        // directly. Without it, executing such a step dies with
+        // "Target class [validator] does not exist" before the step's own
+        // assertion is ever reached.
+        $container->singleton(ValidationFactory::class, fn () => new ValidationFactory(
+            new Translator(new ArrayLoader, 'en'),
+        ));
+        $container->alias(ValidationFactory::class, 'validator');
+
         $this->bindAnonymousAuth($container);
+
+        // Mirrors the provider's own registration: controllers resolve the
+        // search service through the container, so the harness stands in for
+        // the `ProductSearch`/`ProductSearchDriver` singletons exactly the way
+        // it does for the response factory and the validator stub.
+        $container->singleton(ProductSearchDriver::class, fn ($app) => $app->make(
+            $app['config']->get('shop.search.driver', DatabaseProductSearchDriver::class)
+        ));
+        $container->singleton(ProductSearch::class, fn ($app) => new ProductSearch(
+            $app->make(ProductSearchDriver::class)
+        ));
 
         $connection = [
             'driver' => 'sqlite',
@@ -243,6 +284,43 @@ trait BootsShopSchema
         $this->registerRequestSignatureMacros();
 
         self::$shopContainer = $container;
+
+        $this->pruneOrphanedSchemaFiles();
+    }
+
+    /**
+     * Reclaim the temp databases earlier runs leaked.
+     *
+     * Deleting this run's own file at shutdown does not work on Windows: the
+     * Eloquent capsule holds its own reference to the same PDO, so the handle is
+     * still open when the shutdown handler runs and the unlink is refused
+     * silently. Pruning by age sidesteps the locking question entirely - a file
+     * older than an hour belongs to a process that finished long ago, and the
+     * threshold is what keeps a second suite running concurrently on this
+     * machine from having its live schema deleted underneath it.
+     *
+     * Worth doing on the self-hosted Windows runners, which are long-lived:
+     * these files are ~487 KB each and without this they accumulate for as long
+     * as the runner does.
+     */
+    private function pruneOrphanedSchemaFiles(): void
+    {
+        $current = self::$databasePath;
+        $cutoff = time() - 3600;
+
+        foreach (glob(sys_get_temp_dir().DIRECTORY_SEPARATOR.'sho*.tmp.sqlite') ?: [] as $path) {
+            if ($path === $current || ! is_file($path)) {
+                continue;
+            }
+
+            $modified = @filemtime($path);
+
+            if ($modified === false || $modified >= $cutoff) {
+                continue;
+            }
+
+            @unlink($path);
+        }
     }
 
     /**
@@ -257,7 +335,7 @@ trait BootsShopSchema
      */
     private function registerRequestSignatureMacros(): void
     {
-        if (! \Illuminate\Http\Request::hasMacro('hasValidSignature')) {
+        if (! Request::hasMacro('hasValidSignature')) {
             RequestMacro::macro('hasValidSignature', function ($absolute = true) {
                 return Container::getInstance()->make('url')->hasValidSignature($this, $absolute);
             });

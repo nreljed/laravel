@@ -192,6 +192,7 @@ export function ResourceForm({
                                             record: form.data,
                                             value: readPath(form.data, field.name),
                                             error: errorFor(field.name),
+                                            errors: form.errors,
                                             setValue: (value) => setData(field.name, value),
                                             setField: (path, value) => setData(path, value),
                                         }}

@@ -6,9 +6,16 @@ use Illuminate\Http\Request;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\ShopModule\Http\Resources\ProductResource;
 use Nreljed\ShopModule\Models\Product;
+use Nreljed\ShopModule\Services\ProductSearch;
 
 class ProductsController extends Controller
 {
+    private ?ProductSearch $productSearch = null;
+
+    private function productSearch(): ProductSearch
+    {
+        return $this->productSearch ??= app(ProductSearch::class);
+    }
     /**
      * The catalog-visibility values this endpoint may return.
      *
@@ -40,10 +47,7 @@ class ProductsController extends Controller
         $search = $this->searchTerm($request);
 
         if ($search !== null) {
-            $query->where(function ($w) use ($search) {
-                $w->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
-            });
+            $this->productSearch()->applyTo($query, $search, ['name', 'sku']);
         }
 
         // No `status` filter. It is an editorial field, and honouring it from
@@ -66,9 +70,10 @@ class ProductsController extends Controller
     /**
      * A search term, or null when there is nothing usable to search for.
      *
-     * Capped at 100 characters: the value is interpolated straight into a
+     * The term is normalised by the shared `ProductSearch` service (trimmed
+     * and capped at 100 characters: the value is interpolated straight into a
      * `LIKE` pattern, and an unbounded string is an unbounded amount of work
-     * for a database to scan for every anonymous caller.
+     * for a database to scan for every anonymous caller).
      */
     private function searchTerm(Request $request): ?string
     {
@@ -76,13 +81,7 @@ class ProductsController extends Controller
             return null;
         }
 
-        $term = trim($request->search);
-
-        if ($term === '') {
-            return null;
-        }
-
-        return mb_substr($term, 0, 100);
+        return $this->productSearch()->term($request->search);
     }
 
     /**

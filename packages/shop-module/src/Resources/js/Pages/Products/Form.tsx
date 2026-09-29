@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal, Users, Link2 } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -56,6 +56,12 @@ interface GroupedItem {
   name?: string; sku?: string; price?: string;
 }
 
+type RelationType = "cross_sell" | "up_sell";
+
+interface RelationItem {
+  id: number; name: string; sku: string | null; type: RelationType;
+}
+
 interface DownloadItem {
   id?: number; name: string; file: string;
   download_limit: number; download_expiry: number; sort_order: number;
@@ -76,7 +82,7 @@ interface Product {
   id: number; name: string; slug: string; description: string | null; short_description: string | null;
   price: number; compare_price: number | null; cost_price: number | null;
   sale_price: number | null; sale_from: string | null; sale_to: string | null;
-  sku: string | null; barcode: string | null; global_unique_id: string | null;
+  sku: string | null; barcode: string | null; global_unique_id: string | null; mpn: string | null;
   stock_quantity: number; low_stock_threshold: number; incoming_stock: number | null;
   hold_stock_minutes: number | null; stock_status: string | null;
   track_stock: boolean; backorders: string; status: string; type: string;
@@ -88,6 +94,7 @@ interface Product {
   width: number | null; height: number | null; thumbnail_url: string | null;
   images: { url: string; path: string }[] | null; categories: Category[]; tags: Tag[]; brands: Brand[];
   publish_date: string | null; unpublish_at: string | null; groupedItems?: GroupedItem[]; downloads?: DownloadItem[];
+  relations?: RelationItem[];
   seo?: { meta_title?: string | null; meta_description?: string | null; og_image?: string | null; focus_keyword?: string | null; seo_metadata?: unknown | null } | null;
 }
 
@@ -104,7 +111,7 @@ interface FormData {
   name: string; description: string; short_description: string;
   price: string; compare_price: string; cost_price: string;
   sale_price: string; sale_from: string | null; sale_to: string | null;
-  sku: string; barcode: string; global_unique_id: string; vendor: string;
+  sku: string; barcode: string; global_unique_id: string; mpn: string; vendor: string;
   stock_quantity: string; low_stock_threshold: string; incoming_stock: string; hold_stock_minutes: string;
   stock_status: string; track_stock: boolean; backorders: string; status: string; publish_date: string | null; unpublish_at: string | null;
   type: string; catalog_visibility: string; virtual: boolean; downloadable: boolean;
@@ -118,6 +125,7 @@ interface FormData {
   product_attributes: ProductAttributeItem[];
   product_field_values: ProductFieldValueItem[];
   grouped_items: { product_id: number; quantity: number; sort_order?: number; name?: string; sku?: string; price?: string | number }[];
+  product_relations: { product_id: number; type: RelationType; name?: string; sku?: string }[];
   downloads: { id?: number; name: string; file: string; download_limit: number; download_expiry: number }[];
   group_prices: {
     customer_group_id: number; price: number;
@@ -185,6 +193,8 @@ export default function ProductsForm() {
   const [downloads, setDownloads] = useState<DownloadItem[]>(
     (product?.downloads || []).map((d, i) => ({ ...d, sort_order: d.sort_order ?? i }))
   );
+  const relations = product?.relations || [];
+  const [relationItems, setRelationItems] = useState<RelationItem[]>(relations);
   const priceableGroups = props.priceableGroups || [];
   const [groupPrices, setGroupPrices] = useState<GroupPriceRow[]>(
     (props.groupPrices || []).map((row) => ({
@@ -197,6 +207,8 @@ export default function ProductsForm() {
   );
   const [searchProductTerm, setSearchProductTerm] = useState("");
   const [showProductPicker, setShowProductPicker] = useState(false);
+  const [relationSearch, setRelationSearch] = useState("");
+  const [showRelationPicker, setShowRelationPicker] = useState(false);
   const [attrList, setAttrList] = useState<ProductAttributeItem[]>(
     initialProductAttrs.length > 0
       ? initialProductAttrs
@@ -254,6 +266,7 @@ export default function ProductsForm() {
     sku: product?.sku || "",
     barcode: product?.barcode || "",
     global_unique_id: product?.global_unique_id || "",
+    mpn: product?.mpn || "",
     vendor: product?.vendor || "",
     stock_quantity: product?.stock_quantity?.toString() || "0",
     low_stock_threshold: product?.low_stock_threshold?.toString() || "5",
@@ -333,6 +346,10 @@ export default function ProductsForm() {
 
     form.setData("product_attributes", attrList);
     form.setData("grouped_items", groupedItems);
+    form.setData(
+      "product_relations",
+      relationItems.map((r) => ({ product_id: r.id, type: r.type }))
+    );
     form.setData("downloads", downloads);
     form.setData(
       "group_prices",
@@ -1137,6 +1154,9 @@ export default function ProductsForm() {
                   <SectionField label="Global ID" htmlFor="global_unique_id" description="Unique global identifier (GTIN/UPC/EAN/ISBN)">
                     <Input id="global_unique_id" placeholder="e.g. 9780262510875" value={form.data.global_unique_id} onChange={(e) => form.setData("global_unique_id", e.target.value)} />
                   </SectionField>
+                  <SectionField label="MPN" htmlFor="mpn" description="Manufacturer Part Number">
+                    <Input id="mpn" placeholder="e.g. 991-000985" value={form.data.mpn} onChange={(e) => form.setData("mpn", e.target.value)} />
+                  </SectionField>
                   <SectionField label="Vendor" htmlFor="vendor" description="Brand/Supplier name (free text)">
                     <Input id="vendor" placeholder="e.g. Acme Corp" value={form.data.vendor} onChange={(e) => form.setData("vendor", e.target.value)} />
                   </SectionField>
@@ -1387,6 +1407,76 @@ export default function ProductsForm() {
                   </div>
                 </Section>
               )}
+
+              <Section title="Related Products" description="Curated cross-sells and up-sells shown on the product page. The storefront lists these first; it only falls back to same-category picks to fill the rail." icon={Link2}>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder="Search products to link..."
+                        value={relationSearch}
+                        onChange={(e) => setRelationSearch(e.target.value)}
+                        onFocus={() => setShowRelationPicker(true)}
+                      />
+                      {showRelationPicker && (
+                        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
+                          {allProducts
+                            .filter((p) => p.id !== product?.id && !relationItems.some((r) => r.id === p.id))
+                            .filter((p) => !relationSearch || p.name.toLowerCase().includes(relationSearch.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(relationSearch.toLowerCase())))
+                            .slice(0, 10)
+                            .map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                                onClick={() => {
+                                  setRelationItems((prev) => [...prev, { id: p.id, name: p.name, sku: p.sku || null, type: "cross_sell" }]);
+                                  setRelationSearch("");
+                                  setShowRelationPicker(false);
+                                }}
+                              >
+                                <span className="font-medium">{p.name}</span>
+                                <span className="text-xs text-muted-foreground">{p.sku || p.price ? `${p.sku || ""}${p.sku && p.price ? " - " : ""}${p.price ? `$${p.price}` : ""}` : ""}</span>
+                              </button>
+                            ))}
+                          {allProducts.filter((p) => !relationSearch || p.name.toLowerCase().includes(relationSearch.toLowerCase())).length === 0 && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">No products found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {relationItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No related products yet. Search and add products above.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {relationItems.map((item, idx) => (
+                        <div key={item.id} className="flex items-center gap-2 rounded-lg border p-2.5">
+                          <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.name || `Product #${item.id}`}</p>
+                            {item.sku && <p className="text-xs text-muted-foreground">{item.sku}</p>}
+                          </div>
+                          <select
+                            className="h-7 rounded-md border bg-background px-2 text-xs"
+                            value={item.type}
+                            onChange={(e) => {
+                              const type = e.target.value as RelationType;
+                              setRelationItems((prev) => prev.map((r, i) => (i === idx ? { ...r, type } : r)));
+                            }}
+                          >
+                            <option value="cross_sell">Cross-sell</option>
+                            <option value="up_sell">Up-sell</option>
+                          </select>
+                          <button type="button" onClick={() => setRelationItems((prev) => prev.filter((_, i) => i !== idx))} className="h-7 w-7 rounded flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Section>
 
               {form.data.downloadable && (
                 <Section title="Downloadable Files" description="Manage downloadable files for this product" icon={Download}>

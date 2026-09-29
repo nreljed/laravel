@@ -18,6 +18,10 @@ class StoreAttributeRequest extends FormRequest
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'display_type' => 'sometimes|required|in:text,color,image,button',
+            'terms' => 'nullable|array',
+            'terms.*.id' => 'nullable|exists:attribute_terms,id',
+            'terms.*.name' => 'required|string|max:255',
+            'terms.*.swatch_value' => 'nullable|string|max:500',
         ];
     }
 }

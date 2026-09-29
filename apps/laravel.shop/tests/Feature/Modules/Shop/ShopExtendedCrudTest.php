@@ -187,7 +187,7 @@ class ShopExtendedCrudTest extends TestCase
             ->post(route('dashboard.shop.shipping-zones.store'), [
                 'name' => 'Europe',
                 'countries' => ['DE', 'FR', 'IT'],
-                'methods' => [$method->id => ['override_price' => 8]],
+                'methods' => [['id' => $method->id, 'override_price' => 8]],
             ]);
 
         $this->assertDatabaseHas('shipping_zones', ['name' => 'Europe']);

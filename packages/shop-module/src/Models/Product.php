@@ -21,8 +21,9 @@ class Product extends Model
     use SoftDeletes;
 
     /**
-     * Storefront catalog visibility, mirroring WooCommerce's `catalog_visibility`
-     * so the four values mean what a shopkeeper already expects them to mean.
+     * Storefront catalog visibility - the four values a shopkeeper already
+     * expects from WooCommerce, so the column reads the same in the admin and
+     * survives a WooCommerce import.
      *
      * They live here, on the model, because every surface that has to answer
      * "may this shopper see this product?" used to carry its own copy of the
@@ -36,11 +37,28 @@ class Product extends Model
      *  - `search`  — searchable and reachable by direct link, never listed.
      *  - `hidden`  — not listed, not searchable, and 404 on direct link.
      *
+     * **`catalog` deliberately does not mean what WooCommerce means by it.**
+     * In WooCommerce, `catalog` is "exclude from shop and category pages but
+     * keep it searchable" - the same job this schema gives to `search`. Here
+     * `catalog` means "an ordinary listed product" and `search` is the
+     * "findable but never listed" value. So an imported WooCommerce store
+     * reverses the two: products marked `catalog` upstream appear in listings
+     * here, and products marked `search` upstream stay out of them.
+     *
+     * This was not changed to match WooCommerce, because the two sets are
+     * stable, both are covered by tests, and the column is populated with
+     * existing data - flipping the meaning would silently pull or push live
+     * products. An import has to translate the values instead; the mapping is
+     * the whole reason the divergence is written down here.
+     *
      * @var list<string>
      */
     public const VISIBLE = 'visible';
+
     public const CATALOG = 'catalog';
+
     public const SEARCH = 'search';
+
     public const HIDDEN = 'hidden';
 
     /** @var list<string> */
@@ -57,7 +75,7 @@ class Product extends Model
         'price', 'compare_price', 'cost_price', 'sale_price',
         'sale_from', 'sale_to',
         'min_variation_price', 'max_variation_price', 'price_hash',
-        'sku', 'barcode', 'global_unique_id', 'vendor', 'stock_quantity', 'incoming_stock', 'low_stock_threshold',
+        'sku', 'barcode', 'global_unique_id', 'mpn', 'vendor', 'stock_quantity', 'incoming_stock', 'low_stock_threshold',
         'hold_stock_minutes', 'track_stock', 'backorders', 'stock_status',
         'status', 'publish_date', 'unpublish_at', 'type', 'catalog_visibility',
         'virtual', 'downloadable', 'external_url', 'button_text',
@@ -333,7 +351,7 @@ class Product extends Model
     /**
      * Active variation prices, reusing an already-loaded relation to avoid N+1.
      *
-     * @return \Illuminate\Support\Collection<int, float>
+     * @return Collection<int, float>
      */
     protected function variationPrices(): Collection
     {
@@ -347,13 +365,31 @@ class Product extends Model
     /**
      * Bundled item prices for grouped products, reusing an already-loaded relation.
      *
-     * @return \Illuminate\Support\Collection<int, float>
+     * Only children a shopper can actually be charged are counted. A `hidden` or
+     * unpublished child is not payable, so letting it into the range made a kit
+     * advertise "EUR 10 - EUR 5000" with nothing in that span purchasable, and
+     * the same figure feeds the price filter's bounds.
+     *
+     * The two branches apply the same rule in the two forms it can be asked
+     * for: the instance predicate `isVisibleOnStorefront()` when the relation is
+     * already in memory, and the matching `published()->reachable()` scopes when
+     * it has to be fetched. Filtering explicitly rather than trusting whatever
+     * eager load the caller happened to use keeps the value identical either
+     * way - a storefront that constrained the load and a dashboard that did not
+     * would otherwise advertise different prices for the same kit.
+     *
+     * @return Collection<int, float>
      */
     protected function groupedItemPrices(): Collection
     {
         $prices = $this->relationLoaded('groupedItems')
-            ? $this->groupedItems->pluck('price')
-            : $this->groupedItems()->pluck('products.price');
+            ? $this->groupedItems
+                ->filter(fn (self $child) => $child->isVisibleOnStorefront())
+                ->pluck('price')
+            : $this->groupedItems()
+                ->published()
+                ->reachable()
+                ->pluck('products.price');
 
         return $prices->filter()->map(fn ($p) => (float) $p)->values();
     }
@@ -447,6 +483,43 @@ class Product extends Model
     {
         return $this->belongsToMany(Product::class, 'product_grouped_products', 'group_product_id', 'product_id')
             ->withPivot('quantity', 'sort_order')
+            ->orderByPivot('sort_order');
+    }
+
+    /**
+     * Products this product up-sells (the bigger/better alternative) (PR 11B).
+     */
+    public function upSales(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_relations', 'product_id', 'related_product_id')
+            ->wherePivot('type', ProductRelation::TYPE_UP_SELL)
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
+    }
+
+    /**
+     * Products this product cross-sells (bought alongside it) (PR 11B).
+     */
+    public function crossSales(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_relations', 'product_id', 'related_product_id')
+            ->wherePivot('type', ProductRelation::TYPE_CROSS_SELL)
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
+    }
+
+    /**
+     * Every merchant-curated relation in `sort_order`, cross-sells and
+     * up-sells mixed.
+     *
+     * The admin editor keeps the two intents separate, but the storefront rail
+     * is a row of cards either way, so it reads this and never has to care
+     * which merchandising label a product wears.
+     */
+    public function curatedRelations(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_relations', 'product_id', 'related_product_id')
+            ->withPivot('type', 'sort_order')
             ->orderByPivot('sort_order');
     }
 

@@ -3,6 +3,30 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { NativeSelect, NativeSelectOption } from "../ui/native-select";
 import { Switch } from "../ui/switch";
+import { Button } from "../ui/button";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "../ui/collapsible";
+import { Copy, Plus, Trash2, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type UniqueIdentifier,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
     Combobox,
     ComboboxChips,
@@ -22,6 +46,7 @@ import {
     type FieldDefinition,
     type FieldOption,
     type FieldType,
+    type ResourceRecord,
 } from "../../lib/resource-schema";
 import { FeaturedImageSelector } from "../shared/featured-image-selector";
 import { GalleryUploader, type ServerGalleryImage } from "../shared/gallery-uploader";
@@ -79,7 +104,7 @@ function Label({ field, id, required }: { field: FieldDefinition; id: string; re
     );
 }
 
-function Control({ field, value, record, setValue, setField, id, name, disabled }: FieldControlProps) {
+function Control({ field, value, record, setValue, setField, id, name, disabled, error, errors }: FieldControlProps) {
 
 
     // A field's own `render` is the documented escape hatch and wins over the
@@ -108,7 +133,14 @@ function Control({ field, value, record, setValue, setField, id, name, disabled 
 
     const Control_ = registration.control;
 
-    return <Control_ {...{ field, value, record, setValue, setField }} id={id} name={name} disabled={disabled} />;
+    return (
+        <Control_
+            {...{ field, value, record, setValue, setField, error, errors }}
+            id={id}
+            name={name}
+            disabled={disabled}
+        />
+    );
 }
 
 function TextInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
@@ -226,23 +258,28 @@ function MoneyInput({ field, id, name, disabled, value, setValue, setField, reco
 }
 
 function SelectInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+    const { options, loaded, error } = useOptions(field);
+
     return (
-        <NativeSelect
-            id={id}
-            name={name}
-            disabled={disabled}
-            value={value == null ? "" : String(value)}
-            onChange={(event) => setValue(event.target.value)}
-        >
-            {field.placeholder ? (
-                <NativeSelectOption value="">{field.placeholder}</NativeSelectOption>
-            ) : null}
-            {(field.options ?? []).map((option) => (
-                <NativeSelectOption key={String(option.value)} value={String(option.value)}>
-                    {option.label}
-                </NativeSelectOption>
-            ))}
-        </NativeSelect>
+        <div className="space-y-2">
+            <NativeSelect
+                id={id}
+                name={name}
+                disabled={disabled || (!field.options && !loaded)}
+                value={value == null ? "" : String(value)}
+                onChange={(event) => setValue(event.target.value)}
+            >
+                {field.placeholder ? (
+                    <NativeSelectOption value="">{field.placeholder}</NativeSelectOption>
+                ) : null}
+                {options.map((option) => (
+                    <NativeSelectOption key={String(option.value)} value={String(option.value)}>
+                        {option.label}
+                    </NativeSelectOption>
+                ))}
+            </NativeSelect>
+            {!field.options?.length && error ? <p className="text-xs text-destructive">{error}</p> : null}
+        </div>
     );
 }
 
@@ -263,8 +300,10 @@ type RelationItem = { value: string | number; label: string };
 
 /**
  * Resolve a field's option list: static `options` when declared, otherwise a
- * lazy GET from `optionsUrl`. Shared by `relation` (multi-value picker) and
- * `money` (currency list), so the two call the same endpoint shape with the
+ * lazy GET from `optionsUrl`. Shared by `relation` (multi-value picker),
+ * `money` (currency list) and `select` (single-value picker over a lively
+ * catalog), so they call the same endpoint shape with the same loading and
+ * error copy instead of drifting.
  * same loading and error copy instead of drifting.
  */
 function useOptions(field: FieldDefinition): { options: FieldOption[]; loaded: boolean; error: string | undefined } {
@@ -549,6 +588,341 @@ function HiddenInput({ id, name, value }: FieldControlProps) {
     return <input type="hidden" id={id} name={name} value={value == null ? "" : String(value)} readOnly />;
 }
 
+/**
+ * Spans are written out rather than interpolated - the same rule as
+ * `ResourceForm`: Tailwind scans source text for classes, so a computed
+ * `sm:col-span-${span}` produces no CSS and the layout silently collapses.
+ */
+const SUBFIELD_SPANS: Record<number, string> = {
+    1: "",
+    2: "sm:col-span-2",
+    3: "sm:col-span-3",
+    4: "sm:col-span-4",
+};
+
+/**
+ * A reorderable row list. Every row carries the same sub-fields, each rendered
+ * through the same registry this module feeds - so a row can hold a `money`
+ * override, a `relation` picker or a `media` gallery just like a top-level
+ * field, unlike the shared `Repeater`'s narrower subset.
+ *
+ * The value is the rows array in display order. Each row is a plain object keyed
+ * by sub-field name; a row that came from the server carries an `id`, which is
+ * what lets the owning controller diff edited rows against what it persisted
+ * (create when absent, update when present, delete when a persisted row is not
+ * in the submitted array). Duplicating a row drops its `id`, so a duplicated
+ * row arrives as a create instead of a second update against the same record.
+ *
+ * Sub-field server errors resolve from the `field.0.sub_field` keys a
+ * `methods.*.override_price` style rule produces; they land under the exact
+ * sub-field that failed.
+ */
+function NestedInput({ field, id, name, disabled, value, setValue, errors }: FieldControlProps) {
+    const rows = React.useMemo(
+        () => (Array.isArray(value) ? (value as ResourceRecord[]) : []),
+        [value],
+    );
+    const subFields = field.rows ?? [];
+    const label = field.label ?? humanizeFieldName(name);
+    const emptyLabel = field.placeholder ?? `No ${label.toLowerCase()} yet.`;
+
+    // Rows are identified by their index, so every mutation has to rebase the
+    // open/closed states that travel with an index (reorder, insert, delete).
+    // Default-new-rows-open: adding a row should show the fields the user is
+    // about to fill, not hide them behind a collapsed header.
+    const [openRows, setOpenRows] = React.useState<Record<number, boolean>>({});
+
+    // After an insert at `at`, every index at or past the insertion point came
+    // from the row one position earlier, except the new row itself. After a
+    // delete at `at`, every index at or past the gap came from the row one
+    // position later.
+    const openStatesForInsert = (rowsAfter: ResourceRecord[], at: number): Record<number, boolean> => {
+        const next: Record<number, boolean> = {};
+
+        for (const index of rowsAfter.keys()) {
+            next[index] = index === at ? true : Boolean(openRows[index < at ? index : index - 1]);
+        }
+
+        return next;
+    };
+
+    const openStatesForRemove = (rowsAfter: ResourceRecord[], at: number): Record<number, boolean> => {
+        const next: Record<number, boolean> = {};
+
+        for (const index of rowsAfter.keys()) {
+            next[index] = Boolean(openRows[index < at ? index : index + 1]);
+        }
+
+        return next;
+    };
+
+    const patchRow = (index: number, next: ResourceRecord) =>
+        setValue(rows.map((row, i) => (i === index ? next : row)));
+
+    const blankRow = (): ResourceRecord => {
+        const blank: ResourceRecord = {};
+
+        for (const sub of subFields) {
+            if (sub.name in blank) {
+                continue;
+            }
+
+            blank[sub.name] = sub.defaultValue;
+        }
+
+        return blank;
+    };
+
+    const addRow = () => {
+        const next = [...rows, blankRow()];
+
+        setValue(next);
+        setOpenRows(openStatesForInsert(next, next.length - 1));
+    };
+
+    const duplicateRow = (index: number) => {
+        const cloned = structuredClone(rows[index] ?? {});
+        delete cloned.id;
+
+        const next = [...rows];
+        next.splice(index + 1, 0, cloned);
+
+        setValue(next);
+        setOpenRows(openStatesForInsert(next, index + 1));
+    };
+
+    const removeRow = (index: number) => {
+        const next = rows.filter((_, i) => i !== index);
+
+        setValue(next);
+        setOpenRows(openStatesForRemove(next, index));
+    };
+
+    const reorderRows = (activeIndex: number, overIndex: number) => {
+        const next = arrayMove(rows, activeIndex, overIndex);
+        const openArray = rows.map((_, i) => Boolean(openRows[i]));
+        const movedOpen = arrayMove(openArray, activeIndex, overIndex);
+
+        setValue(next);
+        setOpenRows(Object.fromEntries(movedOpen.map((open, i) => [i, open])));
+    };
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+
+    const handleDragStart = (event: { active: { id: UniqueIdentifier } }) => {
+        setActiveId(String(event.active.id));
+    };
+
+    const handleDragEnd = (event: { active: { id: UniqueIdentifier }; over: { id: UniqueIdentifier } | null }) => {
+        const { active, over } = event;
+
+        setActiveId(null);
+
+        if (!over) {
+            return;
+        }
+
+        const activeIndex = Number(active.id);
+        const overIndex = Number(over.id);
+
+        if (activeIndex !== overIndex) {
+            reorderRows(activeIndex, overIndex);
+        }
+    };
+
+    const [, setActiveId] = React.useState<string | null>(null);
+
+    const itemIds = rows.map((_, index) => String(index));
+
+    return (
+        <div className="space-y-3" data-nested={name}>
+            <div className="space-y-3 touch-none min-w-0">
+                {rows.length > 0 ? (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragCancel={() => setActiveId(null)}
+                    >
+                        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+                            {rows.map((row, index) => (
+                                <NestedRow
+                                    key={index}
+                                    id={String(index)}
+                                    index={index}
+                                    field={field}
+                                    row={row}
+                                    open={Boolean(openRows[index])}
+                                    onToggle={(open) => setOpenRows((prev) => ({ ...prev, [index]: open }))}
+                                    onPatchRow={(next) => patchRow(index, next)}
+                                    onDuplicate={() => duplicateRow(index)}
+                                    onRemove={() => removeRow(index)}
+                                    disabled={disabled}
+                                    errorPrefix={`${name}.${index}`}
+                                    baseId={`${id}-row-${index}`}
+                                    errors={errors ?? {}}
+                                />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
+                ) : null}
+            </div>
+
+            <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                    {rows.length} {rows.length === 1 ? "row" : "rows"}
+                </p>
+                <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={addRow}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add {label.toLowerCase()}
+                </Button>
+            </div>
+
+            {rows.length === 0 ? <p className="text-sm text-muted-foreground">{emptyLabel}</p> : null}
+        </div>
+    );
+}
+
+interface NestedRowProps {
+    id: string;
+    index: number;
+    field: FieldDefinition;
+    row: ResourceRecord;
+    open: boolean;
+    onToggle: (open: boolean) => void;
+    onPatchRow: (next: ResourceRecord) => void;
+    onDuplicate: () => void;
+    onRemove: () => void;
+    disabled: boolean;
+    errorPrefix: string;
+    baseId: string;
+    errors: Record<string, string>;
+}
+
+function NestedRow({
+    id,
+    index,
+    field,
+    row,
+    open,
+    onToggle,
+    onPatchRow,
+    onDuplicate,
+    onRemove,
+    disabled,
+    errorPrefix,
+    baseId,
+    errors,
+}: NestedRowProps) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 1000 : 1,
+        position: "relative" as const,
+    };
+
+    const subFields = field.rows ?? [];
+    const titleKey = field.rowTitleField ?? subFields[0]?.name;
+    const rawTitle = titleKey ? row[titleKey] : undefined;
+    const title = rawTitle != null && String(rawTitle).trim() !== "" ? String(rawTitle) : `Item ${index + 1}`;
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`border rounded-lg bg-card min-w-0 overflow-hidden ${isDragging ? "shadow-lg ring-2 ring-primary" : ""}`}
+        >
+            <Collapsible open={open} onOpenChange={onToggle}>
+                <div className="flex items-center gap-2 p-3 min-w-0 overflow-hidden">
+                    <button
+                        type="button"
+                        {...attributes}
+                        {...listeners}
+                        className="text-muted-foreground cursor-grab hover:text-foreground active:cursor-grabbing touch-none p-1 rounded"
+                        title="Drag to reorder"
+                        aria-label={`Drag ${title} to reorder`}
+                    >
+                        <GripVertical className="h-5 w-5" />
+                    </button>
+
+                    <CollapsibleTrigger
+                        nativeButton={false}
+                        render={
+                            <div className="flex items-center gap-2 px-2 flex-1 min-w-0 overflow-hidden cursor-pointer select-none" />
+                        }
+                    >
+                        {open ? (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        )}
+                        <div className="min-w-0 flex-1" title={title}>
+                            <span className="block font-medium text-foreground text-left truncate">{title}</span>
+                        </div>
+                    </CollapsibleTrigger>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={disabled}
+                        onClick={onDuplicate}
+                        className="shrink-0"
+                        aria-label={`Duplicate ${title}`}
+                    >
+                        <Copy className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={disabled}
+                        onClick={onRemove}
+                        aria-label={`Remove ${title}`}
+                        className="shrink-0 text-destructive hover:text-destructive"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                <CollapsibleContent>
+                    <div className="px-4 pb-4 pt-3 border-t">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            {subFields.map((sub) => (
+                                <div
+                                    key={sub.name}
+                                    className={SUBFIELD_SPANS[sub.colSpan ?? 1] || undefined}
+                                >
+                                    <ResourceField
+                                        idPrefix={baseId}
+                                        context={{
+                                            field: sub,
+                                            record: row,
+                                            value: row[sub.name],
+                                            error: errors[`${errorPrefix}.${sub.name}`] ?? errors[`${errorPrefix}`],
+                                            setValue: (value) => onPatchRow({ ...row, [sub.name]: value }),
+                                            setField: (path, value) => onPatchRow({ ...row, [path]: value }),
+                                            disabled,
+                                        }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </CollapsibleContent>
+            </Collapsible>
+        </div>
+    );
+}
+
 const BUILT_INS: Record<Exclude<FieldType, "dynamic">, FieldTypeRegistration> = {
     text: { control: TextInput, initialValue: () => "" },
     textarea: { control: TextareaInput, initialValue: () => "" },
@@ -564,6 +938,7 @@ const BUILT_INS: Record<Exclude<FieldType, "dynamic">, FieldTypeRegistration> = 
     password: { control: PasswordInput, initialValue: () => "" },
     hidden: { control: HiddenInput },
     relation: { control: RelationInput, initialValue: () => [] },
+    nested: { control: NestedInput, initialValue: () => [] },
 };
 
 for (const [type, registration] of Object.entries(BUILT_INS)) {

@@ -412,6 +412,8 @@ class ProductVariationsController extends Controller
         return [
             'sku' => 'nullable|string|max:100',
             'barcode' => 'nullable|string|max:100',
+            'global_unique_id' => 'nullable|string|max:50',
+            'mpn' => 'nullable|string|max:100',
             'price' => 'nullable|numeric|min:0',
             'compare_price' => 'nullable|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0',

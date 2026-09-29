@@ -2,22 +2,38 @@
 
 namespace Nreljed\ShopModule\Http\Controllers;
 
-use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\Platform\Support\ResourceRenderer;
 use Nreljed\ShopModule\Models\TaxRate;
 use Nreljed\ShopModule\Requests\StoreTaxRateRequest;
+use Nreljed\ShopModule\Resources\TaxRateResource;
 
 class TaxRatesController extends Controller
 {
-    public function index()
+    public function index(ResourceRenderer $renderer)
     {
         $this->authorize('viewAny', TaxRate::class);
 
-        $rates = TaxRate::orderBy('country')->orderBy('name')->paginate(20);
+        $rates = TaxRate::query()
+            ->orderBy('country')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (TaxRate $rate): array => $rate->toArray())
+            ->all();
 
-        return Inertia::render('shop/taxrates/index', [
-            'rates' => $rates,
-        ]);
+        return $renderer->renderIndex(TaxRateResource::KEY, $rates);
+    }
+
+    public function create(ResourceRenderer $renderer)
+    {
+        $this->authorize('create', TaxRate::class);
+
+        return $renderer->renderForm(
+            TaxRateResource::KEY,
+            null,
+            'POST',
+            route('dashboard.shop.tax-rates.store'),
+        );
     }
 
     public function store(StoreTaxRateRequest $request)
@@ -29,20 +45,32 @@ class TaxRatesController extends Controller
         return redirect()->back()->with('status', 'Tax rate created.');
     }
 
-    public function update(StoreTaxRateRequest $request, TaxRate $taxRate)
+    public function edit(ResourceRenderer $renderer, TaxRate $record)
     {
-        $this->authorize('update', $taxRate);
+        $this->authorize('update', $record);
 
-        $taxRate->update($request->validated());
+        return $renderer->renderForm(
+            TaxRateResource::KEY,
+            $record->toArray(),
+            'PUT',
+            route('dashboard.shop.tax-rates.update', $record),
+        );
+    }
+
+    public function update(StoreTaxRateRequest $request, TaxRate $record)
+    {
+        $this->authorize('update', $record);
+
+        $record->update($request->validated());
 
         return redirect()->back()->with('status', 'Tax rate updated.');
     }
 
-    public function destroy(TaxRate $taxRate)
+    public function destroy(TaxRate $record)
     {
-        $this->authorize('delete', $taxRate);
+        $this->authorize('delete', $record);
 
-        $taxRate->delete();
+        $record->delete();
 
         return redirect()->back()->with('status', 'Tax rate deleted.');
     }

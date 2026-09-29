@@ -6,27 +6,21 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Platform\Models\User;
+use Nreljed\Platform\Support\ResourceRenderer;
 use Nreljed\ShopModule\Models\Order;
+use Nreljed\ShopModule\Resources\CustomerResource;
 
 class CustomersController extends Controller
 {
-    public function index(Request $request)
+    public function index(ResourceRenderer $renderer)
     {
         $this->authorize('viewAny', Order::class);
-        $query = User::whereExists(function ($q) {
+
+        $customers = User::whereExists(function ($q) {
             $q->selectRaw('1')
                 ->from('orders')
                 ->whereColumn('orders.user_id', 'users.id');
-        });
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('email', 'like', '%'.$request->search.'%');
-            });
-        }
-
-        $customers = $query
+        })
             ->addSelect([
                 'orders_count' => Order::query()
                     ->selectRaw('count(*)')
@@ -36,45 +30,43 @@ class CustomersController extends Controller
                     ->whereColumn('orders.user_id', 'users.id'),
             ])
             ->orderBy('created_at', 'desc')
-            ->paginate(20)
-            ->through(fn ($user) => [
+            ->get()
+            ->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'orders_count' => $user->orders_count,
                 'total_spent' => (float) ($user->total_spent ?? 0),
                 'created_at' => $user->created_at,
-            ]);
+            ])
+            ->all();
 
-        return Inertia::render('shop/customers/index', [
-            'customers' => $customers,
-            'filters' => $request->only(['search']),
-        ]);
+        return $renderer->renderIndex(CustomerResource::KEY, $customers);
     }
 
-    public function show(User $user)
+    public function show(User $record)
     {
         $this->authorize('viewAny', Order::class);
-        $orders = Order::where('user_id', $user->id)
+        $orders = Order::where('user_id', $record->id)
             ->with('items')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         $stats = [
-            'total_orders' => Order::where('user_id', $user->id)->count(),
-            'total_spent' => (float) Order::where('user_id', $user->id)
+            'total_orders' => Order::where('user_id', $record->id)->count(),
+            'total_spent' => (float) Order::where('user_id', $record->id)
                 ->whereIn('status', ['completed', 'processing'])
                 ->sum('total'),
-            'pending_orders' => Order::where('user_id', $user->id)->where('status', 'pending')->count(),
-            'completed_orders' => Order::where('user_id', $user->id)->where('status', 'completed')->count(),
+            'pending_orders' => Order::where('user_id', $record->id)->where('status', 'pending')->count(),
+            'completed_orders' => Order::where('user_id', $record->id)->where('status', 'completed')->count(),
         ];
 
         return Inertia::render('shop/customers/show', [
             'customer' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'created_at' => $user->created_at,
+                'id' => $record->id,
+                'name' => $record->name,
+                'email' => $record->email,
+                'created_at' => $record->created_at,
                 'stats' => $stats,
             ],
             'orders' => $orders,

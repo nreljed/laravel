@@ -10,6 +10,8 @@ use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
 use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Services\SettingsService;
+use Nreljed\Platform\Support\ResourceDefinition;
+use Nreljed\ShopModule\Contracts\ProductSearchDriver;
 use Nreljed\ShopModule\Discounts\DiscountManager;
 use Nreljed\ShopModule\Models\Cart;
 use Nreljed\ShopModule\Models\Coupon;
@@ -37,8 +39,22 @@ use Nreljed\ShopModule\Policies\ShippingMethodPolicy;
 use Nreljed\ShopModule\Policies\ShippingZonePolicy;
 use Nreljed\ShopModule\Policies\TaxRatePolicy;
 use Nreljed\ShopModule\Policies\WebhookPolicy;
+use Nreljed\ShopModule\Resources\AttributeResource;
+use Nreljed\ShopModule\Resources\BrandResource;
+use Nreljed\ShopModule\Resources\CategoryResource;
+use Nreljed\ShopModule\Resources\CouponResource;
+use Nreljed\ShopModule\Resources\CurrencyResource;
+use Nreljed\ShopModule\Resources\CustomerResource;
+use Nreljed\ShopModule\Resources\OrderResource;
+use Nreljed\ShopModule\Resources\ReviewResource;
+use Nreljed\ShopModule\Resources\ShippingMethodResource;
+use Nreljed\ShopModule\Resources\ShippingZoneResource;
+use Nreljed\ShopModule\Resources\TagResource;
+use Nreljed\ShopModule\Resources\TaxRateResource;
+use Nreljed\ShopModule\Resources\WebhookResource;
 use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\PaymentManager;
+use Nreljed\ShopModule\Services\ProductSearch;
 use Nreljed\ShopModule\Services\ShopService;
 use Nreljed\ShopModule\Services\ShopSettingsService;
 
@@ -51,6 +67,8 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         $this->app->singleton(ShopService::class);
         $this->app->singleton(PaymentManager::class, fn () => new PaymentManager(config('shop.payments', [])));
         $this->app->singleton(DiscountManager::class, fn () => DiscountManager::defaults());
+        $this->app->singleton(ProductSearchDriver::class, fn ($app) => $app->make(config('shop.search.driver')));
+        $this->app->singleton(ProductSearch::class, fn ($app) => new ProductSearch($app->make(ProductSearchDriver::class)));
 
         $this->mergeConfigFrom(__DIR__.'/../config/shop.php', 'shop');
     }
@@ -118,8 +136,11 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ->prefix('/admin/shop')->name('admin.shop.')
             ->group(__DIR__.'/Routes/admin.php');
 
-        // Public storefront / guest routes (no auth)
-        Route::middleware(['web'])
+        // Public storefront / guest routes (no auth). `RedirectLegacyUrlAliases`
+        // sits on the whole group so a renamed product or category keeps
+        // answering at its old path with a 301 (PR 11A); it only ever fires
+        // for paths that have a `url_aliases` row, all of which are `/store*`.
+        Route::middleware(['web', Http\Middleware\RedirectLegacyUrlAliases::class])
             ->group(function () {
                 $p = __DIR__.'/Routes/';
                 require $p.'store-checkout.php';
@@ -148,6 +169,8 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
     {
         Product::observe(Observers\SyncsPriceLedger::class);
         ProductVariation::observe(Observers\SyncsPriceLedger::class);
+        Product::observe(Observers\SyncsUrlAliases::class);
+        ProductCategory::observe(Observers\SyncsUrlAliases::class);
     }
 
     protected function registerPolicies(): void
@@ -228,19 +251,12 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                     ['title' => 'All Products', 'url' => route('dashboard.shop.products.index', [], false)],
                     ['title' => 'Orders', 'url' => route('dashboard.shop.orders.index', [], false)],
                     ['title' => 'Create Order', 'url' => route('dashboard.shop.orders.create', [], false)],
-                    ['title' => 'Categories', 'url' => route('dashboard.shop.categories.index', [], false)],
-                    ['title' => 'Tags', 'url' => route('dashboard.shop.tags.index', [], false)],
-                    ['title' => 'Brands', 'url' => route('dashboard.shop.brands.index', [], false)],
                     ['title' => 'Attributes', 'url' => route('dashboard.shop.attributes.index', [], false)],
                     ['title' => 'Product Fields', 'url' => route('dashboard.shop.product-fields.index', [], false)],
                     ['title' => 'Customers', 'url' => route('dashboard.shop.customers.index', [], false)],
                     ['title' => 'Reports', 'url' => route('dashboard.shop.reports.index', [], false)],
-                    ['title' => 'Coupons', 'url' => route('dashboard.shop.coupons.index', [], false)],
                     ['title' => 'Reviews', 'url' => route('dashboard.shop.reviews.index', [], false)],
-                    ['title' => 'Shipping Methods', 'url' => route('dashboard.shop.shipping-methods.index', [], false)],
                     ['title' => 'Shipping Zones', 'url' => route('dashboard.shop.shipping-zones.index', [], false)],
-                    ['title' => 'Tax Rates', 'url' => route('dashboard.shop.tax-rates.index', [], false)],
-                    ['title' => 'Currencies', 'url' => route('dashboard.shop.currencies.index', [], false)],
                     ['title' => 'Webhooks', 'url' => route('dashboard.shop.webhooks.index', [], false)],
                 ];
 
@@ -395,6 +411,12 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                         'quantity' => $item->quantity,
                         'unit_price' => (float) $item->unit_price,
                         'variant_label' => $item->variant_label,
+                        // Mirrors `CartItemResource`: a line whose product was
+                        // withdrawn or sold out after being added stays in the
+                        // basket and is flagged, rather than silently
+                        // disappearing from the header badge. The cart and
+                        // checkout pipelines already refuse to sell it.
+                        'available' => $item->product?->isPurchasable() ?? false,
                         'product' => $item->product ? [
                             'id' => $item->product->id,
                             'name' => $item->product->name,
@@ -443,6 +465,33 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ['slug' => 'shop.taxes.manage', 'name' => 'Manage Taxes', 'description' => 'Manage tax rates.'],
             ['slug' => 'shop.webhooks.manage', 'name' => 'Manage Webhooks', 'description' => 'Configure and manage webhook endpoints.'],
             ['slug' => 'shop.currencies.manage', 'name' => 'Manage Currencies', 'description' => 'Manage store currencies.'],
+        ];
+    }
+
+    /**
+     * The shop's declared admin resources. Every route name a descriptor
+     * declares must stay registered in *this* module's routes, because the
+     * kernel's ResourceRenderer resolves — and fails loud on — those exact
+     * names when rendering the kernel pages.
+     *
+     * @return array<int, ResourceDefinition>
+     */
+    public function getAdminResources(): array
+    {
+        return [
+            TaxRateResource::definition(),
+            CurrencyResource::definition(),
+            ShippingMethodResource::definition(),
+            ShippingZoneResource::definition(),
+            CategoryResource::definition(),
+            TagResource::definition(),
+            BrandResource::definition(),
+            AttributeResource::definition(),
+            CouponResource::definition(),
+            CustomerResource::definition(),
+            OrderResource::definition(),
+            ReviewResource::definition(),
+            WebhookResource::definition(),
         ];
     }
 
@@ -602,9 +651,17 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ['loc' => '/store/products', 'changefreq' => 'daily', 'priority' => '0.8'],
         ];
 
+        // `reachable()` rather than a literal `['visible', 'catalog']`, which is
+        // what sat here before. Two problems with the literal: it was a private
+        // copy of a decision the model already owns - the one kind of list this
+        // codebase has a standing test against - so a fifth visibility value
+        // would have been silently omitted; and it excluded `search` products,
+        // which are published, reachable and already indexed through the search
+        // results page. What belongs in a sitemap is "still buyable at a URL",
+        // and that is exactly `reachable()`.
         $publishedProducts = Product::query()
             ->published()
-            ->whereIn('catalog_visibility', ['visible', 'catalog'])
+            ->reachable()
             ->orderBy('updated_at', 'desc')
             ->get(['slug', 'updated_at']);
 
@@ -617,8 +674,11 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
             ];
         }
 
+        // A category URL is only worth submitting if the page behind it lists
+        // something. A category whose catalog is entirely withdrawn was still
+        // being advertised here, inviting a crawler onto an empty grid.
         $categories = ProductCategory::query()
-            ->whereHas('products', fn ($q) => $q->published())
+            ->whereHas('products', fn ($q) => $q->published()->inListing())
             ->get(['slug']);
 
         foreach ($categories as $category) {

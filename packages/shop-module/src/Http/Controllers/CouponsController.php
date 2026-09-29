@@ -2,37 +2,39 @@
 
 namespace Nreljed\ShopModule\Http\Controllers;
 
-use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\Platform\Support\ResourceRenderer;
 use Nreljed\ShopModule\Models\Coupon;
-use Nreljed\ShopModule\Models\CouponUsage;
-use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Requests\StoreCouponRequest;
-use Nreljed\ShopModule\Services\CurrencyService;
+use Nreljed\ShopModule\Resources\CouponResource;
 
 class CouponsController extends Controller
 {
-    public function index()
+    public function index(ResourceRenderer $renderer)
     {
         $this->authorize('viewAny', Coupon::class);
+
         $coupons = Coupon::withCount('usages')
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->get()
+            ->map(fn (Coupon $coupon): array => array_merge($coupon->toArray(), [
+                'usages_count' => $coupon->usages_count,
+            ]))
+            ->all();
 
-        return Inertia::render('shop/coupons/index', [
-            'coupons' => $coupons,
-        ]);
+        return $renderer->renderIndex(CouponResource::KEY, $coupons);
     }
 
-    public function create()
+    public function create(ResourceRenderer $renderer)
     {
         $this->authorize('create', Coupon::class);
 
-        return Inertia::render('shop/coupons/form', [
-            'coupon' => null,
-            'products' => $this->productOptions(),
-            'currency' => $this->defaultCurrencyCode(),
-        ]);
+        return $renderer->renderForm(
+            CouponResource::KEY,
+            null,
+            'POST',
+            route('dashboard.shop.coupons.store'),
+        );
     }
 
     public function store(StoreCouponRequest $request)
@@ -59,44 +61,21 @@ class CouponsController extends Controller
             ->with('status', 'Coupon created successfully.');
     }
 
-    public function edit(Coupon $coupon)
+    public function edit(ResourceRenderer $renderer, Coupon $record)
     {
-        $this->authorize('view', $coupon);
+        $this->authorize('view', $record);
 
-        $coupon->load('products:id');
-        $coupon->loadCount('usages');
-
-        $totalDiscount = CouponUsage::where('coupon_id', $coupon->id)->sum('discount_amount');
-        $lastUsed = CouponUsage::where('coupon_id', $coupon->id)
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        return Inertia::render('shop/coupons/form', [
-            'coupon' => array_merge($coupon->toArray(), [
-                'total_discount_given' => (float) $totalDiscount,
-                'last_used_at' => $lastUsed?->created_at,
-            ]),
-            'products' => $this->productOptions(),
-            'currency' => $this->defaultCurrencyCode(),
-        ]);
+        return $renderer->renderForm(
+            CouponResource::KEY,
+            $record->toArray(),
+            'PUT',
+            route('dashboard.shop.coupons.update', $record),
+        );
     }
 
-    protected function productOptions(): array
+    public function update(StoreCouponRequest $request, Coupon $record)
     {
-        return Product::select('id', 'name')->orderBy('name')->get()->map(fn (Product $p) => [
-            'id' => $p->id,
-            'name' => $p->name,
-        ])->values()->all();
-    }
-
-    protected function defaultCurrencyCode(): string
-    {
-        return app(CurrencyService::class)->defaultCode();
-    }
-
-    public function update(StoreCouponRequest $request, Coupon $coupon)
-    {
-        $this->authorize('update', $coupon);
+        $this->authorize('update', $record);
 
         $validated = $request->validated();
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -107,21 +86,21 @@ class CouponsController extends Controller
         }
         $validated['code'] = strtoupper($validated['code']);
 
-        $coupon->update($validated);
+        $record->update($validated);
 
         if (array_key_exists('product_ids', $validated)) {
-            $coupon->products()->sync($validated['product_ids'] ?? []);
+            $record->products()->sync($validated['product_ids'] ?? []);
         }
 
         return redirect()->route('dashboard.shop.coupons.index')
             ->with('status', 'Coupon updated successfully.');
     }
 
-    public function destroy(Coupon $coupon)
+    public function destroy(Coupon $record)
     {
-        $this->authorize('delete', $coupon);
+        $this->authorize('delete', $record);
 
-        $coupon->delete();
+        $record->delete();
 
         return redirect()->back()->with('status', 'Coupon deleted successfully.');
     }

@@ -11,6 +11,7 @@ use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Notifications\AppNotification;
 use Nreljed\Platform\Services\NotificationService;
+use Nreljed\Platform\Support\ResourceRenderer;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\OrderNote;
 use Nreljed\ShopModule\Models\Product;
@@ -18,6 +19,7 @@ use Nreljed\ShopModule\Requests\RefundOrderRequest;
 use Nreljed\ShopModule\Requests\StoreOrderNoteRequest;
 use Nreljed\ShopModule\Requests\StoreOrderRequest;
 use Nreljed\ShopModule\Requests\UpdateOrderStatusRequest;
+use Nreljed\ShopModule\Resources\OrderResource;
 use Nreljed\ShopModule\Services\InventoryService;
 use Nreljed\ShopModule\Services\OrderActionService;
 use Nreljed\ShopModule\Services\OrderStatusService;
@@ -46,43 +48,44 @@ class OrdersController extends Controller
         $this->orderStatusService = $orderStatusService;
     }
 
-    public function index(Request $request)
+    public function index(ResourceRenderer $renderer)
     {
         $this->authorize('viewAny', Order::class);
 
-        $query = Order::with(['items', 'user'])->where('status', '!=', 'trash');
+        $orders = Order::where('status', '!=', 'trash')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn (Order $order): array => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'customer_name' => $order->customer_name,
+                'customer_email' => $order->customer_email,
+                'status' => $order->status,
+                'total' => (float) $order->total,
+                'currency' => $order->currency,
+                'payment_status' => $order->payment_status,
+                'created_at' => $order->created_at,
+            ])
+            ->all();
 
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('order_number', 'like', '%'.$request->search.'%')
-                    ->orWhere('customer_name', 'like', '%'.$request->search.'%')
-                    ->orWhere('customer_email', 'like', '%'.$request->search.'%');
-            });
-        }
-
-        if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        }
-
-        $orders = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
-
-        return Inertia::render('shop/orders/index', [
-            'orders' => $orders,
-            'filters' => $request->only(['search', 'status']),
-            'statuses' => OrderStatusService::STATUSES,
-        ]);
+        return $renderer->renderIndex(OrderResource::KEY, $orders);
     }
 
-    public function show(Order $order)
+    public function show(Order $record)
     {
-        $this->authorize('view', $order);
+        $this->authorize('view', $record);
 
-        $order->load(['items.product', 'user', 'actions.user', 'refunds.creator', 'notes.user']);
+        // `shippingMethod` so the page can show both the snapshot the order was
+        // actually sent with and the method's current name. Without the second
+        // one, a method that was renamed or deleted looks identical to one that
+        // was never recorded, which is the distinction an operator needs when
+        // chasing a misrouted parcel. `belongsTo` is a single extra query.
+        $record->load(['items.product', 'user', 'actions.user', 'refunds.creator', 'notes.user', 'shippingMethod']);
 
         return Inertia::render('shop/orders/show', [
-            'order' => $order,
+            'order' => $record,
             'statuses' => OrderStatusService::STATUSES,
-            'allowedTransitions' => $this->orderStatusService->getAllowedTransitions($order->status),
+            'allowedTransitions' => $this->orderStatusService->getAllowedTransitions($record->status),
         ]);
     }
 
@@ -562,14 +565,19 @@ class OrdersController extends Controller
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
 
-            fputcsv($handle, ['order_number', 'status', 'customer_name', 'customer_email', 'subtotal', 'shipping_total', 'tax_total', 'discount_total', 'total', 'payment_status', 'payment_method', 'items', 'created_at']);
+            // `shipping_method` sits next to `shipping_total` rather than after
+            // it: an export that reports what a customer was charged to ship
+            // but never which carrier, cannot answer the one question anyone
+            // runs it for. New trailing column, so existing spreadsheet
+            // formulas keep working.
+            fputcsv($handle, ['order_number', 'status', 'customer_name', 'customer_email', 'subtotal', 'shipping_total', 'shipping_method', 'tax_total', 'discount_total', 'total', 'payment_status', 'payment_method', 'items', 'created_at']);
 
             $query->chunk(200, function ($orders) use ($handle) {
                 foreach ($orders as $o) {
                     $items = $o->items->map(fn ($i) => $i->product_name.' x'.$i->quantity.'@'.$i->unit_price)->implode('|');
                     fputcsv($handle, [
                         $o->order_number, $o->status, $o->customer_name, $o->customer_email,
-                        $o->subtotal, $o->shipping_total, $o->tax_total, $o->discount_total, $o->total,
+                        $o->subtotal, $o->shipping_total, $o->shipping_method_name, $o->tax_total, $o->discount_total, $o->total,
                         $o->payment_status, $o->payment_method, $items, $o->created_at,
                     ]);
                 }

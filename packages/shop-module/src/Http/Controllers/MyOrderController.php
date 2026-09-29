@@ -33,9 +33,7 @@ class MyOrderController extends Controller
 
     public function show(Request $request, Order $order)
     {
-        if ($order->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('viewOwn', $order);
 
         $order->load(['items', 'actions' => fn ($q) => $q->latest()]);
 

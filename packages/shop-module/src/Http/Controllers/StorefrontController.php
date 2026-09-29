@@ -3,6 +3,7 @@
 namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,14 +21,22 @@ use Nreljed\ShopModule\Models\ProductReview;
 use Nreljed\ShopModule\Services\CurrencyService;
 use Nreljed\ShopModule\Services\CustomerPricingContext;
 use Nreljed\ShopModule\Services\PriceResolver;
+use Nreljed\ShopModule\Services\ProductSearch;
 
 class StorefrontController extends Controller
 {
+    private ?ProductSearch $productSearch = null;
+
     public function __construct(
         protected CurrencyService $currencyService,
         protected PriceResolver $priceResolver,
         protected CustomerPricingContext $pricingContext,
     ) {}
+
+    protected function productSearch(): ProductSearch
+    {
+        return $this->productSearch ??= app(ProductSearch::class);
+    }
 
     /**
      * Customer group whose price overrides apply to the current shopper, or
@@ -66,7 +75,7 @@ class StorefrontController extends Controller
             'productAttributes' => fn ($q) => $q->where('visible', true)->orderBy('position')->with('attribute.terms'),
             'downloads' => fn ($q) => $q->orderBy('sort_order'),
             'productFieldValues.field',
-            'groupedItems' => fn ($q) => $q->select('products.id', 'name', 'slug', 'price', 'thumbnail_url'),
+            ...$this->groupedItems(),
         ]);
 
         $visibleAttributes = $product->productAttributes
@@ -209,6 +218,15 @@ class StorefrontController extends Controller
         ];
     }
 
+    /**
+     * A category page (PR 11D).
+     *
+     * The grid keeps listing only the category's own products - browsing a
+     * parent does not silently merge its descendants' catalog into it. What
+     * becomes hierarchical is the navigation around that grid: the trail above
+     * it, the browseable children offered beneath its heading, and the nested
+     * sidebar tree `renderCatalog` builds from the whole taxonomy.
+     */
     public function category(Request $request, string $slug)
     {
         $category = ProductCategory::where('slug', $slug)->firstOrFail();
@@ -218,8 +236,116 @@ class StorefrontController extends Controller
         $this->applyFilters($query, $request);
 
         return $this->renderCatalog($request, $query, [
-            'activeCategory' => $category->only('id', 'name', 'slug'),
+            'activeCategory' => [
+                ...$category->only('id', 'name', 'slug', 'parent_id'),
+                'children' => $this->categoryChildren($category),
+            ],
+            'breadcrumbs' => $this->categoryBreadcrumbs($category),
         ]);
+    }
+
+    /**
+     * The ancestry of a category, outermost first, for a breadcrumb trail.
+     *
+     * The active category is the last entry; an inactive ancestor is skipped -
+     * it is not browseable, so it has no place in the trail either. The visited
+     * guard is for legacy taxonomies that managed to point parents at their own
+     * descendants.
+     *
+     * @return list<array{name: string, slug: string}>
+     */
+    protected function categoryBreadcrumbs(ProductCategory $category): array
+    {
+        $chain = [];
+        $visited = [];
+
+        for ($current = $category; $current !== null && ! isset($visited[$current->id]); $current = $current->parent) {
+            $visited[$current->id] = true;
+
+            if ($current->is_active) {
+                $chain[] = $current->only('name', 'slug');
+            }
+        }
+
+        return array_reverse($chain);
+    }
+
+    /**
+     * The browseable sub-categories of a category, offered as rails under its
+     * heading and beside the sidebar tree.
+     *
+     * A child needs a product the grid can list; `hidden` and `search`-only
+     * stock stays out for the same reason it stays out of the facet list. A
+     * `search`-only product would be fair game elsewhere - it is a real,
+     * buyable product - but the count here sits beside a link to the child's
+     * own grid, which never lists it.
+     *
+     * @return list<array{id: int, name: string, slug: string, products_count: int}>
+     */
+    protected function categoryChildren(ProductCategory $category): array
+    {
+        return $category->children()
+            ->where('is_active', true)
+            ->withCount(['products' => fn ($q) => $q->published()->inListing()])
+            ->orderBy('name')
+            ->get()
+            ->filter(fn ($c) => $c->products_count > 0)
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+                'products_count' => $c->products_count,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Build a browseable taxonomy tree from a flat list of categories.
+     *
+     * A category is a root when its parent is absent from the list - either it
+     * has none, or the parent did not survive the caller's filter. A child
+     * whose parent does survive is nested under it; a child whose parent does
+     * not is offered at the top level, because the alternative - hiding
+     * something the grid can list - would prune a browseable category from the
+     * sidebar entirely.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, ProductCategory>  $categories
+     * @return list<array{id: int, name: string, slug: string, children: list<array>}>
+     */
+    protected function categoryTree(Collection $categories): array
+    {
+        $presentParentIds = $categories->pluck('id')->all();
+
+        return $categories
+            ->reject(fn (ProductCategory $category): bool => $category->parent_id !== null
+                && in_array($category->parent_id, $presentParentIds, true))
+            ->values()
+            ->map(fn (ProductCategory $category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'children' => $this->categoryTreeChildren($categories, $category->id),
+            ])
+            ->toArray();
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Collection<int, ProductCategory>  $categories
+     * @return list<array{id: int, name: string, slug: string, children: list<array>}>
+     */
+    protected function categoryTreeChildren(Collection $categories, int $parentId): array
+    {
+        return $categories
+            ->where('parent_id', $parentId)
+            ->values()
+            ->map(fn (ProductCategory $category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'children' => $this->categoryTreeChildren($categories, $category->id),
+            ])
+            ->toArray();
     }
 
     /**
@@ -247,7 +373,27 @@ class StorefrontController extends Controller
     {
         return Product::published()
             ->whereIn('catalog_visibility', $visibilities)
-            ->with('groupedItems:id,name,slug,price,thumbnail_url');
+            ->with($this->groupedItems());
+    }
+
+    /**
+     * Eager-load a product's bundle children for a public payload.
+     *
+     * The grid, the rails, related products and the wishlist all need the
+     * children so a grouped card can show what is in the kit, and all four used
+     * to load them unconstrained. A `hidden` child then shipped its name and
+     * price inside the parent's JSON - and then 404'd the moment a shopper
+     * clicked the link the card had just printed.
+     *
+     * `reachable()` rather than `inListing()`: a child that is search-only
+     * still belongs in a kit a shopper is already looking at, the same
+     * argument the direct-product route makes. Only `hidden` comes out.
+     */
+    protected function groupedItems(): array
+    {
+        return ['groupedItems' => fn ($q) => $q
+            ->select('products.id', 'name', 'slug', 'price', 'thumbnail_url')
+            ->reachable()];
     }
 
     /**
@@ -291,6 +437,14 @@ class StorefrontController extends Controller
         $bundledItems = fn (): QueryBuilder => DB::table('product_grouped_products as links')
             ->join('products as child', 'child.id', '=', 'links.product_id')
             ->whereIn('links.group_product_id', Product::published()->inListing()->select('products.id'))
+            // The parent being browsable is not enough: the child is a separate
+            // product with its own visibility, and its price is what the shopper
+            // would pay. A `hidden` child priced at 5000 stretched the slider
+            // past anything actually browseable.
+            ->where(function (QueryBuilder $q) {
+                $q->whereNull('child.catalog_visibility')
+                    ->orWhere('child.catalog_visibility', '!=', Product::HIDDEN);
+            })
             ->where('child.price', '>', 0);
 
         $lows[] = (float) ($bundledItems()->min('child.price') ?? 0);
@@ -308,11 +462,7 @@ class StorefrontController extends Controller
     protected function applyFilters(EloquentBuilder $query, Request $request): void
     {
         if ($request->filled('search')) {
-            $q = $request->search;
-            $query->where(function (EloquentBuilder $w) use ($q) {
-                $w->where('name', 'like', "%{$q}%")
-                    ->orWhere('description', 'like', "%{$q}%");
-            });
+            $this->productSearch()->applyTo($query, $this->productSearch()->term((string) $request->search), ['name', 'description']);
         }
 
         if ($request->filled('category')) {
@@ -477,13 +627,26 @@ class StorefrontController extends Controller
             $this->priceResolver->hydrate($product, $currency, $this->priceGroupId());
         }
 
-        $categories = ProductCategory::select('id', 'name', 'slug')
-            ->whereHas('products')
-            ->orderBy('name')
-            ->get();
+        // A category link is a promise that the page has something in it, and
+        // the sidebar is a browse surface, so both the link and the count are
+        // scoped to the listing set. `whereHas('products')` with no constraint
+        // listed a category whose entire catalog was withdrawn, and the count
+        // beside it included every `search`-only product the page can never
+        // show - leaking both the existence of withdrawn stock and a count
+        // that does not match the grid underneath it.
+        //
+        // The result is a tree (PR 11D), not a flat list: a category that can
+        // list something is nested under its parent, and a child whose parent
+        // cannot is offered at the top level.
+        $categories = $this->categoryTree(
+            ProductCategory::select('id', 'name', 'slug', 'parent_id')
+                ->whereHas('products', fn ($q) => $q->published()->inListing())
+                ->orderBy('name')
+                ->get()
+        );
 
         $brands = ProductBrand::where('is_active', true)
-            ->withCount(['products' => fn ($q) => $q->published()])
+            ->withCount(['products' => fn ($q) => $q->published()->inListing()])
             ->orderBy('name')
             ->get()
             ->filter(fn ($b) => $b->products_count > 0)
@@ -495,10 +658,17 @@ class StorefrontController extends Controller
             ])
             ->values();
 
+        // An attribute facet has to be scoped at both levels. The attribute
+        // itself, or a brand with only withdrawn products, still turned up as a
+        // filter. And every term of a surviving attribute used to be offered,
+        // including swatch names and swatch images that only a `hidden` product
+        // uses - a way to read a withdrawn product's options.
         $attributeFilters = Attribute::where('is_active', true)
             ->whereHas('terms')
-            ->whereHas('products', fn ($q) => $q->published())
-            ->with('terms')
+            ->whereHas('products', fn ($q) => $q->published()->inListing())
+            ->with(['terms' => fn ($q) => $q
+                ->whereHas('products', fn ($products) => $products->published()->inListing())
+                ->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
@@ -545,6 +715,10 @@ class StorefrontController extends Controller
             $data['activeCategory'] = $options['activeCategory'];
         }
 
+        if (! empty($options['breadcrumbs'])) {
+            $data['breadcrumbs'] = $options['breadcrumbs'];
+        }
+
         return Inertia::render('shop/storefront/productgrid', $data);
     }
 
@@ -573,7 +747,9 @@ class StorefrontController extends Controller
             $this->priceResolver->hydrate($product, $currency, $this->priceGroupId());
         }
 
-        $categoryGrid = ProductCategory::withCount(['products' => fn ($q) => $q->published()])
+        // `inListing()` for the same reason as the catalog sidebar above: the
+        // tile links to a listing page, so it counts what that page can show.
+        $categoryGrid = ProductCategory::withCount(['products' => fn ($q) => $q->published()->inListing()])
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
@@ -596,27 +772,33 @@ class StorefrontController extends Controller
 
     protected function relatedProducts(Product $product)
     {
-        $categoryIds = $product->categories()->pluck('product_categories.id');
+        $withBundles = fn ($q) => $q->with($this->groupedItems());
 
-        $withBundles = fn ($q) => $q->with('groupedItems:id,name,slug,price,thumbnail_url');
+        // Merchant-curated links first (PR 11B). The cross-sells and up-sells
+        // the admin picked keep their `sort_order`, provided they are still
+        // published and browseable - a link to a withdrawn product would 404
+        // the rail, which is worse than not linking it at all.
+        $curated = $withBundles(
+            $product->curatedRelations()
+                ->published()
+                ->inListing()
+                ->where('products.id', '!=', $product->id)
+        )->get()->unique('id')->values();
 
-        $related = $withBundles(Product::published()->inListing())
-            ->where('id', '!=', $product->id)
-            ->when($categoryIds->isNotEmpty(), fn ($q) => $q->whereHas('categories', fn ($c) => $c->whereIn('product_categories.id', $categoryIds)))
-            ->inRandomOrder()
-            ->limit(4)
-            ->get();
-
-        if ($related->count() < 4) {
-            $extra = $withBundles(Product::published()->inListing())
-                ->where('id', '!=', $product->id)
-                ->whereNotIn('id', $related->pluck('id'))
-                ->inRandomOrder()
-                ->limit(4 - $related->count())
-                ->get();
-            $related = $related->concat($extra);
+        if ($curated->count() >= 4) {
+            return $curated->take(4);
         }
 
-        return $related;
+        $categoryIds = $product->categories()->pluck('product_categories.id');
+
+        $categoryBased = $withBundles(Product::published()->inListing())
+            ->where('id', '!=', $product->id)
+            ->whereNotIn('id', $curated->pluck('id'))
+            ->when($categoryIds->isNotEmpty(), fn ($q) => $q->whereHas('categories', fn ($c) => $c->whereIn('product_categories.id', $categoryIds)))
+            ->inRandomOrder()
+            ->limit(4 - $curated->count())
+            ->get();
+
+        return $curated->concat($categoryBased);
     }
 }

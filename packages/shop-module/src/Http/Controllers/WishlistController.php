@@ -33,7 +33,9 @@ class WishlistController extends Controller
         $products = Product::whereIn('id', $productIds)
             ->published()
             ->reachable()
-            ->with(['categories', 'groupedItems:id,name,slug,price,thumbnail_url'])
+            ->with(['categories', 'groupedItems' => fn ($q) => $q
+                ->select('products.id', 'name', 'slug', 'price', 'thumbnail_url')
+                ->reachable()])
             ->paginate(12)
             ->withQueryString();
 
@@ -56,6 +58,12 @@ class WishlistController extends Controller
 
     public function toggle(Product $product): JsonResponse
     {
+        // The list page above drops `hidden` products, so accepting one here
+        // left a row nothing would ever render: the product was confirmed to
+        // exist, added invisibly, and its id kept coming back in the shared
+        // `wishlistIds` prop. `reachable()` is the same rule the list uses.
+        abort_unless($product->isVisibleOnStorefront(), 404);
+
         $exists = Wishlist::where('user_id', auth()->id())
             ->where('product_id', $product->id)
             ->exists();

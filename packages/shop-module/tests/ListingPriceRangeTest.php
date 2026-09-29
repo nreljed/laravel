@@ -60,11 +60,57 @@ class ListingPriceRangeTest extends TestCase
     {
         $product = new Product(['type' => 'grouped', 'price' => 0]);
         $product->setRelation('groupedItems', collect([
-            new Product(['name' => 'Charger', 'price' => 29]),
-            new Product(['name' => 'Power bank', 'price' => 39]),
+            $this->bundledItem('Charger', 29),
+            $this->bundledItem('Power bank', 39),
         ]));
 
         $this->assertSame(['min' => 29.0, 'max' => 39.0], $product->price_range);
+    }
+
+    /**
+     * A bundle child the shop will not sell must not move the advertised range.
+     *
+     * The range is what a grouped card and the price filter both show, and it
+     * is built from the children's own prices. Counting a `hidden` child made a
+     * kit advertise "EUR 10 - EUR 5000" with nothing payable in between - the
+     * shopper is shown a range the shop cannot honour. `search` is the
+     * counter-case that has to keep counting: it is reachable and buyable, it is
+     * simply never listed on its own.
+     */
+    public function test_a_withdrawn_bundled_item_does_not_stretch_the_range(): void
+    {
+        $product = new Product(['type' => 'grouped', 'price' => 0]);
+        $product->setRelation('groupedItems', collect([
+            $this->bundledItem('Charger', 29),
+            $this->bundledItem('Withdrawn premium bundle', 5000, 'hidden'),
+            $this->bundledItem('Searchable add-on', 45, 'search'),
+        ]));
+
+        $this->assertSame(
+            ['min' => 29.0, 'max' => 45.0],
+            $product->price_range,
+            'A hidden child is not payable, so it cannot set the ceiling. A search-only child still can, because a shopper can buy it.'
+        );
+    }
+
+    /**
+     * An unpublished child is as unpurchasable as a hidden one, and the same
+     * argument applies to it.
+     */
+    public function test_an_unpublished_bundled_item_does_not_stretch_the_range(): void
+    {
+        $product = new Product(['type' => 'grouped', 'price' => 0]);
+        $product->setRelation('groupedItems', collect([
+            $this->bundledItem('Charger', 29),
+            (new Product)->forceFill([
+                'name' => 'Draft premium bundle',
+                'price' => 5000,
+                'status' => 'draft',
+                'catalog_visibility' => 'visible',
+            ]),
+        ]));
+
+        $this->assertSame(['min' => 29.0, 'max' => 29.0], $product->price_range);
     }
 
     public function test_grouped_product_without_items_falls_back_to_its_own_price(): void
@@ -95,9 +141,47 @@ class ListingPriceRangeTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/function baseQuery.*?->with\(\s*[\'"]groupedItems/s',
+            '/function baseQuery.*?->with\(\s*\$this->groupedItems\(\)/s',
             $source,
             'baseQuery() must eager-load groupedItems, otherwise every grouped product in a listing lazy-loads its bundle'
+        );
+    }
+
+    /**
+     * The eager load has to be the shared, visibility-aware one.
+     *
+     * All four public surfaces that show a bundle - the catalog grid, the
+     * product page, the related rail and the wishlist - used to load the
+     * children unconstrained, so a `hidden` child shipped its name and price
+     * inside the parent's JSON and then 404'd when the shopper clicked the
+     * link the card had just printed. The four now share one definition, and
+     * this holds that definition to the `reachable()` rule rather than trusting
+     * a future fifth call site to remember it.
+     */
+    public function test_the_shared_bundle_eager_load_excludes_withdrawn_children(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__).'/src/Http/Controllers/StorefrontController.php'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/function groupedItems.*?reachable\(\)/s',
+            $source,
+            'The shared groupedItems eager load must apply reachable().'
+        );
+
+        // Every public surface must go through the helper rather than repeating
+        // the constraint - four hand-written copies is how the two paths drift.
+        $this->assertSame(
+            1,
+            preg_match_all('/function groupedItems\(.*?\n    \}/s', $source),
+            'groupedItems() must be defined exactly once, so there is a single rule to keep correct.'
+        );
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/->with\([\'"]groupedItems:/',
+            $source,
+            'A bare `groupedItems:` string eager load is the unconstrained form that leaked hidden children. Use $this->groupedItems().'
         );
     }
 
@@ -112,18 +196,18 @@ class ListingPriceRangeTest extends TestCase
             dirname(__DIR__).'/src/Http/Controllers/StorefrontController.php'
         );
         $this->assertMatchesRegularExpression(
-            '/function relatedProducts.*?->with\(\s*[\'"]groupedItems/s',
+            '/function relatedProducts.*?->with\(\s*\$this->groupedItems\(\)/s',
             $storefront,
-            'relatedProducts() must eager-load groupedItems'
+            'relatedProducts() must eager-load groupedItems through the shared helper'
         );
 
         $wishlist = (string) file_get_contents(
             dirname(__DIR__).'/src/Http/Controllers/WishlistController.php'
         );
-        $this->assertStringContainsString(
-            'groupedItems',
+        $this->assertMatchesRegularExpression(
+            '/groupedItems.*?reachable\(\)/s',
             $wishlist,
-            'the wishlist grid must eager-load groupedItems'
+            'the wishlist grid must eager-load groupedItems, and must apply reachable() to them'
         );
     }
 
@@ -271,6 +355,23 @@ class ListingPriceRangeTest extends TestCase
         return (new ProductVariation)->forceFill([
             'active_price' => $activePrice,
             'is_active' => $isActive,
+        ]);
+    }
+
+    /**
+     * A bundle child as the storefront would see it: published and browsable
+     * unless the test says otherwise. `groupedItemPrices()` filters on exactly
+     * these two fields, so a bare `new Product(['price' => …])` would be
+     * excluded as an unpublished draft and quietly test nothing.
+     */
+    private function bundledItem(string $name, float $price, string $visibility = 'visible'): Product
+    {
+        return (new Product)->forceFill([
+            'name' => $name,
+            'price' => $price,
+            'status' => 'published',
+            'catalog_visibility' => $visibility,
+            'unpublish_at' => null,
         ]);
     }
 }

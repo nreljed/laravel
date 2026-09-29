@@ -72,6 +72,10 @@ return [
         ],
     ],
 
+    'search' => [
+        'driver' => \Nreljed\ShopModule\Search\DatabaseProductSearchDriver::class,
+    ],
+
     'tax' => [
         'prices_include_tax' => env('SHOP_PRICES_INCLUDE_TAX', false),
         'based_on' => env('SHOP_TAX_BASED_ON', 'billing'),

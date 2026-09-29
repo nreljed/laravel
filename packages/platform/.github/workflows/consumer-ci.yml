@@ -68,6 +68,10 @@ on:
         description: "True when the job is on a GitHub-hosted runner: enables setup-php and the cache steps"
         type: boolean
         default: false
+      run-e2e:
+        description: "Run the Playwright login smoke against a locally served instance. Consumers opting in must ship their own harness (playwright.config.ts + e2e/auth.spec.ts + a test:e2e script)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -223,3 +227,106 @@ jobs:
       - name: Laravel Pint
         if: ${{ !inputs.skip-php-tests }}
         run: vendor/bin/pint --test
+
+  # Opt-in browser smoke (run-e2e). Standalone apps (laravel.shop, laravel.booking)
+  # enable it from their ci.yml; the workspace app leaves it off. Each consumer
+  # ships its own harness: playwright.config.ts, e2e/helpers/auth.ts,
+  # e2e/auth.spec.ts and a `test:e2e` script. Only the shared auth smoke runs
+  # here (dashboard redirect + login landing with zero console errors) — it needs
+  # no demo data and is identical on every app. Repo-specific specs
+  # (e.g. e2e/shop-admin-resources.spec.ts) run locally against a seated app.
+  e2e:
+    if: inputs.run-e2e
+    needs: validate
+    runs-on: ${{ inputs.runner }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+      APP_URL: http://127.0.0.1:8010
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        if: inputs.hosted-runner
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: ${{ inputs.hosted-runner && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
+
+      - name: Cache Composer dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: composer-e2e-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-e2e-${{ runner.os }}-
+
+      - name: Cache npm dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: npm-e2e-${{ runner.os }}-${{ hashFiles('package-lock.json', 'pnpm-lock.yaml') }}
+          restore-keys: npm-e2e-${{ runner.os }}-
+
+      - name: Create .env + SQLite database
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          # Ziggy/Inertia generate URLs from APP_URL, so it must match the
+          # playwright baseURL (the port php artisan serve binds below).
+          sed -i "s|^APP_URL=.*|APP_URL=${APP_URL}|" .env
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Generate application key + migrate + seed roles
+        run: |
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder' --force
+
+      - name: Create admin user for the e2e login
+        run: php artisan app:create-admin --email=nstudio.webdesign@gmail.com --password='azerty123/*' --name="E2E Admin"
+
+      - name: Install npm dependencies
+        run: |
+          if [ -f pnpm-workspace.yaml ] || [ -f pnpm-lock.yaml ]; then
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+            pnpm install --frozen-lockfile
+          else
+            npm ci --legacy-peer-deps
+          fi
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium ${{ inputs.hosted-runner && '--with-deps' || '' }}
+
+      - name: Start Laravel dev server
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8010 >storage/logs/e2e-server.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS "${APP_URL}/login" -o /dev/null 2>/dev/null; then
+              echo "server ready after ~${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Laravel server did not start"
+          tail -50 storage/logs/e2e-server.log || true
+          exit 1
+
+      - name: Playwright auth smoke
+        run: npm run test:e2e -- e2e/auth.spec.ts

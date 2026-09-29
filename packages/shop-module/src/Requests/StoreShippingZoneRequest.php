@@ -19,9 +19,9 @@ class StoreShippingZoneRequest extends FormRequest
             'countries.*' => 'string|size:2',
             'regions' => 'nullable|array',
             'is_active' => 'boolean',
-            'method_ids' => 'nullable|array',
-            'method_ids.*.id' => 'exists:shipping_methods,id',
-            'method_ids.*.override_price' => 'nullable|numeric|min:0',
+            'methods' => 'nullable|array',
+            'methods.*.id' => 'required|exists:shipping_methods,id',
+            'methods.*.override_price' => 'nullable|numeric|min:0',
         ];
     }
 }

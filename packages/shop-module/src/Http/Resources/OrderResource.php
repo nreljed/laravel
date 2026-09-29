@@ -16,6 +16,12 @@ class OrderResource extends JsonResource
             'status' => $this->status,
             'subtotal' => (float) $this->subtotal,
             'shipping_total' => (float) ($this->shipping_total ?? 0),
+            // The snapshot, not the relation: it is what the order was actually
+            // sent with, and it survives the method being renamed or deleted.
+            // The live relation name rides alongside purely so an operator can
+            // tell "the method was deleted" from "it was called something else".
+            'shipping_method_name' => $this->shipping_method_name,
+            'shipping_method' => $this->whenLoaded('shippingMethod', fn () => $this->shippingMethod?->name),
             'tax_total' => (float) ($this->tax_total ?? 0),
             'discount_total' => (float) ($this->discount_total ?? 0),
             'total' => (float) $this->total,

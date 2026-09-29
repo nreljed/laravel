@@ -15,7 +15,7 @@ class ProductVariation extends Model
     ];
 
     protected $fillable = [
-        'product_id', 'sku', 'barcode', 'price', 'compare_price', 'sale_price',
+        'product_id', 'sku', 'barcode', 'global_unique_id', 'mpn', 'price', 'compare_price', 'sale_price',
         'sale_from', 'sale_to', 'active_price', 'stock_quantity', 'weight', 'length', 'width', 'height',
         'is_active', 'visible', 'image_url', 'images', 'description', 'attributes', 'sort_order',
         'manage_stock', 'backorders', 'stock_status',

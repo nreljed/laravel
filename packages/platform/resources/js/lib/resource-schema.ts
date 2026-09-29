@@ -50,6 +50,7 @@ export type FieldType =
     | "password"
     | "hidden"
     | "relation"
+    | "nested"
     | "dynamic";
 
 export interface FieldOption {
@@ -70,6 +71,12 @@ export interface FieldContext {
     setField: (path: string, value: unknown) => void;
     /** Server validation message for this field, if any. */
     error?: string;
+    /**
+     * The whole validation bag, for a control that resolves sub-field errors
+     * itself - a `nested` field's rows surface server messages keyed
+     * `field.0.sub_field` and need more than the single `error` above.
+     */
+    errors?: Record<string, string>;
     disabled?: boolean;
     /** The whole record, for `visibleWhen` and custom renderers. */
     record: ResourceRecord;
@@ -107,6 +114,21 @@ export interface FieldDefinition {
     subdirectory?: string;
     /** Render a multi-image gallery (`GalleryUploader`) instead of a single picker. */
     multiple?: boolean;
+    /**
+     * Sub-field schema for a `nested` field: a reorderable row list where each
+     * row holds the same sub-fields, and every sub-field renders through the
+     * same registry this module feeds. The value is `Array<Record<string, unknown>>`
+     * (the rows, in display order); the owning controller diffs them against
+     * what it persisted (a child row keeps an `id` for that diff).
+     *
+     * A row's sub-fields accept any registered type, so a nested row can carry
+     * a `money` override, a `relation` picker or a `media` gallery exactly as
+     * a top-level field can - the shipping-zone `methods` pivot and an
+     * attribute's reorderable `terms` are the two shapes this was built for.
+     */
+    rows?: FieldDefinition[];
+    /** For `nested`: the sub-field whose value titles each row (accordeon header). */
+    rowTitleField?: string;
     defaultValue?: unknown;
     /** Grid span within a section. 1-4; defaults to 1. */
     colSpan?: 1 | 2 | 3 | 4;
@@ -420,6 +442,34 @@ export function rowMatchesSearchKeys(row: ResourceRecord, query: string, keys: s
  *  - field `optionsUrl` (the `relation` field's lazy option source) is
  *    resolved from a route name to a URL.
  */
+/**
+ * Resolve every URL surface on a serialized field - `optionsUrl`, `uploadUrl`
+ * and `deleteUrl` arrive as route names from a PHP descriptor and need to
+ * become URLs - and, for a `nested` field, do the same for each row's
+ * sub-fields, which brings the exact same surfaces through.
+ */
+function resolveField(field: Record<string, unknown>, routeRef: RouteRef): FieldDefinition {
+    const resolved: Record<string, unknown> = { ...field };
+
+    for (const key of ["optionsUrl", "uploadUrl", "deleteUrl"] as const) {
+        const url = resolveSerializedUrl(field[key], routeRef);
+
+        if (url === undefined) {
+            delete resolved[key];
+        } else {
+            resolved[key] = url;
+        }
+    }
+
+    if (field["type"] === "nested" && Array.isArray(field["rows"])) {
+        resolved["rows"] = (field["rows"] as Array<Record<string, unknown>>).map((rowField) =>
+            resolveField(rowField, routeRef),
+        );
+    }
+
+    return resolved as unknown as FieldDefinition;
+}
+
 export function toResource(
     serialized: SerializedResource,
     routeRef: RouteRef = (name, params) => route(name, params),
@@ -446,25 +496,10 @@ export function toResource(
                     // Relation lazy option sources come through as route names; the
                     // runtime reads `optionsUrl` as a fetchable URL. A value that
                     // already is a URL is left alone - the bridge only resolves names.
-                    fields: ((section.fields ?? []) as Array<Record<string, unknown>>).map((field) => {
-                        const resolved: Record<string, unknown> = { ...field };
-
-                        // `optionsUrl`, `uploadUrl` and `deleteUrl` arrive as
-                        // route names from a PHP descriptor; the runtime needs
-                        // URLs. Resolve each declared surface, leaving keys the
-                        // field did not declare absent.
-                        for (const key of ["optionsUrl", "uploadUrl", "deleteUrl"] as const) {
-                            const url = resolveSerializedUrl(field[key], routeRef);
-
-                            if (url === undefined) {
-                                delete resolved[key];
-                            } else {
-                                resolved[key] = url;
-                            }
-                        }
-
-                        return resolved as unknown as FieldDefinition;
-                    }),
+                    // Nested rows recurse through the same resolution.
+                    fields: ((section.fields ?? []) as Array<Record<string, unknown>>).map((field) =>
+                        resolveField(field, routeRef),
+                    ),
                 }) as ResourceSection,
         ),
         routes: {

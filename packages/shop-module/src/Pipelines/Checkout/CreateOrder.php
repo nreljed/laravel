@@ -28,6 +28,16 @@ class CreateOrder
             'subtotal' => $quote['subtotal'],
             'discount_total' => $quote['discount_total'],
             'shipping_total' => $quote['shipping_total'],
+            // `ResolveShippingMethod` settled on a method out of the set the
+            // address was offered, so this is the one that was priced. Storing
+            // the id alone would leave the record dependent on the catalogue
+            // still existing: deleting or renaming the method would erase or
+            // rewrite what a past sale was shipped by, so the name is
+            // snapshotted with it. Null when a pipeline ran without a method
+            // (an order placed before this was recorded, or one whose shipping
+            // was quoted at zero without a method chosen).
+            'shipping_method_id' => $context->shippingMethod?->id,
+            'shipping_method_name' => $context->shippingMethod?->name,
             'tax_total' => $quote['tax']['tax_total'],
             'total' => $quote['total'],
             'currency' => $quote['currency'],

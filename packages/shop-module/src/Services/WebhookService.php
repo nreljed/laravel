@@ -189,6 +189,7 @@ class WebhookService
             'total' => (float) $order->total,
             'subtotal' => (float) $order->subtotal,
             'shipping_total' => (float) ($order->shipping_total ?? 0),
+            'shipping_method' => $order->shipping_method_name,
             'tax_total' => (float) ($order->tax_total ?? 0),
             'discount_total' => (float) ($order->discount_total ?? 0),
             'currency' => $order->currency ?? app(CurrencyService::class)->defaultCode(),

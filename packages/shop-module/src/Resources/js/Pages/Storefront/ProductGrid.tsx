@@ -1,6 +1,6 @@
 ﻿import { Link, router, usePage, Head } from "@inertiajs/react";
-import { useState, useRef } from "react";
-import { Search, ShoppingCart, SlidersHorizontal } from "lucide-react";
+import { useState, useRef, type ReactNode } from "react";
+import { Search, ShoppingCart, SlidersHorizontal, ChevronRight } from "lucide-react";
 import StoreLayout from "../../Layouts/StoreLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
 import { Input } from "@nreljed/platform/Components/ui/input";
@@ -15,6 +15,14 @@ interface Category {
     id: number;
     name: string;
     slug: string;
+    children?: Category[];
+}
+
+interface ActiveCategoryChild {
+    id: number;
+    name: string;
+    slug: string;
+    products_count: number;
 }
 
 interface Brand {
@@ -54,7 +62,8 @@ interface StorePage {
     attributeFilters: AttributeFilter[];
     filters: Filters;
     priceRange: [number, number];
-    activeCategory?: { id: number; name: string; slug: string } | null;
+    activeCategory?: { id: number; name: string; slug: string; parent_id: number | null; children: ActiveCategoryChild[] } | null;
+    breadcrumbs?: { name: string; slug: string }[];
     seo?: { title?: string; description?: string; og_image?: string } | null;
 }
 
@@ -100,6 +109,7 @@ function AttributeTermToggle({ term, displayType, active, onToggle }: {
 export default function StorefrontProducts() {
     const { props } = usePage<StorePage & { wishlistIds: number[] }>()
     const { products, categories, brands, attributeFilters, filters, priceRange, activeCategory, wishlistIds, seo } = props
+    const breadcrumbs = props.breadcrumbs ?? []
     const { money } = useCurrency();
     const [priceValue, setPriceValue] = useState<[number, number]>([priceRange[0], priceRange[1]])
     const [applyingPrice, setApplyingPrice] = useState(false)
@@ -133,6 +143,26 @@ export default function StorefrontProducts() {
 
     const pageTitle = activeCategory ? activeCategory.name : (filters.search ? `Search: ${filters.search}` : "All Products")
     const activeTermIds: number[] = Array.isArray(filters.attribute_terms) ? filters.attribute_terms : []
+
+    function renderCategoryTree(list: Category[], depth: number): ReactNode {
+        return (
+            <div className="space-y-1">
+                {list.map((cat) => {
+                    const active = filters.category === cat.slug || activeCategory?.slug === cat.slug
+                    return (
+                        <div key={cat.id}>
+                            <Link href={route("store.category", cat.slug)}
+                                className={`flex gap-1 text-sm px-3 py-1.5 rounded-md ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                                style={{ paddingLeft: `${12 + depth * 14}px` }}>
+                                {cat.name}
+                            </Link>
+                            {cat.children && cat.children.length > 0 && renderCategoryTree(cat.children, depth + 1)}
+                        </div>
+                    )
+                })}
+            </div>
+        )
+    }
 
     const absoluteUrl = (path: string) => {
         if (typeof window === "undefined") return ""
@@ -171,6 +201,29 @@ export default function StorefrontProducts() {
                     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: itemListLd }} />
                 </Head>
 
+                {breadcrumbs.length > 0 && (
+                    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 mt-8 text-sm text-muted-foreground">
+                        <Link href={route("store.products")} className="hover:text-foreground">
+                            Home
+                        </Link>
+                        {breadcrumbs.map((crumb, index) => {
+                            const isLast = index === breadcrumbs.length - 1
+                            return (
+                                <span key={crumb.slug} className="flex items-center gap-1">
+                                    <ChevronRight className="h-3 w-3" />
+                                    {isLast ? (
+                                        <span aria-current="page" className="font-medium text-foreground">{crumb.name}</span>
+                                    ) : (
+                                        <Link href={route("store.category", crumb.slug)} className="hover:text-foreground">
+                                            {crumb.name}
+                                        </Link>
+                                    )}
+                                </span>
+                            )
+                        })}
+                    </nav>
+                )}
+
                 <div className="flex items-center justify-between mt-8 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
@@ -186,6 +239,18 @@ export default function StorefrontProducts() {
                     </form>
                 </div>
 
+                {activeCategory && activeCategory.children.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {activeCategory.children.map((child) => (
+                            <Link key={child.id} href={route("store.category", child.slug)}
+                                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-accent">
+                                {child.name}
+                                <span className="text-xs text-muted-foreground">({child.products_count})</span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+
                 <div className="flex gap-8">
                     <aside className="hidden lg:block w-56 shrink-0 space-y-6">
                         <div>
@@ -194,15 +259,10 @@ export default function StorefrontProducts() {
                             </h3>
                             <div className="space-y-1">
                                 <Link href={route("store.products")}
-                                    className={`block text-sm px-3 py-1.5 rounded-md ${!filters.category ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+                                    className={`block text-sm px-3 py-1.5 rounded-md ${!filters.category && !activeCategory ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
                                     All Products
                                 </Link>
-                                {categories.map((cat) => (
-                                    <Link key={cat.id} href={route("store.category", cat.slug)}
-                                        className={`block text-sm px-3 py-1.5 rounded-md ${filters.category === cat.slug ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
-                                        {cat.name}
-                                    </Link>
-                                ))}
+                                {renderCategoryTree(categories, 0)}
                             </div>
                         </div>
 

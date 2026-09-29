@@ -264,12 +264,16 @@ final class PublicCatalogApiTest extends TestCase
 
     public function test_the_public_payload_still_carries_what_a_buyer_needs(): void
     {
-        $product = $this->product(['name' => 'Live Thing', 'status' => 'published', 'price' => 42.5, 'sku' => 'SKU-1']);
+        $product = $this->product(['name' => 'Live Thing', 'status' => 'published', 'price' => 42.5, 'sku' => 'SKU-1', 'barcode' => '9780262510875', 'global_unique_id' => 'GTIN-14', 'mpn' => 'MPN-1']);
         $payload = (new ProductResource($product))->toArray(Request::create('/api/products'));
 
-        foreach (['id', 'name', 'slug', 'price', 'sku', 'stock_quantity', 'thumbnail_url'] as $field) {
+        foreach (['id', 'name', 'slug', 'price', 'sku', 'barcode', 'global_unique_id', 'mpn', 'stock_quantity', 'thumbnail_url'] as $field) {
             $this->assertArrayHasKey($field, $payload, "Trimming the payload dropped `{$field}`, which the storefront already publishes.");
         }
+
+        $this->assertSame('9780262510875', $payload['barcode']);
+        $this->assertSame('GTIN-14', $payload['global_unique_id']);
+        $this->assertSame('MPN-1', $payload['mpn'], 'MPN is a manufacturer identifier, not an editorial setting - the public feed must carry it.');
     }
 
     // ---------------------------------------------------------------------

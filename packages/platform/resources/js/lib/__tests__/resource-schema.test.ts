@@ -405,6 +405,112 @@ describe("toResource", () => {
 
         expect(resource.table?.searchKeys).toEqual(["order_number", "customer_email"]);
     });
+
+    it("resolves URL surfaces recursively inside a nested field's rows", () => {
+        const resource = toResource(
+            {
+                key: "shop/zones",
+                label: "Zones",
+                form: [
+                    {
+                        title: "Methods",
+                        fields: [
+                            {
+                                name: "methods",
+                                type: "nested",
+                                rows: [
+                                    {
+                                        name: "method",
+                                        type: "relation",
+                                        optionsUrl: "dashboard.shop.methods.options",
+                                    },
+                                    {
+                                        name: "lead_image",
+                                        type: "media",
+                                        uploadUrl: "dashboard.shop.zones.upload-image",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            routeRef,
+        );
+
+        const nested = resource.form?.[0]?.fields[0] as unknown as { rows: Array<Record<string, unknown>> };
+
+        expect(nested.rows[0]?.optionsUrl).toBe("dashboard.shop.methods.options");
+        expect(nested.rows[1]?.uploadUrl).toBe("dashboard.shop.zones.upload-image");
+    });
+
+    it("leaves already-resolved URLs inside nested rows untouched", () => {
+        const resource = toResource(
+            {
+                key: "shop/zones",
+                label: "Zones",
+                form: [
+                    {
+                        title: "Methods",
+                        fields: [
+                            {
+                                name: "methods",
+                                type: "nested",
+                                rows: [
+                                    {
+                                        name: "method",
+                                        type: "relation",
+                                        optionsUrl: "/shop/methods/options",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            routeRef,
+        );
+
+        const nested = resource.form?.[0]?.fields[0] as unknown as { rows: Array<Record<string, unknown>> };
+
+        expect(nested.rows[0]?.optionsUrl).toBe("/shop/methods/options");
+    });
+
+    it("does not drop a nested field's non-URL row sub-fields", () => {
+        const resource = toResource(
+            {
+                key: "shop/zones",
+                label: "Zones",
+                form: [
+                    {
+                        title: "Methods",
+                        fields: [
+                            {
+                                name: "methods",
+                                type: "nested",
+                                rows: [
+                                    {
+                                        name: "override_price",
+                                        type: "money",
+                                    },
+                                    {
+                                        name: "enabled",
+                                        type: "boolean",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            routeRef,
+        );
+
+        const nested = resource.form?.[0]?.fields[0] as unknown as { rows: Array<{ name: string; type: string }> };
+
+        expect(nested.rows.map((row) => row.name)).toEqual(["override_price", "enabled"]);
+        expect(nested.rows[0]?.type).toBe("money");
+    });
 });
 
 describe("rowMatchesSearchKeys", () => {

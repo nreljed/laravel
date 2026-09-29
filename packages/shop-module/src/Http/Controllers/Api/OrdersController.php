@@ -27,8 +27,14 @@ class OrdersController extends Controller
         return OrderResource::collection($orders);
     }
 
-    public function show(Order $order)
+    public function show(Request $request, Order $order)
     {
+        // Without this the route bound any order off the URL, so any sanctum
+        // user could read any other customer's order - name, email, billing and
+        // shipping addresses, item lines - by incrementing the id. `index()`
+        // already scopes to the caller, so `show` answers the same question.
+        $this->authorize('viewOwn', $order);
+
         $order->load('items');
 
         return new OrderResource($order);

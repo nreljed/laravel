@@ -46,6 +46,7 @@ class ResourceDefinition
         'password',
         'hidden',
         'relation',
+        'nested',
     ];
 
     /** Route slots the ResourceIndex/ResourceForm runtime can resolve. */
@@ -86,6 +87,8 @@ class ResourceDefinition
         'deleteUrl',
         'subdirectory',
         'multiple',
+        'rows',
+        'rowTitleField',
         'defaultValue',
         'colSpan',
         'hidden',
@@ -468,60 +471,111 @@ class ResourceDefinition
                     continue;
                 }
 
-                foreach ($field as $key => $value) {
-                    if (! in_array($key, self::FIELD_KEYS, true)) {
-                        $issues[] = $fieldWhere.'.'.$key.' is not expressible in a PHP descriptor (visibleWhen/render/serialize are TS closures)';
+                $issues = array_merge($issues, $this->fieldViolations($fieldWhere, $field));
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * Validate one declared field against the shipped schema. Recurses into a
+     * `nested` field's `rows`, so a sub-field that broke the contract is caught
+     * with the same messages as a top-level field that broke it - a relation
+     * row without an options source, a bad type, a closure-only key.
+     *
+     * @param  array<int|string, mixed>  $field
+     * @return array<int, string>
+     */
+    private function fieldViolations(string $where, array $field): array
+    {
+        $issues = [];
+
+        foreach ($field as $key => $value) {
+            if (! in_array($key, self::FIELD_KEYS, true)) {
+                $issues[] = $where.'.'.$key.' is not expressible in a PHP descriptor (visibleWhen/render/serialize are TS closures)';
+            }
+        }
+
+        $name = $field['name'] ?? null;
+        if (! is_string($name) || $name === '') {
+            $issues[] = $where.'.name must be a non-empty string';
+        }
+
+        $type = $field['type'] ?? null;
+        if (! is_string($type) || ! in_array($type, self::FIELD_TYPES, true)) {
+            $issues[] = $where.'.type must be one of ['.implode('|', self::FIELD_TYPES).']'.' (got '.var_export($type, true).')';
+        }
+
+        if ($type === 'relation' && ($field['options'] ?? null) === null && ($field['optionsUrl'] ?? null) === null) {
+            $issues[] = $where.' is a relation field and must declare an options source: options or optionsUrl';
+        }
+
+        if ($type === 'nested') {
+            $rows = $field['rows'] ?? null;
+            if (! is_array($rows) || $rows === []) {
+                $issues[] = $where.' is a nested field and must declare a non-empty rows array';
+            } else {
+                foreach ($rows as $rowIndex => $rowField) {
+                    $rowWhere = "$where.rows[{$rowIndex}]";
+
+                    if (! is_array($rowField)) {
+                        $issues[] = $rowWhere.' must be an array';
+
+                        continue;
+                    }
+
+                    $issues = array_merge($issues, $this->fieldViolations($rowWhere, $rowField));
+                }
+
+                $rowTitleField = $field['rowTitleField'] ?? null;
+                if ($rowTitleField !== null) {
+                    $rowNames = array_map(
+                        static fn (array $rowField): string => (string) ($rowField['name'] ?? ''),
+                        $rows,
+                    );
+
+                    if (! is_string($rowTitleField) || $rowTitleField === '') {
+                        $issues[] = $where.'.rowTitleField must be a non-empty sub-field name';
+                    } elseif (! in_array($rowTitleField, $rowNames, true)) {
+                        $issues[] = $where.'.rowTitleField ['.$rowTitleField.'] names no sub-field of rows (got '.implode(', ', array_filter($rowNames)).')';
                     }
                 }
+            }
+        }
 
-                $name = $field['name'] ?? null;
-                if (! is_string($name) || $name === '') {
-                    $issues[] = $fieldWhere.'.name must be a non-empty string';
-                }
+        // URL surfaces arrive as route names the frontend bridge
+        // resolves; `optionsUrl` is shared by relation (options source)
+        // and money (currency list), `uploadUrl`/`deleteUrl` by media.
+        foreach (['optionsUrl', 'uploadUrl', 'deleteUrl'] as $urlKey) {
+            if (isset($field[$urlKey]) && (! is_string($field[$urlKey]) || $field[$urlKey] === '')) {
+                $issues[] = "$where.{$urlKey} must be a non-empty route name (string)";
+            }
+        }
 
-                $type = $field['type'] ?? null;
-                if (! is_string($type) || ! in_array($type, self::FIELD_TYPES, true)) {
-                    $issues[] = $fieldWhere.'.type must be one of ['.implode('|', self::FIELD_TYPES).']'.' (got '.var_export($type, true).')';
-                }
+        if (isset($field['subdirectory']) && (! is_string($field['subdirectory']) || $field['subdirectory'] === '')) {
+            $issues[] = $where.'.subdirectory must be a non-empty string';
+        }
 
-                if ($type === 'relation' && ($field['options'] ?? null) === null && ($field['optionsUrl'] ?? null) === null) {
-                    $issues[] = $fieldWhere.' is a relation field and must declare an options source: options or optionsUrl';
-                }
+        foreach (['label', 'help', 'placeholder'] as $stringKey) {
+            if (isset($field[$stringKey]) && (! is_string($field[$stringKey]) || $field[$stringKey] === '')) {
+                $issues[] = "$where.{$stringKey} must be a non-empty string";
+            }
+        }
 
-                // URL surfaces arrive as route names the frontend bridge
-                // resolves; `optionsUrl` is shared by relation (options source)
-                // and money (currency list), `uploadUrl`/`deleteUrl` by media.
-                foreach (['optionsUrl', 'uploadUrl', 'deleteUrl'] as $urlKey) {
-                    if (isset($field[$urlKey]) && (! is_string($field[$urlKey]) || $field[$urlKey] === '')) {
-                        $issues[] = "$fieldWhere.{$urlKey} must be a non-empty route name (string)";
-                    }
-                }
+        foreach (['required', 'hidden', 'multiple'] as $boolKey) {
+            if (isset($field[$boolKey]) && ! is_bool($field[$boolKey])) {
+                $issues[] = "$where.{$boolKey} must be a boolean";
+            }
+        }
 
-                if (isset($field['subdirectory']) && (! is_string($field['subdirectory']) || $field['subdirectory'] === '')) {
-                    $issues[] = $fieldWhere.'.subdirectory must be a non-empty string';
-                }
+        if (isset($field['colSpan']) && ! in_array($field['colSpan'], [1, 2, 3, 4], true)) {
+            $issues[] = $where.'.colSpan must be 1-4';
+        }
 
-                foreach (['label', 'help', 'placeholder'] as $stringKey) {
-                    if (isset($field[$stringKey]) && (! is_string($field[$stringKey]) || $field[$stringKey] === '')) {
-                        $issues[] = "$fieldWhere.{$stringKey} must be a non-empty string";
-                    }
-                }
-
-                foreach (['required', 'hidden', 'multiple'] as $boolKey) {
-                    if (isset($field[$boolKey]) && ! is_bool($field[$boolKey])) {
-                        $issues[] = "$fieldWhere.{$boolKey} must be a boolean";
-                    }
-                }
-
-                if (isset($field['colSpan']) && ! in_array($field['colSpan'], [1, 2, 3, 4], true)) {
-                    $issues[] = $fieldWhere.'.colSpan must be 1-4';
-                }
-
-                foreach ($field['options'] ?? [] as $optionIndex => $option) {
-                    if (! is_array($option) || ! is_string($option['label'] ?? null) || ! is_scalar($option['value'] ?? null)) {
-                        $issues[] = "$fieldWhere.options[{$optionIndex}] must have a string label and a scalar value";
-                    }
-                }
+        foreach ($field['options'] ?? [] as $optionIndex => $option) {
+            if (! is_array($option) || ! is_string($option['label'] ?? null) || ! is_scalar($option['value'] ?? null)) {
+                $issues[] = "$where.options[{$optionIndex}] must have a string label and a scalar value";
             }
         }
 

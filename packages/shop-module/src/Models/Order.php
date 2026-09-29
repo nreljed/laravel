@@ -17,6 +17,7 @@ class Order extends Model
     protected $fillable = [
         'order_number', 'user_id', 'cart_id', 'status', 'confirmation_token',
         'subtotal', 'tax_total', 'shipping_total', 'discount_total', 'total', 'total_refunded',
+        'shipping_method_id', 'shipping_method_name',
         'currency', 'exchange_rate', 'payment_method', 'payment_status',
         'notes', 'billing_address', 'shipping_address',
         'customer_email', 'customer_phone', 'customer_name',
@@ -60,6 +61,20 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The shipping method this order was priced with.
+     *
+     * Nullable all the way through, and deliberately so: the FK nulls when the
+     * method is deleted, and orders placed before the column existed have no
+     * id at all. `shipping_method_name` is the snapshot that outlives both, so
+     * anything reading a past order's shipping should fall back to it rather
+     * than treat a null relation as an order that was never shipped.
+     */
+    public function shippingMethod(): BelongsTo
+    {
+        return $this->belongsTo(ShippingMethod::class);
     }
 
     /**

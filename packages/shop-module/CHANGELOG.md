@@ -2,6 +2,105 @@
 
 All notable changes to `nreljed/shop-module` are documented in this file, based on conventional commits.
 
+## [0.1.72]
+
+### Added
+
+- **URL aliases (PR 11A) — a renamed product or category keeps answering at its old URL.** On the web,
+  renaming a slug is either a broken link or a trap for a deprecated bookmark; the storefront now does
+  neither. `SyncsUrlAliases` observes `Product` and `ProductCategory` and records the old path in the new
+  `url_aliases` table whenever a slug changes, and `RedirectLegacyUrlAliases` runs on the guest storefront
+  group, 301-redirecting a legacy `/store/{slug}` or `/store/category/{slug}` request to the target's
+  current canonical path. A self-referencing alias (a rename back to the same slug) and any non-GET pass
+  through rather than loop, and a deleted target's aliases are dropped with it — a 301 to a 404 is worse
+  than a plain 404. Aliases are observer-managed, deliberately not admin-editable: an alias is a record
+  of a rename, not a routing rule.
+- **Product relations (PR 11B) — merchants can curate cross-sells and up-sells.** New `product_relations`
+  pivot (unique per target/related/type, `sort_order`-sorted) with `Product::crossSales()/upSales()/
+  curatedRelations()`, and a "Related Products" editor on the product form: search for a product, mark it
+  a cross-sell or up-sell, and reorder or remove it. The storefront preference is now properly paired with
+  the curation — the exact list the merchant picked comes first in its `sort_order` (still gated on being
+  published and browseable, so a withdrawn product never 404s the rail), and the same-category fill only
+  tops the rail up when curation leaves it short.
+- **Barcodes & identifiers (PR 11C) — a variation can now carry the same identifier set as a product.**
+  Products gain an `mpn`, and variations gain `global_unique_id` (GTIN/UPC/EAN/ISBN) and `mpn` — a
+  variation previously held a barcode column but no way to carry the identifiers a product had, so the
+  admin form, CSV export and public product API all exposed product identifiers a variation could not
+  hold. Editor fields, CSV export (columns appended at the end, so older importers keep reading the same
+  positions) and the public API resource now expose all three.
+- **Hierarchical category navigation (PR 11D) — the storefront taxonomy is a tree.** A category page now
+  shows a breadcrumb trail from its root down to itself (inactive ancestors dropped), offers its
+  browseable sub-categories as rails beneath its heading (active children whose own grid can list
+  something, with counts that match it), and the catalog sidebar renders the full taxonomy nested by
+  `parent_id` — a child whose parent lists nothing is still offered, at the top level. The sidebar also
+  fixes a highlight that never fired: it keyed the current page off a `?category=` query parameter that a
+  category-page URL never carries, so browsing a category showed no active link; it now uses the page's
+  `activeCategory` too. A parent page still lists only its own products — descendants are navigated to,
+  not silently merged in.
+
+## [0.1.71]
+
+### Fixed
+
+- **The shipping snapshot added in 0.1.70 could not be read back by anyone.** `CreateOrder` records
+  `shipping_method_name` so that "which carrier went wrong" stays answerable after a method is deleted
+  or renamed, but no read surface exposed it: the admin order resource, the orders CSV export and the
+  outbound webhook payload all reported `shipping_total` and none reported the method. The column was
+  written, never shown — invisible, because a write-only field breaks nothing. `OrderResource` now
+  carries both the snapshot and the method's current name (so a rename is distinguishable from a
+  deletion), the export gained a `shipping_method` column paired at matching header and row positions,
+  and `WebhookService` sends `shipping_method` so an integration receiving `shipping_total` can tell a
+  slow carrier from a cheap one. The admin order page now shows the method and displays the shipping
+  row for free-shipping orders too — previously the row was hidden on `shipping_total > 0`, which is
+  exactly where an operator most wants to confirm the service that was chosen.
+
+## [0.1.70]
+
+### Fixed
+
+- **The public cart was a dump of the merchant's own figures.** `Product` declares no `$hidden` — the
+  admin form has to bind `cost_price` — and the cart serialised `items.product` straight off the
+  relation, so one cart line carried `cost_price`, `price_hash` and the rest. `CartItemResource` and
+  `CartResource` now allowlist the public shape, and all six cart responses plus the checkout page go
+  through them instead of serialising models.
+- **The confirmation page published the credential that opens it.** `confirmation_token` is the
+  emailed token for that very page, and it was rendered into the page's own payload — as were the
+  payment intent, order notes, refund notes and `processed_by`. Replaced with `StorefrontOrderResource`.
+  The exclusions are asserted on the token-only guest path too, since a guest order has no account and
+  the token is the only thing standing between that shopper and a stranger.
+- **`GET /api/orders/{order}` returned any order to any signed-in customer.** It bound the order off
+  the URL and returned it, exposing names, email, phone, both addresses and every line. Ownership is
+  now enforced in `OrderPolicy` and the controller.
+- **The shared `cart` Inertia prop was a second, unversioned copy of the same leak**, hand-built
+  inline in the service provider. It is now the same minimal allowlist, and the user-scoped lookup
+  behind it is unchanged.
+- **A withdrawn product stayed buyable.** `addItem()` took a bare `product_id` and never checked that
+  the shop still offered the product, so a draft or hidden product could be added by id, sit in the
+  basket and reach an order; `updateItem()` bypassed the pipeline entirely. Refused at add, at update
+  and at checkout. A `search`-only product stays buyable — it is reachable, and the shopper is on it.
+- **The cart was a product-id enumeration oracle.** A missing product and a withdrawn one behaved
+  differently (422 vs 404), which is enough to enumerate the catalog. Both are now the same JSON 404.
+  Back-in-stock gained the same treatment for inactive, foreign and unpriced variations.
+- **Checkout accepted a shipping method it was never offered.** It did a bare
+  `ShippingMethod::findOrFail()` on the posted id, so a disabled or out-of-zone method could be
+  submitted and then priced by `QuoteService`. `ResolveShippingMethod` now resolves out of the same
+  collection the checkout page rendered, which also preserves the zone pivot's `override_price` that a
+  fresh lookup silently dropped.
+
+### Added
+
+- **Orders record which shipping method they were bought with.** `shipping_total` said how much was
+  charged but not what was bought, so "which carrier went wrong" was unanswerable once a method was
+  deleted or repriced. Adds a nullable `shipping_method_id` foreign key — `nullOnDelete`, because a
+  catalogue tidy-up must never take a sale with it — plus a `shipping_method_name` snapshot that
+  outlives the row. Both are nullable: orders placed before this have neither, and `nullOnDelete`
+  produces the same shape.
+
+### Notes
+
+- These specs are red against every earlier release by design. The package ships first; the
+  consumer's test commit follows, or consumer CI is red.
+
 ## [0.1.69]
 
 ### Fixed
@@ -122,6 +221,29 @@ All notable changes to `nreljed/shop-module` are documented in this file, based 
   behavioural half lives in the deploy app's `ShopStaffExportAndGateTest`.
 - **`RefundIntegrityTest` asserts the lock is taken before the amount is read**, and that the unlocked
   `refresh()` it replaces is gone - keeping both would read as protection that does not exist.
+
+## [0.1.66]
+
+### Added
+
+- **Storefront review submission.** A shopper can now post a review from the product page.
+
+## [0.1.65]
+
+### Fixed
+
+- **The storefront published `cost_price`.** Follow-up to the cart leak: the product-facing resources
+  serialised the model rather than an allowlist.
+- **The public API served unpublished products** from its own narrower copy of the publication list,
+  so the API and the storefront disagreed about the same product.
+- **Order confirmation needed proof.** The confirmation page accepted an order on the URL alone.
+- **Stripe payments were confirmed without server-side verification.**
+- **Cart line lookups were not scoped to the caller's own cart**, so a line could be addressed by id.
+- **The shop admin area was gated on the wrong permission** — now a dedicated `shop.manage`.
+- **Refunds were uncapped and restocked the wrong rows.** Refunds are now capped against the order and
+  restock only what was actually refunded.
+- **The orders module reached for a `User` relationship the package does not own.**
+- Five previously unexecuted checkout pipes now run against the real schema in tests.
 
 ## [0.1.64]
 
@@ -278,8 +400,6 @@ All notable changes to `nreljed/shop-module` are documented in this file, based 
 - **PR 6 scope + coverage** - `DiscountManager` singleton wiring, contract tests for 8 drivers,
   pipeline order continuity (`cart`/`cart_lines` untouched), migration count 63 in docs, 27-test
   discount/contract suite green (122 total), `no hardcoded EUR` in Form when currency prop present.
-
-## [0.1.46] - 2026-09-23
 
 ## [0.1.45] - 2026-09-23
 

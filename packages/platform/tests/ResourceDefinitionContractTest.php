@@ -169,7 +169,7 @@ final class ResourceDefinitionContractTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'form.0.fields[0].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation]',
+            'form.0.fields[0].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation|nested]',
             implode("\n", $definition->violations()),
         );
     }
@@ -185,7 +185,7 @@ final class ResourceDefinitionContractTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'form.0.fields[0].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation]',
+            'form.0.fields[0].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation|nested]',
             implode("\n", $definition->violations()),
         );
     }
@@ -498,5 +498,111 @@ final class ResourceDefinitionContractTest extends TestCase
 
         $this->assertSame([], $definition->violations());
         $definition->assertValid('shop-module');
+    }
+
+    public function test_nested_field_with_valid_rows_is_accepted(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'zones',
+            label: 'Zones',
+            form: [
+                ['title' => 'Methods', 'fields' => [
+                    [
+                        'name' => 'methods',
+                        'type' => 'nested',
+                        'rowTitleField' => 'method_id',
+                        'rows' => [
+                            ['name' => 'method_id', 'type' => 'relation', 'options' => [
+                                ['label' => 'Flat rate', 'value' => 'flat'],
+                            ]],
+                            ['name' => 'override_price', 'type' => 'money'],
+                            ['name' => 'enabled', 'type' => 'boolean'],
+                        ],
+                    ],
+                ]],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+        $definition->assertValid('shop-module');
+    }
+
+    public function test_nested_field_without_rows_is_rejected(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'zones',
+            label: 'Zones',
+            form: [
+                ['title' => 'Methods', 'fields' => [['name' => 'methods', 'type' => 'nested']]],
+            ],
+        );
+
+        $this->assertContains(
+            'form.0.fields[0] is a nested field and must declare a non-empty rows array',
+            $definition->violations(),
+        );
+    }
+
+    public function test_nested_row_sub_fields_are_validated_recursively(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'zones',
+            label: 'Zones',
+            form: [
+                ['title' => 'Methods', 'fields' => [
+                    [
+                        'name' => 'methods',
+                        'type' => 'nested',
+                        'rows' => [
+                            ['name' => 'method_id', 'type' => 'relation'],
+                            ['name' => 'override_price', 'type' => 'not-a-type'],
+                            ['name' => 'enabled', 'type' => 'boolean', 'render' => fn () => 'nope'],
+                        ],
+                    ],
+                ]],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString(
+            'form.0.fields[0].rows[0] is a relation field and must declare an options source',
+            $joined,
+        );
+        $this->assertStringContainsString(
+            'form.0.fields[0].rows[1].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation|nested]',
+            $joined,
+        );
+        $this->assertStringContainsString(
+            'form.0.fields[0].rows[2].render is not expressible in a PHP descriptor',
+            $joined,
+        );
+    }
+
+    public function test_nested_row_title_field_must_name_a_sub_field(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'zones',
+            label: 'Zones',
+            form: [
+                ['title' => 'Methods', 'fields' => [
+                    [
+                        'name' => 'methods',
+                        'type' => 'nested',
+                        'rowTitleField' => 'name',
+                        'rows' => [
+                            ['name' => 'method_id', 'type' => 'relation', 'options' => [['label' => 'Flat', 'value' => 'flat']]],
+                        ],
+                    ],
+                ]],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString(
+            'form.0.fields[0].rowTitleField [name] names no sub-field of rows (got method_id)',
+            $joined,
+        );
     }
 }

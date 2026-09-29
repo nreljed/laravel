@@ -3,9 +3,10 @@
 namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\Platform\Support\ResourceRenderer;
 use Nreljed\ShopModule\Models\Currency;
+use Nreljed\ShopModule\Resources\CurrencyResource;
 use Nreljed\ShopModule\Services\CurrencyService;
 
 class CurrenciesController extends Controller
@@ -14,15 +15,29 @@ class CurrenciesController extends Controller
         protected CurrencyService $currencyService,
     ) {}
 
-    public function index(CurrencyService $currencyService)
+    public function index(ResourceRenderer $renderer)
     {
         $this->authorize('viewAny', Currency::class);
 
-        $currencies = Currency::orderBy('code')->paginate(20);
+        $currencies = Currency::query()
+            ->orderBy('code')
+            ->get()
+            ->map(fn (Currency $currency): array => $currency->toArray())
+            ->all();
 
-        return Inertia::render('shop/currencies/index', [
-            'currencies' => $currencies,
-        ]);
+        return $renderer->renderIndex(CurrencyResource::KEY, $currencies);
+    }
+
+    public function create(ResourceRenderer $renderer)
+    {
+        $this->authorize('create', Currency::class);
+
+        return $renderer->renderForm(
+            CurrencyResource::KEY,
+            null,
+            'POST',
+            route('dashboard.shop.currencies.store'),
+        );
     }
 
     public function store(Request $request)
@@ -50,12 +65,24 @@ class CurrenciesController extends Controller
         return redirect()->back()->with('status', 'Currency created.');
     }
 
-    public function update(Request $request, Currency $currency)
+    public function edit(ResourceRenderer $renderer, Currency $record)
     {
-        $this->authorize('update', $currency);
+        $this->authorize('update', $record);
+
+        return $renderer->renderForm(
+            CurrencyResource::KEY,
+            $record->toArray(),
+            'PUT',
+            route('dashboard.shop.currencies.update', $record),
+        );
+    }
+
+    public function update(Request $request, Currency $record)
+    {
+        $this->authorize('update', $record);
 
         $validated = $request->validate([
-            'code' => 'required|string|size:3|unique:currencies,code,'.$currency->id,
+            'code' => 'required|string|size:3|unique:currencies,code,'.$record->id,
             'name' => 'required|string|max:255',
             'symbol' => 'required|string|max:10',
             'exchange_rate' => 'required|numeric|min:0.000001',
@@ -65,25 +92,25 @@ class CurrenciesController extends Controller
         ]);
 
         if ($validated['is_default'] ?? false) {
-            Currency::where('is_default', true)->where('id', '!=', $currency->id)->update(['is_default' => false]);
+            Currency::where('is_default', true)->where('id', '!=', $record->id)->update(['is_default' => false]);
         }
 
-        $currency->update($validated);
+        $record->update($validated);
 
         $this->currencyService->clearCache();
 
         return redirect()->back()->with('status', 'Currency updated.');
     }
 
-    public function destroy(Currency $currency)
+    public function destroy(Currency $record)
     {
-        $this->authorize('delete', $currency);
+        $this->authorize('delete', $record);
 
-        if ($currency->is_default) {
+        if ($record->is_default) {
             return redirect()->back()->with('error', 'Cannot delete the default currency.');
         }
 
-        $currency->delete();
+        $record->delete();
 
         $this->currencyService->clearCache();
 

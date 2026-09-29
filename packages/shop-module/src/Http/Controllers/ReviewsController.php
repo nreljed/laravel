@@ -3,48 +3,48 @@
 namespace Nreljed\ShopModule\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Inertia\Response;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\Platform\Support\ResourceRenderer;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ProductReview;
 use Nreljed\ShopModule\Requests\StoreReviewRequest;
+use Nreljed\ShopModule\Resources\ReviewResource;
 
 class ReviewsController extends Controller
 {
-    public function index(Request $request)
+    public function index(ResourceRenderer $renderer): Response
     {
         $this->authorize('viewAny', ProductReview::class);
 
-        $query = ProductReview::with(['product:id,name', 'user:id,name']);
+        $reviews = ProductReview::query()
+            ->with(['product:id,name', 'user:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn (ProductReview $review): array => [
+                ...$review->toArray(),
+                // Flat accessors the kernel table columns read; a PHP descriptor
+                // cannot carry a `cell` that dereferences a nested relation.
+                'product_name' => $review->product?->name,
+                'user_name' => $review->user?->name ?? 'Anonymous',
+            ])
+            ->all();
 
-        if ($request->filled('status')) {
-            if ($request->status === 'pending') {
-                $query->where('is_approved', false);
-            } elseif ($request->status === 'approved') {
-                $query->where('is_approved', true);
-            }
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereHas('product', fn ($p) => $p->where('name', 'like', '%'.$request->search.'%'))
-                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$request->search.'%'))
-                    ->orWhere('title', 'like', '%'.$request->search.'%');
-            });
-        }
-
-        $reviews = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
-
-        return Inertia::render('shop/reviews/index', [
-            'reviews' => $reviews,
-            'filters' => $request->only(['status', 'search']),
-        ]);
+        return $renderer->renderIndex(ReviewResource::KEY, $reviews);
     }
 
     public function store(StoreReviewRequest $request, Product $product)
     {
         $this->authorize('create', ProductReview::class);
+
+        // A `hidden` product is not in the shop, so a review form is not the
+        // right place to be writing one. Without this the endpoint was another
+        // oracle - "you have already reviewed this" versus a success redirect
+        // told any signed-in visitor whether a given product id existed, and
+        // which ones had already been reviewed - and it stored a row for a
+        // product no shopper can reach.
+        abort_unless($product->isVisibleOnStorefront(), 404);
 
         $validated = $request->validated();
 
@@ -67,19 +67,24 @@ class ReviewsController extends Controller
             'user_id' => $request->user()->id,
             'order_id' => $orderId,
             'rating' => $validated['rating'],
-            'title' => $validated['title'],
-            'content' => $validated['content'],
+            // Both keys are `nullable`, and `validated()` omits a nullable key
+            // that was not sent at all - so a rating-only review reached these
+            // lines with neither present and the controller died on an
+            // undefined array key (a 500 from the review form, not a message).
+            // Both columns are nullable, so absent is a legitimate review.
+            'title' => $validated['title'] ?? null,
+            'content' => $validated['content'] ?? null,
             'is_approved' => false,
         ]);
 
         return redirect()->back()->with('status', 'Review submitted for approval.');
     }
 
-    public function approve(ProductReview $review)
+    public function approve(ProductReview $record)
     {
-        $this->authorize('approve', $review);
+        $this->authorize('approve', $record);
 
-        $review->update([
+        $record->update([
             'is_approved' => true,
             'approved_at' => now(),
             'approved_by' => request()->user()->id,
@@ -88,11 +93,11 @@ class ReviewsController extends Controller
         return redirect()->back()->with('status', 'Review approved.');
     }
 
-    public function reject(ProductReview $review)
+    public function reject(ProductReview $record)
     {
-        $this->authorize('approve', $review);
+        $this->authorize('approve', $record);
 
-        $review->update([
+        $record->update([
             'is_approved' => false,
             'approved_at' => null,
             'approved_by' => request()->user()->id,
@@ -101,11 +106,11 @@ class ReviewsController extends Controller
         return redirect()->back()->with('status', 'Review rejected.');
     }
 
-    public function destroy(ProductReview $review)
+    public function destroy(ProductReview $record)
     {
-        $this->authorize('delete', $review);
+        $this->authorize('delete', $record);
 
-        $review->delete();
+        $record->delete();
 
         return redirect()->back()->with('status', 'Review deleted.');
     }

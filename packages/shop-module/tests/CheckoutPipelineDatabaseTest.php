@@ -2,15 +2,14 @@
 
 namespace Nreljed\ShopModule\Tests;
 
-use Illuminate\Container\Container;
 use Illuminate\Pipeline\Pipeline;
+use Illuminate\Validation\ValidationException;
 use Nreljed\ShopModule\Models\Cart;
-use Nreljed\ShopModule\Models\CartItem;
 use Nreljed\ShopModule\Models\Order;
 use Nreljed\ShopModule\Models\Product;
 use Nreljed\ShopModule\Models\ShippingMethod;
+use Nreljed\ShopModule\Models\ShippingZone;
 use Nreljed\ShopModule\Models\StockAdjustment;
-use Nreljed\ShopModule\Pipelines\CartLines\BuildOrderItemAttributes;
 use Nreljed\ShopModule\Pipelines\Checkout\ClearCart;
 use Nreljed\ShopModule\Pipelines\Checkout\CreateOrder;
 use Nreljed\ShopModule\Pipelines\Checkout\CreateOrderItems;
@@ -18,6 +17,8 @@ use Nreljed\ShopModule\Pipelines\Checkout\RecordInventory;
 use Nreljed\ShopModule\Pipelines\Checkout\ResolveShippingMethod;
 use Nreljed\ShopModule\Pipelines\CheckoutContext;
 use Nreljed\ShopModule\Services\InventoryService;
+use Nreljed\ShopModule\Services\ShippingService;
+use Nreljed\ShopModule\Services\ShopSettingsService;
 use Nreljed\ShopModule\Services\WebhookService;
 use Nreljed\ShopModule\Tests\Concerns\BootsShopSchema;
 use PHPUnit\Framework\TestCase;
@@ -60,7 +61,7 @@ class CheckoutPipelineDatabaseTest extends TestCase
 
         $context = new CheckoutContext($this->cart(), ['shipping_method_id' => $method->id], null);
 
-        (new Pipeline(app()))->send($context)->through([new ResolveShippingMethod])->thenReturn();
+        (new Pipeline(app()))->send($context)->through([$this->shippingStep()])->thenReturn();
 
         $this->assertTrue($context->shippingMethod->is($method));
     }
@@ -69,9 +70,166 @@ class CheckoutPipelineDatabaseTest extends TestCase
     {
         $context = new CheckoutContext($this->cart(), ['shipping_method_id' => 9999], null);
 
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(ValidationException::class);
 
-        (new Pipeline(app()))->send($context)->through([new ResolveShippingMethod])->thenReturn();
+        (new Pipeline(app()))->send($context)->through([$this->shippingStep()])->thenReturn();
+    }
+
+    /**
+     * The submit endpoint used to `findOrFail()` whatever id it was handed, so
+     * a method an admin had switched off could still be submitted, and so could
+     * one belonging to a zone that does not serve the address.
+     */
+    public function test_resolve_shipping_method_refuses_a_disabled_method(): void
+    {
+        $method = ShippingMethod::create([
+            'name' => 'Retired Carrier',
+            'slug' => 'retired-carrier',
+            'cost' => 0.00,
+            'is_active' => false,
+        ]);
+
+        $context = new CheckoutContext($this->cart(), [
+            'shipping_method_id' => $method->id,
+            'billing_address' => ['country' => 'GB'],
+        ], null);
+
+        $this->expectException(ValidationException::class);
+
+        (new Pipeline(app()))->send($context)->through([$this->shippingStep()])->thenReturn();
+    }
+
+    public function test_resolve_shipping_method_refuses_a_method_from_another_zone(): void
+    {
+        $domestic = ShippingMethod::create([
+            'name' => 'Domestic',
+            'slug' => 'domestic',
+            'cost' => 5.00,
+            'is_active' => true,
+        ]);
+
+        $foreign = ShippingMethod::create([
+            'name' => 'Overseas Only',
+            'slug' => 'overseas-only',
+            'cost' => 0.00,
+            'is_active' => true,
+        ]);
+
+        $zone = ShippingZone::create([
+            'name' => 'United Kingdom',
+            'countries' => ['GB'],
+            'is_active' => true,
+        ]);
+        $zone->methods()->attach($domestic->id);
+
+        // `foreign` is active and a real method - it is simply not served to a
+        // GB address, which is the whole point of the zone.
+        $context = new CheckoutContext($this->cart(), [
+            'shipping_method_id' => $foreign->id,
+            'billing_address' => ['country' => 'GB'],
+        ], null);
+
+        $this->expectException(ValidationException::class);
+
+        (new Pipeline(app()))->send($context)->through([$this->shippingStep()])->thenReturn();
+    }
+
+    /**
+     * The step must resolve the method out of the offered collection rather
+     * than looking it up again: `ShippingService` rewrites `price` from the
+     * zone pivot, and a fresh lookup would silently charge a different amount
+     * from the one the checkout page displayed.
+     */
+    public function test_resolve_shipping_method_keeps_the_zones_override_price(): void
+    {
+        $method = ShippingMethod::create([
+            'name' => 'Domestic',
+            'slug' => 'domestic',
+            'cost' => 5.00,
+            'is_active' => true,
+        ]);
+
+        $zone = ShippingZone::create([
+            'name' => 'United Kingdom',
+            'countries' => ['GB'],
+            'is_active' => true,
+        ]);
+        $zone->methods()->attach($method->id, ['override_price' => 2.50]);
+
+        $context = new CheckoutContext($this->cart(), [
+            'shipping_method_id' => $method->id,
+            'billing_address' => ['country' => 'GB'],
+        ], null);
+
+        (new Pipeline(app()))->send($context)->through([$this->shippingStep()])->thenReturn();
+
+        $this->assertEqualsWithDelta(2.50, (float) $context->shippingMethod->price, 0.001);
+    }
+
+    public function test_create_order_records_which_shipping_method_was_bought(): void
+    {
+        $method = ShippingMethod::create([
+            'name' => 'Express 2-Day',
+            'slug' => 'express-2-day',
+            'cost' => 9.50,
+            'is_active' => true,
+        ]);
+
+        $context = $this->contextWithQuote($this->quote());
+        $context->shippingMethod = $method;
+
+        (new Pipeline(app()))->send($context)->through([new CreateOrder])->thenReturn();
+
+        // `shipping_total` says what was charged; without this the record cannot
+        // say what was bought, and "which carrier went wrong" is unanswerable
+        // once the method is repriced or removed.
+        $this->assertSame($method->id, $context->order->shipping_method_id);
+        $this->assertSame('Express 2-Day', $context->order->shipping_method_name);
+        $this->assertTrue($context->order->shippingMethod->is($method));
+    }
+
+    public function test_the_recorded_shipping_name_outlives_the_method_being_deleted(): void
+    {
+        $method = ShippingMethod::create([
+            'name' => 'Overnight',
+            'slug' => 'overnight',
+            'cost' => 18.00,
+            'is_active' => true,
+        ]);
+
+        $context = $this->contextWithQuote($this->quote());
+        $context->shippingMethod = $method;
+
+        (new Pipeline(app()))->send($context)->through([new CreateOrder])->thenReturn();
+
+        $order = $context->order;
+        $orderId = $order->id;
+        $method->delete();
+        $order->refresh();
+
+        // What survives is asserted here; the `nullOnDelete` behaviour of the
+        // foreign key itself is not. This harness runs the real migrations but
+        // with `foreign_key_constraints => false` (truncation in
+        // `resetShopTables()` depends on that), so the constraint is inert and
+        // the stale id is left behind. Enforcement is proven where constraints
+        // are actually on - the app's feature suite.
+        $this->assertSame($orderId, $order->id);
+        $this->assertSame('Overnight', $order->shipping_method_name);
+        $this->assertEqualsWithDelta(5.00, (float) $order->shipping_total, 0.001);
+    }
+
+    public function test_an_order_placed_without_a_shipping_method_records_neither(): void
+    {
+        $context = $this->contextWithQuote($this->quote());
+
+        (new Pipeline(app()))->send($context)->through([new CreateOrder])->thenReturn();
+
+        // Nullable throughout, and for good reason: an order placed before the
+        // column existed has no method to point at, and `nullOnDelete` produces
+        // the same shape when a method is removed. A column that could not
+        // express either would be lying about one of them.
+        $this->assertNull($context->order->shipping_method_id);
+        $this->assertNull($context->order->shipping_method_name);
     }
 
     public function test_create_order_persists_every_money_column_from_the_quote(): void
@@ -332,6 +490,26 @@ class CheckoutPipelineDatabaseTest extends TestCase
         $product->save();
 
         return $product;
+    }
+
+    /**
+     * A real ShippingService over a stubbed settings service: the zone and
+     * active rules under test live in ShippingService, so stubbing it away would
+     * test nothing.
+     */
+    private function shippingStep(): ResolveShippingMethod
+    {
+        $settings = new class extends ShopSettingsService
+        {
+            public function __construct() {}
+
+            public function baseCountry(): string
+            {
+                return 'GB';
+            }
+        };
+
+        return new ResolveShippingMethod(new ShippingService($settings));
     }
 
     /**

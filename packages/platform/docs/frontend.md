@@ -116,6 +116,25 @@ resources/js/
 - **Editor**: Lexical-based `rich-text-editor.tsx` with a full plugin ecosystem
   (`editor/plugins/*`, `editor/toolbar/*`, `editor/floating/*`).
 
+## Browser E2E
+
+The kernel is validated headlessly with Playwright. Each app owns its runnable
+harness (`playwright.config.ts` + `e2e/` at the app/workspace root — see the
+workspace repo root for the reference implementation). Conventions:
+
+- **Config**: `testDir "./e2e"`, `baseURL` from `APP_URL` (default
+  `http://127.0.0.1:8000`), one chromium project, single worker, retry once on CI.
+- **Credentials**: `E2E_EMAIL` / `E2E_PASSWORD`, defaulting to the shared demo
+  admin (`nstudio.webdesign@gmail.com` / `azerty123/*`). The platform auth form
+  uses name-less inputs — match by type/position and await the Inertia redirect
+  with `page.waitForURL(/\/dashboard/)`.
+- **Commands**: `pnpm test:e2e` (run), `pnpm test:e2e:install` (once, installs
+  Chromium). A machine-wide CLI is installed globally (`playwright`), so
+  `npx playwright test --config <app>/playwright.config.ts` works in any repo.
+- **Ad-hoc checks**: agents write throwaway browser scripts with the global
+  `webapp-testing` skill (Python Playwright, output under
+  `%TEMP%\opencode\playwright`).
+
 ## Feature Icons
 
 Nav item icons resolve by name through `lib/icons.ts` (`registerFeatureIcons`); unknown names
