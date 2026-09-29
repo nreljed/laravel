@@ -10,6 +10,7 @@ import type {
 import { flexRender, useTable } from "@tanstack/react-table";
 
 import { AppTableFeatures, tableFeaturesConfig } from "../../lib/table-features";
+import { rowMatchesSearchKeys } from "../../lib/resource-schema";
 import {
   Table,
   TableBody,
@@ -60,6 +61,13 @@ export interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<AppTableFeatures, TData, CellData>[];
   data: TData[];
   searchKey?: string;
+  /**
+   * Multi-column toolbar search. Where the single `searchKey` binds to that
+   * column's filter, `searchKeys` keeps any row whose value in *any* listed
+   * column contains the query - the OR a customer search needs, applied over
+   * the rows the table was given.
+   */
+  searchKeys?: string[];
   searchPlaceholder?: string;
   filterOptions?: { label: string; value: string }[];
   filterKey?: string;
@@ -87,6 +95,7 @@ export function DataTable<TData extends RowData>({
   columns,
   data,
   searchKey,
+  searchKeys,
   searchPlaceholder,
   filterOptions,
   filterKey,
@@ -104,10 +113,23 @@ export function DataTable<TData extends RowData>({
   const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [confirmAction, setConfirmAction] = React.useState<{
     action: BulkAction;
     ids: (number | string)[];
   } | null>(null);
+
+  // `searchKeys` filters the rows the table was given before TanStack sees
+  // them, because a single column filter cannot express "matches name OR
+  // email". Empty query is a passthrough, so the memo is the single source of
+  // truth for what the table renders.
+  const filteredData = React.useMemo(
+    () =>
+      searchKeys?.length
+        ? data.filter((row) => rowMatchesSearchKeys(row as never, searchQuery, searchKeys))
+        : data,
+    [data, searchKeys, searchQuery],
+  );
 
   const tableColumns = React.useMemo<ColumnDef<AppTableFeatures, TData, CellData>[]>(() => {
     const selectCol: ColumnDef<AppTableFeatures, TData, CellData> = {
@@ -135,7 +157,7 @@ export function DataTable<TData extends RowData>({
 
   const table = useTable({
     features: tableFeaturesConfig,
-    data,
+    data: filteredData,
     columns: tableColumns,
     state: {
       sorting,
@@ -183,6 +205,9 @@ export function DataTable<TData extends RowData>({
       <DataTableToolbar
         table={table}
         searchKey={searchKey}
+        searchKeys={searchKeys}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
         searchPlaceholder={searchPlaceholder}
         filterOptions={filterOptions}
         filterKey={filterKey}

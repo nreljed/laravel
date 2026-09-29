@@ -52,6 +52,8 @@ function lastDataTableProps() {
         data: Widget[];
         bulkActions?: { label: string; value: string }[];
         onBulkAction?: unknown;
+        searchKeys?: string[];
+        searchKey?: string;
     };
 }
 
@@ -145,6 +147,16 @@ describe("ResourceIndex translation", () => {
         render(<ResourceIndex resource={resource} data={widgets} onBulkAction={() => undefined} />);
 
         expect(lastDataTableProps().bulkActions).toEqual([{ label: "Delete", value: "delete" }]);
+    });
+
+    it("forwards the declared searchKeys for the multi-column search", () => {
+        const resource = makeResource({
+            table: { columns: [{ name: "name" }], searchKeys: ["name", "email"] },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} />);
+
+        expect(lastDataTableProps().searchKeys).toEqual(["name", "email"]);
     });
 
     it("hides the create button when no create route is given", () => {

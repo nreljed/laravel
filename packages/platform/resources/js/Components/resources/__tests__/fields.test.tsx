@@ -276,3 +276,75 @@ describe("relation field", () => {
         expect(error).toBeDefined();
     });
 });
+
+describe("money field", () => {
+    function moneyContext(field: FieldDefinition, record: ResourceRecord = {}, value: unknown = undefined) {
+        const setValue = vi.fn();
+        const setField = vi.fn();
+        const context: FieldContext = {
+            field,
+            record: { ...record, unit_price: value },
+            value,
+            setValue,
+            setField,
+        };
+
+        return { context, setValue, setField };
+    }
+
+    it("renders a currency select from declared options", () => {
+        const { context, setField } = moneyContext(
+            {
+                name: "unit_price",
+                type: "money",
+                options: [
+                    { label: "EUR", value: "EUR" },
+                    { label: "USD", value: "USD" },
+                ],
+            },
+            { unit_price_currency: "EUR" },
+        );
+
+        render(<ResourceField context={context} />);
+
+        const select = screen.getByLabelText("Unit price currency") as HTMLSelectElement;
+
+        expect(select.value).toBe("EUR");
+        expect(screen.getByRole("option", { name: "USD" })).toBeDefined();
+
+        fireEvent.change(select, { target: { value: "USD" } });
+
+        expect(setField).toHaveBeenCalledWith("unit_price_currency", "USD");
+    });
+
+    it("falls back to a free-text currency input when no options are declared", () => {
+        const { context } = moneyContext(
+            { name: "legacy_price", type: "money" },
+            { legacy_price_currency: "TND" },
+        );
+
+        render(<ResourceField context={context} />);
+
+        const input = screen.getByLabelText("Legacy price currency") as HTMLInputElement;
+
+        expect(input.tagName).toBe("INPUT");
+        expect(input.value).toBe("TND");
+        expect(input.placeholder).toBe("EUR");
+    });
+
+    it("keeps a declared currency selector render separate from the amount", () => {
+        // The amount keeps editing as a plain string; the currency owns its own
+        // form key and must never travel through the amount's onChange.
+        const { context, setValue } = moneyContext({
+            name: "unit_price",
+            type: "money",
+            options: [{ label: "EUR", value: "EUR" }],
+        });
+
+        render(<ResourceField context={context} />);
+
+        fireEvent.change(screen.getByLabelText("Unit price"), { target: { value: "12.50" } });
+
+        expect(setValue).toHaveBeenCalledWith("12.50");
+    });
+});

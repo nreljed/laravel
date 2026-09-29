@@ -23,6 +23,8 @@ import {
     type FieldOption,
     type FieldType,
 } from "../../lib/resource-schema";
+import { FeaturedImageSelector } from "../shared/featured-image-selector";
+import { GalleryUploader, type ServerGalleryImage } from "../shared/gallery-uploader";
 
 /**
  * Built-in field controls, and the registry a consuming app extends.
@@ -164,32 +166,61 @@ function NumberInput({ field, id, name, disabled, value, setValue }: FieldContro
  * `<name>` and `<name>_currency`. Displayed to two decimals and submitted as
  * the raw string, so the rounding a column type would apply never happens
  * behind the component's back.
+ *
+ * The currency half is a `NativeSelect` when the field declares `options` (a
+ * static list, e.g. the shop's order currencies) or an `optionsUrl` (a lazy
+ * endpoint returning `{ value, label }[]`) - and falls back to free text so a
+ * descriptor that does not constrain it (a legacy money column) still edits.
+ * The amount input never changes.
  */
 function MoneyInput({ field, id, name, disabled, value, setValue, setField, record }: FieldControlProps) {
     const currency = (record[`${name}_currency`] as string | undefined) ?? "";
     const label = field.label ?? humanizeFieldName(name);
+    const { options, loaded, error } = useOptions(field);
+    const selectable = Boolean(field.options?.length) || Boolean(field.optionsUrl);
 
     return (
-        <div className="flex gap-2">
-            <Input
-                id={id}
-                name={name}
-                type="number"
-                step="0.01"
-                disabled={disabled}
-                placeholder={field.placeholder}
-                value={value == null ? "" : String(value)}
-                onChange={(event) => setValue(event.target.value)}
-            />
-            <Input
-                aria-label={`${label} currency`}
-                name={`${name}_currency`}
-                disabled={disabled}
-                className="w-24"
-                placeholder="EUR"
-                value={currency}
-                onChange={(event) => setField(`${name}_currency`, event.target.value)}
-            />
+        <div className="space-y-2">
+            <div className="flex gap-2">
+                <Input
+                    id={id}
+                    name={name}
+                    type="number"
+                    step="0.01"
+                    disabled={disabled}
+                    placeholder={field.placeholder}
+                    value={value == null ? "" : String(value)}
+                    onChange={(event) => setValue(event.target.value)}
+                />
+                {selectable ? (
+                    <NativeSelect
+                        aria-label={`${label} currency`}
+                        name={`${name}_currency`}
+                        disabled={disabled || !loaded}
+                        className="w-32"
+                        value={currency}
+                        onChange={(event) => setField(`${name}_currency`, event.target.value)}
+                    >
+                        <NativeSelectOption value="">Select currency</NativeSelectOption>
+                        {options.map((option) => (
+                            <NativeSelectOption key={String(option.value)} value={String(option.value)}>
+                                {option.label}
+                            </NativeSelectOption>
+                        ))}
+                    </NativeSelect>
+                ) : (
+                    <Input
+                        aria-label={`${label} currency`}
+                        name={`${name}_currency`}
+                        disabled={disabled}
+                        className="w-24"
+                        placeholder="EUR"
+                        value={currency}
+                        onChange={(event) => setField(`${name}_currency`, event.target.value)}
+                    />
+                )}
+            </div>
+            {!field.options?.length && error ? <p className="text-xs text-destructive">{error}</p> : null}
         </div>
     );
 }
@@ -230,12 +261,16 @@ function SelectInput({ field, id, name, disabled, value, setValue }: FieldContro
  */
 type RelationItem = { value: string | number; label: string };
 
-function RelationInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
-    const selected = React.useMemo(() => (Array.isArray(value) ? (value as Array<string | number>) : []), [value]);
-
+/**
+ * Resolve a field's option list: static `options` when declared, otherwise a
+ * lazy GET from `optionsUrl`. Shared by `relation` (multi-value picker) and
+ * `money` (currency list), so the two call the same endpoint shape with the
+ * same loading and error copy instead of drifting.
+ */
+function useOptions(field: FieldDefinition): { options: FieldOption[]; loaded: boolean; error: string | undefined } {
     const [options, setOptions] = React.useState<FieldOption[]>(field.options ?? []);
     const [loaded, setLoaded] = React.useState<boolean>(Boolean(field.options));
-    const [loadError, setLoadError] = React.useState<string | undefined>(undefined);
+    const [error, setError] = React.useState<string | undefined>(undefined);
 
     React.useEffect(() => {
         if (field.options || !field.optionsUrl) {
@@ -266,7 +301,7 @@ function RelationInput({ field, id, name, disabled, value, setValue }: FieldCont
             })
             .catch((caught) => {
                 if (!cancelled) {
-                    setLoadError(caught instanceof Error ? caught.message : "Failed to load options");
+                    setError(caught instanceof Error ? caught.message : "Failed to load options");
                     setLoaded(true);
                 }
             });
@@ -275,6 +310,14 @@ function RelationInput({ field, id, name, disabled, value, setValue }: FieldCont
             cancelled = true;
         };
     }, [field.options, field.optionsUrl]);
+
+    return { options, loaded, error };
+}
+
+function RelationInput({ field, id, name, disabled, value, setValue }: FieldControlProps) {
+    const selected = React.useMemo(() => (Array.isArray(value) ? (value as Array<string | number>) : []), [value]);
+
+    const { options, loaded, error: loadError } = useOptions(field);
 
     const items = React.useMemo(
         () => options.map((option) => ({ value: option.value, label: option.label }) as RelationItem),
@@ -437,24 +480,52 @@ function JsonInput({ id, name, disabled, value, setValue }: FieldControlProps) {
     );
 }
 
-function MediaInput({ id, name, disabled, value, setValue }: FieldControlProps) {
-    const [preview, setPreview] = React.useState<string | null>(typeof value === "string" && value ? value : null);
+/**
+ * A `media` field is a picker, not a path text box. The value contract is the
+ * URL the picker hands back (single) or a `ServerGalleryImage[]` (multiple);
+ * the dropzone, the library dialog, the remove + best-effort delete and the
+ * upload progress all come from the shared pickers so a resource form and a
+ * hand-written page cannot drift apart in how a media field behaves.
+ *
+ * Endpoints come from the field declaration (`uploadUrl`/`deleteUrl`/`subdirectory`):
+ * a serialized PHP descriptor's route names are resolved by the bridge, and a
+ * TS-side resource can pass URLs directly. With no endpoints the control still
+ * renders - a descriptor's `media` field is then a library-pick/URL-carry field.
+ */
+function MediaInput(props: FieldControlProps) {
+    if (props.field.multiple) {
+        return <MultipleMediaInput {...props} />;
+    }
+
+    return <SingleMediaInput {...props} />;
+}
+
+function SingleMediaInput({ value, setValue, field }: FieldControlProps) {
+    return (
+        <FeaturedImageSelector
+            value={typeof value === "string" ? value : ""}
+            onChange={(url) => setValue(url)}
+            uploadUrl={field.uploadUrl}
+            deleteUrl={field.deleteUrl}
+            subdirectory={field.subdirectory}
+            label=""
+            description=""
+        />
+    );
+}
+
+function MultipleMediaInput({ value, setValue, field }: FieldControlProps) {
+    const images = Array.isArray(value) ? (value as ServerGalleryImage[]) : [];
 
     return (
-        <div className="space-y-2">
-            {preview ? <img src={preview} alt="" className="h-32 w-auto rounded border object-cover" /> : null}
-            <Input
-                id={id}
-                name={name}
-                disabled={disabled}
-                value={value == null ? "" : String(value)}
-                placeholder="Media path or URL"
-                onChange={(event) => {
-                    setValue(event.target.value);
-                    setPreview(event.target.value || null);
-                }}
-            />
-        </div>
+        <GalleryUploader
+            images={images}
+            onChange={(next: ServerGalleryImage[]) => setValue(next)}
+            uploadUrl={field.uploadUrl ?? ""}
+            deleteUrl={field.deleteUrl ?? ""}
+            label=""
+            description=""
+        />
     );
 }
 

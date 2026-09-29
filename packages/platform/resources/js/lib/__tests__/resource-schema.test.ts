@@ -9,6 +9,7 @@ import {
     relation,
     RESOURCE_RECORD_PARAM,
     resolveResourceRoute,
+    rowMatchesSearchKeys,
     toColumnDef,
     toResource,
     type FieldDefinition,
@@ -324,6 +325,119 @@ describe("toResource", () => {
         );
 
         expect(resource.form?.[0]?.fields[0]?.optionsUrl).toBe("/shop/products/options");
+    });
+
+    it("resolves media upload/delete route names into URLs", () => {
+        const resource = toResource(
+            {
+                key: "shop/products",
+                label: "Products",
+                form: [
+                    {
+                        title: "Media",
+                        fields: [
+                            {
+                                name: "featured_image",
+                                type: "media",
+                                uploadUrl: "dashboard.shop.products.upload-image",
+                                deleteUrl: "dashboard.shop.products.destroy-image",
+                                subdirectory: "products",
+                            },
+                        ],
+                    },
+                ],
+            },
+            routeRef,
+        );
+
+        const media = resource.form?.[0]?.fields[0]!;
+
+        // The routeRef appends no args, so each name resolves to exactly itself.
+        expect(media.uploadUrl).toBe("dashboard.shop.products.upload-image");
+        expect(media.deleteUrl).toBe("dashboard.shop.products.destroy-image");
+        expect(media.subdirectory).toBe("products");
+    });
+
+    it("leaves already-resolved media URLs untouched", () => {
+        const resource = toResource(
+            {
+                key: "shop/products",
+                label: "Products",
+                form: [
+                    {
+                        title: "Media",
+                        fields: [{ name: "banner", type: "media", uploadUrl: "/shop/products/upload" }],
+                    },
+                ],
+            },
+            routeRef,
+        );
+
+        expect(resource.form?.[0]?.fields[0]?.uploadUrl).toBe("/shop/products/upload");
+    });
+
+    it("does not add endpoint keys a media field did not declare", () => {
+        const resource = toResource(
+            {
+                key: "shop/reviews",
+                label: "Reviews",
+                form: [{ title: "Details", fields: [{ name: "product_image", type: "media" }] }],
+            },
+            routeRef,
+        );
+
+        const media = resource.form?.[0]?.fields[0] as unknown as Record<string, unknown>;
+
+        expect(media.uploadUrl).toBeUndefined();
+        expect(media.deleteUrl).toBeUndefined();
+        expect(media.subdirectory).toBeUndefined();
+    });
+
+    it("carries searchKeys through to the runtime table", () => {
+        const resource = toResource(
+            {
+                key: "shop/orders",
+                label: "Orders",
+                table: { columns: [{ name: "order_number", header: "Number" }], searchKeys: ["order_number", "customer_email"] },
+            },
+            routeRef,
+        );
+
+        expect(resource.table?.searchKeys).toEqual(["order_number", "customer_email"]);
+    });
+});
+
+describe("rowMatchesSearchKeys", () => {
+    it("keeps every row for an empty query", () => {
+        expect(rowMatchesSearchKeys({ name: "Bolt" }, "", ["name"])).toBe(true);
+        expect(rowMatchesSearchKeys({ name: "Bolt" }, "   ", ["name"])).toBe(true);
+    });
+
+    it("keeps a row matching any listed key", () => {
+        const row = { name: "Jane", email: "jane@example.test", order_number: 1042 };
+
+        // "jane" is only in `name` and "1042" only in `order_number`: either
+        // match keeps the row, which is the OR a single column filter cannot do.
+        expect(rowMatchesSearchKeys(row, "jane", ["email", "name"])).toBe(true);
+        expect(rowMatchesSearchKeys(row, "1042", ["email", "name"])).toBe(false);
+        expect(rowMatchesSearchKeys(row, "1042", ["email", "order_number"])).toBe(true);
+    });
+
+    it("matches case-insensitively", () => {
+        expect(rowMatchesSearchKeys({ email: "Jane@Example.TEST" }, "jane", ["email"])).toBe(true);
+    });
+
+    it("skips keys that are absent or hold non-strings", () => {
+        expect(rowMatchesSearchKeys({ name: "Bolt" }, "nut", ["name", "sku"])).toBe(false);
+        expect(rowMatchesSearchKeys({ count: 7 }, "7", ["count"])).toBe(true);
+    });
+
+    it("reads nested keys through dotted paths", () => {
+        expect(rowMatchesSearchKeys({ customer: { email: "jane@example.test" } }, "jane", ["customer.email"])).toBe(true);
+    });
+
+    it("keeps every row when no keys are listed", () => {
+        expect(rowMatchesSearchKeys({ name: "Bolt" }, "bolt", [])).toBe(true);
     });
 });
 

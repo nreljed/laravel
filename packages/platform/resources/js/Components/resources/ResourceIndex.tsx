@@ -249,6 +249,7 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                 columns={allColumns}
                 data={data}
                 searchKey={table.searchKey}
+                searchKeys={table.searchKeys}
                 searchPlaceholder={table.searchPlaceholder}
                 filters={table.filters?.map((filter) => ({ ...filter }))}
                 bulkActions={table.bulkActions}

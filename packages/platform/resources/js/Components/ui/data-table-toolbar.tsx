@@ -40,6 +40,14 @@ export type DataTableFilter = {
 interface DataTableToolbarProps<TData extends RowData> {
   table: ReactTable<AppTableFeatures, TData>;
   searchKey?: string;
+  /**
+   * Multi-column search mode: the box filters every row rather than one column,
+   * narrowing on any listed key. The query was owned by the table (it must
+   * pre-filter `data`), so the toolbar receives the value plus its setter.
+   */
+  searchKeys?: string[];
+  searchQuery?: string;
+  onSearchQueryChange?: (_value: string) => void;
   searchPlaceholder?: string;
   filterOptions?: { label: string; value: string }[];
   filterKey?: string;
@@ -52,6 +60,9 @@ interface DataTableToolbarProps<TData extends RowData> {
 export function DataTableToolbar<TData extends RowData>({
   table,
   searchKey,
+  searchKeys,
+  searchQuery = "",
+  onSearchQueryChange,
   searchPlaceholder = "Search...",
   filterOptions,
   filterKey,
@@ -61,6 +72,9 @@ export function DataTableToolbar<TData extends RowData>({
   toolbarRight,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.state.columnFilters.length > 0;
+
+  const multiSearch = searchKeys && searchKeys.length > 0;
+  const resolvedPlaceholder = searchPlaceholder !== "Search..." ? searchPlaceholder : multiSearch ? `Search ${searchKeys.join(", ")}...` : "Search...";
 
   // The legacy single filter is folded into the same list so there is one
   // rendering path and no chance of the two disagreeing about "All". Built
@@ -82,18 +96,29 @@ export function DataTableToolbar<TData extends RowData>({
       className="flex w-full items-center justify-between gap-2"
     >
       <div className="flex flex-1 items-center gap-2">
-        {searchKey && (
+        {multiSearch ? (
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={searchPlaceholder}
+              placeholder={resolvedPlaceholder}
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange?.(event.target.value)}
+              className="h-8 w-full max-w-sm pl-8 sm:w-[250px] lg:w-[300px]"
+              disabled={loading}
+            />
+          </div>
+        ) : searchKey ? (
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={resolvedPlaceholder}
               value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
               onChange={(event) => table.getColumn(searchKey)?.setFilterValue(event.target.value)}
               className="h-8 w-full max-w-sm pl-8 sm:w-[250px] lg:w-[300px]"
               disabled={loading}
             />
           </div>
-        )}
+        ) : null}
         {resolvedFilters.map((filter) => (
           <Select
             key={filter.key}

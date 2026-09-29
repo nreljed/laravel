@@ -378,4 +378,125 @@ final class ResourceDefinitionContractTest extends TestCase
 
         $this->assertContains('table.columns must be an array', $definition->violations());
     }
+
+    public function test_search_keys_are_accepted(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'orders',
+            label: 'Orders',
+            table: [
+                'columns' => [['name' => 'order_number', 'header' => 'Number']],
+                'searchKeys' => ['order_number', 'customer.email'],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+        $definition->assertValid('shop-module');
+    }
+
+    public function test_search_keys_shape_is_validated(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'orders',
+            label: 'Orders',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'searchKeys' => ['order_number', '', 42],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString('table.searchKeys[1] must be a non-empty string', $joined);
+        $this->assertStringContainsString('table.searchKeys[2] must be a non-empty string', $joined);
+
+        $definition = new ResourceDefinition(
+            key: 'orders',
+            label: 'Orders',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'searchKeys' => 'name',
+            ],
+        );
+
+        $this->assertStringContainsString(
+            'table.searchKeys must be an array of column accessor keys',
+            implode("\n", $definition->violations()),
+        );
+    }
+
+    public function test_media_field_endpoints_and_multiple_flag_are_accepted(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'products',
+            label: 'Products',
+            form: [
+                ['title' => 'Media', 'fields' => [
+                    [
+                        'name' => 'featured_image',
+                        'type' => 'media',
+                        'uploadUrl' => 'dashboard.shop.products.upload-image',
+                        'deleteUrl' => 'dashboard.shop.products.destroy-image',
+                        'subdirectory' => 'products',
+                    ],
+                    ['name' => 'images', 'type' => 'media', 'multiple' => true],
+                ]],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+        $definition->assertValid('shop-module');
+    }
+
+    public function test_media_field_endpoint_shape_is_validated(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'products',
+            label: 'Products',
+            form: [
+                ['title' => 'Media', 'fields' => [
+                    [
+                        'name' => 'featured_image',
+                        'type' => 'media',
+                        'uploadUrl' => '',
+                        'deleteUrl' => ['x'],
+                        'subdirectory' => 7,
+                        'multiple' => 'yes',
+                        'unexpected' => 'nope',
+                    ],
+                ]],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString('form.0.fields[0].uploadUrl must be a non-empty route name (string)', $joined);
+        $this->assertStringContainsString('form.0.fields[0].deleteUrl must be a non-empty route name (string)', $joined);
+        $this->assertStringContainsString('form.0.fields[0].subdirectory must be a non-empty string', $joined);
+        $this->assertStringContainsString('form.0.fields[0].multiple must be a boolean', $joined);
+        $this->assertStringContainsString('form.0.fields[0].unexpected is not expressible in a PHP descriptor', $joined);
+    }
+
+    public function test_money_field_with_static_currency_options_passes(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'products',
+            label: 'Products',
+            form: [
+                ['title' => 'Pricing', 'fields' => [
+                    [
+                        'name' => 'unit_price',
+                        'type' => 'money',
+                        'options' => [
+                            ['label' => 'EUR', 'value' => 'EUR'],
+                            ['label' => 'USD', 'value' => 'USD'],
+                        ],
+                    ],
+                ]],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+        $definition->assertValid('shop-module');
+    }
 }

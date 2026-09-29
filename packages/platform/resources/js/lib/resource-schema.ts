@@ -88,12 +88,25 @@ export interface FieldDefinition {
     placeholder?: string;
     options?: FieldOption[];
     /**
-     * Static or lazy option source for `relation` fields. A serialized PHP
-     * descriptor always passes a route *name* here; `toResource()` resolves it
-     * against Ziggy, so the runtime definition holds a URL. A TS-side resource
-     * may set a URL directly. GET must return `{ value, label }[]`.
+     * Static or lazy option source for `relation` fields (and the currency
+     * list on `money`). A serialized PHP descriptor always passes a route
+     * *name* here; `toResource()` resolves it against Ziggy, so the runtime
+     * definition holds a URL. A TS-side resource may set a URL directly. GET
+     * must return `{ value, label }[]`.
      */
     optionsUrl?: string;
+    /**
+     * Upload endpoint for the `media` control, as a route name (serialized
+     * descriptors) or a URL (TS-side resources). `toResource()` resolves names
+     * against Ziggy. POST the file as `file`; expect `{ url, path }`.
+     */
+    uploadUrl?: string;
+    /** Delete endpoint for the `media` control. DELETE `{ path }`; best-effort. */
+    deleteUrl?: string;
+    /** Media-library folder the picker's "From Library" dialog browses. */
+    subdirectory?: string;
+    /** Render a multi-image gallery (`GalleryUploader`) instead of a single picker. */
+    multiple?: boolean;
     defaultValue?: unknown;
     /** Grid span within a section. 1-4; defaults to 1. */
     colSpan?: 1 | 2 | 3 | 4;
@@ -167,6 +180,12 @@ export interface ResourceTable<TData extends ResourceRecord = ResourceRecord> {
     columns: ResourceColumn<TData>[];
     /** Column the toolbar search box filters on. */
     searchKey?: string;
+    /**
+     * Multi-column toolbar search: rows matching *any* listed key are kept.
+     * Where `searchKey` is a single column filter, `searchKeys` ORs the terms
+     * across the listed columns, which a single column filter cannot do.
+     */
+    searchKeys?: string[];
     searchPlaceholder?: string;
     filters?: ResourceFilter[];
     bulkActions?: BulkAction[];
@@ -346,6 +365,49 @@ export const RESOURCE_RECORD_PARAM = "record";
 type RouteRef = (name: string, params?: Record<string, unknown>) => string;
 
 /**
+ * Resolve a route name a serialized descriptor passes for a URL surface
+ * (`optionsUrl`, `uploadUrl`, `deleteUrl`) into a fetchable URL. Values that
+ * already are URLs pass through untouched; an empty or absent value stays
+ * absent.
+ */
+function resolveSerializedUrl(
+    value: unknown,
+    routeRef: RouteRef,
+): string | undefined {
+    if (typeof value !== "string" || value === "") {
+        return undefined;
+    }
+
+    if (value.startsWith("/") || /^https?:\/\//i.test(value)) {
+        return value;
+    }
+
+    return resolveResourceRoute(value, undefined, routeRef) ?? value;
+}
+
+/**
+ * Whether a row matches a toolbar search across any of the listed keys.
+ *
+ * This backs `ResourceTable.searchKeys`: a single column filter would AND the
+ * term across columns, but a search box asking for a name *or* an email wants
+ * OR semantics. `readPath` is reused so dotted accessor keys work identically
+ * on index + toolbar here and on the form.
+ */
+export function rowMatchesSearchKeys(row: ResourceRecord, query: string, keys: string[]): boolean {
+    const needle = query.trim().toLowerCase();
+
+    if (needle === "" || keys.length === 0) {
+        return true;
+    }
+
+    return keys.some((key) => {
+        const value = readPath(row, key);
+
+        return value != null && String(value).toLowerCase().includes(needle);
+    });
+}
+
+/**
  * Rehydrate a serialized PHP descriptor into a runtime `ResourceDefinition`.
  * The default `routeRef` is Ziggy's global `route`; tests inject a spy.
  *
@@ -385,20 +447,23 @@ export function toResource(
                     // runtime reads `optionsUrl` as a fetchable URL. A value that
                     // already is a URL is left alone - the bridge only resolves names.
                     fields: ((section.fields ?? []) as Array<Record<string, unknown>>).map((field) => {
-                        const optionsUrl = field.optionsUrl;
+                        const resolved: Record<string, unknown> = { ...field };
 
-                        if (typeof optionsUrl !== "string" || optionsUrl === "") {
-                            return field as unknown as FieldDefinition;
+                        // `optionsUrl`, `uploadUrl` and `deleteUrl` arrive as
+                        // route names from a PHP descriptor; the runtime needs
+                        // URLs. Resolve each declared surface, leaving keys the
+                        // field did not declare absent.
+                        for (const key of ["optionsUrl", "uploadUrl", "deleteUrl"] as const) {
+                            const url = resolveSerializedUrl(field[key], routeRef);
+
+                            if (url === undefined) {
+                                delete resolved[key];
+                            } else {
+                                resolved[key] = url;
+                            }
                         }
 
-                        const alreadyResolved = optionsUrl.startsWith("/") || /^https?:\/\//i.test(optionsUrl);
-
-                        return {
-                            ...field,
-                            optionsUrl: alreadyResolved
-                                ? optionsUrl
-                                : (resolveResourceRoute(optionsUrl, undefined, routeRef) ?? optionsUrl),
-                        } as unknown as FieldDefinition;
+                        return resolved as unknown as FieldDefinition;
                     }),
                 }) as ResourceSection,
         ),

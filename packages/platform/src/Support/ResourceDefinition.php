@@ -58,6 +58,7 @@ class ResourceDefinition
     private const TABLE_KEYS = [
         'columns',
         'searchKey',
+        'searchKeys',
         'searchPlaceholder',
         'filters',
         'defaultPageSize',
@@ -81,6 +82,10 @@ class ResourceDefinition
         'placeholder',
         'options',
         'optionsUrl',
+        'uploadUrl',
+        'deleteUrl',
+        'subdirectory',
+        'multiple',
         'defaultValue',
         'colSpan',
         'hidden',
@@ -390,6 +395,16 @@ class ResourceDefinition
             }
         }
 
+        if (isset($this->table['searchKeys']) && ! is_array($this->table['searchKeys'])) {
+            $issues[] = 'table.searchKeys must be an array of column accessor keys';
+        } else {
+            foreach ($this->table['searchKeys'] ?? [] as $index => $key) {
+                if (! is_string($key) || $key === '') {
+                    $issues[] = "table.searchKeys[{$index}] must be a non-empty string";
+                }
+            }
+        }
+
         if (isset($this->table['filters'])) {
             foreach ($this->table['filters'] as $index => $filter) {
                 $where = "table.filters[{$index}]";
@@ -473,8 +488,17 @@ class ResourceDefinition
                     $issues[] = $fieldWhere.' is a relation field and must declare an options source: options or optionsUrl';
                 }
 
-                if (isset($field['optionsUrl']) && (! is_string($field['optionsUrl']) || $field['optionsUrl'] === '')) {
-                    $issues[] = $fieldWhere.'.optionsUrl must be a non-empty route name (string)';
+                // URL surfaces arrive as route names the frontend bridge
+                // resolves; `optionsUrl` is shared by relation (options source)
+                // and money (currency list), `uploadUrl`/`deleteUrl` by media.
+                foreach (['optionsUrl', 'uploadUrl', 'deleteUrl'] as $urlKey) {
+                    if (isset($field[$urlKey]) && (! is_string($field[$urlKey]) || $field[$urlKey] === '')) {
+                        $issues[] = "$fieldWhere.{$urlKey} must be a non-empty route name (string)";
+                    }
+                }
+
+                if (isset($field['subdirectory']) && (! is_string($field['subdirectory']) || $field['subdirectory'] === '')) {
+                    $issues[] = $fieldWhere.'.subdirectory must be a non-empty string';
                 }
 
                 foreach (['label', 'help', 'placeholder'] as $stringKey) {
@@ -483,7 +507,7 @@ class ResourceDefinition
                     }
                 }
 
-                foreach (['required', 'hidden'] as $boolKey) {
+                foreach (['required', 'hidden', 'multiple'] as $boolKey) {
                     if (isset($field[$boolKey]) && ! is_bool($field[$boolKey])) {
                         $issues[] = "$fieldWhere.{$boolKey} must be a boolean";
                     }
