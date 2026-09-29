@@ -27,4 +27,5 @@ jobs:
       # switch is handed over as inputs (see consumer-ci.yml's header).
       runner: ${{ vars.RUNNER_CI || 'self-hosted' }}
       hosted-runner: ${{ vars.RUNNER_CI != 'self-hosted' }}
+      run-e2e: true
     secrets: inherit
