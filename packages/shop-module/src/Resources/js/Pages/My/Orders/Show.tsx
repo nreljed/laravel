@@ -1,5 +1,5 @@
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Package, CreditCard, MapPin, Truck, Receipt } from "lucide-react";
+import { ArrowLeft, Package, CreditCard, MapPin, Receipt } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
 import { Badge } from "@nreljed/platform/Components/ui/badge";

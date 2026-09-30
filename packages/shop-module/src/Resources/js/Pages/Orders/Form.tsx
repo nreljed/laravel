@@ -1,6 +1,6 @@
 import { Head, useForm } from "@inertiajs/react";
 import { FormEventHandler, useState, useCallback } from "react";
-import { Plus, Trash2, Search, X } from "lucide-react";
+import { Trash2, Search, X } from "lucide-react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
@@ -68,10 +68,10 @@ interface Props {
   order: Order | null;
 }
 
-export default function Form({ products: initialProducts, customers: initialCustomers, order }: Props) {
+export default function Form({ order }: Props) {
   const isEditing = !!order;
 
-  const { data, setData, post, put, processing, errors } = useForm({
+  const { data, setData, post, put, processing } = useForm({
     is_draft: false,
     customer_type: order?.user_id ? "existing" : "guest",
     user_id: order?.user_id?.toString() ?? "",
@@ -110,9 +110,9 @@ export default function Form({ products: initialProducts, customers: initialCust
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
 
-  const debounce = (fn: (...args: unknown[]) => void, ms: number) => {
+  const debounce = <TArgs extends unknown[]>(fn: (...args: TArgs) => void, ms: number) => {
     let timer: ReturnType<typeof setTimeout>;
-    return (...args: unknown[]) => {
+    return (...args: TArgs) => {
       clearTimeout(timer);
       timer = setTimeout(() => fn(...args), ms);
     };

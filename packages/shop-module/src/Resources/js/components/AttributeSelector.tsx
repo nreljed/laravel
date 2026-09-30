@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@nreljed/platform/lib/utils";
+import type { Variation as StorefrontVariation } from "../Pages/Storefront/ProductDetail";
 
 interface AttributeTerm {
   id: number; name: string; slug: string;
@@ -13,23 +14,11 @@ interface AttributeDef {
   terms: AttributeTerm[];
 }
 
-interface VariationAttr {
-  attribute_id: number; attribute_term_id: number; name: string;
-}
-
-interface Variation {
-  id: number; sku: string | null; price: string | null;
-  compare_price: string | null; sale_price: string | null;
-  stock_quantity: number; manage_stock: string; backorders: string;
-  image_url: string | null; attributes: VariationAttr[] | null;
-  is_active: boolean;
-}
-
 interface Props {
   attributes: AttributeDef[];
-  variations: Variation[];
-  defaultVariation?: Variation | null;
-  onVariationChange: (variation: Variation | null) => void;
+  variations: StorefrontVariation[];
+  defaultVariation?: StorefrontVariation | null;
+  onVariationChange: (variation: StorefrontVariation | null) => void;
   onImageChange?: (imageUrl: string | null) => void;
 }
 
@@ -95,8 +84,9 @@ export function AttributeSelector({ attributes, variations, defaultVariation, on
     attributes.forEach((attr) => {
       if (next.has(attr.id)) return;
       const compatibleTerms = attr.terms.filter((t) => availableByAttribute.get(attr.id)?.has(t.id) ?? false);
-      if (compatibleTerms.length === 1) {
-        next.set(attr.id, compatibleTerms[0].id);
+      const onlyTerm = compatibleTerms.length === 1 ? compatibleTerms[0] : undefined;
+      if (onlyTerm) {
+        next.set(attr.id, onlyTerm.id);
         changed = true;
       }
     });

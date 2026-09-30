@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { usePage, router, Link } from "@inertiajs/react"
 import { Head } from "@inertiajs/react"
+import type { PageProps } from "@inertiajs/core"
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout"
 import { DataTable } from "@nreljed/platform/Components/ui/data-table"
@@ -9,9 +10,10 @@ import { DataTableColumnHeader } from "@nreljed/platform/Components/ui/data-tabl
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@nreljed/platform/Components/ui/empty"
 import { Button } from "@nreljed/platform/Components/ui/button"
 import { Badge } from "@nreljed/platform/Components/ui/badge"
-import { ActionCell } from "@nreljed/platform/Components/shared/action-cell"
+import { ActionCell, type ActionItem } from "@nreljed/platform/Components/shared/action-cell"
 import { Input } from "@nreljed/platform/Components/ui/input"
 import { Label } from "@nreljed/platform/Components/ui/label"
+import type { AppTableFeatures } from "@nreljed/platform/lib/table-features"
 import { ShoppingBag, Plus, Download, Upload, TrendingUp } from "lucide-react"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -19,6 +21,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@nreljed/platform/Components/ui/select"
+import { Checkbox } from "@nreljed/platform/Components/ui/checkbox"
 
 interface Category {
   id: number
@@ -68,16 +71,67 @@ const VISIBILITY_ROWS: Record<string, { label: string; variant: string; hint: st
   hidden: { label: "Hidden", variant: "destructive", hint: "Not in the store at all" },
 }
 
+/**
+ * Scrolling checkbox list for the category/tag bulk actions.
+ *
+ * The bulk endpoint takes `category_ids`/`tag_ids` and requires them to be
+ * non-empty, so these four actions have to actually let a staff member pick
+ * something. Kept in the dialog rather than a popover so the selection stays
+ * visible next to the Apply button it gates.
+ */
+function BulkPicker({
+  legend,
+  options,
+  selected,
+  onToggle,
+}: {
+  legend: string
+  options: TagOrBrand[]
+  selected: number[]
+  onToggle: (id: number) => void
+}) {
+  if (options.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        There is nothing to pick here yet - create one first, then come back.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      <Label>{legend}</Label>
+      <div className="max-h-56 overflow-y-auto rounded-md border p-2">
+        <div className="flex flex-col gap-1">
+          {options.map((option) => (
+            <label
+              key={option.id}
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+            >
+              <Checkbox
+                checked={selected.includes(option.id)}
+                onCheckedChange={() => onToggle(option.id)}
+              />
+              <span className="truncate">{option.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {selected.length} selected
+      </p>
+    </div>
+  );
+}
+
 export default function ProductsIndex() {
-  const { props } = usePage<{
+  const { props } = usePage<PageProps & {
     products: ProductRow[]
     categories: Category[]
     tags: { id: number; name: string }[]
-    nonce?: string
   }>()
 
   const products = props.products || []
-  const nonce = props.nonce || ""
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,12 +148,12 @@ export default function ProductsIndex() {
   }
 
   const columns = useMemo(() => {
-    const cols: ColumnDef<ProductRow>[] = [
+    const cols: ColumnDef<AppTableFeatures, ProductRow>[] = [
       {
         accessorKey: "id",
         header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
         cell: ({ row }) => <span className="text-xs font-mono text-muted-foreground">#{row.original.id}</span>,
-        className: "w-16 hidden sm:table-cell",
+        meta: { className: "w-16 hidden sm:table-cell" },
       },
       {
         accessorKey: "name",
@@ -138,7 +192,7 @@ export default function ProductsIndex() {
             {row.original.type}
           </Badge>
         ),
-        className: "hidden md:table-cell",
+        meta: { className: "hidden md:table-cell" },
       },
       {
         id: "categories",
@@ -157,7 +211,7 @@ export default function ProductsIndex() {
             </div>
           );
         },
-        className: "hidden lg:table-cell",
+        meta: { className: "hidden lg:table-cell" },
         enableSorting: false,
       },
       {
@@ -177,7 +231,7 @@ export default function ProductsIndex() {
             </div>
           );
         },
-        className: "hidden xl:table-cell",
+        meta: { className: "hidden xl:table-cell" },
         enableSorting: false,
       },
       {
@@ -194,7 +248,7 @@ export default function ProductsIndex() {
             </div>
           );
         },
-        className: "hidden xl:table-cell",
+        meta: { className: "hidden xl:table-cell" },
         enableSorting: false,
       },
       {
@@ -205,7 +259,7 @@ export default function ProductsIndex() {
           if (!p && row.original.type === "variable") return <span className="text-sm text-muted-foreground">From €—</span>
           return <span className="text-sm font-medium tabular-nums">{p != null ? `€${Number(p).toFixed(2)}` : "—"}</span>
         },
-        className: "hidden md:table-cell",
+        meta: { className: "hidden md:table-cell" },
       },
       {
         id: "stock",
@@ -231,7 +285,7 @@ export default function ProductsIndex() {
             </div>
           )
         },
-        className: "hidden lg:table-cell",
+        meta: { className: "hidden lg:table-cell" },
       },
       {
         accessorKey: "status",
@@ -251,7 +305,7 @@ export default function ProductsIndex() {
             </span>
           )
         },
-        className: "hidden lg:table-cell",
+        meta: { className: "hidden lg:table-cell" },
       },
       {
         accessorKey: "catalog_visibility",
@@ -266,23 +320,25 @@ export default function ProductsIndex() {
             </span>
           )
         },
-        className: "hidden lg:table-cell",
+        meta: { className: "hidden lg:table-cell" },
       },
       {
         id: "actions",
         cell: ({ row }) => (
           <ActionCell
-            item={row.original as unknown as import("@nreljed/platform/Components/shared/action-cell").ActionItem}
+            item={row.original as unknown as ActionItem}
             baseRoute={route("dashboard.shop.products.index").replace(/\/+$/, "")}
             itemLabel="Product"
-            nonce={nonce}
+            /* The product status route is a PATCH; ActionCell's default is the
+             * blog's PUT, so the verb is declared by whoever owns the route. */
+            statusMethod="patch"
           />
         ),
         enableSorting: false,
       },
     ]
     return cols
-  }, [nonce])
+  }, [])
 
   const [bulkActionSelection, setBulkActionSelection] = useState<{ ids: number[]; action: string } | null>(null);
 
@@ -295,29 +351,37 @@ export default function ProductsIndex() {
   const handleBulkAction = useCallback((action: string, selectedIds: (number | string)[]) => {
     const needsInput = ["type", "add_category", "remove_category", "add_tag", "remove_tag", "stock_status", "set_price"];
     if (needsInput.includes(action)) {
-      setBulkActionSelection({ ids: selectedIds, action });
+      setBulkActionSelection({ ids: selectedIds.map(Number), action });
       return;
     }
     router.post(route("dashboard.shop.products.bulk"), {
       action,
       selected_ids: selectedIds,
-      _wpnonce: nonce,
     }, {
       onSuccess: () => {
         toast.add({ title: "Bulk action completed.", type: "success" })
-        router.reload({ preserveScroll: true })
+        /* Inertia v3's ReloadOptions has no `preserveScroll`; the reload
+         * already inherits the original visit's scroll behaviour. */
+        router.reload()
       },
       onError: () => toast.add({ title: "Failed to perform bulk action.", type: "error" }),
     })
-  }, [nonce])
+  }, [])
+
+  /* A closed dialog must not carry its previous selection into the next one. */
+  const closeBulkDialog = useCallback(() => {
+    setBulkActionSelection(null);
+    setBulkCategoryIds([]);
+    setBulkTagIds([]);
+    setBulkPriceValue("");
+  }, []);
 
   const executeBulkWithValue = useCallback(() => {
     if (!bulkActionSelection) return;
     const { ids, action } = bulkActionSelection;
-    const data: Record<string, unknown> = {
+    const data: Record<string, string | number[]> = {
       action,
       selected_ids: ids,
-      _wpnonce: nonce,
     };
     if (action === "type") data.type_value = bulkTypeValue;
     if (action === "add_category" || action === "remove_category") data.category_ids = bulkCategoryIds;
@@ -328,12 +392,12 @@ export default function ProductsIndex() {
     router.post(route("dashboard.shop.products.bulk"), data, {
       onSuccess: () => {
         toast.add({ title: "Bulk action completed.", type: "success" });
-        setBulkActionSelection(null);
-        router.reload({ preserveScroll: true });
+        closeBulkDialog();
+        router.reload();
       },
       onError: () => toast.add({ title: "Failed to perform bulk action.", type: "error" }),
     });
-  }, [bulkActionSelection, bulkTypeValue, bulkCategoryIds, bulkTagIds, bulkStockStatus, bulkPriceValue, nonce]);
+  }, [bulkActionSelection, bulkTypeValue, bulkCategoryIds, bulkTagIds, bulkStockStatus, bulkPriceValue, closeBulkDialog]);
 
   const bulkActionDialogTitle = useMemo(() => {
     if (!bulkActionSelection) return "";
@@ -348,6 +412,25 @@ export default function ProductsIndex() {
     };
     return labels[bulkActionSelection.action] || "Bulk Action";
   }, [bulkActionSelection]);
+
+  /**
+   * The picker-driven actions post `category_ids`/`tag_ids`, which the controller
+   * requires. Applying one of them with nothing ticked would fail validation, so
+   * the button stays disabled until there is something to send.
+   */
+  const bulkSelectionIsApplicable = useMemo(() => {
+    if (!bulkActionSelection) return false;
+    if (["add_category", "remove_category"].includes(bulkActionSelection.action)) {
+      return bulkCategoryIds.length > 0;
+    }
+    if (["add_tag", "remove_tag"].includes(bulkActionSelection.action)) {
+      return bulkTagIds.length > 0;
+    }
+    if (bulkActionSelection.action === "set_price") {
+      return bulkPriceValue !== "";
+    }
+    return true;
+  }, [bulkActionSelection, bulkCategoryIds, bulkTagIds, bulkPriceValue]);
 
   const header = (
     <div className="flex items-center justify-between">
@@ -441,7 +524,7 @@ export default function ProductsIndex() {
         />
 
         {/* Bulk Action Input Dialog */}
-        <Dialog open={!!bulkActionSelection} onOpenChange={(o) => { if (!o) setBulkActionSelection(null); }}>
+        <Dialog open={!!bulkActionSelection} onOpenChange={(o) => { if (!o) closeBulkDialog(); }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{bulkActionDialogTitle}</DialogTitle>
@@ -468,19 +551,47 @@ export default function ProductsIndex() {
             )}
 
             {bulkActionSelection?.action === "add_category" && (
-              <p className="text-sm text-muted-foreground">Categories will be added via the category management page.</p>
+              <BulkPicker
+                legend="Categories to add"
+                options={props.categories}
+                selected={bulkCategoryIds}
+                onToggle={(id) => setBulkCategoryIds((current) =>
+                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
+                )}
+              />
             )}
 
             {bulkActionSelection?.action === "remove_category" && (
-              <p className="text-sm text-muted-foreground">Categories will be removed via the category management page.</p>
+              <BulkPicker
+                legend="Categories to remove"
+                options={props.categories}
+                selected={bulkCategoryIds}
+                onToggle={(id) => setBulkCategoryIds((current) =>
+                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
+                )}
+              />
             )}
 
             {bulkActionSelection?.action === "add_tag" && (
-              <p className="text-sm text-muted-foreground">Tags will be added via the tag management page.</p>
+              <BulkPicker
+                legend="Tags to add"
+                options={props.tags}
+                selected={bulkTagIds}
+                onToggle={(id) => setBulkTagIds((current) =>
+                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
+                )}
+              />
             )}
 
             {bulkActionSelection?.action === "remove_tag" && (
-              <p className="text-sm text-muted-foreground">Tags will be removed via the tag management page.</p>
+              <BulkPicker
+                legend="Tags to remove"
+                options={props.tags}
+                selected={bulkTagIds}
+                onToggle={(id) => setBulkTagIds((current) =>
+                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
+                )}
+              />
             )}
 
             {bulkActionSelection?.action === "stock_status" && (
@@ -506,8 +617,8 @@ export default function ProductsIndex() {
             )}
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBulkActionSelection(null)}>Cancel</Button>
-              <Button onClick={executeBulkWithValue}>Apply</Button>
+              <Button variant="outline" onClick={closeBulkDialog}>Cancel</Button>
+              <Button onClick={executeBulkWithValue} disabled={!bulkSelectionIsApplicable}>Apply</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -17,6 +17,10 @@ import {
 
 interface ShippingMethod {
   id: number; name: string; price: number;
+  /* The controller flattens the pivot into `override_price` (see
+   * ShippingZonesController::recordArray), so reading `m.pivot` here always
+   * produced undefined and every per-zone override came back blank. */
+  override_price?: number | string | null;
 }
 interface ZoneData {
   id?: number; name: string; countries: string[]; regions: string[] | null;
@@ -44,14 +48,14 @@ export default function ShippingZoneForm({ zone, methods }: Props) {
 
   const zoneMethods = zone?.methods?.map((m) => ({
     id: m.id,
-    override_price: m.pivot?.override_price?.toString() || "",
+    override_price: m.override_price?.toString() || "",
   })) || [];
 
   const form = useForm({
     name: zone?.name || "",
     countries: zone?.countries || [] as string[],
     is_active: zone?.is_active ?? true,
-    method_ids: zoneMethods,
+    methods: zoneMethods,
   });
 
   const addCountry = (code: string) => {
@@ -65,16 +69,16 @@ export default function ShippingZoneForm({ zone, methods }: Props) {
   };
 
   const toggleMethod = (methodId: number) => {
-    const existing = form.data.method_ids.find((m) => m.id === methodId);
+    const existing = form.data.methods.find((m) => m.id === methodId);
     if (existing) {
-      form.setData("method_ids", form.data.method_ids.filter((m) => m.id !== methodId));
+      form.setData("methods", form.data.methods.filter((m) => m.id !== methodId));
     } else {
-      form.setData("method_ids", [...form.data.method_ids, { id: methodId, override_price: "" }]);
+      form.setData("methods", [...form.data.methods, { id: methodId, override_price: "" }]);
     }
   };
 
   const setOverridePrice = (methodId: number, price: string) => {
-    form.setData("method_ids", form.data.method_ids.map((m) =>
+    form.setData("methods", form.data.methods.map((m) =>
       m.id === methodId ? { ...m, override_price: price } : m,
     ));
   };
@@ -145,7 +149,7 @@ export default function ShippingZoneForm({ zone, methods }: Props) {
             <CardHeader><CardTitle>Shipping Methods</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {methods.map((method) => {
-                const selected = form.data.method_ids.find((m) => m.id === method.id);
+                const selected = form.data.methods.find((m) => m.id === method.id);
                 return (
                   <div key={method.id} className="flex items-center gap-3 rounded-md border p-3">
                     <input type="checkbox" checked={!!selected} onChange={() => toggleMethod(method.id)} className="h-4 w-4" />

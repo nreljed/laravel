@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Head, useForm, usePage, router } from "@inertiajs/react";
+import type { PageProps } from "@inertiajs/core";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import { Building2, Plus, Pencil, Trash2 } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
@@ -31,12 +32,12 @@ interface BrandItem {
   products_count: number;
 }
 
-interface PageProps {
+interface BrandsPageProps {
   brands: BrandItem[];
 }
 
 export default function BrandsIndex() {
-  const { props } = usePage<PageProps>();
+  const { props } = usePage<PageProps & BrandsPageProps>();
   const brands = props.brands || [];
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -188,8 +189,15 @@ export default function BrandsIndex() {
                       <Switch
                         checked={brand.is_active}
                         onCheckedChange={() => {
-                          form.put(route("dashboard.shop.brands.update", brand.id), {
-                            data: { ...brand, is_active: !brand.is_active },
+                          /* `data` is not a useForm submit option - it was being
+                           * sent as a literal request key, so this toggle posted
+                           * the shared create/edit form's data instead of the
+                           * brand row. The endpoint requires name/is_active, so
+                           * send them explicitly. */
+                          router.put(route("dashboard.shop.brands.update", brand.id), {
+                            name: brand.name,
+                            is_active: !brand.is_active,
+                          }, {
                             preserveScroll: true,
                             onSuccess: () => toast.add({ title: "Brand updated.", type: "success" }),
                           });

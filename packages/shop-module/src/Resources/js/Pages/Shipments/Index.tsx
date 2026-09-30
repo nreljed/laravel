@@ -1,4 +1,5 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react'
+import type { PageProps } from '@inertiajs/core'
 import { useState } from 'react'
 import { Package, Plus, Truck } from 'lucide-react'
 import { type ShipmentsPage as ShipmentsPageType } from './types'
@@ -21,7 +22,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export default function Index() {
-    const { order, orderItems, shipments } = usePage<ShipmentsPageType>().props
+    const { order, orderItems, shipments } = usePage<PageProps & ShipmentsPageType>().props
     const [dialogOpen, setDialogOpen] = useBoolean(false)
 
     const form = useForm({
@@ -33,9 +34,13 @@ export default function Index() {
     })
 
     function handleCreate() {
+        /* Only items the operator actually gave a quantity for are shipped. A
+         * missing entry is not the same as "all of it", so the filter has to
+         * stay a strict `> 0` on a defined value rather than defaulting to
+         * item.quantity - defaulting here would ship the whole order. */
         const quantities = Object.fromEntries(
             orderItems
-                .filter((item) => form.data.item_quantities[item.id] > 0)
+                .filter((item) => (form.data.item_quantities[item.id] ?? 0) > 0)
                 .map((item) => [item.id, form.data.item_quantities[item.id] ?? item.quantity]),
         )
 
@@ -176,7 +181,10 @@ export default function Index() {
                                                 max={item.quantity}
                                                 className="w-20"
                                                 value={form.data.item_quantities[item.id] ?? item.quantity}
-                                                onChange={(e) => form.setData(`item_quantities.${item.id}`, parseInt(e.target.value) || 0)}
+                                                onChange={(e) => form.setData('item_quantities', {
+                                                    ...form.data.item_quantities,
+                                                    [item.id]: parseInt(e.target.value) || 0,
+                                                })}
                                             />
                                         </div>
                                     </div>

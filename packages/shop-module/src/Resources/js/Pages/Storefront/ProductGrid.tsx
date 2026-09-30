@@ -1,5 +1,6 @@
-﻿import { Link, router, usePage, Head } from "@inertiajs/react";
-import { useState, useRef, type ReactNode } from "react";
+import { Link, router, usePage, Head } from "@inertiajs/react";
+import { useState, type ReactNode } from "react";
+import type { PageProps } from "@inertiajs/core";
 import { Search, ShoppingCart, SlidersHorizontal, ChevronRight } from "lucide-react";
 import StoreLayout from "../../Layouts/StoreLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
@@ -107,25 +108,25 @@ function AttributeTermToggle({ term, displayType, active, onToggle }: {
 }
 
 export default function StorefrontProducts() {
-    const { props } = usePage<StorePage & { wishlistIds: number[] }>()
+    const { props } = usePage<PageProps & StorePage & { wishlistIds: number[] }>()
     const { products, categories, brands, attributeFilters, filters, priceRange, activeCategory, wishlistIds, seo } = props
     const breadcrumbs = props.breadcrumbs ?? []
     const { money } = useCurrency();
     const [priceValue, setPriceValue] = useState<[number, number]>([priceRange[0], priceRange[1]])
-    const [applyingPrice, setApplyingPrice] = useState(false)
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>()
-
+    
+    /* Both bounds have to land in the query together, so they are applied in a
+     * single visit rather than one after the other - two visits would race and
+     * the second could drop the first bound. */
     function applyPriceFilter() {
-        setApplyingPrice(true)
-        applyFilter("min_price", String(priceValue[0]))
-        setTimeout(() => {
-            applyFilter("max_price", String(priceValue[1]))
-            setApplyingPrice(false)
-        }, 50)
+        applyFilters({ min_price: String(priceValue[0]), max_price: String(priceValue[1]) })
     }
 
     function applyFilter(key: string, value: string | null) {
-        router.get(route("store.products"), { ...filters, [key]: value || "" }, { preserveState: true, preserveScroll: true })
+        applyFilters({ [key]: value || "" })
+    }
+
+    function applyFilters(overrides: Record<string, unknown>) {
+        router.get(route("store.products"), { ...filters, ...overrides }, { preserveState: true, preserveScroll: true })
     }
 
     function toggleAttributeTerm(termId: number) {
@@ -315,7 +316,12 @@ export default function StorefrontProducts() {
                                     step={1}
                                     value={priceValue}
                                     onValueChange={(v) => setPriceValue(v as [number, number])}
-                                    onValueCommit={() => applyPriceFilter()}
+                                    /* Base UI names the commit callback
+                                     * `onValueCommitted`; the old
+                                     * `onValueCommit` was silently dropped, so
+                                     * releasing the slider never applied the
+                                     * range. */
+                                    onValueCommitted={() => applyPriceFilter()}
                                     className="mb-2"
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -365,7 +371,7 @@ export default function StorefrontProducts() {
                                     )}
                                     {Array.from({ length: products.last_page }, (_, i) => i + 1).map((page) => (
                                         <PaginationItem key={page}>
-                                            <PaginationLink href={products.links?.[page]?.url} isActive={page === products.current_page} />
+                                            <PaginationLink href={products.links?.[page]?.url ?? undefined} isActive={page === products.current_page} />
                                         </PaginationItem>
                                     ))}
                                     {products.next_page_url && (

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
+import type { PageProps } from "@inertiajs/core";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, Hash, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal, Users, Link2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, HelpCircle, Layers, Archive, Star, AlertTriangle, Plus, X, Eye, EyeOff, GripVertical, Info, Tag, Tags, Images, FolderTree, ListTree, Package, Truck, Globe, ExternalLink, Download, ShoppingBag, Eye as VisibilityIcon, Copyright, Monitor, Wrench, Search, SlidersHorizontal, Users, Link2 } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -26,10 +27,14 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@nreljed/platform/Components/ui/tooltip";
 import { PublishSection } from "@nreljed/platform/Components/shared/publish-section";
 import { GalleryUploader, type GalleryImage } from "@nreljed/platform/Components/shared/gallery-uploader";
+import { isGalleryImageDone } from "@nreljed/platform/types/gallery";
+import type { UploadResult } from "@nreljed/platform/hooks/use-image-upload";
 import { TermsSelector } from "@nreljed/platform/Components/shared/terms-selector";
 import { DateTimePicker } from "@nreljed/platform/Components/shared/datetime-picker";
 const VariationsManager = lazy(() => import("../../components/VariationsManager").then((m) => ({ default: m.VariationsManager })));
+import type { Variation } from "../../components/VariationsManager";
 const ProductSeoPanel = lazy(() => import("../../components/ProductSeoPanel").then((m) => ({ default: m.ProductSeoPanel })));
+import type { SeoData } from "../../components/ProductSeoPanel";
 
 interface Category { id: number; name: string }
 interface Tag { id: number; name: string }
@@ -49,7 +54,6 @@ interface ProductFieldDef {
   is_required: boolean; is_active: boolean; show_on_storefront: boolean; sort_order: number;
 }
 interface ProductFieldValueItem { product_field_id: number; value: string | boolean | number | null }
-interface Variation { id: number; product_id: number; sku: string | null; price: string | null; stock_quantity: number; weight: string | null; length: string | null; width: string | null; height: string | null; is_active: boolean; image_url: string | null; attributes: { attribute_id: number; attribute_term_id: number; name: string }[] | null; sort_order: number }
 
 interface GroupedItem {
   product_id: number; quantity: number; sort_order?: number;
@@ -83,6 +87,9 @@ interface Product {
   price: number; compare_price: number | null; cost_price: number | null;
   sale_price: number | null; sale_from: string | null; sale_to: string | null;
   sku: string | null; barcode: string | null; global_unique_id: string | null; mpn: string | null;
+  vendor: string | null;
+  /** JSON cast to array by the model; the term ids of the default variation. */
+  default_attributes: number[] | null;
   stock_quantity: number; low_stock_threshold: number; incoming_stock: number | null;
   hold_stock_minutes: number | null; stock_status: string | null;
   track_stock: boolean; backorders: string; status: string; type: string;
@@ -95,10 +102,10 @@ interface Product {
   images: { url: string; path: string }[] | null; categories: Category[]; tags: Tag[]; brands: Brand[];
   publish_date: string | null; unpublish_at: string | null; groupedItems?: GroupedItem[]; downloads?: DownloadItem[];
   relations?: RelationItem[];
-  seo?: { meta_title?: string | null; meta_description?: string | null; og_image?: string | null; focus_keyword?: string | null; seo_metadata?: unknown | null } | null;
+  seo?: { meta_title?: string | null; meta_description?: string | null; og_image?: string | null; focus_keyword?: string | null; seo_metadata?: SeoData | null } | null;
 }
 
-interface PageProps {
+interface ProductFormPageProps {
   product: Product | null; categories: Category[]; tags: Tag[]; brands: Brand[];
   attributes: Attribute[]; variations: Variation[];
   productAttributes?: ProductAttributeItem[]; flash?: { status?: string; error?: string };
@@ -107,7 +114,7 @@ interface PageProps {
   groupPrices?: GroupPriceRow[]; priceableGroups?: PriceableGroup[];
 }
 
-interface FormData {
+interface ProductFormData {
   name: string; description: string; short_description: string;
   price: string; compare_price: string; cost_price: string;
   sale_price: string; sale_from: string | null; sale_to: string | null;
@@ -121,7 +128,7 @@ interface FormData {
   weight: string; length: string; width: string; height: string;
   categories: number[]; tags: number[]; brands: number[]; thumbnail_url: string; images: GalleryImage[];
   default_attributes: number[];
-  meta_title: string; meta_description: string; og_image: string; focus_keyword: string; seo_metadata: unknown | null;
+  meta_title: string; meta_description: string; og_image: string; focus_keyword: string; seo_metadata: SeoData | null;
   product_attributes: ProductAttributeItem[];
   product_field_values: ProductFieldValueItem[];
   grouped_items: { product_id: number; quantity: number; sort_order?: number; name?: string; sku?: string; price?: string | number }[];
@@ -134,6 +141,24 @@ interface FormData {
 }
 
 const minDate = new Date(Date.now() - 60000);
+
+/**
+ * Adapts a stored product image to the uploader's `GalleryImageDone` shape.
+ *
+ * The product's own `path` is kept rather than re-derived from the url: it is
+ * the storage-relative key the delete endpoint requires, and the server is
+ * authoritative for it.
+ */
+const toDoneGalleryImage = (image: { url: string; path: string }): GalleryImage => ({
+  id: `${image.path}-${image.url}`,
+  name: image.path.split("/").pop() || image.url,
+  size: 0,
+  type: "image/*",
+  status: "done",
+  url: image.url,
+  path: image.path,
+  preview: image.url,
+});
 
 const defaultUnpublishAt = () => {
   const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -160,11 +185,16 @@ const CATALOG_VISIBILITY_HELP: Record<string, string> = {
 };
 
 export default function ProductsForm() {
-  const { props } = usePage<PageProps>();
+  const { props } = usePage<PageProps & ProductFormPageProps>();
   const product = props.product || null;
-  const categories = props.categories || [];
-  const tags = props.tags || [];
-  const brands = props.brands || [];
+  /* Terms created inline are not in the server payload until the next load, so
+   * they are merged in locally - the selector renders only what `options` holds. */
+  const [newCategories, setNewCategories] = useState<Category[]>([]);
+  const [newTags, setNewTags] = useState<Tag[]>([]);
+  const [newBrands, setNewBrands] = useState<Brand[]>([]);
+  const categories = useMemo(() => [...(props.categories || []), ...newCategories], [props.categories, newCategories]);
+  const tags = useMemo(() => [...(props.tags || []), ...newTags], [props.tags, newTags]);
+  const brands = useMemo(() => [...(props.brands || []), ...newBrands], [props.brands, newBrands]);
   const attributes = props.attributes || [];
   const variations = props.variations || [];
   const initialProductAttrs = (props.productAttributes || []) as ProductAttributeItem[];
@@ -231,6 +261,8 @@ export default function ProductsForm() {
       if (oldIndex === -1 || newIndex === -1) return prev;
       const next = [...prev];
       const [moved] = next.splice(oldIndex, 1);
+      /* splice at a validated index always yields the removed element. */
+      if (!moved) return prev;
       next.splice(newIndex, 0, moved);
       return next.map((a, i) => ({ ...a, position: i }));
     });
@@ -253,7 +285,7 @@ export default function ProductsForm() {
     if (flash.error) toast.add({ title: flash.error, type: "error" });
   }, [flash.status, flash.error]);
 
-  const form = useForm<FormData>({
+  const form = useForm<ProductFormData>({
     name: product?.name || "",
     description: product?.description || "",
     short_description: product?.short_description || "",
@@ -299,7 +331,7 @@ export default function ProductsForm() {
     tags: product?.tags?.map((t) => t.id) || [],
     brands: product?.brands?.map((b) => b.id) || [],
     thumbnail_url: product?.thumbnail_url || "",
-    images: product?.images || [],
+    images: (product?.images || []).map(toDoneGalleryImage),
     default_attributes: product?.default_attributes || [],
     meta_title: product?.seo?.meta_title || "",
     meta_description: product?.seo?.meta_description || "",
@@ -308,6 +340,12 @@ export default function ProductsForm() {
     seo_metadata: product?.seo?.seo_metadata ?? null,
     product_attributes: initialProductAttrs,
     product_field_values: initialFieldValues,
+    /* These three are owned by their own editors below and copied into the form
+     * on submit, but the form still needs a value of the right shape from the
+     * start or the first render has no field to read. */
+    grouped_items: groupedItems,
+    product_relations: relations.map((r) => ({ product_id: r.id, type: r.type })),
+    downloads,
     group_prices: [],
   });
 
@@ -336,7 +374,7 @@ export default function ProductsForm() {
     }
   }, [form.setData]);
 
-  const handleSeoGenerated = useCallback((seoResponse: unknown) => {
+  const handleSeoGenerated = useCallback((seoResponse: SeoData) => {
     form.setData("seo_metadata", seoResponse);
   }, [form.setData]);
 
@@ -379,60 +417,64 @@ export default function ProductsForm() {
     }
   };
 
-  const handleCreateCategory = useCallback(async (name: string) => {
-    try {
-      const res = await fetch(route("dashboard.shop.categories.store").toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json", "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || "" },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (res.ok && data.id) return { id: data.id, name };
-      return null;
-    } catch {
-      toast.add({ title: "Failed to create category", type: "error" });
-      return null;
-    }
-  }, []);
+  /**
+   * Creates a taxonomy term from inside the selector.
+   *
+   * The selector derives its rendered list from `options` and drops anything not
+   * in it, so a term created here has to be added to local state as well or it is
+   * selected in form data but neither shown nor removable. Failures throw: the
+   * selector's `catch` then keeps the dialog open with the typed name instead of
+   * closing over a term that was never created.
+   */
+  const createTerm = useCallback(
+    async (endpoint: string, label: string, name: string): Promise<{ id: number; term: Record<string, unknown> }> => {
+      try {
+        const res = await fetch(route(endpoint).toString(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json", "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || "" },
+          body: JSON.stringify({ name }),
+        });
+        const data = (await res.json()) as { id?: number | string };
+        if (!res.ok || !data?.id) throw new Error("create failed");
+        return { id: Number(data.id), term: { name } };
+      } catch {
+        toast.add({ title: `Failed to create ${label.toLowerCase()}`, type: "error" });
+        throw new Error(`Failed to create ${label.toLowerCase()}`);
+      }
+    },
+    [],
+  );
 
-  const handleCreateBrand = useCallback(async (name: string) => {
-    try {
-      const res = await fetch(route("dashboard.shop.brands.store").toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json", "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || "" },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (res.ok && data.id) return { id: data.id, name };
-      return null;
-    } catch {
-      toast.add({ title: "Failed to create brand", type: "error" });
-      return null;
-    }
-  }, []);
+  const handleCreateCategory = useCallback(
+    (name: string) => createTerm("dashboard.shop.categories.store", "Category", name).then((created) => {
+      setNewCategories((prev) => (prev.some((c) => c.id === created.id) ? prev : [...prev, { id: created.id, name }]));
+      return created;
+    }),
+    [createTerm],
+  );
 
-  const handleCreateTag = useCallback(async (name: string) => {
-    try {
-      const res = await fetch(route("dashboard.shop.tags.store").toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json", "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || "" },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (res.ok && data.id) return { id: data.id, name };
-      return null;
-    } catch {
-      toast.add({ title: "Failed to create tag", type: "error" });
-      return null;
-    }
-  }, []);
+  const handleCreateBrand = useCallback(
+    (name: string) => createTerm("dashboard.shop.brands.store", "Brand", name).then((created) => {
+      setNewBrands((prev) => (prev.some((b) => b.id === created.id) ? prev : [...prev, { id: created.id, name }]));
+      return created;
+    }),
+    [createTerm],
+  );
+
+  const handleCreateTag = useCallback(
+    (name: string) => createTerm("dashboard.shop.tags.store", "Tag", name).then((created) => {
+      setNewTags((prev) => (prev.some((t) => t.id === created.id) ? prev : [...prev, { id: created.id, name }]));
+      return created;
+    }),
+    [createTerm],
+  );
 
   const getCsrfToken = () =>
     (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || "";
 
   const handleUpload = useCallback(
     async (file: File, onProgress: (pct: number) => void, signal: AbortSignal, _pendingId: string) => {
-      return new Promise<{ url?: string; path?: string }>((resolve, reject) => {
+      return new Promise<UploadResult>((resolve, reject) => {
         const formData = new FormData();
         formData.append("file", file);
 
@@ -442,8 +484,15 @@ export default function ProductsForm() {
         };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
+            /* The uploader cannot mark an image done without url/path, so a body
+             * missing either is the failure it is, not a success. */
             try {
-              resolve(JSON.parse(xhr.responseText));
+              const parsed = JSON.parse(xhr.responseText) as Partial<UploadResult>;
+              if (typeof parsed?.url !== "string" || typeof parsed?.path !== "string") {
+                reject(new Error("Upload response missing url/path"));
+                return;
+              }
+              resolve(parsed as UploadResult);
             } catch {
               reject(new Error("Invalid response"));
             }
@@ -464,10 +513,13 @@ export default function ProductsForm() {
   );
 
   const handleDelete = useCallback(async (image: GalleryImage) => {
+    /* Only a completed image was ever persisted, so an uploading/erroring one
+     * has no path to delete. The endpoint requires `path` and ignores `url`. */
+    if (!isGalleryImageDone(image)) return;
     await fetch(route("dashboard.shop.products.delete-image"), {
       method: "DELETE",
       headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": getCsrfToken() },
-      body: JSON.stringify({ path: image.path || "", url: image.url, entity_id: product?.id }),
+      body: JSON.stringify({ path: image.path, entity_id: product?.id }),
     });
   }, [product?.id]);
 
@@ -945,13 +997,16 @@ export default function ProductsForm() {
               )}
 
               <Section title="Product Gallery" description="Add product images" icon={Images}>
+                {/* `thumbnailUrl`/`onThumbnailChange` were being passed here, but the
+                    released GalleryUploader accepts neither, so they were silently
+                    dropped and `thumbnail_url` could never be changed from this form.
+                    Cover selection needs a cover control the uploader does not have;
+                    until that exists the field keeps whatever the product loaded with. */}
                 <GalleryUploader
                   label=""
                   description="Add product images"
                   value={form.data.images}
-                  onChange={(images) => form.setData("images", images)}
-                  thumbnailUrl={form.data.thumbnail_url}
-                  onThumbnailChange={(url) => form.setData("thumbnail_url", url)}
+                  onChange={(images: GalleryImage[]) => form.setData("images", images)}
                   maxImages={10}
                   onUpload={handleUpload}
                   onDelete={handleDelete}
@@ -965,7 +1020,7 @@ export default function ProductsForm() {
                   value={form.data.categories}
                   onChange={(values) => form.setData("categories", values as number[])}
                   canAdd={true}
-                  onCreateTerm={handleCreateCategory}
+                  onAddTerm={handleCreateCategory}
                   placeholder="Select categories..."
                   taxonomyName="Category"
                 />
@@ -978,7 +1033,7 @@ export default function ProductsForm() {
                   value={form.data.brands}
                   onChange={(values) => form.setData("brands", values as number[])}
                   canAdd={true}
-                  onCreateTerm={handleCreateBrand}
+                  onAddTerm={handleCreateBrand}
                   placeholder="Select brands..."
                   taxonomyName="Brand"
                 />
@@ -991,7 +1046,7 @@ export default function ProductsForm() {
                   value={form.data.tags}
                   onChange={(values) => form.setData("tags", values as number[])}
                   canAdd={true}
-                  onCreateTerm={handleCreateTag}
+                  onAddTerm={handleCreateTag}
                   placeholder="Select tags..."
                   taxonomyName="Tag"
                 />
@@ -1021,7 +1076,7 @@ export default function ProductsForm() {
                       <p className="text-xs text-muted-foreground">All global attributes are assigned to this product.</p>
                     </div>
                   ) : (
-                    <Select onValueChange={(v) => { const id = parseInt(v); if (id) addGlobalAttribute(id); }}>
+                    <Select<string> onValueChange={(v) => { const id = parseInt(v); if (id) addGlobalAttribute(id); }}>
                       <SelectTrigger className="h-8 w-auto text-xs gap-1">
                         <Plus className="h-3 w-3" />
                         <SelectValue placeholder="Add existing" />
@@ -1293,7 +1348,7 @@ export default function ProductsForm() {
                   metaDescription={form.data.meta_description}
                   ogImage={form.data.og_image}
                   keyword={form.data.focus_keyword}
-                  savedSeoData={form.data.seo_metadata as never}
+                  savedSeoData={form.data.seo_metadata}
                   onChange={handleSeoChange}
                   onSeoGenerated={handleSeoGenerated}
                 />
@@ -1544,17 +1599,14 @@ export default function ProductsForm() {
                   productAttributes={attrList}
                   isCreating={!product}
                   attrList={attrList}
-                  usedGlobalIds={usedGlobalIds}
                   availableGlobalAttrs={availableGlobalAttrs}
                   addGlobalAttribute={addGlobalAttribute}
                   addCustomAttribute={addCustomAttribute}
                   removeAttribute={removeAttribute}
                   toggleVisible={toggleVisible}
                   toggleVariation={toggleVariation}
-                  setAttrOptions={setAttrOptions}
                   defaultAttributes={form.data.default_attributes}
                   setDefaultAttributes={(ids: number[]) => form.setData("default_attributes", ids)}
-                  globalAttrMap={globalAttrMap}
                   formType={form.data.type}
                   showCustomInput={showCustomInput}
                   setShowCustomInput={setShowCustomInput}

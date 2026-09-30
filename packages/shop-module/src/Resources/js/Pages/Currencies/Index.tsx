@@ -81,7 +81,9 @@ export default function CurrenciesIndex({ currencies }: Props) {
     });
   };
 
-  const dialogForm = (onSubmit: (e: React.FormEvent) => void) => (
+  /* The surrounding <form> already owns submission, so the shared body is just the
+ * fields - it must not open or close a form of its own. */
+const dialogFields = () => (
     <div className="space-y-3 py-4">
       <div className="grid grid-cols-3 gap-3">
         <div className="grid gap-2"><Label>Code</Label><Input value={form.data.code} onChange={(e) => form.setData("code", e.target.value.toUpperCase())} required placeholder="USD" maxLength={3} /></div>
@@ -128,7 +130,7 @@ export default function CurrenciesIndex({ currencies }: Props) {
             <DialogContent className="max-w-lg">
               <form onSubmit={handleCreate}>
                 <DialogHeader><DialogTitle>Create Currency</DialogTitle><DialogDescription>Add a new currency to your store.</DialogDescription></DialogHeader>
-                {dialogForm(handleCreate)}
+                {dialogFields()}
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
                   <Button type="submit" disabled={form.processing}>Create</Button>
@@ -182,7 +184,7 @@ export default function CurrenciesIndex({ currencies }: Props) {
           <DialogContent className="max-w-lg">
             <form onSubmit={handleUpdate}>
               <DialogHeader><DialogTitle>Edit Currency</DialogTitle></DialogHeader>
-              {dialogForm(handleUpdate)}
+              {dialogFields()}
               <DialogFooter>
                 <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
                 <Button type="submit" disabled={form.processing}>Update</Button>

@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react'
+import type { PageProps } from '@inertiajs/core'
 import AdminLayout from '@nreljed/platform/Layouts/AdminLayout'
 import { Badge } from '@nreljed/platform/Components/ui/badge'
 import { Button } from '@nreljed/platform/Components/ui/button'
@@ -37,7 +38,7 @@ function StatusCodeBadge({ code }: { code: number | null }) {
 }
 
 export default function Calls() {
-    const { webhook, calls } = usePage<CallsPage>().props
+    const { webhook, calls } = usePage<PageProps & CallsPage>().props
 
     return (
         <AdminLayout title={`Webhook Calls - ${webhook.name}`}>

@@ -1,4 +1,5 @@
 import { Head, useForm, router } from "@inertiajs/react";
+import type { FormDataKeys, FormDataValues } from "@inertiajs/core";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import { useState, useCallback, useEffect } from "react";
 import { Plus, Pencil, Trash2, X, SlidersHorizontal, GripVertical, Star } from "lucide-react";
@@ -85,7 +86,7 @@ function defaultValueString(field: ProductField): string {
 function FieldEditor({ data, errors, onChange }: {
   data: FieldFormData;
   errors: Record<string, string | undefined>;
-  onChange: <K extends keyof FieldFormData>(key: K, value: FieldFormData[K]) => void;
+  onChange: <K extends FormDataKeys<FieldFormData>>(key: K, value: FormDataValues<FieldFormData, K>) => void;
 }) {
   const inputId = (key: string) => `field-${key}`;
 
@@ -271,7 +272,10 @@ export default function ProductFieldsIndex({ productFields: initialFields }: Pro
     setLocalData(structuredClone(initialFields));
   }, [initialFields]);
 
-  function setFieldData<K extends keyof FieldFormData>(key: K, value: FieldFormData[K]) {
+  /* Inertia types setData against the form-data shape of the field, not the raw
+   * field type - `FormDataValues` is what it actually accepts, so the helper has
+   * to mirror that signature or nested keys (options, arrays) fail to typecheck. */
+  function setFieldData<K extends FormDataKeys<FieldFormData>>(key: K, value: FormDataValues<FieldFormData, K>) {
     form.clearErrors(key);
     form.setData(key, value);
   }

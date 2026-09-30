@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { Plus, Trash2, Sparkles, Save, AlertTriangle, Image as ImageIcon, X, Info, Layers, Star, Check, Pencil, Percent, GripVertical } from "lucide-react";
+import { Plus, Trash2, Sparkles, Save, AlertTriangle, Image as ImageIcon, X, Info, Layers, Star, Pencil, Percent, GripVertical } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -33,6 +33,8 @@ import { DateTimePicker } from "@nreljed/platform/Components/shared/datetime-pic
 import { Separator } from "@nreljed/platform/Components/ui/separator";
 import { GalleryUploader } from "@nreljed/platform/Components/shared/gallery-uploader";
 import type { GalleryImage } from "@nreljed/platform/Components/shared/gallery-uploader";
+import { isGalleryImageDone, getGalleryImageUrl } from "@nreljed/platform/types/gallery";
+import type { UploadResult } from "@nreljed/platform/hooks/use-image-upload";
 
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
 
@@ -71,11 +73,23 @@ interface Attribute {
   id: number; name: string; terms: AttributeTerm[];
 }
 
+/**
+ * One attribute term on a variation, as `ProductVariation::syncAttributes()`
+ * stores it: the whole array is persisted as JSON, so the shape mirrors the
+ * request payload rather than the pivot table.
+ *
+ * A global (taxonomy) term carries `attribute_id` + `attribute_term_id`. A
+ * custom, product-level attribute has no global term to point at, so it carries
+ * `product_attribute_id` plus the term `name` and both global ids are null.
+ */
 interface VariationAttribute {
-  attribute_id: number; attribute_term_id: number; name: string;
+  attribute_id: number | null;
+  attribute_term_id: number | null;
+  product_attribute_id?: number;
+  name: string;
 }
 
-interface Variation {
+export interface Variation {
   id: number; product_id: number; sku: string | null; barcode: string | null;
   global_unique_id: string | null; mpn: string | null;
   price: string | null; compare_price: string | null; sale_price: string | null;
@@ -108,17 +122,14 @@ interface Props {
   productAttributes?: ProductAttributeItem[];
   isCreating?: boolean;
   attrList: ProductAttributeItem[];
-  usedGlobalIds: Set<number>;
   availableGlobalAttrs: Attribute[];
   addGlobalAttribute: (id: number) => void;
   addCustomAttribute: (name: string, values: string) => void;
   removeAttribute: (index: number) => void;
   toggleVisible: (index: number) => void;
   toggleVariation: (index: number) => void;
-  setAttrOptions: (index: number, value: string) => void;
   defaultAttributes: number[];
   setDefaultAttributes: (ids: number[]) => void;
-  globalAttrMap: Map<number, Attribute>;
   formType: string;
   showCustomInput: boolean;
   reorderAttributes?: (reordered: ProductAttributeItem[]) => void;
@@ -135,9 +146,9 @@ interface RowDirty {
 
 export function VariationsManager({
   productId, attributes, initialVariations, productAttributes = [], isCreating = false,
-  attrList, usedGlobalIds, availableGlobalAttrs,
-  addGlobalAttribute, addCustomAttribute, removeAttribute, toggleVisible, toggleVariation, setAttrOptions,
-  defaultAttributes, setDefaultAttributes, globalAttrMap, formType,
+  attrList, availableGlobalAttrs,
+  addGlobalAttribute, addCustomAttribute, removeAttribute, toggleVisible, toggleVariation,
+  defaultAttributes, setDefaultAttributes, formType,
   showCustomInput, setShowCustomInput, customAttrName, setCustomAttrName, customAttrValues, setCustomAttrValues,
   reorderAttributes,
 }: Props) {
@@ -185,7 +196,7 @@ export function VariationsManager({
 
   const handleVarUpload = useCallback(
     async (file: File, onProgress: (pct: number) => void, signal: AbortSignal, _pendingId: string) => {
-      return new Promise<{ url?: string; path?: string }>((resolve, reject) => {
+      return new Promise<UploadResult>((resolve, reject) => {
         const formData = new FormData();
         formData.append("file", file);
         const xhr = new XMLHttpRequest();
@@ -194,7 +205,20 @@ export function VariationsManager({
         };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error("Invalid response")); }
+            /* The endpoint is trusted to answer with the contract below; without
+             * url/path the uploader cannot mark the image done, so treat a
+             * malformed body as the failure it is instead of resolving with
+             * undefined and failing later at render time. */
+            try {
+              const parsed = JSON.parse(xhr.responseText) as Partial<UploadResult>;
+              if (typeof parsed?.url !== "string" || typeof parsed?.path !== "string") {
+                reject(new Error("Upload response missing url/path"));
+                return;
+              }
+              resolve(parsed as UploadResult);
+            } catch {
+              reject(new Error("Invalid response"));
+            }
           } else { reject(new Error("Upload failed")); }
         };
         xhr.onerror = () => reject(new Error("Network error"));
@@ -210,13 +234,31 @@ export function VariationsManager({
   );
 
   const handleVarDelete = useCallback(async (image: GalleryImage) => {
+    /* Only a completed image was ever persisted, so an uploading/erroring one
+     * has no path to delete. The endpoint requires `path` and ignores `url`. */
+    if (!isGalleryImageDone(image)) return;
     const res = await fetch(route("dashboard.shop.products.delete-image"), {
       method: "DELETE",
       headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": getUploadCsrf() },
-      body: JSON.stringify({ path: image.path || "", url: image.url, entity_id: productId }),
+      body: JSON.stringify({ path: image.path, entity_id: productId }),
     });
     if (!res.ok) throw new Error("Delete failed");
   }, [productId]);
+
+  /**
+   * The gallery stores a `GalleryImage` union, but a variation's `image_url`
+   * column holds a plain URL. `getGalleryImageUrl` is the platform's own
+   * accessor and returns the finished URL (or the local preview while an upload
+   * is still in flight), which is exactly what that column wants.
+   */
+  const handleDrawerImagesChange = useCallback((images: GalleryImage[]) => {
+    const cover = images[0];
+    setDrawerForm((prev) => ({
+      ...prev,
+      images,
+      image_url: (cover ? getGalleryImageUrl(cover) : "") || null,
+    }));
+  }, []);
 
   const handleVmAttrDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -227,6 +269,8 @@ export function VariationsManager({
     if (oldIndex === -1 || newIndex === -1) return;
     const next = [...list];
     const [moved] = next.splice(oldIndex, 1);
+    /* splice at a validated index always yields the removed element. */
+    if (!moved) return;
     next.splice(newIndex, 0, moved);
     next.forEach((a, i) => (a.position = i));
     if (reorderAttributes) reorderAttributes(next);
@@ -303,36 +347,11 @@ export function VariationsManager({
       const data = await apiFetch(route("dashboard.shop.products.variations.index", productId), "GET");
       if (Array.isArray(data)) {
         setVariations(data);
-        setDirty({});
       }
     } catch {
       toast.add({ title: "Failed to fetch variations.", type: "error" });
     }
   }, [productId]);
-
-  const updateDirty = (vid: number, patch: Partial<Variation>) => {
-    setDirty((prev) => ({
-      ...prev,
-      [vid]: { ...(prev[vid] || {}), ...patch },
-    }));
-  };
-
-  const saveRow = async (v: Variation) => {
-    const patch = dirty[v.id];
-    if (!patch || Object.keys(patch).length === 0) return;
-    try {
-      await apiFetch(route("dashboard.shop.products.variations.update", [productId, v.id]), "PUT", patch);
-      toast.add({ title: "Variation saved.", type: "success" });
-      setDirty((prev) => {
-        const next = { ...prev };
-        delete next[v.id];
-        return next;
-      });
-      fetchVariations();
-    } catch {
-      toast.add({ title: "Failed to save variation.", type: "error" });
-    }
-  };
 
   const toggleActive = async (v: Variation) => {
     try {
@@ -405,7 +424,7 @@ export function VariationsManager({
           if (term.id != null) allTermIds.push(term.id);
         }
       } else {
-        allCustomOptions[src.customId!] = src.terms.map(t => t.name);
+        allCustomOptions[src.customId] = src.terms.map(t => t.name);
       }
     }
     setDialogTermIds(allTermIds);
@@ -428,18 +447,33 @@ export function VariationsManager({
       );
     } else {
       const allOptions = src.terms.map(t => t.name);
-      const current = dialogCustomOptions[src.customId!] || [];
+      const current = dialogCustomOptions[src.customId] || [];
       const allSelected = allOptions.every(o => current.includes(o));
       setDialogCustomOptions(prev => ({
         ...prev,
-        [src.customId!]: allSelected ? [] : allOptions,
+        [src.customId]: allSelected ? [] : allOptions,
       }));
     }
   };
 
   // Unified variation attribute sources: global attrs with variation=true + custom attrs with variation=true
-  const variationTermSources = useMemo(() => {
-    const sources: { sourceType: 'global' | 'custom'; globalId?: number; customId?: number; name: string; terms: { id?: number; name: string }[] }[] = [];
+  /**
+   * Where a variation's attribute terms come from, as a discriminated union so
+   * `globalId` is present exactly on the global branch and `customId` exactly on
+   * the custom one - the id is what the `product_attribute_id` field of a
+   * variation's attribute entry has to carry, so an absent id cannot be papered
+   * over with a non-null assertion.
+   */
+  type VariationTermSource = {
+    name: string;
+    terms: { id?: number; name: string }[];
+  } & (
+    | { sourceType: "global"; globalId: number }
+    | { sourceType: "custom"; customId: number }
+  );
+
+  const variationTermSources = useMemo<VariationTermSource[]>(() => {
+    const sources: VariationTermSource[] = [];
     const globalVarAttrs = productAttributes.filter(a => a.attribute_id && a.variation);
     for (const pa of globalVarAttrs) {
       const attr = attributes.find(a => a.id === pa.attribute_id);
@@ -450,7 +484,10 @@ export function VariationsManager({
     const customVarAttrs = productAttributes.filter(a => !a.attribute_id && a.variation);
     for (const pa of customVarAttrs) {
       const options = pa.options || [];
-      if (options.length > 0) {
+      /* A custom attribute only gets a real id once the product is saved; until
+       * then a variation cannot reference it by `product_attribute_id`, so it is
+       * not offered as a term source. */
+      if (options.length > 0 && pa.id != null) {
         sources.push({ sourceType: 'custom', customId: pa.id, name: pa.name, terms: options.map(o => ({ name: o })) });
       }
     }
@@ -464,7 +501,7 @@ export function VariationsManager({
         const selected = src.terms.filter(t => t.id != null && dialogTermIds.includes(t.id));
         if (selected.length > 0) groups.push({ terms: selected.map(t => t.name) });
       } else {
-        const selected = dialogCustomOptions[src.customId!] || [];
+        const selected = dialogCustomOptions[src.customId] || [];
         if (selected.length > 0) groups.push({ terms: selected });
       }
     }
@@ -614,8 +651,6 @@ export function VariationsManager({
     }
   };
 
-  const activeAttrs = attributes.filter((a) => a.terms.length > 0);
-
   const previewVariations = useMemo(() => {
     if (!isCreating) return [] as AttributeTermInfo[][];
     const varAttrs = productAttributes.filter((a) => a.variation);
@@ -648,13 +683,17 @@ export function VariationsManager({
 
   const isDefault = (v: Variation): boolean => {
     if (!v.attributes || v.attributes.length === 0 || defaultAttributes.length === 0) return false;
-    const vIds = v.attributes.map((a) => a.attribute_term_id).sort();
+    /* Only global terms are comparable against the product's default term ids;
+     * a custom attribute has no term id and can never match one. */
+    const vIds = v.attributes.map((a) => a.attribute_term_id).filter((id): id is number => id != null).sort();
     const defIds = [...defaultAttributes].sort();
     return vIds.length === defIds.length && vIds.every((id, i) => id === defIds[i]);
   };
 
   const setAsDefault = (v: Variation) => {
-    const ids = v.attributes?.map((a) => a.attribute_term_id) || [];
+    const ids = v.attributes
+      ?.map((a) => a.attribute_term_id)
+      .filter((id): id is number => id != null) || [];
     setDefaultAttributes(ids);
   };
 
@@ -769,7 +808,7 @@ export function VariationsManager({
                 All added
               </span>
             ) : (
-              <Select onValueChange={(v) => { const id = parseInt(v); if (id) addGlobalAttribute(id); }}>
+              <Select onValueChange={(v: string) => { const id = parseInt(v); if (id) addGlobalAttribute(id); }}>
                 <SelectTrigger className="h-7 w-auto text-xs gap-1">
                   <Plus className="h-3 w-3" /><SelectValue placeholder="Add existing" />
                 </SelectTrigger>
@@ -846,8 +885,8 @@ export function VariationsManager({
               <Button type="button" variant="outline" size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1 h-3 w-3" /> Add Manually</Button>
               {variationTermSources.length >= 1 && (
                 <Button type="button" variant="outline" size="sm" onClick={() => {
-                  setGenerateGlobalIds(variationTermSources.filter(s => s.sourceType === 'global').map(s => s.globalId!));
-                  setGenerateCustomIds(variationTermSources.filter(s => s.sourceType === 'custom').map(s => s.customId!));
+                  setGenerateGlobalIds(variationTermSources.filter(s => s.sourceType === 'global').map(s => s.globalId));
+                  setGenerateCustomIds(variationTermSources.filter(s => s.sourceType === 'custom').map(s => s.customId));
                   setTimeout(handleGenerate, 50);
                 }} disabled={generating}>
                   <Sparkles className="mr-1 h-3 w-3" /> Generate All
@@ -1195,12 +1234,13 @@ export function VariationsManager({
                   {/* Gallery */}
                   <div>
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Images</h4>
+                    {/* The released GalleryUploader has no thumbnail prop - the
+                        cover is the first image, which is what the description
+                        above promises and what handleDrawerImagesChange records
+                        into image_url. */}
                     <GalleryUploader label="" description="Add variation images (first is cover)"
-                      value={drawerForm.images || []} onChange={(images) => {
-                        const featured = images.find((img) => img.featured);
-                        setDrawerForm({ ...drawerForm, images, image_url: featured?.url || images[0]?.url || null });
-                      }} thumbnailUrl={drawerForm.image_url || undefined}
-                      onThumbnailChange={(url) => setDrawerForm({ ...drawerForm, image_url: url })} maxImages={10}
+                      value={drawerForm.images || []} onChange={handleDrawerImagesChange}
+                      maxImages={10}
                       onUpload={handleVarUpload} onDelete={handleVarDelete} />
                   </div>
 
@@ -1234,44 +1274,46 @@ export function VariationsManager({
             </DialogHeader>
             <div className="space-y-4 py-3 max-h-[60vh] overflow-y-auto">
               {variationTermSources.map((src) => {
-                const isGlobal = src.sourceType === 'global';
-                const termIds = isGlobal ? src.terms.map(t => t.id!).filter(id => id != null) : [];
-                const optionNames = !isGlobal ? src.terms.map(t => t.name) : [];
-                const currentTermIds = isGlobal ? dialogTermIds : [];
-                const currentOptions = !isGlobal ? (dialogCustomOptions[src.customId!] || []) : [];
-                const allSelected = isGlobal
+                /* Branch on the discriminant rather than an `isGlobal` alias:
+                 * a boolean stops TypeScript narrowing the union, so neither
+                 * `src.globalId` nor `src.customId` is available afterwards. */
+                const termIds = src.sourceType === 'global'
+                  ? src.terms.map(t => t.id).filter((id): id is number => id != null)
+                  : [];
+                const optionNames = src.sourceType === 'custom' ? src.terms.map(t => t.name) : [];
+                const sourceKey = src.sourceType === 'global' ? `g-${src.globalId}` : `c-${src.customId}`;
+                const currentTermIds = src.sourceType === 'global' ? dialogTermIds : [];
+                const currentOptions = src.sourceType === 'custom' ? (dialogCustomOptions[src.customId] || []) : [];
+                const allSelected = src.sourceType === 'global'
                   ? termIds.length > 0 && termIds.every(id => currentTermIds.includes(id))
                   : optionNames.length > 0 && optionNames.every(o => currentOptions.includes(o));
-                const anySelected = isGlobal
-                  ? termIds.some(id => currentTermIds.includes(id))
-                  : optionNames.some(o => currentOptions.includes(o));
                 return (
-                  <div key={isGlobal ? `g-${src.globalId}` : `c-${src.customId}`} className="rounded-lg border p-3 space-y-2">
+                  <div key={sourceKey} className="rounded-lg border p-3 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Checkbox id={`attr-${isGlobal ? src.globalId : src.customId}`}
+                      <Checkbox id={`attr-${sourceKey}`}
                         checked={allSelected}
                         onCheckedChange={() => toggleDialogAttribute(src)} />
-                      <label htmlFor={`attr-${isGlobal ? src.globalId : src.customId}`}
+                      <label htmlFor={`attr-${sourceKey}`}
                         className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {src.name}
                       </label>
-                      {!isGlobal && <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">Custom</span>}
+                      {src.sourceType === 'custom' && <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">Custom</span>}
                       <Badge variant="secondary" className="text-[10px]">{src.terms.length}</Badge>
                     </div>
                     <div className="ml-6 grid grid-cols-3 gap-1.5">
                       {src.terms.map((term) => {
-                        const termSelected = isGlobal
-                          ? currentTermIds.includes(term.id!)
+                        const termSelected = src.sourceType === 'global'
+                          ? term.id != null && currentTermIds.includes(term.id)
                           : currentOptions.includes(term.name);
                         return (
-                          <div key={isGlobal ? term.id : term.name} className="flex items-center gap-1.5">
-                            <Checkbox id={`t-${isGlobal ? term.id : term.name}`}
+                          <div key={src.sourceType === 'global' ? term.id : term.name} className="flex items-center gap-1.5">
+                            <Checkbox id={`t-${sourceKey}-${term.id ?? term.name}`}
                               checked={termSelected}
                               onCheckedChange={() => {
-                                if (isGlobal && term.id != null) {
+                                if (src.sourceType === 'global' && term.id != null) {
                                   toggleDialogTerm(term.id);
-                                } else {
-                                  const cid = src.customId!;
+                                } else if (src.sourceType === 'custom') {
+                                  const cid = src.customId;
                                   setDialogCustomOptions(prev => {
                                     const current = prev[cid] || [];
                                     const next = current.includes(term.name)
@@ -1281,7 +1323,7 @@ export function VariationsManager({
                                   });
                                 }
                               }} />
-                            <label htmlFor={`t-${isGlobal ? term.id : term.name}`}
+                            <label htmlFor={`t-${sourceKey}-${term.id ?? term.name}`}
                               className="text-xs leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                               {term.name}
                             </label>
@@ -1338,9 +1380,17 @@ export function VariationsManager({
                             <Badge key={term.id ?? term.name} variant={selected ? "default" : "outline"} className="cursor-pointer"
                               onClick={() => {
                                 const current = addForm.attributes || [];
-                                const attrEntry = src.sourceType === 'global'
-                                  ? { attribute_id: src.globalId, attribute_term_id: term.id, name: term.name }
-                                  : { attribute_id: null, attribute_term_id: null, product_attribute_id: src.customId, name: term.name };
+                                /* A global source only ever offers persisted terms,
+                                 * so a term with no id here is a custom option - which
+                                 * is carried by name instead of by term id. */
+                                let attrEntry: VariationAttribute;
+                                if (src.sourceType === 'global' && term.id != null) {
+                                  attrEntry = { attribute_id: src.globalId, attribute_term_id: term.id, name: term.name };
+                                } else if (src.sourceType === 'custom') {
+                                  attrEntry = { attribute_id: null, attribute_term_id: null, product_attribute_id: src.customId, name: term.name };
+                                } else {
+                                  return;
+                                }
                                 const updated = selected
                                   ? current.filter((a) => {
                                       if (src.sourceType === 'global') return a.attribute_term_id !== term.id;
@@ -1406,7 +1456,7 @@ export function VariationsManager({
                 <div className="grid gap-2">
                   <Label className="text-xs">Regular Price</Label>
                   <div className="flex gap-2">
-                    <Select value={bulkPriceMode} onValueChange={(v) => setBulkPriceMode(v as any)}>
+                    <Select value={bulkPriceMode} onValueChange={(v: "set" | "increase" | "decrease" | "percent") => setBulkPriceMode(v)}>
                       <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="set">Set to</SelectItem>
@@ -1442,7 +1492,7 @@ export function VariationsManager({
                 <div className="grid gap-2">
                   <Label className="text-xs">Stock Quantity</Label>
                   <div className="flex gap-2">
-                    <Select value={bulkStockMode} onValueChange={(v) => setBulkStockMode(v as any)}>
+                    <Select value={bulkStockMode} onValueChange={(v: "set" | "increase" | "decrease" | "percent") => setBulkStockMode(v)}>
                       <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="set">Set to</SelectItem>
@@ -1503,7 +1553,7 @@ export function VariationsManager({
                 <div className="grid gap-2">
                   <Label className="text-xs">Weight</Label>
                   <div className="flex gap-2">
-                    <Select value={bulkWeightMode} onValueChange={(v) => setBulkWeightMode(v as any)}>
+                    <Select value={bulkWeightMode} onValueChange={(v: "set" | "increase" | "decrease" | "percent") => setBulkWeightMode(v)}>
                       <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="set">Set to</SelectItem>
@@ -1520,7 +1570,7 @@ export function VariationsManager({
                   <div className="grid gap-1.5">
                     <Label className="text-xs">Length</Label>
                     <div className="flex gap-1">
-                      <Select value={bulkLengthMode} onValueChange={(v) => setBulkLengthMode(v as any)} className="w-20">
+                      <Select value={bulkLengthMode} onValueChange={(v: "set" | "increase" | "decrease") => setBulkLengthMode(v)}>
                         <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="set">Set</SelectItem>

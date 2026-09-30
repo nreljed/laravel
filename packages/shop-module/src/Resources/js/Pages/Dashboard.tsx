@@ -1,8 +1,8 @@
 import { usePage, Link } from "@inertiajs/react"
 import { Head } from "@inertiajs/react"
+import type { PageProps } from "@inertiajs/core"
 import {
-  Package, ShoppingCart, DollarSign, TrendingUp, BarChart3, Users, AlertTriangle,
-  Plus, List, RefreshCw, FileText
+  Package, ShoppingCart, Users, AlertTriangle, Plus
 } from "lucide-react"
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card"
@@ -22,7 +22,7 @@ interface Analytics {
 }
 
 export default function ShopDashboard() {
-  const { analytics, lowStockCount } = usePage<{ analytics: Analytics; lowStockCount: number }>().props
+  const { analytics, lowStockCount } = usePage<PageProps & { analytics: Analytics; lowStockCount: number }>().props
   const { formatPrice } = useFormatting()
 
   return (

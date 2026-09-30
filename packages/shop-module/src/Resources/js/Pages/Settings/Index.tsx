@@ -1,4 +1,5 @@
 import { Head, useForm, usePage } from "@inertiajs/react";
+import type { PageProps, FormDataKeys, FormDataValues } from "@inertiajs/core";
 import type { ChangeEvent, FormEvent } from "react";
 import { Store, Globe2, Coins, Percent, Boxes, ShoppingCart, Ruler, Sparkles, Settings2 } from "lucide-react";
 import AdminLayout from "@nreljed/platform/Layouts/AdminLayout";
@@ -95,7 +96,7 @@ const POSITION_OPTIONS = [
 ];
 
 export default function ShopSettingsPage() {
-    const { settings: initial, countries, currencies } = usePage<SettingsPage>().props;
+    const { settings: initial, countries, currencies } = usePage<PageProps & SettingsPage>().props;
 
     const { data, setData, put, processing, errors } = useForm<SettingsForm>({
         store_name: String(initial.store_name ?? ""),
@@ -149,7 +150,13 @@ export default function ShopSettingsPage() {
         });
     };
 
-    const set = <K extends keyof SettingsForm>(key: K, value: SettingsForm[K]) => setData(key, value);
+    /* Inertia types setData against the form-data shape of a field
+     * (`FormDataValues`), which for nested/array fields is not the raw field
+     * type. Callers here always hold plain top-level keys and raw values, so
+     * the widening is confined to this one adapter instead of leaking a cast
+     * into every call site. */
+    const set = <K extends keyof SettingsForm>(key: K, value: SettingsForm[K]) =>
+        setData(key as FormDataKeys<SettingsForm>, value as FormDataValues<SettingsForm, FormDataKeys<SettingsForm>>);
 
     const toggleSellingLocation = (code: string) => {
         const current = data.selling_locations as string[];

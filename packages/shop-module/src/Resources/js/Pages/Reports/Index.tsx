@@ -1,4 +1,4 @@
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import { DollarSign, ShoppingCart, TrendingUp, Package, BarChart3 } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";

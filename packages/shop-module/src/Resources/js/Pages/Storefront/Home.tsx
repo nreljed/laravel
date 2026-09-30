@@ -1,4 +1,5 @@
 import { Link, router, usePage, Head } from "@inertiajs/react";
+import type { PageProps } from "@inertiajs/core";
 import { ArrowRight, Package, Sparkles } from "lucide-react";
 import StoreLayout from "../../Layouts/StoreLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
@@ -27,7 +28,7 @@ interface HomePage {
 }
 
 export default function StoreHome() {
-    const { props } = usePage<HomePage>();
+    const { props } = usePage<PageProps & HomePage>();
     const { homepage, wishlistIds, seo } = props;
 
     if (!homepage) {

@@ -1,5 +1,5 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { Search, X, Eye, ShoppingCart, Users, Download } from "lucide-react";
+import { Eye, ShoppingCart, Users, Download } from "lucide-react";
 import { useState } from "react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";

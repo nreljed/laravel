@@ -1,7 +1,7 @@
 import { Head, Link } from "@inertiajs/react";
-import { Package, ArrowRight, Clock, CreditCard } from "lucide-react";
+import { Package, ArrowRight, Clock } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
+import { Card, CardContent } from "@nreljed/platform/Components/ui/card";
 import { Badge } from "@nreljed/platform/Components/ui/badge";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@nreljed/platform/Components/ui/empty";
 import { Button } from "@nreljed/platform/Components/ui/button";

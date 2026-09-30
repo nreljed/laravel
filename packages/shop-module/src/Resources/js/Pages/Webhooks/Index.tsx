@@ -1,4 +1,5 @@
 import { Link, router, usePage, useForm } from '@inertiajs/react'
+import type { PageProps } from '@inertiajs/core'
 import { useState } from 'react'
 import { Pencil, Plus, TestTube, Trash2, Webhook } from 'lucide-react'
 import { type Webhook as WebhookType, type WebhooksPage } from './types'
@@ -35,7 +36,7 @@ const EVENT_OPTIONS = [
 ]
 
 export default function Index() {
-    const { webhooks } = usePage<WebhooksPage>().props
+    const { webhooks } = usePage<PageProps & WebhooksPage>().props
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editing, setEditing] = useState<WebhookType | null>(null)
 
@@ -216,7 +217,7 @@ export default function Index() {
                             )}
                             {Array.from({ length: webhooks.last_page }, (_, i) => i + 1).map((page) => (
                                 <PaginationItem key={page}>
-                                    <PaginationLink href={webhooks.links?.[page]?.url} isActive={page === webhooks.current_page} />
+                                    <PaginationLink href={webhooks.links?.[page]?.url ?? undefined} isActive={page === webhooks.current_page} />
                                 </PaginationItem>
                             ))}
                             {webhooks.next_page_url && (

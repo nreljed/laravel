@@ -1,6 +1,7 @@
-﻿import { Link, router, usePage, Head, useForm } from '@inertiajs/react'
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { ArrowLeft, Minus, Plus, ShoppingBag, ShoppingCart, Star, Heart, ExternalLink, FileDown, Package, Expand, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link, router, usePage, Head, useForm } from '@inertiajs/react'
+import type { PageProps } from '@inertiajs/core'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { ArrowLeft, Minus, Plus, ShoppingBag, ShoppingCart, ExternalLink, FileDown, Package, Expand, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import StoreLayout from '../../Layouts/StoreLayout'
 import { Button } from '@nreljed/platform/Components/ui/button'
 import { Card, CardContent } from '@nreljed/platform/Components/ui/card'
@@ -28,7 +29,7 @@ interface AttributeTerm { id: number; name: string; slug: string; swatch_value?:
 interface AttributeDef { id: number; name: string; slug: string; display_type?: string; terms: AttributeTerm[] }
 interface VariationAttr { attribute_id: number; attribute_term_id: number; name: string }
 
-interface Variation {
+export interface Variation {
     id: number; sku: string | null; price: string | null;
     compare_price: string | null; sale_price: string | null; active_price: string | number | null;
     stock_quantity: number; manage_stock: string; backorders: string; stock_status: string | null;
@@ -88,6 +89,9 @@ interface ShowPage {
     userReview?: UserReview | null;
 }
 
+/** Shown when a product has no images, so the gallery always has a current item. */
+const PLACEHOLDER_IMAGE = { url: '', isFeatured: false }
+
 function ProductGallery({ images, thumbnailUrl, productName, variationImageUrl }: { images: GalleryImage[]; thumbnailUrl: string | null; productName: string; variationImageUrl?: string | null }) {
     const all = useMemo(() => {
         const imgs: { url: string; isFeatured: boolean }[] = [];
@@ -96,13 +100,13 @@ function ProductGallery({ images, thumbnailUrl, productName, variationImageUrl }
         images.forEach((img) => {
             if (img.url !== variationImageUrl && img.url !== thumbnailUrl) imgs.push({ url: img.url, isFeatured: !!img.featured });
         });
-        return imgs.length > 0 ? imgs : [{ url: '', isFeatured: false }];
+        return imgs.length > 0 ? imgs : [PLACEHOLDER_IMAGE];
     }, [images, thumbnailUrl, variationImageUrl]);
     const [activeIndex, setActiveIndex] = useState(0);
 
     useEffect(() => { setActiveIndex(0); }, [variationImageUrl]);
     const [lightboxOpen, setLightboxOpen] = useState(false);
-    const active = all[activeIndex];
+    const active = all[activeIndex] ?? PLACEHOLDER_IMAGE;
     const hasNav = all.length > 1;
 
     function prev() { setActiveIndex((activeIndex - 1 + all.length) % all.length); }
@@ -231,10 +235,14 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
         }
         if (selectedVariation) {
             const active = selectedVariation.active_price ?? selectedVariation.price ?? 0;
-            const hasVarSale = selectedVariation.sale_price && selectedVariation.price && parseFloat(selectedVariation.sale_price) < parseFloat(selectedVariation.price);
+            const varPrice = selectedVariation.price ? parseFloat(selectedVariation.price) : null;
+            const varSale = selectedVariation.sale_price ? parseFloat(selectedVariation.sale_price) : null;
+            /* A strike-through price is only honest when the sale price is really
+             * lower than the price it replaces. */
+            const hasVarSale = varPrice !== null && varSale !== null && varSale < varPrice;
             return {
                 current: parseFloat(String(active)),
-                original: hasVarSale ? parseFloat(selectedVariation.price) : null,
+                original: hasVarSale ? varPrice : null,
                 compareAt: !hasVarSale && selectedVariation.compare_price ? parseFloat(selectedVariation.compare_price) : null,
                 rangeMax: null,
             };
@@ -272,7 +280,7 @@ function ProductInfo({ product, selectedVariation, priceRange, isVariable, isExt
 }
 
 export default function StorefrontShow() {
-    const { props } = usePage<ShowPage & { wishlistIds: number[] }>()
+    const { props } = usePage<PageProps & ShowPage & { wishlistIds: number[] }>()
     const { product, related, variations, attributes, priceRange, defaultVariation, visibleAttributes, specifications, wishlistIds, userReview } = props
     const { money, selectedCode } = useCurrency()
     const { isLoggedIn } = useAuth()
@@ -288,7 +296,10 @@ export default function StorefrontShow() {
     // `dashboard.shop.reviews.store` sits behind `permission:shop.manage`, so
     // a shopper following it was met with a 403.
     const [showReviewForm, setShowReviewForm] = useState(false)
-    const reviewForm = useForm({ rating: 0, title: '', content: '' })
+    /* The controller rejects a duplicate review with a top-level `review` error
+ * (see ReviewsController), so that key is part of what this form can receive
+ * back even though it is not one of the fields the shopper typed. */
+const reviewForm = useForm({ rating: 0, title: '', content: '', review: '' })
 
     const submitReview = (e: React.FormEvent) => {
         e.preventDefault()
@@ -438,15 +449,16 @@ export default function StorefrontShow() {
             sku: product.sku || undefined,
             mpn: product.sku || undefined,
         }
-        if (product.global_unique_id) {
-            schema.gtin = product.global_unique_id
-        }
+        // `gtin` and `priceValidUntil` are intentionally not emitted.
+        // `global_unique_id` and `sale_to` are withheld from this payload by
+        // Http\Resources\StorefrontProductResource, which documents that as a
+        // deliberate choice rather than an oversight - so reading them here only
+        // ever produced `undefined` and a silently missing schema.org field.
         schema.offers = {
             '@type': 'Offer',
             url: canonicalUrl || (typeof window !== 'undefined' ? window.location.href : ''),
             priceCurrency: 'EUR',
             price: activePrice.toFixed(2),
-            priceValidUntil: product.sale_to || undefined,
             itemCondition: 'https://schema.org/NewCondition',
             availability: inStockStatus,
         }
@@ -598,7 +610,7 @@ export default function StorefrontShow() {
                                         <span className="h-2 w-2 rounded-full bg-green-500" />
                                         <span className="text-sm text-green-600">
                                             {displayStock !== null ? `${displayStock} in stock` : 'In stock'}
-                                            {product.incoming_stock > 0 && ` (${product.incoming_stock} incoming)`}
+                                            {(product.incoming_stock ?? 0) > 0 && ` (${product.incoming_stock} incoming)`}
                                         </span>
                                     </div>
                                 ) : (

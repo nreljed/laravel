@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import {
   CheckCircle2, Clock, Download, Pencil, Printer, Undo2,
-  Plus, MessageSquare, Trash2, X, FileText, Send,
+  MessageSquare, Trash2, FileText, Send,
   Eye, EyeOff,
 } from "lucide-react";
 import {
@@ -97,7 +97,6 @@ interface Order {
   currency: string;
   payment_method: string | null;
   payment_status: string;
-  notes: string | null;
   customer_name: string | null;
   customer_email: string | null;
   customer_phone: string | null;
@@ -113,12 +112,14 @@ interface Order {
   items: OrderItem[];
   actions: OrderAction[];
   refunds: OrderRefund[];
+  /* The `notes` relation shadows the same-named column on the orders table:
+   * `OrdersController::show` loads `notes.user`, so the serialized order
+   * carries OrderNote[] and the column is not reachable from this page. */
   notes: OrderNote[];
 }
 
 interface OrdersShowProps {
   order: Order;
-  statuses: string[];
   allowedTransitions: string[];
 }
 
@@ -156,10 +157,12 @@ interface RefundItemEntry {
   max_amount: number;
 }
 
-export default function OrdersShow({ order, statuses, allowedTransitions }: OrdersShowProps) {
+export default function OrdersShow({ order, allowedTransitions }: OrdersShowProps) {
   const form = useForm({
     status: order.status,
-    notes: order.notes || "",
+    /* The order's own notes are the OrderNote list, not a single editable
+     * string, so this starts empty and holds only what the operator types. */
+    notes: "",
   });
 
   const [refundOpen, setRefundOpen] = useState(false);
@@ -223,10 +226,10 @@ export default function OrdersShow({ order, statuses, allowedTransitions }: Orde
   };
 
   const handleConvertFromDraft = () => {
-    router.post(route("dashboard.shop.orders.convert-from-draft", order.id), {
+    router.post(route("dashboard.shop.orders.convert-from-draft", order.id), {}, {
       preserveScroll: true,
-      onSuccess: () => toast.add({ title: "Draft converted to pending.", type: "success" }),
-      onError: () => toast.add({ title: "Failed to convert draft.", type: "error" }),
+      onSuccess: () => { toast.add({ title: "Draft converted to pending.", type: "success" }); },
+      onError: () => { toast.add({ title: "Failed to convert draft.", type: "error" }); },
     });
   };
 
@@ -660,10 +663,10 @@ export default function OrdersShow({ order, statuses, allowedTransitions }: Orde
                     size="sm"
                     className="w-full mt-2"
                     onClick={() => {
-                      router.post(route("dashboard.shop.orders.mark-paid", order.id), {
+                      router.post(route("dashboard.shop.orders.mark-paid", order.id), {}, {
                         preserveScroll: true,
-                        onSuccess: () => toast.add({ title: "Payment marked as received.", type: "success" }),
-                        onError: () => toast.add({ title: "Failed to mark payment.", type: "error" }),
+                        onSuccess: () => { toast.add({ title: "Payment marked as received.", type: "success" }); },
+                        onError: () => { toast.add({ title: "Failed to mark payment.", type: "error" }); },
                       });
                     }}
                   >

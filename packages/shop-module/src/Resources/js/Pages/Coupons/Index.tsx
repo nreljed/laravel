@@ -1,7 +1,21 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Tag, Copy, Check, Truck, Sparkles, Gift, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, Copy, Check, Truck, Sparkles, Gift, Layers, type LucideIcon } from "lucide-react";
+
+/**
+ * A bare icon next to a code needs an accessible name. `title` is not part of
+ * `LucideProps` - it reaches the DOM as an unknown attribute, which is why the
+ * type checker rejected it - so the label is carried on the child `<title>`
+ * element and hidden from the layout with `aria-hidden`.
+ */
+function TypeIcon({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <Icon className="h-3 w-3 text-muted-foreground" role="img" aria-label={label}>
+      <title>{label}</title>
+    </Icon>
+  );
+}
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
 import { Badge } from "@nreljed/platform/Components/ui/badge";
@@ -97,11 +111,11 @@ export default function CouponsIndex({ coupons }: Props) {
               cell: (c: Coupon) => (
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono font-medium text-xs">{c.code}</span>
-                  {c.is_automatic && <Sparkles className="h-3 w-3 text-amber-500" title="Auto-discount" />}
-                  {c.type === "free_shipping" && <Truck className="h-3 w-3 text-muted-foreground" title="Free shipping" />}
-                  {c.type === "buy_x_get_y" && <Gift className="h-3 w-3 text-muted-foreground" title="Buy X get Y free" />}
-                  {(c.type === "fixed_product" || c.type === "percentage_product") && <Tag className="h-3 w-3 text-muted-foreground" title="Product-specific discount" />}
-                  {c.type === "tiered" && <Layers className="h-3 w-3 text-muted-foreground" title="Quantity tiers" />}
+                  {c.is_automatic && <Sparkles className="h-3 w-3 text-amber-500" role="img" aria-label="Auto-discount" />}
+                  {c.type === "free_shipping" && <TypeIcon icon={Truck} label="Free shipping" />}
+                  {c.type === "buy_x_get_y" && <TypeIcon icon={Gift} label="Buy X get Y free" />}
+                  {(c.type === "fixed_product" || c.type === "percentage_product") && <TypeIcon icon={Tag} label="Product-specific discount" />}
+                  {c.type === "tiered" && <TypeIcon icon={Layers} label="Quantity tiers" />}
                 </div>
               ),
             },

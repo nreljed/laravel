@@ -1,9 +1,9 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { ArrowLeft, Package, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Plus, Minus } from "lucide-react";
 import { useState } from "react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
+import { Card, CardContent } from "@nreljed/platform/Components/ui/card";
 import { Badge } from "@nreljed/platform/Components/ui/badge";
 import { Input } from "@nreljed/platform/Components/ui/input";
 import { Label } from "@nreljed/platform/Components/ui/label";

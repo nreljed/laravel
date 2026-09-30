@@ -1,4 +1,4 @@
-﻿import { Head, useForm, usePage } from "@inertiajs/react";
+import { Head, useForm, usePage } from "@inertiajs/react";
 import { FormEventHandler, useState } from "react";
 import { ShoppingBag, CreditCard, Truck, Loader2, Check, ChevronLeft, ChevronRight, MapPin, User, Eye } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
@@ -190,7 +190,6 @@ export default function Checkout({ cart, shippingMethods, userBillingAddress, us
   const [step, setStep] = useState(0);
   const [stripeDialogOpen, setStripeDialogOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState("");
-  const [paymentIntentId, setPaymentIntentId] = useState("");
 
   const defaultCountry = shopSettings.checkout_default_country || shopSettings.base_country || "";
   const requiresCompany = shopSettings.require_company_field;
@@ -258,11 +257,12 @@ export default function Checkout({ cart, shippingMethods, userBillingAddress, us
   const orderTotal = cart.total + shippingPrice + taxTotal;
 
   const handleStripeSuccess = (id: string) => {
-    setPaymentIntentId(id);
     setStripeDialogOpen(false);
+    /* `setData` above is what actually reaches the server; the `data` key that
+     * used to sit in this options object was not a submit option and was sent
+     * to the endpoint as a literal request field instead. */
     setData("stripe_payment_intent_id", id);
     post(route("store.checkout.store"), {
-      data: { ...data, stripe_payment_intent_id: id },
       preserveScroll: false,
       onError: () => {},
     });
@@ -297,7 +297,7 @@ export default function Checkout({ cart, shippingMethods, userBillingAddress, us
     <div className="mb-8">
       <div className="flex items-center justify-center gap-0">
         {STEPS.map((s, i) => {
-          const Icon = s.icon;
+          const StepIcon = s.icon;
           const active = i === step;
           const done = i < step;
           return (
@@ -316,7 +316,7 @@ export default function Checkout({ cart, shippingMethods, userBillingAddress, us
                   done ? "bg-primary text-primary-foreground" :
                   "bg-muted text-muted-foreground"
                 }`}>
-                  {done ? <Check className="h-3 w-3" /> : i + 1}
+                  {done ? <Check className="h-3 w-3" /> : <StepIcon className="h-3 w-3" />}
                 </span>
                 <span className="hidden sm:inline">{s.label}</span>
               </button>

@@ -1,7 +1,7 @@
 import { Head, useForm, router } from "@inertiajs/react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import { useState } from "react";
-import { ArrowLeft, Star, MessageSquare, BadgeCheck, Clock, Check, X } from "lucide-react";
+import { ArrowLeft, MessageSquare, BadgeCheck, Check } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
 import { Input } from "@nreljed/platform/Components/ui/input";
@@ -170,7 +170,7 @@ export default function ProductShow({ product, userReview }: Props) {
                         <div className="flex items-center gap-2">
                           <StarRating value={review.rating} readonly size="sm" />
                           {review.order_id && review.is_approved && (
-                            <BadgeCheck className="h-3.5 w-3.5 text-blue-500" title="Verified Purchase" />
+                            <BadgeCheck className="h-3.5 w-3.5 text-blue-500" role="img" aria-label="Verified Purchase" />
                           )}
                           {!review.is_approved && (
                             <Badge variant="outline" className="text-xs">Pending</Badge>

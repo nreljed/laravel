@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@nreljed/platform/Components/ui/empty";
 import { ShoppingBag } from "lucide-react";
 

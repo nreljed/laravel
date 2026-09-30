@@ -7,7 +7,7 @@ import { Button } from "@nreljed/platform/Components/ui/button";
 import { Input } from "@nreljed/platform/Components/ui/input";
 import { Textarea } from "@nreljed/platform/Components/ui/textarea";
 import { Label } from "@nreljed/platform/Components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
+import { Card, CardContent } from "@nreljed/platform/Components/ui/card";
 import {
   Table,
   TableBody,
