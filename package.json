@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
+    "typecheck:packages": "tsc -p tsconfig.packages.json",
     "lint": "eslint resources/js/",
     "lint:fix": "eslint resources/js/ --fix",
     "format": "prettier --write \"resources/js/**/*.{ts,tsx,json,css}\"",
@@ -21,7 +22,7 @@
     "test:e2e:install": "playwright install chromium",
     "check:core-deps": "node scripts/check-core-deps.js",
     "check:platform-consistency": "node scripts/check-platform-consistency.js",
-    "check:ci": "npm run check:platform-consistency && npm run lint && npm run typecheck && npm run format:check && npm run test && php vendor/bin/pint && php vendor/bin/phpstan analyse --no-progress --memory-limit=1G && php vendor/bin/rector process --dry-run && php artisan test --parallel --compact"
+    "check:ci": "npm run check:platform-consistency && npm run lint && npm run typecheck && npm run typecheck:packages && npm run format:check && npm run test && php vendor/bin/pint && php vendor/bin/phpstan analyse --no-progress --memory-limit=1G && php vendor/bin/rector process --dry-run && php artisan test --parallel --compact"
   },
   "lint-staged": {
     "resources/js/**/*.{ts,tsx}": [

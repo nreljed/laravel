@@ -1,0 +1,47 @@
+{
+    // Typecheck gate for the workspace feature packages' own React sources.
+    //
+    // Why this exists separately from apps/laravel.shop/tsconfig.json: that file
+    // includes only `**/*.d.ts` from packages/blog and packages/shop-module, so
+    // the packages' ~60 .tsx page and component files were never compiled by
+    // anything. shop-module has no package.json script and no tsconfig of its
+    // own, and its CI is PHP-only, so a page could reference a prop a
+    // component never declared, or call an Inertia v2 option Inertia v3 removed,
+    // and ship green. This file closes that hole.
+    //
+    // The packages stay excluded from the root lint-staged, ESLint and Pint
+    // passes - those would reformat sources their own repos own. This is only
+    // a compiler, which reports rather than rewrites, and the fixes are made in
+    // the source repos and released.
+    "compilerOptions": {
+        "allowJs": true,
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "jsx": "react-jsx",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noUncheckedIndexedAccess": true,
+        "isolatedModules": true,
+        "target": "ESNext",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": false,
+        "skipLibCheck": true,
+        "noEmit": true,
+        "baseUrl": ".",
+        "ignoreDeprecations": "6.0",
+        "paths": {
+            "@nreljed/platform/*": ["packages/platform/resources/js/*"],
+            "@nreljed/blog/*": ["packages/blog/src/Resources/js/*"],
+            "@nreljed/shop-module/*": ["packages/shop-module/src/Resources/js/*"]
+        }
+    },
+    "include": [
+        "packages/shop-module/src/Resources/js/**/*.ts",
+        "packages/shop-module/src/Resources/js/**/*.tsx",
+        "packages/blog/src/Resources/js/**/*.ts",
+        "packages/blog/src/Resources/js/**/*.tsx",
+        "packages/platform/resources/js/types/**/*.d.ts",
+        "resources/js/test-setup.ts"
+    ]
+}
