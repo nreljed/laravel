@@ -48,7 +48,9 @@ export default function ResourceIndexPage({ resource: serialized, data }: Resour
           <ResourceIndex
             resource={resource}
             data={data}
-            createRoute={routes?.create}
+            /* `toResource` already bound edit/destroy to the {record} param;
+               `create` is still a route *name*, so Ziggy resolves it here. */
+            createRoute={routes?.create ? route(routes.create) : undefined}
             editRoute={routes?.edit}
             destroyRoute={routes?.destroy}
           />

@@ -246,18 +246,19 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         // customer branch and saw no management navigation at all.
         if ($user->can('shop.manage')) {
             try {
+                // Only links a descriptor cannot express belong here. Anything
+                // backed by a kernel descriptor (Orders, Attributes, Customers,
+                // Reviews, Shipping Zones, Webhooks, plus Tax Rates, Currencies,
+                // Shipping Methods, Categories, Tags, Brands and Coupons) is
+                // appended by the platform registry into this same group, with
+                // the resource's own read permission instead of module-wide
+                // `shop.manage`. Writing them here as well duplicated every one.
                 $items = [
                     ['title' => 'Dashboard', 'url' => route('dashboard.shop.dashboard', [], false)],
                     ['title' => 'All Products', 'url' => route('dashboard.shop.products.index', [], false)],
-                    ['title' => 'Orders', 'url' => route('dashboard.shop.orders.index', [], false)],
                     ['title' => 'Create Order', 'url' => route('dashboard.shop.orders.create', [], false)],
-                    ['title' => 'Attributes', 'url' => route('dashboard.shop.attributes.index', [], false)],
                     ['title' => 'Product Fields', 'url' => route('dashboard.shop.product-fields.index', [], false)],
-                    ['title' => 'Customers', 'url' => route('dashboard.shop.customers.index', [], false)],
                     ['title' => 'Reports', 'url' => route('dashboard.shop.reports.index', [], false)],
-                    ['title' => 'Reviews', 'url' => route('dashboard.shop.reviews.index', [], false)],
-                    ['title' => 'Shipping Zones', 'url' => route('dashboard.shop.shipping-zones.index', [], false)],
-                    ['title' => 'Webhooks', 'url' => route('dashboard.shop.webhooks.index', [], false)],
                 ];
 
                 // shop_manager can manage the shop but not create products,

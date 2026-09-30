@@ -130,8 +130,21 @@ class FeatureRegistry
         return $this->remember('nav_items', function () {
             $items = [];
 
+            // Descriptors are grouped by owning feature slug up front so each
+            // provider can adopt the resources it declared.
+            $descriptorsByOwner = [];
+
+            foreach ($this->getAllAdminResources() as $descriptor) {
+                $owner = $this->getAdminResourceOwners()[$descriptor->getKey()] ?? null;
+
+                if ($owner !== null) {
+                    $descriptorsByOwner[$owner][] = $descriptor;
+                }
+            }
+
             foreach ($this->enabledProviders() as $provider) {
                 $groupLabel = $provider->getNavGroupLabel();
+                $providerItems = [];
 
                 foreach ($provider->getNavItems() as $item) {
                     // Normalize group labels so the sidebar renders consistent
@@ -140,37 +153,166 @@ class FeatureRegistry
                         $item['groupLabel'] = $groupLabel;
                     }
 
-                    $items[] = $item;
+                    $providerItems[] = $item;
                 }
-            }
 
-            // Emit one sidebar item per admin resource that declares an index
-            // route. The generic kernel pages (dashboard/admin/resources/*)
-            // render the payload; the provider's own route + controller stay
-            // authoritative. Only resources with a resolvable index route get
-            // an item — a descriptor awaiting its routes stays invisible.
-            $owners = $this->getAdminResourceOwners();
+                // Build one sidebar item per admin resource that declares an index
+                // route. The generic kernel pages (dashboard/admin/resources/*)
+                // render the payload; the provider's own route + controller stay
+                // authoritative. Only resources with a resolvable index route get
+                // an item — a descriptor awaiting its routes stays invisible.
+                $resourceItems = [];
 
-            foreach ($this->getAllAdminResources() as $descriptor) {
-                $indexRoute = $descriptor->getRoutes()['index'] ?? null;
+                foreach ($descriptorsByOwner[$provider->slug()] ?? [] as $descriptor) {
+                    $indexRoute = $descriptor->getRoutes()['index'] ?? null;
 
-                if (! is_string($indexRoute) || $indexRoute === '' || ! Route::has($indexRoute)) {
+                    if (! is_string($indexRoute) || $indexRoute === '' || ! Route::has($indexRoute)) {
+                        continue;
+                    }
+
+                    $permissions = $descriptor->getPermissions();
+
+                    $resourceItems[] = array_filter([
+                        'title' => $descriptor->getLabel(),
+                        'url' => route($indexRoute),
+                        'feature_slug' => $provider->slug(),
+                        'permission' => $permissions['view'] ?? null,
+                    ], fn ($value) => $value !== null);
+                }
+
+                if ($resourceItems === []) {
+                    $items = [...$items, ...$providerItems];
+
                     continue;
                 }
 
-                $permissions = $descriptor->getPermissions();
+                // Adopt the resources into the provider's own collapsible group so
+                // the sidebar shows one heading per module. A provider that returns
+                // exactly one collapsible entry owns it; anything else falls back to
+                // flat emission, which keeps the contract safe for providers without
+                // a group to nest into.
+                $groupIndex = $this->collapsibleGroupIndex($providerItems);
 
-                $items[] = array_filter([
-                    'title' => $descriptor->getLabel(),
-                    'url' => route($indexRoute),
-                    'feature_slug' => $owners[$descriptor->getKey()] ?? null,
-                    'permission' => $permissions['view'] ?? null,
-                    'groupLabel' => 'Resources',
-                ], fn ($value) => $value !== null);
+                if ($groupIndex === null) {
+                    $items = [...$items, ...$providerItems];
+
+                    // No group to nest into, so the resources need a heading of their own.
+                    foreach ($resourceItems as $resourceItem) {
+                        $items[] = ['groupLabel' => 'Resources', ...$resourceItem];
+                    }
+
+                    continue;
+                }
+
+                foreach ($providerItems as $index => $item) {
+                    $items[] = $index === $groupIndex
+                        ? $this->withResourceSubItems($item, $resourceItems)
+                        : $item;
+                }
             }
 
             return $items;
         });
+    }
+
+    /**
+     * Resolve the index of the single collapsible group a provider returned.
+     *
+     * A collapsible entry is one that carries its own `items` array. Only an
+     * unambiguous single group is adopted; zero or several mean the provider has
+     * no obvious place to nest resources into.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    protected function collapsibleGroupIndex(array $items): ?int
+    {
+        $indexes = [];
+
+        foreach ($items as $index => $item) {
+            if ($this->isCollapsible($item)) {
+                $indexes[] = $index;
+            }
+        }
+
+        return count($indexes) === 1 ? $indexes[0] : null;
+    }
+
+    /**
+     * Determine whether a nav item carries its own sub-item list.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    protected function isCollapsible(array $item): bool
+    {
+        return isset($item['items']) && is_array($item['items']);
+    }
+
+    /**
+     * Reduce a URL to a comparable path so relative and absolute forms of the
+     * same link are recognised as duplicates.
+     *
+     * Modules write nav links with `route($name, [], false)` while the registry
+     * generates absolute ones; comparing the raw strings would let the same
+     * destination through twice.
+     *
+     * @param  mixed  $url
+     */
+    protected function normalizeUrl($url): string
+    {
+        if (! is_string($url) || $url === '') {
+            return '';
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return is_string($path) ? $path : $url;
+    }
+
+    /**
+     * Append descriptor sub-items to a collapsible nav group, skipping any
+     * descriptor whose URL a hand-written entry already covers.
+     *
+     * The hand-written entry is authoritative: modules declare curated links
+     * (quick actions, module landing pages) that descriptors cannot express, so
+     * an existing URL wins over the generated duplicate.
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<int, array<string, mixed>>  $resourceItems
+     * @return array<string, mixed>
+     */
+    protected function withResourceSubItems(array $item, array $resourceItems): array
+    {
+        $existingUrls = [];
+
+        foreach ($item['items'] as $subItem) {
+            if (is_array($subItem) && isset($subItem['url'])) {
+                $existingUrls[] = $this->normalizeUrl($subItem['url']);
+            }
+        }
+
+        $appended = [];
+
+        foreach ($resourceItems as $resourceItem) {
+            if (in_array($this->normalizeUrl($resourceItem['url']), $existingUrls, true)) {
+                continue;
+            }
+
+            $appended[] = $resourceItem;
+        }
+
+        if ($appended === []) {
+            return $item;
+        }
+
+        // Nested sub-items inherit the group's heading; carrying a stale
+        // `groupLabel` on a sub-item would override it when rendered.
+        foreach ($appended as $index => $resourceItem) {
+            unset($appended[$index]['groupLabel']);
+        }
+
+        $item['items'] = [...array_values($item['items']), ...$appended];
+
+        return $item;
     }
 
     public function getAllSharedData(): array
