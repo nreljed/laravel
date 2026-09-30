@@ -55,6 +55,12 @@ export interface BulkAction {
   confirmTitle?: string;
   confirmDescription?: string;
   confirmLabel?: string;
+  /**
+   * This action needs data from the user (which categories, which price) before
+   * it can be sent. The table does not own that form, so it hands the action and
+   * the selection to `onBulkInput` and lets the caller collect and submit.
+   */
+  needsInput?: boolean;
 }
 
 export interface DataTableProps<TData extends RowData> {
@@ -82,6 +88,11 @@ export interface DataTableProps<TData extends RowData> {
   pageSizeOptions?: number[];
   bulkActions?: BulkAction[];
   onBulkAction?: (_action: string, _ids: (number | string)[]) => void;
+  /**
+   * Called instead of `onBulkAction` when the chosen action declares
+   * `needsInput`. The caller owns the collection form and submits the result.
+   */
+  onBulkInput?: (_action: BulkAction, _ids: (number | string)[]) => void;
   emptyState?: React.ReactNode;
   loading?: boolean;
   toolbarRight?: React.ReactNode;
@@ -105,6 +116,7 @@ export function DataTable<TData extends RowData>({
   pageSizeOptions = [10, 20, 50, 100],
   bulkActions,
   onBulkAction,
+  onBulkInput,
   emptyState,
   loading = false,
   toolbarRight,
@@ -216,7 +228,7 @@ export function DataTable<TData extends RowData>({
         loading={loading}
         toolbarRight={toolbarRight}
       />
-      {selectedRowsCount > 0 && onBulkAction && (
+      {selectedRowsCount > 0 && (onBulkAction || onBulkInput) && (
         <div className="flex items-center gap-2 px-2 py-1">
           <span className="text-sm text-muted-foreground">
             {selectedRowsCount} selected
@@ -235,10 +247,14 @@ export function DataTable<TData extends RowData>({
                       const ids = selectedRows
                         .map((r) => (r.original as Record<string, unknown>).id as number | string)
                         .filter((id): id is number | string => id != null);
-                      if (action.destructive) {
+                      if (action.needsInput) {
+                        /* The caller renders the input form; it decides whether
+                         * the result is ready to send. */
+                        onBulkInput?.(action, ids);
+                      } else if (action.destructive) {
                         setConfirmAction({ action, ids });
                       } else {
-                        onBulkAction(action.value, ids);
+                        onBulkAction?.(action.value, ids);
                       }
                     }}
                   >
@@ -310,7 +326,7 @@ export function DataTable<TData extends RowData>({
       </div>
       <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
       <AlertDialog
-        open={!!confirmAction}
+        open={!!confirmAction && !!onBulkAction}
         onOpenChange={(open) => {
           if (!open) setConfirmAction(null);
         }}

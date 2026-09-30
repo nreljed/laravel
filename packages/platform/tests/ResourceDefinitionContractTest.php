@@ -65,7 +65,7 @@ final class ResourceDefinitionContractTest extends TestCase
         );
 
         $this->assertSame(
-            ['key', 'label', 'singular', 'table', 'form', 'relations', 'routes', 'permissions'],
+            ['key', 'label', 'singular', 'table', 'form', 'relations', 'routes', 'permissions', 'recordParam'],
             array_keys($definition->toArray()),
         );
     }
@@ -79,6 +79,144 @@ final class ResourceDefinitionContractTest extends TestCase
         $this->assertNull($definition->getSingular());
         $this->assertSame([], $definition->getRoutes());
         $this->assertSame([], $definition->getPermissions());
+        $this->assertSame(ResourceDefinition::DEFAULT_RECORD_PARAM, $definition->getRecordParam());
+    }
+
+    public function test_record_param_defaults_to_record_and_survives_a_round_trip(): void
+    {
+        $this->assertSame('record', (new ResourceDefinition(key: 'a', label: 'A'))->getRecordParam());
+
+        $custom = ResourceDefinition::fromArray([
+            'key' => 'shop.products',
+            'label' => 'Products',
+            'recordParam' => 'product',
+        ]);
+
+        $this->assertSame('product', $custom->getRecordParam());
+        $this->assertSame('product', $custom->toArray()['recordParam']);
+    }
+
+    public function test_a_blank_record_param_falls_back_rather_than_binding_nothing(): void
+    {
+        $this->assertSame(
+            ResourceDefinition::DEFAULT_RECORD_PARAM,
+            ResourceDefinition::fromArray(['key' => 'a', 'label' => 'A', 'recordParam' => ''])->getRecordParam(),
+        );
+    }
+
+    public function test_record_param_must_be_an_identifier(): void
+    {
+        $violations = (new ResourceDefinition(key: 'a', label: 'A', recordParam: '9lives'))
+            ->violations();
+
+        $this->assertContains(
+            'recordParam must be a valid route parameter name (identifier), got \'9lives\'',
+            $violations,
+        );
+    }
+
+    public function test_header_actions_with_a_file_input_and_a_get_link_pass_validation(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'headerActions' => [
+                    ['label' => 'Export CSV', 'routeName' => 'dashboard.shop.products.export', 'method' => 'get'],
+                    ['label' => 'Import', 'routeName' => 'dashboard.shop.products.import', 'method' => 'post', 'fileInput' => true, 'accept' => '.csv'],
+                ],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+    }
+
+    public function test_bulk_actions_with_fields_and_an_endpoint_pass_validation(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'bulkEndpoint' => 'dashboard.shop.products.bulk',
+                'bulkActions' => [
+                    ['label' => 'Delete', 'value' => 'delete', 'destructive' => true, 'confirmTitle' => 'Delete products?'],
+                    [
+                        'label' => 'Add Categories',
+                        'value' => 'add_category',
+                        'fields' => [
+                            ['name' => 'category_ids', 'type' => 'relation', 'label' => 'Categories', 'relation' => 'categories'],
+                        ],
+                    ],
+                ],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+    }
+
+    public function test_bulk_actions_without_an_endpoint_are_rejected(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'bulkActions' => [['label' => 'Delete', 'value' => 'delete']],
+            ],
+        );
+
+        $this->assertContains(
+            'table.bulkActions requires table.bulkEndpoint (a route name) to POST the action to',
+            $definition->violations(),
+        );
+    }
+
+    public function test_bulk_action_shape_is_validated(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'bulkEndpoint' => 'dashboard.shop.products.bulk',
+                'bulkActions' => [
+                    ['label' => 'No value', 'destructive' => 'yes'],
+                    ['label' => 'Bad key', 'value' => 'x', 'nope' => 1],
+                    ['label' => 'Bad fields', 'value' => 'x', 'fields' => 'not-an-array'],
+                ],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString('table.bulkActions[0].value must be a non-empty string', $joined);
+        $this->assertStringContainsString('table.bulkActions[0].destructive must be a boolean', $joined);
+        $this->assertStringContainsString('table.bulkActions[1].nope is not expressible', $joined);
+        $this->assertStringContainsString('table.bulkActions[2].fields must be an array of field definitions', $joined);
+    }
+
+    public function test_header_action_shape_is_validated(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'headerActions' => [
+                    ['routeName' => 'dashboard.shop.products.export'],
+                    ['label' => 'Bad method', 'routeName' => 'x', 'method' => 'put'],
+                    ['label' => 'Bad fileInput', 'routeName' => 'x', 'fileInput' => 'yes'],
+                ],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString('table.headerActions[0].label must be a non-empty string', $joined);
+        $this->assertStringContainsString('table.headerActions[1].method must be one of [get|post]', $joined);
+        $this->assertStringContainsString('table.headerActions[2].fileInput must be a boolean', $joined);
     }
 
     public function test_the_generator_output_is_schema_valid(): void
@@ -140,7 +278,9 @@ final class ResourceDefinitionContractTest extends TestCase
                 ['fields' => [['name' => 'sku', 'type' => 'text', 'serialize' => fn () => null]]],
             ],
             table: [
-                'bulkActions' => [['label' => 'Delete']],
+                // bulkActions is serializable now, but a `show` predicate is a
+                // TS closure and stays off the PHP surface.
+                'bulkActions' => [['label' => 'Delete', 'value' => 'delete', 'show' => fn () => true]],
                 'columns' => [['name' => 'id', 'header' => 'ID', 'cell' => fn () => 'x']],
             ],
             relations: [
@@ -152,7 +292,7 @@ final class ResourceDefinitionContractTest extends TestCase
 
         $joined = implode("\n", $violations);
 
-        $this->assertStringContainsString('table.bulkActions is not expressible in a PHP descriptor', $joined);
+        $this->assertStringContainsString('table.bulkActions[0].show is not expressible in a PHP descriptor', $joined);
         $this->assertStringContainsString('table.columns[0].cell is not expressible in a PHP descriptor', $joined);
         $this->assertStringContainsString('form.0.fields[0].serialize is not expressible in a PHP descriptor', $joined);
         $this->assertStringContainsString('relations[0].component is not expressible in a PHP descriptor', $joined);

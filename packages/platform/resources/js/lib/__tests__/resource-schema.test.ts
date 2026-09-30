@@ -242,6 +242,77 @@ describe("toResource", () => {
         expect(resource.routes?.destroy).toBeUndefined();
     });
 
+    it("binds record routes on a descriptor-declared recordParam", () => {
+        const resource = toResource(
+            {
+                key: "shop.products",
+                label: "Products",
+                recordParam: "product",
+                routes: {
+                    edit: "dashboard.shop.products.edit",
+                    destroy: "dashboard.shop.products.destroy",
+                },
+            },
+            routeRef,
+        );
+
+        expect(resource.routes?.edit?.({ id: 7 })).toBe("dashboard.shop.products.edit?product=7");
+        expect(resource.routes?.destroy?.({ id: 7 })).toBe("dashboard.shop.products.destroy?product=7");
+    });
+
+    it("falls back to the record param when the declaration is blank", () => {
+        const resource = toResource(
+            { key: "shop/tax-rates", label: "Tax Rates", recordParam: "  ", routes: { edit: "x.edit" } },
+            routeRef,
+        );
+
+        expect(resource.routes?.edit?.({ id: 7 })).toBe(`x.edit?${RESOURCE_RECORD_PARAM}=7`);
+    });
+
+    it("resolves header action route names into URLs", () => {
+        const resource = toResource(
+            {
+                key: "shop.products",
+                label: "Products",
+                table: {
+                    columns: [{ name: "name" }],
+                    headerActions: [
+                        { label: "Export CSV", routeName: "dashboard.shop.products.export", method: "get" },
+                        { label: "Import", routeName: "dashboard.shop.products.import", method: "post", fileInput: true, accept: ".csv" },
+                    ],
+                },
+            },
+            routeRef,
+        );
+
+        expect(resource.table?.headerActions).toEqual([
+            { label: "Export CSV", route: "dashboard.shop.products.export", method: "get" },
+            { label: "Import", route: "dashboard.shop.products.import", method: "post", fileInput: true, accept: ".csv" },
+        ]);
+    });
+
+    it("carries bulkEndpoint and bulk action fields through untouched", () => {
+        const resource = toResource(
+            {
+                key: "shop.products",
+                label: "Products",
+                table: {
+                    columns: [{ name: "name" }],
+                    bulkEndpoint: "dashboard.shop.products.bulk",
+                    bulkActions: [
+                        { label: "Delete", value: "delete", destructive: true },
+                        { label: "Add Categories", value: "add_category", fields: [{ name: "category_ids", type: "relation", label: "Categories" }] },
+                    ],
+                },
+            },
+            routeRef,
+        );
+
+        expect(resource.table?.bulkEndpoint).toBe("dashboard.shop.products.bulk");
+        expect(resource.table?.bulkActions?.[0]?.value).toBe("delete");
+        expect(resource.table?.bulkActions?.[1]?.fields?.[0]?.name).toBe("category_ids");
+    });
+
     it("drops relations — a PHP descriptor can never carry a React component", () => {
         const resource = toResource(
             { key: "shop/tax-rates", label: "Tax Rates", relations: [{ key: "lines" }] },

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, act } from "@testing-library/react";
+import { render, screen, cleanup, act, fireEvent } from "@testing-library/react";
 import type { CellData, ColumnDef } from "@tanstack/react-table";
 import { ResourceIndex } from "../ResourceIndex";
 import { defineResource, type ResourceDefinition, type ResourceRecord } from "../../../lib/resource-schema";
@@ -50,8 +50,12 @@ function lastDataTableProps() {
     return dataTableSpy.mock.calls.at(-1)?.[0] as {
         columns: ColumnDef<AppTableFeatures, Widget, CellData>[];
         data: Widget[];
-        bulkActions?: { label: string; value: string }[];
+        bulkActions?: { label: string; value: string; needsInput?: boolean }[];
         onBulkAction?: unknown;
+        onBulkInput?: (
+            action: { label: string; value: string; needsInput?: boolean; destructive?: boolean },
+            ids: (number | string)[],
+        ) => void;
         searchKeys?: string[];
         searchKey?: string;
     };
@@ -147,6 +151,154 @@ describe("ResourceIndex translation", () => {
         render(<ResourceIndex resource={resource} data={widgets} onBulkAction={() => undefined} />);
 
         expect(lastDataTableProps().bulkActions).toEqual([{ label: "Delete", value: "delete" }]);
+    });
+
+    it("only offers the input path when a submit handler exists", () => {
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                bulkActions: [{ label: "Add Categories", value: "add_category", needsInput: true }],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkAction={() => undefined} />);
+
+        /* Without onBulkSubmit there is nowhere to send the collected values, so
+         * the dialog must not open - a button that swallows input is worse than
+         * an action the descriptor did not declare. */
+        expect(lastDataTableProps().onBulkInput).toBeUndefined();
+    });
+
+    it("offers the input path for a needsInput action when a submit handler exists", () => {
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                bulkActions: [{ label: "Add Categories", value: "add_category", needsInput: true }],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkSubmit={() => undefined} />);
+
+        expect(typeof lastDataTableProps().onBulkInput).toBe("function");
+    });
+
+    it("submits the collected values with the action and the selection", () => {
+        const onBulkSubmit = vi.fn();
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                bulkActions: [
+                    {
+                        label: "Add Categories",
+                        value: "add_category",
+                        needsInput: true,
+                        fields: [{ name: "category_ids", type: "relation", label: "Categories" }],
+                    },
+                ],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkSubmit={onBulkSubmit} />);
+
+        /* Drive the callback the DataTable would fire, then submit the dialog. */
+        act(() => {
+            lastDataTableProps().onBulkInput?.({ label: "Add Categories", value: "add_category", needsInput: true }, [1, 2]);
+        });
+
+        /* The dialog renders a footer button carrying the action's own label,
+         * so the last match is the submit and not the trigger. */
+        const submitButtons = screen.getAllByRole("button", { name: "Add Categories" });
+        act(() => {
+            fireEvent.click(submitButtons[submitButtons.length - 1]!);
+        });
+
+        expect(onBulkSubmit).toHaveBeenCalledWith("add_category", [1, 2], {});
+    });
+
+    it("confirms a destructive action that needs input before submitting", () => {
+        const onBulkSubmit = vi.fn();
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                bulkActions: [
+                    {
+                        label: "Remove Categories",
+                        value: "remove_category",
+                        needsInput: true,
+                        destructive: true,
+                        fields: [{ name: "category_ids", type: "relation", label: "Categories" }],
+                    },
+                ],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkSubmit={onBulkSubmit} />);
+
+        act(() => {
+            lastDataTableProps().onBulkInput?.(
+                { label: "Remove Categories", value: "remove_category", needsInput: true, destructive: true },
+                [1],
+            );
+        });
+
+        const buttons = screen.getAllByRole("button", { name: "Remove Categories" });
+        act(() => {
+            fireEvent.click(buttons[buttons.length - 1]!);
+        });
+
+        /* Still unconfirmed - nothing may be sent until the user agrees. */
+        expect(onBulkSubmit).not.toHaveBeenCalled();
+
+        act(() => {
+            fireEvent.click(screen.getByRole("button", { name: "Remove Categories" }));
+        });
+
+        expect(onBulkSubmit).toHaveBeenCalledWith("remove_category", [1], {});
+    });
+
+    it("renders a plain header action as a button that reports its route", () => {
+        const onHeaderAction = vi.fn();
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                headerActions: [{ label: "Export CSV", route: "/products/export", method: "get" }],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onHeaderAction={onHeaderAction} />);
+
+        fireEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+        expect(onHeaderAction).toHaveBeenCalledWith({
+            label: "Export CSV",
+            route: "/products/export",
+            method: "get",
+        });
+    });
+
+    it("renders a fileInput header action as a hidden picker, not a link", () => {
+        const onHeaderUpload = vi.fn();
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                headerActions: [{ label: "Import", route: "/products/import", method: "post", fileInput: true, accept: ".csv" }],
+            },
+        });
+
+        const { container } = render(<ResourceIndex resource={resource} data={widgets} onHeaderUpload={onHeaderUpload} />);
+
+        const input = container.querySelector('input[type="file"]');
+        expect(input).not.toBeNull();
+        expect(input).toHaveAttribute("accept", ".csv");
+
+        const file = new File(["id,name\n1,Bolt"], "products.csv", { type: "text/csv" });
+        fireEvent.change(input as HTMLInputElement, { target: { files: [file] } });
+
+        expect(onHeaderUpload).toHaveBeenCalledWith({
+            label: "Import",
+            route: "/products/import",
+            file,
+        });
     });
 
     it("forwards the declared searchKeys for the multi-column search", () => {

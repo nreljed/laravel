@@ -20,14 +20,19 @@ use Nreljed\Platform\Services\FeatureRegistry;
  * wired yet is a contract violation, not a runtime guess: we fail loudly so
  * the missing route is never silently rendered as a dead link.
  *
- * Edit/update/destroy routes must bind their record on the literal parameter
- * name "record" (ResourceRenderer::RECORD_PARAM), which is what the generic
- * pages resolve client-side via Ziggy.
+ * Edit/update/destroy routes must bind their record on the parameter name the
+ * descriptor declares (`recordParam`, defaulting to ResourceRenderer::RECORD_PARAM),
+ * which is what the generic pages resolve client-side via Ziggy. A feature whose
+ * own routes already name the parameter (products bind `{product}`) declares it
+ * rather than forcing a route rename.
  */
 class ResourceRenderer
 {
-    /** Literal route parameter the generic pages bind for record-scoped URLs. */
-    public const RECORD_PARAM = 'record';
+    /**
+     * Default literal route parameter the generic pages bind for
+     * record-scoped URLs. A descriptor overrides it via `recordParam`.
+     */
+    public const RECORD_PARAM = ResourceDefinition::DEFAULT_RECORD_PARAM;
 
     public function __construct(protected FeatureRegistry $registry) {}
 
@@ -93,7 +98,7 @@ class ResourceRenderer
                 'Resource ['.$key.'] declares route name(s) that are not registered: '
                 .implode(', ', array_keys($missing))
                 .'. Register the routes behind the owning feature (record param must be named "'
-                .self::RECORD_PARAM.'" for edit/update/destroy).'
+                .$definition->getRecordParam().'" for edit/update/destroy).'
             );
         }
 

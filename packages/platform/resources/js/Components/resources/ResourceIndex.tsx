@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, router } from "@inertiajs/react";
-import { DataTable } from "../ui/data-table";
+import { DataTable, type BulkAction } from "../ui/data-table";
 import { Button } from "../ui/button";
 import {
     AlertDialog,
@@ -13,13 +13,22 @@ import {
     AlertDialogTitle,
 } from "../ui/alert-dialog";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "../ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import { toColumnDef, type ResourceDefinition, type ResourceRecord, type ResourceRowAction } from "../../lib/resource-schema";
+import { ResourceField } from "./fields";
+import { readPath, toColumnDef, type ResourceBulkAction, type ResourceDefinition, type ResourceRecord, type ResourceRowAction } from "../../lib/resource-schema";
 
 /**
  * Renders a resource's index from its declaration.
@@ -49,6 +58,16 @@ export interface ResourceIndexProps<TData extends ResourceRecord = ResourceRecor
     destroyRoute?: (row: TData) => string;
     onRowAction?: (action: ResourceRowAction<TData>, row: TData) => void;
     onBulkAction?: (action: string, ids: (number | string)[]) => void;
+    /**
+     * Submit a bulk action that collected input. The dialog is rendered here
+     * from the action's declared `fields`; the page still owns the request,
+     * because it owns the verb, the payload envelope and the error handling.
+     */
+    onBulkSubmit?: (action: string, ids: (number | string)[], values: Record<string, unknown>) => void;
+    /** Send a header action that needs no input (a GET export, a POST sync). */
+    onHeaderAction?: (action: { label: string; route: string; method: "get" | "post"; confirm?: string }) => void;
+    /** Send a header action carrying a file (a CSV import). */
+    onHeaderUpload?: (action: { label: string; route: string; file: File }) => void;
 }
 
 export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
@@ -59,9 +78,14 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
     destroyRoute,
     onRowAction,
     onBulkAction,
+    onBulkSubmit,
+    onHeaderAction,
+    onHeaderUpload,
 }: ResourceIndexProps<TData>) {
     const table = resource.table;
     const [confirming, setConfirming] = React.useState<{ title: string; description?: string; confirmLabel: string; run: () => void } | null>(null);
+    const [bulkDialog, setBulkDialog] = React.useState<{ action: BulkAction; ids: (number | string)[]; values: Record<string, unknown> } | null>(null);
+    const fileInputs = React.useRef(new Map<string, HTMLInputElement | null>());
 
     const columns = React.useMemo(() => (table?.columns ?? []).map(toColumnDef), [table?.columns]);
 
@@ -230,6 +254,82 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
         return next;
     }, [columns, actionsColumn]);
 
+    const setBulkValue = React.useCallback((path: string, value: unknown) => {
+        setBulkDialog((current) =>
+            current ? { ...current, values: { ...current.values, [path]: value } } : current,
+        );
+    }, []);
+
+    const closeBulkDialog = React.useCallback(() => {
+        setBulkDialog(null);
+    }, []);
+
+    const submitBulkDialog = React.useCallback(() => {
+        if (!bulkDialog) {
+            return;
+        }
+
+        const { action, ids, values } = bulkDialog;
+
+        // A `destructive` action that also needs input confirms after the
+        // fields are filled in, not before - the user has to see what they are
+        // about to apply before agreeing to it.
+        if (action.destructive) {
+            setConfirming({
+                title: action.confirmTitle ?? `Confirm ${action.label}`,
+                description:
+                    action.confirmDescription ??
+                    `Apply "${action.label}" to ${ids.length} selected item(s)?`,
+                confirmLabel: action.confirmLabel ?? action.label,
+                run: () => {
+                    onBulkSubmit?.(action.value, ids, values);
+                    closeBulkDialog();
+                },
+            });
+            closeBulkDialog();
+
+            return;
+        }
+
+        onBulkSubmit?.(action.value, ids, values);
+        closeBulkDialog();
+    }, [bulkDialog, onBulkSubmit, closeBulkDialog]);
+
+    /**
+     * Send a header action. A `fileInput` action is dispatched from the change
+     * handler instead, because the browser only hands us the file once the
+     * picker closes.
+     */
+    const runHeaderAction = React.useCallback(
+        (action: { label: string; route: string; method?: "get" | "post"; confirm?: string }) => {
+            if (!onHeaderAction) {
+                return;
+            }
+
+            const send = () =>
+                onHeaderAction({
+                    label: action.label,
+                    route: action.route,
+                    method: action.method ?? "get",
+                    ...(action.confirm ? { confirm: action.confirm } : {}),
+                });
+
+            if (action.confirm) {
+                setConfirming({
+                    title: action.label,
+                    description: action.confirm,
+                    confirmLabel: action.label,
+                    run: send,
+                });
+
+                return;
+            }
+
+            send();
+        },
+        [onHeaderAction],
+    );
+
     // Thrown after every hook has run, so a resource that lost its table
     // declaration cannot change the hook count between renders.
     if (!table) {
@@ -240,9 +340,62 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
         <>
             <div className="flex items-center justify-between gap-4 pb-4">
                 <h1 className="text-2xl font-semibold tracking-tight">{resource.label}</h1>
-                {createRoute ? (
-                    <Button render={<Link href={createRoute} />}>New {resource.singular ?? "item"}</Button>
-                ) : null}
+                <div className="flex items-center gap-2">
+                    {/* Header actions are the table's own verbs - export, import,
+                        sync - so they sit beside Create rather than inside a row. */}
+                    {table.headerActions?.map((action) => {
+                        if (!action.route) {
+                            return null;
+                        }
+
+                        if (action.fileInput) {
+                            return (
+                                <React.Fragment key={action.label}>
+                                    <input
+                                        ref={(element) => {
+                                            fileInputs.current.set(action.label, element);
+                                        }}
+                                        type="file"
+                                        accept={action.accept}
+                                        className="hidden"
+                                        aria-label={`${action.label} file`}
+                                        onChange={(event) => {
+                                            const file = event.target.files?.[0];
+                                            // Reset first: re-picking the same file
+                                            // after a failed import must still fire.
+                                            event.target.value = "";
+
+                                            if (file) {
+                                                onHeaderUpload?.({ label: action.label, route: action.route as string, file });
+                                            }
+                                        }}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => fileInputs.current.get(action.label)?.click()}
+                                    >
+                                        {action.label}
+                                    </Button>
+                                </React.Fragment>
+                            );
+                        }
+
+                        return (
+                            <Button
+                                key={action.label}
+                                type="button"
+                                variant="outline"
+                                onClick={() => runHeaderAction(action as { label: string; route: string })}
+                            >
+                                {action.label}
+                            </Button>
+                        );
+                    })}
+                    {createRoute ? (
+                        <Button render={<Link href={createRoute} />}>New {resource.singular ?? "item"}</Button>
+                    ) : null}
+                </div>
             </div>
 
             <DataTable
@@ -254,11 +407,58 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                 filters={table.filters?.map((filter) => ({ ...filter }))}
                 bulkActions={table.bulkActions}
                 onBulkAction={onBulkAction}
+                onBulkInput={onBulkSubmit ? (action, ids) => setBulkDialog({ action, ids, values: {} }) : undefined}
                 defaultPageSize={table.defaultPageSize}
                 pageSizeOptions={table.pageSizeOptions}
                 emptyState={table.emptyState}
                 loading={table.loading}
             />
+
+            {/* The input a bulk action needs, rendered from its own declared
+                fields so a descriptor can describe "assign categories" without
+                the page hand-building a form per action. */}
+            <Dialog
+                open={bulkDialog !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeBulkDialog();
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{bulkDialog?.action.label}</DialogTitle>
+                        <DialogDescription>
+                            {bulkDialog
+                                ? `Applies to ${bulkDialog.ids.length} selected item(s).`
+                                : null}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4">
+                        {(bulkDialog?.action as ResourceBulkAction | undefined)?.fields?.map((field) => (
+                            <ResourceField
+                                key={field.name}
+                                idPrefix="bulk-field"
+                                context={{
+                                    field,
+                                    record: bulkDialog?.values ?? {},
+                                    value: bulkDialog ? readPath(bulkDialog.values, field.name) : undefined,
+                                    setValue: (value) => setBulkValue(field.name, value),
+                                    setField: (path, value) => setBulkValue(path, value),
+                                }}
+                            />
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={closeBulkDialog}>
+                            Cancel
+                        </Button>
+                        <Button type="button" onClick={submitBulkDialog}>
+                            {bulkDialog?.action.label}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <AlertDialog open={confirming !== null} onOpenChange={(open) => !open && setConfirming(null)}>
                 <AlertDialogContent>

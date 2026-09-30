@@ -198,6 +198,46 @@ export interface ResourceRowAction<TData extends ResourceRecord = ResourceRecord
     icon?: ComponentType<{ className?: string }>;
 }
 
+/**
+ * A button rendered next to Create in the table header, for the actions a
+ * resource owns that are neither row-scoped nor bulk-scoped: export a CSV,
+ * import one, sync with a provider.
+ *
+ * `fileInput: true` turns the button into a hidden file picker that POSTs the
+ * chosen file as multipart FormData (the CSRF token rides along in the
+ * `X-CSRF-TOKEN` header), which is what a CSV import needs - a plain link
+ * cannot carry a file.
+ */
+export interface ResourceHeaderAction {
+    label: string;
+    /** Serialized PHP descriptors declare this instead of `route`; `toResource()` resolves it. */
+    routeName?: string;
+    /** TS-side resources resolve their own URL. */
+    route?: string;
+    method?: "get" | "post";
+    /** Render a hidden file input and POST the selection as multipart. */
+    fileInput?: boolean;
+    /** `accept` attribute for the file input, e.g. `.csv,text/csv`. */
+    accept?: string;
+    /** Ask before sending. */
+    confirm?: string;
+}
+
+/**
+ * A bulk action plus the input it needs. A PHP descriptor serializes this
+ * whole shape: an action that only needs a value ("delete") declares no
+ * `fields`, while one that needs data ("assign categories") declares the same
+ * `FieldDefinition` list a form uses, and the kernel renders it in a dialog.
+ *
+ * `show` stays TS-only - it is a predicate over the current selection.
+ */
+export interface ResourceBulkAction extends Omit<BulkAction, "show"> {
+    /** Fields collected in a dialog before the action is POSTed. */
+    fields?: FieldDefinition[];
+    /** Gate the action on the current selection (TS-only; not serializable). */
+    show?: (selectedStatuses: string[]) => boolean;
+}
+
 export interface ResourceTable<TData extends ResourceRecord = ResourceRecord> {
     columns: ResourceColumn<TData>[];
     /** Column the toolbar search box filters on. */
@@ -210,7 +250,11 @@ export interface ResourceTable<TData extends ResourceRecord = ResourceRecord> {
     searchKeys?: string[];
     searchPlaceholder?: string;
     filters?: ResourceFilter[];
-    bulkActions?: BulkAction[];
+    /** Route name bulk actions POST to as `{action, selected_ids, ...values}`. */
+    bulkEndpoint?: string;
+    bulkActions?: ResourceBulkAction[];
+    /** Header-level actions (export, import, sync) rendered beside Create. */
+    headerActions?: ResourceHeaderAction[];
     /** Row dropdown, appended after edit/delete. */
     rowActions?: ResourceRowAction<TData>[];
     defaultPageSize?: number;
@@ -362,9 +406,10 @@ export function isFieldVisible(field: FieldDefinition, record: ResourceRecord): 
  *    component, so a serialized "relation" is a stub, not a row of the
  *    VariationsManager. Live side-car tables stay in the owning feature's own
  *    page (or an `extra` prop its controller passes next to the descriptor).
- *  - `edit`/`update`/`destroy` become URL builders bound to the literal
- *    `record` route param (matching `ResourceRenderer::RECORD_PARAM`), because
- *    the PHP side declares only route *names*.
+ *  - `edit`/`update`/`destroy` become URL builders bound to the record route
+ *    param the descriptor declares (`recordParam`, defaulting to `record` to
+ *    match `ResourceRenderer::RECORD_PARAM`), because the PHP side declares
+ *    only route *names*.
  */
 
 /** The exact shape `ResourceDefinition::toArray()` (and `fromArray`) emits. */
@@ -377,11 +422,17 @@ export interface SerializedResource {
     relations?: Array<Record<string, unknown>>;
     routes?: Partial<Record<RouteSlot, string | null>>;
     permissions?: Partial<Record<"view" | "create" | "edit" | "delete", string | null>>;
+    /**
+     * Route parameter record-scoped URLs bind. A feature whose own routes name
+     * it differently (products bind `{product}`) declares it; absent means
+     * `RESOURCE_RECORD_PARAM`.
+     */
+    recordParam?: string | null;
 }
 
 type RouteSlot = "index" | "create" | "store" | "edit" | "update" | "destroy";
 
-/** Literal route parameter the generic pages bind for record-scoped URLs. */
+/** Default literal route parameter the generic pages bind for record-scoped URLs. */
 export const RESOURCE_RECORD_PARAM = "record";
 
 type RouteRef = (name: string, params?: Record<string, unknown>) => string;
@@ -476,8 +527,15 @@ export function toResource(
 ): ResourceDefinition {
     const routes = serialized.routes ?? {};
 
+    // A descriptor whose own routes name the parameter (products bind
+    // `{product}`) declares it; everything else keeps the `record` default so
+    // the 14 resources already migrated need no change.
+    const recordParam = typeof serialized.recordParam === "string" && serialized.recordParam.trim() !== ""
+        ? serialized.recordParam.trim()
+        : RESOURCE_RECORD_PARAM;
+
     const recordUrl = (name: string | null | undefined): ((row: ResourceRecord) => string) | undefined => {
-        return name && name !== "" ? (row) => routeRef(name, { [RESOURCE_RECORD_PARAM]: row.id }) : undefined;
+        return name && name !== "" ? (row) => routeRef(name, { [recordParam]: row.id }) : undefined;
     };
 
     const table = serialized.table ?? undefined;
@@ -487,7 +545,11 @@ export function toResource(
         label: serialized.label,
         singular: serialized.singular ?? undefined,
         table: table
-            ? ({ ...table, rowActions: mapSerializedRowActions(table.rowActions, routeRef) } as ResourceTable<ResourceRecord>)
+            ? ({
+                ...table,
+                rowActions: mapSerializedRowActions(table.rowActions, routeRef, recordParam),
+                headerActions: mapSerializedHeaderActions(table.headerActions, routeRef),
+            } as ResourceTable<ResourceRecord>)
             : undefined,
         form: (serialized.form ?? undefined)?.map(
             (section) =>
@@ -524,12 +586,13 @@ interface SerializedRowAction {
 
 /**
  * Turn `routeName` row actions into runtime `route` builders bound to the
- * `record` param. Actions that already carry a `route` (TS-declared) pass
+ * record param. Actions that already carry a `route` (TS-declared) pass
  * through untouched, so `toResource` is safe against both shapes.
  */
 export function mapSerializedRowActions(
     rowActions: unknown,
     routeRef: RouteRef = (name, params) => route(name, params),
+    recordParam: string = RESOURCE_RECORD_PARAM,
 ): ResourceRowAction[] | undefined {
     if (!Array.isArray(rowActions)) {
         return undefined;
@@ -541,7 +604,7 @@ export function mapSerializedRowActions(
         if (typeof action.routeName === "string" && action.routeName !== "") {
             const name = action.routeName;
             const routeBuilder: (row: ResourceRecord) => string = (row) =>
-                routeRef(name, { [RESOURCE_RECORD_PARAM]: row.id });
+                routeRef(name, { [recordParam]: row.id });
 
             return {
                 label: action.label ?? "",
@@ -553,6 +616,48 @@ export function mapSerializedRowActions(
         }
 
         return action as ResourceRowAction;
+    });
+}
+
+/** Header-action shape a serialized PHP descriptor emits for `table.headerActions`. */
+interface SerializedHeaderAction {
+    label: string;
+    routeName?: string;
+    /** Already-resolved URL, for actions declared on the TS side. */
+    route?: string;
+    method?: "get" | "post";
+    fileInput?: boolean;
+    accept?: string;
+    confirm?: string;
+}
+
+/**
+ * Turn `routeName` header actions into resolved URLs. A header action has no
+ * row to bind, so this is a plain one-shot resolution rather than a builder.
+ */
+export function mapSerializedHeaderActions(
+    headerActions: unknown,
+    routeRef: RouteRef = (name, params) => route(name, params),
+): ResourceHeaderAction[] | undefined {
+    if (!Array.isArray(headerActions)) {
+        return undefined;
+    }
+
+    return headerActions.map((declared) => {
+        const action = declared as Partial<SerializedHeaderAction>;
+        const resolved =
+            typeof action.routeName === "string" && action.routeName !== ""
+                ? routeRef(action.routeName)
+                : action.route;
+
+        return {
+            label: action.label ?? "",
+            ...(resolved ? { route: resolved } : {}),
+            method: action.method ?? "get",
+            ...(action.fileInput !== undefined ? { fileInput: action.fileInput } : {}),
+            ...(typeof action.accept === "string" && action.accept !== "" ? { accept: action.accept } : {}),
+            ...(typeof action.confirm === "string" && action.confirm !== "" ? { confirm: action.confirm } : {}),
+        };
     });
 }
 

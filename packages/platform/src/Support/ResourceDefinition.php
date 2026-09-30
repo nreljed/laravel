@@ -55,6 +55,15 @@ class ResourceDefinition
     /** Permission slots a descriptor may declare. Anything else is a typo. */
     public const PERMISSION_KEYS = ['view', 'create', 'edit', 'delete'];
 
+    /**
+     * Default route parameter a record-scoped URL binds. A descriptor whose
+     * owning feature names its routes differently (products use `{product}`)
+     * declares `recordParam` on the definition; the renderer and the
+     * `toResource()` bridge both read it, so `{record}` stays the default
+     * rather than the only spelling.
+     */
+    public const DEFAULT_RECORD_PARAM = 'record';
+
     /** `table` keys a PHP descriptor may carry (the serializable ones). */
     private const TABLE_KEYS = [
         'columns',
@@ -65,7 +74,21 @@ class ResourceDefinition
         'defaultPageSize',
         'pageSizeOptions',
         'rowActions',
+        'headerActions',
+        'bulkActions',
+        'bulkEndpoint',
     ];
+
+    /** `headerAction` keys a PHP descriptor may carry. `render` is a closure. */
+    private const HEADER_ACTION_KEYS = ['label', 'routeName', 'method', 'fileInput', 'accept', 'confirm'];
+
+    /**
+     * `bulkAction` keys a PHP descriptor may carry. `fields` are serialized
+     * field definitions (the same shape `form` uses), which is why it is
+     * allowed here: a bulk action that needs input - assign categories, set a
+     * price - is described, not hand-built.
+     */
+    private const BULK_ACTION_KEYS = ['label', 'value', 'destructive', 'confirmTitle', 'confirmDescription', 'confirmLabel', 'fields'];
 
     /** `rowAction` keys a PHP descriptor may carry. */
     private const ROW_ACTION_KEYS = ['label', 'routeName', 'method', 'destructive', 'confirm'];
@@ -106,6 +129,7 @@ class ResourceDefinition
         protected readonly array $relations = [],
         protected readonly array $routes = [],
         protected readonly array $permissions = [],
+        protected readonly string $recordParam = self::DEFAULT_RECORD_PARAM,
     ) {}
 
     /**
@@ -113,6 +137,8 @@ class ResourceDefinition
      */
     public static function fromArray(array $config): self
     {
+        $recordParam = $config['recordParam'] ?? self::DEFAULT_RECORD_PARAM;
+
         return new self(
             key: (string) ($config['key'] ?? ''),
             label: (string) ($config['label'] ?? ''),
@@ -122,6 +148,9 @@ class ResourceDefinition
             relations: $config['relations'] ?? [],
             routes: $config['routes'] ?? [],
             permissions: $config['permissions'] ?? [],
+            recordParam: is_string($recordParam) && trim($recordParam) !== ''
+                ? trim($recordParam)
+                : self::DEFAULT_RECORD_PARAM,
         );
     }
 
@@ -186,6 +215,16 @@ class ResourceDefinition
     }
 
     /**
+     * Route parameter record-scoped URLs bind. Defaults to `record`; a
+     * feature whose own routes are named differently (products use
+     * `{product}`) declares its own so the kernel never has to guess.
+     */
+    public function getRecordParam(): string
+    {
+        return $this->recordParam;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -199,6 +238,7 @@ class ResourceDefinition
             'relations' => $this->relations,
             'routes' => $this->routes,
             'permissions' => $this->permissions,
+            'recordParam' => $this->recordParam,
         ];
     }
 
@@ -216,6 +256,11 @@ class ResourceDefinition
 
         $this->key === '' && $issues[] = 'key must be a non-empty string';
         $this->label === '' && $issues[] = 'label must be a non-empty string';
+
+        if ($this->recordParam === '' || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $this->recordParam) !== 1) {
+            $issues[] = 'recordParam must be a valid route parameter name (identifier), got '
+                .var_export($this->recordParam, true);
+        }
 
         $issues = array_merge($issues, $this->tableViolations());
         $issues = array_merge($issues, $this->formViolations());
@@ -299,7 +344,7 @@ class ResourceDefinition
 
         foreach ($this->table as $key => $value) {
             if (! in_array($key, self::TABLE_KEYS, true)) {
-                $issues[] = "table.{$key} is not expressible in a PHP descriptor (TS-only key like bulkActions, or a typo)";
+                $issues[] = "table.{$key} is not expressible in a PHP descriptor (TS-only key, or a typo)";
             }
         }
 
@@ -374,7 +419,7 @@ class ResourceDefinition
 
                     $routeName = $action['routeName'] ?? null;
                     if (! is_string($routeName) || $routeName === '') {
-                        $issues[] = $where.'.routeName must be a non-empty route name (the kernel binds the {"record"} param)';
+                        $issues[] = $where.'.routeName must be a non-empty route name (the kernel binds the record param)';
                     }
 
                     if (isset($action['method']) && ! in_array($action['method'], ['get', 'post', 'put', 'delete'], true)) {
@@ -390,6 +435,112 @@ class ResourceDefinition
                     }
                 }
             }
+        }
+
+        $headerActions = $this->table['headerActions'] ?? null;
+        if ($headerActions !== null) {
+            if (! is_array($headerActions)) {
+                $issues[] = 'table.headerActions must be an array';
+            } else {
+                foreach ($headerActions as $index => $action) {
+                    $where = "table.headerActions[{$index}]";
+
+                    if (! is_array($action)) {
+                        $issues[] = $where.' must be an array';
+
+                        continue;
+                    }
+
+                    foreach ($action as $key => $value) {
+                        if (! in_array($key, self::HEADER_ACTION_KEYS, true)) {
+                            $issues[] = $where.'.'.$key.' is not expressible in a PHP descriptor header action';
+                        }
+                    }
+
+                    $label = $action['label'] ?? null;
+                    if (! is_string($label) || $label === '') {
+                        $issues[] = $where.'.label must be a non-empty string';
+                    }
+
+                    $routeName = $action['routeName'] ?? null;
+                    if (! is_string($routeName) || $routeName === '') {
+                        $issues[] = $where.'.routeName must be a non-empty route name (string)';
+                    }
+
+                    if (isset($action['method']) && ! in_array($action['method'], ['get', 'post'], true)) {
+                        $issues[] = $where.'.method must be one of [get|post]';
+                    }
+
+                    if (isset($action['fileInput']) && ! is_bool($action['fileInput'])) {
+                        $issues[] = $where.'.fileInput must be a boolean';
+                    }
+
+                    if (isset($action['accept']) && (! is_string($action['accept']) || $action['accept'] === '')) {
+                        $issues[] = $where.'.accept must be a non-empty string when present';
+                    }
+
+                    if (isset($action['confirm']) && (! is_string($action['confirm']) || $action['confirm'] === '')) {
+                        $issues[] = $where.'.confirm must be a non-empty string when present';
+                    }
+                }
+            }
+        }
+
+        $bulkActions = $this->table['bulkActions'] ?? null;
+        if ($bulkActions !== null) {
+            if (! is_array($bulkActions)) {
+                $issues[] = 'table.bulkActions must be an array';
+            } else {
+                foreach ($bulkActions as $index => $action) {
+                    $where = "table.bulkActions[{$index}]";
+
+                    if (! is_array($action)) {
+                        $issues[] = $where.' must be an array';
+
+                        continue;
+                    }
+
+                    foreach ($action as $key => $value) {
+                        if (! in_array($key, self::BULK_ACTION_KEYS, true)) {
+                            $issues[] = $where.'.'.$key.' is not expressible in a PHP descriptor bulk action';
+                        }
+                    }
+
+                    if (! is_string($action['label'] ?? null) || $action['label'] === '') {
+                        $issues[] = $where.'.label must be a non-empty string';
+                    }
+
+                    if (! is_string($action['value'] ?? null) || $action['value'] === '') {
+                        $issues[] = $where.'.value must be a non-empty string (the action key the controller receives)';
+                    }
+
+                    if (isset($action['destructive']) && ! is_bool($action['destructive'])) {
+                        $issues[] = $where.'.destructive must be a boolean';
+                    }
+
+                    foreach (['confirmTitle', 'confirmDescription', 'confirmLabel'] as $stringKey) {
+                        if (isset($action[$stringKey]) && (! is_string($action[$stringKey]) || $action[$stringKey] === '')) {
+                            $issues[] = $where.'.'.$stringKey.' must be a non-empty string when present';
+                        }
+                    }
+
+                    if (isset($action['fields']) && ! is_array($action['fields'])) {
+                        $issues[] = $where.'.fields must be an array of field definitions';
+                    }
+                }
+            }
+        }
+
+        $bulkEndpoint = $this->table['bulkEndpoint'] ?? null;
+        if ($bulkEndpoint !== null && (! is_string($bulkEndpoint) || $bulkEndpoint === '')) {
+            $issues[] = 'table.bulkEndpoint must be a non-empty route name (string) when present';
+        }
+
+        // A bulk action is only reachable if the table has somewhere to send
+        // it. Without an endpoint the DataTable stays silent and the whole
+        // declaration is dead weight, so reject the half-declared case.
+        if (is_array($bulkActions) && $bulkActions !== [] && ! isset($this->table['bulkEndpoint'])) {
+            $issues[] = 'table.bulkActions requires table.bulkEndpoint (a route name) to POST the action to';
         }
 
         foreach (['searchKey', 'searchPlaceholder'] as $stringKey) {
