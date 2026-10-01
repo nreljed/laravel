@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { ResourceField, getFieldType, registerFieldType, registeredFieldTypes } from "../fields";
 import type { FieldContext, FieldDefinition, ResourceRecord } from "../../../lib/resource-schema";
+import type { ServerGalleryImage } from "../../../types/gallery";
 
 /**
  * The field registry and the field renderer.
@@ -679,5 +680,63 @@ fireEvent.click(screen.getByText("Standard"));
 
         fireEvent.click(screen.getByText("Item 1"));
         expect(screen.getByRole("alert").textContent).toContain("The Label field is required.");
+    });
+});
+
+/**
+ * `featuredField` is how a record keeps a gallery's cover as a URL of its own -
+ * a product's `thumbnail_url` beside its `gallery`. The gallery itself cannot do
+ * that: it only knows the image list, so the write has to come from the field.
+ */
+describe("media field featuredField", () => {
+    function galleryContext(field: FieldDefinition, images: ServerGalleryImage[], setField = vi.fn()) {
+        return {
+            context: { ...contextFor(field, {}, images), setField } satisfies FieldContext,
+            setField,
+        };
+    }
+
+    it("writes the cover image url into the declared companion field", () => {
+        const { context, setField } = galleryContext(
+            { name: "gallery", type: "media", multiple: true, featuredField: "thumbnail_url" },
+            [
+                { url: "/storage/first.webp" },
+                { url: "/storage/second.webp" },
+            ],
+        );
+
+        render(<ResourceField context={context} />);
+
+        // The second image is not the cover yet, so it offers "set as cover".
+        fireEvent.click(screen.getByTitle("Set as cover image"));
+
+        expect(setField).toHaveBeenCalledWith("thumbnail_url", "/storage/second.webp");
+    });
+
+    it("leaves the companion field alone when the field declares no companion", () => {
+        const { context, setField } = galleryContext({ name: "gallery", type: "media", multiple: true }, [
+            { url: "/storage/first.webp" },
+            { url: "/storage/second.webp" },
+        ]);
+
+        render(<ResourceField context={context} />);
+
+        fireEvent.click(screen.getByTitle("Set as cover image"));
+
+        // Reordering is still the gallery's business; without a declared
+        // companion there is simply no sibling field to write.
+        expect(setField).not.toHaveBeenCalled();
+    });
+
+    it("does not offer set-as-cover on the single-image control", () => {
+        const setField = vi.fn();
+        const context = { ...contextFor({ name: "thumbnail_url", type: "media", featuredField: "gallery" }, {}, "/storage/first.webp"), setField };
+
+        render(<ResourceField context={context} />);
+
+        // A single picker has no list to reorder, so "cover" is its only image
+        // and the companion declaration has nothing to mirror.
+        expect(screen.queryByTitle("Set as cover image")).toBeNull();
+        expect(setField).not.toHaveBeenCalled();
     });
 });

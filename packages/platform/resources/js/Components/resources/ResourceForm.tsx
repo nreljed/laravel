@@ -63,10 +63,17 @@ type ResourceFormState = FormDataType<ResourceRecord>;
  * a field hidden by a toggle must not keep submitting its stale value, because
  * the server has no way to know it stopped being meaningful. `serialize` runs
  * after that filter so a field can decide its own outbound shape.
+ *
+ * `extraPaths` covers keys a relation wrote that no declared field covers - a
+ * companion `thumbnail_url` mirrored from a gallery, an attribute list owned by
+ * a sub-editor. They are read straight off the record and appended only when a
+ * declared field has not already claimed the key, so a field's `serialize` stays
+ * authoritative for anything the schema actually knows about.
  */
 export function buildPayload(
     record: ResourceRecord,
     fields: { name: string; serialize?: (value: unknown) => unknown }[],
+    extraPaths: Iterable<string> = [],
 ): ResourceRecord {
     const payload: ResourceRecord = {};
 
@@ -84,6 +91,20 @@ export function buildPayload(
         }
 
         payload[field.name] = field.serialize ? field.serialize(value) : value;
+    }
+
+    for (const path of extraPaths) {
+        if (path in payload) {
+            continue;
+        }
+
+        const value = record[path];
+
+        if (value === undefined) {
+            continue;
+        }
+
+        payload[path] = value;
     }
 
     return payload;
@@ -140,11 +161,24 @@ export function ResourceForm({
 
     const errorFor = (name: string) => form.errors[name];
 
+    // Keys a relation has published back into the form. Held in a ref rather than
+    // state: the set only has to be correct at submit time, and it must not
+    // re-render the form on every keystroke a relation makes.
+    const relationPaths = React.useRef<Set<string>>(new Set());
+
+    const setFieldFromRelation = React.useCallback(
+        (path: string, value: unknown) => {
+            relationPaths.current.add(path);
+            setData(path, value);
+        },
+        [setData],
+    );
+
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
 
         const visible = allFields.filter((field) => isFieldVisible(field, form.data));
-        const payload = buildPayload(form.data, visible);
+        const payload = buildPayload(form.data, visible, relationPaths.current);
 
         if (submit) {
             submit(payload, {
@@ -207,7 +241,14 @@ export function ResourceForm({
             {resource.relations?.map((declared) => {
                 const RelationComponent = declared.component;
 
-                return <RelationComponent key={declared.key} record={form.data} errors={form.errors} />;
+                return (
+                    <RelationComponent
+                        key={declared.key}
+                        record={form.data}
+                        errors={form.errors}
+                        setField={setFieldFromRelation}
+                    />
+                );
             })}
 
             <div className="flex items-center gap-2">

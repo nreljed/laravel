@@ -51,6 +51,7 @@ import {
 } from "../../lib/resource-schema";
 import { FeaturedImageSelector } from "../shared/featured-image-selector";
 import { GalleryUploader, type ServerGalleryImage } from "../shared/gallery-uploader";
+import { getGalleryImageUrl } from "../../types/gallery";
 
 /**
  * Built-in field controls, and the registry a consuming app extends.
@@ -643,7 +644,7 @@ function SingleMediaInput({ value, setValue, field }: FieldControlProps) {
     );
 }
 
-function MultipleMediaInput({ value, setValue, field }: FieldControlProps) {
+function MultipleMediaInput({ value, setValue, setField, field }: FieldControlProps) {
     const images = Array.isArray(value) ? (value as ServerGalleryImage[]) : [];
 
     return (
@@ -652,6 +653,11 @@ function MultipleMediaInput({ value, setValue, field }: FieldControlProps) {
             onChange={(next: ServerGalleryImage[]) => setValue(next)}
             uploadUrl={field.uploadUrl ?? ""}
             deleteUrl={field.deleteUrl ?? ""}
+            onSetFeatured={
+                field.featuredField
+                    ? (image) => setField(field.featuredField!, getGalleryImageUrl(image))
+                    : undefined
+            }
             label=""
             description=""
         />

@@ -124,6 +124,17 @@ export interface FieldDefinition {
     /** Render a multi-image gallery (`GalleryUploader`) instead of a single picker. */
     multiple?: boolean;
     /**
+     * Companion field that mirrors the gallery's cover image, for a `multiple`
+     * media field. `GalleryUploader` treats the first image as the cover, so
+     * "set cover" writes that image's URL into the named sibling field while the
+     * reorder itself keeps carrying the position.
+     *
+     * This is what lets a record keep the cover as a URL of its own - a
+     * product's `thumbnail_url` beside its `gallery` - declaratively, rather than
+     * through a hand-built uploader that has to re-implement "set cover".
+     */
+    featuredField?: string;
+    /**
      * Sub-field schema for a `nested` field: a reorderable row list where each
      * row holds the same sub-fields, and every sub-field renders through the
      * same registry this module feeds. The value is `Array<Record<string, unknown>>`
@@ -325,6 +336,18 @@ export interface RelationProps {
     record: ResourceRecord;
     /** Errors keyed the same way the parent's are. */
     errors: Record<string, string>;
+    /**
+     * Write into the parent form - the same primitive `FieldContext` hands a
+     * field. A relation that owns its state still has to project the part of it
+     * the parent persists: a variations manager saves every variation through
+     * its own endpoint and writes only `default_attributes` here, and an
+     * attribute list is published back the same way.
+     *
+     * There is no "flush at submit" hook, so a relation calls this on each
+     * change instead - that is what keeps the parent's payload from serializing
+     * a stale value for a section the user already edited.
+     */
+    setField: (path: string, value: unknown) => void;
 }
 
 export interface ResourceDefinition<TData extends ResourceRecord = ResourceRecord> {

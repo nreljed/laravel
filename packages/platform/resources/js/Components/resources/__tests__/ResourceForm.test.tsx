@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { ResourceForm } from "../ResourceForm";
-import { defineResource, type ResourceRecord } from "../../../lib/resource-schema";
+import { defineResource, type RelationProps, type ResourceRecord } from "../../../lib/resource-schema";
 
 /**
  * ResourceForm owns the Inertia `useForm` call and nothing else. What matters
@@ -279,6 +279,81 @@ describe("ResourceForm custom submit", () => {
         expect(helpers.processing).toBe(false);
         expect(helpers.errors).toEqual({});
         expect(typeof helpers.setError).toBe("function");
+    });
+});
+
+describe("ResourceForm relation contract", () => {
+    /**
+     * A relation that owns its own persistence - variations, attribute lists -
+     * still has to publish part of its state into the payload the parent posts.
+     * `setField` is that seam, so these pin it rather than the relation itself.
+     */
+    function relationThatWrites(path: string, value: unknown) {
+        return function WritingRelation({ record, errors, setField }: RelationProps) {
+            expect(record).toBeDefined();
+            expect(errors).toBeDefined();
+
+            return (
+                <button type="button" onClick={() => setField(path, value)}>
+                    write {path}
+                </button>
+            );
+        };
+    }
+
+    it("lets a relation write into the submitted payload", () => {
+        const submit = vi.fn();
+        const resource = defineResource({
+            ...makeResource([{ fields: [{ name: "name", type: "text" }] }]),
+            relations: [{ key: "defaults", component: relationThatWrites("default_attributes", [3, 7]) }],
+        } as never);
+
+        render(<ResourceForm resource={resource} action="/widgets" submit={submit} />);
+
+        fireEvent.click(screen.getByRole("button", { name: /write default_attributes/i }));
+        submitForm();
+
+        expect(submit.mock.calls[0]![0]).toHaveProperty("default_attributes", [3, 7]);
+    });
+
+    it("gives the relation the live form state, not a snapshot of the record", () => {
+        const resource = defineResource({
+            ...makeResource([{ fields: [{ name: "type", type: "text" }] }]),
+            relations: [
+                {
+                    key: "echo",
+                    component: ({ record }: RelationProps) => <div>type: {String(record.type ?? "none")}</div>,
+                },
+            ],
+        } as never);
+
+        render(<ResourceForm resource={resource} record={{ type: "simple" }} action="/widgets" />);
+
+        expect(screen.getByText("type: simple")).toBeDefined();
+
+        // `useForm` seeds once and then holds live state, which is what a relation
+        // needs: a section that reacts to the record being edited (a variation
+        // table keyed off `type`) has to see the edit, not the initial payload.
+        fireEvent.change(screen.getByLabelText("Type"), { target: { value: "variable" } });
+
+        expect(screen.getByText("type: variable")).toBeDefined();
+    });
+
+    it("lets a relation write a sibling key the form has no field for", () => {
+        // The gallery case: `featuredField` mirrors the cover into `thumbnail_url`,
+        // which no control renders, so only the relation can populate it.
+        const submit = vi.fn();
+        const resource = defineResource({
+            ...makeResource([{ fields: [{ name: "gallery", type: "media", multiple: true, featuredField: "thumbnail_url" }] }]),
+            relations: [{ key: "cover", component: relationThatWrites("thumbnail_url", "/storage/cover.webp") }],
+        } as never);
+
+        render(<ResourceForm resource={resource} action="/widgets" submit={submit} />);
+
+        fireEvent.click(screen.getByRole("button", { name: /write thumbnail_url/i }));
+        submitForm();
+
+        expect(submit.mock.calls[0]![0]).toHaveProperty("thumbnail_url", "/storage/cover.webp");
     });
 });
 
