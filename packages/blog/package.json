@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/blog",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Blog feature for the Nreljed dashboard platform — posts, categories, tags, public blog and SEO generation frontend kit.",
   "license": "proprietary",
   "type": "module",

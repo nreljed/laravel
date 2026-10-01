@@ -15,7 +15,7 @@ vi.mock("../ImagePlugin", () => ({
   uploadImageToServer: vi.fn(),
 }));
 
-vi.mock("../../../ui/toast", () => ({
+vi.mock("@nreljed/platform/Components/ui/toast", () => ({
   toast: { add: vi.fn() },
 }));
 

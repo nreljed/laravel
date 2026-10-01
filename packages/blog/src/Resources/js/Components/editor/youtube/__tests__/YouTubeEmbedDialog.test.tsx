@@ -10,7 +10,7 @@ vi.mock("@lexical/react/LexicalComposerContext", () => ({
   useLexicalComposerContext: () => [{ update }],
 }));
 
-vi.mock("../../../ui/toast", () => ({
+vi.mock("@nreljed/platform/Components/ui/toast", () => ({
   toast: { add: vi.fn() },
 }));
 
