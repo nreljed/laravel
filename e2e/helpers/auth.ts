@@ -18,9 +18,11 @@ export async function login(page: Page): Promise<void> {
     ]);
 }
 
-/** Attaches console/pageerror listeners and returns the collected messages. */
+// Attaches console/pageerror listeners and returns the collected messages.
 export function collectConsoleErrors(page: Page, bucket: string[]): void {
-    page.on("pageerror", (e) => bucket.push(`pageerror: ${e}`));
+    page.on("pageerror", (e) => {
+        bucket.push(`pageerror: ${e}`);
+    });
     page.on("console", (m) => {
         if (m.type() === "error") {
             bucket.push(m.text());

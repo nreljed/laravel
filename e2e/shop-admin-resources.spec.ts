@@ -20,8 +20,8 @@ test("customers resource renders descriptor columns and a row action", async ({ 
         expect(headers).toContain(col);
     }
 
-    const buttons = (await page.locator("main button").allInnerTexts()).map((b) => b.trim());
-    expect(buttons).toContain("View");
+    const buttons = await page.locator("main button").allInnerTexts();
+    expect(buttons.map((b) => b.trim())).toContain("View");
 });
 
 test("orders resource renders descriptor columns and the status filter", async ({ page }) => {
@@ -33,8 +33,8 @@ test("orders resource renders descriptor columns and the status filter", async (
         expect(headers).toContain(col);
     }
 
-    const buttons = (await page.locator("main button").allInnerTexts()).map((b) => b.trim());
-    expect(buttons).toContain("Status");
+    const buttons = await page.locator("main button").allInnerTexts();
+    expect(buttons.map((b) => b.trim())).toContain("Status");
     expect(buttons).toContain("View");
 });
 
