@@ -11,6 +11,12 @@ export default defineConfig({
         pool: "threads",
         include: [
             "resources/js/**/*.test.{ts,tsx}",
+            // shop-module's own frontend suites. The package ships no vitest
+            // config of its own, so without this glob its tests are dead weight
+            // that nothing runs and nothing fails when they rot - this app is the
+            // module's deploy target, and it already resolves the package
+            // aliases below.
+            "../../packages/shop-module/src/Resources/js/**/*.test.{ts,tsx}",
         ],
         setupFiles: ["./resources/js/test-setup.ts"],
         coverage: {

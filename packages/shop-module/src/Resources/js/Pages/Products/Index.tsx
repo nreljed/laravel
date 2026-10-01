@@ -1,628 +1,157 @@
-import { useCallback, useMemo, useRef, useState } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import { usePage, router, Link } from "@inertiajs/react"
-import { Head } from "@inertiajs/react"
-import type { PageProps } from "@inertiajs/core"
+import { useCallback, useMemo } from "react";
+import { Head, router, usePage } from "@inertiajs/react";
+import type { PageProps } from "@inertiajs/core";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout"
-import { DataTable } from "@nreljed/platform/Components/ui/data-table"
-import { DataTableColumnHeader } from "@nreljed/platform/Components/ui/data-table-column-header"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@nreljed/platform/Components/ui/empty"
-import { Button } from "@nreljed/platform/Components/ui/button"
-import { Badge } from "@nreljed/platform/Components/ui/badge"
-import { ActionCell, type ActionItem } from "@nreljed/platform/Components/shared/action-cell"
-import { Input } from "@nreljed/platform/Components/ui/input"
-import { Label } from "@nreljed/platform/Components/ui/label"
-import type { AppTableFeatures } from "@nreljed/platform/lib/table-features"
-import { ShoppingBag, Plus, Download, Upload, TrendingUp } from "lucide-react"
+import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
+import { ResourceIndex } from "@nreljed/platform/Components/resources/ResourceIndex";
+import type { ResourceRowAction } from "@nreljed/platform/lib/resource-schema";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@nreljed/platform/Components/ui/dialog"
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@nreljed/platform/Components/ui/select"
-import { Checkbox } from "@nreljed/platform/Components/ui/checkbox"
-
-interface Category {
-  id: number
-  name: string
-}
-
-interface TagOrBrand {
-  id: number
-  name: string
-}
-
-interface ProductRow {
-  id: number
-  name: string
-  slug: string
-  sku: string | null
-  price: number | null
-  type: string
-  status: string
-  publish_date: string | null
-  unpublish_at: string | null
-  stock_quantity: number
-  low_stock_threshold: number | null
-  track_stock: boolean
-  thumbnail_url: string | null
-  catalog_visibility: string
-  categories: Category[]
-  tags: TagOrBrand[]
-  brands: TagOrBrand[]
-  is_featured: boolean
-}
+  defineProductResource,
+  type ProductOption,
+  type ProductRow,
+} from "../../resources/productResource";
 
 /**
- * How each visibility reads on the staff list.
+ * The product list is declared in `resources/productResource.ts` and rendered
+ * by the kernel's generic `ResourceIndex`.
  *
- * The status column answers "is it published?" and the visibility column answers
- * the completely separate question "is it in the store?". They can disagree in
- * both directions - a published product can be `hidden`, and a `search`-only
- * product is published, buyable and reachable but never appears on a grid - so
- * collapsing them into one badge would hide exactly the state a staff member
- * needs to see.
+ * What stays here is only what a declaration cannot know: the verb, the payload
+ * envelope and the toast copy. The columns, the bulk-input dialog, the filter
+ * facets and the row dropdown all come from the declaration.
  */
-const VISIBILITY_ROWS: Record<string, { label: string; variant: string; hint: string }> = {
-  visible: { label: "Visible", variant: "default", hint: "Listed, searchable and buyable" },
-  catalog: { label: "Catalog", variant: "default", hint: "Listed, searchable and buyable" },
-  search: { label: "Search only", variant: "secondary", hint: "Reachable and buyable, but never listed" },
-  hidden: { label: "Hidden", variant: "destructive", hint: "Not in the store at all" },
-}
-
-/**
- * Scrolling checkbox list for the category/tag bulk actions.
- *
- * The bulk endpoint takes `category_ids`/`tag_ids` and requires them to be
- * non-empty, so these four actions have to actually let a staff member pick
- * something. Kept in the dialog rather than a popover so the selection stays
- * visible next to the Apply button it gates.
- */
-function BulkPicker({
-  legend,
-  options,
-  selected,
-  onToggle,
-}: {
-  legend: string
-  options: TagOrBrand[]
-  selected: number[]
-  onToggle: (id: number) => void
-}) {
-  if (options.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        There is nothing to pick here yet - create one first, then come back.
-      </p>
-    );
-  }
-
-  return (
-    <div className="grid gap-2">
-      <Label>{legend}</Label>
-      <div className="max-h-56 overflow-y-auto rounded-md border p-2">
-        <div className="flex flex-col gap-1">
-          {options.map((option) => (
-            <label
-              key={option.id}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
-            >
-              <Checkbox
-                checked={selected.includes(option.id)}
-                onCheckedChange={() => onToggle(option.id)}
-              />
-              <span className="truncate">{option.name}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {selected.length} selected
-      </p>
-    </div>
-  );
-}
-
 export default function ProductsIndex() {
-  const { props } = usePage<PageProps & {
-    products: ProductRow[]
-    categories: Category[]
-    tags: { id: number; name: string }[]
-  }>()
-
-  const products = props.products || []
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const formData = new FormData()
-    formData.append("file", file)
-    router.post(route("dashboard.shop.products.import"), formData, {
-      preserveScroll: true,
-      onSuccess: () => { toast.add({ title: "Import completed.", type: "success" }) },
-      onError: () => { toast.add({ title: "Import failed.", type: "error" }) },
-    })
-    e.target.value = ""
-  }
-
-  const columns = useMemo(() => {
-    const cols: ColumnDef<AppTableFeatures, ProductRow>[] = [
-      {
-        accessorKey: "id",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-        cell: ({ row }) => <span className="text-xs font-mono text-muted-foreground">#{row.original.id}</span>,
-        meta: { className: "w-16 hidden sm:table-cell" },
-      },
-      {
-        accessorKey: "name",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Product" />,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-3 max-w-xs">
-            <div className="h-10 w-10 shrink-0 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-              {row.original.thumbnail_url ? (
-                <img src={row.original.thumbnail_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <ShoppingBag className="h-4 w-4 text-muted-foreground/50" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <Link
-                href={route("dashboard.shop.products.edit", row.original.id)}
-                className="text-sm font-medium text-foreground hover:underline truncate block"
-              >
-                {row.original.name}
-              </Link>
-              {row.original.sku && (
-                <p className="text-xs text-muted-foreground truncate">SKU: {row.original.sku}</p>
-              )}
-              {row.original.is_featured && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 mt-0.5">Featured</Badge>
-              )}
-            </div>
-          </div>
-        ),
-      },
-      {
-        accessorKey: "type",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-        cell: ({ row }) => (
-          <Badge variant="outline" className="text-xs capitalize">
-            {row.original.type}
-          </Badge>
-        ),
-        meta: { className: "hidden md:table-cell" },
-      },
-      {
-        id: "categories",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Categories" />,
-        cell: ({ row }) => {
-          const cats = row.original.categories || [];
-          if (cats.length === 0) return <span className="text-sm text-muted-foreground">—</span>;
-          const visible = cats.slice(0, 2);
-          const remainder = cats.length - 2;
-          return (
-            <div className="flex flex-wrap gap-1 max-w-[180px]">
-              {visible.map((c) => (
-                <Badge key={c.id} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{c.name}</Badge>
-              ))}
-              {remainder > 0 && <span className="text-[10px] text-muted-foreground self-center">+{remainder}</span>}
-            </div>
-          );
-        },
-        meta: { className: "hidden lg:table-cell" },
-        enableSorting: false,
-      },
-      {
-        id: "tags",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Tags" />,
-        cell: ({ row }) => {
-          const t = row.original.tags || [];
-          if (t.length === 0) return <span className="text-sm text-muted-foreground">—</span>;
-          const visible = t.slice(0, 2);
-          const remainder = t.length - 2;
-          return (
-            <div className="flex flex-wrap gap-1 max-w-[160px]">
-              {visible.map((tag) => (
-                <Badge key={tag.id} variant="outline" className="text-[10px] px-1.5 py-0 font-normal">{tag.name}</Badge>
-              ))}
-              {remainder > 0 && <span className="text-[10px] text-muted-foreground self-center">+{remainder}</span>}
-            </div>
-          );
-        },
-        meta: { className: "hidden xl:table-cell" },
-        enableSorting: false,
-      },
-      {
-        id: "brands",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Brands" />,
-        cell: ({ row }) => {
-          const b = row.original.brands || [];
-          if (b.length === 0) return <span className="text-sm text-muted-foreground">—</span>;
-          return (
-            <div className="flex flex-wrap gap-1 max-w-[160px]">
-              {b.map((brand) => (
-                <Badge key={brand.id} variant="outline" className="text-[10px] px-1.5 py-0 font-normal">{brand.name}</Badge>
-              ))}
-            </div>
-          );
-        },
-        meta: { className: "hidden xl:table-cell" },
-        enableSorting: false,
-      },
-      {
-        accessorKey: "price",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Price" />,
-        cell: ({ row }) => {
-          const p = row.original.price
-          if (!p && row.original.type === "variable") return <span className="text-sm text-muted-foreground">From €—</span>
-          return <span className="text-sm font-medium tabular-nums">{p != null ? `€${Number(p).toFixed(2)}` : "—"}</span>
-        },
-        meta: { className: "hidden md:table-cell" },
-      },
-      {
-        id: "stock",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Stock" />,
-        cell: ({ row }) => {
-          const p = row.original
-          if (!p.track_stock) return <span className="text-sm text-muted-foreground">—</span>
-          const isLow = p.low_stock_threshold != null && p.stock_quantity <= p.low_stock_threshold
-          return (
-            <div className="flex items-center gap-1.5">
-              <span className={`text-sm tabular-nums ${isLow ? "text-destructive font-medium" : ""}`}>
-                {p.stock_quantity}
-              </span>
-              {p.track_stock && (
-                <Link
-                  href={route("dashboard.shop.products.stock-history", p.id)}
-                  className="text-muted-foreground hover:text-foreground"
-                  title="Stock History"
-                >
-                  <TrendingUp className="h-3 w-3" />
-                </Link>
-              )}
-            </div>
-          )
-        },
-        meta: { className: "hidden lg:table-cell" },
-      },
-      {
-        accessorKey: "status",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-        cell: ({ row }) => {
-          const s = row.original.status
-          const variant = s === "published" ? "default" : s === "draft" ? "secondary" : "outline"
-          const cue = s === "future" && row.original.publish_date
-            ? `scheduled ${new Date(row.original.publish_date).toLocaleDateString()}`
-            : s === "published" && row.original.unpublish_at
-              ? `unpublishes ${new Date(row.original.unpublish_at).toLocaleDateString()}`
-              : null
-          return (
-            <span className="flex flex-col gap-0.5">
-              <Badge variant={variant} className="text-xs capitalize w-fit">{s}</Badge>
-              {cue && <span className="text-[10px] text-muted-foreground">{cue}</span>}
-            </span>
-          )
-        },
-        meta: { className: "hidden lg:table-cell" },
-      },
-      {
-        accessorKey: "catalog_visibility",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="In Store" />,
-        cell: ({ row }) => {
-          const key = row.original.catalog_visibility
-          const meta = VISIBILITY_ROWS[key] ?? { label: key, variant: "outline", hint: "" }
-          return (
-            <span className="flex flex-col gap-0.5" title={meta.hint}>
-              <Badge variant={meta.variant as never} className="text-xs w-fit">{meta.label}</Badge>
-              <span className="text-[10px] text-muted-foreground">{meta.hint}</span>
-            </span>
-          )
-        },
-        meta: { className: "hidden lg:table-cell" },
-      },
-      {
-        id: "actions",
-        cell: ({ row }) => (
-          <ActionCell
-            item={row.original as unknown as ActionItem}
-            baseRoute={route("dashboard.shop.products.index").replace(/\/+$/, "")}
-            itemLabel="Product"
-            /* The product status route is a PATCH; ActionCell's default is the
-             * blog's PUT, so the verb is declared by whoever owns the route. */
-            statusMethod="patch"
-          />
-        ),
-        enableSorting: false,
-      },
-    ]
-    return cols
-  }, [])
-
-  const [bulkActionSelection, setBulkActionSelection] = useState<{ ids: number[]; action: string } | null>(null);
-
-  const [bulkTypeValue, setBulkTypeValue] = useState("simple");
-  const [bulkCategoryIds, setBulkCategoryIds] = useState<number[]>([]);
-  const [bulkTagIds, setBulkTagIds] = useState<number[]>([]);
-  const [bulkStockStatus, setBulkStockStatus] = useState("instock");
-  const [bulkPriceValue, setBulkPriceValue] = useState("");
-
-  const handleBulkAction = useCallback((action: string, selectedIds: (number | string)[]) => {
-    const needsInput = ["type", "add_category", "remove_category", "add_tag", "remove_tag", "stock_status", "set_price"];
-    if (needsInput.includes(action)) {
-      setBulkActionSelection({ ids: selectedIds.map(Number), action });
-      return;
+  const { props } = usePage<
+    PageProps & {
+      products: ProductRow[];
+      categories: ProductOption[];
+      tags: ProductOption[];
     }
-    router.post(route("dashboard.shop.products.bulk"), {
-      action,
-      selected_ids: selectedIds,
-    }, {
-      onSuccess: () => {
-        toast.add({ title: "Bulk action completed.", type: "success" })
-        /* Inertia v3's ReloadOptions has no `preserveScroll`; the reload
-         * already inherits the original visit's scroll behaviour. */
-        router.reload()
-      },
-      onError: () => toast.add({ title: "Failed to perform bulk action.", type: "error" }),
-    })
-  }, [])
+  >();
 
-  /* A closed dialog must not carry its previous selection into the next one. */
-  const closeBulkDialog = useCallback(() => {
-    setBulkActionSelection(null);
-    setBulkCategoryIds([]);
-    setBulkTagIds([]);
-    setBulkPriceValue("");
-  }, []);
+  const products = props.products || [];
 
-  const executeBulkWithValue = useCallback(() => {
-    if (!bulkActionSelection) return;
-    const { ids, action } = bulkActionSelection;
-    const data: Record<string, string | number[]> = {
-      action,
-      selected_ids: ids,
-    };
-    if (action === "type") data.type_value = bulkTypeValue;
-    if (action === "add_category" || action === "remove_category") data.category_ids = bulkCategoryIds;
-    if (action === "add_tag" || action === "remove_tag") data.tag_ids = bulkTagIds;
-    if (action === "stock_status") data.stock_status_value = bulkStockStatus;
-    if (action === "set_price") data.price_value = bulkPriceValue;
-
-    router.post(route("dashboard.shop.products.bulk"), data, {
-      onSuccess: () => {
-        toast.add({ title: "Bulk action completed.", type: "success" });
-        closeBulkDialog();
-        router.reload();
-      },
-      onError: () => toast.add({ title: "Failed to perform bulk action.", type: "error" }),
-    });
-  }, [bulkActionSelection, bulkTypeValue, bulkCategoryIds, bulkTagIds, bulkStockStatus, bulkPriceValue, closeBulkDialog]);
-
-  const bulkActionDialogTitle = useMemo(() => {
-    if (!bulkActionSelection) return "";
-    const labels: Record<string, string> = {
-      type: "Change Product Type",
-      add_category: "Add Categories",
-      remove_category: "Remove Categories",
-      add_tag: "Add Tags",
-      remove_tag: "Remove Tags",
-      stock_status: "Set Stock Status",
-      set_price: "Set Price",
-    };
-    return labels[bulkActionSelection.action] || "Bulk Action";
-  }, [bulkActionSelection]);
+  const resource = useMemo(
+    () => defineProductResource({ categories: props.categories ?? [], tags: props.tags ?? [] }),
+    [props.categories, props.tags],
+  );
 
   /**
-   * The picker-driven actions post `category_ids`/`tag_ids`, which the controller
-   * requires. Applying one of them with nothing ticked would fail validation, so
-   * the button stays disabled until there is something to send.
+   * A bulk action that collects fields posts the collected values alongside the
+   * action and the selection. The fields are named for the controller's own
+   * validator (`type_value`, `category_ids`, `tag_ids`, `stock_status_value`,
+   * `price_value`), so the values need no renaming here.
    */
-  const bulkSelectionIsApplicable = useMemo(() => {
-    if (!bulkActionSelection) return false;
-    if (["add_category", "remove_category"].includes(bulkActionSelection.action)) {
-      return bulkCategoryIds.length > 0;
-    }
-    if (["add_tag", "remove_tag"].includes(bulkActionSelection.action)) {
-      return bulkTagIds.length > 0;
-    }
-    if (bulkActionSelection.action === "set_price") {
-      return bulkPriceValue !== "";
-    }
-    return true;
-  }, [bulkActionSelection, bulkCategoryIds, bulkTagIds, bulkPriceValue]);
+  const sendBulk = useCallback(
+    (action: string, ids: (number | string)[], values: Record<string, unknown> = {}) => {
+      router.post(
+        route("dashboard.shop.products.bulk"),
+        { action, selected_ids: ids, ...values },
+        {
+          onSuccess: () => {
+            toast.add({ title: "Bulk action completed.", type: "success" });
+            router.reload();
+          },
+          onError: () => toast.add({ title: "Failed to perform bulk action.", type: "error" }),
+        },
+      );
+    },
+    [],
+  );
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Products</h2>
-        <p className="text-muted-foreground">Manage your product catalog</p>
-      </div>
-      <div className="flex items-center gap-2">
-        <a href={route("dashboard.shop.products.export")}>
-          <Button variant="outline"><Download className="mr-1 h-4 w-4" /> Export</Button>
-        </a>
-        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-          <Upload className="mr-1 h-4 w-4" /> Import
-        </Button>
-        <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-        <Link href={route("dashboard.shop.products.create")}>
-          <Button><Plus className="mr-2 h-4 w-4" /> Add Product</Button>
-        </Link>
-      </div>
-    </div>
-  )
+  const onBulkAction = useCallback(
+    (action: string, ids: (number | string)[]) => sendBulk(action, ids),
+    [sendBulk],
+  );
 
-  if (products.length === 0) {
-    return (
-      <AuthenticatedLayout header="Products">
-        <Head title="Products" />
-        <div className="space-y-6">
-          {header}
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon"><ShoppingBag /></EmptyMedia>
-              <EmptyTitle>No products found</EmptyTitle>
-              <EmptyDescription>Create your first product to get started</EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Link href={route("dashboard.shop.products.create")}>
-                <Button><Plus className="mr-2 h-4 w-4" /> Create your first product</Button>
-              </Link>
-            </EmptyContent>
-          </Empty>
-        </div>
-      </AuthenticatedLayout>
-    )
-  }
+  const onBulkSubmit = useCallback(
+    (action: string, ids: (number | string)[], values: Record<string, unknown>) =>
+      sendBulk(action, ids, values),
+    [sendBulk],
+  );
+
+  /**
+   * The kernel owns the confirm dialogs and the per-row gating, so this handler
+   * only has to answer "what does this row action actually send?" for the two
+   * verbs a declaration cannot express: DELETE the product, or PATCH its status.
+   *
+   * The status transition is read off the row rather than off the action label.
+   * The two row actions are gated so that only one is ever offered - publish
+   * while the product is not published, make draft once it is - which makes the
+   * row's own status the discriminator, with no string matching to keep in sync
+   * with the menu.
+   */
+  const onRowAction = useCallback((action: ResourceRowAction<ProductRow>, row: ProductRow) => {
+    if (action.destructive) {
+      router.delete(route("dashboard.shop.products.destroy", row.id), {
+        preserveScroll: true,
+        onSuccess: () => toast.add({ title: "Product deleted.", type: "success" }),
+        onError: () => toast.add({ title: "Failed to delete product.", type: "error" }),
+      });
+
+      return;
+    }
+
+    if (!action.route) return;
+
+    const status = row.status === "published" ? "draft" : "published";
+
+    router.patch(
+      action.route(row),
+      { status },
+      {
+        preserveScroll: true,
+        onSuccess: () =>
+          toast.add({
+            title: status === "published" ? "Product published." : "Product moved to draft.",
+            type: "success",
+          }),
+        onError: () => toast.add({ title: "Failed to update product status.", type: "error" }),
+      },
+    );
+  }, []);
+
+  /** Export is a plain navigation: the CSV comes back as a download. */
+  const onHeaderAction = useCallback((action: { route: string; method: "get" | "post" }) => {
+    if (action.method === "get") {
+      window.location.href = action.route;
+
+      return;
+    }
+
+    router.post(action.route, {}, { preserveScroll: true });
+  }, []);
+
+  /**
+   * Import posts multipart `file`. The CSRF token rides along in the header the
+   * kernel sets, which a bare `router.post(FormData)` would otherwise not send.
+   */
+  const onHeaderUpload = useCallback((action: { route: string; file: File }) => {
+    const formData = new FormData();
+
+    formData.append("file", action.file);
+
+    router.post(action.route, formData, {
+      preserveScroll: true,
+      onSuccess: () => toast.add({ title: "Import completed.", type: "success" }),
+      onError: () => toast.add({ title: "Import failed.", type: "error" }),
+    });
+  }, []);
 
   return (
     <AuthenticatedLayout header="Products">
       <Head title="Products" />
-      <div className="space-y-6">
-        {header}
-        <DataTable
-          columns={columns}
-          data={products}
-          searchKey="name"
-          searchPlaceholder="Search products..."
-          filterKey="status"
-          filterTitle="Status"
-          filterOptions={[
-            { label: "Draft", value: "draft" },
-            { label: "Published", value: "published" },
-            { label: "Archived", value: "archived" },
-          ]}
-          filters={[
-            {
-              key: "catalog_visibility",
-              title: "In Store",
-              options: [
-                { label: "Visible", value: "visible" },
-                { label: "Catalog", value: "catalog" },
-                { label: "Search only", value: "search" },
-                { label: "Hidden", value: "hidden" },
-              ],
-            },
-          ]}
-          bulkActions={[
-            { label: "Publish", value: "publish", show: (s) => s.every((st) => st !== "published") },
-            { label: "Set to Draft", value: "draft", show: (s) => s.some((st) => st !== "draft") },
-            { label: "Archive", value: "archive" },
-            { label: "Mark as Featured", value: "featured", show: (s) => s.some((st) => st !== "featured") },
-            { label: "Unmark as Featured", value: "unfeatured" },
-            { label: "Change Type...", value: "type" },
-            { label: "Add Categories...", value: "add_category" },
-            { label: "Remove Categories...", value: "remove_category" },
-            { label: "Add Tags...", value: "add_tag" },
-            { label: "Remove Tags...", value: "remove_tag" },
-            { label: "Set Stock Status...", value: "stock_status" },
-            { label: "Set Price...", value: "set_price" },
-            { label: "Delete selected", value: "delete", destructive: true },
-          ]}
-          onBulkAction={handleBulkAction}
-        />
-
-        {/* Bulk Action Input Dialog */}
-        <Dialog open={!!bulkActionSelection} onOpenChange={(o) => { if (!o) closeBulkDialog(); }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{bulkActionDialogTitle}</DialogTitle>
-              <DialogDescription>
-                {bulkActionSelection?.ids.length} product(s) selected.
-              </DialogDescription>
-            </DialogHeader>
-
-            {bulkActionSelection?.action === "type" && (
-              <div className="grid gap-2">
-                <Label>Product Type</Label>
-                <Select value={bulkTypeValue} onValueChange={setBulkTypeValue}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="simple">Simple</SelectItem>
-                    <SelectItem value="variable">Variable</SelectItem>
-                    <SelectItem value="grouped">Grouped</SelectItem>
-                    <SelectItem value="external">External / Affiliate</SelectItem>
-                    <SelectItem value="digital">Digital</SelectItem>
-                    <SelectItem value="service">Service</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {bulkActionSelection?.action === "add_category" && (
-              <BulkPicker
-                legend="Categories to add"
-                options={props.categories}
-                selected={bulkCategoryIds}
-                onToggle={(id) => setBulkCategoryIds((current) =>
-                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
-                )}
-              />
-            )}
-
-            {bulkActionSelection?.action === "remove_category" && (
-              <BulkPicker
-                legend="Categories to remove"
-                options={props.categories}
-                selected={bulkCategoryIds}
-                onToggle={(id) => setBulkCategoryIds((current) =>
-                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
-                )}
-              />
-            )}
-
-            {bulkActionSelection?.action === "add_tag" && (
-              <BulkPicker
-                legend="Tags to add"
-                options={props.tags}
-                selected={bulkTagIds}
-                onToggle={(id) => setBulkTagIds((current) =>
-                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
-                )}
-              />
-            )}
-
-            {bulkActionSelection?.action === "remove_tag" && (
-              <BulkPicker
-                legend="Tags to remove"
-                options={props.tags}
-                selected={bulkTagIds}
-                onToggle={(id) => setBulkTagIds((current) =>
-                  current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
-                )}
-              />
-            )}
-
-            {bulkActionSelection?.action === "stock_status" && (
-              <div className="grid gap-2">
-                <Label>Stock Status</Label>
-                <Select value={bulkStockStatus} onValueChange={setBulkStockStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="instock">In Stock</SelectItem>
-                    <SelectItem value="outofstock">Out of Stock</SelectItem>
-                    <SelectItem value="onbackorder">On Backorder</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {bulkActionSelection?.action === "set_price" && (
-              <div className="grid gap-2">
-                <Label>Price</Label>
-                <Input type="number" step="0.01" min="0" value={bulkPriceValue}
-                  onChange={(e) => setBulkPriceValue(e.target.value)} placeholder="0.00" />
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button variant="outline" onClick={closeBulkDialog}>Cancel</Button>
-              <Button onClick={executeBulkWithValue} disabled={!bulkSelectionIsApplicable}>Apply</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <ResourceIndex
+        resource={resource}
+        data={products}
+        createRoute={resource.routes?.create}
+        editRoute={resource.routes?.edit}
+        destroyRoute={resource.routes?.destroy}
+        onRowAction={onRowAction}
+        onBulkAction={onBulkAction}
+        onBulkSubmit={onBulkSubmit}
+        onHeaderAction={onHeaderAction}
+        onHeaderUpload={onHeaderUpload}
+      />
     </AuthenticatedLayout>
-  )
+  );
 }
