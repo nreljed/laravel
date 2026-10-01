@@ -1,7 +1,15 @@
 import type { ReactNode, ComponentType } from "react";
-import type { CellData, ColumnDef } from "@tanstack/react-table";
+import type { CellData, ColumnDef, HeaderContext } from "@tanstack/react-table";
 import type { BulkAction } from "../Components/ui/data-table";
 import type { AppTableFeatures } from "./table-features";
+
+/**
+ * The context TanStack hands a column `header`. Its first type parameter is the
+ * feature set, so it has to be `AppTableFeatures` - spelling `HeaderContext`
+ * with only the row type yields a bare `Column_Core`, which is not assignable to
+ * the `Column` that `DataTableColumnHeader` wants.
+ */
+export type ResourceHeaderContext<TData extends ResourceRecord> = HeaderContext<AppTableFeatures, TData, CellData>;
 
 /**
  * A declarative description of an admin CRUD resource.
@@ -160,7 +168,22 @@ export interface FieldControlProps extends FieldContext {
 export interface ResourceColumn<TData extends ResourceRecord = ResourceRecord> {
     /** Accessor key, or a custom `cell` when the value is not directly on the row. */
     name?: keyof TData & string;
+    /**
+     * Identity for a column that reads no single row field - a display-only
+     * column whose `cell` composes several of them, or whose `name` is not a
+     * path into the row at all. Mirrors TanStack's own `id`: giving it omits
+     * `accessorKey`, so the column has no resolved value and no sort state,
+     * which is what a display-only column wants.
+     */
+    id?: string;
     header?: string;
+    /**
+     * Custom header renderer. Receives the same context TanStack hands a
+     * `header` function - `{ column, table, ... }` - so a sortable header is
+     * `({ column }) => <DataTableColumnHeader column={column} title="Name" />`.
+     * Omit it to get a plain label.
+     */
+    headerCell?: ReactNode | ((context: ResourceHeaderContext<TData>) => ReactNode);
     /** Cell renderer. Receives the row; `value` is the column's resolved value. */
     cell?: (row: TData, value: unknown) => ReactNode;
     /** CSS class applied to both header and body cells (TanStack v9 has no `className`). */
@@ -222,6 +245,8 @@ export interface ResourceHeaderAction {
     accept?: string;
     /** Ask before sending. */
     confirm?: string;
+    /** Icon to render in the button, if desired. */
+    icon?: ComponentType<{ className?: string }>;
 }
 
 /**
@@ -349,10 +374,24 @@ export function toColumnDef<TData extends ResourceRecord>(column: ResourceColumn
     const alignment =
         column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : "text-left";
 
+    // `declared` narrows to the function member in the first branch, so the
+    // context TanStack supplies is passed straight through - no cast, and the
+    // declaration's own signature is what a consumer is checked against. A
+    // non-function `headerCell` stays a function returning the node, because
+    // TanStack reads a non-function header as a plain string label.
+    const declared = column.headerCell;
+
     return {
-        id: column.name,
+        id: column.id ?? column.name,
+        // Only an accessor-backed column gets `accessorKey`; a display-only
+        // `id` stays valueless so TanStack reports it as unsortable instead of
+        // sorting a field that does not exist.
         accessorKey: column.name,
-        header: column.header,
+        header: declared
+            ? typeof declared === "function"
+                ? (context: ResourceHeaderContext<TData>) => declared(context)
+                : () => declared
+            : column.header,
         enableSorting: column.sortable ?? true,
         enableHiding: column.hideable ?? true,
         cell: column.cell ? (context: { row: { original: TData } }) => column.cell!(context.row.original, (context.row.original as ResourceRecord)[column.name as string]) : undefined,
@@ -579,7 +618,7 @@ export function toResource(
 interface SerializedRowAction {
     label: string;
     routeName?: string;
-    method?: "get" | "post" | "put" | "delete";
+    method?: "get" | "post" | "put" | "patch" | "delete";
     destructive?: boolean;
     confirm?: string;
 }

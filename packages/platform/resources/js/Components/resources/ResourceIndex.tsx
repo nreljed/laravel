@@ -406,6 +406,7 @@ const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction;
                         }
 
                         if (action.fileInput) {
+                            const Icon = (action as { icon?: React.ComponentType<{ className?: string }> }).icon;
                             return (
                                 <React.Fragment key={action.label}>
                                     <input
@@ -432,12 +433,14 @@ const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction;
                                         variant="outline"
                                         onClick={() => fileInputs.current.get(action.label)?.click()}
                                     >
+                                        {Icon ? <Icon className="mr-1 h-4 w-4" /> : null}
                                         {action.label}
                                     </Button>
                                 </React.Fragment>
                             );
                         }
 
+                        const Icon = (action as { icon?: React.ComponentType<{ className?: string }> }).icon;
                         return (
                             <Button
                                 key={action.label}
@@ -445,6 +448,7 @@ const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction;
                                 variant="outline"
                                 onClick={() => runHeaderAction(action as { label: string; route: string })}
                             >
+                                {Icon ? <Icon className="mr-1 h-4 w-4" /> : null}
                                 {action.label}
                             </Button>
                         );
@@ -462,7 +466,10 @@ const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction;
                 searchKeys={table.searchKeys}
                 searchPlaceholder={table.searchPlaceholder}
                 filters={table.filters?.map((filter) => ({ ...filter }))}
-                bulkActions={table.bulkActions}
+                bulkActions={table.bulkActions?.map((action) => ({
+                    ...action,
+                    needsInput: action.needsInput ?? (action.fields?.length ?? 0) > 0,
+                }))}
                 onBulkAction={onBulkAction}
                 onBulkInput={
                     onBulkSubmit

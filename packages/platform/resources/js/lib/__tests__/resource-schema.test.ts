@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildPayload } from "../../Components/resources/ResourceForm";
+import { jsx } from "react/jsx-runtime";
 import {
     defineResource,
     flattenFields,
@@ -56,8 +57,8 @@ describe("relation", () => {
 
 describe("toColumnDef", () => {
     /** Read a flag off a translated column; the `ColumnDef` union hides them. */
-    const flag = (column: ReturnType<typeof toColumnDef>, key: "accessorKey" | "enableSorting" | "enableHiding") =>
-        (column as unknown as Record<string, unknown>)[key];
+const flag = (column: ReturnType<typeof toColumnDef>, key: "id" | "accessorKey" | "enableSorting" | "enableHiding" | "header") =>
+    (column as unknown as Record<string, unknown>)[key];
 
     it("maps a declared name onto an accessorKey", () => {
         const column = toColumnDef({ name: "email" });
@@ -109,6 +110,69 @@ describe("toColumnDef", () => {
         (column.cell as (context: unknown) => unknown)({ row: { original: { id: 7, total: 12 } } });
 
         expect(seen).toEqual([7, 12]);
+    });
+
+    it("uses the plain header when no headerCell is declared", () => {
+        const column = toColumnDef({ name: "email", header: "Email" });
+
+        expect(flag(column, "header")).toBe("Email");
+    });
+
+    it("renders a headerCell ReactNode as the header", () => {
+        // The node is asserted on its own identity, not on JSX structure: this
+        // file has no JSX runtime (see the import above), and what matters is
+        // that the declared node reaches the renderer rather than being dropped.
+        const node = jsx("span", { children: "Email" });
+        const column = toColumnDef({ name: "email", headerCell: node });
+
+        expect((column.header as () => unknown)()).toBe(node);
+    });
+
+    it("calls a headerCell function with the header context", () => {
+        // The context is what carries the TanStack `column`, and without it a
+        // descriptor cannot build a sortable header button - the header would be
+        // text the reader cannot click.
+        let seen: unknown;
+
+        const column = toColumnDef({
+            name: "email",
+            headerCell: (context) => {
+                seen = context;
+
+                return "Email";
+            },
+        });
+
+        const context = { column: { id: "email" } };
+
+        expect((column.header as (c: unknown) => unknown)(context)).toBe("Email");
+        expect(seen).toBe(context);
+    });
+
+    it("omits the accessor for a display-only id", () => {
+        // A column whose cell composes several row fields has no single value
+        // to resolve. Giving it `accessorKey` would make TanStack treat a
+        // missing path as sortable, so the header becomes a sort control over
+        // `undefined` - the reader clicks it and nothing moves.
+        const display = toColumnDef({ id: "stock", headerCell: "Stock" });
+        const accessor = toColumnDef({ name: "stock_quantity", header: "Stock" });
+
+        expect(flag(display, "id")).toBe("stock");
+        expect(flag(display, "accessorKey")).toBeUndefined();
+        expect(flag(accessor, "id")).toBe("stock_quantity");
+        expect(flag(accessor, "accessorKey")).toBe("stock_quantity");
+    });
+
+    it("prefers an explicit id over the accessor name", () => {
+        const column = toColumnDef({ id: "stock", name: "stock_quantity" });
+
+        expect(flag(column, "id")).toBe("stock");
+    });
+
+    it("prefers headerCell over the plain header", () => {
+        const column = toColumnDef({ name: "email", header: "Email", headerCell: "E-mail" });
+
+        expect((column.header as () => unknown)()).toBe("E-mail");
     });
 });
 
@@ -359,6 +423,36 @@ describe("toResource", () => {
 
         // A serialized action with no verb walks (GET) — same as a TS-declared one.
         expect(show.method).toBe("get");
+    });
+
+    it("carries a serialized PATCH row action through", () => {
+        // The PHP descriptor whitelist allows "patch" and the TS row-action type
+        // allows it, but the serialized union once omitted it - so a PHP
+        // resource declaring a status PATCH was narrowed away by the type
+        // even though the runtime passed it through untouched.
+        const resource = toResource(
+            {
+                key: "shop/products",
+                label: "Products",
+                table: {
+                    columns: [{ name: "id", header: "ID" }],
+                    rowActions: [
+                        {
+                            label: "Publish",
+                            routeName: "dashboard.shop.products.update-status",
+                            method: "patch",
+                            confirm: "Publish this product?",
+                        },
+                    ],
+                },
+            },
+            routeRef,
+        );
+
+        const publish = resource.table?.rowActions?.[0]!;
+
+        expect(publish.method).toBe("patch");
+        expect(publish.confirm).toBe("Publish this product?");
     });
 
     it("resolves a relation field optionsUrl route name into a URL", () => {

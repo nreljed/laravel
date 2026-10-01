@@ -152,7 +152,47 @@ describe("ResourceIndex translation", () => {
 
         render(<ResourceIndex resource={resource} data={widgets} onBulkAction={() => undefined} />);
 
-        expect(lastDataTableProps().bulkActions).toEqual([{ label: "Delete", value: "delete" }]);
+        /* `needsInput` is resolved on the way through rather than trusted from
+         * the declaration - see the inference test below - so it is the only
+         * key the table sees that the descriptor did not write itself. */
+        expect(lastDataTableProps().bulkActions).toEqual([
+            { label: "Delete", value: "delete", needsInput: false },
+        ]);
+    });
+
+    it("infers needsInput from a declared field list", () => {
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                bulkActions: [
+                    {
+                        label: "Add Categories",
+                        value: "add_category",
+                        fields: [{ name: "category_ids", type: "checkboxList", label: "Categories" }],
+                    },
+                ],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkSubmit={() => undefined} />);
+
+        /* A descriptor that declares fields but forgets `needsInput` would
+         * otherwise route the action to the valueless path, and the user would be
+         * asked to confirm an action whose input form never opened. */
+        expect(lastDataTableProps().bulkActions!.at(0)!.needsInput).toBe(true);
+    });
+
+    it("keeps an explicitly declared needsInput: false on a fieldless action", () => {
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                bulkActions: [{ label: "Delete", value: "delete", needsInput: false }],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkSubmit={() => undefined} />);
+
+        expect(lastDataTableProps().bulkActions!.at(0)!.needsInput).toBe(false);
     });
 
     it("only offers the input path when a submit handler exists", () => {
@@ -464,6 +504,29 @@ describe("ResourceIndex translation", () => {
             route: "/products/export",
             method: "get",
         });
+    });
+
+    it("renders a header action's declared icon beside its label", () => {
+        const resource = makeResource({
+            table: {
+                columns: [{ name: "name" }],
+                headerActions: [
+                    {
+                        label: "Export CSV",
+                        route: "/products/export",
+                        method: "get",
+                        icon: ({ className }: { className?: string }) => <svg data-testid="export-icon" className={className} />,
+                    },
+                ],
+            },
+        });
+
+        render(<ResourceIndex resource={resource} data={widgets} onHeaderAction={() => undefined} />);
+
+        const icon = screen.getByTestId("export-icon");
+
+        expect(icon).toBeInTheDocument();
+        expect(icon).toHaveClass("h-4", "w-4");
     });
 
     it("renders a fileInput header action as a hidden picker, not a link", () => {

@@ -3432,10 +3432,6 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.77",
-                "issues": "https://github.com/nreljed/platform/issues"
-            },
             "time": "2026-10-01T12:47:48+00:00"
         },
         {
