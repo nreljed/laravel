@@ -38,7 +38,10 @@ final class ResourceSchemaContractTest extends TestCase
 
         $this->assertArrayHasKey(1, $matches, 'resource-schema.ts must declare the FieldType union.');
 
-        preg_match_all('/\|\s*"([a-z]+)"/', $matches[1], $typeMatches);
+        /* CamelCase members (`checkboxList`) must be captured too - a
+         * lowercase-only class would quietly drop them from the comparison and
+         * let the two halves drift apart. */
+        preg_match_all('/\|\s*"([a-zA-Z]+)"/', $matches[1], $typeMatches);
 
         $tsFieldTypes = $typeMatches[1] ?? [];
 
@@ -71,7 +74,10 @@ final class ResourceSchemaContractTest extends TestCase
 
         $this->assertArrayHasKey(1, $matches, 'fields.tsx must declare the BUILT_INS registry.');
 
-        preg_match_all('/^\s{4}([a-z]+):\s*\{/m', $matches[1], $registered);
+        /* `[a-z]+` cannot span the camelCase `checkboxList` the registry
+         * declares, so the type name is matched as a word instead - otherwise
+         * this check silently passes on any camelCase type and drifts. */
+        preg_match_all('/^\s{4}([a-zA-Z]+):\s*\{/m', $matches[1], $registered);
 
         $registeredTypes = $registered[1] ?? [];
 

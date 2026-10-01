@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, act, fireEvent } from "@testing-library/react";
 import type { CellData, ColumnDef } from "@tanstack/react-table";
 import { ResourceIndex } from "../ResourceIndex";
-import { defineResource, type ResourceDefinition, type ResourceRecord } from "../../../lib/resource-schema";
+import { defineResource, type FieldDefinition, type ResourceDefinition, type ResourceRecord } from "../../../lib/resource-schema";
 import { AppTableFeatures } from "../../../lib/table-features";
 
 /**
@@ -20,7 +20,7 @@ import { AppTableFeatures } from "../../../lib/table-features";
  */
 const { dataTableSpy, routerMock } = vi.hoisted(() => ({
     dataTableSpy: vi.fn(),
-    routerMock: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
+    routerMock: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
 vi.mock("../../ui/data-table", () => ({
@@ -75,6 +75,8 @@ beforeEach(() => {
     routerMock.get.mockClear();
     routerMock.delete.mockClear();
     routerMock.post.mockClear();
+    routerMock.put.mockClear();
+    routerMock.patch.mockClear();
 });
 
 afterEach(() => {
@@ -205,11 +207,10 @@ describe("ResourceIndex translation", () => {
             lastDataTableProps().onBulkInput?.({ label: "Add Categories", value: "add_category", needsInput: true }, [1, 2]);
         });
 
-        /* The dialog renders a footer button carrying the action's own label,
-         * so the last match is the submit and not the trigger. */
-        const submitButtons = screen.getAllByRole("button", { name: "Add Categories" });
+        /* The dialog's submit button is a plain "Apply" - repeating the action's
+         * label there read as though the dialog were still pending. */
         act(() => {
-            fireEvent.click(submitButtons[submitButtons.length - 1]!);
+            fireEvent.click(screen.getByRole("button", { name: "Apply" }));
         });
 
         expect(onBulkSubmit).toHaveBeenCalledWith("add_category", [1, 2], {});
@@ -241,9 +242,10 @@ describe("ResourceIndex translation", () => {
             );
         });
 
-        const buttons = screen.getAllByRole("button", { name: "Remove Categories" });
+        /* Filling the fields opens the confirm, not the submit: the confirm
+         * button is the one carrying the action's own label. */
         act(() => {
-            fireEvent.click(buttons[buttons.length - 1]!);
+            fireEvent.click(screen.getByRole("button", { name: "Apply" }));
         });
 
         /* Still unconfirmed - nothing may be sent until the user agrees. */
@@ -254,6 +256,194 @@ describe("ResourceIndex translation", () => {
         });
 
         expect(onBulkSubmit).toHaveBeenCalledWith("remove_category", [1], {});
+    });
+
+    /**
+     * Opens a bulk dialog the way the DataTable does: the action handed to
+     * `onBulkInput` is the very object the resource declared, `fields` included.
+     * A hand-rolled stub without `fields` opens a dialog with no controls at
+     * all, so a test written that way would assert against an empty dialog
+     * rather than against the component's behaviour.
+     */
+    function openBulkDialog(action: {
+        label: string;
+        value: string;
+        dialogTitle?: string;
+        needsInput?: boolean;
+        fields?: FieldDefinition[];
+    }) {
+        const onBulkSubmit = vi.fn();
+        const resource = makeResource({ table: { columns: [{ name: "name" }], bulkActions: [action] } });
+
+        render(<ResourceIndex resource={resource} data={widgets} onBulkSubmit={onBulkSubmit} />);
+
+        act(() => {
+            lastDataTableProps().onBulkInput?.(action as never, [1]);
+        });
+
+        return { onBulkSubmit };
+    }
+
+    /**
+     * A dialog whose `required` field starts empty must not be submittable: the
+     * controller would reject it on `required_if` anyway, and a disabled button
+     * says so before the round-trip instead of after it.
+     */
+    it("keeps Apply disabled while a required field is empty", () => {
+        const { onBulkSubmit } = openBulkDialog({
+            label: "Set Price",
+            value: "set_price",
+            needsInput: true,
+            fields: [{ name: "price_value", type: "number", label: "Price", required: true }],
+        });
+
+        const apply = screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement;
+
+        expect(apply.disabled).toBe(true);
+
+        act(() => {
+            fireEvent.click(apply);
+        });
+
+        expect(onBulkSubmit).not.toHaveBeenCalled();
+    });
+
+    it("enables Apply once a required field holds a value", () => {
+        const { onBulkSubmit } = openBulkDialog({
+            label: "Set Price",
+            value: "set_price",
+            needsInput: true,
+            fields: [{ name: "price_value", type: "number", label: "Price", required: true }],
+        });
+
+        act(() => {
+            /* A required label carries a `*` span, so the accessible name is
+             * "Price*" - matching the bare word would find nothing. */
+            fireEvent.change(screen.getByLabelText(/^Price/), { target: { value: "19.99" } });
+        });
+
+        const apply = screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement;
+
+        expect(apply.disabled).toBe(false);
+
+        act(() => {
+            fireEvent.click(apply);
+        });
+
+        expect(onBulkSubmit).toHaveBeenCalledWith("set_price", [1], { price_value: "19.99" });
+    });
+
+    /** A required multi-value field is satisfied by one tick, not by `[]`. */
+    it("keeps Apply disabled while a required checkboxList is empty", () => {
+        openBulkDialog({
+            label: "Add Categories",
+            value: "add_category",
+            needsInput: true,
+            fields: [
+                {
+                    name: "category_ids",
+                    type: "checkboxList",
+                    label: "Categories",
+                    required: true,
+                    options: [{ label: "Apparel", value: 1 }],
+                },
+            ],
+        });
+
+        const apply = screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement;
+
+        expect(apply.disabled).toBe(true);
+
+        act(() => {
+            /* The Base UI control and its hidden input both carry the label, so
+             * this is addressed by role: getByLabelText would find two. */
+            fireEvent.click(screen.getByRole("checkbox", { name: /Apparel/ }));
+        });
+
+        expect(apply.disabled).toBe(false);
+    });
+
+    it("does not gate on an optional field", () => {
+        openBulkDialog({
+            label: "Change Type",
+            value: "type",
+            needsInput: true,
+            fields: [{ name: "type_value", type: "text", label: "Type" }],
+        });
+
+        expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    /**
+     * A `defaultValue` has to be seeded when the dialog opens, or a select
+     * declaring `defaultValue: "simple"` sends an empty value the controller
+     * rejects as `required_if`.
+     */
+    it("seeds a field default when the dialog opens", () => {
+        const { onBulkSubmit } = openBulkDialog({
+            label: "Change Type",
+            value: "type",
+            needsInput: true,
+            fields: [
+                {
+                    name: "type_value",
+                    type: "select",
+                    label: "Type",
+                    required: true,
+                    defaultValue: "simple",
+                    options: [
+                        { label: "Simple", value: "simple" },
+                        { label: "Variable", value: "variable" },
+                    ],
+                },
+            ],
+        });
+
+        act(() => {
+            fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+        });
+
+        expect(onBulkSubmit).toHaveBeenCalledWith("type", [1], { type_value: "simple" });
+    });
+
+    it("gives an unseeded multi-value field an empty array, not undefined", () => {
+        const { onBulkSubmit } = openBulkDialog({
+            label: "Add Tags",
+            value: "add_tag",
+            needsInput: true,
+            fields: [{ name: "tag_ids", type: "checkboxList", label: "Tags" }],
+        });
+
+        act(() => {
+            fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+        });
+
+        expect(onBulkSubmit).toHaveBeenCalledWith("add_tag", [1], { tag_ids: [] });
+    });
+
+    /** A menu label ending in `...` announces the dialog; the title drops it. */
+    it("strips a trailing ellipsis from the dialog title", () => {
+        openBulkDialog({
+            label: "Add Categories...",
+            value: "add_category",
+            needsInput: true,
+            fields: [{ name: "category_ids", type: "checkboxList", label: "Categories" }],
+        });
+
+        expect(screen.getByText("Add Categories")).toBeDefined();
+        expect(screen.queryByText("Add Categories...")).toBeNull();
+    });
+
+    it("prefers an explicit dialogTitle over the derived one", () => {
+        openBulkDialog({
+            label: "Add Categories...",
+            dialogTitle: "Choose categories to add",
+            value: "add_category",
+            needsInput: true,
+            fields: [{ name: "category_ids", type: "checkboxList", label: "Categories" }],
+        });
+
+        expect(screen.getByText("Choose categories to add")).toBeDefined();
     });
 
     it("renders a plain header action as a button that reports its route", () => {
@@ -457,6 +647,45 @@ describe("ResourceIndex row actions", () => {
         act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
 
         expect(routerMock.post).toHaveBeenCalledWith("/widgets/1/approve", {}, { preserveScroll: true });
+    });
+
+    /**
+     * A feature that routes a partial update to PATCH answers 405 to a PUT, so
+     * the declared verb has to be the verb on the wire - not a PUT standing in
+     * for it.
+     */
+    it("submits a PATCH row action through router.patch", () => {
+        const resource = makeResource({
+            table: {
+                columns: [],
+                rowActions: [{ label: "Set status", method: "patch", route: (row) => `/widgets/${(row as Widget).id}/status` }],
+            },
+        });
+
+        const item = findItem(actionCellFor(resource), "Set status");
+
+        expect(item).not.toBeNull();
+
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+
+        expect(routerMock.patch).toHaveBeenCalledWith("/widgets/1/status", {}, { preserveScroll: true });
+        expect(routerMock.put).not.toHaveBeenCalled();
+    });
+
+    it("submits a PUT row action through router.put", () => {
+        const resource = makeResource({
+            table: {
+                columns: [],
+                rowActions: [{ label: "Rename", method: "put", route: (row) => `/widgets/${(row as Widget).id}` }],
+            },
+        });
+
+        const item = findItem(actionCellFor(resource), "Rename");
+
+        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+
+        expect(routerMock.put).toHaveBeenCalledWith("/widgets/1", {}, { preserveScroll: true });
+        expect(routerMock.patch).not.toHaveBeenCalled();
     });
 
     it("confirms a non-destructive action carrying confirm copy before running", () => {

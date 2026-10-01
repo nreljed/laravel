@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, router } from "@inertiajs/react";
-import { DataTable, type BulkAction } from "../ui/data-table";
+import { DataTable } from "../ui/data-table";
 import { Button } from "../ui/button";
 import {
     AlertDialog,
@@ -27,8 +27,8 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import { ResourceField } from "./fields";
-import { readPath, toColumnDef, type ResourceBulkAction, type ResourceDefinition, type ResourceRecord, type ResourceRowAction } from "../../lib/resource-schema";
+import { ResourceField, fieldTypeInitialValue } from "./fields";
+import { readPath, toColumnDef, type FieldDefinition, type ResourceBulkAction, type ResourceDefinition, type ResourceRecord, type ResourceRowAction } from "../../lib/resource-schema";
 
 /**
  * Renders a resource's index from its declaration.
@@ -84,7 +84,11 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
 }: ResourceIndexProps<TData>) {
     const table = resource.table;
     const [confirming, setConfirming] = React.useState<{ title: string; description?: string; confirmLabel: string; run: () => void } | null>(null);
-    const [bulkDialog, setBulkDialog] = React.useState<{ action: BulkAction; ids: (number | string)[]; values: Record<string, unknown> } | null>(null);
+    /* The dialog carries the *declared* action, not the table's `BulkAction`: the
+ * `fields`, `dialogTitle` and confirm copy a dialog needs all live on the
+ * resource-level shape, and `ResourceBulkAction` is a superset of what the table
+ * hands back. */
+const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction; ids: (number | string)[]; values: Record<string, unknown> } | null>(null);
     const fileInputs = React.useRef(new Map<string, HTMLInputElement | null>());
 
     const columns = React.useMemo(() => (table?.columns ?? []).map(toColumnDef), [table?.columns]);
@@ -120,7 +124,12 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
 
                     if (method === "post") {
                         router.post(url, {}, options);
-                    } else if (method === "put" || method === "patch") {
+                    } else if (method === "patch") {
+                        /* PATCH is not PUT: a feature that routes a partial
+                         * update to PATCH answers 405 to a PUT, so the declared
+                         * verb is the verb that goes on the wire. */
+                        router.patch(url, {}, options);
+                    } else if (method === "put") {
                         router.put(url, {}, options);
                     } else if (method === "delete") {
                         router.delete(url, options);
@@ -254,6 +263,27 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
         return next;
     }, [columns, actionsColumn]);
 
+    /**
+     * Seed a bulk action's dialog from its own field defaults, the way
+     * `ResourceForm` seeds a create form. Without it a field declaring
+     * `defaultValue: "simple"` opens the dialog *empty* and the action's value
+     * depends on the user noticing an unselected control - which for a
+     * `required` field is indistinguishable from a broken dialog.
+     */
+    const seedBulkValues = React.useCallback((action: ResourceBulkAction): Record<string, unknown> => {
+        const seeded: Record<string, unknown> = {};
+
+        for (const field of action.fields ?? []) {
+            if (field.defaultValue !== undefined) {
+                seeded[field.name] = field.defaultValue;
+            } else {
+                seeded[field.name] = fieldTypeInitialValue(field.type);
+            }
+        }
+
+        return seeded;
+    }, []);
+
     const setBulkValue = React.useCallback((path: string, value: unknown) => {
         setBulkDialog((current) =>
             current ? { ...current, values: { ...current.values, [path]: value } } : current,
@@ -264,8 +294,35 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
         setBulkDialog(null);
     }, []);
 
-    const submitBulkDialog = React.useCallback(() => {
+    /**
+     * Whether every `required` field in the open dialog holds a value. The Apply
+     * button reads this so the dialog cannot submit an action the server is
+     * going to reject on `required_if` anyway - the user gets a disabled button
+     * instead of a round-trip that ends in a validation error, and the
+     * controller stays the single source of truth for what is required.
+     */
+    const bulkDialogReady = React.useMemo(() => {
         if (!bulkDialog) {
+            return false;
+        }
+
+        return (bulkDialog.action.fields ?? []).every((field: FieldDefinition) => {
+            if (!field.required) {
+                return true;
+            }
+
+            const value = readPath(bulkDialog.values, field.name);
+
+            if (Array.isArray(value)) {
+                return value.length > 0;
+            }
+
+            return value !== undefined && value !== null && value !== "";
+        });
+    }, [bulkDialog]);
+
+    const submitBulkDialog = React.useCallback(() => {
+        if (!bulkDialog || !bulkDialogReady) {
             return;
         }
 
@@ -293,7 +350,7 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
 
         onBulkSubmit?.(action.value, ids, values);
         closeBulkDialog();
-    }, [bulkDialog, onBulkSubmit, closeBulkDialog]);
+    }, [bulkDialog, bulkDialogReady, onBulkSubmit, closeBulkDialog]);
 
     /**
      * Send a header action. A `fileInput` action is dispatched from the change
@@ -407,7 +464,20 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                 filters={table.filters?.map((filter) => ({ ...filter }))}
                 bulkActions={table.bulkActions}
                 onBulkAction={onBulkAction}
-                onBulkInput={onBulkSubmit ? (action, ids) => setBulkDialog({ action, ids, values: {} }) : undefined}
+                onBulkInput={
+                    onBulkSubmit
+                        ? (action, ids) =>
+                              setBulkDialog({
+                                  /* The table types the action as its own narrower
+                                   * `BulkAction`; it is the very object
+                                   * `table.bulkActions` handed it, so the declared
+                                   * fields are present at runtime. */
+                                  action: action as ResourceBulkAction,
+                                  ids,
+                                  values: seedBulkValues(action as ResourceBulkAction),
+                              })
+                        : undefined
+                }
                 defaultPageSize={table.defaultPageSize}
                 pageSizeOptions={table.pageSizeOptions}
                 emptyState={table.emptyState}
@@ -427,7 +497,15 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{bulkDialog?.action.label}</DialogTitle>
+                        {/* A menu label ending in `...` is announcing that a
+                            dialog opens; repeating it as the dialog's own
+                            title reads as though the dialog is still pending. */}
+                        <DialogTitle>
+                            {bulkDialog
+                                ? (bulkDialog.action.dialogTitle ??
+                                  bulkDialog.action.label.replace(/\.{3}$/, ""))
+                                : null}
+                        </DialogTitle>
                         <DialogDescription>
                             {bulkDialog
                                 ? `Applies to ${bulkDialog.ids.length} selected item(s).`
@@ -453,8 +531,8 @@ export function ResourceIndex<TData extends ResourceRecord = ResourceRecord>({
                         <Button type="button" variant="outline" onClick={closeBulkDialog}>
                             Cancel
                         </Button>
-                        <Button type="button" onClick={submitBulkDialog}>
-                            {bulkDialog?.action.label}
+                        <Button type="button" onClick={submitBulkDialog} disabled={!bulkDialogReady}>
+                            Apply
                         </Button>
                     </DialogFooter>
                 </DialogContent>

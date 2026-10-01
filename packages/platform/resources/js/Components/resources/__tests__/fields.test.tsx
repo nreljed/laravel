@@ -39,6 +39,7 @@ describe("field type registry", () => {
         "password",
         "hidden",
         "relation",
+        "checkboxList",
         "nested",
     ])("has a built-in control for %s", (type) => {
         expect(getFieldType(type as never)?.control).toBeDefined();
@@ -275,6 +276,151 @@ describe("relation field", () => {
         const error = await screen.findByText("Failed to load options (500)");
 
         expect(error).toBeDefined();
+    });
+});
+
+/**
+ * `checkboxList` is `relation`'s twin: same scalar-array value, same option
+ * sources, different shape. The distinction that matters is that a list shows
+ * its whole catalog at once, so it is asserted against the things a combobox
+ * cannot do - no search affordance, and a tick per option.
+ */
+describe("checkboxList field", () => {
+    function listContext(field: FieldDefinition, value: unknown = []) {
+        const setValue = vi.fn();
+        const context: FieldContext = {
+            field,
+            record: { [field.name]: value } as ResourceRecord,
+            value,
+            setValue,
+            setField: () => undefined,
+        };
+
+        return { context, setValue };
+    }
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("lists every declared option at once, with no search box", () => {
+        const { context } = listContext({
+            name: "category_ids",
+            type: "checkboxList",
+            label: "Categories",
+            options: [
+                { label: "Apparel", value: 1 },
+                { label: "Mugs", value: 2 },
+            ],
+        });
+
+        render(<ResourceField context={context} />);
+
+        expect(screen.getByText("Apparel")).toBeDefined();
+        expect(screen.getByText("Mugs")).toBeDefined();
+        // The combobox a `relation` renders is the affordance this type exists
+        // to avoid - if one appears, the two have drifted into each other.
+        expect(screen.queryByRole("combobox")).toBeNull();
+    });
+
+    it("adds a ticked value to the array and removes an unticked one", () => {
+        const { context, setValue } = listContext(
+            {
+                name: "category_ids",
+                type: "checkboxList",
+                label: "Categories",
+                options: [
+                    { label: "Apparel", value: 1 },
+                    { label: "Mugs", value: 2 },
+                ],
+            },
+            [1],
+        );
+
+        render(<ResourceField context={context} />);
+
+        /* Addressed by role: a Base UI Checkbox ships a hidden input carrying
+         * the same label, so getByLabelText would match two elements. */
+        fireEvent.click(screen.getByRole("checkbox", { name: "Mugs" }));
+
+        expect(setValue).toHaveBeenCalledWith([1, 2]);
+    });
+
+    it("drops a value whose option is unticked", () => {
+        const { context, setValue } = listContext(
+            {
+                name: "category_ids",
+                type: "checkboxList",
+                label: "Categories",
+                options: [
+                    { label: "Apparel", value: 1 },
+                    { label: "Mugs", value: 2 },
+                ],
+            },
+            [1, 2],
+        );
+
+        render(<ResourceField context={context} />);
+
+        fireEvent.click(screen.getByRole("checkbox", { name: "Apparel" }));
+
+        expect(setValue).toHaveBeenCalledWith([2]);
+    });
+
+    it("reports how many are selected", () => {
+        const { context } = listContext(
+            {
+                name: "category_ids",
+                type: "checkboxList",
+                label: "Categories",
+                options: [{ label: "Apparel", value: 1 }],
+            },
+            [1],
+        );
+
+        render(<ResourceField context={context} />);
+
+        expect(screen.getByText("1 selected")).toBeDefined();
+    });
+
+    it("loads options from optionsUrl like relation does", async () => {
+        const fetchSpy = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => [
+                { label: "Apparel", value: 1 },
+                { label: "Mugs", value: 2 },
+            ],
+        });
+
+        vi.stubGlobal("fetch", fetchSpy);
+
+        const { context, setValue } = listContext({
+            name: "category_ids",
+            type: "checkboxList",
+            label: "Categories",
+            optionsUrl: "/shop/categories/options",
+        });
+
+        render(<ResourceField context={context} />);
+
+        const option = await screen.findByRole("checkbox", { name: "Apparel" });
+
+        fireEvent.click(option);
+
+        expect(setValue).toHaveBeenCalledWith([1]);
+    });
+
+    it("explains an empty catalog instead of rendering an empty box", async () => {
+        const { context } = listContext({
+            name: "category_ids",
+            type: "checkboxList",
+            label: "Categories",
+            options: [],
+        });
+
+        render(<ResourceField context={context} />);
+
+        expect(screen.getByText(/nothing to pick here yet/i)).toBeDefined();
     });
 });
 

@@ -3,6 +3,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { NativeSelect, NativeSelectOption } from "../ui/native-select";
 import { Switch } from "../ui/switch";
+import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import {
     Collapsible,
@@ -87,6 +88,17 @@ export function getFieldType(type: FieldType): FieldTypeRegistration | undefined
 
 export function registeredFieldTypes(): FieldType[] {
     return [...registry.keys()];
+}
+
+/**
+ * The empty value a freshly-registered control starts from - `[]` for the
+ * multi-value pickers, `false` for a switch, `null` for raw JSON. Callers that
+ * build a value map outside a form (the bulk-action dialog) seed from the same
+ * registry the controls render through, so a new field type cannot end up with
+ * a working control and an uninitialised value.
+ */
+export function fieldTypeInitialValue(type: FieldType): unknown {
+    return registry.get(type)?.initialValue?.() ?? "";
 }
 
 function Label({ field, id, required }: { field: FieldDefinition; id: string; required?: boolean }) {
@@ -414,6 +426,84 @@ function RelationInput({ field, id, name, disabled, value, setValue }: FieldCont
                     <ComboboxEmpty>{loaded ? "No options." : "Loading…"}</ComboboxEmpty>
                 </ComboboxContent>
             </Combobox>
+            {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+        </div>
+    );
+}
+
+/**
+ * `checkboxList` is the same multi-value picker `relation` is, rendered as a
+ * scrolling list of tick boxes instead of a searchable combobox. It exists
+ * because the two answer different questions: a combobox is right when the
+ * catalog is long enough that finding an entry means *searching* for it
+ * (products on a coupon), and a list is right when a staff member needs to see
+ * the whole available set at once and tick several of it (categories on a
+ * product's bulk assign). Shipping the list as its own type rather than a flag
+ * on `relation` leaves every existing `relation` field rendering exactly as it
+ * did.
+ *
+ * The value is the raw scalar array, the same shape `relation` writes, so a
+ * bulk action can move between the two controls without touching its payload.
+ */
+function CheckboxListInput({ field, id, disabled, value, setValue }: FieldControlProps) {
+    const selected = React.useMemo(() => (Array.isArray(value) ? (value as Array<string | number>) : []), [value]);
+    const { options, loaded, error: loadError } = useOptions(field);
+
+    const isSelected = (option: FieldOption) => selected.some((entry) => String(entry) === String(option.value));
+
+    const toggle = (option: FieldOption) => {
+        if (disabled) {
+            return;
+        }
+
+        setValue(
+            isSelected(option)
+                ? selected.filter((entry) => String(entry) !== String(option.value))
+                : [...selected, option.value],
+        );
+    };
+
+    return (
+        <div className="space-y-2">
+            <div
+                className="max-h-56 overflow-y-auto rounded-md border p-2"
+                role="group"
+                aria-labelledby={id}
+                aria-invalid={loadError ? "true" : undefined}
+            >
+                {options.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        {loaded
+                            ? "There is nothing to pick here yet - create one first, then come back."
+                            : "Loading…"}
+                    </p>
+                ) : (
+                    <div className="flex flex-col gap-1">
+                        {options.map((option) => {
+                            const optionId = `${id}-${String(option.value)}`;
+
+                            return (
+                                <label
+                                    key={String(option.value)}
+                                    htmlFor={optionId}
+                                    className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                                >
+                                    <Checkbox
+                                        id={optionId}
+                                        checked={isSelected(option)}
+                                        disabled={disabled}
+                                        onCheckedChange={() => toggle(option)}
+                                    />
+                                    <span className="truncate">{option.label}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+            <p className="text-xs text-muted-foreground" data-selected-count={selected.length}>
+                {selected.length} selected
+            </p>
             {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
         </div>
     );
@@ -938,6 +1028,7 @@ const BUILT_INS: Record<Exclude<FieldType, "dynamic">, FieldTypeRegistration> = 
     password: { control: PasswordInput, initialValue: () => "" },
     hidden: { control: HiddenInput },
     relation: { control: RelationInput, initialValue: () => [] },
+    checkboxList: { control: CheckboxListInput, initialValue: () => [] },
     nested: { control: NestedInput, initialValue: () => [] },
 };
 

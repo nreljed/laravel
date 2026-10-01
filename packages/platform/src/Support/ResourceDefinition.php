@@ -46,6 +46,7 @@ class ResourceDefinition
         'password',
         'hidden',
         'relation',
+        'checkboxList',
         'nested',
     ];
 
@@ -88,7 +89,7 @@ class ResourceDefinition
      * allowed here: a bulk action that needs input - assign categories, set a
      * price - is described, not hand-built.
      */
-    private const BULK_ACTION_KEYS = ['label', 'value', 'destructive', 'confirmTitle', 'confirmDescription', 'confirmLabel', 'fields'];
+    private const BULK_ACTION_KEYS = ['label', 'value', 'destructive', 'confirmTitle', 'confirmDescription', 'confirmLabel', 'fields', 'dialogTitle'];
 
     /** `rowAction` keys a PHP descriptor may carry. */
     private const ROW_ACTION_KEYS = ['label', 'routeName', 'method', 'destructive', 'confirm'];
@@ -422,8 +423,8 @@ class ResourceDefinition
                         $issues[] = $where.'.routeName must be a non-empty route name (the kernel binds the record param)';
                     }
 
-                    if (isset($action['method']) && ! in_array($action['method'], ['get', 'post', 'put', 'delete'], true)) {
-                        $issues[] = $where.'.method must be one of [get|post|put|delete]';
+                    if (isset($action['method']) && ! in_array($action['method'], ['get', 'post', 'put', 'patch', 'delete'], true)) {
+                        $issues[] = $where.'.method must be one of [get|post|put|patch|delete]';
                     }
 
                     if (isset($action['destructive']) && ! is_bool($action['destructive'])) {
@@ -526,6 +527,25 @@ class ResourceDefinition
 
                     if (isset($action['fields']) && ! is_array($action['fields'])) {
                         $issues[] = $where.'.fields must be an array of field definitions';
+                    } elseif (is_array($action['fields'] ?? null)) {
+                        // A bulk action's fields are form fields, so they are
+                        // validated as such - a mistyped field type here would
+                        // otherwise only surface as an unlabelled control at
+                        // runtime, in a dialog, after the resource shipped.
+                        foreach (array_keys($action['fields']) as $fieldIndex) {
+                            $field = $action['fields'][$fieldIndex];
+
+                            if (! is_array($field)) {
+                                $issues[] = $where.".fields[{$fieldIndex}] must be a field definition array";
+
+                                continue;
+                            }
+
+                            $issues = array_merge(
+                                $issues,
+                                $this->fieldViolations($where.".fields[{$fieldIndex}]", $field),
+                            );
+                        }
                     }
                 }
             }

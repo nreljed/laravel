@@ -50,6 +50,7 @@ export type FieldType =
     | "password"
     | "hidden"
     | "relation"
+    | "checkboxList"
     | "nested"
     | "dynamic";
 
@@ -182,7 +183,7 @@ export interface ResourceRowAction<TData extends ResourceRecord = ResourceRecord
     /** Resolve the Inertia route for a row, e.g. (row) => `admin/products/${row.id}/edit`. */
     route?: (row: TData) => string;
     /** HTTP verb the route resolves to. Non-`get` actions submit, they do not navigate. */
-    method?: "get" | "post" | "put" | "delete";
+    method?: "get" | "post" | "put" | "patch" | "delete";
     /** Destructive actions get a confirm dialog and destructive styling. */
     destructive?: boolean;
     /**
@@ -234,6 +235,13 @@ export interface ResourceHeaderAction {
 export interface ResourceBulkAction extends Omit<BulkAction, "show"> {
     /** Fields collected in a dialog before the action is POSTed. */
     fields?: FieldDefinition[];
+    /**
+     * Heading for the input dialog. Defaults to `label` with a trailing ellipsis
+     * stripped, because a menu label that ends in `...` ("Add Categories...")
+     * is announcing that *something else* opens - reusing it verbatim as the
+     * dialog's own title reads as though the dialog is still pending.
+     */
+    dialogTitle?: string;
     /** Gate the action on the current selection (TS-only; not serializable). */
     show?: (selectedStatuses: string[]) => boolean;
 }
@@ -481,19 +489,6 @@ export function rowMatchesSearchKeys(row: ResourceRecord, query: string, keys: s
 }
 
 /**
- * Rehydrate a serialized PHP descriptor into a runtime `ResourceDefinition`.
- * The default `routeRef` is Ziggy's global `route`; tests inject a spy.
- *
- * Besides the literal `record` route slots, the bridge resolves two
- * route-name surfaces the PHP side cannot express as closures but the runtime
- * needs as URLs:
- *  - `table.rowActions` entries declare `routeName`; each becomes a `route`
- *    builder bound to `{ record: row.id }` (interim Route URL) carrying the
- *    declared verb (`method`) and optional `confirm` copy.
- *  - field `optionsUrl` (the `relation` field's lazy option source) is
- *    resolved from a route name to a URL.
- */
-/**
  * Resolve every URL surface on a serialized field - `optionsUrl`, `uploadUrl`
  * and `deleteUrl` arrive as route names from a PHP descriptor and need to
  * become URLs - and, for a `nested` field, do the same for each row's
@@ -549,6 +544,11 @@ export function toResource(
                 ...table,
                 rowActions: mapSerializedRowActions(table.rowActions, routeRef, recordParam),
                 headerActions: mapSerializedHeaderActions(table.headerActions, routeRef),
+                // A bulk action's `fields` are form fields, so their lazy option
+                // sources need the same route-name resolution the form gets -
+                // otherwise a serialized `optionsUrl` reaches the control as a
+                // route name and its fetch 404s.
+                bulkActions: mapSerializedBulkActions(table.bulkActions, routeRef),
             } as ResourceTable<ResourceRecord>)
             : undefined,
         form: (serialized.form ?? undefined)?.map(
@@ -657,6 +657,37 @@ export function mapSerializedHeaderActions(
             ...(action.fileInput !== undefined ? { fileInput: action.fileInput } : {}),
             ...(typeof action.accept === "string" && action.accept !== "" ? { accept: action.accept } : {}),
             ...(typeof action.confirm === "string" && action.confirm !== "" ? { confirm: action.confirm } : {}),
+        };
+    });
+}
+
+/**
+ * Resolve a bulk action's `fields` so a serialized descriptor's lazy option
+ * sources become fetchable URLs. A bulk action's fields are form fields in
+ * every other respect - the same `resolveField` the form path uses, so a
+ * `checkboxList` or `relation` over an `optionsUrl` route name behaves the same
+ * whether it was declared on a form section or a bulk action.
+ */
+export function mapSerializedBulkActions(
+    bulkActions: unknown,
+    routeRef: RouteRef = (name, params) => route(name, params),
+): ResourceBulkAction[] | undefined {
+    if (!Array.isArray(bulkActions)) {
+        return undefined;
+    }
+
+        return (bulkActions as Array<Record<string, unknown>>).map((declared) => {
+        const action = declared as Partial<ResourceBulkAction>;
+
+        return {
+            ...(action as ResourceBulkAction),
+            ...(Array.isArray(action.fields)
+                ? {
+                      fields: (action.fields as unknown as Array<Record<string, unknown>>).map((field) =>
+                          resolveField(field, routeRef),
+                      ),
+                  }
+                : {}),
         };
     });
 }

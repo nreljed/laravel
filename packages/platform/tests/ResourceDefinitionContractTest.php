@@ -7,6 +7,17 @@ use PHPUnit\Framework\TestCase;
 
 final class ResourceDefinitionContractTest extends TestCase
 {
+    /**
+     * The type list an unknown field type is reported against, derived from the
+     * catalog rather than pasted. Hardcoding it made every new field type a
+     * test edit - and when one was missed the suite failed on an unrelated
+     * message, hiding whether the real check still worked.
+     */
+    private static function allowedFieldTypes(): string
+    {
+        return 'must be one of ['.implode('|', ResourceDefinition::FIELD_TYPES).']';
+    }
+
     public function test_defaults_are_empty(): void
     {
         $definition = new ResourceDefinition(key: 'products', label: 'Products');
@@ -146,7 +157,7 @@ final class ResourceDefinitionContractTest extends TestCase
                         'label' => 'Add Categories',
                         'value' => 'add_category',
                         'fields' => [
-                            ['name' => 'category_ids', 'type' => 'relation', 'label' => 'Categories', 'relation' => 'categories'],
+                            ['name' => 'category_ids', 'type' => 'relation', 'optionsUrl' => 'dashboard.shop.categories.options'],
                         ],
                     ],
                 ],
@@ -309,7 +320,7 @@ final class ResourceDefinitionContractTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'form.0.fields[0].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation|nested]',
+            'form.0.fields[0].type '.self::allowedFieldTypes()." (got 'colour-swatch')",
             implode("\n", $definition->violations()),
         );
     }
@@ -325,7 +336,7 @@ final class ResourceDefinitionContractTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'form.0.fields[0].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation|nested]',
+            'form.0.fields[0].type '.self::allowedFieldTypes()." (got 'dynamic')",
             implode("\n", $definition->violations()),
         );
     }
@@ -472,8 +483,10 @@ final class ResourceDefinitionContractTest extends TestCase
                 'columns' => [['name' => 'id', 'header' => 'ID']],
                 'rowActions' => [
                     ['label' => 'Approve', 'routeName' => 'dashboard.shop.reviews.approve', 'method' => 'post', 'confirm' => 'Approve this review?'],
+                    ['label' => 'Set status', 'routeName' => 'dashboard.shop.reviews.status', 'method' => 'patch'],
                     ['label' => 'Delete', 'routeName' => 'dashboard.shop.reviews.destroy', 'method' => 'delete', 'destructive' => true],
                     ['label' => 'Show', 'routeName' => 'dashboard.shop.reviews.show', 'method' => 'get'],
+                    ['label' => 'Rename', 'routeName' => 'dashboard.shop.reviews.update', 'method' => 'put'],
                 ],
             ],
         );
@@ -490,7 +503,7 @@ final class ResourceDefinitionContractTest extends TestCase
             table: [
                 'columns' => [['name' => 'id', 'header' => 'ID']],
                 'rowActions' => [
-                    ['routeName' => 'dashboard.shop.reviews.approve', 'method' => 'patch'],
+                    ['routeName' => 'dashboard.shop.reviews.approve', 'method' => 'trace'],
                     ['label' => 'Purge', 'method' => 'post'],
                     ['label' => 'Logo', 'routeName' => 'dashboard.shop.reviews.logo', 'confirm' => 3],
                     ['label' => 'Broken', 'routeName' => 'dashboard.shop.reviews.broken', 'destructive' => 'yes', 'icon' => 'swatch'],
@@ -501,11 +514,74 @@ final class ResourceDefinitionContractTest extends TestCase
         $joined = implode("\n", $definition->violations());
 
         $this->assertStringContainsString('table.rowActions[0].label must be a non-empty string', $joined);
-        $this->assertStringContainsString('table.rowActions[0].method must be one of [get|post|put|delete]', $joined);
+        $this->assertStringContainsString('table.rowActions[0].method must be one of [get|post|put|patch|delete]', $joined);
         $this->assertStringContainsString('table.rowActions[1].routeName must be a non-empty route name', $joined);
         $this->assertStringContainsString('table.rowActions[2].confirm must be a non-empty string when present', $joined);
         $this->assertStringContainsString('table.rowActions[3].destructive must be a boolean', $joined);
         $this->assertStringContainsString('table.rowActions[3].icon is not expressible in a PHP descriptor row action', $joined);
+    }
+
+    /**
+     * A row action that carries a `dialogTitle` and a `checkboxList` field is
+     * the exact shape the products index declares, and it has to survive
+     * validation: rejecting it would block the migration at boot.
+     */
+    public function test_bulk_action_with_a_dialog_title_and_a_checkbox_list_field_passes_validation(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'bulkEndpoint' => 'dashboard.shop.products.bulk',
+                'bulkActions' => [
+                    [
+                        'label' => 'Add Categories...',
+                        'dialogTitle' => 'Choose categories to add',
+                        'value' => 'add_category',
+                        'fields' => [
+                            [
+                                'name' => 'category_ids',
+                                'type' => 'checkboxList',
+                                'label' => 'Categories',
+                                'required' => true,
+                                'options' => [['label' => 'Apparel', 'value' => 1]],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        );
+
+        $this->assertSame([], $definition->violations());
+    }
+
+    /**
+     * A mistyped field type inside a bulk action would otherwise only surface
+     * in a dialog at runtime; the descriptor is rejected at boot instead.
+     */
+    public function test_a_bulk_action_field_with_an_unknown_type_is_rejected(): void
+    {
+        $definition = new ResourceDefinition(
+            key: 'shop.products',
+            label: 'Products',
+            table: [
+                'columns' => [['name' => 'id', 'header' => 'ID']],
+                'bulkEndpoint' => 'dashboard.shop.products.bulk',
+                'bulkActions' => [
+                    [
+                        'label' => 'Add Categories',
+                        'value' => 'add_category',
+                        'fields' => [['name' => 'category_ids', 'type' => 'checkboxes', 'label' => 'Categories']],
+                    ],
+                ],
+            ],
+        );
+
+        $joined = implode("\n", $definition->violations());
+
+        $this->assertStringContainsString('table.bulkActions[0].fields[0].type', $joined);
+        $this->assertStringContainsString('checkboxes', $joined);
     }
 
     public function test_row_actions_with_no_columns_are_rejected(): void
@@ -710,7 +786,7 @@ final class ResourceDefinitionContractTest extends TestCase
             $joined,
         );
         $this->assertStringContainsString(
-            'form.0.fields[0].rows[1].type must be one of [text|textarea|number|money|select|boolean|date|datetime|slug|json|media|password|hidden|relation|nested]',
+            'form.0.fields[0].rows[1].type '.self::allowedFieldTypes()." (got 'not-a-type')",
             $joined,
         );
         $this->assertStringContainsString(
