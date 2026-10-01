@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
-import { Plus, Trash2, Sparkles, Save, AlertTriangle, Image as ImageIcon, X, Info, Layers, Star, Pencil, Percent, GripVertical } from "lucide-react";
+import { Plus, Trash2, Sparkles, Image as ImageIcon, X, Info, Layers, Star, Pencil, Percent, GripVertical } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -140,10 +140,6 @@ interface Props {
   setCustomAttrValues: (v: string) => void;
 }
 
-interface RowDirty {
-  [variationId: number]: Partial<Variation>;
-}
-
 export function VariationsManager({
   productId, attributes, initialVariations, productAttributes = [], isCreating = false,
   attrList, availableGlobalAttrs,
@@ -153,7 +149,6 @@ export function VariationsManager({
   reorderAttributes,
 }: Props) {
   const [variations, setVariations] = useState<Variation[]>(initialVariations || []);
-  const [dirty, setDirty] = useState<RowDirty>({});
   const [saving, setSaving] = useState(false);
   const [drawerVariation, setDrawerVariation] = useState<Variation | null>(null);
   const [drawerForm, setDrawerForm] = useState<Partial<Variation>>({});
@@ -551,26 +546,6 @@ export function VariationsManager({
     } catch { toast.add({ title: "Failed to add variation.", type: "error" }); }
   };
 
-  const handleBulkSave = async () => {
-    setSaving(true);
-    try {
-      const dirtyEntries = Object.entries(dirty);
-      if (dirtyEntries.length === 0) { toast.add({ title: "Nothing to save.", type: "success" }); return; }
-      const payload = dirtyEntries.map(([id, patch]) => ({ id: parseInt(id), ...patch }));
-      const selectedTargets = selectedVarIds.size > 0 ? Array.from(selectedVarIds) : null;
-      await apiFetch(route("dashboard.shop.products.variations.bulk", productId), "POST", {
-        variations: payload,
-        selected_ids: selectedTargets,
-        bulk_edit: true,
-      });
-      toast.add({ title: `${payload.length} variation(s) saved.`, type: "success" });
-      setDirty({});
-      fetchVariations();
-    } catch { toast.add({ title: "Failed to save variations.", type: "error" }); } finally {
-      setSaving(false);
-    }
-  };
-
   const selectedTargetIds = useMemo(() => {
     if (selectedVarIds.size === 0) return null;
     return Array.from(selectedVarIds);
@@ -667,7 +642,6 @@ export function VariationsManager({
   }, [isCreating, productAttributes, attributes]);
 
   const variationCount = isCreating ? previewVariations.length : variations.length;
-  const hasUnsavedChanges = Object.keys(dirty).length > 0;
 
   const stockStatus = (v: Variation): { label: string; color: string } => {
     if (v.manage_stock === 'parent') return { label: "Parent", color: "bg-blue-500/10 text-blue-600" };
@@ -756,13 +730,8 @@ export function VariationsManager({
           <div className="flex items-center gap-2">
             <CardTitle>Attributes & Variations</CardTitle>
             <Badge variant="secondary">{variationCount} {isCreating ? "expected" : "total"}</Badge>
-            {isCreating && <Badge variant="outline" className="text-muted-foreground">Preview</Badge>}
-            {!isCreating && hasUnsavedChanges && (
-              <Badge variant="outline" className="text-amber-500 border-amber-500">
-                <AlertTriangle className="h-3 w-3 mr-1" /> {Object.keys(dirty).length} unsaved
-              </Badge>
-            )}
-          </div>
+{isCreating && <Badge variant="outline" className="text-muted-foreground">Preview</Badge>}
+            </div>
           {!isCreating && (
             <div className="flex items-center gap-2">
               {variationTermSources.length >= 1 && (
@@ -787,13 +756,8 @@ export function VariationsManager({
                 </>
               )}
               <Button type="button" variant="outline" size="sm" onClick={() => setBulkDialog(true)}><Percent className="mr-1 h-3 w-3" /> Bulk Edit</Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1 h-3 w-3" /> Add</Button>
-              {hasUnsavedChanges && (
-                <Button type="button" size="sm" onClick={handleBulkSave} disabled={saving}>
-                  <Save className="mr-1 h-3 w-3" />{saving ? "Saving..." : `Save All (${Object.keys(dirty).length})`}
-                </Button>
-              )}
-            </div>
+<Button type="button" variant="outline" size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1 h-3 w-3" /> Add</Button>
+              </div>
           )}
         </div>
       </CardHeader>

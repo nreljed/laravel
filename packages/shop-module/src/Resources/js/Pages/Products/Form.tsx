@@ -35,6 +35,7 @@ const VariationsManager = lazy(() => import("../../components/VariationsManager"
 import type { Variation } from "../../components/VariationsManager";
 const ProductSeoPanel = lazy(() => import("../../components/ProductSeoPanel").then((m) => ({ default: m.ProductSeoPanel })));
 import type { SeoData } from "../../components/ProductSeoPanel";
+import { typeChangeEffects } from "../../lib/productTypeChange";
 
 interface Category { id: number; name: string }
 interface Tag { id: number; name: string }
@@ -99,7 +100,7 @@ interface Product {
   max_quantity: number | null; menu_order: number | null;
   is_taxable: boolean; tax_class: string | null; weight: number | null; length: number | null;
   width: number | null; height: number | null; thumbnail_url: string | null;
-  images: { url: string; path: string }[] | null; categories: Category[]; tags: Tag[]; brands: Brand[];
+  images: { url: string; path?: string | null }[] | null; categories: Category[]; tags: Tag[]; brands: Brand[];
   publish_date: string | null; unpublish_at: string | null; groupedItems?: GroupedItem[]; downloads?: DownloadItem[];
   relations?: RelationItem[];
   seo?: { meta_title?: string | null; meta_description?: string | null; og_image?: string | null; focus_keyword?: string | null; seo_metadata?: SeoData | null } | null;
@@ -148,17 +149,29 @@ const minDate = new Date(Date.now() - 60000);
  * The product's own `path` is kept rather than re-derived from the url: it is
  * the storage-relative key the delete endpoint requires, and the server is
  * authoritative for it.
+ *
+ * `path` is nullable and that is normal, not an edge case: images seeded from a
+ * remote url (or imported from an older record) have no storage path at all.
+ * Splitting it unconditionally took down the entire edit page - the render threw
+ * inside the gallery map, so every product with such an image was unopenable.
+ * A missing path degrades to the url as the display name and to an empty path,
+ * which the server-side cleanup already filters out, so nothing is deleted by
+ * mistake.
  */
-const toDoneGalleryImage = (image: { url: string; path: string }): GalleryImage => ({
-  id: `${image.path}-${image.url}`,
-  name: image.path.split("/").pop() || image.url,
-  size: 0,
-  type: "image/*",
-  status: "done",
-  url: image.url,
-  path: image.path,
-  preview: image.url,
-});
+const toDoneGalleryImage = (image: { url: string; path?: string | null }): GalleryImage => {
+    const path = image.path ?? "";
+
+    return {
+        id: `${path}-${image.url}`,
+        name: (path.split("/").pop() || image.url),
+        size: 0,
+        type: "image/*",
+        status: "done",
+        url: image.url,
+        path,
+        preview: image.url,
+    };
+};
 
 const defaultUnpublishAt = () => {
   const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -578,6 +591,22 @@ export default function ProductsForm() {
     setAttrList((prev) => prev.map((a, i) => (i === index ? { ...a, options: values } : a)));
   }, []);
 
+  /**
+   * The one place a product type switch is applied. Both entry points call it:
+   * the direct branch below and the confirm dialog. They used to carry separate
+   * copies of these rules, which is how `digital` and `service` ended up
+   * applying their side effects only when no dialog appeared.
+   */
+  const applyTypeChange = useCallback((newType: string) => {
+    const effects = typeChangeEffects(newType);
+
+    form.setData("type", newType);
+
+    Object.entries(effects.data).forEach(([key, value]) => form.setData(key, value));
+
+    setAttrList((prev) => prev.map((a) => ({ ...a, variation: effects.attributesAreVariations })));
+  }, [form]);
+
   const maybeChangeType = useCallback((newType: string) => {
     if (form.data.type === "variable" && newType !== "variable" && variations.length > 0) {
       setPendingType(newType);
@@ -586,29 +615,9 @@ export default function ProductsForm() {
       setPendingType(newType);
       setShowTypeWarning(true);
     } else {
-      form.setData("type", newType);
-      if (newType !== "variable") {
-        setAttrList((prev) => prev.map((a) => ({ ...a, variation: false })));
-      } else {
-        setAttrList((prev) => prev.map((a) => ({ ...a, variation: true })));
-      }
-      if (newType === "external") {
-        form.setData("track_stock", false);
-        form.setData("virtual", true);
-      }
-      if (newType === "grouped") {
-        form.setData("track_stock", false);
-      }
-      if (newType === "digital") {
-        form.setData("virtual", true);
-        form.setData("downloadable", true);
-      }
-      if (newType === "service") {
-        form.setData("virtual", true);
-        form.setData("downloadable", false);
-      }
+      applyTypeChange(newType);
     }
-  }, [form.data.type, variations.length, groupedItems.length]);
+  }, [form.data.type, variations.length, groupedItems.length, applyTypeChange]);
 
   const availableGlobalAttrs = useMemo(
     () => attributes.filter((a) => !usedGlobalIds.has(a.id)),
@@ -1710,24 +1719,14 @@ export default function ProductsForm() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
-                if (pendingType) {
-                  form.setData("type", pendingType);
-                  if (pendingType !== "variable") {
-                    setAttrList((prev) => prev.map((a) => ({ ...a, variation: false })));
-                  } else {
-                    setAttrList((prev) => prev.map((a) => ({ ...a, variation: true })));
+<AlertDialogAction onClick={() => {
+                  if (pendingType) {
+                    applyTypeChange(pendingType);
+                    if (pendingType !== "grouped") setGroupedItems([]);
                   }
-                  if (pendingType !== "grouped") setGroupedItems([]);
-                  if (pendingType === "external") {
-                    form.setData("track_stock", false);
-                    form.setData("virtual", true);
-                  }
-                  if (pendingType === "grouped") form.setData("track_stock", false);
-                }
-                setShowTypeWarning(false);
-                setPendingType(null);
-              }}>
+                  setShowTypeWarning(false);
+                  setPendingType(null);
+                }}>
                 Yes, switch to {pendingType || "new type"}
               </AlertDialogAction>
             </AlertDialogFooter>
