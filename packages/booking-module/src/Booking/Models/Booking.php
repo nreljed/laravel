@@ -3,7 +3,6 @@
 namespace Nreljed\BookingModule\Booking\Models;
 
 use Carbon\Carbon;
-use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Event;
 use Nreljed\BookingModule\Booking\Enums\BookingStatus;
+use Nreljed\BookingModule\Database\Factories\BookingFactory;
 use Nreljed\BookingModule\Properties\Models\Property;
 use Nreljed\Platform\Models\User;
 

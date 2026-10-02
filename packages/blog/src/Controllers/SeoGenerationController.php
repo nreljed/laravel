@@ -4,14 +4,14 @@ namespace Nreljed\Blog\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Bus;
+use Nreljed\Platform\Ai\Agents\SeoAgent;
+use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
+use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Blog\Jobs\GenerateSeoForPost;
 use Nreljed\Blog\Models\Post;
 use Nreljed\Blog\Requests\BulkSeoRequest;
 use Nreljed\Blog\Requests\GenerateSeoRequest;
 use Nreljed\Blog\Services\SeoSuggestionResolver;
-use Nreljed\Platform\Ai\Agents\SeoAgent;
-use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
-use Nreljed\Platform\Http\Controllers\Controller;
 
 class SeoGenerationController extends Controller
 {

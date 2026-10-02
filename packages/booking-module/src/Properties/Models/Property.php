@@ -3,7 +3,6 @@
 namespace Nreljed\BookingModule\Properties\Models;
 
 use Carbon\Carbon;
-use Database\Factories\PropertyFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Nreljed\BookingModule\Booking\Models\Booking;
+use Nreljed\BookingModule\Database\Factories\PropertyFactory;
 use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Services\SettingsService;
 
