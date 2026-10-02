@@ -16,8 +16,6 @@ return [
         ['name' => 'Manage Audit Logs', 'slug' => 'manage-audit-logs', 'description' => 'View system audit logs.', 'group' => 'Administration'],
         ['name' => 'Export Audit Logs', 'slug' => 'export-audit-logs', 'description' => 'Export audit log data as CSV.', 'group' => 'Administration'],
         ['name' => 'Manage Email Settings', 'slug' => 'manage-email-settings', 'description' => 'Configure email settings.', 'group' => 'Administration'],
-        ['name' => 'Manage Categories', 'slug' => 'manage-categories', 'description' => 'Manage post categories.', 'group' => 'Blog'],
-        ['name' => 'Manage Tags', 'slug' => 'manage-tags', 'description' => 'Manage post tags.', 'group' => 'Blog'],
         ['name' => 'View Dashboard', 'slug' => 'view-dashboard', 'description' => 'View the main dashboard.', 'group' => 'General'],
         ['name' => 'View Profile', 'slug' => 'view-profile', 'description' => 'View user profile.', 'group' => 'General'],
         ['name' => 'Edit Profile', 'slug' => 'edit-profile', 'description' => 'Edit user profile.', 'group' => 'General'],
@@ -31,12 +29,6 @@ return [
         ['name' => 'Manage Pages', 'slug' => 'manage-pages', 'description' => 'Manage CMS pages.', 'group' => 'Administration'],
         ['name' => 'View Pages', 'slug' => 'view-pages', 'description' => 'View CMS pages.', 'group' => 'Administration'],
         ['name' => 'Manage Email Templates', 'slug' => 'manage-email-templates', 'description' => 'Manage email templates.', 'group' => 'Administration'],
-
-        // Blog (from package)
-        ['name' => 'View Posts', 'slug' => 'posts.view', 'description' => 'View blog posts.', 'group' => 'Blog'],
-        ['name' => 'Create Posts', 'slug' => 'posts.create', 'description' => 'Create new blog posts.', 'group' => 'Blog'],
-        ['name' => 'Edit Posts', 'slug' => 'posts.edit', 'description' => 'Edit existing blog posts.', 'group' => 'Blog'],
-        ['name' => 'Delete Posts', 'slug' => 'posts.delete', 'description' => 'Delete blog posts.', 'group' => 'Blog'],
 
         // Properties
         ['name' => 'View Properties', 'slug' => 'properties.view', 'description' => 'View property listings.', 'group' => 'Properties'],
@@ -70,10 +62,6 @@ return [
                 'manage-users',
                 'view-notifications',
                 'manage-notifications',
-                'posts.view',
-                'posts.create',
-                'posts.edit',
-                'posts.delete',
                 'properties.view',
                 'properties.create',
                 'properties.edit',
@@ -82,22 +70,6 @@ return [
                 'bookings.create',
                 'bookings.edit',
                 'bookings.delete',
-            ],
-        ],
-
-        'author' => [
-            'name' => 'Author',
-            'description' => 'Can manage blog posts.',
-            'permissions' => [
-                'view-dashboard',
-                'view-profile',
-                'edit-profile',
-                'view-notifications',
-                'manage-notifications',
-                'posts.view',
-                'posts.create',
-                'posts.edit',
-                'posts.delete',
             ],
         ],
 

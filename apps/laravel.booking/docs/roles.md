@@ -42,7 +42,8 @@ These permissions are seeded by `RolesAndPermissionsSeeder` and are always prese
 
 ## Module Permissions
 
-Module permissions are registered by feature providers (`ShopServiceProvider`, `BlogServiceProvider`) and synced to the database via:
+Module permissions are registered by feature providers (`BookingServiceProvider`,
+`PropertiesServiceProvider`) and synced to the database via:
 
 ```bash
 php artisan modules:sync-permissions
@@ -68,15 +69,6 @@ php artisan modules:sync-permissions
 | `shop.webhooks.manage`   | ✅    | ✅         | ❌           |
 | `shop.currencies.manage` | ✅    | ✅         | ❌           |
 
-### Blog / Posts Module
-
-| Slug           | Admin | Shop Owner | Shop Manager |
-| -------------- | ----- | ---------- | ------------ |
-| `posts.view`   | ✅    | ✅         | ✅           |
-| `posts.create` | ✅    | ✅         | ❌           |
-| `posts.edit`   | ✅    | ✅         | ✅           |
-| `posts.delete` | ✅    | ✅         | ❌           |
-
 ## Permission Assignment Flow
 
 ```
@@ -92,7 +84,7 @@ php artisan modules:sync-permissions
 Custom roles can be created via the admin UI (Settings > Roles) or via the Artisan command:
 
 ```bash
-php artisan roles:create "Editor" --permissions="view-dashboard,view-profile,posts.view,posts.edit" --description="Can edit posts"
+php artisan roles:create "Editor" --permissions="view-dashboard,view-profile,properties.view,properties.edit" --description="Can edit properties"
 ```
 
 ## Technical Details

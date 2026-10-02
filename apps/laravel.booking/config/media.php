@@ -1,6 +1,5 @@
 <?php
 
-use Nreljed\Blog\Models\Post;
 use Nreljed\BookingModule\Properties\Models\Property;
 use Nreljed\Platform\Models\User;
 
@@ -18,7 +17,6 @@ return [
     */
 
     'orphan_media' => [
-        'posts' => Post::class,
         'avatars' => User::class,
         'properties' => Property::class,
     ],

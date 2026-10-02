@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 import inertia from '@inertiajs/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { platformRefreshGlobs } from './vendor/nreljed/platform/platform.aliases.js';
+import { packageDedupes } from './vendor/nreljed/platform/vite.dedupe.js';
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,9 +19,8 @@ export default defineConfig({
             refresh: [
                 'resources/js/**',
                 'app/**/Resources/js/**',
-                '../../packages/booking-module/src/**/Resources/js/**',
-                '../../packages/platform/resources/js/**',
-                '../../packages/blog/src/Resources/js/**',
+                ...platformRefreshGlobs(),
+                'vendor/nreljed/booking-module/src/**/Resources/js/**',
             ],
         }),
         react(),
@@ -27,13 +28,14 @@ export default defineConfig({
         tailwindcss(),
     ],
     resolve: {
+        dedupe: packageDedupes,
         alias: {
-            '@nreljed/platform/*': path.resolve(__dirname, '../../packages/platform/resources/js'),
-            '@nreljed/blog/*': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
-            '@nreljed/booking-module/booking': path.resolve(__dirname, '../../packages/booking-module/src/Booking/Resources/js'),
-            '@nreljed/booking-module/booking/*': path.resolve(__dirname, '../../packages/booking-module/src/Booking/Resources/js'),
-            '@nreljed/booking-module/properties': path.resolve(__dirname, '../../packages/booking-module/src/Properties/Resources/js'),
-            '@nreljed/booking-module/properties/*': path.resolve(__dirname, '../../packages/booking-module/src/Properties/Resources/js'),
+            '@nreljed/platform': path.resolve(__dirname, './vendor/nreljed/platform/resources/js'),
+            '@nreljed/platform/*': path.resolve(__dirname, './vendor/nreljed/platform/resources/js'),
+            '@nreljed/booking-module/booking': path.resolve(__dirname, './vendor/nreljed/booking-module/src/Booking/Resources/js'),
+            '@nreljed/booking-module/booking/*': path.resolve(__dirname, './vendor/nreljed/booking-module/src/Booking/Resources/js'),
+            '@nreljed/booking-module/properties': path.resolve(__dirname, './vendor/nreljed/booking-module/src/Properties/Resources/js'),
+            '@nreljed/booking-module/properties/*': path.resolve(__dirname, './vendor/nreljed/booking-module/src/Properties/Resources/js'),
         },
     },
     build: {

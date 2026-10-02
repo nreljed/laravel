@@ -1,6 +1,5 @@
 import type { FoundationAppConfig, PageImport } from "@nreljed/platform/app";
 import { registerCoreTemplates } from "@nreljed/platform/dashboard";
-import { registerBlogPages } from "@nreljed/blog/pages";
 import { registerBookingPages } from "@nreljed/booking-module/booking/pages";
 import { registerPropertiesPages } from "@nreljed/booking-module/properties/pages";
 
@@ -27,7 +26,6 @@ const localPages: Record<string, PageImport> = Object.fromEntries(
 export const pageConfig: FoundationAppConfig = {
   basePages: {
     ...registerCoreTemplates(),
-    ...registerBlogPages(),
     ...registerBookingPages(),
     ...registerPropertiesPages(),
     ...localPages,

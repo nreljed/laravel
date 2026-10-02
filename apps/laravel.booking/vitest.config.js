@@ -2,13 +2,14 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { platformAliases } from "./vendor/nreljed/platform/platform.aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
     server: {
         fs: {
-            allow: [realpathSync(path.resolve(__dirname, "../../packages/platform"))],
+            allow: [realpathSync("./vendor/nreljed/platform")],
         },
     },
     test: {
@@ -34,10 +35,15 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            "@nreljed/platform/*": path.resolve(__dirname, "../../packages/platform/resources/js"),
-            "@nreljed/blog/*": path.resolve(__dirname, "../../packages/blog/src/Resources/js"),
-            "@nreljed/booking-module/booking/*": path.resolve(__dirname, "../../packages/booking-module/src/Booking/Resources/js"),
-            "@nreljed/booking-module/properties/*": path.resolve(__dirname, "../../packages/booking-module/src/Properties/Resources/js"),
+            ...platformAliases(),
+            "@booking": path.resolve(
+                __dirname,
+                "./vendor/nreljed/booking-module/src/Booking/Resources/js"
+            ),
+            "@properties": path.resolve(
+                __dirname,
+                "./vendor/nreljed/booking-module/src/Properties/Resources/js"
+            ),
         },
     },
 });
