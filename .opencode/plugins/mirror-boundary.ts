@@ -8,9 +8,9 @@ import type { Plugin } from "@opencode-ai/plugin"
  * nreljed/booking-module) -- never this workspace. A change authored here does
  * not ship: the next `composer update` overwrites it with the released tree.
  *
- * This is not hypothetical. packages/*/composer.json drifted to claim a core
- * version the lock did not contain, and cross-app consistency CI failed on a
- * PR that had already been auto-merged.
+ * This is not hypothetical. Each package's composer.json drifted to claim a
+ * core version the lock did not contain, and cross-app consistency CI failed on
+ * a PR that had already been auto-merged.
  *
  * So writes under packages/ are blocked by default. To perform a DELIBERATE
  * mirror sync from the owning repo, set NRELJED_ALLOW_MIRROR_EDIT=1.
@@ -22,14 +22,15 @@ const ESCAPE_HATCH = "NRELJED_ALLOW_MIRROR_EDIT"
 /** Tools that write to a path and therefore can create mirror drift. */
 const WRITE_TOOLS = new Set(["edit", "write", "patch", "multiedit"])
 
-function relativeToWorktree(filePath: string, worktree: string): string {
+/** Exported for behavioural tests; the hook below is the only caller. */
+export function relativeToWorktree(filePath: string, worktree: string): string {
   const normalizedRoot = worktree.replace(/\\/g, "/").replace(/\/$/, "")
   const normalizedPath = filePath.replace(/\\/g, "/")
   if (!normalizedPath.startsWith(`${normalizedRoot}/`)) return normalizedPath
   return normalizedPath.slice(normalizedRoot.length + 1)
 }
 
-function isMirrorPath(relativePath: string): boolean {
+export function isMirrorPath(relativePath: string): boolean {
   return (
     relativePath === MIRROR_ROOT ||
     relativePath.startsWith(`${MIRROR_ROOT}/`)
