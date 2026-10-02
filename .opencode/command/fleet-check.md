@@ -1,35 +1,29 @@
 ---
-description: Run the full fleet verification gate and report honestly
+description: Run the full verification gate for this repo and report honestly
 ---
 
 # Fleet check
 
-Run the gates that actually prove the fleet is coherent. Report failures as
-failures.
+Run the gates that actually prove this repo is coherent. Report failures as
+failures. Scope: the root `laravel` app + its two upstream packages
+(`nreljed/platform`, `nreljed/blog`).
 
-## 1. Cross-app lock parity
+## 1. Cross-app lock parity + mirror drift
 
 ```bash
 node scripts/check-platform-consistency.js
 ```
 
-## 2. Upstream core peers (deploy tree)
+Compares Composer + pnpm pins across apps **and** diffs every
+`packages/*` mirror against `vendor/nreljed/*`. A non-zero exit is real drift.
+
+## 2. Upstream package declares every peer the app imports
 
 ```bash
-cd "C:/Users/nrelj/Local Sites/laravel.shop"
-node scripts/check-core-deps.js
+npm run check:core-deps
 ```
 
-## 3. Which tree am I in?
-
-```bash
-php artisan shop:env-check
-```
-
-Exits non-zero if this is not the served tree. Both trees can `artisan` and both
-look plausible — only one is served.
-
-## 4. Package-lock parity (catches path-repo drift)
+## 3. Package-lock parity (catches path-repo drift)
 
 ```bash
 php artisan test --compact --filter=PackageLockParityTest
@@ -38,27 +32,42 @@ php artisan test --compact --filter=PackageLockParityTest
 A Composer `path` repository makes `composer update` reuse a checkout and report
 success while the lock claims a release. This test fails CI on that.
 
-## 5. Mono-owned correctness
+## 4. Platform boundary fence
 
 ```bash
-cd "C:/Users/nrelj/Local Sites/laravel/app"
+composer validate --no-check-publish
+php scripts/foundation-check.php
+```
+
+Confirms app-owned files (`bootstrap/app.php`, `routes/web.php`) still carry
+their core-manifest markers and no forbidden core path has been re-created in
+the app.
+
+## 5. Agent plugins
+
+```bash
+bun run .opencode/test/mirror-boundary.test.ts
+bun run .opencode/test/session-context.test.ts
+```
+
+"Plugin appears in `opencode debug config`" only proves discovery. These prove
+behaviour.
+
+## 6. Mono-owned correctness
+
+```bash
 vendor/bin/pint --test          # excludes packages/ ONLY -- apps/ IS included
 npm run typecheck
+npm run typecheck:packages
 npm run lint
 npm run format:check
 ```
 
-## 6. Tests
+## 7. Tests
 
 ```bash
-php artisan test --compact
+php artisan test --parallel --compact
 npm run test
-```
-
-## 7. Mirror drift
-
-```bash
-git diff --stat -- packages/
 ```
 
 ## Reporting rules
@@ -72,5 +81,8 @@ git diff --stat -- packages/
 
 - Root CI runs Vitest with `pass-with-no-tests: true`, so an empty frontend
   suite reports green. Cross-check `npm run test` output for a real test count.
-- The workspace-only app PHP suites are not currently executed by mono CI; run
-  them explicitly if you are changing `apps/**`.
+- `npm run lint` and `npm run format:check` only cover `resources/js/**`;
+  `apps/**` and `packages/**` are excluded by design (they run their own
+  toolchains, or are upstream mirrors).
+- The workspace-only app PHP suites under `apps/**` are not executed by mono CI;
+  run them explicitly if you are changing those trees.

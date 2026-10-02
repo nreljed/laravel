@@ -5,7 +5,12 @@ description: Refresh package mirrors and every consumer lock, then prove fleet p
 # Sync mirrors + locks
 
 Bring `packages/*` and all consumer `composer.lock` files back onto the released
-upstream tree, then prove it.
+upstream tree, then prove it. Upstream clones:
+
+| Package | Clone | Mirror |
+| --- | --- | --- |
+| `nreljed/platform` | `C:/Users/nrelj/Local Sites/platform` | `packages/platform` |
+| `nreljed/blog` | `C:/Users/nrelj/Local Sites/blog` | `packages/blog` |
 
 ## 1. Establish ground truth
 
@@ -13,6 +18,7 @@ Identify the version to sync to (default: the newest release tag):
 
 ```bash
 gh release list -R nreljed/platform --limit 5
+gh release list -R nreljed/blog --limit 5
 ```
 
 Do NOT infer the version from a stale lock. Confirm it against the upstream
@@ -37,33 +43,31 @@ Never hand-edit version strings to make a check pass.
 
 ## 4. Update every consumer lock
 
-Consumers that must agree:
+Consumers that must agree (the root app is the primary; the workspace-only
+`apps/*` follow automatically once they are on the same version):
 
-- root `composer.lock`
-- `apps/laravel.shop/composer.lock`
-- `apps/laravel.booking/composer.lock`
+- root `composer.lock` (required)
+- `apps/laravel.shop/composer.lock` (if consuming the package)
+- `apps/laravel.booking/composer.lock` (if consuming the package)
 - `packages/*/composer.lock` (each mirror's own lock)
 
 ```bash
 cd "C:/Users/nrelj/Local Sites/laravel/app"
 composer update nreljed/platform --lock
+composer update nreljed/blog --lock
 ```
 
 ## 5. Prove parity — do not skip this
 
 ```bash
+cd "C:/Users/nrelj/Local Sites/laravel/app"
 node scripts/check-platform-consistency.js
+npm run check:core-deps
 ```
 
-In the deploy tree:
-
-```bash
-cd "C:/Users/nrelj/Local Sites/laravel.shop"
-node scripts/check-core-deps.js
-```
-
-Both MUST pass. If the consistency gate fails, fix the locks; never loosen the
-gate to make it green.
+Both MUST pass. The consistency gate also diffs each `packages/*` mirror against
+`vendor/nreljed/*`, so it will catch a half-finished copy. If a gate fails, fix
+the source of truth; never loosen the gate to make it green.
 
 ## 6. Verify the mirror is byte-identical
 

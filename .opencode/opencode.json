@@ -7,25 +7,32 @@
       "enabled": true
     }
   },
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "*.env.production.example": "allow"
+    },
+    "edit": {
+      "*": "allow",
+      "packages/*": "ask"
+    },
+    "skill": {
+      "*": "allow",
+      "bricks-*": "deny",
+      "paseo-*": "deny"
+    }
+  },
   "references": {
     "platform": {
       "path": "../../../platform",
       "description": "SOURCE OF TRUTH for the nreljed/platform engine package. Use for routes, RBAC, deploy pipeline, notifications, media, core frontend kit, and anything under packages/platform. Edit here, tag, then composer update the consumer -- never patch packages/platform directly."
     },
-    "shop-module": {
-      "path": "../../../shop-module",
-      "description": "SOURCE OF TRUTH for the shop-module package (products, orders, storefront, coupons, taxes, dashboards). Use for anything under packages/shop-module."
-    },
-    "booking-module": {
-      "path": "../../../booking-module",
-      "description": "SOURCE OF TRUTH for the booking-module package. Use for anything under packages/booking-module."
-    },
     "blog": {
       "path": "../../../blog",
       "description": "SOURCE OF TRUTH for the blog package (posts, categories, tags, content blocks, scheduled publishing). Use for anything under packages/blog."
     }
-  },
-  "skills": {
-    "paths": [".agents/skills"]
   }
 }

@@ -55,6 +55,39 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 > (`scripts/check-platform-consistency.js`) now reads pnpm-lock importer versions for workspace
 > apps and `package-lock.json` for any remaining npm apps, plus each app's `composer.lock`.
 
+> **App-vs-upstream fork check** — `apps/laravel.shop` and `apps/laravel.booking` are workspace
+> members whose _code_ must match their standalone repos. Nothing in this repo's CI builds or
+> tests `apps/**`, so the guard is what stops those copies from silently becoming forks. Point
+> it at the standalone checkouts and it fails on any content drift, missing file, or
+> dependency-manifest change:
+>
+> ```bash
+> $env:CHECK_PLATFORM_SHOP_UPSTREAM     = 'C:\Users\nrelj\Local Sites\laravel.shop'
+> $env:CHECK_PLATFORM_BOOKING_UPSTREAM = 'C:\Users\nrelj\Local Sites\laravel.booking'
+> npm run check:platform-consistency
+> ```
+>
+> Tolerated by design: `tsconfig.json` / `vite.config.js` (the workspace aliases `@nreljed/*`
+> to `packages/*` instead of `vendor/*`), the lockfiles, and the explicit `APP_WORKSPACE_OVERLAY`
+> list. `composer.json` / `package.json` **are** compared, but semantically — so a real version
+> bump fails while key order, indentation and trailing blank lines do not, and `@nreljed/*`
+> entries are ignored so `workspace:*` is not drift. Unset in CI (no second checkout) → reported
+> as SKIPPED, never silently green.
+>
+> > **Manifest ranges must agree across BOTH deploy repos.** The two guard rules are mutually
+> > constraining: "each app's `package.json` matches its deploy source" (semantic compare) and
+> > "all workspace members resolve identical versions" (pnpm-lock importer compare). If
+> > `laravel.shop` and `laravel.booking` declare different ranges for a guard key, no mono-side
+> > edit satisfies both — bumping either app breaks that app's upstream parity, and `pnpm install`
+> > will not unify two importers on its own (it keeps each importer's valid existing pin). Bump
+> > the toolchain in **both standalone deploy repos** first, re-sync the app copies, then
+> > `pnpm install` once at the root. Done 2026-10-02 for eslint, `@typescript-eslint/eslint-plugin`,
+> > `@typescript-eslint/parser`, `@eslint-react/eslint-plugin`, vite, vitest, lucide-react.
+> > Keep `@typescript-eslint/parser` in lockstep with `@typescript-eslint/eslint-plugin` — the
+> > plugin pins the parser as a peer, so `pnpm peers check` fails otherwise (and `pnpm update
+> > <pkg>` silently rewrites the *declared* range in only the importer you name, creating a new
+> > drift). Run `pnpm peers check` after any toolchain bump.
+
 ## Tech Stack
 
 | Layer         | Technology                    | Version                           |
@@ -173,7 +206,15 @@ routes/                             # APP-only routes (most routing lives in the
 > `peerDependencies` for every runtime npm package it imports (React, Inertia, Lexical, Base UI,
 > shadcn, etc.) and consumes apps declare them as direct dependencies. Resolution parity
 > between apps is guaranteed by the **single root `pnpm-lock.yaml`** (workspace members cannot
-> drift from siblings) — the old per-app `package-lock.json` + `vite.dedupe.js` setup is gone.
+> drift from siblings) — the old per-app `package-lock.json` + `vite.dedupe.js` setup is gone
+> **everywhere**, including `apps/laravel.booking` (converted 2026-10-02: no vendor imports, no
+> `dedupe`, `tsconfig.json` + `vite.config.js` resolve `@nreljed/*` from `packages/*`). All three
+> workspace members — root app, `apps/laravel.shop`, `apps/laravel.booking` — now use the same
+> convention. Note `packages/booking-module` exports **only** `./booking-aliases`, so its
+> `@nreljed/booking-module/{booking,properties}/*` subpaths need explicit entries in BOTH
+> `tsconfig.json` `paths` and `vite.config.js` `resolve.alias` (the platform/blog/shop-module
+> wildcard paths resolve on their own). Keeping one resolved copy of React/Inertia is pnpm's job
+> now, not `resolve.dedupe` — dropping it produced no duplicate vendor chunk.
 > To add a runtime npm dependency to a package, update that package's `package.json` peers AND
 > list it as a direct dependency in every app that imports it; then `pnpm install` once at the
 > root and commit the lockfile. Run `pnpm workspace <name> add <pkg>` / `pnpm -w add <pkg>`
@@ -476,7 +517,7 @@ npm run typecheck        # tsc --noEmit
 npm run lint             # ESLint
 npm run format:check     # Prettier check
 npm run test             # Vitest frontend tests (app shell + package workspaces)
-npm run check:ci         # Full CI pipeline (lint + typecheck + format + test + pint + phpunit)
+npm run check:ci         # Local superset (see note below)
 vendor/bin/pint          # Laravel Pint (PSR-12)
 php artisan test         # PHPUnit
 php artisan test --compact  # PHPUnit (compact output)
@@ -486,12 +527,36 @@ php artisan permissions:list          # List all permissions
 php artisan app:create-admin           # Bootstrap/update admin user
 ```
 
+> **`check:ci` is a local superset, not the CI pipeline.** It runs, in order:
+> `check:platform-consistency` → `lint` → `typecheck` → `typecheck:packages` →
+> `format:check` → `test` → `pint` → `phpstan` → `rector --dry-run` →
+> `artisan test --parallel`. Actual CI (root `ci.yml` → platform's reusable
+> `consumer-ci.yml`) runs `check:core-deps`, `check:platform-consistency`, `npm audit`,
+> `lint`, `typecheck`, `format:check`, `test`, `build`, `artisan test --parallel`, and
+> `pint --test` — plus a Playwright auth smoke job.
+>
+> **`typecheck:packages`, `phpstan` and `rector` are NOT run by CI.** They are local-only
+> gates, so they can rot without turning the pipeline red — `typecheck:packages` is
+> currently **failing** on a pre-existing `shop-module` error
+> (`Pages/Products/Form.tsx:605` — `Object.entries(effects.data)` yields `string` keys that
+> `form.setData` rejects). That source belongs to the shop-module repo, so the fix is made
+> and released upstream, not here. Run `npm run check:ci` knowing this one step is red.
+
 The pre-commit hook (lint-staged) is **scoped to mono-owned files only** — `resources/js/**`,
 `app/**` for TS/TSX eslint+prettier, and `{app,bootstrap,config,database,routes,tests,resources}/**`
 for Pint. `packages/**` and `apps/**` are excluded from the root lint-staged AND root ESLint
 (`eslint.config.js` `ignores`) — those trees are owned by their own repos/apps and run their own
 toolchains (shop/booking `check:ci`, package repo CIs). Never widen the catch-all back to `*.{ts,tsx}`
 / `*.php` or the root hook will reformat foreign package sources.
+
+> **`--config package.json` in the pre-commit hook is load-bearing.** lint-staged v16 discovers and
+> *merges* the `lint-staged` block of every `package.json` in the repo, then runs each block with that
+> package as `cwd`. Without the flag the hook also loads `apps/*/package.json` (whose globs are the
+> broad `*.{ts,tsx}` / `*.{json,css,md}` / `*.php`), so root Pint/Prettier/ESLint rewrite upstream-owned
+> mirrored files and `check-platform-consistency` fails with ~46 + ~43 forked files. Always pass
+> `--config package.json` so only root-owned paths are touched. If the root hook ever "fixes" a file
+> under `apps/**` or `packages/**`, that is this bug, not a formatting nit — re-sync from upstream.
+
 
 **Root Pint is boundary-scoped too** — the root `pint.json` sets `{"exclude": ["packages"]}`, which is
 what keeps `vendor/bin/pint` (root `pre-push` hook, `check:ci`, and CI's `Laravel Pint` step from
@@ -577,7 +642,12 @@ pull_request → pr.yml
 3. Download `deploy.zip`, extract, restore `.env`
 4. Run: migrate, create-admin, cache, storage:link
 
-**database-maintenance.yml** (`workflow_dispatch`, manual only):
+> **Note:** there is currently **no `database-maintenance.yml`** in `.github/workflows`
+> (actual workflows: `ci.yml`, `pr.yml`, `deploy.yml`, `deploy-package.yml`,
+> `core-update.yml`, `restore.yml`). Database resets are driven manually with
+> `gh workflow run ...` against `deploy.yml`'s deploy job, or by calling the
+> `/deploy/*` endpoints directly — the inputs below describe the manual curl
+> contract, not a committed workflow file.
 
 - Inputs: `command` (`migrate` | `reset`), `confirm` (`yes` for migrate, `RESET` for reset),
   `with_demo`, `purge_media` (reset only)
@@ -721,7 +791,7 @@ php artisan test --parallel --compact                # All tests, parallel via p
 php artisan test --compact tests/Feature/Blog/       # All blog tests
 php artisan test --compact --filter=testName         # Specific test
 npm run test                                         # Vitest frontend tests
-npm run check:ci                                     # Full CI pipeline
+npm run check:ci                                     # Local superset (see note above)
 pnpm test:e2e                                        # Playwright e2e against APP_URL (defaults to 127.0.0.1:8000)
 ```
 

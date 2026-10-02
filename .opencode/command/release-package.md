@@ -6,12 +6,12 @@ description: Release an upstream package (version bump, tag, release) and propag
 
 Releases originate in the OWNING repo, never in the mono. Applies to
 `nreljed/platform`, `nreljed/blog`, `nreljed/shop-module`,
-`nreljed/booking-module`.
+`nreljed/booking-module` — though this app consumes only the first two.
 
 ## 0. Confirm the tree
 
 ```bash
-cd "C:/Users/nrelj/Local Sites/platform"
+cd "C:/Users/nrelj/Local Sites/platform"   # or ../blog for the blog package
 git status --short
 git branch --show-current
 ```

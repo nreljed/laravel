@@ -1,1 +1,6 @@
-npx lint-staged --max-arg-length 4000
+# --config pins this hook to the ROOT lint-staged config. Without it lint-staged
+# also loads apps/*/package.json and packages/*/package.json and runs each with
+# its own package as cwd, so the root Pint/Prettier/ESLint rewrite upstream-owned
+# mirrored files (apps/**) and break check-platform-consistency's parity check.
+# Those trees run their own toolchains in their own repos.
+npx lint-staged --config package.json --max-arg-length 4000

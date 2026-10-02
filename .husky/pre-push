@@ -1,1 +1,1 @@
-npx eslint resources/js/ && npx tsc --noEmit && prettier --check "resources/js/**/*.{ts,tsx,json,css}" && php vendor/bin/pint
+node scripts/check-platform-consistency.js && npx eslint resources/js/ && npx tsc --noEmit && prettier --check "resources/js/**/*.{ts,tsx,json,css}" && php vendor/bin/pint
