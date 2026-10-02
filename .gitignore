@@ -44,7 +44,13 @@ packages/**/dist/
 .cursorrules
 CLAUDE.md
 .github/copilot-instructions.md
-.ai/
-.ai/guidelines/
-.ai/skills/
+
+# .ai/ is mostly Boost-generated (guidelines/, skills/), so it stays ignored --
+# but .ai/rules/ is hand-written, path-scoped agent guidance that took real
+# incidents to produce. Ignoring the whole directory meant none of it reached a
+# fresh clone, so an agent only ever saw the rules that happened to exist on the
+# machine it was written on. Ignore the contents, re-include the rules.
+.ai/*
+!.ai/rules/
+
 boost.json
