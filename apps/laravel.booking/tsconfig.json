@@ -16,12 +16,12 @@
     "noEmit": true,
     "typeRoots": ["./node_modules/@types"],
     "paths": {
-      "@nreljed/platform/*": ["./vendor/nreljed/platform/resources/js/*"],
+      "@nreljed/platform/*": ["../../packages/platform/resources/js/*"],
       "@nreljed/booking-module/booking/*": [
-        "./vendor/nreljed/booking-module/src/Booking/Resources/js/*"
+        "../../packages/booking-module/src/Booking/Resources/js/*"
       ],
       "@nreljed/booking-module/properties/*": [
-        "./vendor/nreljed/booking-module/src/Properties/Resources/js/*"
+        "../../packages/booking-module/src/Properties/Resources/js/*"
       ],
       "ziggy-js": ["./vendor/tightenco/ziggy"],
       "@inertiajs/core": ["./node_modules/@inertiajs/core"],
@@ -37,11 +37,8 @@
     "resources/js/**/*.ts",
     "resources/js/**/*.tsx",
     "resources/js/**/*.d.ts",
-    "vendor/nreljed/platform/resources/js/**/*.ts",
-    "vendor/nreljed/platform/resources/js/**/*.tsx",
-    "vendor/nreljed/platform/resources/js/**/*.d.ts",
-    "vendor/nreljed/platform/src/**/Resources/js/**/*.ts",
-    "vendor/nreljed/platform/src/**/Resources/js/**/*.tsx",
-    "vendor/nreljed/platform/src/**/Resources/js/**/*.d.ts"
+    "../../packages/platform/resources/js/**/*.d.ts",
+    "../../packages/platform/src/**/Resources/js/**/*.d.ts",
+    "../../packages/booking-module/src/**/Resources/js/**/*.d.ts"
   ]
 }
