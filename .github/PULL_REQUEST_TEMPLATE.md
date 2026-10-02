@@ -35,7 +35,10 @@
 
 ## Boundary check
 
-- [ ] My change stays inside the mono-owned tree (`app/`, `bootstrap/`, `config/`, `database/`, `routes/`, `resources/js/`, `tests/`). Changes to `packages/**` or `apps/**` belong in their own repository, not this PR.
+- [ ] My change is **source-of-truth-correct**: anything under `packages/**` is a released-package mirror, so the real fix belongs in the owning repo (`nreljed/platform`, `nreljed/blog`, `nreljed/shop-module`, `nreljed/booking-module`). If this PR only refreshes a mirror to match a released tag, say so explicitly.
+- [ ] I did **not** hand-edit a `packages/**` mirror to make a gate pass. Mirror diffs must be explained as "upstream release X".
+- [ ] If I touched `apps/**`: note that `apps/laravel.shop` and `apps/laravel.booking` are **workspace-only and mono-owned** — they belong in this PR, they have no upstream repo, and they are intentionally covered by `vendor/bin/pint --test`, lint, typecheck and their own PHPUnit suites (which CI must actually execute — verify rather than assume).
+- [ ] I ran the app-level suites for any `apps/**` change; mono CI does not execute them automatically.
 
 ## Screenshots (if applicable)
 

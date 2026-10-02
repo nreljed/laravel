@@ -17,7 +17,12 @@ vendor-bin
 /dist
 composer.phar
 /.playwright-mcp
-/.opencode
+
+# .opencode/ is VERSIONED agent infrastructure: MCP config, plugins, custom
+# commands, agents, and task plans under plans/. It was previously ignored
+# wholesale, which meant the enforcement rules and release/sync commands only
+# existed on the machine they were authored on. Only the install output is
+# ignored, and that is handled by .opencode/.gitignore.
 /storage/temp/
 /storage/phpstan/
 /PLAN.md

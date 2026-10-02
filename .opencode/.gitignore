@@ -1,0 +1,7 @@
+# Install output only. package.json IS tracked on purpose: it declares the
+# @opencode-ai/plugin dependency that plugins/*.ts import, and OpenCode runs
+# `bun install` against this file at startup. Ignoring it meant a fresh clone
+# had plugin imports that could not resolve.
+node_modules
+package-lock.json
+bun.lock

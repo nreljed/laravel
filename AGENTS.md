@@ -498,8 +498,18 @@ what keeps `vendor/bin/pint` (root `pre-push` hook, `check:ci`, and CI's `Larave
 `nreljed/platform/.github/workflows/consumer-ci.yml`) from touching `packages/*` mirrors. Those mirrors
 must stay **byte-identical to the released package tree** (the package repos own their formatting and
 their CIs don't run Pint), so a repo-wide Pint run would both break CI's `pint --test` and silently
-reformat ~100 mirror files on every push. Same boundary rule as lint-staged/ESLint above: add a new
-tool to the root hooks only if it is scoped to mono-owned paths.
+reformat ~100 mirror files on every push.
+
+Note the two boundaries are **deliberately different**: lint-staged and ESLint exclude
+`packages/**` **and** `apps/**` (the apps run their own toolchains), whereas Pint excludes
+`packages/**` **only**. `apps/laravel.shop` and `apps/laravel.booking` are workspace-only and
+mono-owned, so their PHP is formatted and enforced here on purpose — do not add `apps` to
+`pint.json`. When adding a tool to the root hooks, copy the boundary from Pint for PHP and
+from lint-staged/ESLint for TS/TSX rather than assuming one shared rule.
+
+`.opencode/plugins/mirror-boundary.ts` enforces the `packages/**` write boundary at the
+agent level, and `.opencode/opencode.json` registers the four upstream package repos as
+`references` so their real source is reachable from this workspace.
 
 Also useful: `pnpm -w update <pkg>` (roll a `^` range forward in the workspace lock),
 `pnpm workspace <name> add <pkg>` (per-package manifest change), `pnpm approve-builds`
