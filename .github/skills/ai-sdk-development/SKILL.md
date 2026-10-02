@@ -405,6 +405,12 @@ $store->assertAdded('file_id');
 - Artisan commands: `php artisan make:agent`, `php artisan make:tool`
 - Global helper: `agent()` for anonymous agents
 
+## Project BYOK (Bring Your Own Key) Pattern
+
+This project (platform `src/Ai/`) resolves each user's provider key at runtime. The SDK's `provider()` must return a **config key string** (e.g. `'openai'`); the per-user key is injected into that provider's config via `config()->set("ai.providers.{driver}.key", $key)` before prompting — see `ResolvesUserProvider::injectProviderKey()`.
+
+Do NOT return `['driver' => ..., 'key' => ...]` from `provider()`: the SDK treats an array as a **failover** list (provider→model pairs), and `Provider::providerCredentials()` reads `key` from the provider's **config** — so both are read from `ai.providers.{driver}`. `config()->set()` per-request is safe in PHP.
+
 ## OpenAI-Compatible Provider
 
 Point the SDK at any OpenAI Chat Completions endpoint (LM Studio, vLLM, Together, etc.) with the config-driven `openai-compatible` driver. Define named instances in `config/ai.php`, no code required:
