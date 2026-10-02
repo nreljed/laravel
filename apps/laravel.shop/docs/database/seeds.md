@@ -41,12 +41,12 @@ php artisan app:create-admin
 
 ### DatabaseSeeder (Essential — `php artisan db:seed`)
 
-| Component                   | What it does                                                                                                                                                                                                                                                                           | Idempotent?            |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `RolesAndPermissionsSeeder` | Creates 7 roles (admin, editor, author, user, shop_owner, shop_manager, customer) + core permissions. Migrates old `crm_user` → `customer`. Shop/blog module perms (shop._, posts._) are also synced here (via `FeatureRegistry` merge), and roles are assigned per `config/roles.php` | Yes (`firstOrCreate`)  |
-| User factory (x4)           | Creates `nstudio` (admin), `shop_owner`, `shop_manager`, `customer` — all password `azerty123/*`                                                                                                                                                                                       | No (creates every run) |
-| `SettingsSeeder`            | 25 settings across 7 groups (general, registration, notifications, security, email, maintenance, localization, formatting)                                                                                                                                                             | Yes (`firstOrCreate`)  |
-| `CurrencySeeder`            | 4 currencies (EUR default, USD, GBP, TND)                                                                                                                                                                                                                                              | Yes (`updateOrInsert`) |
+| Component | What it does | Idempotent? |
+|-----------|-------------|-------------|
+| `RolesAndPermissionsSeeder` | Creates 7 roles (admin, editor, author, user, shop_owner, shop_manager, customer) + core permissions. Migrates old `crm_user` → `customer`. Shop/blog module perms (shop.*, posts.*) are also synced here (via `FeatureRegistry` merge), and roles are assigned per `config/roles.php` | Yes (`firstOrCreate`) |
+| User factory (x4) | Creates `nstudio` (admin), `shop_owner`, `shop_manager`, `customer` — all password `azerty123/*` | No (creates every run) |
+| `SettingsSeeder` | 25 settings across 7 groups (general, registration, notifications, security, email, maintenance, localization, formatting) | Yes (`firstOrCreate`) |
+| `CurrencySeeder` | 4 currencies (EUR default, USD, GBP, TND) | Yes (`updateOrInsert`) |
 
 **Warning:** `DatabaseSeeder` is for **DEV only**. Production uses `app:create-admin` from GitHub secrets (see Deployment section).
 
@@ -54,16 +54,16 @@ php artisan app:create-admin
 
 Creates a realistic Xiaomi/Redmi product catalog:
 
-| #   | Product                | Type       | Key Features                                     |
-| --- | ---------------------- | ---------- | ------------------------------------------------ |
-| 1   | Xiaomi 14 Pro          | `simple`   | Flagship phone, 50 stock, on sale                |
-| 2   | Redmi Note 13 Pro      | `variable` | 6 variations (3 colors × 2 storage), all on sale |
-| 3   | 67W Turbo Charger      | `simple`   | Accessory, backorder notify, 200 stock           |
-| 4   | 20000mAh Power Bank 3  | `simple`   | Accessory, backorders yes, 150 stock             |
-| 5   | Smart Band 8 Pro       | `external` | Affiliate link to mi.com, no stock tracking      |
-| 6   | Smart Life Bundle      | `grouped`  | Bundles charger + power bank                     |
-| 7   | Pro Themes Pack        | `digital`  | Downloadable, 2 files, catalog visibility only   |
-| 8   | Priority Care (1 Year) | `service`  | Virtual, sold individually, not taxable          |
+| # | Product | Type | Key Features |
+|---|---------|------|-------------|
+| 1 | Xiaomi 14 Pro | `simple` | Flagship phone, 50 stock, on sale |
+| 2 | Redmi Note 13 Pro | `variable` | 6 variations (3 colors × 2 storage), all on sale |
+| 3 | 67W Turbo Charger | `simple` | Accessory, backorder notify, 200 stock |
+| 4 | 20000mAh Power Bank 3 | `simple` | Accessory, backorders yes, 150 stock |
+| 5 | Smart Band 8 Pro | `external` | Affiliate link to mi.com, no stock tracking |
+| 6 | Smart Life Bundle | `grouped` | Bundles charger + power bank |
+| 7 | Pro Themes Pack | `digital` | Downloadable, 2 files, catalog visibility only |
+| 8 | Priority Care (1 Year) | `service` | Virtual, sold individually, not taxable |
 
 **Variations:** Redmi Note 13 Pro uses the relational pivot table (`product_variation_attribute_term`) for Color (midnight-black, pearl-white, forest-green) and Storage (128GB, 256GB, 512GB) — 6 variations total, all with sale pricing active.
 
@@ -79,19 +79,18 @@ Creates realistic e-commerce activity for development/testing.
 
 **Orders:** 18 orders across all 8 statuses:
 
-| Status     | Count | Details                                   |
-| ---------- | ----- | ----------------------------------------- |
-| completed  | 10    | Includes notes, coupons, full status flow |
-| pending    | 2     | Fresh orders, one with coupon             |
-| processing | 1     | Color change request note                 |
-| confirmed  | 1     | Cash on delivery                          |
-| cancelled  | 1     | Refunded via Stripe                       |
-| refunded   | 1     | Damaged item, full refund + shipping      |
-| on-hold    | 1     | Bank transfer verification                |
-| failed     | 1     | Card declined                             |
+| Status | Count | Details |
+|--------|-------|---------|
+| completed | 10 | Includes notes, coupons, full status flow |
+| pending | 2 | Fresh orders, one with coupon |
+| processing | 1 | Color change request note |
+| confirmed | 1 | Cash on delivery |
+| cancelled | 1 | Refunded via Stripe |
+| refunded | 1 | Damaged item, full refund + shipping |
+| on-hold | 1 | Bank transfer verification |
+| failed | 1 | Card declined |
 
 Each order includes:
-
 - Realistic subtotal/discount/shipping/tax breakdown
 - `OrderAction` entries for full status transition history
 - `OrderNote` (public and private where applicable)
@@ -114,23 +113,23 @@ Called automatically by `DeployController::check()` during deploy via the webhoo
 
 ## Permission Management
 
-| Command                        | Purpose                                                                                        |
-| ------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `php artisan permissions:sync` | Syncs feature permissions from `ShopModule::permissions()` + `BlogModule::permissions()` to DB |
-| `php artisan permissions:list` | Lists all registered permissions with their features                                           |
+| Command | Purpose |
+|---------|---------|
+| `php artisan db:seed --class=RolesAndPermissionsSeeder` | Syncs feature permissions from platform + module `permissions()` catalogs to DB (idempotent) |
+| `php artisan permissions:list` | Lists all registered permissions with their features |
 
-Module permissions (e.g., `shop.products.*`, `posts.*`) are defined in each module's `ServiceProvider::permissions()` method. They are synced to the database and attached to roles by `PermissionGateServiceProvider` and `PermissionServiceProvider` on login.
+Module permissions (e.g., `shop.products.*`, `posts.*`) are defined in each package's `ServiceProvider::permissions()`. They are seeded to the database and attached to roles by `RolesAndPermissionsSeeder`, and gates auto-register from the `permissions` table plus `FeatureRegistry::permissions()`.
 
 ## Idempotency Summary
 
-| Seeder                      | Idempotent? | Key                                                                      |
-| --------------------------- | ----------- | ------------------------------------------------------------------------ |
-| `RolesAndPermissionsSeeder` | Yes         | `firstOrCreate` by slug                                                  |
-| `SettingsSeeder`            | Yes         | `firstOrCreate` by key                                                   |
-| `CurrencySeeder`            | Yes         | `updateOrInsert` by code                                                 |
-| `ShopProductSeeder`         | Yes         | `firstOrCreate` by slug (brands, categories, tags, products, variations) |
-| `GenerateDemoData`          | No          | Use `--fresh` to clear before re-run                                     |
-| `DatabaseSeeder` (users)    | No          | Creates duplicates each run; use `migrate:fresh` first                   |
+| Seeder | Idempotent? | Key |
+|--------|-------------|-----|
+| `RolesAndPermissionsSeeder` | Yes | `firstOrCreate` by slug |
+| `SettingsSeeder` | Yes | `firstOrCreate` by key |
+| `CurrencySeeder` | Yes | `updateOrInsert` by code |
+| `ShopProductSeeder` | Yes | `firstOrCreate` by slug (brands, categories, tags, products, variations) |
+| `GenerateDemoData` | No | Use `--fresh` to clear before re-run |
+| `DatabaseSeeder` (users) | No | Creates duplicates each run; use `migrate:fresh` first |
 
 ## Quick Start
 
@@ -139,10 +138,10 @@ Module permissions (e.g., `shop.products.*`, `posts.*`) are defined in each modu
 php artisan migrate:fresh
 php artisan db:seed
 php artisan shop:product-seed
-php artisan permissions:sync
+php artisan db:seed --class=RolesAndPermissionsSeeder
 php artisan demo:generate --fresh
 
 # Quick refresh (seed essentials only)
 php artisan migrate:fresh --seed
-php artisan permissions:sync
+php artisan db:seed --class=RolesAndPermissionsSeeder
 ```

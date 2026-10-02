@@ -80,13 +80,13 @@ User clicks avatar circle
 
 ### Key Frontend Files
 
-| File                  | Role                                                                              |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `avatar-uploader.tsx` | File validation, drag-drop, crop dialog trigger, preview, upload/delete buttons   |
-| `cropper-dialog.tsx`  | Modal with react-image-crop, zoom slider, rotation slider, canvas export          |
-| `AvatarSection.tsx`   | Thin Section wrapper with title "Profile Picture"                                 |
-| `Profile/Edit.tsx`    | Manages `avatarPreview` state, `handleAvatarUpload` (fetch), `handleDeleteAvatar` |
-| `nav-user.tsx`        | Sidebar — renders `<AvatarImage>` with `user?.avatar`, fallback to initials       |
+| File | Role |
+|------|------|
+| `avatar-uploader.tsx` | File validation, drag-drop, crop dialog trigger, preview, upload/delete buttons |
+| `cropper-dialog.tsx` | Modal with react-image-crop, zoom slider, rotation slider, canvas export |
+| `AvatarSection.tsx` | Thin Section wrapper with title "Profile Picture" |
+| `Profile/Edit.tsx` | Manages `avatarPreview` state, `handleAvatarUpload` (fetch), `handleDeleteAvatar` |
+| `nav-user.tsx` | Sidebar — renders `<AvatarImage>` with `user?.avatar`, fallback to initials |
 
 ---
 
@@ -127,10 +127,10 @@ The accessor dynamically rewrites the scheme/host to match the current request. 
 
 ## Routes
 
-| Method   | URL                         | Controller                    | Purpose           |
-| -------- | --------------------------- | ----------------------------- | ----------------- |
-| `POST`   | `/dashboard/profile/avatar` | `AvatarController::upload()`  | Upload new avatar |
-| `DELETE` | `/dashboard/profile/avatar` | `AvatarController::destroy()` | Remove avatar     |
+| Method | URL | Controller | Purpose |
+|--------|-----|-----------|---------|
+| `POST` | `/dashboard/profile/avatar` | `AvatarController::upload()` | Upload new avatar |
+| `DELETE` | `/dashboard/profile/avatar` | `AvatarController::destroy()` | Remove avatar |
 
 All routes are behind `auth` + `verified` middleware. The `POST` route is CSRF-exempt (token is sent in FormData body but the exemption exists due to fetch() usage).
 
@@ -144,10 +144,10 @@ The CSP `img-src` directive is set to `'self' data: blob: https:` in `ContentSec
 
 ## Troubleshooting
 
-| Symptom                               | Likely Cause                                    | Fix                                                                                    |
-| ------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------- |
-| 500 error on upload                   | `$file->move()` failed (disk full, permissions) | Check `storage/logs/laravel.log`                                                       |
-| Avatar not showing after upload       | CSP blocking, or stale props                    | Verify CSP `img-src`, check browser console                                            |
-| Sidebar not updating                  | `router.reload` not firing                      | Check `only: ['auth']` in `handleAvatarUpload`                                         |
-| Old avatar still on disk after change | Upload failure after old file was deleted       | Verify the delete-only-after-save logic in `AvatarController::upload()`                |
-| "Mixed Content" warning               | Avatar URL scheme doesn't match page scheme     | Check `UserDataTrait::getAvatarUrlAttribute()` — should auto-rewrite to request origin |
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| 500 error on upload | `$file->move()` failed (disk full, permissions) | Check `storage/logs/laravel.log` |
+| Avatar not showing after upload | CSP blocking, or stale props | Verify CSP `img-src`, check browser console |
+| Sidebar not updating | `router.reload` not firing | Check `only: ['auth']` in `handleAvatarUpload` |
+| Old avatar still on disk after change | Upload failure after old file was deleted | Verify the delete-only-after-save logic in `AvatarController::upload()` |
+| "Mixed Content" warning | Avatar URL scheme doesn't match page scheme | Check `UserDataTrait::getAvatarUrlAttribute()` — should auto-rewrite to request origin |

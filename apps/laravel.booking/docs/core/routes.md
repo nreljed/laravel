@@ -2,10 +2,10 @@
 
 ## Route Files
 
-| File              | Prefix | Middleware | Purpose                                                 |
-| ----------------- | ------ | ---------- | ------------------------------------------------------- |
-| `routes/web.php`  | `/`    | web        | Dashboard, admin, public, deploy, switch-mode           |
-| `routes/auth.php` | `/`    | web        | Breeze auth + profile, loaded by `RouteServiceProvider` |
+| File | Prefix | Middleware | Purpose |
+|------|--------|------------|---------|
+| `routes/web.php` | `/` | web | Dashboard, admin, public, deploy, switch-mode |
+| `routes/auth.php` | `/` | web | Breeze auth + profile, loaded by `RouteServiceProvider` |
 
 ## Route Registration via Modules
 
@@ -53,7 +53,6 @@ Middleware: `web` only.
 Routes follow the convention: `{prefix}.{name}` where name is defined in the route file.
 
 Examples:
-
 - `dashboard.bookings.index`
 - `dashboard.bookings.create`
 - `dashboard.properties.edit`

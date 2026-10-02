@@ -13,12 +13,12 @@ Admin (super admin)
 
 ## Roles Overview
 
-| Role         | Slug           | Default? | Description                                                                                                                             |
-| ------------ | -------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Admin        | `admin`        | No       | Full access to everything including user management, settings, roles, system health                                                     |
-| Shop Owner   | `shop_owner`   | No       | Full shop control: products, orders, categories, tags, brands, attributes, reviews, coupons, shipping, taxes, webhooks, reports + posts |
-| Shop Manager | `shop_manager` | No       | Manage existing shop content: edit products, view and update orders, moderate reviews + posts                                           |
-| Customer     | `customer`     | **Yes**  | Account management: profile, notifications, account settings. No module or admin access                                                 |
+| Role | Slug | Default? | Description |
+|------|------|----------|-------------|
+| Admin | `admin` | No | Full access to everything including user management, settings, roles, system health |
+| Shop Owner | `shop_owner` | No | Full shop control: products, orders, categories, tags, brands, attributes, reviews, coupons, shipping, taxes, webhooks, reports + posts |
+| Shop Manager | `shop_manager` | No | Manage existing shop content: edit products, view and update orders, moderate reviews + posts |
+| Customer | `customer` | **Yes** | Account management: profile, notifications, account settings. No module or admin access |
 
 > The default role for new registrations is `customer`, configurable in Settings > Registration.
 
@@ -26,19 +26,19 @@ Admin (super admin)
 
 These permissions are seeded by `RolesAndPermissionsSeeder` and are always present:
 
-| Slug                   | Description                        | Admin | Shop Owner | Shop Manager | Customer |
-| ---------------------- | ---------------------------------- | ----- | ---------- | ------------ | -------- |
-| `manage-users`         | Create, edit, delete users         | ✅    | ❌         | ❌           | ❌       |
-| `manage-settings`      | Change application settings        | ✅    | ❌         | ❌           | ❌       |
-| `manage-roles`         | Assign and manage roles            | ✅    | ❌         | ❌           | ❌       |
-| `view-system-health`   | View system diagnostics            | ✅    | ❌         | ❌           | ❌       |
-| `manage_options`       | Module-level settings (admin only) | ✅    | ❌         | ❌           | ❌       |
-| `view-dashboard`       | Access the main dashboard          | ✅    | ✅         | ✅           | ✅       |
-| `view-profile`         | View own profile                   | ✅    | ✅         | ✅           | ✅       |
-| `edit-profile`         | Edit own name, email, password     | ✅    | ✅         | ✅           | ✅       |
-| `delete-account`       | Delete own account                 | ✅    | ✅         | ✅           | ✅       |
-| `view-notifications`   | View notifications                 | ✅    | ✅         | ✅           | ✅       |
-| `manage-notifications` | Mark read, delete notifications    | ✅    | ✅         | ✅           | ✅       |
+| Slug | Description | Admin | Shop Owner | Shop Manager | Customer |
+|------|-------------|-------|------------|--------------|----------|
+| `manage-users` | Create, edit, delete users | ✅ | ❌ | ❌ | ❌ |
+| `manage-settings` | Change application settings | ✅ | ❌ | ❌ | ❌ |
+| `manage-roles` | Assign and manage roles | ✅ | ❌ | ❌ | ❌ |
+| `view-system-health` | View system diagnostics | ✅ | ❌ | ❌ | ❌ |
+| `manage_options` | Module-level settings (admin only) | ✅ | ❌ | ❌ | ❌ |
+| `view-dashboard` | Access the main dashboard | ✅ | ✅ | ✅ | ✅ |
+| `view-profile` | View own profile | ✅ | ✅ | ✅ | ✅ |
+| `edit-profile` | Edit own name, email, password | ✅ | ✅ | ✅ | ✅ |
+| `delete-account` | Delete own account | ✅ | ✅ | ✅ | ✅ |
+| `view-notifications` | View notifications | ✅ | ✅ | ✅ | ✅ |
+| `manage-notifications` | Mark read, delete notifications | ✅ | ✅ | ✅ | ✅ |
 
 ## Module Permissions
 
@@ -50,32 +50,32 @@ php artisan modules:sync-permissions
 
 ### Shop Module
 
-| Slug                     | Admin | Shop Owner | Shop Manager |
-| ------------------------ | ----- | ---------- | ------------ |
-| `shop.view`              | ✅    | ✅         | ✅           |
-| `shop.products.create`   | ✅    | ✅         | ❌           |
-| `shop.products.edit`     | ✅    | ✅         | ✅           |
-| `shop.products.delete`   | ✅    | ✅         | ❌           |
-| `shop.orders.view`       | ✅    | ✅         | ✅           |
-| `shop.orders.edit`       | ✅    | ✅         | ✅           |
-| `shop.orders.refund`     | ✅    | ✅         | ❌           |
-| `shop.tags.manage`       | ✅    | ✅         | ❌           |
-| `shop.brands.manage`     | ✅    | ✅         | ❌           |
-| `shop.coupons.manage`    | ✅    | ✅         | ❌           |
-| `shop.reviews.moderate`  | ✅    | ✅         | ✅           |
-| `shop.shipping.manage`   | ✅    | ✅         | ❌           |
-| `shop.taxes.manage`      | ✅    | ✅         | ❌           |
-| `shop.webhooks.manage`   | ✅    | ✅         | ❌           |
-| `shop.currencies.manage` | ✅    | ✅         | ❌           |
+| Slug | Admin | Shop Owner | Shop Manager |
+|------|-------|------------|--------------|
+| `shop.view` | ✅ | ✅ | ✅ |
+| `shop.products.create` | ✅ | ✅ | ❌ |
+| `shop.products.edit` | ✅ | ✅ | ✅ |
+| `shop.products.delete` | ✅ | ✅ | ❌ |
+| `shop.orders.view` | ✅ | ✅ | ✅ |
+| `shop.orders.edit` | ✅ | ✅ | ✅ |
+| `shop.orders.refund` | ✅ | ✅ | ❌ |
+| `shop.tags.manage` | ✅ | ✅ | ❌ |
+| `shop.brands.manage` | ✅ | ✅ | ❌ |
+| `shop.coupons.manage` | ✅ | ✅ | ❌ |
+| `shop.reviews.moderate` | ✅ | ✅ | ✅ |
+| `shop.shipping.manage` | ✅ | ✅ | ❌ |
+| `shop.taxes.manage` | ✅ | ✅ | ❌ |
+| `shop.webhooks.manage` | ✅ | ✅ | ❌ |
+| `shop.currencies.manage` | ✅ | ✅ | ❌ |
 
 ### Blog / Posts Module
 
-| Slug           | Admin | Shop Owner | Shop Manager |
-| -------------- | ----- | ---------- | ------------ |
-| `posts.view`   | ✅    | ✅         | ✅           |
-| `posts.create` | ✅    | ✅         | ❌           |
-| `posts.edit`   | ✅    | ✅         | ✅           |
-| `posts.delete` | ✅    | ✅         | ❌           |
+| Slug | Admin | Shop Owner | Shop Manager |
+|------|-------|------------|--------------|
+| `posts.view` | ✅ | ✅ | ✅ |
+| `posts.create` | ✅ | ✅ | ❌ |
+| `posts.edit` | ✅ | ✅ | ✅ |
+| `posts.delete` | ✅ | ✅ | ❌ |
 
 ## Permission Assignment Flow
 
@@ -104,12 +104,12 @@ php artisan roles:create "Editor" --permissions="view-dashboard,view-profile,pos
 
 ### Key Files
 
-| File                                              | Purpose                                             |
-| ------------------------------------------------- | --------------------------------------------------- |
-| `database/seeders/RolesAndPermissionsSeeder.php`  | Seeds core roles and permissions                    |
-| `app/Console/Commands/SyncModulePermissions.php`  | Syncs module permissions to DB + assigns to roles   |
-| `app/Providers/PermissionGateServiceProvider.php` | Registers dynamic Gates for all permissions         |
-| `app/Http/Middleware/HandleInertiaRequests.php`   | Shares `userCapabilities` with frontend             |
-| `app/Models/User.php`                             | `isAdmin()`, `hasRole()`, `hasPermission()` methods |
-| `app/Http/Middleware/AdminMiddleware.php`         | 403 if not admin                                    |
-| `app/Http/Middleware/CheckPermission.php`         | Route-based permission check                        |
+| File | Purpose |
+|------|---------|
+| `database/seeders/RolesAndPermissionsSeeder.php` | Seeds core roles and permissions |
+| `app/Console/Commands/SyncModulePermissions.php` | Syncs module permissions to DB + assigns to roles |
+| `app/Providers/PermissionGateServiceProvider.php` | Registers dynamic Gates for all permissions |
+| `app/Http/Middleware/HandleInertiaRequests.php` | Shares `userCapabilities` with frontend |
+| `app/Models/User.php` | `isAdmin()`, `hasRole()`, `hasPermission()` methods |
+| `app/Http/Middleware/AdminMiddleware.php` | 403 if not admin |
+| `app/Http/Middleware/CheckPermission.php` | Route-based permission check |

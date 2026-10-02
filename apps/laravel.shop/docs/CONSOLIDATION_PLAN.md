@@ -29,7 +29,6 @@ All routes, controllers, models, services, frontend pages, policies, permissions
 ## 3. Progress
 
 ### Done
-
 - Created `app/Shop/` and `app/Blog/` trees.
 - Moved every Shop and Blog model/controller/service/provider into the new namespaces.
 - Deleted `app/Modules/Booking/`, `app/Modules/Properties/`, `app/Modules/Contracts/`, `app/Modules/Traits/`, `app/Modules/ModuleRegistry.php`, `app/Modules/ModuleLoader.php`, `app/Modules/BookableRegistry.php`.
@@ -66,43 +65,38 @@ All routes, controllers, models, services, frontend pages, policies, permissions
 - Deleted stale factories (BookingFactory, PropertyFactory).
 
 ### Phase 5 — Frontend (Inertia + Vite)
-
 - **Status: Done** — Updated `vite.config.js` aliases, `app.tsx` globs, `tsconfig.json` paths. Deleted `booking-widget.tsx`.
 
 ### Phase 6 — Cleanup + Verification
-
 - **Status: Done** — All 156 tests passing, `vendor/bin/pint` clean, `npm run typecheck` clean, `npm run build` succeeds.
 
 ### Phase 7 — Documentation
-
 - **Status: Done** — AGENTS.md rewritten with new structure, stale docs deleted (booking, properties, module-system), root-level scripts updated.
 
 ---
 
 ## 4. Key Decisions
 
-| Decision                                            | Rationale                                                                                                                    |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `App\Shop` flat namespace under `app/Shop/`         | Minimizes churn vs deeper Laravel `App\Domain\Shop` structure                                                                |
-| `App\Blog` namespace, keep `posts` route names      | Keeps existing frontend URLs stable                                                                                          |
-| Delete all module infrastructure                    | Removes dead weight; `FeatureRegistry` is the only module-like concept still needed for backward compatibility with services |
-| `FeatureRegistry` aggregates providers              | Lets `DashboardService`, `FormattingService`, etc. keep working without deeper rewrites                                      |
-| Routes loaded via route files (`routes/shop.php`)   | Conventional Laravel loading, easier to audit than provider boot                                                             |
-| `HandleInertiaRequests` iterates providers directly | Removes `ModuleRegistry` from the request lifecycle entirely                                                                 |
+| Decision | Rationale |
+|----------|-----------|
+| `App\Shop` flat namespace under `app/Shop/` | Minimizes churn vs deeper Laravel `App\Domain\Shop` structure |
+| `App\Blog` namespace, keep `posts` route names | Keeps existing frontend URLs stable |
+| Delete all module infrastructure | Removes dead weight; `FeatureRegistry` is the only module-like concept still needed for backward compatibility with services |
+| `FeatureRegistry` aggregates providers | Lets `DashboardService`, `FormattingService`, etc. keep working without deeper rewrites |
+| Routes loaded via route files (`routes/shop.php`) | Conventional Laravel loading, easier to audit than provider boot |
+| `HandleInertiaRequests` iterates providers directly | Removes `ModuleRegistry` from the request lifecycle entirely |
 
 ---
 
 ## 5. Detailed Plan Phases
 
 ### Phase 0 — Preparation
-
 - Audit all `App\Modules\*` references with grep.
 - Map every module controller, model, view, route, and frontend page.
 - Decide namespace targets (`App\Shop`, `App\Blog`).
 - **Status: Done**
 
 ### Phase 1 — Move Shop + Blog to Core
-
 - Create `app/Shop/` and `app/Blog/` directories.
 - Move files, update namespaces, fix imports in 140+ PHP files.
 - Create `ShopServiceProvider` and `BlogServiceProvider`.
@@ -110,7 +104,6 @@ All routes, controllers, models, services, frontend pages, policies, permissions
 - **Status: Done**
 
 ### Phase 2 — Remove Booking + Properties
-
 - Delete `app/Modules/Booking/`, `app/Modules/Properties/`, `app/Modules/Contracts/`, `app/Modules/Traits/`.
 - Delete `ModuleRegistry`, `ModuleLoader`, `BookableRegistry`.
 - Delete `ModuleController`, `Module` model, `DebugModules` command.
@@ -119,14 +112,12 @@ All routes, controllers, models, services, frontend pages, policies, permissions
 - **Status: Done (code moves complete; a few lingering references remain in consumer services)**
 
 ### Phase 3 — Replace ModuleRegistry with FeatureRegistry
-
 - Create `App\Services\FeatureRegistry`.
 - Update `DashboardService`, `FormattingService`, `GalleryService`, `RepeaterService`, `EmailSettingsController`, `NotificationService`, `NotificationTypeRegistry`, `GalleryService`, `AccountService`, `SystemHealthService`, `SettingsController`, `SyncModulePermissions`.
 - Remove `app()->resolved(ModuleRegistry::class)` guards.
 - **Status: Mostly done; remaining guard cleanups in progress**
 
 ### Phase 4 — Routing & Middleware
-
 - Add `routes/api.php` + `api` middleware group to `bootstrap/app.php`.
 - Create `routes/shop.php`, `routes/shop-api.php`, `routes/blog.php`, `routes/api.php`.
 - Move all Shop/Blog routes out of providers into route files.
@@ -139,14 +130,12 @@ All routes, controllers, models, services, frontend pages, policies, permissions
 ## 6. Critical Context
 
 ### Module System (Removed)
-
 - `ModuleInterface` defined 53 methods including `getNavGroupLabel()`.
 - `HasRoutes` trait provided `loadRoutes()`, `loadAdminRoutes()`, `loadPublicRoutes()`, `loadApiRoutes()`.
 - `ModuleRegistry` was the central lookup for nav items, shared data, permissions, and formatting configs.
 - `ModuleLoader` scanned `app/Modules/*/` for `{Name}Module.php`.
 
 ### Frontend Aliases (Before)
-
 ```
 @modules-shop   → app/Modules/Shop/Resources/js/
 @modules-posts  → app/Modules/Posts/Resources/js/
@@ -155,16 +144,13 @@ All routes, controllers, models, services, frontend pages, policies, permissions
 ```
 
 ### Frontend Aliases (After)
-
 ```
 @shop   → app/Shop/Resources/js/
 @blog   → app/Blog/Resources/js/
 ```
 
 ### FeatureRegistry
-
 Replaces `ModuleRegistry`. Aggregates `ShopServiceProvider` + `BlogServiceProvider`. Provides:
-
 - `all()`, `get(string $slug)`
 - `getAllNavItems()`, `getAllSharedData()`
 - `getAllMetaFormattingConfigs()`, `getAllRepeaterConfigs()`, `getAllGalleryConfigs()`, `getAllProfileFieldConfigs()`
@@ -174,7 +160,6 @@ Replaces `ModuleRegistry`. Aggregates `ShopServiceProvider` + `BlogServiceProvid
 - `cleanupUserData(int $userId)`
 
 ### Services Consuming FeatureRegistry
-
 - `DashboardService` • `FormattingService` • `GalleryService` • `RepeaterService`
 - `NotificationService` • `NotificationTypeRegistry` • `EmailSettingsController`
 - `PermissionGateServiceProvider` • `SettingsController` • `AccountService` • `SyncModulePermissions`
@@ -196,4 +181,4 @@ All consolidation tasks are complete. Future work should focus on new feature de
 
 ---
 
-_Last updated: 2026-07-08_
+*Last updated: 2026-07-08*

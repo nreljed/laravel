@@ -14,14 +14,14 @@ Also check that `.env.production` has its own unique key (it should already, but
 
 ## 2. `.env` — App Identity
 
-| Field                                  | What to change                       |
-| -------------------------------------- | ------------------------------------ |
-| `APP_NAME`                             | Must be unique per project           |
-| `APP_URL`                              | Must match the local dev domain      |
-| `DB_DATABASE`                          | Must be a unique database            |
-| `DB_USERNAME` / `DB_PASSWORD`          | Unique credentials                   |
-| `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | Unique per app                       |
-| `SESSION_DOMAIN`                       | Must not overlap with other projects |
+| Field | What to change |
+|-------|---------------|
+| `APP_NAME` | Must be unique per project |
+| `APP_URL` | Must match the local dev domain |
+| `DB_DATABASE` | Must be a unique database |
+| `DB_USERNAME` / `DB_PASSWORD` | Unique credentials |
+| `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | Unique per app |
+| `SESSION_DOMAIN` | Must not overlap with other projects |
 
 ## 3. `.env.example` & `.env.production.example`
 

@@ -42,24 +42,24 @@ act push -W ".github/workflows/develop-ci.yml" --secret-file .secrets -v
 
 ### Detected Workflows
 
-| Workflow             | File                 | Trigger             | Notes                                                         |
-| -------------------- | -------------------- | ------------------- | ------------------------------------------------------------- |
-| CI Validation        | `ci.yml`             | `workflow_call`     | Called by other workflows                                     |
-| Develop CI           | `develop-ci.yml`     | `push`              | Validates on push to develop                                  |
-| Pull Request Checks  | `pr.yml`             | `pull_request`      | PR validation                                                 |
-| Manual Deploy Check  | `cron-deploy.yml`    | `workflow_dispatch` | Manual trigger                                                |
-| Build Deploy Package | `deploy-package.yml` | `workflow_call`     | Called by deploy.yml                                          |
-| Deploy to Production | `deploy.yml`         | `push`              | 4-stage pipeline (validate → package → release → push-deploy) |
+| Workflow | File | Trigger | Notes |
+|----------|------|---------|-------|
+| CI Validation | `ci.yml` | `workflow_call` | Called by other workflows |
+| Develop CI | `develop-ci.yml` | `push` | Validates on push to develop |
+| Pull Request Checks | `pr.yml` | `pull_request` | PR validation |
+| Manual Deploy Check | `cron-deploy.yml` | `workflow_dispatch` | Manual trigger |
+| Build Deploy Package | `deploy-package.yml` | `workflow_call` | Called by deploy.yml |
+| Deploy to Production | `deploy.yml` | `push` | 4-stage pipeline (validate → package → release → push-deploy) |
 
 > **Note:** `workflow_call` workflows (`ci.yml`, `deploy-package.yml`) can't be triggered directly with `act`. Use `pr.yml`, `develop-ci.yml`, or `deploy.yml` instead.
 
 ### Performance
 
-| Scenario   | Time     | Notes                                     |
-| ---------- | -------- | ----------------------------------------- |
-| First run  | 5-10 min | Downloads ubuntu:22.04, installs PHP/Node |
-| Normal run | 2-3 min  | Uses cached containers via `--reuse`      |
-| Dry-run    | ~30 sec  | Validation only, no execution             |
+| Scenario | Time | Notes |
+|----------|------|-------|
+| First run | 5-10 min | Downloads ubuntu:22.04, installs PHP/Node |
+| Normal run | 2-3 min | Uses cached containers via `--reuse` |
+| Dry-run | ~30 sec | Validation only, no execution |
 
 ---
 

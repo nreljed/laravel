@@ -9,12 +9,12 @@
 
 ## Priority Legend
 
-| Priority | Action                              |
-| -------- | ----------------------------------- |
-| **P0**   | Must do — bug/blocker               |
-| **P1**   | Should do — significant improvement |
-| **P2**   | Nice to have — minor improvement    |
-| **P3**   | Future consideration                |
+| Priority | Action |
+|----------|--------|
+| **P0** | Must do — bug/blocker |
+| **P1** | Should do — significant improvement |
+| **P2** | Nice to have — minor improvement |
+| **P3** | Future consideration |
 
 ---
 
@@ -27,7 +27,6 @@ CRM-dashboard has a comprehensive ESLint setup. Laravel has none.
 **CRM config**: TypeScript parser, React plugin, React Hooks plugin, Import resolver (`eslint-plugin-import-x`), Unicorn plugin (40+ rules), Prettier integration, test file exemptions.
 
 **Install**:
-
 ```bash
 npm install --save-dev \
   eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin \
@@ -42,7 +41,6 @@ npm install --save-dev \
 ### 1.2 Prettier Configuration
 
 **Install**:
-
 ```bash
 npm install --save-dev prettier
 ```
@@ -52,21 +50,18 @@ npm install --save-dev prettier
 ### 1.3 Husky + lint-staged
 
 **Install**:
-
 ```bash
 npm install --save-dev husky lint-staged
 npx husky init
 ```
 
 **Git hooks to create**:
-
 - `.husky/pre-commit`: `npx lint-staged`
 - `.husky/pre-push`: `npm run lint && npm run typecheck && vendor/bin/pint`
 
 ### 1.4 Commitlint
 
 **Install**:
-
 ```bash
 npm install --save-dev @commitlint/cli @commitlint/config-conventional
 ```
@@ -76,7 +71,6 @@ npm install --save-dev @commitlint/cli @commitlint/config-conventional
 ### 1.5 TypeScript Strictness
 
 Enable in `tsconfig.json`:
-
 ```json
 {
   "noUnusedLocals": true,
@@ -90,7 +84,6 @@ Currently Laravel has these set to `false` or omitted. CRM-dashboard has all thr
 ### 1.6 dependency-cruiser or Renovate
 
 CRM-dashboard uses Renovate with grouped updates. Consider adding:
-
 - **Renovate**: Free, automated dependency PRs (`.github/renovate.json`)
 - Or **Dependabot**: Built into GitHub
 
@@ -109,13 +102,11 @@ Laravel has **no frontend tests**. CRM-dashboard has full Vitest with:
 - `__tests__` dirs in `hooks/` and `lib/`
 
 **Install**:
-
 ```bash
 npm install --save-dev vitest @testing-library/react @testing-library/jest-dom @testing-library/dom jsdom
 ```
 
 **Files to port**:
-
 - `vitest.config.js` (adapt paths to Laravel)
 - `resources/js/test-setup.js`
 - `resources/js/hooks/__tests__/use-auth.test.tsx`
@@ -133,7 +124,6 @@ Add `npm run test:core` to the `deploy.yml` GitHub workflow.
 ### 3.1 API Client
 
 CRM-dashboard has `lib/api/client.js` (396 lines) — a full Inertia REST API client class with:
-
 - `api.get()`, `api.post()`, `api.put()`, `api.patch()`, `api.delete()`
 - Automatic nonce injection (WordPress-specific — replace with Laravel CSRF)
 - Error normalization
@@ -159,31 +149,30 @@ CRM-dashboard has `lib/api/client.js` (396 lines) — a full Inertia REST API cl
 
 ### 4.1 Hooks to Port
 
-| Hook                       | Purpose                             | Effort                           |
-| -------------------------- | ----------------------------------- | -------------------------------- |
-| `use-gallery-config.ts`    | Gallery drag-and-drop configuration | Low (if gallery uploader exists) |
-| `use-tip-tap-dark-mode.ts` | Rich text editor dark mode          | Low (if TipTap is added)         |
+| Hook | Purpose | Effort |
+|------|---------|--------|
+| `use-gallery-config.ts` | Gallery drag-and-drop configuration | Low (if gallery uploader exists) |
+| `use-tip-tap-dark-mode.ts` | Rich text editor dark mode | Low (if TipTap is added) |
 
 ### 4.2 Shared Components to Port
 
-| Component                | Location in CRM                            | Effort                   |
-| ------------------------ | ------------------------------------------ | ------------------------ |
-| `FlashMessages.tsx`      | `Components/FlashMessages.tsx`             | Low                      |
-| `ThemeProvider.tsx`      | `Components/ThemeProvider.tsx`             | Low (simplifies app.tsx) |
-| `kbd.tsx`                | `Components/shared/kbd.tsx`                | Low                      |
-| `native-select.tsx`      | `Components/shared/native-select.tsx`      | Low                      |
-| `state-select.tsx`       | `Components/shared/state-select.tsx`       | Low                      |
-| `variations-manager.tsx` | `Components/shared/variations-manager.tsx` | Medium                   |
-| `item.tsx`               | `Components/shared/item.tsx`               | Low                      |
-| `direction.tsx`          | `Components/shared/direction.tsx`          | Low                      |
-| `cropper.tsx`            | `Components/shared/cropper.tsx`            | Low                      |
-| `error-message.tsx`      | Already exists in Laravel                  | ✅                       |
-| `section.tsx`            | Already exists in Laravel                  | ✅                       |
+| Component | Location in CRM | Effort |
+|-----------|----------------|--------|
+| `FlashMessages.tsx` | `Components/FlashMessages.tsx` | Low |
+| `ThemeProvider.tsx` | `Components/ThemeProvider.tsx` | Low (simplifies app.tsx) |
+| `kbd.tsx` | `Components/shared/kbd.tsx` | Low |
+| `native-select.tsx` | `Components/shared/native-select.tsx` | Low |
+| `state-select.tsx` | `Components/shared/state-select.tsx` | Low |
+| `variations-manager.tsx` | `Components/shared/variations-manager.tsx` | Medium |
+| `item.tsx` | `Components/shared/item.tsx` | Low |
+| `direction.tsx` | `Components/shared/direction.tsx` | Low |
+| `cropper.tsx` | `Components/shared/cropper.tsx` | Low |
+| `error-message.tsx` | Already exists in Laravel | ✅ |
+| `section.tsx` | Already exists in Laravel | ✅ |
 
 ### 4.3 TipTap Rich Text Editor
 
 CRM-dashboard has a full TipTap integration (`components/tiptap/`):
-
 - 20+ extensions (table, image, link, task list, highlight, code block, etc.)
 - Custom toolbar
 - Image upload handler
@@ -197,35 +186,35 @@ CRM-dashboard has a full TipTap integration (`components/tiptap/`):
 
 ### Versions to Upgrade
 
-| Package                | Laravel (package.json) | CRM-dashboard | Action              |
-| ---------------------- | ---------------------- | ------------- | ------------------- |
-| `react`                | `^19.0.0`              | `^19.2.7`     | Update to `^19.2.0` |
-| `react-dom`            | `^19.0.0`              | `^19.2.7`     | Update to `^19.2.0` |
-| `@inertiajs/react`     | `^3.0.0`               | `^3.5.0`      | Update to `^3.5.0`  |
-| `@vitejs/plugin-react` | `^6.0.2`               | `^6.0.3`      | Update to `^6.0.3`  |
-| `tailwindcss`          | `^4.0.0`               | `^4.3.1`      | Update to `^4.3.0`  |
-| `@tailwindcss/vite`    | `^4.0.0`               | `^4.3.1`      | Update to `^4.3.0`  |
-| `typescript`           | `^6.0.0`               | `^6.0.3`      | Update to `^6.0.3`  |
-| `vite`                 | `^8.0.0`               | `^8.1.0`      | Update to `^8.1.0`  |
-| `lucide-react`         | `^1.20.0`              | `^1.21.0`     | Update to `^1.21.0` |
-| `@base-ui/react`       | `^1.5.0`               | `^1.6.0`      | Update to `^1.6.0`  |
-| `@zxcvbn-ts/core`      | `^4.1.2`               | `^4.1.2`      | Same                |
-| `date-fns`             | `^4.4.0`               | `^4.4.0`      | Same                |
+| Package | Laravel (package.json) | CRM-dashboard | Action |
+|---------|----------------------|---------------|--------|
+| `react` | `^19.0.0` | `^19.2.7` | Update to `^19.2.0` |
+| `react-dom` | `^19.0.0` | `^19.2.7` | Update to `^19.2.0` |
+| `@inertiajs/react` | `^3.0.0` | `^3.5.0` | Update to `^3.5.0` |
+| `@vitejs/plugin-react` | `^6.0.2` | `^6.0.3` | Update to `^6.0.3` |
+| `tailwindcss` | `^4.0.0` | `^4.3.1` | Update to `^4.3.0` |
+| `@tailwindcss/vite` | `^4.0.0` | `^4.3.1` | Update to `^4.3.0` |
+| `typescript` | `^6.0.0` | `^6.0.3` | Update to `^6.0.3` |
+| `vite` | `^8.0.0` | `^8.1.0` | Update to `^8.1.0` |
+| `lucide-react` | `^1.20.0` | `^1.21.0` | Update to `^1.21.0` |
+| `@base-ui/react` | `^1.5.0` | `^1.6.0` | Update to `^1.6.0` |
+| `@zxcvbn-ts/core` | `^4.1.2` | `^4.1.2` | Same |
+| `date-fns` | `^4.4.0` | `^4.4.0` | Same |
 
 ### Packages to Add (Dev)
 
-| Package                           | Version | Purpose              |
-| --------------------------------- | ------- | -------------------- |
-| `eslint`                          | ^10.6.0 | Linting              |
-| `prettier`                        | ^3.8.5  | Formatting           |
-| `husky`                           | ^9.1.7  | Git hooks            |
-| `lint-staged`                     | ^17.0.8 | Staged linting       |
-| `@commitlint/cli`                 | ^21.1.0 | Commit convention    |
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `eslint` | ^10.6.0 | Linting |
+| `prettier` | ^3.8.5 | Formatting |
+| `husky` | ^9.1.7 | Git hooks |
+| `lint-staged` | ^17.0.8 | Staged linting |
+| `@commitlint/cli` | ^21.1.0 | Commit convention |
 | `@commitlint/config-conventional` | ^21.1.0 | Conventional commits |
-| `vitest`                          | ^4.1.9  | Frontend testing     |
-| `@testing-library/react`          | ^16.3.2 | React test utilities |
-| `@testing-library/jest-dom`       | ^6.9.1  | DOM matchers         |
-| `jsdom`                           | ^29.1.1 | DOM environment      |
+| `vitest` | ^4.1.9 | Frontend testing |
+| `@testing-library/react` | ^16.3.2 | React test utilities |
+| `@testing-library/jest-dom` | ^6.9.1 | DOM matchers |
+| `jsdom` | ^29.1.1 | DOM environment |
 
 ### Animation Plugin Migration
 
@@ -237,7 +226,6 @@ npm install tw-animate-css@^1.4.0
 ```
 
 Replace in `resources/css/app.css`:
-
 ```css
 /* Remove: @plugin "tailwindcss-animate"; */
 /* Add:    @plugin "tw-animate-css"; */
@@ -250,30 +238,28 @@ Replace in `resources/css/app.css`:
 ### 6.1 Tailwind v4 Source Directives
 
 Current Laravel:
-
 ```css
 @import "tailwindcss";
 ```
 
 CRM-dashboard (more explicit):
-
 ```css
 @import "tailwindcss" source(none);
 @source "../resources/js/";
 @source "../../app/Modules/Properties/Resources/js/";
-@source ...;
+@source ...
 ```
 
 The `source(none)` + `@source` pattern explicitly declares which directories Tailwind should scan, preventing false positive class generation from `vendor/` and `node_modules/`.
 
 ### 6.2 Additional CSS Variables
 
-| Variable                                   | CRM Value            | Priority |
-| ------------------------------------------ | -------------------- | -------- |
-| `--warning`                                | oklch(0.8 0.115 85)  | Low      |
-| `--password-fair`                          | oklch(0.64 0.145 75) | Low      |
-| `--password-strong`                        | oklch(0.62 0.14 145) | Low      |
-| `--accent-purple` / `--accent-rose` / etc. | various              | Low      |
+| Variable | CRM Value | Priority |
+|----------|-----------|----------|
+| `--warning` | oklch(0.8 0.115 85) | Low |
+| `--password-fair` | oklch(0.64 0.145 75) | Low |
+| `--password-strong` | oklch(0.62 0.14 145) | Low |
+| `--accent-purple` / `--accent-rose` / etc. | various | Low |
 
 ### 6.3 @tailwindcss/typography
 
@@ -284,7 +270,6 @@ npm install @tailwindcss/typography
 ```
 
 Add to CSS:
-
 ```css
 @plugin "@tailwindcss/typography";
 ```
@@ -315,11 +300,11 @@ CRM-dashboard uses `date-fns` with `phpToDateFnsFormat()`. This is more reliable
 
 Laravel has `lib/schemas/index.ts` with auth schemas. CRM-dashboard has additional schemas:
 
-| Schema           | CRM | Laravel | Action                   |
-| ---------------- | --- | ------- | ------------------------ |
-| `profileSchema`  | ✅  | ❌      | Port for Account page    |
-| `passwordSchema` | ✅  | ❌      | Port for password change |
-| `emailSchema`    | ✅  | ❌      | Port for email change    |
+| Schema | CRM | Laravel | Action |
+|--------|-----|---------|--------|
+| `profileSchema` | ✅ | ❌ | Port for Account page |
+| `passwordSchema` | ✅ | ❌ | Port for password change |
+| `emailSchema` | ✅ | ❌ | Port for email change |
 
 ---
 
@@ -334,7 +319,6 @@ lint → typecheck → format:check → phpcs → phpstan → phpunit → vitest
 ```
 
 **Action**: Create `.github/workflows/ci-validation.yml` for the Laravel project with:
-
 ```yaml
 - npm run lint        (once ESLint is added)
 - npm run typecheck
@@ -348,7 +332,6 @@ lint → typecheck → format:check → phpcs → phpstan → phpunit → vitest
 ### 8.2 Build Stats
 
 CRM-dashboard uses `rollup-plugin-visualizer`. Add to `vite.config.js`:
-
 ```js
 import { visualizer } from "rollup-plugin-visualizer";
 // In plugins: visualizer({ filename: "build-stats.html", open: false, gzipSize: true })
@@ -357,7 +340,6 @@ import { visualizer } from "rollup-plugin-visualizer";
 ### 8.3 Granular Code Splitting
 
 CRM-dashboard has 14 code-splitting groups. Laravel has 4. Consider adding groups for:
-
 - `leaflet-vendor` (if map bundle is significant)
 - `dnd-vendor` (@dnd-kit)
 - `date-vendor` (date-fns)
@@ -371,15 +353,15 @@ CRM-dashboard has 14 code-splitting groups. Laravel has 4. Consider adding group
 
 These CRM-dashboard patterns are WordPress-specific and have no equivalent in a standalone Laravel app:
 
-| Pattern                      | CRM Reason                   | Laravel Equivalent                 |
-| ---------------------------- | ---------------------------- | ---------------------------------- |
-| `use-nonce.ts`               | WordPress CSRF nonces        | Laravel's `csrf_token()` / Sanctum |
-| `apiUrl()` in utils          | WordPress `plugins_url()`    | Ziggy's `route()`                  |
-| `@radix-ui/react-direction`  | RTL support for WP admin     | Optional                           |
-| `image-security.js`          | WordPress image handling     | Server-side validation in PHP      |
-| `plugin.php` header          | WordPress plugin bootstrap   | `routes/web.php` + `artisan serve` |
-| Fix permissions shell script | Shared hosting deployment    | Not needed (Dedicated server)      |
-| `acorn-integration`          | Roots Acorn WordPress bridge | Not needed (Native Laravel)        |
+| Pattern | CRM Reason | Laravel Equivalent |
+|---------|-----------|-------------------|
+| `use-nonce.ts` | WordPress CSRF nonces | Laravel's `csrf_token()` / Sanctum |
+| `apiUrl()` in utils | WordPress `plugins_url()` | Ziggy's `route()` |
+| `@radix-ui/react-direction` | RTL support for WP admin | Optional |
+| `image-security.js` | WordPress image handling | Server-side validation in PHP |
+| `plugin.php` header | WordPress plugin bootstrap | `routes/web.php` + `artisan serve` |
+| Fix permissions shell script | Shared hosting deployment | Not needed (Dedicated server) |
+| `acorn-integration` | Roots Acorn WordPress bridge | Not needed (Native Laravel) |
 
 ---
 
@@ -414,14 +396,14 @@ These CRM-dashboard patterns are WordPress-specific and have no equivalent in a 
 
 ## Migration Status
 
-| Area             | CRM-dashboard                    | Laravel         | Gap                    |
-| ---------------- | -------------------------------- | --------------- | ---------------------- |
-| UI Components    | 32                               | 80              | CRM has subset         |
-| Hooks            | 16                               | 13              | CRM has 3 unique       |
-| Tests            | Vitest + PHPUnit + PHPStan       | PHPUnit only    | Frontend tests missing |
-| Linting          | ESLint + Prettier                | None            | Missing                |
-| Git Hooks        | Husky + lint-staged + commitlint | None            | Missing                |
-| CI/CD            | CI validation + Release          | Deploy only     | Missing validation     |
-| Rich Text        | TipTap full                      | None            | Not needed yet         |
-| API Client       | Full class                       | Direct Inertia  | Not needed yet         |
-| Version Currency | Mostly up to date                | Slightly behind | 10 packages to update  |
+| Area | CRM-dashboard | Laravel | Gap |
+|------|---------------|---------|-----|
+| UI Components | 32 | 80 | CRM has subset |
+| Hooks | 16 | 13 | CRM has 3 unique |
+| Tests | Vitest + PHPUnit + PHPStan | PHPUnit only | Frontend tests missing |
+| Linting | ESLint + Prettier | None | Missing |
+| Git Hooks | Husky + lint-staged + commitlint | None | Missing |
+| CI/CD | CI validation + Release | Deploy only | Missing validation |
+| Rich Text | TipTap full | None | Not needed yet |
+| API Client | Full class | Direct Inertia | Not needed yet |
+| Version Currency | Mostly up to date | Slightly behind | 10 packages to update |

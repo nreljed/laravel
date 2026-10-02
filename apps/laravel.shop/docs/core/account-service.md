@@ -33,11 +33,11 @@ Logs audit, calls `deleteAllUserData()`, deletes the user, sends deletion confir
 
 ## Email Categories
 
-| Method                             | Category           |
-| ---------------------------------- | ------------------ |
+| Method | Category |
+|--------|----------|
 | `sendPasswordChangeConfirmation()` | `password-changed` |
-| `sendEmailChangeNotification()`    | `email-changed`    |
-| `sendDeletionConfirmationEmail()`  | `account-deleted`  |
+| `sendEmailChangeNotification()` | `email-changed` |
+| `sendDeletionConfirmationEmail()` | `account-deleted` |
 
 ## Usage
 

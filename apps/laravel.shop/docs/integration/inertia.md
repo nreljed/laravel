@@ -2,10 +2,10 @@
 
 ## Version
 
-| Package            | Version (installed) | Latest available | Status              |
-| ------------------ | ------------------- | ---------------- | ------------------- |
-| `@inertiajs/react` | 3.4.0               | ^3.5.0 (CRM)     | Outdated by 1 minor |
-| `@inertiajs/vite`  | **Not installed**   | ^3.5.0 (CRM)     | **Missing**         |
+| Package | Version (installed) | Latest available | Status |
+|---------|-------------------|-----------------|--------|
+| `@inertiajs/react` | 3.4.0 | ^3.5.0 (CRM) | Outdated by 1 minor |
+| `@inertiajs/vite` | **Not installed** | ^3.5.0 (CRM) | **Missing** |
 
 ---
 
@@ -39,11 +39,11 @@
 
 ### ⚠️ Issues Found
 
-| Issue                                        | Priority | Impact                                           | Fix                                                     |
-| -------------------------------------------- | -------- | ------------------------------------------------ | ------------------------------------------------------- |
-| `@inertiajs/vite` plugin not installed       | Medium   | Missing Vite plugin for Inertia HMR optimization | `npm install @inertiajs/vite` + add to `vite.config.js` |
-| Outdated `@inertiajs/react` (3.4.0 vs 3.5.0) | Low      | Missing latest fixes/features                    | `npm install @inertiajs/react@^3.5.0`                   |
-| `router` typed as `any` in `app.tsx`         | Low      | Unsafe access pattern                            | Use Inertia's `router` type                             |
+| Issue | Priority | Impact | Fix |
+|-------|----------|--------|-----|
+| `@inertiajs/vite` plugin not installed | Medium | Missing Vite plugin for Inertia HMR optimization | `npm install @inertiajs/vite` + add to `vite.config.js` |
+| Outdated `@inertiajs/react` (3.4.0 vs 3.5.0) | Low | Missing latest fixes/features | `npm install @inertiajs/react@^3.5.0` |
+| `router` typed as `any` in `app.tsx` | Low | Unsafe access pattern | Use Inertia's `router` type |
 
 ### ❌ Missing from CRM-dashboard (both projects share same gaps)
 
@@ -108,18 +108,18 @@ Then use in pages: `const props = usePage<PageProps<MySpecificProps>>()`
 
 ## Inertia v3 Features Not Used
 
-| Feature                       | Available Since | Benefit                                                 | Implementation Effort |
-| ----------------------------- | --------------- | ------------------------------------------------------- | --------------------- |
-| `usePrefetch`                 | v3.0            | Preload pages on hover for instant navigation           | Low                   |
-| `useRemember`                 | v3.0            | Persist form state across navigations                   | Low                   |
-| `deferred` props              | v3.0            | Defer slow data (e.g., stats) for faster initial render | Medium                |
-| `merge` option in reload      | v3.0            | Merge instead of replace in partial reloads             | Low                   |
-| `preserveScroll` improvements | v3.0            | Better scroll restoration                               | Low                   |
+| Feature | Available Since | Benefit | Implementation Effort |
+|---------|---------------|---------|----------------------|
+| `usePrefetch` | v3.0 | Preload pages on hover for instant navigation | Low |
+| `useRemember` | v3.0 | Persist form state across navigations | Low |
+| `deferred` props | v3.0 | Defer slow data (e.g., stats) for faster initial render | Medium |
+| `merge` option in reload | v3.0 | Merge instead of replace in partial reloads | Low |
+| `preserveScroll` improvements | v3.0 | Better scroll restoration | Low |
 
 ---
 
 ## Version History
 
-| Date       | Action                                             |
-| ---------- | -------------------------------------------------- |
+| Date | Action |
+|------|--------|
 | 2026-06-30 | Audit created — v3.4.0 installed, v3.5.0 available |

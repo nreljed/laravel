@@ -11,13 +11,13 @@
    map markers, radii, font, prose/editor/code-block styling) lives in
    core.css. */
 :root {
-  --warning: oklch(0.84 0.16 84);
+    --warning: oklch(0.84 0.16 84);
 }
 
 .dark {
-  --warning: oklch(0.7 0.14 75);
+    --warning: oklch(0.7 0.14 75);
 }
 
 @theme inline {
-  --color-warning: var(--warning);
+    --color-warning: var(--warning);
 }

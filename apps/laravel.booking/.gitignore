@@ -7,7 +7,6 @@
 /storage/framework/sessions/*
 /storage/framework/views/*
 /storage/framework/cache/laravel-exceptions
-/storage/logs/*.log
 /storage/app/public/*
 /public/build/*
 /public/hot
@@ -36,6 +35,8 @@ composer.phar
 /_fix_autoload.php
 /_schema_dump.php
 /storage/debug/playwright-output/*
+/test-results/
+/playwright-report/
 /check_users.php
 /*-desktop.png
 /*-mobile.png

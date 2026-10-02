@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Permission;
 use Nreljed\Platform\Models\Role;
 use Tests\TestCase;

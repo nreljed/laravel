@@ -27,22 +27,22 @@ Multi-layered email system supporting SMTP configuration via admin UI, template-
 
 All SMTP settings are stored in the `settings` table with key `email_settings` as a JSON blob.
 
-| Field                    | Type   | Description                                                    |
-| ------------------------ | ------ | -------------------------------------------------------------- |
-| `mailer`                 | string | `smtp`, `sendmail`, `mail`, `log`                              |
-| `smtp_host`              | string | SMTP server hostname                                           |
-| `smtp_port`              | int    | Port (587 TLS, 465 SSL)                                        |
-| `smtp_encryption`        | string | `tls`, `ssl`, `none`                                           |
-| `smtp_auth`              | bool   | Enable/disable authentication                                  |
-| `auto_tls`               | bool   | Automatically upgrade to STARTTLS                              |
-| `smtp_allow_self_signed` | bool   | Disable CA verification for self-signed certs                  |
-| `smtp_ehlo_domain`       | string | Custom EHLO/HELO hostname (empty = fallback to `app.url` host) |
-| `smtp_username`          | string | SMTP login username                                            |
-| `smtp_password`          | string | Encrypted via `Crypt::encryptString()` on save                 |
-| `from_email`             | string | Global "From" address                                          |
-| `from_name`              | string | Global "From" name                                             |
-| `reply_to_email`         | string | Optional Reply-To header                                       |
-| `return_path`            | string | Optional bounce handling address                               |
+| Field | Type | Description |
+|-------|------|-------------|
+| `mailer` | string | `smtp`, `sendmail`, `mail`, `log` |
+| `smtp_host` | string | SMTP server hostname |
+| `smtp_port` | int | Port (587 TLS, 465 SSL) |
+| `smtp_encryption` | string | `tls`, `ssl`, `none` |
+| `smtp_auth` | bool | Enable/disable authentication |
+| `auto_tls` | bool | Automatically upgrade to STARTTLS |
+| `smtp_allow_self_signed` | bool | Disable CA verification for self-signed certs |
+| `smtp_ehlo_domain` | string | Custom EHLO/HELO hostname (empty = fallback to `app.url` host) |
+| `smtp_username` | string | SMTP login username |
+| `smtp_password` | string | Encrypted via `Crypt::encryptString()` on save |
+| `from_email` | string | Global "From" address |
+| `from_name` | string | Global "From" name |
+| `reply_to_email` | string | Optional Reply-To header |
+| `return_path` | string | Optional bounce handling address |
 
 ### Password Encryption
 
@@ -54,29 +54,29 @@ All SMTP settings are stored in the `settings` table with key `email_settings` a
 
 ### Backend
 
-| File                                               | Responsibility                                             |
-| -------------------------------------------------- | ---------------------------------------------------------- |
-| `app/Services/MailerConfigurator.php`              | Reads DB settings, overrides `config/mail.*` on every boot |
-| `app/Services/MailService.php`                     | `send()` → queue, `sendNow()` → synchronous, `sendRaw()`   |
-| `app/Services/EmailSettingsService.php`            | CRUD, encryption, sanitization, defaults                   |
-| `app/Services/EmailTemplateService.php`            | Renders `.blade.php` templates with global layout          |
-| `app/Http/Controllers/EmailSettingsController.php` | Save, test send, template preview, template send           |
-| `app/Jobs/SendEmail.php`                           | Queued job for async delivery                              |
+| File | Responsibility |
+|------|---------------|
+| `app/Services/MailerConfigurator.php` | Reads DB settings, overrides `config/mail.*` on every boot |
+| `app/Services/MailService.php` | `send()` → queue, `sendNow()` → synchronous, `sendRaw()` |
+| `app/Services/EmailSettingsService.php` | CRUD, encryption, sanitization, defaults |
+| `app/Services/EmailTemplateService.php` | Renders `.blade.php` templates with global layout |
+| `app/Http/Controllers/EmailSettingsController.php` | Save, test send, template preview, template send |
+| `app/Jobs/SendEmail.php` | Queued job for async delivery |
 
 ### Notifications
 
-| File                                                   | Responsibility                                    |
-| ------------------------------------------------------ | ------------------------------------------------- |
-| `app/Notifications/AppNotification.php`                | Generic database notification                     |
-| `app/Notifications/VerifyEmail.php`                    | Custom verify email (overrides Laravel default)   |
-| `app/Notifications/ResetPassword.php`                  | Custom password reset (overrides Laravel default) |
-| `resources/views/vendor/notifications/email.blade.php` | Vendor notification template (branded)            |
+| File | Responsibility |
+|------|---------------|
+| `app/Notifications/AppNotification.php` | Generic database notification |
+| `app/Notifications/VerifyEmail.php` | Custom verify email (overrides Laravel default) |
+| `app/Notifications/ResetPassword.php` | Custom password reset (overrides Laravel default) |
+| `resources/views/vendor/notifications/email.blade.php` | Vendor notification template (branded) |
 
 ### Frontend
 
-| File                                                                      | Responsibility                            |
-| ------------------------------------------------------------------------- | ----------------------------------------- |
-| `resources/js/Components/settings/sections/EmailSection.tsx`              | SMTP settings form                        |
+| File | Responsibility |
+|------|---------------|
+| `resources/js/Components/settings/sections/EmailSection.tsx` | SMTP settings form |
 | `resources/js/Components/settings/sections/TemplateSimulationSection.tsx` | Template preview, test send, delivery log |
 
 ---
@@ -84,23 +84,22 @@ All SMTP settings are stored in the `settings` table with key `email_settings` a
 ## Templates
 
 24 templates in `resources/views/email/templates/`, rendered via `EmailTemplateService::renderWithLayout()` which:
-
 1. Injects global data (`siteName`, `siteUrl`, `logoUrl`, `year`)
 2. Renders the template-specific `.blade.php`
 3. Wraps in `resources/views/email/layouts/email.blade.php`
 
 ### Core Templates
 
-| Template           | Group      | Key Variables                                                    |
-| ------------------ | ---------- | ---------------------------------------------------------------- |
-| `test`             | System     | `recipientName`, `recipientEmail`                                |
-| `default`          | System     | `title`, `message`                                               |
-| `new-user`         | Account    | `userName`, `loginUrl`                                           |
-| `new-user-admin`   | Account    | `userName`, `userLogin`, `profileUrl`                            |
-| `password-changed` | Account    | `userName`, `resetUrl`                                           |
-| `password-reset`   | Account    | `userName`, `resetUrl`, `expiry`                                 |
-| `email-changed`    | Account    | `userName`, `oldEmail`, `newEmail`                               |
-| `account-deleted`  | Account    | `userName`                                                       |
+| Template | Group | Key Variables |
+|----------|-------|---------------|
+| `test` | System | `recipientName`, `recipientEmail` |
+| `default` | System | `title`, `message` |
+| `new-user` | Account | `userName`, `loginUrl` |
+| `new-user-admin` | Account | `userName`, `userLogin`, `profileUrl` |
+| `password-changed` | Account | `userName`, `resetUrl` |
+| `password-reset` | Account | `userName`, `resetUrl`, `expiry` |
+| `email-changed` | Account | `userName`, `oldEmail`, `newEmail` |
+| `account-deleted` | Account | `userName` |
 | `property-inquiry` | Properties | `inquiryName`, `inquiryEmail`, `inquiryMessage`, `propertyTitle` |
 
 ### Module Templates

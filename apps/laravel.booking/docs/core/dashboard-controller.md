@@ -47,13 +47,13 @@ Toggles the host/guest mode in session. Validates `mode` is `host` or `guest`. R
 
 ## Notification Type Filter Patterns
 
-| Filter     | Matches                                        |
-| ---------- | ---------------------------------------------- |
-| `booking`  | `booking.%`, `%booking%`                       |
-| `property` | `property.%`, `%property%`                     |
-| `account`  | `%user%`, `%password%`, `%email%`, `%account%` |
-| `content`  | `post.%`, `%content%`                          |
-| `orders`   | `order.%`, `%stock%`, `%shop%`                 |
+| Filter | Matches |
+|--------|---------|
+| `booking` | `booking.%`, `%booking%` |
+| `property` | `property.%`, `%property%` |
+| `account` | `%user%`, `%password%`, `%email%`, `%account%` |
+| `content` | `post.%`, `%content%` |
+| `orders` | `order.%`, `%stock%`, `%shop%` |
 
 ## Routes Applied
 

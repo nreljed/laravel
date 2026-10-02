@@ -2,12 +2,12 @@
 
 ## Version
 
-| Package            | Version (installed) | Range in package.json | Status     |
-| ------------------ | ------------------- | --------------------- | ---------- |
-| `react`            | 19.2.7              | `^19.0.0`             | Up to date |
-| `react-dom`        | 19.2.7              | `^19.0.0`             | Up to date |
-| `@types/react`     | ^19.0.0             | `^19.0.0`             | Up to date |
-| `@types/react-dom` | ^19.0.0             | `^19.0.0`             | Up to date |
+| Package | Version (installed) | Range in package.json | Status |
+|---------|-------------------|----------------------|--------|
+| `react` | 19.2.7 | `^19.0.0` | Up to date |
+| `react-dom` | 19.2.7 | `^19.0.0` | Up to date |
+| `@types/react` | ^19.0.0 | `^19.0.0` | Up to date |
+| `@types/react-dom` | ^19.0.0 | `^19.0.0` | Up to date |
 
 CRM-dashboard reference: `react@^19.2.7`, same major.
 
@@ -59,33 +59,33 @@ CRM-dashboard reference: `react@^19.2.7`, same major.
 
 ### ⚠️ Issues Found
 
-| Issue                                                                     | Priority | Impact                             | Fix                          |
-| ------------------------------------------------------------------------- | -------- | ---------------------------------- | ---------------------------- |
-| `react-hook-form` in `package.json` but project prefers Inertia `useForm` | Low      | Unused dependency (57KB)           | Remove if not used anywhere  |
-| `@hookform/resolvers` in `package.json`                                   | Low      | Unused if react-hook-form unused   | Remove                       |
-| Missing `types/` directory for shared TypeScript types                    | Medium   | Duplicated interfaces across files | Create `resources/js/types/` |
-| `use as any` casts in `app.tsx` router handling                           | Medium   | Unsafe type assumptions            | Use typed Inertia router     |
+| Issue | Priority | Impact | Fix |
+|-------|----------|--------|-----|
+| `react-hook-form` in `package.json` but project prefers Inertia `useForm` | Low | Unused dependency (57KB) | Remove if not used anywhere |
+| `@hookform/resolvers` in `package.json` | Low | Unused if react-hook-form unused | Remove |
+| Missing `types/` directory for shared TypeScript types | Medium | Duplicated interfaces across files | Create `resources/js/types/` |
+| `use as any` casts in `app.tsx` router handling | Medium | Unsafe type assumptions | Use typed Inertia router |
 
 ### React 19 Features Not Used
 
-| Feature                   | Benefit                          | Effort                       |
-| ------------------------- | -------------------------------- | ---------------------------- |
-| `useActionState`          | Server action state management   | Low (if paired with Inertia) |
-| `useOptimistic`           | Optimistic UI updates            | Medium                       |
-| `use()` hook              | Direct promise reading in render | Low                          |
-| `<Context>` as provider   | Render prop provider pattern     | Low                          |
-| Document metadata (`use`) | Dynamic `<title>`, `<meta>`      | Low                          |
+| Feature | Benefit | Effort |
+|---------|---------|--------|
+| `useActionState` | Server action state management | Low (if paired with Inertia) |
+| `useOptimistic` | Optimistic UI updates | Medium |
+| `use()` hook | Direct promise reading in render | Low |
+| `<Context>` as provider | Render prop provider pattern | Low |
+| Document metadata (`use`) | Dynamic `<title>`, `<meta>` | Low |
 
 ---
 
 ## Bundle Analysis
 
-| Chunk            | Size (gzip) | Contents                    |
-| ---------------- | ----------- | --------------------------- |
-| `react-vendor`   | 169 KB      | react, react-dom, scheduler |
-| `ui-vendor`      | 45 KB       | radix-ui primitives         |
-| `icons-vendor`   | 15 KB       | lucide-react                |
-| `inertia-vendor` | 99 KB       | @inertiajs/react            |
+| Chunk | Size (gzip) | Contents |
+|-------|-------------|----------|
+| `react-vendor` | 169 KB | react, react-dom, scheduler |
+| `ui-vendor` | 45 KB | radix-ui primitives |
+| `icons-vendor` | 15 KB | lucide-react |
+| `inertia-vendor` | 99 KB | @inertiajs/react |
 
 No significant bundle issues. Code-splitting groups could be more granular (CRM-dashboard uses 14 groups vs Laravel's 4).
 
@@ -118,6 +118,6 @@ CRM-dashboard uses `noUnusedLocals: true` and `noUnusedParameters: true` — str
 
 ## Version History
 
-| Date       | Action                                 |
-| ---------- | -------------------------------------- |
+| Date | Action |
+|------|--------|
 | 2026-06-30 | Audit created — React 19.2.7 installed |

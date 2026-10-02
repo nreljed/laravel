@@ -13,15 +13,15 @@ The sidebar has **two nav sources:**
 
 ```typescript
 interface NavItem {
-  title: string;
-  url?: string;
-  icon?: React.ComponentType<{ className?: string }> | string;
-  items?: NavItem[]; // sub-items (collapsible dropdown)
-  badge?: string;
-  badgeVariant?: "default" | "secondary" | "outline" | "destructive";
-  permission?: string; // permission slug for filtering
-  module_slug?: string; // used for guest mode and Host badge
-  showModeBadge?: boolean; // shows "Host" badge on parent
+  title: string
+  url?: string
+  icon?: React.ComponentType<{ className?: string }> | string
+  items?: NavItem[]                // sub-items (collapsible dropdown)
+  badge?: string
+  badgeVariant?: "default" | "secondary" | "outline" | "destructive"
+  permission?: string              // permission slug for filtering
+  module_slug?: string             // used for guest mode and Host badge
+  showModeBadge?: boolean          // shows "Host" badge on parent
 }
 ```
 
@@ -54,7 +54,6 @@ Collapsible (asChild, defaultOpen when child active)
 ```
 
 Key points:
-
 - Parent button is a **pure toggle** — clicking it opens/closes the dropdown, does NOT navigate
 - `defaultOpen` is set to `true` when any child's URL matches the current page
 - The `Collapsible` component manages open/close state internally (Radix handles all events)
@@ -76,11 +75,11 @@ No collapsible wrapper, no chevron — just a direct navigation link.
 
 ```typescript
 const hasPermission = (perm: string | undefined): boolean => {
-  if (!perm) return true; // no permission required
-  if (isAdmin) return true; // admins bypass all checks
-  if (perm in userCapabilities) return Boolean(userCapabilities[perm]);
-  return false;
-};
+  if (!perm) return true          // no permission required
+  if (isAdmin) return true        // admins bypass all checks
+  if (perm in userCapabilities) return Boolean(userCapabilities[perm])
+  return false
+}
 ```
 
 - `userCapabilities` is a flat boolean map shared from `HandleInertiaRequests` (see `auth-integration.md`)
@@ -120,13 +119,8 @@ Module nav items pass `icon` as a **string key** (e.g., `"Calendar"`, `"Building
 
 ```typescript
 const moduleIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Building2,
-  Calendar,
-  FileText,
-  Settings,
-  LayoutDashboard,
-  ShoppingCart,
-};
+  Building2, Calendar, FileText, Settings, LayoutDashboard, ShoppingCart,
+}
 ```
 
 `NavMain` receives this as `iconMap` and resolves string icons via `iconMap[iconProp]`. Direct component references (for core nav items) pass the component directly.
@@ -161,7 +155,7 @@ Sidebar (collapsible="icon")
 ## Active State Detection
 
 ```typescript
-const currentUrl = usePage().url || globalThis.location.pathname;
+const currentUrl = usePage().url || globalThis.location.pathname
 
 // For flat items: currentUrl === normalizeUrl(item.url)
 // For collapsible parents: true if any child's url matches currentUrl

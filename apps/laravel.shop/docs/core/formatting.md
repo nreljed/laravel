@@ -77,13 +77,13 @@ $service->formatRepeaterData(array $data, string $moduleSlug, array $globalOptio
 
 ### Callers (updated to injectable)
 
-| Caller                      | Injection Method                       |
-| --------------------------- | -------------------------------------- |
-| `ModuleController`          | Constructor DI                         |
-| `PropertyFormattingService` | Constructor DI                         |
-| `SettingsService`           | `app(FormattingService::class)` bridge |
-| `BookingService`            | `app(FormattingService::class)` bridge |
-| `BookingCurrencyService`    | `app(FormattingService::class)` bridge |
+| Caller | Injection Method |
+|--------|-----------------|
+| `ModuleController` | Constructor DI |
+| `PropertyFormattingService` | Constructor DI |
+| `SettingsService` | `app(FormattingService::class)` bridge |
+| `BookingService` | `app(FormattingService::class)` bridge |
+| `BookingCurrencyService` | `app(FormattingService::class)` bridge |
 
 ## DashboardService
 
@@ -102,9 +102,9 @@ $service->clearCache(): void
 
 ### Per-Module Stats
 
-| Module     | Stats                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------- |
-| Properties | `total`, `published`, `draft`, `totalValue`                                                 |
-| Booking    | `total`, `pending`, `confirmed`                                                             |
-| Posts      | `total`, `published`, `draft`                                                               |
-| Shop       | `total_products`, `published_products`, `total_orders`, `pending_orders`, `low_stock_count` |
+| Module | Stats |
+|--------|-------|
+| Properties | `total`, `published`, `draft`, `totalValue` |
+| Booking | `total`, `pending`, `confirmed` |
+| Posts | `total`, `published`, `draft` |
+| Shop | `total_products`, `published_products`, `total_orders`, `pending_orders`, `low_stock_count` |

@@ -14,16 +14,16 @@ BREAKING CHANGE: description
 
 ### Types
 
-| Type       | Description                                             | Version Bump |
-| ---------- | ------------------------------------------------------- | ------------ |
-| `feat`     | A new feature                                           | minor        |
-| `fix`      | A bug fix                                               | patch        |
-| `docs`     | Documentation only                                      | patch        |
-| `refactor` | Code change that neither fixes a bug nor adds a feature | patch        |
-| `perf`     | A code change that improves performance                 | patch        |
-| `style`    | Changes that do not affect the meaning of the code      | patch        |
-| `test`     | Adding missing or correcting existing tests             | patch        |
-| `chore`    | Changes to the build process or auxiliary tools         | patch        |
+| Type | Description | Version Bump |
+|------|-------------|-------------|
+| `feat` | A new feature | minor |
+| `fix` | A bug fix | patch |
+| `docs` | Documentation only | patch |
+| `refactor` | Code change that neither fixes a bug nor adds a feature | patch |
+| `perf` | A code change that improves performance | patch |
+| `style` | Changes that do not affect the meaning of the code | patch |
+| `test` | Adding missing or correcting existing tests | patch |
+| `chore` | Changes to the build process or auxiliary tools | patch |
 
 ### Scope (optional but recommended)
 

@@ -6,28 +6,27 @@
 
 ### Server Deploy Endpoints
 
-| Endpoint                         | Purpose                                       |
-| -------------------------------- | --------------------------------------------- |
-| `GET /deploy/check?token=`       | Main deploy entry point                       |
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /deploy/check?token=` | Main deploy entry point |
 | `GET /deploy/cache-clear?token=` | Emergency reset (migrate:fresh + cache clear) |
 
 ### Required GitHub Secrets
 
-| Secret           | Purpose                                        |
-| ---------------- | ---------------------------------------------- |
-| `DEPLOY_TOKEN`   | Must match `config('app.deploy_token')`        |
-| `GH_TOKEN`       | Fine-grained PAT with Contents: Read and Write |
-| `DB_DATABASE`    | Production database name                       |
-| `DB_USERNAME`    | Production username                            |
-| `DB_PASSWORD`    | Production password                            |
-| `ADMIN_EMAIL`    | Initial admin email                            |
-| `ADMIN_PASSWORD` | Initial admin password                         |
-| `ADMIN_NAME`     | Initial admin name                             |
+| Secret | Purpose |
+|--------|---------|
+| `DEPLOY_TOKEN` | Must match `config('app.deploy_token')` |
+| `GH_TOKEN` | Fine-grained PAT with Contents: Read and Write |
+| `DB_DATABASE` | Production database name |
+| `DB_USERNAME` | Production username |
+| `DB_PASSWORD` | Production password |
+| `ADMIN_EMAIL` | Initial admin email |
+| `ADMIN_PASSWORD` | Initial admin password |
+| `ADMIN_NAME` | Initial admin name |
 
 ### Server Process
 
 On deploy trigger:
-
 1. Verify token, check `.deploy-lock` (10 min TTL)
 2. Fetch latest release from GitHub API
 3. Download `deploy.zip`, extract over project root

@@ -2,10 +2,10 @@
 
 Master reference for all codebase audits and improvement plans.
 
-| Document                                                      | Status      | Priority |
-| ------------------------------------------------------------- | ----------- | -------- |
-| [Upgrade Plan](upgrade-plan.md)                               | ✅ Complete | P0       |
-| [CRM Migration Opportunities](crm-migration-opportunities.md) | ✅ Complete | P0       |
+| Document | Status | Priority |
+|----------|--------|----------|
+| [Upgrade Plan](upgrade-plan.md) | ✅ Complete | P0 |
+| [CRM Migration Opportunities](crm-migration-opportunities.md) | ✅ Complete | P0 |
 
 ## Running an Audit
 

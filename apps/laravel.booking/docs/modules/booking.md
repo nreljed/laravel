@@ -10,22 +10,22 @@ Manage guest bookings, availability, and reservations.
 
 ## Permissions
 
-| Slug              | Name            |
-| ----------------- | --------------- |
-| `bookings.view`   | View Bookings   |
+| Slug | Name |
+|------|------|
+| `bookings.view` | View Bookings |
 | `bookings.create` | Create Bookings |
-| `bookings.edit`   | Edit Bookings   |
+| `bookings.edit` | Edit Bookings |
 | `bookings.delete` | Delete Bookings |
 
 ## Routes
 
 Three route files:
 
-| File                     | Prefix                | Auth     | Middleware      |
-| ------------------------ | --------------------- | -------- | --------------- |
-| `Routes/web.php`         | `/dashboard/bookings` | Required | `bookings.view` |
-| `Routes/my-bookings.php` | `/dashboard`          | Required | `bookings.view` |
-| `Routes/guest.php`       | `/`                   | Public   | None            |
+| File | Prefix | Auth | Middleware |
+|------|--------|------|------------|
+| `Routes/web.php` | `/dashboard/bookings` | Required | `bookings.view` |
+| `Routes/my-bookings.php` | `/dashboard` | Required | `bookings.view` |
+| `Routes/guest.php` | `/` | Public | None |
 
 ### Auth Routes (`web.php`)
 
@@ -100,28 +100,28 @@ This module owns the host/guest mode toggle:
 
 10 templates in the `Booking` group:
 
-| Key                            | Description                         |
-| ------------------------------ | ----------------------------------- |
-| `booking-confirmation`         | Booking Confirmation                |
-| `booking-cancellation`         | Booking Cancellation                |
-| `booking-status-change`        | Booking Status Change               |
-| `booking-new-notification`     | New Booking Notification (Admin)    |
-| `booking-pre-arrival`          | Pre-Arrival Instructions            |
-| `booking-post-stay`            | Post-Stay Follow-up                 |
-| `booking-cancel-request`       | Cancel Request (Guest Confirmation) |
-| `booking-checkin-instructions` | Check-In Instructions               |
-| `booking-guest-received`       | Booking Received (Guest)            |
-| `booking-checkout-reminder`    | Check-Out Reminder                  |
-| `booking-refund`               | Refund Summary                      |
+| Key | Description |
+|-----|-------------|
+| `booking-confirmation` | Booking Confirmation |
+| `booking-cancellation` | Booking Cancellation |
+| `booking-status-change` | Booking Status Change |
+| `booking-new-notification` | New Booking Notification (Admin) |
+| `booking-pre-arrival` | Pre-Arrival Instructions |
+| `booking-post-stay` | Post-Stay Follow-up |
+| `booking-cancel-request` | Cancel Request (Guest Confirmation) |
+| `booking-checkin-instructions` | Check-In Instructions |
+| `booking-guest-received` | Booking Received (Guest) |
+| `booking-checkout-reminder` | Check-Out Reminder |
+| `booking-refund` | Refund Summary |
 
 ## Notification Types
 
-| Type                | Channels       | Template                   |
-| ------------------- | -------------- | -------------------------- |
-| `booking.created`   | in_app + email | `booking-new-notification` |
-| `booking.cancelled` | in_app + email | `booking-cancellation`     |
-| `booking.confirmed` | in_app + email | `booking-confirmation`     |
-| `booking.modified`  | in_app + email | (dynamic template)         |
+| Type | Channels | Template |
+|------|----------|----------|
+| `booking.created` | in_app + email | `booking-new-notification` |
+| `booking.cancelled` | in_app + email | `booking-cancellation` |
+| `booking.confirmed` | in_app + email | `booking-confirmation` |
+| `booking.modified` | in_app + email | (dynamic template) |
 
 ## Event Listeners
 
@@ -151,13 +151,13 @@ On user deletion, all bookings owned by that user are deleted.
 
 ## Services
 
-| Service                    | Purpose                                       |
-| -------------------------- | --------------------------------------------- |
-| `BookingCacheService`      | Cache busting for property-level booking data |
-| `BookingEmailService`      | Guest-facing email sending                    |
-| `BookingGuestTokenService` | Magic link token generation/revocation        |
-| `BookingPipelineTrace`     | Debug trace logging for booking lifecycle     |
-| `BookingRefundMailService` | Refund notification emails                    |
+| Service | Purpose |
+|---------|---------|
+| `BookingCacheService` | Cache busting for property-level booking data |
+| `BookingEmailService` | Guest-facing email sending |
+| `BookingGuestTokenService` | Magic link token generation/revocation |
+| `BookingPipelineTrace` | Debug trace logging for booking lifecycle |
+| `BookingRefundMailService` | Refund notification emails |
 
 ## Architecture
 
@@ -173,10 +173,10 @@ All per-property booking settings (pricing, rules, availability, units, area inf
 
 ```
 Properties → Edit Property → BookingSection (5 tabs) → Save
-
-If the user needs to edit property images or meta:
-the BookingSection is already inside the Property Form —
-one place for everything.
+                                                               
+If the user needs to edit property images or meta:             
+the BookingSection is already inside the Property Form —      
+one place for everything.                                      
 ```
 
 No separate booking settings page. Booking records can be created manually via the create form (`/dashboard/bookings/create`, `Form.tsx`), or by guests via the public widget. Existing bookings can be edited via the edit form (`/dashboard/bookings/{booking}/edit`, also `Form.tsx`).

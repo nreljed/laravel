@@ -2,17 +2,17 @@
 
 ## Tech Stack
 
-| Technology   | Version                | Purpose                    |
-| ------------ | ---------------------- | -------------------------- |
-| React        | 19.2                   | UI framework               |
-| Inertia.js   | 3.4                    | Server-driven routing      |
-| TypeScript   | 6                      | Type safety                |
-| Vite         | 8                      | Build tool                 |
-| Tailwind CSS | 4                      | Styling                    |
-| shadcn/ui    | new-york, neutral base | UI component library       |
-| Radix UI     | latest                 | Headless primitives        |
-| Lucide React | latest                 | Icons                      |
-| Ziggy        | latest                 | Laravel route helper in JS |
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| React | 19.2 | UI framework |
+| Inertia.js | 3.4 | Server-driven routing |
+| TypeScript | 6 | Type safety |
+| Vite | 8 | Build tool |
+| Tailwind CSS | 4 | Styling |
+| shadcn/ui | new-york, neutral base | UI component library |
+| Radix UI | latest | Headless primitives |
+| Lucide React | latest | Icons |
+| Ziggy | latest | Laravel route helper in JS |
 
 ## Build Pipeline
 
@@ -36,8 +36,8 @@ Module pages are lazy-loaded via Vite glob imports in `app.tsx`:
 
 ```typescript
 const pages = import.meta.glob([
-  "../resources/js/Pages/**/*.tsx",
-  "../app/Modules/*/Resources/js/Pages/**/*.tsx",
+    '../resources/js/Pages/**/*.tsx',
+    '../app/Modules/*/Resources/js/Pages/**/*.tsx',
 ]);
 ```
 

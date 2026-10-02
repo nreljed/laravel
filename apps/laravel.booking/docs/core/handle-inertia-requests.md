@@ -6,28 +6,28 @@ Extends `Inertia\Middleware`. All Inertia shared props are defined here as lazy 
 
 ## Shared Props
 
-| Prop                      | Type         | Description                                              |
-| ------------------------- | ------------ | -------------------------------------------------------- |
-| `flash`                   | object       | Session flash messages (`status`, `error`, `mail_debug`) |
-| `csp_nonce`               | string       | CSP nonce from request attribute                         |
-| `auth.user`               | object\|null | Authenticated user (see `buildAuthUser()` below)         |
-| `latestNotifications`     | array        | Latest 5 notifications                                   |
-| `userCapabilities`        | object       | Permission flags + module enabled status                 |
-| `userMode`                | string       | `"host"` or `"guest"` (from session, default `guest`)    |
-| `canSwitchMode`           | bool         | `bookings.view` permission + module enabled              |
-| `formattingSettings`      | object       | Currency, surface, date/time format defaults             |
-| `moduleNavItems`          | array        | Nav item definitions from all booted modules             |
-| `moduleData`              | object       | Shared data from all booted modules                      |
-| `modules`                 | object       | `{ enabled: string[], list: array }`                     |
-| `repeaterConfigs`         | object       | Repeater field configs from modules                      |
-| `profileFieldConfigs`     | object       | Profile field configs from modules                       |
-| `emailSettings`           | object       | SMTP settings for frontend                               |
-| `emailTemplates`          | object       | Email template definitions                               |
-| `brand`                   | object       | `{ logo: string, name: string }` from settings           |
-| `app_url`                 | string       | App URL from settings                                    |
-| `notificationUnreadCount` | number       | Unread notification count                                |
-| `debug`                   | bool         | `APP_DEBUG` value                                        |
-| `moduleDebugData`         | array        | Debug info per module (System Health page)               |
+| Prop | Type | Description |
+|------|------|-------------|
+| `flash` | object | Session flash messages (`status`, `error`, `mail_debug`) |
+| `csp_nonce` | string | CSP nonce from request attribute |
+| `auth.user` | object\|null | Authenticated user (see `buildAuthUser()` below) |
+| `latestNotifications` | array | Latest 5 notifications |
+| `userCapabilities` | object | Permission flags + module enabled status |
+| `userMode` | string | `"host"` or `"guest"` (from session, default `guest`) |
+| `canSwitchMode` | bool | `bookings.view` permission + module enabled |
+| `formattingSettings` | object | Currency, surface, date/time format defaults |
+| `moduleNavItems` | array | Nav item definitions from all booted modules |
+| `moduleData` | object | Shared data from all booted modules |
+| `modules` | object | `{ enabled: string[], list: array }` |
+| `repeaterConfigs` | object | Repeater field configs from modules |
+| `profileFieldConfigs` | object | Profile field configs from modules |
+| `emailSettings` | object | SMTP settings for frontend |
+| `emailTemplates` | object | Email template definitions |
+| `brand` | object | `{ logo: string, name: string }` from settings |
+| `app_url` | string | App URL from settings |
+| `notificationUnreadCount` | number | Unread notification count |
+| `debug` | bool | `APP_DEBUG` value |
+| `moduleDebugData` | array | Debug info per module (System Health page) |
 
 ## `buildAuthUser()` Return Shape
 

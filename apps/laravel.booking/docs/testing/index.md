@@ -41,7 +41,6 @@ class BookingControllerTest extends TestCase
 ```
 
 `bootModules()`:
-
 1. Loads module classes via `ModuleLoader`
 2. Seeds module records (`ModuleSeeder`) and roles/permissions (`RolesAndPermissionsSeeder`)
 3. Boots enabled modules and registers routes

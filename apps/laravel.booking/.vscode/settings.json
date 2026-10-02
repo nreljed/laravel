@@ -8,6 +8,9 @@
   "files.exclude": {
     "node_modules/": true
   },
-  "eslint.validate": ["typescript", "typescriptreact"],
+  "eslint.validate": [
+    "typescript",
+    "typescriptreact"
+  ],
   "prettier.requireConfig": true
 }

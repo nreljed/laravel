@@ -48,13 +48,13 @@ Single notification class for all in-app notifications:
 
 Central registry of all notification types. Each type defines:
 
-| Field              | Purpose                                                      |
-| ------------------ | ------------------------------------------------------------ |
-| `label`            | Human-readable name                                          |
-| `default_channels` | Default delivery channels (`['in_app']`)                     |
-| `default_enabled`  | Whether enabled by default                                   |
-| `category`         | Grouping for UI (`booking`, `property`, `system`, `account`) |
-| `email_template`   | Optional Blade template path for email                       |
+| Field | Purpose |
+|-------|---------|
+| `label` | Human-readable name |
+| `default_channels` | Default delivery channels (`['in_app']`) |
+| `default_enabled` | Whether enabled by default |
+| `category` | Grouping for UI (`booking`, `property`, `system`, `account`) |
+| `email_template` | Optional Blade template path for email |
 
 ### Sharing Data to Inertia
 
@@ -69,12 +69,12 @@ No caching — queries run fresh every request (the query is a single indexed CO
 
 ### Routes
 
-| Method | URL                                      | Controller Action                   | Purpose               |
-| ------ | ---------------------------------------- | ----------------------------------- | --------------------- |
-| GET    | `/dashboard/notifications`               | `DashboardController@notifications` | Full list with search |
-| PUT    | `/dashboard/notifications/mark-read`     | `DashboardController@markRead`      | Mark one as read      |
-| POST   | `/dashboard/notifications/mark-all-read` | `DashboardController@markAllRead`   | Mark all as read      |
-| DELETE | `/dashboard/notifications/{id}`          | `DashboardController@destroy`       | Delete one            |
+| Method | URL | Controller Action | Purpose |
+|--------|-----|------------------|---------|
+| GET | `/dashboard/notifications` | `DashboardController@notifications` | Full list with search |
+| PUT | `/dashboard/notifications/mark-read` | `DashboardController@markRead` | Mark one as read |
+| POST | `/dashboard/notifications/mark-all-read` | `DashboardController@markAllRead` | Mark all as read |
+| DELETE | `/dashboard/notifications/{id}` | `DashboardController@destroy` | Delete one |
 
 ## Frontend
 
@@ -170,14 +170,14 @@ $user->notify(new AppNotification('booking.confirmed', [
 
 ## No-Infrastructure Guarantees
 
-| Feature              | How it works                            | Infrastructure required |
-| -------------------- | --------------------------------------- | ----------------------- |
-| Deliver notification | INSERT into `notifications` table       | None                    |
-| Show unread count    | SELECT COUNT with WHERE read_at IS NULL | None                    |
-| Poll for updates     | `setInterval` + `router.reload`         | None                    |
-| Sound on new notif   | Web Audio API oscillator                | None                    |
-| Real-time push       | ❌ Not available (would need WebSocket) | None                    |
-| Email delivery       | PHP `mail()` or SMTP via MailService    | Standard PHP mail       |
-| Search notifications | SQL LIKE on JSON column                 | None                    |
+| Feature | How it works | Infrastructure required |
+|---------|-------------|----------------------|
+| Deliver notification | INSERT into `notifications` table | None |
+| Show unread count | SELECT COUNT with WHERE read_at IS NULL | None |
+| Poll for updates | `setInterval` + `router.reload` | None |
+| Sound on new notif | Web Audio API oscillator | None |
+| Real-time push | ❌ Not available (would need WebSocket) | None |
+| Email delivery | PHP `mail()` or SMTP via MailService | Standard PHP mail |
+| Search notifications | SQL LIKE on JSON column | None |
 
 The 10-second polling is the only active mechanism for detecting new notifications. On shared hosting with 100+ concurrent users, the polling requests are cheap (each is a lightweight Inertia partial reload from the user's own session).

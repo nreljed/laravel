@@ -23,10 +23,15 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
+// Sibling dirs are repo-relative so this check is portable: standalone repos
+// (no apps/ subtree) find only their own root and skip; the monorepo resolves
+// all three and enforces parity. Never hardcode machine paths here - CI runs
+// on self-hosted AND GitHub-hosted runners.
+const repoRoot = path.resolve(__dirname, '..');
 const defaultDirs = {
-    mono: 'C:\\Users\\nrelj\\Local Sites\\laravel\\app',
-    shop: 'C:\\Users\\nrelj\\Local Sites\\laravel\\app\\apps\\laravel.shop',
-    booking: 'C:\\Users\\nrelj\\Local Sites\\laravel\\app\\apps\\laravel.booking',
+    mono: repoRoot,
+    shop: path.join(repoRoot, 'apps', 'laravel.shop'),
+    booking: path.join(repoRoot, 'apps', 'laravel.booking'),
 };
 
 const apps = [
@@ -121,74 +126,10 @@ function composerVersion(lock, pkg) {
     return null;
 }
 
-/**
- * Resolve a locked npm version. Two lock formats exist during the migration:
- *
- *  - pnpm-lock.yaml (workspace members — mono root today, all apps post-workspace):
- *    read the root importer's `dependencies` / `devDependencies` resolution.
- *    Versions carry a peer-suffix (e.g. `1.8.0(@base-ui/react@...)(react@19.3.0)`)
- *    which must be normalized to the bare version to compare against npm locks.
- *    Workspace links (`link:../../packages/*`) return null (never compared).
- *  - package-lock.json (pre-workspace apps): top-level node_modules/<name>.
- */
-function pnpmNpmVersion(appDir, pkg) {
-    const lockPath = path.join(appDir, 'pnpm-lock.yaml');
-    if (!fs.existsSync(lockPath)) {
-        return null;
-    }
-    const lines = fs.readFileSync(lockPath, 'utf8').split(/\r?\n/);
-    const importersIdx = lines.findIndex((line) => line.trim() === 'importers:');
-    if (importersIdx === -1) {
-        return null;
-    }
-    const keyRe = /^      (?:'([^']+)'|([^\s:]+)):$/;
-    const versionRe = /^        version: (.+)$/;
-    let inRootImporter = false;
-    for (let i = importersIdx + 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (/^\S/.test(line)) {
-            // Left importers block (packages:, snapshots:, ...).
-            break;
-        }
-        if (/^  \.:$/.test(line)) {
-            inRootImporter = true;
-            continue;
-        }
-        if (!inRootImporter || /^    \S/.test(line)) {
-            continue;
-        }
-        const keyMatch = line.match(keyRe);
-        if (!keyMatch) {
-            continue;
-        }
-        const name = keyMatch[1] ?? keyMatch[2];
-        if (name !== pkg) {
-            continue;
-        }
-        for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-            const versionMatch = lines[j].match(versionRe);
-            if (versionMatch) {
-                let version = versionMatch[1].trim();
-                if (version.startsWith('link:')) {
-                    return null;
-                }
-                const paren = version.indexOf('(');
-                return paren === -1 ? version : version.slice(0, paren);
-            }
-        }
-        return null;
-    }
-    return null;
-}
-
 function npmVersion(appDir, pkg) {
     const lock = readJson(path.join(appDir, 'package-lock.json'));
     const entry = lock?.packages?.[`node_modules/${pkg}`];
     return entry?.version ?? null;
-}
-
-function lockedNpmVersion(appDir, pkg) {
-    return pnpmNpmVersion(appDir, pkg) ?? npmVersion(appDir, pkg);
 }
 
 if (reachable.length === 1) {
@@ -218,7 +159,7 @@ for (const pkg of composerKeyPackages) {
 for (const pkg of npmKeyPackages) {
     const versions = reachable.map((app) => ({
         name: app.name,
-        version: lockedNpmVersion(app.dir, pkg),
+        version: npmVersion(app.dir, pkg),
     }));
     const selected = versions[0].version;
     if (selected === null) {

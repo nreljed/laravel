@@ -30,18 +30,18 @@ Get all settings organized by group. Cached for 3600 seconds.
 
 Returns formatting configuration with these defaults:
 
-| Key                   | Default  | Description                        |
-| --------------------- | -------- | ---------------------------------- |
-| `default_currency`    | `USD`    | Currency code                      |
-| `currency_position`   | `before` | Symbol position (`before`/`after`) |
-| `price_empty_text`    | `""`     | Text when no price set             |
-| `surface_unit`        | `sq_ft`  | Area measurement unit              |
-| `thousands_separator` | `,`      | Thousands separator                |
-| `decimal_separator`   | `.`      | Decimal separator                  |
-| `date_format`         | `Y-m-d`  | Date display format                |
-| `time_format`         | `H:i`    | Time display format                |
-| `start_of_week`       | `0`      | Sunday (0=Sun through 6=Sat)       |
-| `timezone`            | `UTC`    | Application timezone               |
+| Key | Default | Description |
+|-----|---------|-------------|
+| `default_currency` | `USD` | Currency code |
+| `currency_position` | `before` | Symbol position (`before`/`after`) |
+| `price_empty_text` | `""` | Text when no price set |
+| `surface_unit` | `sq_ft` | Area measurement unit |
+| `thousands_separator` | `,` | Thousands separator |
+| `decimal_separator` | `.` | Decimal separator |
+| `date_format` | `Y-m-d` | Date display format |
+| `time_format` | `H:i` | Time display format |
+| `start_of_week` | `0` | Sunday (0=Sun through 6=Sat) |
+| `timezone` | `UTC` | Application timezone |
 
 ### `formatPrice(float $value, array $options = [])`
 

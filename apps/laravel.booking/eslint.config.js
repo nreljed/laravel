@@ -157,5 +157,15 @@ export default [
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+  // The e2e harness drives local sites (booking-laravel.local, 127.0.0.1)
+  // that Local serves over plain HTTP, so any http URL is by design and
+  // eslint --fix must not rewrite it to https. Kept last so it wins over
+  // the unicorn recommended set.
+  {
+    files: ["e2e/**", "playwright.config.ts"],
+    rules: {
+      "unicorn/prefer-https": "off",
+    },
+  },
   configPrettier,
 ];

@@ -2,16 +2,16 @@
 
 ## Version & Config
 
-| Field                   | Value                                                                |
-| ----------------------- | -------------------------------------------------------------------- |
-| Style                   | `base-vega` (Base UI primitive registry — NOT `new-york`/Radix)      |
-| Base color              | `neutral`                                                            |
-| CSS variables           | `true`                                                               |
-| Tailwind config         | Empty (Tailwind v4 CSS-first, no config file)                        |
-| Icon library            | `lucide`                                                             |
-| React Server Components | `false`                                                              |
-| Aliases                 | `@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks` |
-| Registries              | `@wds`, `@diceui` (+ default shadcn registry)                        |
+| Field | Value |
+|-------|-------|
+| Style | `base-vega` (Base UI primitive registry — NOT `new-york`/Radix) |
+| Base color | `neutral` |
+| CSS variables | `true` |
+| Tailwind config | Empty (Tailwind v4 CSS-first, no config file) |
+| Icon library | `lucide` |
+| React Server Components | `false` |
+| Aliases | `@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks` |
+| Registries | `@wds`, `@diceui` (+ default shadcn registry) |
 
 `components.json` uses `"style": "base-vega"` — the `base-` prefix selects the Base UI primitive registry, `vega` is the theme style. This is the official shadcn mechanism so `npx shadcn add/view` resolves Base UI components (from `{@base-ui/react}`) instead of Radix. Do NOT rename to a bare theme name (`nova`/`vega`) — that drops the Base UI base and fetches Radix components. Do NOT run `npx shadcn apply --preset` — it overwrites all UI components + theme CSS.
 
@@ -19,32 +19,32 @@
 
 Components do NOT live in this repo (host). They are vendored into `vendor/` from the `nreljed/platform` composer package:
 
-| Location                                                     | Contents                              |
-| ------------------------------------------------------------ | ------------------------------------- |
-| `vendor/nreljed/platform/resources/js/Components/ui/`        | 67 shadcn/ui primitives (all Base UI) |
-| `vendor/nreljed/platform/resources/js/Components/shared/`    | App-shared components                 |
-| `vendor/nreljed/platform/resources/js/Components/dashboard/` | KpiCard, charts, tables               |
-| `vendor/nreljed/shop-module/src/Resources/js/`               | Shop feature pages/components         |
+| Location | Contents |
+|----------|----------|
+| `vendor/nreljed/platform/resources/js/Components/ui/` | 67 shadcn/ui primitives (all Base UI) |
+| `vendor/nreljed/platform/resources/js/Components/shared/` | App-shared components |
+| `vendor/nreljed/platform/resources/js/Components/dashboard/` | KpiCard, charts, tables |
+| `vendor/nreljed/shop-module/src/Resources/js/` | Shop feature pages/components |
 
 Editing UI components = package change → PR in `nreljed/platform` → tag → release → `core-update` fan-out. NEVER edit `vendor/` directly.
 
 ## Dependency Versions
 
-| Package                    | Version                    | Notes                                                    |
-| -------------------------- | -------------------------- | -------------------------------------------------------- |
-| `@base-ui/react`           | ^1.5.0 (installed 1.7.x)   | Unstyled primitives — used by ALL 67 ui/ components      |
-| `shadcn` (devDep)          | ^4.19.1 (installed 4.21.0) | Component generator / `npx shadcn diff`                  |
-| `@shadcn/react`            | ^0.3.0                     | shadcn unstyled React kit (`message-scroller`)           |
-| `tailwindcss`              | ^4.0.0 (installed 4.3.x)   | v4 — no config file, CSS-first                           |
-| `@tailwindcss/vite`        | ^4.0.0 (installed 4.3.x)   | Vite plugin (NOT PostCSS)                                |
-| `tw-animate-css`           | ^1.4.0                     | Animation utilities (`animate-in`, `fade-in-0`, …)       |
-| `class-variance-authority` | ^0.7.1                     | Variants (`cva`)                                         |
-| `clsx` + `tailwind-merge`  | ^2.1.1 / ^3.6.0            | `cn()` composition                                       |
-| `lucide-react`             | ^1.35.0                    | Icons                                                    |
-| `embla-carousel-react`     | ^8.6.0                     | `carousel.tsx`                                           |
-| `input-otp`                | ^1.5.0                     | `input-otp.tsx`                                          |
-| `sonner`                   | removed (^2.0.8)           | Migrated to Base UI toast — see Toast below (2026-09-08) |
-| `vaul`                     | removed (was ^1.1.2)       | Superceded by `@base-ui/react/drawer`                    |
+| Package | Version | Notes |
+|---------|---------|-------|
+| `@base-ui/react` | ^1.5.0 (installed 1.7.x) | Unstyled primitives — used by ALL 67 ui/ components |
+| `shadcn` (devDep) | ^4.19.1 (installed 4.21.0) | Component generator / `npx shadcn diff` |
+| `@shadcn/react` | ^0.3.0 | shadcn unstyled React kit (`message-scroller`) |
+| `tailwindcss` | ^4.0.0 (installed 4.3.x) | v4 — no config file, CSS-first |
+| `@tailwindcss/vite` | ^4.0.0 (installed 4.3.x) | Vite plugin (NOT PostCSS) |
+| `tw-animate-css` | ^1.4.0 | Animation utilities (`animate-in`, `fade-in-0`, …) |
+| `class-variance-authority` | ^0.7.1 | Variants (`cva`) |
+| `clsx` + `tailwind-merge` | ^2.1.1 / ^3.6.0 | `cn()` composition |
+| `lucide-react` | ^1.35.0 | Icons |
+| `embla-carousel-react` | ^8.6.0 | `carousel.tsx` |
+| `input-otp` | ^1.5.0 | `input-otp.tsx` |
+| `sonner` | removed (^2.0.8) | Migrated to Base UI toast — see Toast below (2026-09-08) |
+| `vaul` | removed (was ^1.1.2) | Superceded by `@base-ui/react/drawer` |
 
 NO `radix-ui` / `@radix-ui/react-*` in direct deps or source imports. `@radix-ui/*` only exists transitively (cmdk). There is no `tailwindcss-animate` (legacy v3 plugin) — the codebase is on v4-native `tw-animate-css`.
 
@@ -90,7 +90,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 ```tsx
 import { toast } from "@/Components/ui/toast";
 
-toast.add({ title: "Saved", type: "success" }); // success | info | warning | error | loading
+toast.add({ title: "Saved", type: "success" });   // success | info | warning | error | loading
 ```
 
 This is a BREAKING CHANGE from the old sonner API: `toast.success("msg")` → `toast.add({ title: "msg", type: "success" })`, `toast.error("msg")` → `toast.add({ title: "msg", type: "error" })`. The `sonner` dependency was REMOVED with the shop-module migration (v0.1.10) — do not `import { toast } from "sonner"`.
@@ -119,7 +119,7 @@ Use `ring-[3px] ring-ring/50` (explicit px) — `ring-3` numeric shorthand is no
 
 ## Version History
 
-| Date       | Action                                                                                                                                                          |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-06-30 | Initial audit created                                                                                                                                           |
+| Date | Action |
+|------|--------|
+| 2026-06-30 | Initial audit created |
 | 2026-09-08 | Base UI migration — `base-vega` style, `@base-ui/react` everywhere, removed `radix-ui`/`vaul`/`sonner`, `shadcn` CLI added, all toasts on Base UI `toast.add()` |

@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Models\NotificationPreference;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Tests\TestCase;
 
 class DataIsolationTest extends TestCase

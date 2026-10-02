@@ -2,10 +2,10 @@
 
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Hash;
-use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
-use Nreljed\Platform\Database\Seeders\SettingsSeeder;
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';

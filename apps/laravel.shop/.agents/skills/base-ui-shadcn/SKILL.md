@@ -3,7 +3,7 @@ name: base-ui-shadcn
 description: "Develops UI components using Base UI and shadcn/ui with Tailwind CSS v4. Activates when creating or modifying React UI components, shadcn/ui primitives, Base UI components, Tailwind utility classes, dark mode theming, CSS variables, or when working with the design system, color tokens, or responsive layouts. Also activates for the critical dark mode text rule, the Base UI toast API, and component styling patterns in the platform / shop-module Laravel stack."
 ---
 
-# Base UI + shadcn/ui Development (Laravel / platform)
+# Base UI + shadcn/ui Development (Laravel / nreljed/platform)
 
 ## When to Apply
 
@@ -26,17 +26,18 @@ Activate this skill when:
 
 The host repo (`shop-laravel`) is a THIN SHELL. All UI components, CSS tokens
 (`core.css`), and dashboard/blog/account pages live in the
-`nreljed/platform` composer package (installed into `vendor/`); the frontend
-maps through pnpm workspace symlinks (`@nreljed/*`), not vendor aliases:
+`nreljed/platform` composer package; the blog kit lives in `nreljed/blog`; shop
+pages live in `nreljed/shop-module`. They install into `vendor/` and map through
+Vite aliases:
 
-- `@nreljed/platform` → `packages/platform/resources/js`
-- `@nreljed/blog` → `packages/blog/src/Resources/js`
-- `@nreljed/shop-module` → `packages/shop-module/src/Resources/js`
+- `@nreljed/platform` / `@nreljed/platform/*` → `vendor/nreljed/platform/resources/js`
+- `@nreljed/blog` / `@nreljed/blog/*` → `vendor/nreljed/blog/src/Resources/js`
+- `@nreljed/shop-module` / `@nreljed/shop-module/*` → `vendor/nreljed/shop-module/src/Resources/js`
 
 **NEVER edit `vendor/`.** Edit the package checkout, commit, tag, release —
 the `core-update.yml` / `shop-update.yml` fan-out bumps `composer.lock` in the
-app. Local dev typecheck/build reads the workspace symlink tree, so after
-`pnpm install` the new code is active without a dev server.
+app. Local dev typecheck/build reads the live `vendor/` tree, so after
+`composer update` the new code is active without a dev server.
 
 ---
 
@@ -88,18 +89,18 @@ The core `Components/ui/toast.tsx` wraps `@base-ui/react/toast` via
 from ANY page component (platform OR shop-module):
 
 ```tsx
-import { toast } from "@/Components/ui/toast";
+import { toast } from "@nreljed/platform/Components/ui/toast";
 
 toast.add({ title: "Saved", type: "success" }); // success | info | warning | error | loading
 ```
 
 **MIGRATION MAP (sonner → this API):**
 
-| Old (sonner — REMOVED)           | New (Base UI)                                   |
-| -------------------------------- | ----------------------------------------------- |
-| `toast.success("msg")`           | `toast.add({ title: "msg", type: "success" })`  |
-| `toast.error("msg")`             | `toast.add({ title: "msg", type: "error" })`    |
-| `import { toast } from "sonner"` | `import { toast } from "@/Components/ui/toast"` |
+| Old (sonner — REMOVED)        | New (Base UI)                                  |
+| ----------------------------- | ---------------------------------------------- |
+| `toast.success("msg")`        | `toast.add({ title: "msg", type: "success" })` |
+| `toast.error("msg")`          | `toast.add({ title: "msg", type: "error" })`   |
+| `import { toast } from "sonner"` | `import { toast } from "@nreljed/platform/Components/ui/toast"` |
 
 **Do NOT** `import { toast } from "sonner"` — sonner was REMOVED (2026-09-08)
 and there is NO sonner `<Toaster />` mounted (sonner toasts are silent
@@ -124,17 +125,16 @@ Before creating any new page or component, verify:
 
 ### Token source of truth
 
-`packages/platform/resources/css/core.css` — imported into the
+`vendor/nreljed/platform/resources/css/core.css` — imported into the
 host `resources/css/app.css` AFTER `@import "tailwindcss"` + `@source` globs:
 
 ```css
 @import "tailwindcss" source(none);
 @source "../";
-@source "../../../../packages/shop-module/src/Resources/js/";
-@source "../../../../packages/platform/resources/js/";
-@source "../../../../packages/blog/src/Resources/js/";
+@source "../../vendor/nreljed/shop-module/src/Resources/js/";
+@source "../../vendor/nreljed/platform/resources/js/";
 @import "tw-animate-css";
-@import "../../../../packages/platform/resources/css/core.css";
+@import "../../vendor/nreljed/platform/resources/css/core.css";
 ```
 
 All values use `oklch()`. `@theme inline` maps `--color-*` → Tailwind utilities.
@@ -221,17 +221,19 @@ function MyComponent({ className, ...props }: PrimitiveType.Props) {
 
 ### Data attributes (Base UI pattern)
 
-| State       | Attribute                           | Note                                     |
-| ----------- | ----------------------------------- | ---------------------------------------- |
-| open/closed | `data-open` / `data-closed`         | NOT `data-state`                         |
-| checked     | `data-checked`                      | checkbox/radio                           |
-| selected    | `data-selected`                     | menu list item, select item              |
+| State | Attribute | Note |
+| ----- | --------- | ---- |
+| open/closed | `data-open` / `data-closed` | NOT `data-state` |
+| checked | `data-checked` | checkbox/radio |
+| selected | `data-selected` | menu list item, select item |
 | orientation | `data-horizontal` / `data-vertical` | custom variant (tabs, slider, separator) |
 
 Animations:
 
 ```tsx
-<DialogPrimitive.Popup className="data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:slide-in-from-bottom-2 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95" />
+<DialogPrimitive.Popup
+  className="data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:slide-in-from-bottom-2 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+/>
 ```
 
 ### `render` prop pattern
@@ -284,9 +286,7 @@ Class-based. `.dark` is toggled on `<html>` by `next-themes` `<ThemeProvider>`.
 
 ### Source scanning
 
-Tailwind source globs live in the HOST `app.css` (`@source`), covering host JS plus all
-workspace packages. When a new JS dir is added in platform/shop-module, ensure the app's
-`@source` glob includes it.
+Tailwind source globs live in the HOST `app.css` (`@source`), covering host JS plus both vendored packages. When a new JS dir is added in platform or shop-module, ensure the app's `@source` glob includes it.
 
 ### Animation library
 
@@ -306,7 +306,7 @@ import * as React from "react";
 ### Toasts (NOT sonner)
 
 ```tsx
-import { toast } from "@/Components/ui/toast";
+import { toast } from "@nreljed/platform/Components/ui/toast";
 toast.add({ title: "Created", type: "success" });
 ```
 
@@ -394,7 +394,7 @@ toast.add({ title: "Created", type: "success" });
 
 ### DO NOT
 
-- `import { toast } from "sonner"` — use `toast.add({ title, type })` from `@/Components/ui/toast`
+- `import { toast } from "sonner"` — use `toast.add({ title, type })` from `@nreljed/platform/Components/ui/toast`
 - Use hardcoded colors (`text-green-500`, `bg-red-100`) for status — use `status-*` tokens
 - Skip `text-foreground` on `<span>`, `<p>`, `<div>`, `<h1>`–`<h6>`, `<td>` because "it works in light mode"
 - Import from `@radix-ui/react-*` or `radix-ui` for new components — use `@base-ui/react`
@@ -419,15 +419,15 @@ toast.add({ title: "Created", type: "success" });
 
 ## Dependency Versions
 
-| Package                    | Version             | Notes                           |
-| -------------------------- | ------------------- | ------------------------------- |
-| `tailwindcss`              | `^4.0.0`            | v4 — no config file, CSS-first  |
-| `@tailwindcss/vite`        | `^4.0.0`            | Vite plugin (NOT PostCSS)       |
-| `@base-ui/react`           | `^1.5.0`            | Unstyled primitives (NOT Radix) |
-| `shadcn` (devDep)          | `^4.19.1`           | Component generator / diff      |
-| `tw-animate-css`           | `^1.4.0`            | Animation utilities             |
-| `class-variance-authority` | `^0.7.1`            | Variants (`cva`)                |
-| `clsx` / `tailwind-merge`  | `^2.1.1` / `^3.6.0` | `cn()` composition              |
-| `lucide-react`             | `^1.35.0`           | Icons                           |
-| `embla-carousel-react`     | `^8.6.0`            | Required by `carousel.tsx`      |
-| `input-otp`                | `^1.5.0`            | Required by `input-otp.tsx`     |
+| Package                    | Version    | Notes                             |
+| -------------------------- | ---------- | --------------------------------- |
+| `tailwindcss`              | `^4.0.0`   | v4 — no config file, CSS-first    |
+| `@tailwindcss/vite`        | `^4.0.0`   | Vite plugin (NOT PostCSS)         |
+| `@base-ui/react`           | `^1.5.0`   | Unstyled primitives (NOT Radix)   |
+| `shadcn` (devDep)          | `^4.19.1`  | Component generator / diff        |
+| `tw-animate-css`           | `^1.4.0`   | Animation utilities               |
+| `class-variance-authority` | `^0.7.1`   | Variants (`cva`)                  |
+| `clsx` / `tailwind-merge`  | `^2.1.1` / `^3.6.0` | `cn()` composition        |
+| `lucide-react`             | `^1.35.0`  | Icons                             |
+| `embla-carousel-react`     | `^8.6.0`   | Required by `carousel.tsx`        |
+| `input-otp`                | `^1.5.0`   | Required by `input-otp.tsx`       |

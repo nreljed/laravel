@@ -5,8 +5,8 @@ namespace Tests\Feature\Admin;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Tests\TestCase;
 
 class RoleCreationTest extends TestCase
