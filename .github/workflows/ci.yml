@@ -22,7 +22,11 @@ jobs:
       skip-php-tests: ${{ inputs.skip-php-tests || false }}
       skip-npm-tests: ${{ inputs.skip-npm-tests || false }}
       php-tests-parallel: true
-      pass-with-no-tests: true
+      # consumer-ci.yml defaults this to false, and the mono HAS a real vitest
+      # suite (app shell + workspace packages). Passing true here overrode that
+      # default and made the frontend test gate green even with zero tests
+      # collected -- a silent false negative on every run. Omit it so the
+      # default applies.
       # The called workflow cannot read this repo's `vars`, so the runner
       # switch is handed over as inputs (see consumer-ci.yml's header).
       runner: ${{ vars.RUNNER_CI || 'self-hosted' }}

@@ -106,14 +106,21 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: php artisan key:generate && php artisan migrate --force
 
-      - name: Validate - npm install + checks (typecheck, lint, format, deps)
+      # Keep this gate list identical to ci.yml (which calls
+      # nreljed/platform/.github/workflows/consumer-ci.yml). It previously
+      # skipped `check:platform-consistency`, which is exactly the gate that
+      # failed on PR #84 -- so this job went green and merged a broken lock.
+      - name: Validate - npm install + gates (mirrors consumer-ci.yml)
         if: steps.check.outputs.changed == 'true'
         run: |
           pnpm install --frozen-lockfile
           npm run check:core-deps
+          npm run check:platform-consistency
+          pnpm audit --audit-level=high
           npm run lint
           npm run typecheck
           npm run format:check
+          npm run test
 
       - name: Validate - build
         if: steps.check.outputs.changed == 'true'
