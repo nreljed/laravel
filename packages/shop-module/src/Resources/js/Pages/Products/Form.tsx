@@ -35,7 +35,7 @@ const VariationsManager = lazy(() => import("../../components/VariationsManager"
 import type { Variation } from "../../components/VariationsManager";
 const ProductSeoPanel = lazy(() => import("../../components/ProductSeoPanel").then((m) => ({ default: m.ProductSeoPanel })));
 import type { SeoData } from "../../components/ProductSeoPanel";
-import { typeChangeEffects } from "../../lib/productTypeChange";
+import { typeChangeEffects, type ProductTypeEffectData } from "../../lib/productTypeChange";
 
 interface Category { id: number; name: string }
 interface Tag { id: number; name: string }
@@ -602,7 +602,9 @@ export default function ProductsForm() {
 
     form.setData("type", newType);
 
-    Object.entries(effects.data).forEach(([key, value]) => form.setData(key, value));
+    (Object.entries(effects.data) as [keyof ProductTypeEffectData, boolean][]).forEach(
+        ([key, value]) => form.setData(key, value),
+    );
 
     setAttrList((prev) => prev.map((a) => ({ ...a, variation: effects.attributesAreVariations })));
   }, [form]);

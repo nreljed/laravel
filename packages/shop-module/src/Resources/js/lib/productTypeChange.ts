@@ -13,15 +13,21 @@
  * the form.
  */
 
+export interface ProductTypeEffectData {
+    track_stock?: boolean;
+    virtual?: boolean;
+    downloadable?: boolean;
+}
+
 export interface TypeChangeEffects {
     /** Form fields the switch writes, excluding the type itself. */
-    data: Partial<Record<string, unknown>>;
+    data: ProductTypeEffectData;
     /** Whether the product's attributes become variation attributes. */
     attributesAreVariations: boolean;
 }
 
 export function typeChangeEffects(newType: string): TypeChangeEffects {
-    const data: Partial<Record<string, unknown>> = {};
+    const data: ProductTypeEffectData = {};
 
     // An external product is bought elsewhere and a grouped one is a container,
     // so neither carries its own stock.
