@@ -8,6 +8,16 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
+    # directory: "/" is the pnpm workspace root, so Dependabot otherwise scans
+    # every workspace manifest. packages/** are released-package MIRRORS (owned
+    # by their own repos) and apps/** must stay byte-identical to the standalone
+    # deploy repos, so a Dependabot edit to either fails check-platform-
+    # consistency (mirror drift / app drift). Keep updates to the root manifest
+    # (+ the single pnpm-lock.yaml); package/app ranges are bumped upstream in
+    # the owning repo, then synced.
+    exclude-paths:
+      - "packages/**"
+      - "apps/**"
     ignore:
       # @typescript-eslint has no TypeScript 7 support yet - see AGENTS.md
       # "Known Blockers". Bumping to 7.x breaks the ESLint pipeline.
