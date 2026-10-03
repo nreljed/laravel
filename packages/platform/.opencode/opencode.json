@@ -1,0 +1,9 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "workspace": {
+      "path": "../../laravel/app",
+      "description": "The nreljed workspace monorepo (packages/* mirrors + apps/laravel.shop, apps/laravel.booking). Use to see how consumers actually wire this engine, which routes/pages/permissions are registered, and what breaks when the engine changes. packages/platform here is a byte-identical mirror of this repo -- never edit it."
+    }
+  }
+}
