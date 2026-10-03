@@ -116,7 +116,7 @@ jobs:
           pnpm install --frozen-lockfile
           npm run check:core-deps
           npm run check:platform-consistency
-          pnpm audit --audit-level=high
+          pnpm audit --prod --audit-level=high
           npm run lint
           npm run typecheck
           npm run format:check
