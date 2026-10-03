@@ -1,8 +1,9 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { platformAliases } from "./vendor/nreljed/platform/platform.aliases.js";
-import { blogAliases } from "./vendor/nreljed/blog/blog.aliases.js";
+import { platformAliases } from "../../packages/platform/platform.aliases.js";
+import { blogAliases } from "../../packages/blog/blog.aliases.js";
+import { shopAliases } from "../../packages/shop-module/shop.aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -32,14 +33,14 @@ export default defineConfig({
         alias: {
             ...platformAliases(),
             ...blogAliases(),
-            "@dashboard-themes": path.resolve(__dirname, "vendor/nreljed/platform/resources/themes"),
-            "@shop": path.resolve(__dirname, "vendor/nreljed/shop-module/src/Resources/js"),
-            "@nreljed/platform": path.resolve(__dirname, "vendor/nreljed/platform/resources/js"),
-            "@nreljed/platform/*": path.resolve(__dirname, "vendor/nreljed/platform/resources/js"),
-            "@nreljed/blog": path.resolve(__dirname, "vendor/nreljed/blog/src/Resources/js"),
-            "@nreljed/blog/*": path.resolve(__dirname, "vendor/nreljed/blog/src/Resources/js"),
-            "@nreljed/shop-module": path.resolve(__dirname, "vendor/nreljed/shop-module/src/Resources/js"),
-            "@nreljed/shop-module/*": path.resolve(__dirname, "vendor/nreljed/shop-module/src/Resources/js"),
+            ...shopAliases(),
+            "@dashboard-themes": path.resolve(__dirname, "../../packages/platform/resources/themes"),
+            "@nreljed/platform": path.resolve(__dirname, "../../packages/platform/resources/js"),
+            "@nreljed/platform/*": path.resolve(__dirname, "../../packages/platform/resources/js"),
+            "@nreljed/blog": path.resolve(__dirname, "../../packages/blog/src/Resources/js"),
+            "@nreljed/blog/*": path.resolve(__dirname, "../../packages/blog/src/Resources/js"),
+            "@nreljed/shop-module": path.resolve(__dirname, "../../packages/shop-module/src/Resources/js"),
+            "@nreljed/shop-module/*": path.resolve(__dirname, "../../packages/shop-module/src/Resources/js"),
         },
     },
 });
