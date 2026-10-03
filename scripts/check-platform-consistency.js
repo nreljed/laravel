@@ -540,6 +540,7 @@ const APP_IGNORED_DIRS = new Set([
   "public",
   "bootstrap",
   ".vscode",
+  ".opencode",
   ".playwright-mcp",
   ".kilo",
   "dist",
