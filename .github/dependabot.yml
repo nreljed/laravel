@@ -8,13 +8,20 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    # directory: "/" is the pnpm workspace root, so Dependabot otherwise scans
-    # every workspace manifest. packages/** are released-package MIRRORS (owned
-    # by their own repos) and apps/** must stay byte-identical to the standalone
-    # deploy repos, so a Dependabot edit to either fails check-platform-
-    # consistency (mirror drift / app drift). Keep updates to the root manifest
-    # (+ the single pnpm-lock.yaml); package/app ranges are bumped upstream in
-    # the owning repo, then synced.
+    # directory: "/" is the pnpm workspace root. Two constraints combine:
+    #  1. packages/** are released-package MIRRORS (owned by their own repos)
+    #     and apps/** must stay byte-identical to the standalone deploy repos,
+    #     so any Dependabot edit to their package.json fails
+    #     check-platform-consistency (mirror/app drift).
+    #  2. Dependabot's pnpm-workspace support rewrites every member package.json
+    #     to keep the shared lockfile consistent, and it does NOT honor
+    #     exclude-paths for workspace members (dependabot-core#10758) - so
+    #     exclude-paths alone does not protect the mirrors.
+    # lockfile-only is the lever that actually holds: PRs touch only
+    # pnpm-lock.yaml, never a package.json, so mirrors/apps cannot drift.
+    # Declared ranges (root + package/app) are bumped upstream in the owning
+    # repo, then synced.
+    versioning-strategy: lockfile-only
     exclude-paths:
       - "packages/**"
       - "apps/**"
