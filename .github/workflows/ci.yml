@@ -33,3 +33,45 @@ jobs:
       hosted-runner: ${{ vars.RUNNER_CI != 'self-hosted' }}
       run-e2e: true
     secrets: inherit
+
+  # The workspace apps (apps/laravel.shop, apps/laravel.booking) are mirrors of
+  # standalone deploy repos. Nothing else in this repo's CI builds or tests
+  # them, so this matrix is the only place a workspace-only breakage (e.g. a
+  # root resolution or alias change) is caught before the guard flags content
+  # drift. Runs after `validate` (single runner serialises jobs anyway) so a
+  # broken core run does not pay for the extra install.
+  apps:
+    needs: validate
+    if: ${{ !inputs.skip-npm-tests }}
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [laravel.shop, laravel.booking]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          # Cache only on GitHub-hosted runners — the persistent self-hosted
+          # runner must not use the cache upload step (it stalls).
+          cache: ${{ (vars.RUNNER_CI || 'self-hosted') == 'ubuntu-latest' && 'pnpm' || '' }}
+
+      - name: Install pnpm + workspace dependencies
+        run: |
+          command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+          pnpm install --frozen-lockfile
+
+      - name: Typecheck (${{ matrix.app }})
+        run: npm --prefix apps/${{ matrix.app }} run typecheck
+
+      - name: Tests (${{ matrix.app }})
+        run: npm --prefix apps/${{ matrix.app }} run test
+
+      - name: Build (${{ matrix.app }})
+        run: npm --prefix apps/${{ matrix.app }} run build
