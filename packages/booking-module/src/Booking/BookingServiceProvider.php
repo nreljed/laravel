@@ -96,11 +96,6 @@ class BookingServiceProvider extends ServiceProvider implements FeatureProvider
         return 'nreljed/booking-module';
     }
 
-    public function dependencies(): array
-    {
-        return ['properties'];
-    }
-
     public function getSettingsGroups(): array
     {
         return ['booking'];
