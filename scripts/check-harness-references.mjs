@@ -268,6 +268,33 @@ function resolveRef(ref, fromFile) {
 }
 
 /* ------------------------------------------------------------------ */
+/**
+ * Roots that a dependency install produces rather than the repository
+ * containing. `.github/workflows/agent-evals.yml` deliberately installs nothing
+ * ("They need no dependency install... this job runs in seconds"), so a
+ * reference into one of these cannot be verified there at all.
+ *
+ * Absence therefore means UNVERIFIED, not broken, and is reported as a note
+ * instead of a failure. When the directory IS present -- a dev machine, or a job
+ * that ran composer install -- the reference is checked exactly as strictly as
+ * any other, so this never hides a genuinely stale path.
+ */
+const INSTALL_ROOTS = new Set(["vendor", "node_modules"])
+
+/** References that could not be checked because their install root is absent. */
+const unverified = []
+
+/**
+ * True when `ref` lives under an install root that is not present on this
+ * machine. Only the first path segment is considered, so `vendor/**` is
+ * unverifiable on a fresh checkout while `packages/platform/**` is always
+ * checked.
+ */
+function isUnverifiable(ref) {
+    const head = ref.replace(/\\/g, "/").replace(/^\.\//, "").split("/")[0]
+    return INSTALL_ROOTS.has(head) && !existsSync(join(ROOT, head))
+}
+
 /* Checks                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -335,7 +362,8 @@ function checkRuleFrontmatter(problems) {
             // Wildcard-free glob: a literal path, so existence is the test.
             if (!/[*?]/.test(glob)) {
                 if (!existsSync(join(ROOT, glob.replace(/\//g, sep)))) {
-                    problems.push({ file, line, ref: glob, note: "path does not exist" })
+                    if (isUnverifiable(glob)) unverified.push({ file, line, ref: glob })
+                    else problems.push({ file, line, ref: glob, note: "path does not exist" })
                 }
                 continue
             }
@@ -346,10 +374,11 @@ function checkRuleFrontmatter(problems) {
             let base = glob.split("*")[0].replace(/[/\\]$/, "")
             if (base.includes(".")) base = base.slice(0, base.lastIndexOf("/") + 1).replace(/[/\\]$/, "")
             if (!base) base = "."
-            if (!existsSync(join(ROOT, base.replace(/\//g, sep)))) {
-                problems.push({ file, line, ref: glob, note: `glob base path does not exist: ${base}` })
-                continue
-            }
+if (!existsSync(join(ROOT, base.replace(/\//g, sep)))) {
+                    if (isUnverifiable(glob)) unverified.push({ file, line, ref: glob })
+                    else problems.push({ file, line, ref: glob, note: `glob base path does not exist: ${base}` })
+                    continue
+                }
             const re2 = globToRegExp(glob)
             const all = walk(base === "." ? "." : base)
             if (!all.some((f) => re2.test(f.replace(/\/$/, "").replace(/\//g, "/")))) {
@@ -380,6 +409,10 @@ function checkProsePaths(problems) {
                 scanned++
                 if (ALLOWED_MISSING.has(ref)) continue
                 if (resolveRef(ref, rel)) continue
+                if (isUnverifiable(ref)) {
+                    unverified.push({ file: rel, line: i + 1, ref })
+                    continue
+                }
                 problems.push({ file: rel, line: i + 1, ref, note: "unresolvable" })
             }
         })
@@ -394,7 +427,13 @@ function main() {
     const prose = checkProsePaths(problems)
 
     if (asJson) {
-        console.log(JSON.stringify({ globs, prose, problems, allowed: [...ALLOWED_MISSING.keys()] }, null, 2))
+        console.log(
+            JSON.stringify(
+                { globs, prose, problems, unverified, allowed: [...ALLOWED_MISSING.keys()] },
+                null,
+                2,
+            ),
+        )
         process.exit(problems.length > 0 ? 1 : 0)
     }
 
@@ -418,6 +457,14 @@ function main() {
         }
         console.log("  If a reference is intentionally absent (another machine, a build")
         console.log("  artifact, an upstream repo), add it to ALLOWED_MISSING with a reason.")
+    }
+
+    if (unverified.length > 0) {
+        const roots = [...INSTALL_ROOTS].filter((r) => !existsSync(join(ROOT, r)))
+        console.log(
+            `\n  note  ${unverified.length} reference(s) not verified: they live under ${roots.join(", ")}, which this machine has not installed.`,
+        )
+        console.log("        They are checked normally wherever dependencies are installed.")
     }
     process.exit(problems.length > 0 ? 1 : 0)
 }
