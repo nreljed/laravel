@@ -12,10 +12,14 @@ import type { Plugin } from "@opencode-ai/plugin"
  * replacing output.prompt, so OpenCode's own compaction instructions survive).
  * It also instructs the summarizer to carry forward real task progress.
  *
- * SCOPE: this repo is the root `laravel` app. Its two upstream packages are
- * nreljed/platform (the engine) and nreljed/blog (the blog module). Earlier
- * revisions of this text described apps/laravel.shop as the served tree and
- * laravel.shop as the deploy tree; that is true of the SHOP app, not of this
+ * SCOPE: this repo is the root `laravel` app. It CONSUMES two upstream packages --
+ * nreljed/platform (the engine) and nreljed/blog (the blog module). But four
+ * package trees are mirrored here (shop-module and booking-module are mirrored
+ * for the workspace apps, not consumed by this app), and two whole apps are
+ * mirrored here as well. Mirrored is not the same as consumed, and neither is
+ * the same as owned -- see the ownership section below.
+ * Earlier revisions of this text described apps/laravel.shop as the served tree
+ * and laravel.shop as the deploy tree; that is true of the SHOP app, not of this
  * one, and stating it here misled work on the root app.
  */
 
@@ -42,11 +46,31 @@ const FLEET_CONTEXT = `
   repo. Never author a fix there -- edit upstream, tag, then \`composer update\`.
   Mirrors must stay byte-identical to the released tree; root Pint and ESLint
   deliberately exclude \`packages/**\` so nothing silently reformats them.
-- \`packages/shop-module\` + \`packages/booking-module\` and the
-  \`apps/laravel.shop\` / \`apps/laravel.booking\` apps are WORKSPACE-ONLY and
-  MONO-OWNED. They are not separate repositories -- do not defer them to an
-  upstream, and do not exclude them from root correctness gates (Pint, lint,
-  typecheck, tests) without evidence. Root Pint excludes \`packages\` ONLY.
+- ALL SIX of these trees are upstream mirrors with standalone repos, NOT
+  workspace-only code. This is the single most-repeated wrong belief in this
+  repo's history; an earlier revision of this very file asserted the opposite
+  and was re-injected on every compaction.
+  - \`packages/shop-module\`  -> \`nreljed/shop-module\`
+  - \`packages/booking-module\`-> \`nreljed/booking-module\`
+  - \`apps/laravel.shop\`     -> \`nreljed/laravel.shop\`   (deploys on its own)
+  - \`apps/laravel.booking\`  -> \`nreljed/laravel.booking\`
+  Proof, not convention: \`.github/workflows/ci.yml\` clones BOTH standalone app
+  repos and byte-compares them against \`apps/**\`, and
+  \`apps/laravel.shop/composer.json\` requires \`nreljed/shop-module\` from
+  \`git@github.com:nreljed/shop-module.git\`. Clones live at
+  \`C:/Users/nrelj/Local Sites/{platform,blog,shop-module,booking-module,laravel.shop,laravel.booking}\`.
+  So a "quick fix" authored in \`apps/**\` or in a module package does NOT ship
+  -- the standalone repo deploys, and the next sync overwrites it.
+- BOUNDARY NUANCE (do not "simplify" this away): the two mirror trees are
+  deliberately governed DIFFERENTLY, and the difference is intentional.
+  - \`packages/**\` -- excluded from root Pint AND ESLint, because they must stay
+    byte-identical to the released tree and a formatter would break parity.
+  - \`apps/**\` -- covered by root Pint, lint, typecheck and tests, because they
+    share the root pnpm workspace and a root toolchain change can break them.
+    That is coverage of a SHARED TOOLCHAIN, not ownership of their content.
+  When adding a tool to the root hooks, copy the boundary from Pint for PHP
+  (excludes \`packages\` only) and from lint-staged/ESLint for TS/TSX (excludes
+  \`packages\` AND \`apps\`) -- never assume one shared rule for both.
 - The root app itself owns: \`bootstrap/app.php\`, \`routes/web.php\`,
   \`resources/js/**\` (entry + theme), \`app/**\`. Enforced by
   \`vendor/nreljed/platform/core-manifest.json\` via \`php

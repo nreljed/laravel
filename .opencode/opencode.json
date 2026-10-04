@@ -19,6 +19,7 @@
       "*": "allow",
       "packages/*": "ask"
     },
+    "task": "ask",
     "skill": {
       "*": "allow",
       "bricks-*": "deny",
@@ -33,6 +34,38 @@
     "blog": {
       "path": "../../../blog",
       "description": "SOURCE OF TRUTH for the blog package (posts, categories, tags, content blocks, scheduled publishing). Use for anything under packages/blog."
+    },
+    "shop-module": {
+      "path": "../../../shop-module",
+      "description": "SOURCE OF TRUTH for packages/shop-module (products, customers, orders, cart, coupons, checkout). packages/shop-module is a MIRROR -- author changes here, tag, then re-sync the mirror. Do not patch the mirror directly."
+    },
+    "booking-module": {
+      "path": "../../../booking-module",
+      "description": "SOURCE OF TRUTH for packages/booking-module (bookings, reservations, properties, availability). packages/booking-module is a MIRROR -- author changes here, tag, then re-sync the mirror."
+    },
+    "laravel.shop": {
+      "path": "../../../laravel.shop",
+      "description": "SOURCE OF TRUTH for apps/laravel.shop, a full app mirror that deploys independently to shop.laravel.tunispromo.tn. A fix authored under apps/laravel.shop does NOT ship -- it belongs in this repo."
+    },
+    "laravel.booking": {
+      "path": "../../../laravel.booking",
+      "description": "SOURCE OF TRUTH for apps/laravel.booking, a full app mirror that deploys independently. A fix authored under apps/laravel.booking does NOT ship -- it belongs in this repo."
+    },
+    "scoped-packages": {
+      "path": "../packages",
+      "description": "Mirror boundary + upstream dev loop for packages/**. READ BEFORE editing anything under packages/** or apps/**."
+    },
+    "scoped-frontend": {
+      "path": "../resources/js",
+      "description": "Frontend conventions: TSX style, page resolution, theming, workspace deps. Read when touching resources/js/** or any TSX/Tailwind work."
+    },
+    "scoped-scripts": {
+      "path": "../scripts",
+      "description": "Scripts, tooling and deploy pipeline: runners, commands, CI wiring. Read when touching scripts/**, .github/**, hooks, or deploys."
+    },
+    "scoped-tests": {
+      "path": "../tests",
+      "description": "PHPUnit + Vitest layout, factories, Playwright MCP. Read when running, writing, or debugging tests."
     }
   }
 }

@@ -5,8 +5,15 @@ description: Run the full verification gate for this repo and report honestly
 # Fleet check
 
 Run the gates that actually prove this repo is coherent. Report failures as
-failures. Scope: the root `laravel` app + its two upstream packages
-(`nreljed/platform`, `nreljed/blog`).
+failures.
+
+Scope: the root `laravel` app **plus all six upstream mirrors** it consumes -
+`packages/platform`, `packages/blog`, `packages/shop-module`,
+`packages/booking-module`, `apps/laravel.shop`, `apps/laravel.booking`. Every one is
+owned by a standalone repo; see `packages/AGENTS.md`.
+
+This command covers the **application**. For the agent harness
+(`.opencode/**`, `.ai/rules/**`, `AGENTS.md`), run `/verify-harness`.
 
 ## 1. Cross-app lock parity + mirror drift
 
@@ -53,7 +60,7 @@ bun run .opencode/test/session-context.test.ts
 "Plugin appears in `opencode debug config`" only proves discovery. These prove
 behaviour.
 
-## 6. Mono-owned correctness
+## 6. App-owned tree correctness
 
 ```bash
 vendor/bin/pint --test          # excludes packages/ ONLY -- apps/ IS included
@@ -62,6 +69,10 @@ npm run typecheck:packages
 npm run lint
 npm run format:check
 ```
+
+These cover the trees this repo actually owns (`bootstrap/app.php`, `routes/web.php`,
+`resources/js/**`, `app/**`) plus the `apps/**` toolchain. They do **not** prove the
+mirrors are correct - step 1 does that.
 
 ## 7. Tests
 
@@ -82,7 +93,7 @@ npm run test
 - Root CI runs Vitest with `pass-with-no-tests: true`, so an empty frontend
   suite reports green. Cross-check `npm run test` output for a real test count.
 - `npm run lint` and `npm run format:check` only cover `resources/js/**`;
-  `apps/**` and `packages/**` are excluded by design (they run their own
-  toolchains, or are upstream mirrors).
-- The workspace-only app PHP suites under `apps/**` are not executed by mono CI;
-  run them explicitly if you are changing those trees.
+  `apps/**` and `packages/**` are excluded because they are upstream mirrors that
+  run their own toolchains in their own repos.
+- The workspace app suites under `apps/**` are not executed by root CI; run them
+  explicitly if you are changing those trees.

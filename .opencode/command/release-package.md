@@ -4,9 +4,9 @@ description: Release an upstream package (version bump, tag, release) and propag
 
 # Release an upstream package
 
-Releases originate in the OWNING repo, never in the mono. Applies to
+Releases originate in the **owning upstream repo**, never in this workspace. All four package repos are mirrored under `packages/**`:
 `nreljed/platform`, `nreljed/blog`, `nreljed/shop-module`,
-`nreljed/booking-module` — though this app consumes only the first two.
+`nreljed/booking-module` — all mirrored here, though this app requires only the first two directly.
 
 ## 0. Confirm the tree
 

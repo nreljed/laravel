@@ -4,13 +4,17 @@ description: Refresh package mirrors and every consumer lock, then prove fleet p
 
 # Sync mirrors + locks
 
-Bring `packages/*` and all consumer `composer.lock` files back onto the released
-upstream tree, then prove it. Upstream clones:
+Bring every mirror and every consumer lock back onto the released upstream tree,
+then prove it. All six are owned by standalone repos:
 
-| Package | Clone | Mirror |
-| --- | --- | --- |
-| `nreljed/platform` | `C:/Users/nrelj/Local Sites/platform` | `packages/platform` |
-| `nreljed/blog` | `C:/Users/nrelj/Local Sites/blog` | `packages/blog` |
+| Mirror | Upstream clone |
+| --- | --- |
+| `packages/platform` | `C:/Users/nrelj/Local Sites/platform` |
+| `packages/blog` | `C:/Users/nrelj/Local Sites/blog` |
+| `packages/shop-module` | `C:/Users/nrelj/Local Sites/shop-module` |
+| `packages/booking-module` | `C:/Users/nrelj/Local Sites/booking-module` |
+| `apps/laravel.shop` | `C:/Users/nrelj/Local Sites/laravel.shop` |
+| `apps/laravel.booking` | `C:/Users/nrelj/Local Sites/laravel.booking` |
 
 ## 1. Establish ground truth
 
@@ -43,12 +47,12 @@ Never hand-edit version strings to make a check pass.
 
 ## 4. Update every consumer lock
 
-Consumers that must agree (the root app is the primary; the workspace-only
-`apps/*` follow automatically once they are on the same version):
+Every lock that must agree. The root app is primary; `apps/**` are mirrors with
+their own locks that pin the same versions:
 
 - root `composer.lock` (required)
-- `apps/laravel.shop/composer.lock` (if consuming the package)
-- `apps/laravel.booking/composer.lock` (if consuming the package)
+- `apps/laravel.shop/composer.lock`
+- `apps/laravel.booking/composer.lock`
 - `packages/*/composer.lock` (each mirror's own lock)
 
 ```bash
@@ -56,6 +60,8 @@ cd "C:/Users/nrelj/Local Sites/laravel/app"
 composer update nreljed/platform --lock
 composer update nreljed/blog --lock
 ```
+
+Composer and npm must land on the **same** version for each package.
 
 ## 5. Prove parity — do not skip this
 

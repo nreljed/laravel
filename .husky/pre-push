@@ -1,1 +1,1 @@
-node scripts/check-platform-consistency.js && npx eslint resources/js/ && npx tsc --noEmit && prettier --check "resources/js/**/*.{ts,tsx,json,css}" && php vendor/bin/pint
+node scripts/check-platform-consistency.js && php scripts/foundation-check.php && node scripts/check-agent-context.mjs && node scripts/check-harness-references.mjs && node scripts/check-doc-links.mjs && node evals/skills/run.mjs && npx eslint resources/js/ && npx tsc --noEmit && prettier --check "resources/js/**/*.{ts,tsx,json,css}" && php vendor/bin/pint
