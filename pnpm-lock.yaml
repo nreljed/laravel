@@ -150,7 +150,7 @@ importers:
         specifier: ^1.13.12
         version: 1.13.13
       lucide-react:
-        specifier: ^1.48.0
+        specifier: ^1.46.0
         version: 1.49.0(@types/react@19.3.0)(react@19.3.0)
       next-themes:
         specifier: ^0.4.6
@@ -217,20 +217,17 @@ importers:
         specifier: ^1.11.1
         version: 1.11.3
       '@eslint-react/eslint-plugin':
-        specifier: ^5.20.8
+        specifier: ^5.19.1
         version: 5.23.3(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
-      '@playwright/test':
-        specifier: ^1.63.0
-        version: 1.63.0
+        version: 3.7.1(axios@1.20.0)(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.3.3(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -259,10 +256,10 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.70.1
+        specifier: ^8.70.0
         version: 8.71.0(@typescript-eslint/parser@8.71.0(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       '@typescript-eslint/parser':
-        specifier: ^8.71.0
+        specifier: ^8.62.1
         version: 8.71.0(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       '@vitejs/plugin-react':
         specifier: ^6.1.0
@@ -271,7 +268,7 @@ importers:
         specifier: ^0.28.2
         version: 0.28.2
       eslint:
-        specifier: ^10.11.0
+        specifier: ^10.10.0
         version: 10.11.0(jiti@2.7.0)
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -316,10 +313,10 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       vite:
-        specifier: ^8.3.1
+        specifier: ^8.2.2
         version: 8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
       vitest:
-        specifier: ^5.0.2
+        specifier: ^5.0.0
         version: 5.0.3(@types/node@26.5.1)(jsdom@30.0.1)(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
   apps/laravel.booking:
@@ -531,13 +528,13 @@ importers:
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.88.0(react@19.3.0))(zod@4.6.5)
       '@inertiajs/core':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.7.1(axios@1.20.0)(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -844,13 +841,13 @@ importers:
         version: 5.23.3(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: ^3.7.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.7.1(axios@1.20.0)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -967,10 +964,10 @@ importers:
         version: 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/core':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -1049,10 +1046,10 @@ importers:
     dependencies:
       '@inertiajs/core':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1113,10 +1110,10 @@ importers:
         version: 2.20.1(leaflet@1.9.4)
       '@inertiajs/core':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -1300,10 +1297,10 @@ importers:
     dependencies:
       '@inertiajs/core':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))
+        version: 3.7.1(axios@1.20.0)
       '@inertiajs/react':
         specifier: ^3.0.0
-        version: 3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -7260,35 +7257,35 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inertiajs/core@3.7.1(axios@1.20.0(debug@4.4.3))':
+  '@inertiajs/core@3.7.1(axios@1.20.0)':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       es-toolkit: 1.52.0
-      laravel-precognition: 2.0.0(axios@1.20.0(debug@4.4.3))
+      laravel-precognition: 2.0.0(axios@1.20.0)
     optionalDependencies:
       axios: 1.20.0(debug@4.4.3)
 
-  '@inertiajs/react@3.7.1(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@inertiajs/react@3.7.1(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@inertiajs/core': 3.7.1(axios@1.20.0(debug@4.4.3))
+      '@inertiajs/core': 3.7.1(axios@1.20.0)
       es-toolkit: 1.52.0
-      laravel-precognition: 2.0.0(axios@1.20.0(debug@4.4.3))
+      laravel-precognition: 2.0.0(axios@1.20.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
     transitivePeerDependencies:
       - axios
 
-  '@inertiajs/vite@3.7.1(axios@1.20.0(debug@4.4.3))(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
+  '@inertiajs/vite@3.7.1(axios@1.20.0)(vite@8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
-      '@inertiajs/core': 3.7.1(axios@1.20.0(debug@4.4.3))
+      '@inertiajs/core': 3.7.1(axios@1.20.0)
       tinyglobby: 0.2.17
       vite: 8.3.1(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
     transitivePeerDependencies:
       - axios
 
-  '@inertiajs/vite@3.7.1(axios@1.20.0(debug@4.4.3))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
+  '@inertiajs/vite@3.7.1(axios@1.20.0)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
-      '@inertiajs/core': 3.7.1(axios@1.20.0(debug@4.4.3))
+      '@inertiajs/core': 3.7.1(axios@1.20.0)
       tinyglobby: 0.2.17
       vite: 8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
     transitivePeerDependencies:
@@ -9858,7 +9855,7 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  laravel-precognition@2.0.0(axios@1.20.0(debug@4.4.3)):
+  laravel-precognition@2.0.0(axios@1.20.0):
     dependencies:
       es-toolkit: 1.52.0
     optionalDependencies:
