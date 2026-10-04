@@ -1,0 +1,89 @@
+name: Agent Harness Evals
+
+# Validates the agent harness itself: that its config parses, its plugins load,
+# its skills advertise the words routing depends on, its rules point at files
+# that exist, and its docs do not link to nothing.
+#
+# Why a separate workflow instead of folding this into ci.yml:
+#   - These are the gates that let an agent find its way around this repo. When
+#     they rot, every other agent task starts failing in a confusing way, and
+#     nothing in the PHP/frontend pipeline would notice.
+#   - They need no dependency install. All four runners are Node built-ins only,
+#     so this job runs in seconds and fails fast without waiting for `npm ci`.
+#   - They should still run when the frontend gates are skipped (skip-npm-tests),
+#     because a stale AGENTS.md is not an npm problem.
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "opencode.json"
+      - ".opencode/**"
+      - ".agents/**"
+      - ".ai/**"
+      - ".husky/pre-push"
+      - "scripts/check-*.mjs"
+      - "evals/**"
+      - "docs/**"
+      - "package.json"
+      - ".github/workflows/agent-evals.yml"
+  push:
+    branches: [main]
+    paths:
+      - "AGENTS.md"
+      - "opencode.json"
+      - ".opencode/**"
+      - ".agents/**"
+      - ".ai/**"
+      - ".husky/pre-push"
+      - "scripts/check-*.mjs"
+      - "evals/**"
+      - "docs/**"
+      - "package.json"
+      - ".github/workflows/agent-evals.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Same variable-driven runner switch as every other workflow in this repo. See
+# AGENTS.md "Self-Hosted Runners": `vars.RUNNER_CI` chooses self-hosted vs hosted.
+concurrency:
+  group: agent-evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  harness:
+    name: Harness config, skills, refs, docs
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Node 26 matches ci.yml. check-agent-context.mjs imports the harness
+      # plugins (session-context.ts, mirror-boundary.ts) directly to prove they
+      # parse and their hooks are well-formed, which relies on native TypeScript
+      # type stripping. On an older Node the import fails and the check cannot
+      # run at all, so the version is pinned rather than inherited.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "26"
+
+      - name: Harness config and plugin load
+        run: node scripts/check-agent-context.mjs
+
+      - name: Harness path references
+        run: node scripts/check-harness-references.mjs
+
+      - name: Documentation links
+        run: node scripts/check-doc-links.mjs
+
+      - name: Skill routing
+        run: node evals/skills/run.mjs
+
+      # Deliberately NOT running php scripts/foundation-check.php here.
+      # It needs a PHP toolchain, which is not preinstalled on GitHub-hosted
+      # runners, and it is already enforced twice: by `check:ci` (which CI runs
+      # through consumer-ci.yml) and by the pre-push hook. Adding setup-php
+      # would make this job slower and able to fail for toolchain reasons, to
+      # re-check something two other gates already own. The point of this
+      # workflow is that it needs no install at all.
