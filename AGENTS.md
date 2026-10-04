@@ -563,35 +563,39 @@ pull_request → pr.yml
 ### Account Data Backup & Restore (data-feature conventions)
 
 The **Data** feature (`dashboard → Account → Data`) lets a user export or restore *their own*
-account data from `vendor/nreljed/platform` (+ `vendor/nreljed/blog`). It is the canonical
-example of the **module contract**: a feature is not data-owning unless it says so.
+account data. It is the canonical example of the **module contract**: a feature is not
+data-owning unless it says so. Backend lives in `vendor/nreljed/platform`.
 
-- **Contract**: Data-owning modules implement `Nreljed\Platform\Data\Contracts\DataBackupCapability`
-  exposing `provider()`, `key()`, `label()`, `exclude()` (PII blacklist), `envelope()`,
-  `restore(array $data)`, `validate(...)`. Registered via `FeatureRegistry` / feature
-  `capabilities` — `FeatureRegistry::getDataBackupModules()` returns all providers.
-- **Envelope v1** (single canonical shape, versioned for forward compat):
-  `{ app, generated_at, user: { id, username }, module: { provider, key, label }, data }`.
-  Never invent per-module envelope shapes; extend the shared one.
-- **Routes**: `GET  /dashboard/account/data` (page), `POST /dashboard/account/data/export/{module}`
-  (download), `POST /dashboard/account/data/restore/{module}` (restore). Restore is
-  `throttle:10,1` and validated by `RestoreAccountDataRequest` (J~backup upload `mimes:json,text/plain`
-  `max:20480` + typed `confirmation: in:restore my data` phrase — restore is **not** a
-  password-confirmed flow, the phrase + throttle are the gate); it **replaces only
-  the user's own rows** (never touches other users'/global data) and is idempotent via the
-  module's restore key.
-- **Audits**: `data_exported` / `data_restored` (critical). Restore writes a `critical` audit
-  log + notifies the admin on success/failure.
-- **Providers**: maps `provider` slug → module — `post` → Blog
-  (add your feature there, not in the UI switch). Sidebar/nav/dashboard are unaffected.
-- **Tests**: `tests/Feature/Account/AccountDataBackupTest.php` (15 tests — page lists
-  modules, export restores own rows only, restore idempotent/own-rows-only + round-trips
-  slug collisions; live in the **app**, consuming core's DataBackupCapability). Backend +
-  frontend code both under core.
-- **Frontend**: `Pages/dashboard/account/data.tsx` renders `DataBackupSection`
-  (`resources/js/Components/account/sections/...`). Uses the shared `SettingsAccordion`
-  pattern; export is a plain `router.post` download, restore is a `useForm` with
-  `CurrentPasswordInput` + file input.
+- **Contract**: a data-owning feature returns capability objects from
+  `FeatureProvider::getDataBackupCapabilities()`. Each is an instance of
+  `Nreljed\Platform\Support\DataBackupCapability` — a **class**, not an interface — built with
+  a constructor and exposing `getKey()`, `getLabel()`, `getDescription()`, `supportsExport()`,
+  `supportsRestore()`, `getActions()` and `toArray()`. `toArray()` is the serializer, so the
+  export shape is whatever the capability returns; there is no versioned envelope to extend.
+- **Registry**: `FeatureRegistry::getDataBackupModules()` returns
+  `list<array{provider: FeatureProvider, capability: DataBackupCapability}>`;
+  `FeatureRegistry::resolveDataBackupModule(string $key)` resolves one by key and returns
+  `null` for an unknown key (the controller surfaces that as "Unknown data module").
+- **Routes** (`AccountDataController`, prefix `/dashboard/account`):
+  `GET /data` (page, `dashboard.account.page.data`),
+  `GET /data/export/{module}` (download, `dashboard.account.data.export`) — note it is **GET**,
+  not POST, because it streams a file response —
+  and `POST /data/restore/{module}` (`throttle:10,1`). Restore is validated by
+  `RestoreAccountDataRequest`: `backup` required file `mimes:json,text/plain` `max:20480`
+  (KiB) plus `confirmation` `in:restore my data` — restore is **not** a password-confirmed
+  flow, the typed phrase + throttle are the gate. It **replaces only the user's own rows**
+  and is idempotent via the capability's restore key.
+- **Audits**: `AuditAction::DataExported` (`data_exported`, severity `info`) and
+  `AuditAction::DataRestored` (`data_restored`, severity `warning` — not `critical`).
+- **Frontend**: `packages/platform/resources/js/Pages/dashboard/account/data.tsx` renders
+  `DataBackupSection` (`packages/platform/resources/js/Components/account/sections/`).
+  Uses the shared `SettingsAccordion` pattern; export is a plain `router.get` download,
+  restore is a `useForm` with a file input.
+- **Known gap (pinned versions)**: no feature supplies a capability yet, so the page lists
+  zero modules and every export/restore returns "Unknown data module". `vendor/nreljed/blog` does
+  not implement `getDataBackupCapabilities()` in the version this app pins. Add the
+  capability in the **owning feature repo**, tag, then update this app's lock — do not patch
+  the vendor tree or the mirror.
 - Local dev cache: keep `CACHE_STORE=file` in the app `.env` — a `database` store on a
   shared SQLite cache table causes intermittent read flapping (settings/feature props);
   middleware reads are `Cache::remember` + fail-closed, controllers `Cache::forget` on toggle.
