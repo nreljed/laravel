@@ -21,8 +21,6 @@
   "require": {
     "php": "^8.4",
     "fakerphp/faker": "^1.23",
-    "nreljed/blog": "^0.1",
-    "nreljed/platform": "^0.1",
     "inertiajs/inertia-laravel": "^3.3.3",
     "intervention/image-laravel": "^4.0",
     "laravel/ai": "^0.10",
@@ -30,6 +28,9 @@
     "laravel/sanctum": "^4.3",
     "laravel/tinker": "^3.0",
     "minishlink/web-push": "^11.0",
+    "nreljed/blog": "^0.1",
+    "nreljed/platform": "^0.1",
+    "sentry/sentry-laravel": "4.27",
     "tightenco/ziggy": "^2.6.4"
   },
   "require-dev": {
@@ -43,8 +44,11 @@
     "laravel/telescope": "^5.20",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.6",
+    "phpmd/phpmd": "*",
     "phpunit/phpunit": "^13.2.5 <13.3.0",
-    "rector/rector": "^2.5"
+    "rector/rector": "^2.5",
+    "squizlabs/php_codesniffer": "*",
+    "vimeo/psalm": "*"
   },
   "autoload": {
     "psr-4": {

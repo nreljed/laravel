@@ -11,7 +11,6 @@
  * Usage: php scripts/frontend-boundary-check.php
  * Exit code 0 = clean, 1 = violation found.
  */
-
 $root = dirname(__DIR__);
 
 $allowedAliases = [
@@ -82,7 +81,7 @@ foreach ($files as $file) {
 }
 
 if ($issues === []) {
-    fwrite(STDOUT, "Frontend boundary check: OK (".count($files)." files)\n");
+    fwrite(STDOUT, 'Frontend boundary check: OK ('.count($files)." files)\n");
 
     exit(0);
 }

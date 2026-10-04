@@ -6,11 +6,11 @@ use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Nreljed\Blog\Models\Post;
+use Nreljed\Blog\Services\SeoSuggestionResolver;
 use Nreljed\Platform\Ai\Agents\SeoAgent;
 use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
 use Nreljed\Platform\Models\User;
-use Nreljed\Blog\Models\Post;
-use Nreljed\Blog\Services\SeoSuggestionResolver;
 
 class GenerateSeoForPost implements ShouldQueue
 {

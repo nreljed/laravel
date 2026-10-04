@@ -35,16 +35,12 @@
 
 ## Lexical Editor
 
-| Document                                | Description                                                                                       |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| [Architecture](lexical/architecture.md) | Plugin composition, data flow, HTML serialization, component tree                                 |
-| [Custom Nodes](lexical/nodes.md)        | ImageNode, YouTubeNode, LayoutContainerNode, LayoutItemNode                                       |
-| [Toolbar](lexical/toolbar.md)           | EditorToolbar, block formatting, inline formatting, color picker, insert actions                  |
-| [Table](lexical/table.md)               | TableActionMenuPlugin, TableHoverActionsPlugin, TableCellResizerPlugin, column drag-reorder, sort |
-| [Image](lexical/image.md)               | ImageNode, upload pipeline, resize handles, insert/edit dialogs, floating toolbar                 |
-| [Layout](lexical/layout.md)             | LayoutContainerNode, LayoutItemNode, ColumnsPlugin, LayoutControlsPlugin, insert dialog           |
-| [Plugins](lexical/plugins.md)           | Full plugin inventory — Lexical built-ins and custom plugins                                      |
-| [Theme](lexical/theme.md)               | Tailwind CSS class mappings, dark mode, table cell styling                                        |
+The editor is **owned by the `nreljed/blog` package**. Full docs live in the blog repo:
+
+- Canonical: **`nreljed/blog` → `docs/lexical/`** (start at `index.md`)
+- Source: `src/Resources/js/Components/editor/` in the blog package (mirrored to `packages/blog`)
+
+This monorepo's [`lexical/index.md`](lexical/index.md) is a stub pointing at the canonical docs; the editor is not shipped by the platform core.
 
 ## Workflow
 

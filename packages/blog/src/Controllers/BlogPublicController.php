@@ -4,10 +4,10 @@ namespace Nreljed\Blog\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Blog\Models\Post;
 use Nreljed\Blog\Models\PostCategory;
 use Nreljed\Blog\Models\PostTag;
+use Nreljed\Platform\Http\Controllers\Controller;
 
 class BlogPublicController extends Controller
 {

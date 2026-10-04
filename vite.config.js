@@ -3,10 +3,6 @@ import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import inertia from '@inertiajs/vite';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
     plugins: [

@@ -115,7 +115,7 @@ final class BlogFeatureContractTest extends TestCase
         $source = (string) file_get_contents((new ReflectionClass(PostsSeed::class))->getFileName());
 
         $this->assertStringContainsString(
-            "database_maintenance.seeders.",
+            'database_maintenance.seeders.',
             $source,
             'posts:seed must resolve the demo seeder class from the database_maintenance config catalog.'
         );
