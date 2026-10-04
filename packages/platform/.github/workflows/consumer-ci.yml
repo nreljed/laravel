@@ -152,7 +152,7 @@ jobs:
             dev-*|9999999-*|'@dev') echo "dev build pinned — skipping fleet check"; exit 0 ;;
           esac
           if [ -z "${GH_TOKEN:-}" ]; then
-            echo "no GH_TOKEN (e.g. Dependabot PR) — skipping fleet check"
+            echo "::warning::no GH_TOKEN (e.g. Dependabot PR) — fleet single-core check was SKIPPED, not enforced. This run does not prove the lock matches the latest core release."
             exit 0
           fi
           LATEST=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "User-Agent: fleet-check" \
@@ -160,7 +160,7 @@ jobs:
             | php -r '$d=json_decode(stream_get_contents(STDIN),true);echo $d["tag_name"]??"";')
           echo "latest nreljed/platform release: ${LATEST:-<unknown>}"
           if [ -z "${LATEST}" ]; then
-            echo "could not resolve latest release — skipping fleet check"
+            echo "::warning::could not resolve the latest nreljed/platform release (rate limit, expired token, or API outage) — fleet single-core check was SKIPPED, not enforced. Verify the lock against the latest release manually."
             exit 0
           fi
           NORM=${PINNED#v}; NORM=${NORM%% +@}
@@ -192,12 +192,16 @@ jobs:
       - name: Check cross-app platform consistency
         run: npm run check:platform-consistency
 
+      # Gate SHIPPED dependencies only. Dev-only advisories with no upstream
+      # patch (e.g. the unfixable `braces` stack-exhaustion DoS reached through
+      # the `shadcn` codegen CLI) must not block a deploy -- nothing in that
+      # subtree runs in production. Bump the toolchain on its own schedule.
       - name: npm audit
         run: |
           if [ -f pnpm-lock.yaml ]; then
-            pnpm audit --audit-level=high
+            pnpm audit --prod --audit-level=high
           else
-            npm audit --audit-level=high
+            npm audit --omit=dev --audit-level=high
           fi
 
       - name: ESLint

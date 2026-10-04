@@ -4,8 +4,8 @@ namespace Nreljed\Blog\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Nreljed\Blog\Models\PostTag;
 use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\Blog\Models\PostTag;
 
 class PostTagController extends Controller
 {

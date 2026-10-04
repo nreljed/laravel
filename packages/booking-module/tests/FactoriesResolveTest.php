@@ -33,8 +33,8 @@ final class FactoriesResolveTest extends TestCase
     }
 
     /**
-     * @param  class-string  $model
-     * @param  class-string  $factory
+     * @param class-string $model
+     * @param class-string $factory
      */
     #[DataProvider('modelsWithFactories')]
     public function test_model_resolves_to_package_factory(string $model, string $factory): void
@@ -52,8 +52,8 @@ final class FactoriesResolveTest extends TestCase
     }
 
     /**
-     * @param  class-string  $model
-     * @param  class-string  $factory
+     * @param class-string $model
+     * @param class-string $factory
      */
     #[DataProvider('modelsWithFactories')]
     public function test_factory_targets_matching_model(string $model, string $factory): void

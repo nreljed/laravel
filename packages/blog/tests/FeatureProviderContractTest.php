@@ -2,12 +2,14 @@
 
 namespace Nreljed\Blog\Tests;
 
-use Nreljed\Blog\BlogServiceProvider;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
 use Nreljed\Platform\Contracts\FeatureProvider;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use ReflectionClass;
 use ReflectionMethod;
+use SplFileInfo;
 
 /**
  * Structural contract test for the FeatureProvider interface. Deliberately
@@ -96,7 +98,7 @@ final class FeatureProviderContractTest extends TestCase
 
     public function test_provider_implements_the_full_contract(): void
     {
-        $provider = new ReflectionClass(BlogServiceProvider::class);
+        $provider = new ReflectionClass(\Nreljed\Blog\BlogServiceProvider::class);
 
         $this->assertTrue($provider->implementsInterface(FeatureProvider::class));
 
