@@ -1,7 +1,7 @@
 {
   "name": "nreljed/booking-module",
   "description": "Booking & properties feature for the Nreljed dashboard platform (property listings, availability calendar, bookings pipeline, guest portal, iCal sync, payments).",
-  "version": "0.1.41",
+  "version": "0.1.42",
   "type": "library",
   "license": "proprietary",
   "authors": [
