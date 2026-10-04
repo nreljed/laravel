@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'src/Ai/Agents/**'
+  - 'vendor/nreljed/platform/src/Ai/Agents/**'
 ---
 
 # Agents

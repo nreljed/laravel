@@ -1,6 +1,6 @@
 ---
 paths:
-  - src/Concerns/InteractsWithFeatures.php
+  - vendor/nreljed/platform/src/Concerns/InteractsWithFeatures.php
 ---
 
 # Concerns

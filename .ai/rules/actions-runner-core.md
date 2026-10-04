@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'C:/actions-runner-core/**'
+  - 'C:/runners/platform/**'
 ---
 
 # Actions Runner Core

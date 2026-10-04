@@ -20,3 +20,11 @@ vite 8.3.0 (rolldown) breaks object alias keys with trailing `/*` for app-namesp
 
 ## Composer dev loop in the workspace: path repos via sync script
 `scripts/switch-composer-repos.js` flips each app's composer.json `repositories` between dev `path` (`packages/<pkg>`) and release `vcs` (`nreljed/<pkg>.git`) — mono stays VCS at rest, shop/booking are the flip targets. After switching: `composer update nreljed/platform nreljed/blog nreljed/shop-module` (booking: ...booking-module); `vendor/nreljed/*` become junctions to `packages/*`. Never edit `vendor/` — edits go to `packages/*` and boards in with `composer update`. `packages/*/composer.json` keeps the `version` field (path repos need NPP version ⊂ root require range). Fresh app scaffolds miss `.env`/`storage/`/`database/database.sqlite` — tests die `No application encryption key` then `Please provide a valid cache path`; fix = `.env` + `key:generate` + storage skeleton + touch sqlite, and set per-app `APP_NAME` (the `brand` shared prop falls back to `config('app.name')`).
+
+## Memory & Context Persistence
+- Always check docs/memory/, docs/decisions/, .ai/rules/ when starting complex work
+- Record important architectural decisions as ADRs in docs/decisions/ (use template)
+- Save recurring gotchas in docs/memory/gotchas.md
+- Curate key learnings from sessions into docs/memory/lessons-learned.md or docs/history/
+- Don't commit raw verbose session dumps; commit curated summaries
+- Keep memory concise, dated, and searchable
