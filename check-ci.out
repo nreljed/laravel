@@ -1,0 +1,241 @@
+
+> check:ci
+> npm run check:platform-consistency && npm run check:foundation && npm run check:context && npm run check:references && npm run check:docs && npm run check:skills && npm run lint && npm run typecheck && npm run typecheck:packages && npm run format:check && npm run test && php vendor/bin/pint && php vendor/bin/phpstan analyse --no-progress --memory-limit=1G && php vendor/bin/rector process --dry-run && php artisan test --parallel --compact
+
+
+> check:platform-consistency
+> node scripts/check-platform-consistency.js
+
+[check-platform-consistency] OK upstream-drift shop — matches C:\Users\nrelj\Local Sites\laravel.shop
+[check-platform-consistency] OK upstream-drift booking — matches C:\Users\nrelj\Local Sites\laravel.booking
+[check-platform-consistency] OK — mono (this app), shop, booking
+  composer : 35 resolved, 1 skipped of 12 keys
+  npm      : 75 resolved, 0 skipped of 25 keys
+  mirrors  : 4 compared against vendor, 0 skipped
+  apps     : 2 compared against upstream, 0 skipped
+
+> check:foundation
+> php scripts/foundation-check.php
+
+Foundation check: OK
+
+> check:context
+> node scripts/check-agent-context.mjs
+
+Agent harness check
+
+  ok     agents-size
+  ok     config-parse
+  ok     config-instructions
+  ok     permission-shape
+  warn   shell-permission-explicit (1)
+           - permission.bash is unset here; shell access inherits the global default. If that is intentional, consider stating it in the scoped agents/AGENTS.md rather than leaving it implicit.
+  ok     skill-frontmatter
+  warn   skill-shadow (7)
+           - skill "deploy" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+           - skill "feature-architecture" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+           - skill "lexical-editor-development" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+           - skill "permission-system" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+           - skill "self-hosted-runners" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+           - skill "skill-creator" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+           - skill "webapp-testing" also exists as a GLOBAL skill; .opencode/skills takes precedence, but any other tool reading only the global dir sees the other copy
+  ok     skill-routable
+  ok     command-frontmatter
+  ok     plugin-parse
+  ok     plugin-events
+  ok     agent-gates
+  ok     agent-registered
+  ok     reference-resolve
+  ok     mirror-reference-coverage
+  ok     placeholder-scan
+  ok     session-context-budget
+  ok     boundary-truth
+  ok     version-claims
+
+17 passed, 0 failed, 2 warned (of 19 checks)
+
+> check:references
+> node scripts/check-harness-references.mjs
+
+Harness reference check
+
+  14 rule globs, 58 prose path references in 10 files
+  13 references explicitly allowed as intentionally absent
+
+  ok  every rule glob and referenced path resolves
+
+> check:docs
+> node scripts/check-doc-links.mjs
+
+Doc link check
+
+  46 documents, 50 local links, 2 external (skipped)
+  52 archived documents excluded (historical records, not maintained)
+
+  ok  every local link resolves
+
+> check:skills
+> node evals/skills/run.mjs
+
+Skill routing eval
+
+  18 skills discovered, 14 cases
+
+  ok    artisan-command-scheduling     -> console-commands
+  ok    query-index-tuning             -> database-performance
+  ok    n-plus-one                     -> database-performance
+  ok    workflow-yaml                  -> deployment-pipeline
+  ok    inertia-form                   -> inertia-react-development
+  ok    notification-bell              -> notification-system
+  ok    media-upload-webp              -> media-uploads
+  ok    security-review                -> security-hardening
+  ok    test-factory                   -> testing-patterns
+  ok    tailwind-tokens                -> tailwindcss-development
+  ok    laravel-controller             -> laravel-best-practices
+  ok    ai-agent-provider              -> ai-sdk-development
+  ok    not-deploy-for-scheduling      -> console-commands
+  ok    not-notifications-for-security -> security-hardening
+
+  warn  7 skill(s) have no routing case: deploy, feature-architecture, lexical-editor-development, permission-system, self-hosted-runners, skill-creator, webapp-testing
+        A skill with no case is a skill nobody asserted should match.
+
+  ok  all 14 routing cases hold
+
+> lint
+> eslint resources/js/
+
+
+> typecheck
+> tsc --noEmit
+
+
+> typecheck:packages
+> tsc -p tsconfig.packages.json
+
+
+> format:check
+> prettier --check "resources/js/**/*.{ts,tsx,json,css}"
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/nrelj/Local Sites/laravel/app[39m
+
+ [32m✓[39m packages/platform/resources/js/Components/shared/__tests__/action-cell.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 997[2mms[22m[39m
+   [32m✓[39m ActionCell status verb [2m(4)[22m
+     [33m[2m✓[22m[39m defaults to PUT so the blog's status route keeps working[33m 657[2mms[22m[39m
+[90mstderr[2m | packages/blog/src/Resources/js/Components/editor/image/__tests__/ImageInsertDialog.test.tsx[2m > [22m[2mImageInsertDialog[2m > [22m[2minserts an image from a URL
+[22m[39m[MediaLibrary] load error: [TypeError: fetch failed] {
+  [cause]: AggregateError: 
+  [90m    at internalConnectMultiple (node:net:1426:18)[39m
+  [90m    at afterConnectMultiple (node:net:2095:7)[39m {
+    code: [32m'ECONNREFUSED'[39m,
+    [errors]: [ [36m[Error][39m, [36m[Error][39m ]
+  }
+}
+
+[90mstderr[2m | packages/blog/src/Resources/js/Components/editor/image/__tests__/ImageInsertDialog.test.tsx[2m > [22m[2mImageInsertDialog[2m > [22m[2minserts an image from a URL
+[22m[39m[MediaLibrary] load error: [TypeError: fetch failed] {
+  [cause]: AggregateError: 
+  [90m    at internalConnectMultiple (node:net:1426:18)[39m
+  [90m    at afterConnectMultiple (node:net:2095:7)[39m {
+    code: [32m'ECONNREFUSED'[39m,
+    [errors]: [ [36m[Error][39m, [36m[Error][39m ]
+  }
+}
+
+ [32m✓[39m packages/blog/src/Resources/js/Components/editor/youtube/__tests__/YouTubeEmbedDialog.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 2064[2mms[22m[39m
+   [32m✓[39m YouTubeEmbedDialog [2m(3)[22m
+     [33m[2m✓[22m[39m inserts a YouTube embed from a URL[33m 1489[2mms[22m[39m
+     [33m[2m✓[22m[39m shows an error toast for an invalid URL[33m 442[2mms[22m[39m
+[90mstderr[2m | packages/blog/src/Resources/js/Components/editor/image/__tests__/ImageInsertDialog.test.tsx[2m > [22m[2mImageInsertDialog[2m > [22m[2muploads a file and inserts the returned URL
+[22m[39m[MediaLibrary] load error: [TypeError: fetch failed] {
+  [cause]: AggregateError: 
+  [90m    at internalConnectMultiple (node:net:1426:18)[39m
+  [90m    at afterConnectMultiple (node:net:2095:7)[39m {
+    code: [32m'ECONNREFUSED'[39m,
+    [errors]: [ [36m[Error][39m, [36m[Error][39m ]
+  }
+}
+
+[90mstderr[2m | packages/blog/src/Resources/js/Components/editor/image/__tests__/ImageInsertDialog.test.tsx[2m > [22m[2mImageInsertDialog[2m > [22m[2mdoes not insert an empty URL
+[22m[39m[MediaLibrary] load error: [TypeError: fetch failed] {
+  [cause]: AggregateError: 
+  [90m    at internalConnectMultiple (node:net:1426:18)[39m
+  [90m    at afterConnectMultiple (node:net:2095:7)[39m {
+    code: [32m'ECONNREFUSED'[39m,
+    [errors]: [ [36m[Error][39m, [36m[Error][39m ]
+  }
+}
+
+[90mstderr[2m | packages/blog/src/Resources/js/Components/editor/image/__tests__/ImageInsertDialog.test.tsx[2m > [22m[2mImageInsertDialog[2m > [22m[2mdoes not insert an empty URL
+[22m[39m[MediaLibrary] load error: [TypeError: fetch failed] {
+  [cause]: AggregateError: 
+  [90m    at internalConnectMultiple (node:net:1426:18)[39m
+  [90m    at afterConnectMultiple (node:net:2095:7)[39m {
+    code: [32m'ECONNREFUSED'[39m,
+    [errors]: [ [36m[Error][39m, [36m[Error][39m ]
+  }
+}
+
+ [32m✓[39m packages/blog/src/Resources/js/Components/editor/image/__tests__/ImageInsertDialog.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2558[2mms[22m[39m
+   [32m✓[39m ImageInsertDialog [2m(3)[22m
+     [33m[2m✓[22m[39m inserts an image from a URL[33m 2037[2mms[22m[39m
+     [33m[2m✓[22m[39m uploads a file and inserts the returned URL[33m 386[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/Components/ui/__tests__/data-table-toolbar.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 413[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/hooks/__tests__/use-auth.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/__tests__/Pages/admin/resources/index.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 562[2mms[22m[39m
+   [32m✓[39m resource index page route resolution [2m(3)[22m
+     [33m[2m✓[22m[39m resolves the declared create route name to a URL[33m 440[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/schemas.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/Components/resources/__tests__/ResourceForm.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 1148[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/__tests__/has-inertia-page.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/Components/resources/__tests__/ResourceIndex.test.tsx [2m([22m[2m40 tests[22m[2m)[22m[33m 2091[2mms[22m[39m
+   [32m✓[39m ResourceIndex translation [2m(27)[22m
+     [33m[2m✓[22m[39m submits the collected values with the action and the selection[33m 475[2mms[22m[39m
+[90mstderr[2m | packages/platform/resources/js/Components/resources/__tests__/fields.test.tsx[2m > [22m[2mmedia field featuredField[2m > [22m[2mdoes not offer set-as-cover on the single-image control
+[22m[39m[MediaLibrary] load error: ReferenceError: route is not defined
+    at C:/Users/nrelj/Local Sites/laravel/app/packages/platform/resources/js/Components/shared/media-library/use-media-library.ts:72:21
+    at C:/Users/nrelj/Local Sites/laravel/app/packages/platform/resources/js/Components/shared/media-library/use-media-library.ts:115:5
+    at Object.react_stack_bottom_frame [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:28656:20[90m)[39m
+    at runWithFiberInDEV [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:1048:13[90m)[39m
+    at commitHookEffectListMount [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:13748:29[90m)[39m
+    at commitHookPassiveMountEffects [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:13835:11[90m)[39m
+    at commitPassiveMountOnFiber [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:16906:13[90m)[39m
+    at recursivelyTraversePassiveMountEffects [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:16851:13[90m)[39m
+    at commitPassiveMountOnFiber [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:17183:11[90m)[39m
+    at recursivelyTraversePassiveMountEffects [90m(C:\Users\nrelj\Local Sites\laravel\app\[39mnode_modules\[4m.pnpm[24m\react-dom@19.3.0_react@19.3.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:16851:13[90m)[39m
+
+ [32m✓[39m packages/platform/resources/js/Components/resources/__tests__/fields.test.tsx [2m([22m[2m53 tests[22m[2m)[22m[33m 2362[2mms[22m[39m
+   [32m✓[39m ResourceField [2m(10)[22m
+     [33m[2m✓[22m[39m renders a server error as an alert[33m 319[2mms[22m[39m
+   [32m✓[39m relation field [2m(4)[22m
+     [33m[2m✓[22m[39m lists the declared options and stores the picked values as scalars[33m 355[2mms[22m[39m
+ [32m✓[39m packages/blog/src/Resources/js/Components/editor/image/__tests__/ImagePlugin.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/gallery.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m packages/blog/src/Resources/js/Components/editor/toc/__tests__/headings.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m .opencode/test/session-context.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/utils.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m packages/shop-module/src/Resources/js/lib/__tests__/productTypeChange.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m .opencode/test/mirror-boundary.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/code-gutter.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/shop-module/src/Resources/js/resources/__tests__/productResource.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/versions.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/__tests__/build-page-map.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/storefront-layout.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/platform/resources/js/lib/__tests__/resource-schema.test.ts [2m([22m[2m63 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m      Tests [22m [1m[32m363 passed[39m[22m[90m (363)[39m
+[2m   Start at [22m 00:07:24
+[2m   Duration [22m 24.62s[2m (import 46%, environment 34%, tests 8%, setup 8%, transform 3%)[22m
+
+[2mEnvironment [22m [33mjsdom was created 24 times[39m[2m · 51.38s total, 34% of tracked time[22m
+[2m            [22m [2mcreate it once per worker with [22m[33mpool: 'vmThreads'[39m[2m (keeps per-file isolation) or [22m[33misolate: false[39m[2m (shares it across files)[22m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#test-environments[22m
+
+{"tool":"pint","result":"passed"}{"tool":"phpstan","result":"passed","errors":0}
