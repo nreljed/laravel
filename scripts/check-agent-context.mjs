@@ -53,6 +53,19 @@ const SEVERITY = {
     agentsSize: "warn",
 }
 
+/**
+ * The mirrors an agent is told to edit upstream instead of in place, keyed by
+ * the opencode.json `references` entry that points at their editable clone.
+ */
+const MIRROR_SOURCES = {
+    platform: "packages/platform",
+    blog: "packages/blog",
+    "shop-module": "packages/shop-module",
+    "booking-module": "packages/booking-module",
+    "laravel.shop": "apps/laravel.shop",
+    "laravel.booking": "apps/laravel.booking",
+}
+
 const BUILTIN_COMMANDS = new Set(["init", "undo", "redo", "share", "help"])
 
 /**
@@ -568,6 +581,15 @@ check("agent-registered", "error", () => {
     return issues
 })
 
+// opencode.json references that point OUTSIDE the repo are the editable
+// upstream clones on the dev machine (Local Sites\platform and siblings).
+// They are deliberately NOT the in-repo mirrors: a reference that resolved to
+// packages/** would invite an agent to patch a mirror. The consequence is that
+// those paths cannot exist on any machine without those clones -- notably CI --
+// so "absent" is collected here and reported by the
+// `reference-external-unverifiable` warn check instead of failing the run.
+const unverifiedExternalRefs = []
+
 check("reference-resolve", "error", () => {
     const issues = []
     const rel = ".opencode/opencode.json"
@@ -578,26 +600,56 @@ check("reference-resolve", "error", () => {
             issues.push(`references.${name} has no path`)
             continue
         }
-        const abs = join(ROOT, ".opencode", ref.path)
-        if (!existsSync(abs)) {
-            issues.push(`references.${name} -> ${ref.path} does not resolve from .opencode/`)
-        } else if (!statSync(abs).isDirectory()) {
-            issues.push(`references.${name} -> ${ref.path} is not a directory`)
-        } else if (!isInsideRepo(abs)) {
-            // External references must point at a real upstream checkout. Without
-            // this, a path with one `../` too many can land on an unrelated
-            // directory that merely happens to exist (e.g. ../../packages from
-            // .opencode/ hits a stale Local Sites\laravel\packages\shop-module)
-            // and pass silently while pointing an agent at the wrong tree.
-            const isRepo = existsSync(join(abs, ".git")) || existsSync(join(abs, "composer.json"))
-            if (!isRepo) {
-                issues.push(
-                    `references.${name} -> ${ref.path} resolves outside the repo to ${abs}, which is not a repository checkout (no .git or composer.json). This usually means one too many "../" segments -- use "../" to stay inside this repo.`,
-                )
+        const abs = resolve(ROOT, ".opencode", ref.path)
+        if (isInsideRepo(abs)) {
+            // In-repo references are claims about this repository, so they must
+            // resolve on every machine that checks it out.
+            if (!existsSync(abs)) {
+                issues.push(`references.${name} -> ${ref.path} does not resolve from .opencode/`)
+            } else if (!statSync(abs).isDirectory()) {
+                issues.push(`references.${name} -> ${ref.path} is not a directory`)
             }
+            continue
+        }
+        // External reference: the directory it lands on must still be the
+        // upstream clone it claims to be. This comparison needs no filesystem
+        // access, so it catches a mistyped segment or a wrong "../" count even
+        // where the clone is absent (CI).
+        const expected = MIRROR_SOURCES[name]
+        if (expected && basename(abs) !== basename(expected)) {
+            issues.push(
+                `references.${name} -> ${ref.path} resolves to ${abs}, whose directory name does not match its mirror ${expected}. This usually means one too many or too few "../" segments -- the upstream clone lives in a sibling of the repo root.`,
+            )
+            continue
+        }
+        if (!existsSync(abs)) {
+            unverifiedExternalRefs.push(
+                `references.${name} -> ${ref.path} (${abs}) is not present on this machine, so it was not verified to be a checkout`,
+            )
+            continue
+        }
+        if (!statSync(abs).isDirectory()) {
+            issues.push(`references.${name} -> ${ref.path} is not a directory`)
+            continue
+        }
+        // External references must point at a real upstream checkout. Without
+        // this, a path with one `../` too many can land on an unrelated
+        // directory that merely happens to exist (e.g. ../../packages from
+        // .opencode/ hits a stale Local Sites\laravel\packages\shop-module)
+        // and pass silently while pointing an agent at the wrong tree.
+        const isRepo = existsSync(join(abs, ".git")) || existsSync(join(abs, "composer.json"))
+        if (!isRepo) {
+            issues.push(
+                `references.${name} -> ${ref.path} resolves outside the repo to ${abs}, which is not a repository checkout (no .git or composer.json). This usually means one too many "../" segments -- use "../" to stay inside this repo.`,
+            )
         }
     }
     return issues
+})
+
+check("reference-external-unverifiable", "warn", () => {
+    // Reported, never fatal: these paths are machine-local by design.
+    return [...unverifiedExternalRefs]
 })
 
 check("mirror-reference-coverage", "warn", () => {
@@ -608,15 +660,7 @@ check("mirror-reference-coverage", "warn", () => {
     const issues = []
     const { value } = parseJsonc(read(".opencode/opencode.json"), ".opencode/opencode.json")
     const configured = new Set(Object.keys(value?.references ?? {}))
-    const required = {
-        platform: "packages/platform",
-        blog: "packages/blog",
-        "shop-module": "packages/shop-module",
-        "booking-module": "packages/booking-module",
-        "laravel.shop": "apps/laravel.shop",
-        "laravel.booking": "apps/laravel.booking",
-    }
-    for (const [name, mirror] of Object.entries(required)) {
+    for (const [name, mirror] of Object.entries(MIRROR_SOURCES)) {
         if (!existsSync(join(ROOT, mirror))) continue
         if (!configured.has(name)) {
             issues.push(
