@@ -7,3 +7,21 @@ minimumReleaseAge: 0
 allowBuilds:
   esbuild: true
   unrs-resolver: true
+# Single Inertia identity across the workspace.
+#
+# Why this is required, not cosmetic: `packages/platform/resources/js/types/global.d.ts`
+# augments the `"@inertiajs/core"` module, and TypeScript resolves that specifier
+# relative to the augmenting FILE. Welcome.tsx resolves `usePage` relative to itself.
+# If pnpm installs two physical copies of @inertiajs/core (one under
+# packages/platform/node_modules, one at the workspace root) the augmentation is
+# applied to a module identity the page never imports, and `usePage()`'s props
+# collapse to `{}` - TS2339 on every shared prop. That is exactly what happened
+# when Dependabot raised the root range to ^3.8.0 while the packages stayed on ^3.7.0.
+#
+# The package/app manifests keep their own caret ranges because those files are
+# upstream-owned mirrors. Forcing one resolved version here is the only lever the
+# mono root owns, and it also immunises future partial bumps.
+overrides:
+  "@inertiajs/core": 3.8.0
+  "@inertiajs/react": 3.8.0
+  "@inertiajs/vite": 3.8.0
