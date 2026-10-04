@@ -478,9 +478,9 @@ php artisan permissions:list          # List all permissions
 php artisan app:create-admin           # Bootstrap/update admin user
 ```
 
-The pre-commit hook (lint-staged) is **scoped to mono-owned files only** — `resources/js/**`,
+The pre-commit hook (lint-staged) is **scoped to the files this app owns** — `resources/js/**`,
 `app/**` for TS/TSX eslint+prettier, and `{app,bootstrap,config,database,routes,tests,resources}/**`
-for Pint. `packages/**` and `apps/**` are excluded from the root lint-staged AND root ESLint
+for Pint. `packages/**` and `apps/**` are upstream mirrors, so they are excluded from the root lint-staged AND root ESLint
 (`eslint.config.js` `ignores`) — those trees are owned by their own repos/apps and run their own
 toolchains (shop/booking `check:ci`, package repo CIs). Never widen the catch-all back to `*.{ts,tsx}`
 / `*.php` or the root hook will reformat foreign package sources.
@@ -705,12 +705,15 @@ tests/
 
 ### Factories
 
-| Model          | File                                         | States                                             |
-| -------------- | -------------------------------------------- | -------------------------------------------------- |
-| `User`         | `database/factories/UserFactory.php`         | `admin()`, default: unverified                     |
-| `Post`         | `database/factories/PostFactory.php`         | `published()`, `draft()`, `archived()`, `future()` |
-| `PostCategory` | `database/factories/PostCategoryFactory.php` | —                                                  |
-| `PostTag`      | `database/factories/PostTagFactory.php`      | —                                                  |
+| Model          | File                                                             | States                                             |
+| -------------- | ---------------------------------------------------------------- | -------------------------------------------------- |
+| `User`         | `packages/platform/src/Database/Factories/UserFactory.php`        | `admin()`, default: unverified                     |
+| `Post`         | `packages/blog/src/Database/Factories/PostFactory.php`           | `published()`, `draft()`, `archived()`, `future()` |
+| `PostCategory` | `packages/blog/src/Database/Factories/PostCategoryFactory.php`   | —                                                  |
+| `PostTag`      | `packages/blog/src/Database/Factories/PostTagFactory.php`        | —                                                  |
+
+These are **upstream mirrors** — edit the owning repo (`nreljed/platform`,
+`nreljed/blog`), never the copy under `packages/**`.
 
 ### Key Patterns
 

@@ -10,7 +10,8 @@ failures.
 Scope: the root `laravel` app **plus all six upstream mirrors** it consumes -
 `packages/platform`, `packages/blog`, `packages/shop-module`,
 `packages/booking-module`, `apps/laravel.shop`, `apps/laravel.booking`. Every one is
-owned by a standalone repo; see `packages/AGENTS.md`.
+owned by a standalone repo; see the "This repo's role" / ownership sections in
+`AGENTS.md`.
 
 This command covers the **application**. For the agent harness
 (`.opencode/**`, `.ai/rules/**`, `AGENTS.md`), run `/verify-harness`.
