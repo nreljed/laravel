@@ -453,8 +453,11 @@ function checkMirrorDrift() {
  * Files that legitimately differ between an apps/ workspace member and its
  * standalone upstream repo, because the workspace deliberately overrides vendor
  * resolution:
- *   - tsconfig.json / vite.config.js: the workspace aliases @nreljed/* to
- *     ../../packages/*, the standalone repo aliases them to ./vendor/nreljed/*.
+ *   - tsconfig.json / vite.config.js / vitest.config.js: the workspace aliases
+ *     @nreljed/* to ../../packages/*, the standalone repo aliases them to
+ *     ./vendor/nreljed/*.
+ *   - resources/css/app.css: same reason - its @source/@import target the
+ *     ./vendor/nreljed/* tree upstream and ../../packages/* in the workspace.
  *   - the lockfiles, which are per-consumer by definition.
  * NOTE: composer.json / package.json are deliberately NOT in this set. Their
  * dependency blocks are the contract that must not drift, so they are compared
@@ -464,6 +467,8 @@ function checkMirrorDrift() {
 const APP_INTEGRATION_FILES = new Set([
   "tsconfig.json",
   "vite.config.js",
+  "vitest.config.js",
+  "resources/css/app.css",
   "composer.lock",
   "package-lock.json",
   "pnpm-lock.yaml",
@@ -535,6 +540,7 @@ const APP_IGNORED_DIRS = new Set([
   "public",
   "bootstrap",
   ".vscode",
+  ".opencode",
   ".playwright-mcp",
   ".kilo",
   "dist",

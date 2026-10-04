@@ -33,3 +33,87 @@ jobs:
       hosted-runner: ${{ vars.RUNNER_CI != 'self-hosted' }}
       run-e2e: true
     secrets: inherit
+
+  # The workspace apps (apps/laravel.shop, apps/laravel.booking) are mirrors of
+  # standalone deploy repos. Nothing else in this repo's CI builds or tests
+  # them, so this matrix is the only place a workspace-only breakage (e.g. a
+  # root resolution or alias change) is caught before the guard flags content
+  # drift. Runs after `validate` (single runner serialises jobs anyway) so a
+  # broken core run does not pay for the extra install.
+  apps:
+    needs: validate
+    if: ${{ !inputs.skip-npm-tests }}
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [laravel.shop, laravel.booking]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          # Cache only on GitHub-hosted runners — the persistent self-hosted
+          # runner must not use the cache upload step (it stalls).
+          cache: ${{ (vars.RUNNER_CI || 'self-hosted') == 'ubuntu-latest' && 'pnpm' || '' }}
+
+      - name: Install pnpm + workspace dependencies
+        run: |
+          command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+          pnpm install --frozen-lockfile
+
+      - name: Typecheck (${{ matrix.app }})
+        run: npm --prefix apps/${{ matrix.app }} run typecheck
+
+      - name: Tests (${{ matrix.app }})
+        run: npm --prefix apps/${{ matrix.app }} run test
+
+      - name: Build (${{ matrix.app }})
+        run: npm --prefix apps/${{ matrix.app }} run build
+
+  # The platform-consistency guard compares apps/* against their standalone
+  # deploy repos, but only when those checkouts are reachable: on a dev machine
+  # they are auto-discovered as siblings, while in CI the compare silently
+  # reported SKIPPED because there was no second checkout. This job checks out
+  # both standalone repos and points the guard at them, so the app-vs-upstream
+  # fork check actually runs on every CI invocation. It is a structural check
+  # (no composer/pnpm install needed: mirror drift then reports SKIPPED and is
+  # covered by the `validate` job), so it only needs Node.
+  parity:
+    needs: validate
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Checkout standalone shop repo
+        uses: actions/checkout@v7
+        with:
+          repository: nreljed/laravel.shop
+          token: ${{ secrets.GH_TOKEN }}
+          path: __upstream/laravel.shop
+
+      - name: Checkout standalone booking repo
+        uses: actions/checkout@v7
+        with:
+          repository: nreljed/laravel.booking
+          token: ${{ secrets.GH_TOKEN }}
+          path: __upstream/laravel.booking
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+
+      - name: Platform consistency (real upstreams)
+        env:
+          CHECK_PLATFORM_SHOP_UPSTREAM: ${{ github.workspace }}/__upstream/laravel.shop
+          CHECK_PLATFORM_BOOKING_UPSTREAM: ${{ github.workspace }}/__upstream/laravel.booking
+        run: node scripts/check-platform-consistency.js
