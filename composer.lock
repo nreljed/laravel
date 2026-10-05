@@ -3370,6 +3370,10 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.4",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
             "time": "2026-10-01T15:17:32+00:00"
         },
         {
@@ -3430,6 +3434,10 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.80",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
             "time": "2026-10-04T22:38:44+00:00"
         },
         {
