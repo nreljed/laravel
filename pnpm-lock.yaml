@@ -14,8 +14,8 @@ importers:
   .:
     dependencies:
       '@atlaskit/pragmatic-drag-and-drop':
-        specifier: ^3.1.0
-        version: 3.1.0
+        specifier: ^4.0.0
+        version: 4.0.0
       '@base-ui/react':
         specifier: ^1.8.0
         version: 1.8.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -226,13 +226,13 @@ importers:
         version: 5.23.3(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -536,13 +536,13 @@ importers:
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.5)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -849,13 +849,13 @@ importers:
         version: 5.23.3(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -972,10 +972,10 @@ importers:
         version: 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -1054,10 +1054,10 @@ importers:
     dependencies:
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1118,10 +1118,10 @@ importers:
         version: 2.20.1(leaflet@1.9.4)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -1305,10 +1305,10 @@ importers:
     dependencies:
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1347,6 +1347,9 @@ packages:
 
   '@atlaskit/pragmatic-drag-and-drop@3.1.0':
     resolution: {integrity: sha512-VU+2Oh6OgvC6D1xiX3lfm1gZJsaSPD+ZKjAHodOQ9IO6RfOvAyReLlK5ut9gIUpPmbD8d09wlCs7y4A6/I8c5Q==}
+
+  '@atlaskit/pragmatic-drag-and-drop@4.0.0':
+    resolution: {integrity: sha512-pyDo2B5NiaExoKGmgeXKGNUL4aR4UzzSZm8QWWjYTEyBLVqSqKyKUwtVxMw2YEkakagOGFONUdHM32LAH2nPug==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -6069,6 +6072,12 @@ snapshots:
       bind-event-listener: 3.0.0
       raf-schd: 4.0.3
 
+  '@atlaskit/pragmatic-drag-and-drop@4.0.0':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      bind-event-listener: 3.0.0
+      raf-schd: 4.0.3
+
   '@babel/code-frame@7.29.7':
     dependencies:
       '@babel/helper-validator-identifier': 7.29.7
@@ -6809,27 +6818,27 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inertiajs/core@3.8.0(axios@1.20.0)':
+  '@inertiajs/core@3.8.0(axios@1.20.0(debug@4.4.3))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       es-toolkit: 1.52.0
-      laravel-precognition: 2.1.0(axios@1.20.0)
+      laravel-precognition: 2.1.0(axios@1.20.0(debug@4.4.3))
     optionalDependencies:
       axios: 1.20.0(debug@4.4.3)
 
-  '@inertiajs/react@3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@inertiajs/react@3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@inertiajs/core': 3.8.0(axios@1.20.0)
+      '@inertiajs/core': 3.8.0(axios@1.20.0(debug@4.4.3))
       es-toolkit: 1.52.0
-      laravel-precognition: 2.1.0(axios@1.20.0)
+      laravel-precognition: 2.1.0(axios@1.20.0(debug@4.4.3))
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
     transitivePeerDependencies:
       - axios
 
-  '@inertiajs/vite@3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
+  '@inertiajs/vite@3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
-      '@inertiajs/core': 3.8.0(axios@1.20.0)
+      '@inertiajs/core': 3.8.0(axios@1.20.0(debug@4.4.3))
       tinyglobby: 0.2.17
       vite: 8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
     transitivePeerDependencies:
@@ -9291,7 +9300,7 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  laravel-precognition@2.1.0(axios@1.20.0):
+  laravel-precognition@2.1.0(axios@1.20.0(debug@4.4.3)):
     dependencies:
       es-toolkit: 1.52.0
     optionalDependencies:
