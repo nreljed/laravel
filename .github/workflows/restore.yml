@@ -37,6 +37,7 @@ on:
           - release-cleanup
           - logs
           - health
+          - migrate
           - prune
       version:
         description: "Release tag to install/record as .deployed-version (release-install/install only); empty = leave marker untouched"
@@ -69,6 +70,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: FTP upload of runner.php
+        if: inputs.action != 'migrate' && inputs.action != 'prune'
         shell: bash
         run: |
           if [ -z "${{ secrets.FTP_USERNAME }}" ]; then
@@ -151,7 +153,37 @@ jobs:
               "$RUNNER_URL" 2>&1
           }
 
+          # Prod DB migrations are applied through the Laravel app itself (the
+          # runner flips symlinks but has no exec; /deploy/migrate runs
+          # Artisan::call in-process). Non-destructive --force migrate.
+          run_migrate() {
+            echo "Invoking /deploy/migrate on $APP_URL"
+            local resp
+            resp=$(curl -s --max-time 300 -X POST \
+              "$APP_URL/deploy/migrate?token=$DEPLOY_TOKEN" 2>&1)
+            echo "$resp"
+            echo "---"
+            if echo "$resp" | grep -q '"status":"ok"\|"status": "ok"'; then
+              echo "/deploy/migrate OK"
+              return 0
+            fi
+            echo "/deploy/migrate did not report ok"
+            return 1
+          }
+
+          if [ "$ACTION" = "migrate" ]; then
+            run_migrate
+            exit $?
+          fi
+
           if [ "$ACTION" = "release-install" ]; then
+            # A release flip can carry schema changes, and the new code expects
+            # the new schema. Installing the release without migrating leaves the
+            # app serving 500s on any page that touches the new columns — this
+            # is exactly what v0.1.58 did (deployed, then failed on
+            # "Unknown column 'customer_group_id'"). So migrate here, before the
+            # health check, rather than as a separate manual action.
+            #
             # Resumable extraction: re-invoke until status=installed (each pass
             # resumes from the .progress marker). The runner allocates a ~85s
             # budget; a large zip may need several passes. The host can kill the
@@ -165,8 +197,9 @@ jobs:
               echo "$RESP"
               echo "---"
               if echo "$RESP" | grep -q '"status":"installed"\|"status": "installed"'; then
-                echo "Release installed (status=installed)"
-                exit 0
+                echo "Release installed (status=installed) — applying migrations"
+                run_migrate
+                exit $?
               fi
               if echo "$RESP" | grep -q '"partial":true\|"partial": true'; then
                 echo "Extraction partial — resuming (budget hit)"
@@ -180,8 +213,9 @@ jobs:
                 exit 1
               fi
               if echo "$RESP" | grep -q '"ok":true\|"ok": true'; then
-                echo "Runner action release-install OK"
-                exit 0
+                echo "Runner action release-install OK — applying migrations"
+                run_migrate
+                exit $?
               fi
               echo "No clean JSON response (connection killed mid-pass?) — treating as busy, resuming"
               ATTEMPT=$((ATTEMPT + 1))
@@ -208,7 +242,7 @@ jobs:
           fi
 
       - name: Wait for app health (if a recovery/release flip was attempted)
-        if: inputs.action == 'recover' || inputs.action == 'install' || inputs.action == 'release-install' || inputs.action == 'release-rollback'
+        if: inputs.action == 'recover' || inputs.action == 'install' || inputs.action == 'release-install' || inputs.action == 'release-rollback' || inputs.action == 'migrate'
         shell: bash
         env:
           APP_URL: ${{ vars.APP_URL }}
