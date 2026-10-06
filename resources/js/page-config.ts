@@ -3,13 +3,13 @@ import { registerBlogPages } from "@nreljed/blog/pages";
 import { registerCoreTemplates } from "@nreljed/platform/dashboard";
 
 /**
- * Single source of truth for the page resolution map.
- * Imported by the client entry (app.tsx) so the full page registry
- * lives in one place. Core/foundation pages are registered via
- * registerCoreTemplates(); feature modules register their own kits
- * (registerBlogPages) — both spread here. Project theme overrides are
- * declared in pageOverrides and always win.
- */
+Single source of truth for the page resolution map.
+Imported by the client entry (app.tsx) so the full page registry
+lives in one place. Core/foundation pages are registered via
+registerCoreTemplates(); feature modules register their own kits
+(registerBlogPages) — both spread here. Project theme overrides are
+declared in pageOverrides and always win.
+*/
 export const pageConfig: FoundationAppConfig = {
   basePages: {
     ...registerCoreTemplates(),
