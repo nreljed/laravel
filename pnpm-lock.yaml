@@ -226,13 +226,13 @@ importers:
         version: 5.23.5(eslint@10.12.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -351,7 +351,7 @@ importers:
         specifier: ^0.27.20
         version: 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@geoman-io/leaflet-geoman-free':
-        specifier: ^2.20.0
+        specifier: ^2.20.2
         version: 2.20.2(leaflet@1.9.4)
       '@lexical/code':
         specifier: ^0.49.0
@@ -411,11 +411,11 @@ importers:
         specifier: ^0.3.1
         version: 0.3.1(@types/react@19.3.0)(react@19.3.0)
       '@stripe/react-stripe-js':
-        specifier: ^6.9.0
-        version: 6.10.0(@stripe/stripe-js@9.16.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^7.0.0
+        version: 7.0.0(@stripe/stripe-js@10.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@stripe/stripe-js':
-        specifier: ^9.9.0
-        version: 9.16.0
+        specifier: ^10.0.0
+        version: 10.0.0
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -465,10 +465,10 @@ importers:
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
       libphonenumber-js:
-        specifier: ^1.13.13
+        specifier: ^1.13.14
         version: 1.13.14
       lucide-react:
-        specifier: ^1.48.0
+        specifier: ^1.51.0
         version: 1.51.0(@types/react@19.3.0)(react@19.3.0)
       next-themes:
         specifier: ^0.4.6
@@ -477,7 +477,7 @@ importers:
         specifier: ^19.2.8
         version: 19.3.0
       react-day-picker:
-        specifier: ^10.0.1
+        specifier: ^10.0.2
         version: 10.0.2(@types/react@19.3.0)(react@19.3.0)
       react-dom:
         specifier: ^19.2.8
@@ -486,7 +486,7 @@ importers:
         specifier: ^20.1.1
         version: 20.1.2(@types/react@19.3.0)(react@19.3.0)
       react-hook-form:
-        specifier: ^7.87.0
+        specifier: ^7.89.0
         version: 7.89.0(@types/react@19.3.0)(react@19.3.0)
       react-image-crop:
         specifier: ^11.0.10
@@ -507,7 +507,7 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-resizable-panels:
-        specifier: ^4.12.3
+        specifier: ^4.14.2
         version: 4.14.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       recharts:
         specifier: ^3.10.1
@@ -523,7 +523,7 @@ importers:
         version: 4.6.5
     devDependencies:
       '@commitlint/cli':
-        specifier: ^21.2.2
+        specifier: ^21.2.3
         version: 21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.2)(typescript@6.0.3)
       '@commitlint/config-conventional':
         specifier: ^21.2.0
@@ -536,13 +536,13 @@ importers:
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.5)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -568,7 +568,7 @@ importers:
         specifier: ^1.0.13
         version: 1.0.13
       '@types/node':
-        specifier: ^26.5.0
+        specifier: ^26.6.4
         version: 26.6.4
       '@types/react':
         specifier: ^19.2.18
@@ -607,22 +607,22 @@ importers:
         specifier: ^76.0.0
         version: 76.0.0(eslint@10.12.0(jiti@2.7.0))
       globals:
-        specifier: ^17.12.0
+        specifier: ^17.13.0
         version: 17.13.0
       husky:
         specifier: ^9.1.7
         version: 9.1.7
       jsdom:
-        specifier: ^30.0.1
+        specifier: ^30.1.1
         version: 30.1.1
       laravel-vite-plugin:
         specifier: ^3.2
         version: 3.2.0(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       lint-staged:
-        specifier: ^17.5.0
+        specifier: ^17.6.0
         version: 17.6.0
       prettier:
-        specifier: ^3.9.6
+        specifier: ^3.9.9
         version: 3.9.9
       semver:
         specifier: ^7.7.0
@@ -781,7 +781,7 @@ importers:
         specifier: ^1.13.14
         version: 1.13.14
       lucide-react:
-        specifier: ^1.48.0
+        specifier: ^1.51.0
         version: 1.51.0(@types/react@19.3.0)(react@19.3.0)
       next-themes:
         specifier: ^0.4.6
@@ -814,7 +814,7 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-resizable-panels:
-        specifier: ^4.13.3
+        specifier: ^4.14.2
         version: 4.14.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       recharts:
         specifier: ^3.10.1
@@ -845,17 +845,17 @@ importers:
         specifier: ^1.11.1
         version: 1.11.3
       '@eslint-react/eslint-plugin':
-        specifier: ^5.23.3
+        specifier: ^5.23.5
         version: 5.23.5(eslint@10.12.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/vite':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -899,7 +899,7 @@ importers:
         specifier: ^0.28.2
         version: 0.28.2
       eslint:
-        specifier: ^10.11.0
+        specifier: ^10.12.0
         version: 10.12.0(jiti@2.7.0)
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -914,8 +914,8 @@ importers:
         specifier: ^7.1.1
         version: 7.1.1(eslint@10.12.0(jiti@2.7.0))
       eslint-plugin-unicorn:
-        specifier: ^76.0.0
-        version: 76.0.0(eslint@10.12.0(jiti@2.7.0))
+        specifier: ^77.0.0
+        version: 77.0.0(eslint@10.12.0(jiti@2.7.0))
       globals:
         specifier: ^17.13.0
         version: 17.13.0
@@ -972,10 +972,10 @@ importers:
         version: 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -1054,10 +1054,10 @@ importers:
     dependencies:
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1118,10 +1118,10 @@ importers:
         version: 2.20.1(leaflet@1.9.4)
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -1305,10 +1305,10 @@ importers:
     dependencies:
       '@inertiajs/core':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))
+        version: 3.8.0(axios@1.20.0)
       '@inertiajs/react':
         specifier: 3.8.0
-        version: 3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table':
         specifier: ^9.2.3
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1950,6 +1950,10 @@ packages:
 
   '@eslint/css-tree@4.1.0':
     resolution: {integrity: sha512-cg0ohyrAG3swyGqt8t1K/OK97DqBw/ftDvlvyY1fmEst5B40UOmsimwLENq74z2dyw5CDM+3zJIW+CV2nFNDdA==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@eslint/css-tree@4.1.1':
+    resolution: {integrity: sha512-A+s89eP+yDAPkKjnIOfjlkGifg5J7GPn01nWx14UjBVWktfkxOU4975F9ZZ13xNxkGiblNcBaAqgKhnQrW6SWA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
   '@eslint/object-schema@3.0.5':
@@ -3447,6 +3451,11 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
+  browserslist@4.29.3:
+    resolution: {integrity: sha512-1R4kiYKXGViqEN0CnoDrXc1StD9niAwu+j2dukWzrD4bJgsD4lDmEp0CRbc6E/vYJIfTHwPmwyaKtVSudICdPA==}
+    engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
+    hasBin: true
+
   builtin-modules@5.3.0:
     resolution: {integrity: sha512-hMQUl2bUFG339QygPM97E+mc8OY1IAchORZxm4a/frcYwKzozMzRVDBwHW0NjOqGElLm2O37AVQE8ikxlZHrMQ==}
     engines: {node: '>=18.20'}
@@ -3987,6 +3996,12 @@ packages:
 
   eslint-plugin-unicorn@76.0.0:
     resolution: {integrity: sha512-3ywJrCMHKYhcBP5yFzGaOOX3dY7+iR3hvpuoS/0EnhRFgVWLejly+t4fOdJvWQxJdHZl1C+QBW7hybXPDld4Pw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      eslint: '>=10.4'
+
+  eslint-plugin-unicorn@77.0.0:
+    resolution: {integrity: sha512-aayznMCKTXlPAsoyUjRok862sz3BJAfxpQX/t79AT/uVQTmWsCx3FXfXo+9hfhL8aR2mMZQYyXoDZo3/ly6lJw==}
     engines: {node: '>=22'}
     peerDependencies:
       eslint: '>=10.4'
@@ -4829,6 +4844,9 @@ packages:
   mdn-data@2.34.0:
     resolution: {integrity: sha512-OgIlLv0NxJKVW4GTSAoEgpRGd4F2XCqGinK0MsMlBCCS/Zcm2/LsbercNWNA7PeMMcjl75NnI97eqyo7zkdxWA==}
 
+  mdn-data@2.35.0:
+    resolution: {integrity: sha512-k+1+dEIm2z/BEfdvYzT/fIyAGeDBo/1AJNJI4ilFXJRYoxP/3Ds+GP8shAOIq8jYXY9N5nGB3Ag104NsagmLAA==}
+
   media-typer@1.1.1:
     resolution: {integrity: sha512-yz3xRaG20c6/BOzvYoDaGtPmGscs7YivItZEEqe6GbwNfHuxu9YNmvnEkMzKldAGY4/80pRcQRZSEnhquk9XuQ==}
     engines: {node: '>= 0.8'}
@@ -5386,6 +5404,10 @@ packages:
 
   regjsparser@0.13.2:
     resolution: {integrity: sha512-NgRBy2Nx/bE+9F27nVHnqcN5HjyLmecqsqx2PJHu3/IEtADD4WuxuXIVExD5PoSDFVrl78dOonfcOe5O+5nbzQ==}
+    hasBin: true
+
+  regjsparser@0.13.4:
+    resolution: {integrity: sha512-EWV80YgFaVgFrjGCAsV7oybp4GOxbls5RzBg8OB0nKEVXsBJR1JlV8Di1JhCROg3MzTfe1RI8yitIm1eOs68iA==}
     hasBin: true
 
   require-from-string@2.0.2:
@@ -6694,6 +6716,11 @@ snapshots:
       mdn-data: 2.34.0
       source-map-js: 1.2.1
 
+  '@eslint/css-tree@4.1.1':
+    dependencies:
+      mdn-data: 2.35.0
+      source-map-js: 1.2.1
+
   '@eslint/object-schema@3.0.5': {}
 
   '@eslint/plugin-kit@0.7.3':
@@ -6778,27 +6805,27 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inertiajs/core@3.8.0(axios@1.20.0(debug@4.4.3))':
+  '@inertiajs/core@3.8.0(axios@1.20.0)':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       es-toolkit: 1.52.0
-      laravel-precognition: 2.1.0(axios@1.20.0(debug@4.4.3))
+      laravel-precognition: 2.1.0(axios@1.20.0)
     optionalDependencies:
       axios: 1.20.0(debug@4.4.3)
 
-  '@inertiajs/react@3.8.0(axios@1.20.0(debug@4.4.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@inertiajs/react@3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@inertiajs/core': 3.8.0(axios@1.20.0(debug@4.4.3))
+      '@inertiajs/core': 3.8.0(axios@1.20.0)
       es-toolkit: 1.52.0
-      laravel-precognition: 2.1.0(axios@1.20.0(debug@4.4.3))
+      laravel-precognition: 2.1.0(axios@1.20.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
     transitivePeerDependencies:
       - axios
 
-  '@inertiajs/vite@3.8.0(axios@1.20.0(debug@4.4.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
+  '@inertiajs/vite@3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
-      '@inertiajs/core': 3.8.0(axios@1.20.0(debug@4.4.3))
+      '@inertiajs/core': 3.8.0(axios@1.20.0)
       tinyglobby: 0.2.17
       vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
     transitivePeerDependencies:
@@ -8142,6 +8169,14 @@ snapshots:
       node-releases: 2.0.57
       update-browserslist-db: 1.3.3(browserslist@4.28.9)
 
+  browserslist@4.29.3:
+    dependencies:
+      baseline-browser-mapping: 2.11.26
+      caniuse-lite: 1.0.30001814
+      electron-to-chromium: 1.5.443
+      node-releases: 2.0.57
+      update-browserslist-db: 1.3.3(browserslist@4.29.3)
+
   builtin-modules@5.3.0: {}
 
   bundle-name@4.1.0:
@@ -8694,6 +8729,30 @@ snapshots:
       pluralize: 8.0.0
       quote-js-string: 0.1.0
       regjsparser: 0.13.2
+      reserved-identifiers: 1.2.0
+      semver: 7.8.5
+      strip-indent: 4.1.1
+      yaml: 2.9.1
+
+  eslint-plugin-unicorn@77.0.0(eslint@10.12.0(jiti@2.7.0)):
+    dependencies:
+      '@eslint-community/eslint-utils': 4.10.1(eslint@10.12.0(jiti@2.7.0))
+      '@eslint/css-tree': 4.1.1
+      browserslist: 4.29.3
+      change-case: 5.4.4
+      ci-info: 4.4.0
+      core-js-compat: 3.50.0
+      detect-indent: 7.0.2
+      entities: 8.1.0
+      eslint: 10.12.0(jiti@2.7.0)
+      find-up-simple: 1.0.1
+      globals: 17.13.0
+      identifier-regex: 1.1.0
+      indent-string: 5.0.0
+      is-builtin-module: 5.0.0
+      pluralize: 8.0.0
+      quote-js-string: 0.1.0
+      regjsparser: 0.13.4
       reserved-identifiers: 1.2.0
       semver: 7.8.5
       strip-indent: 4.1.1
@@ -9258,7 +9317,7 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  laravel-precognition@2.1.0(axios@1.20.0(debug@4.4.3)):
+  laravel-precognition@2.1.0(axios@1.20.0):
     dependencies:
       es-toolkit: 1.52.0
     optionalDependencies:
@@ -9473,6 +9532,8 @@ snapshots:
   mdn-data@2.27.1: {}
 
   mdn-data@2.34.0: {}
+
+  mdn-data@2.35.0: {}
 
   media-typer@1.1.1: {}
 
@@ -9983,6 +10044,10 @@ snapshots:
     dependencies:
       jsesc: 3.1.0
 
+  regjsparser@0.13.4:
+    dependencies:
+      jsesc: 3.1.0
+
   require-from-string@2.0.2: {}
 
   reselect@5.2.0: {}
@@ -10441,6 +10506,12 @@ snapshots:
   update-browserslist-db@1.3.3(browserslist@4.28.9):
     dependencies:
       browserslist: 4.28.9
+      escalade: 3.2.0
+      picocolors: 1.1.1
+
+  update-browserslist-db@1.3.3(browserslist@4.29.3):
+    dependencies:
+      browserslist: 4.29.3
       escalade: 3.2.0
       picocolors: 1.1.1
 

@@ -6,14 +6,14 @@ import { registerBlogPages } from "@nreljed/blog/pages";
 import { registerShopPages } from "@nreljed/shop-module/pages";
 
 /**
- * Mirrors `resources/js/page-config.ts`: every feature module's page kit is
- * spread exactly once, host-owned pages under ./Pages/** are registered via a
- * localPages glob (like the platform's own kits), and the host's marketing
- * overrides are applied last. This locks the contract that every Inertia page
- * key a controller renders resolves to a real component — regressions (like the
- * posts kit never being wired) surface here instead of as runtime "Page not
- * found" errors.
- */
+Mirrors `resources/js/page-config.ts`: every feature module's page kit is
+spread exactly once, host-owned pages under ./Pages/** are registered via a
+localPages glob (like the platform's own kits), and the host's marketing
+overrides are applied last. This locks the contract that every Inertia page
+key a controller renders resolves to a real component — regressions (like the
+posts kit never being wired) surface here instead of as runtime "Page not
+found" errors.
+*/
 const coreKit = registerCoreTemplates();
 const blogKit = registerBlogPages();
 const shopKit = registerShopPages();
