@@ -37,6 +37,11 @@ updates:
       # the check-core-deps parity gate. Platform controls the cn version.
       - dependency-name: "cn"
         versions: [">=0.3.0"]
+      # Core + blog declare this as a peer with range ^2.0.1 || ^3.0.0. App-
+      # level 4.x bumps fail the check:core-deps parity gate until platform and
+      # blog widen the peer range and release.
+      - dependency-name: "@atlaskit/pragmatic-drag-and-drop"
+        versions: [">=4.0.0"]
     groups:
       minor-and-patch:
         applies-to: version-updates
