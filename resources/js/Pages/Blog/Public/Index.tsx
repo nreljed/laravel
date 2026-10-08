@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
-import { Badge } from "@nreljed/platform/Components/ui/badge";
-import PaginationLinks from "@nreljed/platform/Components/shared/pagination-links";
+import PublicLayout from "../../../Layouts/PublicLayout";
+import { SitePill } from "../../../Components/site/SitePill";
+import { SitePagination } from "../../../Components/site/SitePagination";
 
 interface Author {
   id: number;
@@ -80,12 +80,15 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
         {posts.next_page_url && <link rel="next" href={posts.next_page_url} />}
       </Head>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-site px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          <p className="text-sm font-medium tracking-[0.2em] text-site-secondary uppercase">
+            From the blog
+          </p>
+          <h1 className="mt-4 font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
             {category ? category.name : tag ? tag.name : "Blog"}
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-site-ink-soft">
             {category
               ? category.meta_description || "Articles in this category."
               : tag
@@ -96,30 +99,33 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
 
         {(category || tag) && (
           <div className="mb-8 text-center">
-            <Badge variant="secondary" className="px-4 py-1.5 text-sm">
-              {category ? `Category: ${category.name}` : `Tag: ${tag!.name}`}
-              <Link
-                href={route("blog.index")}
-                className="ml-1 text-muted-foreground hover:text-foreground"
-              >
-                &times;
-              </Link>
-            </Badge>
+            <span className="inline-flex items-center gap-2">
+              <SitePill>
+                {category ? `Category: ${category.name}` : `Tag: ${tag!.name}`}
+                <Link
+                  href={route("blog.index")}
+                  className="ml-1 text-site-ink-faint hover:text-site-ink"
+                  aria-label="Clear filter"
+                >
+                  &times;
+                </Link>
+              </SitePill>
+            </span>
           </div>
         )}
 
         {posts.data.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-lg text-muted-foreground">No posts published yet.</p>
+            <p className="text-lg text-site-ink-soft">No posts published yet.</p>
           </div>
         ) : (
           <>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {posts.data.map((post) => (
                 <Link
                   key={post.id}
                   href={route("blog.show", post.slug)}
-                  className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-accent/50"
+                  className="group flex flex-col overflow-hidden rounded-site-card bg-site-surface transition-colors hover:bg-site-alt-1/40"
                 >
                   {post.featured_image && (
                     <div className="aspect-video overflow-hidden">
@@ -136,19 +142,19 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
                   )}
                   <div className="flex flex-1 flex-col p-6">
                     {post.category && (
-                      <span className="mb-2 text-xs font-medium uppercase tracking-wider text-primary">
+                      <span className="mb-2 text-xs font-medium uppercase tracking-wider text-site-secondary">
                         {post.category.name}
                       </span>
                     )}
-                    <h2 className="mb-2 text-xl font-semibold text-foreground group-hover:text-primary">
+                    <h2 className="mb-2 font-site-display text-xl font-semibold text-site-ink transition-colors group-hover:text-site-secondary">
                       {post.title}
                     </h2>
                     {post.excerpt && (
-                      <p className="mb-4 flex-1 text-sm text-muted-foreground line-clamp-3">
+                      <p className="mb-4 flex-1 text-sm text-site-ink-soft line-clamp-3">
                         {post.excerpt}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-site-ink-faint">
                       <span>{post.user.name}</span>
                       {post.published_at && (
                         <>
@@ -163,8 +169,8 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
             </div>
 
             {posts.links.length > 3 && (
-              <div className="mt-12">
-                <PaginationLinks links={posts.links} />
+              <div className="mt-14">
+                <SitePagination links={posts.links} />
               </div>
             )}
           </>

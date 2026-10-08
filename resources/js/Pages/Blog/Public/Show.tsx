@@ -1,8 +1,8 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useEffect } from "react";
 import { Pencil } from "lucide-react";
-import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
-import { Badge } from "@nreljed/platform/Components/ui/badge";
+import PublicLayout from "../../../Layouts/PublicLayout";
+import { SitePill } from "../../../Components/site/SitePill";
 import ProseContent from "@nreljed/platform/Components/blog/ProseContent";
 import { useAuth } from "@nreljed/platform/hooks/use-auth";
 import { highlightAllCodeBlocks } from "@nreljed/platform/lib/shiki-highlight";
@@ -100,12 +100,12 @@ export default function BlogShow({ post }: BlogShowProps) {
         />
       </Head>
 
-      <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+      <article className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <header className="relative mb-8">
           {canEdit && (
             <Link
               href={route("dashboard.posts.edit", post.id)}
-              className="absolute right-0 top-0 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="absolute right-0 top-0 inline-flex items-center gap-1.5 rounded-site-pill border border-site-border bg-site-surface px-2.5 py-1 text-xs font-medium text-site-ink-soft transition-colors hover:border-site-ink hover:text-site-ink"
             >
               <Pencil className="h-3 w-3" />
               Edit
@@ -114,15 +114,15 @@ export default function BlogShow({ post }: BlogShowProps) {
           {post.category && (
             <Link
               href={route("blog.index", { category: post.category.slug })}
-              className="mb-4 inline-block text-sm font-medium uppercase tracking-wider text-primary hover:text-primary/80"
+              className="mb-4 inline-block text-sm font-medium uppercase tracking-wider text-site-secondary hover:text-site-ink"
             >
               {post.category.name}
             </Link>
           )}
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h1 className="font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
             {post.title}
           </h1>
-          <div className="mt-4 flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="mt-4 flex items-center gap-3 text-sm text-site-ink-faint">
             <span>{post.user.name}</span>
             {post.published_at && (
               <>
@@ -140,18 +140,16 @@ export default function BlogShow({ post }: BlogShowProps) {
           {post.tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
-                <Link key={tag.id} href={route("blog.index", { tag: tag.slug })}>
-                  <Badge variant="secondary" className="text-xs">
-                    {tag.name}
-                  </Badge>
-                </Link>
+                <SitePill key={tag.id} href={route("blog.index", { tag: tag.slug })}>
+                  {tag.name}
+                </SitePill>
               ))}
             </div>
           )}
         </header>
 
         {post.featured_image && (
-          <div className="mb-8 overflow-hidden rounded-lg">
+          <div className="mb-8 overflow-hidden rounded-site-card">
             <img
               src={post.featured_image}
               srcSet={post.featured_image_srcset || undefined}
@@ -165,15 +163,15 @@ export default function BlogShow({ post }: BlogShowProps) {
         )}
 
         {post.excerpt && (
-          <p className="mb-8 text-lg leading-relaxed text-muted-foreground">{post.excerpt}</p>
+          <p className="mb-8 text-lg leading-relaxed text-site-ink-soft">{post.excerpt}</p>
         )}
 
         {post.content && <ProseContent html={post.content} />}
 
-        <div className="mt-12 border-t border-border pt-8">
+        <div className="mt-12 border-t border-site-border pt-8">
           <Link
             href={route("blog.index")}
-            className="text-sm font-medium text-primary hover:text-primary/80"
+            className="text-sm font-medium text-site-secondary hover:text-site-ink"
           >
             &larr; Back to all posts
           </Link>

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // ═══════════════════════════════════════════════════
 // PROJECT ROUTES
@@ -12,3 +13,7 @@ use Illuminate\Support\Facades\Route;
 // routes through their feature service providers.
 //
 // Route::get('/example', fn () => view('example'))->name('example');
+
+Route::get('/style-guide', function () {
+    return Inertia::render('public/styleguide');
+})->name('styleguide');

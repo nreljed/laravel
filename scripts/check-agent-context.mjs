@@ -215,8 +215,9 @@ function frontmatter(rel) {
     const data = {}
     let key = null
     for (const line of block.split("\n")) {
-        if (/^\s/.test(line) || !line.trim()) continue
-        const m = line.match(/^([A-Za-z0-9_.-]+):\s*(.*)$/)
+        const clean = line.replace(/\r$/, "")
+        if (/^\s/.test(clean) || !clean.trim()) continue
+        const m = clean.match(/^([A-Za-z0-9_.-]+):\s*(.*)$/)
         if (!m) continue
         key = m[1]
         let v = m[2].trim()
@@ -696,7 +697,9 @@ check("placeholder-scan", "error", () => {
                 // expressions (${{ vars.RUNNER_CI || 'self-hosted' }}) both
                 // appear in real guidance. Only flag a span that looks like an
                 // unfilled placeholder -- a bare identifier, no PHP, no GH
-                // expression operators.
+                // expression operators. Also accept ornament-only bodies
+                // ({{.}}, {{...}}), which are written to illustrate JSX object
+                // braces (`style={{...}}`) and are not unfilled identifiers.
                 for (const inner of span.matchAll(/\{\{([^}]*)\}\}/g)) {
                     const body = inner[1].trim()
                     if (body === "") continue
@@ -705,6 +708,7 @@ check("placeholder-scan", "error", () => {
                         body.includes("->") ||
                         body.includes("||") ||
                         body.includes("&&") ||
+                        /^[.\u2026]+$/.test(body) ||
                         /\b(json_encode|echo)\b/.test(body) ||
                         /^['"]/.test(body) ||
                         /\b(secrets|vars|github|env|steps|needs|inputs|job|runner|strategy|matrix)\./.test(body) ||
