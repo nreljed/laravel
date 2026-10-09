@@ -134,7 +134,11 @@ export function createFoundationApp(config: FoundationAppConfig = {}): void {
     const pageMap = buildPageMap(config);
 
     createInertiaApp({
-        title: (title) => `${title} - ${appName}`,
+        // SeoHead already composes "<page> — <site title>", so appending the
+        // brand again double-suffixed every public page's document title.
+        // Only add the brand when the incoming title doesn't already carry it.
+        title: (title) =>
+            title && appName && title.includes(appName) ? title : `${title} - ${appName}`,
         resolve: resolvePage(pageMap),
         setup({ el, App, props }) {
             const root = createRoot(el);
