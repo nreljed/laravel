@@ -1,91 +1,111 @@
+import { useRef } from "react";
 import { ArrowRight, Clock, Mail, MapPin, MessageSquareText } from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton } from "../../components/site/PillButton";
+import { PillButton, useReveal } from "../../components/site";
 
 const channels = [
   {
+    n: "01",
     icon: Mail,
     title: "Email us",
-    description: "support@costbreaker360.com",
-    note: "For feature requests, billing, and everything in between.",
-    alt: false,
+    value: "support@costbreaker360.com",
+    note: "Feature requests, billing, and everything in between.",
   },
   {
+    n: "02",
     icon: Clock,
     title: "Fast response",
-    description: "Within 24 hours",
+    value: "Within 24 hours",
     note: "On weekdays. Most questions answered the same day.",
-    alt: true,
   },
   {
+    n: "03",
     icon: MapPin,
     title: "Built anywhere",
-    description: "Remote-first team",
+    value: "Remote-first team",
     note: "Working across time zones to serve you whenever you need us.",
-    alt: false,
   },
 ];
 
 export default function Contact() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useReveal(rootRef, "[data-hero]", { group: true });
+  useReveal(rootRef);
+
   return (
     <PublicLayout
       title="Contact"
-      description="Get in touch with our team to discuss your project — we'd love to hear from you."
+      description="Questions, feedback, or want a hand mapping your spend? Get in touch with the Cost Breaker 360 team \u2014 we answer within 24 hours on weekdays."
     >
-      <section className="mx-auto w-full max-w-site px-4 py-20 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <p className="text-sm font-medium tracking-[0.2em] text-site-secondary uppercase">
-            Contact
-          </p>
-          <h1 className="mt-4 font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
-            Contact Us
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-site-ink-soft">
-            Questions, feedback, or just curious about what we're building? We'd love to hear from
-            you.
-          </p>
-        </div>
-      </section>
-
-      <section className="mx-auto w-full max-w-site px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {channels.map((channel) => (
-            <div
-              key={channel.title}
-              className={`flex flex-col justify-between rounded-site-card p-6 ${
-                channel.alt ? "bg-site-alt-2 text-site-ink" : "bg-site-surface"
-              }`}
-            >
-              <div className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
-                <channel.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-site-display text-lg font-bold tracking-tight">
-                  {channel.title}
-                </h2>
-                <p className="mt-1 text-sm font-medium text-site-ink">{channel.description}</p>
-                <p className="mt-1 text-sm leading-6 text-site-ink-soft">{channel.note}</p>
-              </div>
+      <div ref={rootRef}>
+        {/* ---------- HERO ---------- */}
+        <section className="px-6 pt-16 pb-16 sm:px-10 sm:pt-24">
+          <div className="mx-auto grid max-w-site items-end gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-20">
+            <div>
+              <p
+                data-hero
+                className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
+                Contact
+              </p>
+              <h1 data-hero className="site-h2 mt-6 max-w-[16ch]">
+                Tell us where the money leaks.
+              </h1>
             </div>
-          ))}
-        </div>
-
-        <div className="mt-16 flex flex-col items-center justify-between gap-6 rounded-site-card bg-site-alt-1 p-10 text-center sm:text-left lg:flex-row">
-          <div>
-            <h2 className="flex items-center justify-center gap-2 font-site-display text-2xl font-bold tracking-tight text-site-ink sm:justify-start">
-              <MessageSquareText className="h-6 w-6" />
-              Prefer to start on your own?
-            </h2>
-            <p className="mt-2 text-site-ink-soft">
-              Create a free account and explore the dashboard before reaching out.
+            <p data-hero className="site-lead max-w-[42ch]">
+              Questions, feedback, or just curious about what we&apos;re building? We&apos;d love to
+              hear from you.
             </p>
           </div>
-          <PillButton href={route("register")}>
-            Get Started Free
-            <ArrowRight className="h-4 w-4" />
-          </PillButton>
-        </div>
-      </section>
+        </section>
+
+        {/* ---------- CHANNELS ---------- */}
+        <section className="px-6 pb-24 sm:px-10">
+          <div className="mx-auto max-w-site">
+            <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
+              Ways to reach us
+            </p>
+            <div className="mt-10 grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-3">
+              {channels.map((channel) => (
+                <div key={channel.n} data-reveal className="bg-site-surface p-8">
+                  <div className="flex items-center justify-between">
+                    <span className="font-site-display text-sm font-bold text-site-accent">
+                      {channel.n}
+                    </span>
+                    <channel.icon className="h-5 w-5 text-site-ink-faint" />
+                  </div>
+                  <h2 className="site-h5 mt-6">{channel.title}</h2>
+                  <p className="mt-2 text-sm font-semibold text-site-ink">{channel.value}</p>
+                  <p className="mt-2 leading-relaxed text-site-ink-soft">{channel.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- CLOSING ---------- */}
+        <section className="px-6 pb-24 sm:px-10">
+          <div
+            data-reveal
+            className="mx-auto flex max-w-site flex-col items-start justify-between gap-6 rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14 lg:flex-row lg:items-center"
+          >
+            <div>
+              <h2 className="site-h3 flex items-center gap-3">
+                <MessageSquareText className="h-7 w-7 text-site-accent" />
+                Prefer to start on your own?
+              </h2>
+              <p className="site-lead mt-4 max-w-[46ch]">
+                Create a free account and explore the dashboard before reaching out.
+              </p>
+            </div>
+            <PillButton href={route("register")}>
+              Start free
+              <ArrowRight className="h-4 w-4" />
+            </PillButton>
+          </div>
+        </section>
+      </div>
     </PublicLayout>
   );
 }

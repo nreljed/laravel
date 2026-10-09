@@ -1,116 +1,130 @@
+import { useRef } from "react";
 import {
   ArrowRight,
   BarChart3,
   BellRing,
   CircleDollarSign,
-  Database,
   ShieldCheck,
+  Sparkles,
+  Wallet,
 } from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton } from "../../components/site/PillButton";
+import { PillButton, useReveal } from "../../components/site";
 
 const services = [
   {
+    n: "01",
     icon: CircleDollarSign,
     title: "Expense tracking",
-    description:
-      "Capture costs from every team and project in one place, with categories that make sense to your business.",
-    alt: false,
+    body: "Capture costs from every team and project in one place, with categories that make sense to your business.",
   },
   {
+    n: "02",
     icon: BarChart3,
     title: "Cost analytics",
-    description:
-      "Interactive dashboards and reports that surface trends, outliers, and opportunities the moment they appear.",
-    alt: true,
+    body: "Interactive dashboards and reports that surface trends, outliers and opportunities the moment they appear.",
   },
   {
+    n: "03",
     icon: BellRing,
     title: "Budget alerts",
-    description:
-      "Set thresholds per department or project and get notified before a line item slips past your budget.",
-    alt: false,
+    body: "Set thresholds per department or project and get told before a line item slips past your budget.",
   },
   {
+    n: "04",
     icon: ShieldCheck,
     title: "Security & access control",
-    description:
-      "Role-based permissions, audit logs, and session control so the right people see the right numbers.",
-    alt: true,
+    body: "Role-based permissions, audit logs and session control so the right people see the right numbers.",
   },
   {
-    icon: Database,
+    n: "05",
+    icon: Sparkles,
     title: "AI-assisted insights",
-    description:
-      "Bring your own AI key and get plain-language summaries of your spending — without sharing your data.",
-    alt: false,
+    body: "Bring your own AI key and get plain-language summaries of your spending \u2014 without sharing your data.",
   },
   {
-    icon: CircleDollarSign,
+    n: "06",
+    icon: Wallet,
     title: "Zero-cost platform",
-    description:
-      "No per-seat pricing, no markup on analytics. The tool pays for itself from the first euro it saves.",
-    alt: true,
+    body: "No per-seat pricing, no markup on analytics. The tool pays for itself from the first euro it saves.",
   },
 ];
 
 export default function Services() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useReveal(rootRef, "[data-hero]", { group: true });
+  useReveal(rootRef);
+
   return (
     <PublicLayout
       title="Services"
-      description="Cost-effective, high-performance software solutions tailored to your needs — from tracking to optimisation."
+      description="Everything you need to understand, control and reduce spending \u2014 tracking, analytics, budget alerts, access control and bring-your-own-key AI in one zero-cost platform."
     >
-      <section className="mx-auto w-full max-w-site px-4 py-20 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <p className="text-sm font-medium tracking-[0.2em] text-site-secondary uppercase">
-            Our services
-          </p>
-          <h1 className="mt-4 font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
-            Our Services
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-site-ink-soft">
-            Everything you need to understand, control, and reduce your spending — in one dashboard.
-          </p>
-        </div>
-      </section>
-
-      <section className="mx-auto w-full max-w-site px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <div
-              key={service.title}
-              className={`flex flex-col justify-between rounded-site-card p-6 ${
-                service.alt ? "bg-site-alt-2 text-site-ink" : "bg-site-surface"
-              }`}
-            >
-              <div className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
-                <service.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-site-display text-lg font-bold tracking-tight">
-                  {service.title}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-site-ink-soft">{service.description}</p>
-              </div>
+      <div ref={rootRef}>
+        {/* ---------- HERO ---------- */}
+        <section className="px-6 pt-16 pb-16 sm:px-10 sm:pt-24">
+          <div className="mx-auto grid max-w-site items-end gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-20">
+            <div>
+              <p
+                data-hero
+                className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
+                Services
+              </p>
+              <h1 data-hero className="site-h2 mt-6 max-w-[16ch]">
+                Everything you need to break every cost.
+              </h1>
             </div>
-          ))}
-        </div>
-
-        <div className="mt-16 flex flex-col items-center justify-between gap-6 rounded-site-card bg-site-alt-1 p-10 text-center sm:text-left lg:flex-row">
-          <div>
-            <h2 className="font-site-display text-2xl font-bold tracking-tight text-site-ink">
-              Not sure where your money goes?
-            </h2>
-            <p className="mt-2 text-site-ink-soft">
-              Start tracking today — it takes less than a minute to set up.
+            <p data-hero className="site-lead max-w-[42ch]">
+              Understand, control and reduce spend from one ledger \u2014 no per-seat pricing and no
+              markup on the analytics that do the work.
             </p>
           </div>
-          <PillButton href={route("register")}>
-            Get Started Free
-            <ArrowRight className="h-4 w-4" />
-          </PillButton>
-        </div>
-      </section>
+        </section>
+
+        {/* ---------- SERVICE GRID ---------- */}
+        <section className="px-6 pb-24 sm:px-10">
+          <div className="mx-auto max-w-site">
+            <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
+              What&apos;s included
+            </p>
+            <div className="mt-10 grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2 lg:grid-cols-3">
+              {services.map((service) => (
+                <div key={service.n} data-reveal className="bg-site-surface p-8">
+                  <div className="flex items-center justify-between">
+                    <span className="font-site-display text-sm font-bold text-site-accent">
+                      {service.n}
+                    </span>
+                    <service.icon className="h-5 w-5 text-site-ink-faint" />
+                  </div>
+                  <h2 className="site-h5 mt-6">{service.title}</h2>
+                  <p className="mt-3 leading-relaxed text-site-ink-soft">{service.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- CLOSING ---------- */}
+        <section className="px-6 pb-24 sm:px-10">
+          <div
+            data-reveal
+            className="mx-auto flex max-w-site flex-col items-start justify-between gap-6 rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14 lg:flex-row lg:items-center"
+          >
+            <div>
+              <h2 className="site-h3 max-w-[18ch]">Not sure where your money goes?</h2>
+              <p className="site-lead mt-4 max-w-[46ch]">
+                Start tracking today \u2014 it takes less than a minute to set up.
+              </p>
+            </div>
+            <PillButton href={route("register")}>
+              Start free
+              <ArrowRight className="h-4 w-4" />
+            </PillButton>
+          </div>
+        </section>
+      </div>
     </PublicLayout>
   );
 }

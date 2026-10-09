@@ -214,6 +214,87 @@ export function useScaleIn(
   );
 }
 
+export interface RevealConfig {
+  /**
+  Rise distance in px (default 40 scroll-reveal, 24 group intro).
+  */
+  y?: number;
+  /**
+  Tween duration in seconds (default 0.8).
+  */
+  duration?: number;
+  /**
+  ScrollTrigger `start` for per-element reveals (default "top 85%").
+  */
+  start?: string;
+  /**
+  Stagger between items — only used when `group` is true (default 0.08).
+  */
+  stagger?: number;
+  /**
+  Intro delay in seconds (group mode).
+  */
+  delay?: number;
+  /**
+  Reveal the whole matched set once on mount with a stagger (hero intros),
+  instead of per-element on scroll.
+  */
+  group?: boolean;
+}
+
+// Generic site reveal: mark anything `data-reveal` and it rises + fades in on
+// scroll (once). Pass `group: true` to instead intro a matched set together on
+// mount — the hero pattern (eyebrow + heading + lead). Reduced-motion users get
+// static, fully-visible content because the whole thing is gated by
+// gsap.matchMedia.
+export function useReveal(
+  scope: RefObject<HTMLElement | null>,
+  selector = "[data-reveal]",
+  config: RevealConfig = {},
+) {
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const root = scope.current;
+        if (!root) return;
+        const targets = gsap.utils.toArray<HTMLElement>(selector, root);
+        if (targets.length === 0) return;
+
+        if (config.group) {
+          gsap.from(targets, {
+            y: config.y ?? 24,
+            autoAlpha: 0,
+            duration: config.duration ?? 0.8,
+            stagger: config.stagger ?? 0.08,
+            delay: config.delay ?? 0,
+            ease: "power3.out",
+          });
+          return;
+        }
+
+        for (const target of targets) {
+          gsap.from(target, {
+            y: config.y ?? 40,
+            autoAlpha: 0,
+            duration: config.duration ?? 0.8,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: target,
+              start: config.start ?? "top 85%",
+              once: true,
+            },
+          });
+        }
+      });
+
+      return () => mm.revert();
+    },
+    { scope },
+  );
+}
+
 // canvasly `parallax`: the image inside an overflow-hidden wrap drifts ±6%
 // relative to the scroll. Mirror of the inline recipe Home.tsx uses for its
 // work grid.
