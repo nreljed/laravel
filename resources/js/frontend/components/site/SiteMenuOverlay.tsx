@@ -2,6 +2,7 @@ import { Link } from "@inertiajs/react";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { cn } from "cn";
+import { useBodyScrollLock } from "./motion/use-body-scroll-lock";
 
 export interface SiteMenuLink {
   number: string;
@@ -19,6 +20,10 @@ interface SiteMenuOverlayProps {
 }
 
 export function SiteMenuOverlay({ open, onClose, links, brand, logo, note }: SiteMenuOverlayProps) {
+  // Freeze the page while the menu is open — the body can't scroll, but the
+  // menu content itself stays scrollable (link list can overflow short
+  // viewports). Stopping Lenis is what actually locks the page.
+  useBodyScrollLock(open);
   const rootRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -53,26 +58,6 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo, note }: Sit
     };
   }, [open]);
 
-  // Lock page scroll while the menu is open — only the menu content
-  // itself scrolls (the link list can overflow short viewports).
-  useEffect(() => {
-    if (!open) return;
-    const html = document.documentElement;
-    const body = document.body;
-    const { overflow: prevHtml, overflowY: prevHtmlY } = html.style;
-    const { overflow: prevBody, overflowY: prevBodyY } = body.style;
-    html.style.overflow = "hidden";
-    html.style.overflowY = "hidden";
-    body.style.overflow = "hidden";
-    body.style.overflowY = "hidden";
-    return () => {
-      html.style.overflow = prevHtml;
-      html.style.overflowY = prevHtmlY;
-      body.style.overflow = prevBody;
-      body.style.overflowY = prevBodyY;
-    };
-  }, [open]);
-
   return (
     <div
       ref={rootRef}
@@ -84,7 +69,8 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo, note }: Sit
     >
       <div
         ref={contentRef}
-        className="flex h-full w-full flex-col overflow-y-auto overscroll-contain px-6 py-[8vh] opacity-0 sm:px-10"
+        data-lenis-prevent
+        className="flex h-full w-full flex-col overflow-y-auto overscroll-contain px-6 pt-28 pb-[8vh] opacity-0 sm:px-10"
       >
         <nav className="mx-auto my-auto flex w-full max-w-site flex-col">
           {links.map((link) => (

@@ -20,11 +20,12 @@ const menuLinks: SiteMenuLink[] = navLinks.map((link, index) => ({
   href: link.href,
 }));
 
-// Shared public-site header. Fixed-height (h-20) bar that is transparent at
-// the top of the page and turns to a glass surface once scrolled. Carries the
-// three global controls — dark-mode toggle, user control (→ dashboard/login),
-// and the Menu pill that opens the full-screen nav overlay — so every public
-// page shares one chrome without forking.
+// Shared public-site header. Fixed-height (h-20) bar pinned to the viewport so
+// it is always visible; transparent at the top of the page and a glass surface
+// once scrolled (or while the menu overlay is open, so it never disappears over
+// the dark menu). Carries the three global controls — dark-mode toggle, user
+// control (→ dashboard/login), and the Menu pill that opens the full-screen nav
+// overlay — so every public page shares one chrome without forking.
 export function SiteHeader() {
   const { props } = usePage();
   const brand = (props.brand as { name?: string; logo?: string }) || {};
@@ -43,8 +44,8 @@ export function SiteHeader() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-40 h-20 border-b transition-colors duration-300",
-          scrolled
+          "fixed inset-x-0 top-0 z-40 h-20 border-b transition-colors duration-300",
+          scrolled || menuOpen
             ? "border-site-border bg-site-bg/80 backdrop-blur"
             : "border-transparent bg-transparent",
         )}
@@ -77,6 +78,9 @@ export function SiteHeader() {
           </div>
         </div>
       </header>
+
+      {/* Offsets the fixed header inside the flex column flow. */}
+      <div aria-hidden="true" className="h-20 shrink-0" />
 
       <SiteMenuOverlay
         open={menuOpen}
