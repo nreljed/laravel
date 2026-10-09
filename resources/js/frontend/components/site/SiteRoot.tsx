@@ -4,7 +4,8 @@ import { SmoothScroll } from "./motion/SmoothScroll";
 interface SiteRootProps {
   children: ReactNode;
   // Theme slug resolved by the `site-*` token layer (resources/css/themes/).
-  // Defaults to canvasly so existing public pages are unchanged.
+  // Defaults to cb360 (the Cost Breaker 360 "Ledger" identity); the style
+  // guide can swap themes live.
   theme?: string;
 }
 
@@ -13,7 +14,7 @@ interface SiteRootProps {
 // `data-site-theme="<theme>"` so every `site-*` utility resolves against the
 // active palette for the whole sub-tree. The Dashboard stays on core's
 // shadcn tokens — this shell only governs public pages.
-export function SiteRoot({ children, theme = "canvasly" }: SiteRootProps) {
+export function SiteRoot({ children, theme = "cb360" }: SiteRootProps) {
   useEffect(() => {
     const id = "instrument-sans-font-stylesheet";
     if (document.querySelector(`#${id}`)) return;

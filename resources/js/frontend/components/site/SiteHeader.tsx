@@ -28,7 +28,7 @@ const menuLinks: SiteMenuLink[] = navLinks.map((link, index) => ({
 export function SiteHeader() {
   const { props } = usePage();
   const brand = (props.brand as { name?: string; logo?: string }) || {};
-  const appName = brand.name || "";
+  const appName = brand.name || "Cost Breaker 360";
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -84,7 +84,7 @@ export function SiteHeader() {
         links={menuLinks}
         brand={appName}
         logo={brand.logo}
-        note="Let's build something that sticks."
+        note="Break every cost."
       />
     </>
   );

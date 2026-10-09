@@ -11,11 +11,11 @@ const exploreLinks = [
   { label: "Contact", href: "/contact" },
 ];
 
-const socialLinks = [
-  { label: "Instagram", href: "#" },
-  { label: "Twitter", href: "#" },
-  { label: "Behance", href: "#" },
-  { label: "LinkedIn", href: "#" },
+const productLinks = [
+  { label: "Dashboard", href: route("dashboard.index") },
+  { label: "Start free", href: route("register") },
+  { label: "Log in", href: route("login") },
+  { label: "Blog", href: route("blog.index") },
 ];
 
 const legalLinks = [
@@ -31,7 +31,7 @@ const legalLinks = [
 export function SiteFooter() {
   const { props } = usePage();
   const brand = (props.brand as { name?: string }) || {};
-  const appName = brand.name || "";
+  const appName = brand.name || "Cost Breaker 360";
   const year = useMemo(() => new Date().getFullYear(), []);
 
   return (
@@ -46,13 +46,14 @@ export function SiteFooter() {
               {appName}
             </Link>
             <p className="mt-4 text-site-ink-soft">
-              A creative agency building brands with clarity, strategy, and intention.
+              One honest ledger for every team, project and vendor &mdash; so finance and ops can
+              see where the money goes, and cut what it shouldn&apos;t.
             </p>
             <Link
-              href={route("contact")}
+              href={route("register")}
               className="mt-8 inline-flex items-center gap-2 text-sm font-bold tracking-[0.02em]"
             >
-              Start a project
+              Start free
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
@@ -75,20 +76,19 @@ export function SiteFooter() {
             </ul>
           </nav>
 
-          <nav aria-label="Connect">
+          <nav aria-label="Product">
             <h3 className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
-              Connect
+              Product
             </h3>
             <ul className="mt-5 space-y-3 text-sm">
-              {socialLinks.map((link) => (
+              {productLinks.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
-                    className="inline-flex items-center gap-1.5 text-site-ink-soft transition-colors hover:text-site-ink"
+                    className="text-site-ink-soft transition-colors hover:text-site-ink"
                   >
                     {link.label}
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
