@@ -1,0 +1,80 @@
+/* ---------------------------------------------------------------
+   THEME: cb360  ("Ledger")
+   ---------------------------------------------------------------
+   The original Cost Breaker 360 public identity. Warm paper ground,
+   near-black ink, and a single confident signal-green accent — the
+   "break/clear" colour. Calm, trustworthy, instrument-grade; no hype,
+   no gradient tells. Tabular numerals are the numeric voice.
+
+   Scoped under [data-site-theme="cb360"]; SiteRoot applies it to the
+   public sub-tree. Dark mode is stated explicitly (see the
+   :where(html.dark) block) — never inherited from the light values.
+
+   Palette rationale (light):
+     paper  #f4f1ea  warm ground, softer than pure white
+     ink    #191a17  warm near-black (never #000)
+     green  #0e7a4b  signal accent — the single brand colour
+     sand   #e7e1d3  soft panel / callout
+     forest #1f2a24  deep emphasis panel
+   ---------------------------------------------------------------- */
+@layer base {
+  [data-site-theme="cb360"] {
+    /* Surfaces */
+    --site-bg: #f4f1ea;
+    --site-bg-strong: #ffffff;
+    --site-surface: #ffffff;
+
+    /* Text */
+    --site-ink: #191a17;
+    --site-ink-soft: rgba(25, 26, 23, 0.68);
+    --site-ink-faint: rgba(25, 26, 23, 0.46);
+
+    /* Accents */
+    --site-accent: #0e7a4b;
+    --site-accent-ink: #ffffff;
+    --site-secondary: #5b655f;
+
+    /* Panel accents (stat cards, callouts) */
+    --site-alt-1: #e7e1d3;
+    --site-alt-2: #1f2a24;
+
+    /* Tertiary panel tint (was the canvasly "pink"; here a warm clay) */
+    --site-pink: #e9d3ba;
+
+    /* Hairlines + outline/fill text */
+    --site-border: rgba(25, 26, 23, 0.14);
+    --site-outline: #191a17;
+
+    /* Type */
+    --font-body-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-display-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-secondary-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+    /* Radii */
+    --radius-card: 0.625rem;
+    --radius-pill: 9999px;
+  }
+
+  /* Dark variant — warm near-black ground, brighter signal green. */
+  :where(html.dark) [data-site-theme="cb360"] {
+    --site-bg: #141512;
+    --site-bg-strong: #1c1e18;
+    --site-surface: #1c1e18;
+
+    --site-ink: #f2efe6;
+    --site-ink-soft: rgba(242, 239, 230, 0.72);
+    --site-ink-faint: rgba(242, 239, 230, 0.5);
+
+    --site-accent: #35c97f;
+    --site-accent-ink: #10130f;
+    --site-secondary: #9aa69c;
+
+    --site-alt-1: #23261f;
+    --site-alt-2: #2e3a33;
+
+    --site-pink: #3a2e24;
+
+    --site-border: rgba(242, 239, 230, 0.14);
+    --site-outline: #f2efe6;
+  }
+}

@@ -154,9 +154,11 @@ const sections = [
   { id: "pagination", label: "Pagination", number: "09" },
 ];
 
-// Palettes available to the live swapper: the canvasly module
-// (resources/css/themes/canvasly.css) and the base neutral fallback.
+// Palettes available to the live swapper: the cb360 brand module
+// (resources/css/themes/cb360.css), the canvasly module, and the base
+// neutral fallback.
 const themeOptions = [
+  { slug: "cb360", label: "Ledger" },
   { slug: "canvasly", label: "Canvasly" },
   { slug: "neutral", label: "Neutral" },
 ];
@@ -167,7 +169,7 @@ export default function StyleGuide() {
   const [resolved, setResolved] = useState<Record<string, string>>({});
   const [active, setActive] = useState<string>("colors");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [theme, setTheme] = useState<string>("canvasly");
+  const [theme, setTheme] = useState<string>("cb360");
 
   useEffect(() => {
     const root = rootRef.current?.closest("[data-site-theme]");

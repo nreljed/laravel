@@ -29,6 +29,7 @@
 
 /* Swappable theme modules — one palette per file, all scoped under
    [data-site-theme="<slug>"]. */
+@import "./themes/cb360.css";
 @import "./themes/canvasly.css";
 
 @utility animate-marquee {
