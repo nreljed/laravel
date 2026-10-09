@@ -24,6 +24,14 @@ updates:
       time: "08:00"
       timezone: "UTC"
     open-pull-requests-limit: 10
+    ignore:
+      # @typescript-eslint has no TypeScript 7 support yet - peer range is
+      # ">=4.8.4 <6.1.0" on @typescript-eslint/eslint-plugin 8.x (AGENTS.md
+      # "Known Blockers"). Consumers pin typescript ^6.0.3 for the same reason.
+      # This repo's CI runs no ESLint (tsc --noEmit only), so a 7.x bump would
+      # look green here while breaking every consumer's lint pipeline.
+      - dependency-name: "typescript"
+        versions: ["7.x"]
     groups:
       npm-minor-patch:
         applies-to: version-updates
