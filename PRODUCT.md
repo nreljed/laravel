@@ -18,17 +18,24 @@ React 19. Server-rendered SPA, self-hosted.
 
 ## Product purpose (by surface)
 
-| Surface | Job | Success looks like |
-| --- | --- | --- |
-| Public pages (`/`, about, services, contact) | **Persuade** — earn a signup or a login | Visitor understands the value in < 10s and hits a CTA |
-| Dashboard (`/dashboard`) | **Operate** — act on data fast | User finds a number or performs a task in < 3 clicks |
-| Admin (`/dashboard/admin`) | **Operate** — manage users/options safely | Dense tables, clear states, no ambiguity |
-| Blog (`/dashboard/posts`, public blog) | **Read** — long-form comprehension | Comfortable measure, strong headings, calm prose |
+| Surface                                      | Job                                       | Success looks like                                    |
+| -------------------------------------------- | ----------------------------------------- | ----------------------------------------------------- |
+| Public pages (`/`, about, services, contact) | **Persuade** — earn a signup or a login   | Visitor understands the value in < 10s and hits a CTA |
+| Dashboard (`/dashboard`)                     | **Operate** — act on data fast            | User finds a number or performs a task in < 3 clicks  |
+| Admin (`/dashboard/admin`)                   | **Operate** — manage users/options safely | Dense tables, clear states, no ambiguity              |
+| Blog (`/dashboard/posts`, public blog)       | **Read** — long-form comprehension        | Comfortable measure, strong headings, calm prose      |
 
 ## Voice
 
 Direct, confident, slightly sharp. "Break every cost." Not "Unlock your
 potential today". No vague superlatives, no exclamation marks, no emoji in UI.
+
+## Brand
+
+The public identity is **Cost Breaker 360 — "Ledger"**: warm paper, near-black
+ink, one signal-green accent; instrument-grade and calm. The refrain is "Break
+every cost." Palette, tokens and layout language live in DESIGN.md (§ Public
+site system) — that is the visual source of truth; this file stays product/voice.
 
 ## Accessibility & inclusion
 

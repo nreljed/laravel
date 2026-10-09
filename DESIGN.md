@@ -8,14 +8,14 @@ direction; preserve these decisions unless the task is an explicit redesign.
 
 Light mode:
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `--background` | `oklch(1 0 0)` | page bg |
-| `--foreground` | `oklch(0.145 0 0)` | body text (tinted near-black, never #000) |
-| `--primary` | `oklch(0.205 0 0)` | primary buttons (near-black ink) |
-| `--muted-foreground` | `oklch(0.556 0 0)` | secondary text |
-| `--border` | `oklch(0.922 0 0)` | hairline borders |
-| `--destructive` | `oklch(0.577 0.245 27.325)` | destructive actions only |
+| Token                | Value                       | Use                                       |
+| -------------------- | --------------------------- | ----------------------------------------- |
+| `--background`       | `oklch(1 0 0)`              | page bg                                   |
+| `--foreground`       | `oklch(0.145 0 0)`          | body text (tinted near-black, never #000) |
+| `--primary`          | `oklch(0.205 0 0)`          | primary buttons (near-black ink)          |
+| `--muted-foreground` | `oklch(0.556 0 0)`          | secondary text                            |
+| `--border`           | `oklch(0.922 0 0)`          | hairline borders                          |
+| `--destructive`      | `oklch(0.577 0.245 27.325)` | destructive actions only                  |
 
 Accents available (use sparingly, one per surface):
 `--accent-purple oklch(0.558 0.288 302.321)`,
@@ -46,7 +46,7 @@ never hardcode light values.
 - Numbers in tables/stats: `tabular-nums`.
 - Measure: keep prose ≤ ~65ch.
 
-**Banned defaults (AI tells):** Inter as a *new* choice, Arial, system-font
+**Banned defaults (AI tells):** Inter as a _new_ choice, Arial, system-font
 headlines with no tracking treatment, gray-on-colored-background text.
 
 ## Shape & space
@@ -75,6 +75,61 @@ headlines with no tracking treatment, gray-on-colored-background text.
 - `prefers-reduced-motion`: degrade to static (gsap.matchMedia).
 - One orchestrated load moment per page > scattered micro-interactions.
 
+## Public site system (marketing surfaces)
+
+The public site is a **separate token layer** from the dashboard. Dashboard
+surfaces read shadcn OKLCH tokens from `core.css`; public/marketing surfaces read
+the semantic `--site-*` tokens from `resources/css/site.css`, scoped by
+`SiteRoot` (`data-site-theme="<slug>"`). Never mix the two layers on one element.
+
+- Tokens (semantic, never raw hex in components): `--site-bg`, `--site-bg-strong`,
+  `--site-surface`, `--site-ink`, `--site-ink-soft`, `--site-ink-faint`,
+  `--site-accent`, `--site-accent-ink`, `--site-secondary`, `--site-alt-1`,
+  `--site-alt-2`, `--site-pink`, `--site-border`, `--site-outline`, plus
+  `--radius-card` / `--radius-pill` and the three font-family slots. Exposed as
+  Tailwind utilities (`bg-site-surface`, `text-site-ink-soft`, …).
+- Themes are isolated modules under `resources/css/themes/<slug>.css`, each
+  stating its own light **and** dark palette under `[data-site-theme="<slug>"]`
+  (with a `:where(html.dark)` variant). `site.css` imports them and holds the
+  neutral fallback. Swap a theme by passing `theme="<slug>"` to `SiteRoot`, or
+  live from the style guide.
+- Type scale: `site-hero` / `site-h1`…`site-h6` / `site-lead` (fluid clamps).
+  Hierarchy is SEO-safe: one `h1` per page; `site-hero` is reserved for the
+  landing crown.
+
+### CB360 "Ledger" identity (default public theme)
+
+The original Cost Breaker 360 brand — `resources/css/themes/cb360.css`.
+Warm-paper ground with a single confident signal-green accent: calm,
+instrument-grade, no hype, no gradient tells.
+
+| Role                       | Light                | Dark                    |
+| -------------------------- | -------------------- | ----------------------- |
+| ground (`--site-bg`)       | `#f4f1ea` paper      | `#141512`               |
+| surface (`--site-surface`) | `#ffffff`            | `#1c1e18`               |
+| ink (`--site-ink`)         | `#191a17`            | `#f2efe6`               |
+| accent (`--site-accent`)   | `#0e7a4b` green      | `#35c97f`               |
+| sand (`--site-alt-1`)      | `#e7e1d3`            | `#23261f`               |
+| forest (`--site-alt-2`)    | `#1f2a24`            | `#2e3a33`               |
+| border                     | `rgba(25,26,23,.14)` | `rgba(242,239,230,.14)` |
+
+- **Typography:** Instrument Sans only; personality from weight + tracking + size
+  contrast. Numeric voice is `tabular-nums`.
+- **Layout language:** asymmetric two-column heroes
+  (`lg:grid-cols-[1.05fr_0.95fr]`), hairline grids (`grid gap-px` over
+  `bg-site-border`, cells `bg-site-surface`), numbered items (`01`/`02` in
+  `font-site-display text-site-accent`) and accent-dot eyebrow labels
+  (`text-xs font-bold tracking-[0.2em] uppercase` with an
+  `h-1.5 w-1.5 rounded-full bg-site-accent` dot).
+- **Signature element:** the cost ledger panel (the Home hero) — spend rows with
+  hairline bars, deltas and a tabular total. Reuse this motif for numeric
+  storytelling; it is the brand's one memorable anchor.
+- **Motion:** GSAP `useReveal` from the site motion kit — per-element scroll
+  reveals (`data-reveal`) plus one `group` load intro for hero items
+  (`data-hero`); `prefers-reduced-motion` degrades to static.
+- **Canvasly** (`themes/canvasly.css`) is retained as an alternate theme for the
+  style guide / forks; CB360 is the default (`SiteRoot` default prop).
+
 ## Public page architecture (project-owned)
 
 Everything the frontend team owns lives under `resources/js/frontend/`
@@ -86,17 +141,19 @@ layout `resources/js/frontend/layouts/PublicLayout`, registered via
 Current inventory: `Home` (page key `public/welcome`), `About`, `Services`,
 `Contact`, `StyleGuide`, plus the blog public templates `Index` / `Show`.
 
-## Known slop in the current public pages (fix list for redesign passes)
+## Redesign status (public pages)
 
-> Path note: public pages live in `resources/js/frontend/pages/public/`
-> (`Home.tsx` is the `public/welcome` page). The items below still apply to
-> `Home.tsx` until the original CB360 redesign pass (Phase 3/4).
+Phases 3–5 shipped the CB360 "Ledger" identity across every public template:
+`Home`, `About`, `Services`, `Contact` (project-owned) and the blog public
+templates `Index` / `Show`. Every one uses the site-token layer (never raw hex),
+one `h1`, a single primary CTA per viewport, and GSAP reveals that respect
+`prefers-reduced-motion`.
 
-- Home hero is the default centered-headline + two-buttons template.
-- Feature grid is four identical rounded-square icon tiles above headings
-  (Impeccable "icon tile stack" tell).
-- Stats row is three evenly spaced big numbers with equal weight.
-- No signature element — nothing memorable anchors the page.
+Remaining backlog:
+
+- `StyleGuide` — live theme swapper; re-check the CB360 specimen after each
+  theme change.
+- Optional: a featured-post treatment on the blog index (first post wider).
 
 ## Pre-ship checklist (every public page)
 
