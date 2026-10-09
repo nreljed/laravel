@@ -77,14 +77,22 @@ headlines with no tracking treatment, gray-on-colored-background text.
 
 ## Public page architecture (project-owned)
 
-Pages live in `resources/js/Pages/Public/`, layout `@nreljed/platform/Layouts/PublicLayout`,
-registered via `pageOverrides` in `resources/js/page-config.ts`.
+Everything the frontend team owns lives under `resources/js/frontend/`
+(`pages/`, `layouts/`, `components/site/`) — separated from the Laravel backend
+(`app/`, `routes/`). Public pages live in `resources/js/frontend/pages/public/`,
+layout `resources/js/frontend/layouts/PublicLayout`, registered via
+`pageOverrides` in `resources/js/page-config.ts`.
 
-Current inventory: `Welcome`, `About`, `Services`, `Contact`.
+Current inventory: `Home` (page key `public/welcome`), `About`, `Services`,
+`Contact`, `StyleGuide`, plus the blog public templates `Index` / `Show`.
 
 ## Known slop in the current public pages (fix list for redesign passes)
 
-- Welcome hero is the default centered-headline + two-buttons template.
+> Path note: public pages live in `resources/js/frontend/pages/public/`
+> (`Home.tsx` is the `public/welcome` page). The items below still apply to
+> `Home.tsx` until the original CB360 redesign pass (Phase 3/4).
+
+- Home hero is the default centered-headline + two-buttons template.
 - Feature grid is four identical rounded-square icon tiles above headings
   (Impeccable "icon tile stack" tell).
 - Stats row is three evenly spaced big numbers with equal weight.

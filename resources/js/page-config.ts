@@ -18,13 +18,13 @@ export const pageConfig: FoundationAppConfig = {
   pageOverrides: {
     // Project-owned THEME pages — override core's template pages, applied last.
     // Marketing site:
-    "public/welcome": () => import("./Pages/Public/Home"),
-    "public/about": () => import("./Pages/Public/About"),
-    "public/services": () => import("./Pages/Public/Services"),
-    "public/contact": () => import("./Pages/Public/Contact"),
-    "public/styleguide": () => import("./Pages/Public/StyleGuide"),
+    "public/welcome": () => import("./frontend/pages/public/Home"),
+    "public/about": () => import("./frontend/pages/public/About"),
+    "public/services": () => import("./frontend/pages/public/Services"),
+    "public/contact": () => import("./frontend/pages/public/Contact"),
+    "public/styleguide": () => import("./frontend/pages/public/StyleGuide"),
     // Blog public templates (forked from the core starter theme):
-    "blog/public/index": (() => import("./Pages/Blog/Public/Index")) as PageImport,
-    "blog/public/show": (() => import("./Pages/Blog/Public/Show")) as PageImport,
+    "blog/public/index": (() => import("./frontend/pages/blog/public/Index")) as PageImport,
+    "blog/public/show": (() => import("./frontend/pages/blog/public/Show")) as PageImport,
   },
 };

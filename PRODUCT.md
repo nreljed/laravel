@@ -45,8 +45,8 @@ potential today". No vague superlatives, no exclamation marks, no emoji in UI.
   `@layer base` in `resources/css/app.css` — never edit core.css itself.
 - UI kit is Base UI + shadcn (`render` prop, never `asChild`); toasts via
   `toast.add()`, never sonner.
-- Public pages are project-owned (`resources/js/Pages/Public/`, swapped in via
-  `pageOverrides` in `page-config.ts`). Routes/controllers stay in core.
+- Public pages are project-owned (`resources/js/frontend/pages/public/`, swapped in
+  via `pageOverrides` in `page-config.ts`). Routes/controllers stay in core.
 - AI features are BYOK (zero platform cost) — a genuine differentiator, say it plainly.
 
 ## Anti-patterns (copy + UX)

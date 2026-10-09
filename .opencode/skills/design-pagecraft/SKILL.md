@@ -37,13 +37,14 @@ visual direction is already decided; the job is execution + craft.
 
 - Components: Base UI + shadcn, `render` prop, NEVER `asChild`.
 - Toasts: `toast.add({ title, type })`, NEVER sonner.
-- Class merge: `cn` from the `cn` package.
-- Imports: `@/Components/...` (capital C) inside the app;
-  `@nreljed/platform/...`, `@nreljed/blog/...` cross-package.
+- Class merge: `cn` from the `cn` package (`import { cn } from "cn"`).
+- Imports: there is **no `@/` alias** — inside `resources/js/frontend/**` use
+  relative paths; import cross-package via `@nreljed/platform/...` and
+  `@nreljed/blog/...`.
 - NEVER edit `vendor/**` or `packages/**` mirrors. Public pages are
-  project-owned: `resources/js/Pages/Public/*.tsx`, registered via
+  project-owned: `resources/js/frontend/pages/public/*.tsx`, registered via
   `pageOverrides` in `resources/js/page-config.ts`. Layout:
-  `@nreljed/platform/Layouts/PublicLayout`.
+  `resources/js/frontend/layouts/PublicLayout`.
 - **Marketing pages** read their own `site-*` token layer
   (`resources/css/site.css` + theme scoping) — load the
   `frontend-site-theming` skill for anything public-facing that is themed.
@@ -59,7 +60,8 @@ visual direction is already decided; the job is execution + craft.
 - Marketing/scroll motion (hero reveals, pinned sections, scrubbed
   timelines): GSAP. Load `gsap-react` (useGSAP hook) + `gsap-scrolltrigger`
   + `gsap-timeline` (+ `gsap-core`/`gsap-performance` as needed). Deps are
-  installed: `gsap`, `@gsap/react`.
+  installed: `gsap`, `@gsap/react`, `lenis` (Lenis drives scroll; the
+  project's `frontend/components/site/motion/` kit wires Lenis → ScrollTrigger).
 - Animate only `transform`/`opacity`. `useGSAP` with `scope`/refs for cleanup.
 - `prefers-reduced-motion` is MANDATORY: wrap GSAP in `gsap.matchMedia()`
   with a static fallback.
@@ -77,7 +79,7 @@ visual direction is already decided; the job is execution + craft.
 - Playwright MCP / `webapp-testing` skill: screenshot the page at 375, 768
   and 1440 widths, in light AND dark. Inspect the screenshots; fix findings
   in one batch.
-- Manual detector pass: `npx impeccable detect resources/js/Pages/Public/`
+- Manual detector pass: `npx impeccable detect resources/js/frontend/pages/public/`
   (skill-only mode — no hook, no auto-run).
 - Gates before done: `npm run typecheck && npm run lint && npm run build`.
 

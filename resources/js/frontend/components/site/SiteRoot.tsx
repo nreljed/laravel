@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { SmoothScroll } from "./motion/SmoothScroll";
 
 interface SiteRootProps {
   children: ReactNode;
@@ -26,7 +27,7 @@ export function SiteRoot({ children }: SiteRootProps) {
       data-site-theme="canvasly"
       className="flex min-h-screen flex-col bg-site-bg font-site-body text-site-ink"
     >
-      {children}
+      <SmoothScroll>{children}</SmoothScroll>
     </div>
   );
 }

@@ -11,7 +11,7 @@ interface PillButtonProps {
 
 export function PillButton({ href, external = false, className, children }: PillButtonProps) {
   const classes = cn(
-    "inline-flex h-[53px] items-center gap-2 rounded-site-pill bg-site-ink px-8 text-site-bg-strong transition-colors duration-200 hover:bg-site-ink/90",
+    "group inline-flex h-[53px] items-center gap-2 rounded-site-pill bg-site-ink px-8 text-site-bg-strong transition-colors duration-200 hover:bg-site-ink/90 [&_svg]:transition-transform [&_svg]:duration-300 group-hover:[&_svg]:translate-x-1.5",
     className,
   );
 

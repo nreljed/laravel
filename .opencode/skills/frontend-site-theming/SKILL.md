@@ -45,10 +45,9 @@ Examples: `bg-site-bg`, `text-site-ink/70`, `text-site-secondary`,
 2. Copy the `[data-site-theme="canvasly"]` block, rename the attribute
    value to your theme slug, and re-map every token to your palette/type.
    Add the Google-Fonts `<link>` your theme needs (see below).
-3. In each page of that site, set `data-site-theme="<slug>"` on the page
-   root element. Tokens cascade — one attribute restyles the page. Pages
-   using `Layouts/PublicLayout` get it centrally from `SiteRoot`'s
-   `data-site-theme`.
+3. Set `data-site-theme="<slug>"` on the page root element. Tokens cascade —
+   one attribute restyles the page. Pages using `frontend/layouts/PublicLayout`
+   get it centrally from `SiteRoot`, so don't set it per page.
 4. Verify at `/style-guide` first — swatch values, type scale, pills and
    cards all re-resolve from the new token block automatically.
 
@@ -71,7 +70,7 @@ Core ships the backend service + a token-agnostic `SeoHead` +
 `Components/frontend/SiteHeader` / `SiteFooter` are shadcn-tokened and
 read-only (mirror). This project therefore owns its layout + chrome:
 
-- `resources/js/Layouts/PublicLayout.tsx` — project public layout. Same
+- `resources/js/frontend/layouts/PublicLayout.tsx` — project public layout. Same
   props contract as core's (`title`, `description`, `ogImage`, `ogType`,
   `canonical`, `article*` fields, `twitterCard`); renders `SeoHead`
   (`@nreljed/platform/Components/seo/SeoHead`), skip-link, `SiteHeader`,
@@ -80,18 +79,21 @@ read-only (mirror). This project therefore owns its layout + chrome:
 - Brand wordmark reads `props.brand.name` (= `app_name` setting via
   `HandleInertiaRequests`) — header/footer, never a hardcoded string.
 
-## The site kit — `resources/js/Components/site/`
+## The site kit — `resources/js/frontend/components/site/`
 
 Shared presentational primitives used across pages. Keep them generic and
 token-driven (no per-brand literals):
 
 - `SiteRoot` — sets `data-site-theme="canvasly"` on the page root, injects
-  the Geist font stylesheet once, wraps `min-h-screen bg-site-bg font-site-body text-site-ink`.
-- `SiteHeader` — sticky top bar: brand wordmark, desktop nav (Home/About/
-  Services/Blog/Contact via `route()`, Get Started → `route("register")`),
-  mobile Menu button toggling `SiteMenuOverlay`.
-- `SiteFooter` — border-t, brand + `© {year}` (year via `useMemo` — purity
-  rule), nav links.
+  the Instrument Sans webfont once, wraps the page in a flex-column shell
+  (`min-h-screen bg-site-bg font-site-body text-site-ink`) and mounts
+  `SmoothScroll` (Lenis).
+- `SiteHeader` — sticky `h-20` bar (transparent → glass on scroll): brand
+  wordmark, then the controls cluster — `ThemeToggle`, `UserMenu`
+  (→ dashboard/login), and a Menu button toggling `SiteMenuOverlay`
+  (nav: Home/About/Services/Blog/Style Guide/Contact via `route()`).
+- `SiteFooter` — 3-column brand + Explore + Connect, then a legal bar
+  (`© {year}`, legal links, Back to top). No CTA (the CTA is a page section).
 - `SitePill` — tag/category pill; `<span>` or `<Link>` when `href` given.
 - `SitePagination` — token pager, same `links` shape as platform
   `PaginationLinks`; active page = ink pill with `aria-current="page"`.
@@ -101,7 +103,7 @@ token-driven (no per-brand literals):
 
 Project-owned; lives in the app shell, not the platform package. Page-level
 composition (hero, works grid, services rows, testimonial track) stays in
-`resources/js/Pages/Public/*`.
+`resources/js/frontend/pages/public/*`.
 
 ## Style guide page — `/style-guide`
 
@@ -128,11 +130,12 @@ borders, inline-code bg. Keep the `!important` on the rules core also makes
 
 ## Fonts
 
-Load the theme's display/body fonts with Google Fonts `<link>` tags. The
-current theme (Canvasly) uses Geist; the font is injected by the page
-(`useEffect` inserting a `<link rel="stylesheet">`), and the theme tokens
-declare the `--font-body-family` / `--font-display-family` stack with
-Instrument Sans as fallback so text is readable before/without the webfont.
+Load the theme's display/body fonts with `<link>` tags. The current theme
+uses **Instrument Sans** (a variable font): `resources/views/app.blade.php`
+preconnects to `fonts.bunny.net`, and `SiteRoot` injects the Google-Fonts
+variable-font stylesheet once. The `--font-body-family` /
+`--font-display-family` tokens in `site.css` declare the same stack with a
+system fallback so text is readable before/without the webfont.
 
 For a new theme: add its font stylesheet the same way and update the
 `--font-*-family` tokens in `site.css`.

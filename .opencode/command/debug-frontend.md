@@ -34,8 +34,8 @@ Inertia resolves pages by **lowercased** component name. The controller renders 
 name; `resources/js/page-config.ts` must map it.
 
 - `Inertia::render('dashboard/index')` -> a `dashboard/index` entry in the page map
-- `Inertia::render('blog/index')` -> `Blog/Public/Index.tsx`
-- `Inertia::render('public/about')` -> the project's `./Pages/Public/About.tsx`
+- `Inertia::render('blog/index')` -> `frontend/pages/blog/public/Index.tsx`
+- `Inertia::render('public/about')` -> the project's `./frontend/pages/public/About.tsx`
 
 `resources/js/app.tsx` imports `pageConfig` and spreads
 `registerCoreTemplates()` plus `projectPages` / `pageOverrides`. CORE never
@@ -51,21 +51,26 @@ npm run build
 ```
 
 If styles are missing after a successful build, the source is not being imported.
-The project CSS must import core's tokens:
+`resources/css/app.css` must import core's tokens and then the site layer:
 
 ```css
-@import "core.css";
+@import "../../packages/platform/resources/css/core.css";
+@import "./site.css";
 ```
 
-followed by any `@layer base { --token: ... }` overrides.
+`@source` directives must point at the real package paths
+(`../../packages/platform/resources/js/`, `.../themes/`,
+`../../packages/blog/src/Resources/js/`) or Tailwind won't scan classes.
 
 ## 4. Theming / invisible text
 
-Dark mode is owned by `next-themes` `<ThemeProvider>`. The recurring bug is a text
-colour that only resolves in one theme. Use semantic tokens - `text-foreground`,
-`text-muted-foreground`, `bg-background`, `bg-card` - never raw palette classes like
-`text-gray-900`. Flip the scheme in devtools to confirm both themes before
-reporting done.
+Dark mode is owned by `next-themes` `<ThemeProvider>`. There are two token
+layers: **dashboard/admin** uses core's shadcn tokens (`text-foreground`,
+`bg-background`, …); **public/marketing** uses the `site-*` layer in
+`resources/css/site.css` (`text-site-ink`, `bg-site-bg`, …). Use the layer that
+matches the surface, never raw palette classes like `text-gray-900`, and never
+inline hex — theme values live in `site.css`. Flip the scheme in devtools and
+verify `[data-site-theme]` dark parity before reporting done.
 
 ## 5. Stale UI
 

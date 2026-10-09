@@ -6,9 +6,10 @@
    reads from these tokens ONLY — never raw hex in components.
 
    Themes swap by scoping values under `[data-site-theme="…"]` on a
-   wrapper element (see resources/js/Pages/Public/Welcome.tsx which
-   renders data-site-theme="canvasly"). The Dashboard admin UI keeps
-   its own shadcn tokens in core.css — do not mix the two layers.
+   wrapper element — SiteRoot (resources/js/frontend/components/site/
+   SiteRoot.tsx) sets data-site-theme="canvasly" for the whole public
+   sub-tree. The Dashboard admin UI keeps its own shadcn tokens in
+   core.css — do not mix the two layers.
 
 Adding a new theme:
    1. Copy the block under [data-site-theme="canvasly"]
@@ -19,6 +20,11 @@ Adding a new theme:
       :where(html.dark) [data-site-theme="<slug>"] (see the canvasly
       dark variant below) — every theme states its dark palette
    ---------------------------------------------------------------- */
+
+/* Lenis smooth-scroll baseline (html.lenis rules, .lenis-smooth forces
+   scroll-behavior:auto). Loaded before the site theme tokens so the
+   reduced-motion `@media` overrides can follow below. */
+@import "lenis/dist/lenis.css";
 
 @utility animate-marquee {
   animation: site-marquee 32s linear infinite;
@@ -276,4 +282,49 @@ Adding a new theme:
 }
 [data-site-theme] .prose code:not(pre code) {
   background-color: color-mix(in srgb, var(--site-ink) 8%, transparent) !important;
+}
+
+/* ------------------------------------------------------------------
+   Motion layer  (resources/js/frontend/components/site/motion)
+   ------------------------------------------------------------------
+   Lenis + GSAP ScrollTrigger recipe kit. Lenis drives the rAF loop and
+   forwards scroll to ScrollTrigger; the use* hooks animate markup
+   attributes (data-fading-chars, data-word-reveal, data-text-fill,
+   data-scale-in, data-parallax). This block ships the few CSS pieces
+   the kit depends on: the spotlight radial for useCursorSpotlight and
+   its reduced-motion degradation.
+   ------------------------------------------------------------------ */
+
+/* canvasly footer-lights cursor glow: useCursorSpotlight writes
+   --site-cursor-x/y on pointermove; the ::after radial follows them.
+   z-index:-1 keeps the glow behind the CTA text; isolation:isolate
+   contains the negative z-index so it never dips under the page bg. */
+.site-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.site-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    600px circle at var(--site-cursor-x, 50%) var(--site-cursor-y, 50%),
+    color-mix(in oklab, var(--site-accent) 22%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.site-spotlight:hover::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-spotlight::after {
+    display: none;
+  }
 }

@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import PublicLayout from "../../../Layouts/PublicLayout";
-import { SitePill } from "../../../Components/site/SitePill";
-import { SitePagination } from "../../../Components/site/SitePagination";
+import PublicLayout from "../../../layouts/PublicLayout";
+import { SitePill } from "../../../components/site/SitePill";
+import { SitePagination } from "../../../components/site/SitePagination";
 
 interface Author {
   id: number;

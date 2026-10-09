@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "cn";
-import PublicLayout from "../../Layouts/PublicLayout";
-import { PillButton } from "../../Components/site/PillButton";
-import { SitePill } from "../../Components/site/SitePill";
-import { SitePagination } from "../../Components/site/SitePagination";
+import PublicLayout from "../../layouts/PublicLayout";
+import { PillButton } from "../../components/site/PillButton";
+import { SitePill } from "../../components/site/SitePill";
+import { SitePagination } from "../../components/site/SitePagination";
 
 interface ColorSwatch {
   label: string;

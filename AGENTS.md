@@ -145,12 +145,15 @@ app/                                # APP shell (thin — most logic lives in th
   Http/Controllers/Controller.php   # Base controller
   Providers/AppServiceProvider.php
   Providers/TelescopeServiceProvider.php
-resources/js/                       # APP shell (master) — entry point + project-owned THEME
+resources/js/                       # APP shell frontend (master) — entry + project-owned THEME
   app.tsx                           # Entry — imports pageConfig, calls createFoundationApp()
   page-config.ts                    # SINGLE SOURCE OF TRUTH for page resolution — buildPageMap(base + project + overrides)
   test-setup.ts                     # Vitest setup
-  Layouts/StoreLayout.tsx           # Future store layout (project theme example)
-  Pages/Public/                     # PROJECT-OWNED marketing theme — overrides core's public/welcome|about|services|contact
+  frontend/                         # FRONTEND bucket — everything the frontend team owns, one folder
+    pages/public/                   #   MARKETING pages (Home/About/Services/Contact/StyleGuide) — override core's public/* via pageOverrides
+    pages/blog/public/              #   Blog public templates (Index/Show) — override blog/public/*
+    layouts/                        #   PublicLayout (SiteRoot shell) + StoreLayout (storefront theme seam)
+    components/site/                #   Canvasly site kit (SiteHeader/SiteFooter/SiteMenuOverlay/SitePill/…) + motion/ recipes
 routes/                             # APP-only routes (most routing lives in the core package)
   web.php                           # Reserved for project-specific routes — public/dashboard/admin/deploy/csp-report live in vendor/nreljed/platform/routes
   channels.php
@@ -173,7 +176,7 @@ routes/                             # APP-only routes (most routing lives in the
 > **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@nreljed/blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`, then applies its `pageOverrides` (project theme swaps). Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
 
 > **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `page-config.ts` builds its own explicit pageMap:
-> `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./Pages/Public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*`, `blog/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. The client entry (`app.tsx`) imports `pageConfig` — never duplicate the config block.
+> `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./frontend/pages/public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*`, `blog/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. The client entry (`app.tsx`) imports `pageConfig` — never duplicate the config block.
 
 > **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
 

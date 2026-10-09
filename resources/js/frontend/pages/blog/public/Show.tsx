@@ -1,8 +1,8 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useEffect } from "react";
 import { Pencil } from "lucide-react";
-import PublicLayout from "../../../Layouts/PublicLayout";
-import { SitePill } from "../../../Components/site/SitePill";
+import PublicLayout from "../../../layouts/PublicLayout";
+import { SitePill } from "../../../components/site/SitePill";
 import ProseContent from "@nreljed/platform/Components/blog/ProseContent";
 import { useAuth } from "@nreljed/platform/hooks/use-auth";
 import { highlightAllCodeBlocks } from "@nreljed/platform/lib/shiki-highlight";

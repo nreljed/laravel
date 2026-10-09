@@ -1,6 +1,6 @@
 import { ArrowRight, Clock, Mail, MapPin, MessageSquareText } from "lucide-react";
-import PublicLayout from "../../Layouts/PublicLayout";
-import { PillButton } from "../../Components/site/PillButton";
+import PublicLayout from "../../layouts/PublicLayout";
+import { PillButton } from "../../components/site/PillButton";
 
 const channels = [
   {

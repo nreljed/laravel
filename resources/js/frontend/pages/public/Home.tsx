@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef } from "react";
 import { Link, usePage } from "@inertiajs/react";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SeoHead } from "@nreljed/platform/Components/seo/SeoHead";
-import { PillButton, SiteMenuOverlay } from "../../Components/site";
+import PublicLayout from "../../layouts/PublicLayout";
+import { PillButton } from "../../components/site";
 
 const CDN = "https://cdn.prod.website-files.com/6922d75ee39b1fb737dc0680";
 const CDN_WORK = "https://cdn.prod.website-files.com/6922d75ee39b1fb737dc068a";
@@ -16,9 +16,6 @@ const heroImages = {
   two: `${CDN}/697a750965ca90e0ff43be2d_h.mp4.webp`,
   three: `${CDN}/697a75093d77bb3fbf23a558_a.webp`,
 };
-
-const logoSvg = `${CDN}/697ba563050d0ce6bd2bca61_Background.svg`;
-const contactBadgeSvg = `${CDN}/693762854882533db079b5e6__%20Contact%20Us%20_%20Contact%20Us%20Us%20(1).svg`;
 
 const works = [
   {
@@ -193,25 +190,12 @@ const HeroChars = ({ text, accent }: { text: string; accent?: boolean }) => (
 
 const bigStatement = "We combine premium quality with strategic scalability to elevate your brand.";
 
-const menuLinks = [
-  { number: "01", label: "Home", href: "/" },
-  { number: "02", label: "About", href: "/about" },
-  { number: "03", label: "Works", href: "#" },
-  { number: "04", label: "Contact", href: "/contact" },
-  { number: "05", label: "Services", href: "/services" },
-  { number: "06", label: "Pricing", href: "#" },
-  { number: "07", label: "Blog", href: "/blog" },
-  { number: "08", label: "Style Guide", href: "/style-guide" },
-];
-
 export default function Home() {
   const { props } = usePage();
   const brand = (props.brand as { name?: string; logo?: string }) || {};
   const appName = brand.name || "";
-  const year = useMemo(() => new Date().getFullYear(), []);
   const rootRef = useRef<HTMLDivElement>(null);
   const exploreRef = useRef<HTMLDivElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useGSAP(
     () => {
@@ -325,14 +309,14 @@ export default function Home() {
         }
 
         gsap.fromTo(
-          "[data-footer-line-outline]",
+          "[data-cta-outline]",
           { autoAlpha: 0, y: 40 },
           {
             autoAlpha: 1,
             y: 0,
             duration: 1,
             ease: "power3.out",
-            scrollTrigger: { trigger: "[data-footer-cta]", start: "top 70%", once: true },
+            scrollTrigger: { trigger: "[data-cta]", start: "top 70%", once: true },
           },
         );
       });
@@ -343,92 +327,15 @@ export default function Home() {
   );
 
   return (
-    <div
-      ref={rootRef}
-      data-site-theme="canvasly"
-      className="min-h-screen bg-site-bg font-site-body text-site-ink"
+    <PublicLayout
+      title={`${appName} — We design clarity, we build growth`}
+      description="Creative agency focused on strategy, design, and digital experiences."
     >
-      <SeoHead
-        title={`${appName} — We design clarity, we build growth`}
-        description="Creative agency focused on strategy, design, and digital experiences."
-      />
-
-      <SiteMenuOverlay
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        links={menuLinks}
-        brand={appName}
-        logo={logoSvg}
-        note="Let's build something that sticks."
-      />
-
-      {/* Fixed rail — logo, vertical nav, brand */}
-      <header className="pointer-events-none fixed inset-y-0 left-0 z-40 hidden w-40 flex-col items-center py-6 lg:flex">
-        <Link href="/" className="pointer-events-auto block">
-          <img
-            src={logoSvg}
-            alt={`${appName} logo`}
-            className="h-16 w-16 rounded-full bg-transparent object-contain"
-          />
-        </Link>
-        <nav className="pointer-events-auto mt-10 flex flex-1 flex-col items-center justify-center gap-1">
-          {(
-            [
-              ["Home", "/", true],
-              ["About", "/about", false],
-              ["Works", "#", false],
-              ["Contact", "/contact", false],
-            ] as Array<[label: string, href: string, active: boolean]>
-          ).map(([label, href, active]) => (
-            <Link
-              key={label}
-              href={href}
-              className={`flex h-10 w-10 rotate-0 items-center justify-center text-[11px] font-medium tracking-[0.18em] uppercase transition-colors ${
-                active ? "text-site-ink" : "text-site-secondary/50 hover:text-site-ink"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <span
-          className="pointer-events-auto text-[11px] font-medium tracking-[0.2em] uppercase text-site-secondary"
-          style={{ writingMode: "vertical-rl" }}
-        >
-          {appName}
-        </span>
-      </header>
-
-      {/* Fixed top-right menu + bottom-right lime circle */}
-      <div className="fixed right-6 top-6 z-30 sm:right-8 sm:top-8">
-        <button
-          type="button"
-          onClick={() => setMenuOpen((value) => !value)}
-          className="inline-flex h-[53px] min-w-28 items-center justify-center gap-2 rounded-site-card bg-site-ink px-7 text-site-bg-strong transition-transform duration-200 hover:scale-[1.03]"
-        >
-          {menuOpen ? "Close" : "Menu"}
-        </button>
-      </div>
-      <Link
-        href="/contact"
-        aria-label="Contact Us"
-        className="fixed right-6 bottom-6 z-30 hidden h-[139px] w-[139px] items-center justify-center rounded-full bg-site-accent text-site-accent-ink transition-transform duration-200 hover:scale-105 sm:right-8 sm:bottom-8 lg:flex"
-      >
-        <span className="relative flex h-full w-full items-center justify-center">
-          <img
-            src={contactBadgeSvg}
-            alt="Contact Us circular text"
-            className="absolute inset-0 h-full w-full animate-[spin_14s_linear_infinite] object-contain p-2.5"
-          />
-          <ArrowUpRight className="h-7 w-7" />
-        </span>
-      </Link>
-
-      <main className="relative lg:pr-20">
+      <div ref={rootRef} className="relative">
         {/* ---------- HERO ---------- */}
-        <section className="relative overflow-hidden px-6 pt-32 pb-20 sm:px-10 lg:pl-52 lg:pr-16">
+        <section className="relative overflow-hidden px-6 pt-16 pb-20 sm:px-10">
           <div className="mx-auto max-w-site">
-            <div className="flex flex-col items-center text-center lg:pl-40">
+            <div className="flex flex-col items-center text-center">
               <h1
                 data-hero-title
                 className="font-site-display max-w-[960px] text-[clamp(2.9rem,8vw,7.5rem)] font-bold leading-[0.92] tracking-[-0.05em]"
@@ -507,8 +414,8 @@ export default function Home() {
         </section>
 
         {/* ---------- APPROACH / STATEMENT ---------- */}
-        <section className="px-6 py-24 sm:px-10 lg:pl-52 lg:pr-16">
-          <div className="mx-auto max-w-site lg:pl-40">
+        <section className="px-6 py-24 sm:px-10">
+          <div className="mx-auto max-w-site">
             <div data-reveal-band className="lg:pl-24">
               <p
                 data-reveal
@@ -554,8 +461,8 @@ export default function Home() {
         </section>
 
         {/* ---------- FEATURED WORK ---------- */}
-        <section className="px-6 py-24 sm:px-10 lg:pl-52 lg:pr-16">
-          <div className="mx-auto max-w-site lg:pl-40">
+        <section className="px-6 py-24 sm:px-10">
+          <div className="mx-auto max-w-site">
             <div data-reveal-band className="max-w-[640px]">
               <h2
                 data-reveal
@@ -620,7 +527,7 @@ export default function Home() {
         </section>
 
         {/* ---------- EXPLORE OUR THINKING ---------- */}
-        <section ref={exploreRef} className="relative px-6 py-24 sm:px-10 lg:pl-52 lg:pr-16">
+        <section ref={exploreRef} className="relative px-6 py-24 sm:px-10">
           <div className="relative mx-auto hidden aspect-square w-full max-w-[1060px] sm:block lg:max-w-[1180px]">
             {ringPositions.map((pos, index) => (
               <img
@@ -647,8 +554,8 @@ export default function Home() {
         </section>
 
         {/* ---------- SERVICES ---------- */}
-        <section className="px-6 py-24 sm:px-10 lg:pl-52 lg:pr-16">
-          <div className="mx-auto max-w-site lg:pl-40">
+        <section className="px-6 py-24 sm:px-10">
+          <div className="mx-auto max-w-site">
             <div className="max-w-[640px]">
               <h2 className="font-site-display text-[clamp(2.6rem,9vw,9.5rem)] leading-[0.9] font-bold tracking-[-0.05em]">
                 What we bring to the Table
@@ -700,8 +607,8 @@ export default function Home() {
         </section>
 
         {/* ---------- TESTIMONIALS ---------- */}
-        <section className="px-6 py-24 sm:px-10 lg:pl-52 lg:pr-16">
-          <div className="mx-auto max-w-site lg:pl-40">
+        <section className="px-6 py-24 sm:px-10">
+          <div className="mx-auto max-w-site">
             <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
               <h2 className="font-site-display max-w-[640px] text-[clamp(2.6rem,7.5vw,7.5rem)] leading-[0.92] font-bold tracking-[-0.05em]">
                 Real stories, real <span className="text-site-secondary">results</span>
@@ -743,69 +650,32 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---------- FOOTER CTA ---------- */}
-        <footer className="px-6 pt-16 sm:px-10 lg:pl-52 lg:pr-16">
-          <div className="mx-auto max-w-site lg:pl-40">
-            <nav className="flex flex-wrap items-center justify-between gap-4 border-b border-site-border pb-8 text-sm">
-              <div className="flex gap-6">
-                {["Instagram", "Twitter", "Behance"].map((social) => (
-                  <a
-                    key={social}
-                    href="#"
-                    className="text-site-ink/70 transition-colors hover:text-site-ink"
-                  >
-                    {social}
-                  </a>
-                ))}
-              </div>
-              <div className="flex gap-6">
-                <a href="#" className="text-site-ink/70 transition-colors hover:text-site-ink">
-                  Licensing
-                </a>
-                <Link
-                  href={route("styleguide")}
-                  className="text-site-ink/70 transition-colors hover:text-site-ink"
-                >
-                  Style Guide
-                </Link>
-                <a href="#" className="text-site-ink/70 transition-colors hover:text-site-ink">
-                  Change log
-                </a>
-              </div>
-              <p className="w-full text-sm text-site-ink-faint sm:w-auto">
-                © {year} {appName}.
-              </p>
-            </nav>
-
-            <div data-footer-cta className="relative py-24">
-              <h2 className="font-site-display text-[clamp(2.8rem,10vw,10.5rem)] leading-[0.85] font-bold tracking-[-0.05em]">
-                Create a brand that knows
-                <br />
-                where it&apos;s going.
-              </h2>
-              <h2
-                data-footer-line-outline
-                className="font-site-display mt-2 text-[clamp(2.8rem,10vw,10.5rem)] leading-[0.85] font-bold tracking-[-0.05em] text-transparent [-webkit-text-stroke:2px_var(--site-outline)]"
-              >
-                Create a brand that knows
-                <br />
-                where it&apos;s going.
-              </h2>
-              <Link
-                href="/contact"
-                aria-label="Let's Talk"
-                className="absolute -top-2 right-4 flex h-[168px] w-[168px] items-center justify-center rounded-full bg-site-accent text-site-accent-ink transition-transform duration-200 hover:rotate-6 hover:scale-105"
-              >
-                <span className="rotate-[-24deg] text-center text-xs font-bold tracking-[0.2em] uppercase leading-relaxed">
-                  Let&apos;s
-                  <br />
-                  Talk
-                </span>
-              </Link>
+        {/* ---------- CTA ---------- */}
+        <section data-cta className="px-6 pt-8 pb-24 sm:px-10">
+          <div className="mx-auto max-w-site">
+            <h2 className="font-site-display text-[clamp(2.8rem,10vw,10.5rem)] leading-[0.85] font-bold tracking-[-0.05em]">
+              Create a brand that knows
+              <br />
+              where it&apos;s going.
+            </h2>
+            <h2
+              data-cta-outline
+              aria-hidden
+              className="font-site-display mt-2 text-[clamp(2.8rem,10vw,10.5rem)] leading-[0.85] font-bold tracking-[-0.05em] text-transparent [-webkit-text-stroke:2px_var(--site-outline)]"
+            >
+              Create a brand that knows
+              <br />
+              where it&apos;s going.
+            </h2>
+            <div className="mt-12">
+              <PillButton href={route("contact")}>
+                Start a project
+                <ArrowRight className="h-4 w-4" />
+              </PillButton>
             </div>
           </div>
-        </footer>
-      </main>
-    </div>
+        </section>
+      </div>
+    </PublicLayout>
   );
 }
