@@ -75,7 +75,7 @@ return [
 
         'paths' => [
 
-            resource_path('js/Pages'),
+            resource_path('js/frontend/pages'),
             base_path('vendor/nreljed/platform/resources/js/Pages'),
             base_path('vendor/nreljed/blog/src/Resources/js/Pages'),
 
