@@ -34,8 +34,8 @@ Inertia resolves pages by **lowercased** component name. The controller renders 
 name; `resources/js/page-config.ts` must map it.
 
 - `Inertia::render('dashboard/index')` -> a `dashboard/index` entry in the page map
-- `Inertia::render('blog/index')` -> `frontend/pages/blog/public/Index.tsx`
-- `Inertia::render('public/about')` -> the project's `./frontend/pages/public/About.tsx`
+- `Inertia::render('blog/index')` -> `resources/js/frontend/pages/blog/public/Index.tsx`
+- `Inertia::render('public/about')` -> the project's `resources/js/frontend/pages/public/About.tsx`
 
 `resources/js/app.tsx` imports `pageConfig` and spreads
 `registerCoreTemplates()` plus `projectPages` / `pageOverrides`. CORE never
