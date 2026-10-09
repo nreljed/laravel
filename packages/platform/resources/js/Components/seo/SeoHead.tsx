@@ -41,8 +41,12 @@ export function SeoHead({
   const brand = (pageProps.brand as { name?: string }) || {};
 
   const siteTitle = siteSeo.title || "";
+  // Append the site title only when the caller's title is distinct AND does not
+  // already carry it. Authored `meta_title`s commonly include the brand (e.g.
+  // "Pricing | Acme"), so an unguarded append produced a double-branded title
+  // ("Pricing | Acme — Acme").
   const fullTitle = title
-    ? siteTitle && title !== siteTitle
+    ? siteTitle && title !== siteTitle && !title.includes(siteTitle)
       ? `${title} — ${siteTitle}`
       : title
     : siteTitle;
