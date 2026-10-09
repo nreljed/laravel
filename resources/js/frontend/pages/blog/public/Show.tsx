@@ -114,12 +114,13 @@ export default function BlogShow({ post }: BlogShowProps) {
           {post.category && (
             <Link
               href={route("blog.index", { category: post.category.slug })}
-              className="mb-4 inline-block text-sm font-medium uppercase tracking-wider text-site-secondary hover:text-site-ink"
+              className="mb-5 inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase transition-colors hover:text-site-ink"
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               {post.category.name}
             </Link>
           )}
-          <h1 className="font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
+          <h1 className="font-site-display text-4xl font-bold tracking-tight text-site-ink text-balance sm:text-5xl">
             {post.title}
           </h1>
           <div className="mt-4 flex items-center gap-3 text-sm text-site-ink-faint">
