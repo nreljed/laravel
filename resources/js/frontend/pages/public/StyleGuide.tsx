@@ -154,12 +154,20 @@ const sections = [
   { id: "pagination", label: "Pagination", number: "09" },
 ];
 
+// Palettes available to the live swapper: the canvasly module
+// (resources/css/themes/canvasly.css) and the base neutral fallback.
+const themeOptions = [
+  { slug: "canvasly", label: "Canvasly" },
+  { slug: "neutral", label: "Neutral" },
+];
+
 export default function StyleGuide() {
   const rootRef = useRef<HTMLDivElement>(null);
   const mobileNavPanelRef = useRef<HTMLDivElement>(null);
   const [resolved, setResolved] = useState<Record<string, string>>({});
   const [active, setActive] = useState<string>("colors");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [theme, setTheme] = useState<string>("canvasly");
 
   useEffect(() => {
     const root = rootRef.current?.closest("[data-site-theme]");
@@ -174,7 +182,7 @@ export default function StyleGuide() {
       }
     }
     setResolved(values);
-  }, []);
+  }, [theme]);
 
   // Scroll-spy: highlight the sidebar/mobile entry that matches the section
   // currently crossing the upper third of the viewport.
@@ -296,6 +304,7 @@ export default function StyleGuide() {
     >
       <div
         ref={rootRef}
+        data-site-theme={theme}
         className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-6 lg:px-10 lg:py-14"
       >
         {/* Sidebar (desktop sticky) + content */}
@@ -353,26 +362,55 @@ export default function StyleGuide() {
           <div>
             {/* Hero */}
             <header className="mb-12 border-b border-site-border pb-8 lg:mb-8">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
-                Design system
-              </p>
-              <h1 className="mt-3 font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
-                Style Guide
-              </h1>
+              <div className="flex flex-wrap items-start justify-between gap-6">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
+                    Design system
+                  </p>
+                  <h1 className="mt-3 font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
+                    Style Guide
+                  </h1>
+                </div>
+
+                {/* Live theme swapper — proves the token layer re-skins at runtime. */}
+                <div
+                  role="group"
+                  aria-label="Theme"
+                  className="inline-flex rounded-site-pill border border-site-border bg-site-surface p-1"
+                >
+                  {themeOptions.map((option) => (
+                    <button
+                      key={option.slug}
+                      type="button"
+                      onClick={() => setTheme(option.slug)}
+                      aria-pressed={theme === option.slug}
+                      className={cn(
+                        "rounded-site-pill px-4 py-1.5 text-sm font-medium transition-colors",
+                        theme === option.slug
+                          ? "bg-site-ink text-site-bg-strong"
+                          : "text-site-ink-soft hover:text-site-ink",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <p className="mt-5 max-w-2xl text-base leading-7 text-site-ink-soft">
                 A living reference for the public site. Every value below resolves from the{" "}
                 <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
                   site-*
                 </code>{" "}
-                tokens under{" "}
+                tokens scoped under{" "}
                 <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
-                  [data-site-theme="canvasly"]
+                  [data-site-theme="…"]
                 </code>
-                : swap the block in{" "}
+                . Each palette is an isolated module in{" "}
                 <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
-                  site.css
-                </code>{" "}
-                to introduce a new theme; this page is the theme's proof.
+                  resources/css/themes/
+                </code>
+                ; use the switcher above to re-theme this page live.
               </p>
             </header>
 

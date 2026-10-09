@@ -5,26 +5,31 @@
    page renders (Welcome, About, Services, Contact, landing pages)
    reads from these tokens ONLY — never raw hex in components.
 
-   Themes swap by scoping values under `[data-site-theme="…"]` on a
-   wrapper element — SiteRoot (resources/js/frontend/components/site/
-   SiteRoot.tsx) sets data-site-theme="canvasly" for the whole public
-   sub-tree. The Dashboard admin UI keeps its own shadcn tokens in
-   core.css — do not mix the two layers.
+   `:root` below holds the NEUTRAL fallback — used only when a site
+   subtree renders with no [data-site-theme]. Real palettes live as
+   isolated, swappable theme modules under resources/css/themes/ and
+   are imported here. SiteRoot (resources/js/frontend/components/site/
+   SiteRoot.tsx) applies data-site-theme="<slug>" to the public
+   sub-tree, and the style guide can swap it live. The Dashboard admin
+   UI keeps its own shadcn tokens in core.css — never mix the layers.
 
-Adding a new theme:
-   1. Copy the block under [data-site-theme="canvasly"]
-   2. Change the attribute value to your theme slug
-   3. Re-map the token values to your palette/type
-   4. Set data-site-theme="<slug>" on that site's page root
-   5. Add the matching dark block under
-      :where(html.dark) [data-site-theme="<slug>"] (see the canvasly
-      dark variant below) — every theme states its dark palette
+   Adding a theme:
+    1. Copy resources/css/themes/canvasly.css to themes/<slug>.css
+    2. Change the [data-site-theme="<slug>"] value and the palette —
+       including the :where(html.dark) variant, because every theme
+       states its own dark palette
+    3. Import it below
+    4. Pass theme="<slug>" to that page's SiteRoot
    ---------------------------------------------------------------- */
 
 /* Lenis smooth-scroll baseline (html.lenis rules, .lenis-smooth forces
    scroll-behavior:auto). Loaded before the site theme tokens so the
    reduced-motion `@media` overrides can follow below. */
 @import "lenis/dist/lenis.css";
+
+/* Swappable theme modules — one palette per file, all scoped under
+   [data-site-theme="<slug>"]. */
+@import "./themes/canvasly.css";
 
 @utility animate-marquee {
   animation: site-marquee 32s linear infinite;
@@ -45,97 +50,71 @@ Adding a new theme:
     overflow-anchor: none;
   }
 
-  :root {
+  /* Neutral palette — applied to <html> as the no-theme fallback AND to any
+     explicit [data-site-theme="neutral"] subtree (the style-guide swapper
+     uses it). Kept here rather than in a theme module because it is the
+     base every module layers over. */
+  :root,
+  [data-site-theme="neutral"] {
     /* Surfaces */
-    --site-bg: #f2f0e9;
+    --site-bg: #f6f6f7;
     --site-bg-strong: #ffffff;
     --site-surface: #ffffff;
 
     /* Text */
-    --site-ink: #1a1c18;
-    --site-ink-soft: rgba(26, 28, 24, 0.7);
-    --site-ink-faint: rgba(26, 28, 24, 0.5);
+    --site-ink: #18181b;
+    --site-ink-soft: rgba(24, 24, 27, 0.7);
+    --site-ink-faint: rgba(24, 24, 27, 0.5);
 
     /* Accents */
-    --site-accent: #d4ff00;
-    --site-accent-ink: #1a1c18;
-    --site-secondary: #6c7b61;
+    --site-accent: #4f46e5;
+    --site-accent-ink: #ffffff;
+    --site-secondary: #52525b;
 
     /* Panel accents (stat cards, callouts) */
-    --site-alt-1: #dbe4ff;
-    --site-alt-2: #5f9491;
+    --site-alt-1: #e4e4e7;
+    --site-alt-2: #a1a1aa;
 
-    /* Demo-only accent (creamy-axolotl pink) */
-    --site-pink: #ffd9e8;
+    /* Panel tint */
+    --site-pink: #f4f4f5;
 
     /* Hairlines + outline/fill text */
-    --site-border: rgba(26, 28, 24, 0.15);
-    --site-outline: #1a1c18;
+    --site-border: rgba(24, 24, 27, 0.15);
+    --site-outline: #18181b;
 
     /* Type */
-    --font-body-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-    --font-display-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-    --font-secondary-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-body-family: ui-sans-serif, system-ui, sans-serif;
+    --font-display-family: ui-sans-serif, system-ui, sans-serif;
+    --font-secondary-family: ui-sans-serif, system-ui, sans-serif;
 
     /* Radii */
     --radius-card: 0.75rem;
     --radius-pill: 9999px;
   }
 
-  /* Canvasly creative-agency theme (exact template clone) */
-  [data-site-theme="canvasly"] {
-    --site-bg: #f2f0e9;
-    --site-bg-strong: #ffffff;
-    --site-surface: #ffffff;
+  /* Neutral dark — the html-root fallback and an explicit neutral subtree.
+     `html.dark` ties :root's specificity and wins by source order. */
+  html.dark,
+  html.dark [data-site-theme="neutral"] {
+    --site-bg: #161618;
+    --site-bg-strong: #1e1e21;
+    --site-surface: #1e1e21;
 
-    --site-ink: #1a1c18;
-    --site-ink-soft: rgba(26, 28, 24, 0.7);
-    --site-ink-faint: rgba(26, 28, 24, 0.5);
+    --site-ink: #fafafa;
+    --site-ink-soft: rgba(250, 250, 250, 0.7);
+    --site-ink-faint: rgba(250, 250, 250, 0.5);
 
-    --site-accent: #d4ff00;
-    --site-accent-ink: #1a1c18;
-    --site-secondary: #6c7b61;
+    --site-accent: #818cf8;
+    --site-accent-ink: #18181b;
+    --site-secondary: #a1a1aa;
 
-    --site-alt-1: #dbe4ff;
-    --site-alt-2: #5f9491;
+    --site-alt-1: #27272a;
+    --site-alt-2: #52525b;
 
-    --site-pink: #ffd9e8;
+    --site-pink: #27272a;
 
-    --site-border: rgba(26, 28, 24, 0.15);
-    --site-outline: #1a1c18;
-
-    --font-body-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-    --font-display-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-    --font-secondary-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-
-    --radius-card: 0.75rem;
-    --radius-pill: 9999px;
-  }
-
-  /* Canvasly dark variant. `:where()` keeps specificity at (0,1,0) so this
-     only wins by being later than the light block above; the `.dark` class
-     is the app-wide next-themes toggle on <html>. Themes must state their
-     dark block explicitly (see design-pagecraft / frontend-site-theming). */
-  :where(html.dark) [data-site-theme="canvasly"] {
-    --site-bg: #11130f;
-    --site-bg-strong: #191c16;
-    --site-surface: #191c16;
-
-    --site-ink: #edf0e3;
-    --site-ink-soft: rgba(237, 240, 227, 0.72);
-    --site-ink-faint: rgba(237, 240, 227, 0.5);
-
-    --site-accent: #d4ff00;
-    --site-accent-ink: #1a1c18;
-    --site-secondary: #9cb08c;
-
-    --site-alt-1: #232c45;
-    --site-alt-2: #79a6a3;
-
-    --site-pink: #46283a;
-
-    --site-border: rgba(237, 240, 227, 0.14);
-    --site-outline: #edf0e3;
+    --site-border: rgba(250, 250, 250, 0.14);
+    --site-outline: #fafafa;
   }
 }
 
