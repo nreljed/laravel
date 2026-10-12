@@ -132,7 +132,6 @@
     "@zxcvbn-ts/core": "^4.2.0",
     "@zxcvbn-ts/language-common": "^4.1.2",
     "@zxcvbn-ts/language-en": "^4.1.1",
-    "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.2.6",
