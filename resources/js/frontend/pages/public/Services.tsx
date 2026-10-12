@@ -72,7 +72,7 @@ export default function Services() {
                 <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
                 Services
               </p>
-              <h1 data-hero className="site-h2 mt-6 max-w-[16ch]">
+              <h1 data-hero className="site-title mt-6 max-w-[16ch]">
                 Everything you need to break every cost.
               </h1>
             </div>
@@ -98,7 +98,7 @@ export default function Services() {
                     </span>
                     <service.icon className="h-5 w-5 text-site-ink-faint" />
                   </div>
-                  <h2 className="site-h5 mt-6">{service.title}</h2>
+                  <h2 className="site-heading-sm mt-6">{service.title}</h2>
                   <p className="mt-3 leading-relaxed text-site-ink-soft">{service.body}</p>
                 </div>
               ))}
@@ -113,7 +113,7 @@ export default function Services() {
             className="mx-auto flex max-w-site flex-col items-start justify-between gap-6 rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14 lg:flex-row lg:items-center"
           >
             <div>
-              <h2 className="site-h3 max-w-[18ch]">Not sure where your money goes?</h2>
+              <h2 className="site-title-sm max-w-[18ch]">Not sure where your money goes?</h2>
               <p className="site-lead mt-4 max-w-[46ch]">
                 Start tracking today \u2014 it takes less than a minute to set up.
               </p>

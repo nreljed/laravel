@@ -14,6 +14,4 @@ use Inertia\Inertia;
 //
 // Route::get('/example', fn () => view('example'))->name('example');
 
-Route::get('/style-guide', function () {
-    return Inertia::render('public/styleguide');
-})->name('styleguide');
+Route::get('/style-guide', fn () => Inertia::render('public/styleguide'))->name('styleguide');

@@ -155,14 +155,25 @@
 /* ------------------------------------------------------------------
    Fluid heading scale (desktop -> mobile)
    ------------------------------------------------------------------
-   Reusable class API for site headings. Base properties are zero-
-   specificity (:where) so per-element classes and Tailwind utilities
-   can tune/override; each class clamps between a mobile floor and a
-   desktop cap. Hierarchy is SEO-safe: H1 is the largest heading, hero
-   is the display crown reserved for the home hero / landing heads.
+   Reusable class API for site headings. These classes are a VISUAL
+   SIZE ramp, not heading levels — put one on any heading tag and let
+   the tag carry the semantics (one `h1` per page). `site-hero` is the
+   display crown reserved for the landing head; `site-lead` is the deck
+   paragraph. Base properties are zero-specificity (:where) so per-
+   element classes and Tailwind utilities can tune/override; each class
+   clamps between a mobile floor and a desktop cap.
    ------------------------------------------------------------------ */
 @layer components {
-  [data-site-theme] :where(.site-hero, .site-h1, .site-h2, .site-h3, .site-h4, .site-h5, .site-h6) {
+  [data-site-theme]
+    :where(
+      .site-hero,
+      .site-display,
+      .site-title,
+      .site-title-sm,
+      .site-heading,
+      .site-heading-sm,
+      .site-heading-xs
+    ) {
     font-family: var(--font-display-family);
     font-weight: 700;
     color: var(--site-ink);
@@ -176,39 +187,39 @@
     letter-spacing: -0.05em;
   }
 
-  [data-site-theme] .site-h1 {
+  [data-site-theme] .site-display {
     font-size: clamp(2.75rem, 7vw, 5.6rem);
     line-height: 0.9;
     letter-spacing: -0.05em;
   }
 
-  [data-site-theme] .site-h2 {
+  [data-site-theme] .site-title {
     font-size: clamp(2.25rem, 5.5vw, 4.5rem);
     line-height: 0.95;
     letter-spacing: -0.04em;
   }
 
-  [data-site-theme] .site-h3 {
+  [data-site-theme] .site-title-sm {
     font-size: clamp(1.875rem, 4vw, 3rem);
     line-height: 1;
     letter-spacing: -0.03em;
   }
 
-  [data-site-theme] .site-h4 {
+  [data-site-theme] .site-heading {
     font-size: clamp(1.5rem, 3vw, 2.25rem);
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.02em;
   }
 
-  [data-site-theme] .site-h5 {
+  [data-site-theme] .site-heading-sm {
     font-size: clamp(1.25rem, 2.5vw, 1.6rem);
     font-weight: 600;
     line-height: 1.15;
     letter-spacing: -0.02em;
   }
 
-  [data-site-theme] .site-h6 {
+  [data-site-theme] .site-heading-xs {
     font-size: clamp(1.05rem, 1.6vw, 1.25rem);
     font-weight: 700;
     line-height: 1.3;

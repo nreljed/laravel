@@ -45,7 +45,7 @@ export default function About() {
               <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               About
             </p>
-            <h1 data-hero className="site-h2 mt-6 max-w-[18ch]">
+            <h1 data-hero className="site-title mt-6 max-w-[18ch]">
               We built the cost tool our own budgets needed.
             </h1>
             <p data-hero className="site-lead mt-7 max-w-[56ch]">
@@ -59,7 +59,7 @@ export default function About() {
         {/* ---------- STORY ---------- */}
         <section className="px-6 pb-8 sm:px-10">
           <div className="mx-auto grid max-w-site gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-20">
-            <h2 data-reveal className="site-h2 max-w-[16ch]">
+            <h2 data-reveal className="site-title max-w-[16ch]">
               A cost platform that doesn&apos;t eat your budget.
             </h2>
             <div data-reveal className="space-y-5 text-lg leading-8 text-site-ink-soft">
@@ -91,7 +91,7 @@ export default function About() {
                     </span>
                     <principle.icon className="h-5 w-5 text-site-ink-faint" />
                   </div>
-                  <h3 className="site-h5 mt-6">{principle.title}</h3>
+                  <h3 className="site-heading-sm mt-6">{principle.title}</h3>
                   <p className="mt-3 leading-relaxed text-site-ink-soft">{principle.body}</p>
                 </div>
               ))}
@@ -111,7 +111,7 @@ export default function About() {
                   <HeartHandshake className="h-4 w-4" />
                   Dogfooding
                 </span>
-                <h2 className="site-h2 mt-5 max-w-[20ch]">We run our own books on it.</h2>
+                <h2 className="site-title mt-5 max-w-[20ch]">We run our own books on it.</h2>
                 <p className="site-lead mt-5 max-w-[50ch]">
                   Every cost we help you cut, we cut in our own stack first. Dogfooding keeps the
                   advice honest.

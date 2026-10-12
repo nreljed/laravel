@@ -103,7 +103,7 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               From the blog
             </p>
-            <h1 data-hero className="site-h2 mt-6">
+            <h1 data-hero className="site-title mt-6">
               {heading}
             </h1>
             <p data-hero className="site-lead mt-7 max-w-[52ch]">
@@ -170,7 +170,7 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
                             {post.category.name}
                           </span>
                         )}
-                        <h2 className="site-h5 transition-colors group-hover:text-site-secondary">
+                        <h2 className="site-heading-sm transition-colors group-hover:text-site-secondary">
                           {post.title}
                         </h2>
                         {post.excerpt && (

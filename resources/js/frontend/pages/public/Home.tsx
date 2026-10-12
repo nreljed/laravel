@@ -226,7 +226,7 @@ export default function Home() {
         {/* ---------- THE PROBLEM ---------- */}
         <section className="px-6 pb-6 sm:px-10">
           <div className="mx-auto grid max-w-site gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-20">
-            <h2 data-reveal className="site-h2 max-w-[18ch]">
+            <h2 data-reveal className="site-title max-w-[18ch]">
               Most teams can&apos;t say where a third of their spend goes.
             </h2>
             <p data-reveal className="site-lead max-w-[52ch]">
@@ -249,7 +249,7 @@ export default function Home() {
                   <span className="font-site-display text-sm font-bold text-site-accent">
                     {capability.n}
                   </span>
-                  <h3 className="site-h5 mt-4">{capability.title}</h3>
+                  <h3 className="site-heading-sm mt-4">{capability.title}</h3>
                   <p className="mt-3 leading-relaxed text-site-ink-soft">{capability.body}</p>
                 </div>
               ))}
@@ -260,7 +260,7 @@ export default function Home() {
         {/* ---------- HOW IT WORKS ---------- */}
         <section id="how" className="scroll-mt-24 px-6 py-20 sm:px-10">
           <div className="mx-auto max-w-site">
-            <h2 data-reveal className="site-h2 max-w-[20ch]">
+            <h2 data-reveal className="site-title max-w-[20ch]">
               Three moves to a leaner budget.
             </h2>
             <ol className="mt-14 grid gap-10 sm:grid-cols-3">
@@ -269,7 +269,7 @@ export default function Home() {
                   <span className="font-site-display text-5xl font-bold tracking-tight text-site-ink/15">
                     {step.n}
                   </span>
-                  <h3 className="site-h5 mt-4">{step.title}</h3>
+                  <h3 className="site-heading-sm mt-4">{step.title}</h3>
                   <p className="mt-2 leading-relaxed text-site-ink-soft">{step.body}</p>
                 </li>
               ))}
@@ -288,7 +288,7 @@ export default function Home() {
                 <Sparkles className="h-4 w-4" />
                 Bring your own AI
               </span>
-              <h2 className="site-h2 mt-5 max-w-[24ch]">
+              <h2 className="site-title mt-5 max-w-[24ch]">
                 Ask your spend a question. Keep your keys.
               </h2>
               <p className="site-lead mt-5 max-w-[54ch]">

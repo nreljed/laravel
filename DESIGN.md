@@ -93,9 +93,11 @@ the semantic `--site-*` tokens from `resources/css/site.css`, scoped by
   (with a `:where(html.dark)` variant). `site.css` imports them and holds the
   neutral fallback. Swap a theme by passing `theme="<slug>"` to `SiteRoot`, or
   live from the style guide.
-- Type scale: `site-hero` / `site-h1`…`site-h6` / `site-lead` (fluid clamps).
-  Hierarchy is SEO-safe: one `h1` per page; `site-hero` is reserved for the
-  landing crown.
+- Type scale: `site-hero` / `site-display` / `site-title` / `site-title-sm` /
+  `site-heading` / `site-heading-sm` / `site-heading-xs` / `site-lead` (fluid
+  clamps). These are **visual size tokens, not heading levels** — apply one to
+  any heading tag and let the tag carry the semantics (one `h1` per page);
+  `site-hero` is the display crown reserved for the landing head.
 
 ### CB360 "Ledger" identity (default public theme)
 

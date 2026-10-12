@@ -3,12 +3,12 @@ import { useMemo } from "react";
 import { ArrowUp, ArrowUpRight } from "lucide-react";
 
 const exploreLinks = [
-  { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Services", href: "/services" },
-  { label: "Blog", href: "/blog" },
-  { label: "Style Guide", href: "/style-guide" },
-  { label: "Contact", href: "/contact" },
+  { label: "Home", href: route("home") },
+  { label: "About", href: route("about") },
+  { label: "Services", href: route("services") },
+  { label: "Blog", href: route("blog.index") },
+  { label: "Style Guide", href: route("styleguide") },
+  { label: "Contact", href: route("contact") },
 ];
 
 const productLinks = [

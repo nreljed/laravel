@@ -87,49 +87,49 @@ const headingClasses: {
   {
     tag: "p",
     className: "site-hero",
-    sample: "Hero crown, reserved for the home hero head",
+    sample: "The display crown — the home hero head.",
     meta: "site-hero · clamp(3.25rem, 9vw, 7rem) · 700 · lh .85 · −.05em",
   },
   {
-    tag: "h1",
-    className: "site-h1",
-    sample: "Heading 1, the page title",
-    meta: "site-h1 · clamp(2.75rem, 7vw, 5.6rem) · 700 · lh .9 · −.05em",
+    tag: "p",
+    className: "site-display",
+    sample: "Display — the largest page title.",
+    meta: "site-display · clamp(2.75rem, 7vw, 5.6rem) · 700 · lh .9 · −.05em",
   },
   {
-    tag: "h2",
-    className: "site-h2",
-    sample: "Heading 2, major section titles",
-    meta: "site-h2 · clamp(2.25rem, 5.5vw, 4.5rem) · 700 · lh .95 · −.04em",
+    tag: "p",
+    className: "site-title",
+    sample: "Title — page heads and major section titles.",
+    meta: "site-title · clamp(2.25rem, 5.5vw, 4.5rem) · 700 · lh .95 · −.04em",
   },
   {
-    tag: "h3",
-    className: "site-h3",
-    sample: "Heading 3, subsection leads",
-    meta: "site-h3 · clamp(1.875rem, 4vw, 3rem) · 700 · lh 1 · −.03em",
+    tag: "p",
+    className: "site-title-sm",
+    sample: "Title sm — subsection leads.",
+    meta: "site-title-sm · clamp(1.875rem, 4vw, 3rem) · 700 · lh 1 · −.03em",
   },
   {
-    tag: "h4",
-    className: "site-h4",
-    sample: "Heading 4, card titles",
-    meta: "site-h4 · clamp(1.5rem, 3vw, 2.25rem) · 700 · lh 1.1 · −.02em",
+    tag: "p",
+    className: "site-heading",
+    sample: "Heading — card titles.",
+    meta: "site-heading · clamp(1.5rem, 3vw, 2.25rem) · 700 · lh 1.1 · −.02em",
   },
   {
-    tag: "h5",
-    className: "site-h5",
-    sample: "Heading 5, small card titles",
-    meta: "site-h5 · clamp(1.25rem, 2.5vw, 1.6rem) · 600 · lh 1.15 · −.02em",
+    tag: "p",
+    className: "site-heading-sm",
+    sample: "Heading sm — small card titles.",
+    meta: "site-heading-sm · clamp(1.25rem, 2.5vw, 1.6rem) · 600 · lh 1.15 · −.02em",
   },
   {
-    tag: "h6",
-    className: "site-h6",
-    sample: "Heading 6, eyebrow labels",
-    meta: "site-h6 · clamp(1.05rem, 1.6vw, 1.25rem) · 700 · lh 1.3 · −.01em",
+    tag: "p",
+    className: "site-heading-xs",
+    sample: "Heading xs — eyebrow labels.",
+    meta: "site-heading-xs · clamp(1.05rem, 1.6vw, 1.25rem) · 700 · lh 1.3 · −.01em",
   },
   {
     tag: "p",
     className: "site-lead",
-    sample: "Lead paragraph, the intro line that follows a heading.",
+    sample: "Lead paragraph — the intro line that follows a heading.",
     meta: "site-lead · clamp(1.125rem, 1.7vw, 1.5rem) · lh 1.65 · −.015em",
   },
 ];
@@ -462,7 +462,7 @@ export default function StyleGuide() {
             <section id="typography" className="mb-16 scroll-mt-28">
               {sectionHeading("02", "Typography")}
               <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
-                One base size and a set of semantic heading classes. There are no ad-hoc text sizes;
+                One base size and a set of heading size tokens. There are no ad-hoc text sizes;
                 everything else derives from these two layers.
               </p>
 
@@ -484,6 +484,10 @@ export default function StyleGuide() {
               <div className="mt-6 rounded-site-card border border-site-border bg-site-surface p-6">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
                   Heading classes
+                </p>
+                <p className="mt-2 max-w-2xl text-sm text-site-ink-soft">
+                  These are visual size tokens, not heading levels — apply one to any heading tag
+                  and let the tag carry the semantics (one <code>h1</code> per page).
                 </p>
                 <div className="mt-2">
                   {headingClasses.map((item) => {

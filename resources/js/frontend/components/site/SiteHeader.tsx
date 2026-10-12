@@ -6,7 +6,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
 
 const navLinks = [
-  { label: "Home", href: "/" },
+  { label: "Home", href: route("home") },
   { label: "About", href: route("about") },
   { label: "Services", href: route("services") },
   { label: "Blog", href: route("blog.index") },
@@ -51,7 +51,11 @@ export function SiteHeader() {
         )}
       >
         <div className="mx-auto flex h-full w-full max-w-site items-center justify-between px-6 sm:px-10">
-          <Link href="/" aria-label={appName || "Home"} className="inline-flex items-center">
+          <Link
+            href={route("home")}
+            aria-label={appName || "Home"}
+            className="inline-flex items-center"
+          >
             {brand.logo ? (
               <img
                 src={brand.logo}
@@ -88,7 +92,6 @@ export function SiteHeader() {
         links={menuLinks}
         brand={appName}
         logo={brand.logo}
-        note="Break every cost."
       />
     </>
   );
