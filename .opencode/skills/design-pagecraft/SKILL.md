@@ -7,9 +7,9 @@ description: "Routes and enforces the full professional page-craft workflow for 
 
 This skill does not contain design knowledge itself. It ROUTES to the installed
 skills in the correct order and enforces nreljed conventions so they compose
-without fighting. All referenced skills are installed globally
-(`~/.agents/skills/`, `~/.config/opencode/skills/`) AND mirrored in
-`.opencode/skills/`.
+without fighting. The referenced skills are installed project-locally in this
+repo's `.opencode/skills/` (a couple — such as `impeccable` and `webapp-testing`
+— also exist globally, but the project copy takes precedence).
 
 ## Read first (always)
 

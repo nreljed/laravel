@@ -26,7 +26,7 @@ Use `search-docs` for detailed Inertia v3 React patterns and documentation.
 
 ### Page Components Location
 
-React page components should be placed in the `resources/js/Pages` directory.
+React page components live in the platform package's `Pages/` (the shared kit) or this app's `resources/js/frontend/pages/`. Each app registers the exact pages it wants in `resources/js/page-config.ts` (`basePages` + `projectPages` + `pageOverrides`); Inertia resolves them by **lowercased** component name.
 
 ### Page Component Structure
 

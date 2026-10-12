@@ -6,7 +6,7 @@ description: Deploying the nreljed Laravel apps (laravel.shop host, laravel mono
 # Deploy Operations Guide (nreljed apps)
 
 Three apps auto-deploy on push to their default branch via GitHub Actions. All share the
-same infra pattern (DeployController/DeployService ship from `nreljed/dashboard-core`),
+same infra pattern (DeployController/DeployService ship from `nreljed/platform`),
 but have distinct repos, branches, servers, DBs, and deploy tokens.
 
 | | Shop host | Monorepo (Cost Breaker 360) | Booking |
@@ -89,17 +89,17 @@ node scripts/switch-composer-repos.js vcs shop booking    # back to release-pinn
 ## Secrets & token design (CRITICAL)
 
 **ONE fine-grained PAT** `GH_TOKEN` ("nreljed-deploy") covers all six repos
-(`nreljed/laravel`, `laravel.shop`, `laravel.booking`, `dashboard-core`, `shop-module`,
+(`nreljed/laravel`, `laravel.shop`, `laravel.booking`, `platform`, `shop-module`,
 `booking-module`). It is set in all THREE app repos (`laravel`, `laravel.shop`,
 `laravel.booking`) and stored in all THREE server `.env` files. This is because each
-app's composer install VCS-clones its private packages (Shop: `dashboard-core` +
-`shop-module`; Booking: `dashboard-core` + `booking-module`; monorepo: `dashboard-core`),
+app's composer install VCS-clones its private packages (Shop: `platform` +
+`shop-module`; Booking: `platform` + `booking-module`; monorepo: `platform`),
 and per-repo tokens can't express that. The unified token is pushed to servers by the
 env-push step, so it never goes stale.
 
 Repo spaces:
 - App repos (Contents R+W + **Pull requests R+W REQUIRED** — `gh pr merge` does a GraphQL `repository.pullRequest` lookup and fails with "Resource not accessible by personal access token" without it): `nreljed/laravel`, `nreljed/laravel.shop`, `nreljed/laravel.booking`
-- Package repos (Contents only): `nreljed/dashboard-core` (R+W), `nreljed/shop-module` (R), `nreljed/booking-module` (R)
+- Package repos (Contents only): `nreljed/platform` (R+W), `nreljed/blog` (R), `nreljed/shop-module` (R), `nreljed/booking-module` (R)
 
 Rules:
 - Never create/rotate per-repo tokens. Always use the one unified PAT.
@@ -177,13 +177,21 @@ curl.exe -sS -X POST -H "Content-Type: application/json" --data-binary "@$env:TE
 - Raw curl from Windows PowerShell can't STOR (no passive flag) — use `curl.exe -T` with
   `--ftp-port -` or the FtpWebRequest code path for testing.
 
-## Core package publish (monorepo only)
+## Core package publish (tag pipeline, not the monorepo)
 
-Pushing to `main` touching `packages/dashboard-core/**` triggers `core-publish.yml`:
-subtree-split → `nreljed/dashboard-core`, version bump (git-cliff) + tag, GH release, and
-dispatch `core-updated` to consumers. DeployController/DeployService/deploy:auto all ship
-from this package, so core changes propagate to every app via `./update-core.sh`
-(`composer update` → `npm install` → `npm run build` → `php artisan migrate`).
+Core now publishes from the standalone **`nreljed/platform`** repo (and `nreljed/blog`). The old
+monorepo `core-publish.yml` / `scripts/core-publish.php` subtree-split flow is **deleted**. To ship a
+core change:
+
+1. Edit the core clone (`C:\Users\nrelj\Local Sites\platform` or `...\blog`), commit + push (branch → PR).
+2. Tag `vX.Y.Z` on `main`. Core CI hard-fails unless **both** `composer.json` and `package.json`
+   `version` match the tag, then creates the GitHub Release automatically and fires the
+   `core-updated` `repository_dispatch` to every consumer in the `CORE_CONSUMERS` repo variable.
+3. Consumers pull via `composer update nreljed/platform` (+ `npm install` / `pnpm install` →
+   `npm run build` → `php artisan migrate`). Their `core-update.yml` opens a validated, lock-only PR.
+
+Never hand-create the release (the tag pipeline owns it) and never hand-edit `vendor/nreljed/*`
+or the `packages/*` mirrors. See `docs/core-dashboard-package.md` §7.1 for the publish/consumption contract.
 
 ## Deploy Runner (auto-repair / release model)
 
@@ -229,8 +237,7 @@ is the zero-framework control plane used when `/deploy/*` can't answer (app wedg
 | PHPUnit passes locally but view-rendering tests 500 in CI | Vite manifest missing — assets must be built BEFORE PHP tests. Ordering is canonical in all app workflows now; keep it. |
 | `npm ci` ERESOLVE (eslint v10 vs eslint-plugin-react peers) in any repo | Append `--legacy-peer-deps` to npm ci (applied everywhere 2026-08-25). |
 | ParaTest workers under `--parallel` still at 128M despite `-d memory_limit=512M` | `-d` does NOT propagate to spawned workers; `--passthru-php="'-d' ..."` quoting breaks cross-shell (verified empirically). PERMANENT FIX 2026-08-25: runner PHP `C:\php\php.ini` bumped to `memory_limit = 512M` machine-wide; worker inheritance PROVEN via probe test asserting `ini_get('memory_limit')==='512M'` under `--parallel`. |
-| `core-publish.yml` fails with `Author identity unknown` at `git commit` | CI runners have no global git identity. FIXED 2026-08-21: `scripts/core-publish.php` now sets a `github-actions[bot]` identity on its temp clone. If it resurfaces, check the identity block right after the clone step. |
-| `core-publish.php` fails `git fetch: not a git repository` locally | Interrupted run left a broken temp clone (`%TEMP%\core-publish-nreljed`, `.git` missing HEAD). FIXED 2026-08-21: script auto-detects and re-clones. |
+| Tag pushed to `nreljed/platform`/`blog` but no release appears | `composer.json` and `package.json` `version` must BOTH equal the tag (without the `v`); core CI hard-fails on any mismatch. Bump both, re-tag |
 | Publish succeeded but consumers never got a PR | Dispatch step is `continue-on-error` — check the publish run log for "WARN: dispatch ... failed" (GH_TOKEN missing Contents R+W on the consumer repo), or consumer ran before the release. Fallback: `gh workflow run core-update.yml -R <consumer>`. |
 | `npm audit --audit-level=high` fails on nanoid | Need `"overrides": {"nanoid": "^3.3.18"}` in `package.json` + lockfile update |
 | `/deploy/check` returns 403 "Invalid or missing deploy token" | Wrong `DEPLOY_TOKEN` used (e.g. passed the secret NAME instead of value). Use the literal value from the server `.env`. |

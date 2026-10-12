@@ -10,12 +10,12 @@ metadata:
 
 ## MediaService
 
-`App\Services\MediaService` is the single backend entry point for all file uploads (`upload()`, `delete()`, `getValidationRules()`).
+`Nreljed\Platform\Services\MediaService` is the single backend entry point for all file uploads (`upload()`, `delete()`, `getValidationRules()`).
 
 ### Image Processing Pipeline
 
 ```php
-// app/Services/MediaService.php
+// vendor/nreljed/platform/src/Services/MediaService.php
 const int MAX_DIMENSION = 1920; // downscale beyond this
 const int QUALITY = 80;         // WebP encode quality
 const int MAX_FILE_SIZE = 51200; // 50MB in KB

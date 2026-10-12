@@ -6,7 +6,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | C:/runners/platform/** | .ai/rules/actions-runner-core.md |
 | vendor/nreljed/platform/src/Ai/Agents/** | .ai/rules/agents.md |
-| vendor/nreljed/platform/src/Concerns/InteractsWithFeatures.php | .ai/rules/concerns.md | |
+| vendor/nreljed/platform/src/Concerns/InteractsWithFeatures.php | .ai/rules/concerns.md |
 | vendor/nreljed/platform/src/Deploy/** | .ai/rules/deploy.md |
 | tests/Feature/** | .ai/rules/feature.md |
 | vite.config.js, pnpm-workspace.yaml | .ai/rules/general.md |

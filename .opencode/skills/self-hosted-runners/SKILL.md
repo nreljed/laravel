@@ -5,15 +5,15 @@ description: Self-hosted GitHub Actions runners on the dev laptop for all nrelje
 
 # Self-Hosted Runners Guide (nreljed repos)
 
-Seven GitHub Actions runners run on this dev laptop — one registration per repo
+Eight GitHub Actions runners run on this dev laptop — one registration per repo
 (GitHub rule: repo-scoped runners can't serve other repos). They exist because
 **GitHub-hosted runners are billing-blocked account-wide** ("recent account payments
 have failed or your spending limit needs to be increased" kills every hosted job in ~5s).
 
 ## Inventory
 
-> **Layout (2026-08-31):** all seven install folders live under `C:\runners\<suffix>` (`C:\runners\shop`,
-> `C:\runners\laravel`, `C:\runners\booking`, `C:\runners\core`, `C:\runners\shopmodule`,
+> **Layout (2026-08-31):** all eight install folders live under `C:\runners\<suffix>` (`C:\runners\shop`,
+> `C:\runners\laravel`, `C:\runners\booking`, `C:\runners\platform`, `C:\runners\blog`, `C:\runners\shopmodule`,
 > `C:\runners\bookingmodule`, `C:\runners\projectwp`) — they were moved from `C:\actions-runner-*` flat on
 > `C:\` root. Each runner still needs its OWN directory (GitHub constraint — one install dir can't serve
 > multiple registrations; each has its own `.runner` + `_work`). Moving a folder wholesale **preserves the
@@ -164,8 +164,8 @@ After ANY `.env` edit: restart the listener (kill `Runner.Listener.exe` for that
 ## Operations cheat sheet
 
 ```powershell
-# Status of all three (GitHub side)
-foreach ($repo in 'nreljed/laravel','nreljed/laravel.shop','nreljed/laravel.booking','nreljed/dashboard-core','nreljed/shop-module','nreljed/booking-module','nreljed/Project-WP') {
+# Status of all eight (GitHub side)
+foreach ($repo in 'nreljed/laravel','nreljed/laravel.shop','nreljed/laravel.booking','nreljed/platform','nreljed/blog','nreljed/shop-module','nreljed/booking-module','nreljed/Project-WP') {
   gh api "repos/$repo/actions/runners" --jq '.runners[] | .name+" "+.status+" busy="+(.busy|tostring)' }
 
 # Restart ONE runner (graceful-ish): kill only its listener, then relaunch via run.cmd
@@ -214,9 +214,9 @@ not a code change:
 - Every `runs-on:` is written `${{ vars.RUNNER_CI || 'self-hosted' }}` (same for PACKAGE) so a
   missing/empty var degrades safely to today's behavior instead of failing the run.
 - **Reusable workflows (`workflow_call`)** resolve `vars` against the **CALLING** repo — so
-  `consumer-ci.yml` (lives in dashboard-core) reads the var from laravel/shop/booking. Each
+  `consumer-ci.yml` (lives in platform) reads the var from laravel/shop/booking. Each
   consumer repo must have `RUNNER_CI` set for its own CI to work.
-- Flip everything across all 7 repos: `pwsh -NoProfile -File C:\tools\switch-runners.ps1 self|cloud`
+- Flip everything across all 8 repos: `pwsh -NoProfile -File C:\tools\switch-runners.ps1 self|cloud`
   (creates/updates both vars per repo, verifies, prints caveats). A browser edit of one repo's
   var flips just that repo.
 - GitHub has **no native auto-failover** between runner types (a mixed label list never matches),

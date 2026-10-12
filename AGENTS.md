@@ -13,55 +13,8 @@ Cost Breaker 360 is a server-rendered single-page application that provides:
 - **Auth** — login, registration, email verification, password reset, impersonation
 - **Deploy** — zero-SSH CI/CD pipeline via GitHub Releases + token-protected endpoints
 
-The app uses a **feature-based architecture** where each domain (Blog, future features) is self-contained with its own routes, controllers, models, migrations, and frontend pages.
-
-## Package Model & Source of Truth (2026-08-24)
-
-**`nreljed/platform` is now the standalone product repo and the single
-source of truth.** This monorepo became a regular consumer on 2026-08-24:
-
-- composer requires `nreljed/platform: ^0.1` from the VCS repo (was:
-  path repo + `@dev`).
-- Frontend aliases `@` / `@dashboard` resolve into
-  `vendor/nreljed/platform/...`, and `@blog` into
-  `vendor/nreljed/blog/...` (vite.config.js + tsconfig.json).
-- Develop core via PRs in `nreljed/platform`; release = semver tag →
-  GitHub Release (auto) → `core-updated` dispatch to all consumer apps.
-- Blog is a sibling standalone package (`nreljed/blog`, slug `posts`):
-  `registerBlogPages()` from `@blog/pages`, its own migrations/commands,
-  `blog-updated` dispatch. Apps consume both via Composer vcs.
-- Burn-in COMPLETE (2026-08-24): the old local core copy,
-  `core-publish.yml`, `scripts/core-publish.php` and the `core:publish`
-  script are deleted; vitest/eslint/prettier/pre-push configs, Inertia page
-  globs, CSS sources and deploy-package core recording all read from
-  `vendor/nreljed/platform` / `composer.lock`. Never re-create a local
-  copy of core — package repo only.
-- `composer.lock` is the pin of record — commit it whenever core updates.
-
-> **Workspace (2026-09-14 — supersedes the frontend-vendor consumption)** — this repo's root is
-> now a **pnpm workspace**: `packages/*` (platform, blog, shop-module, booking-module) +
-> `apps/*` (laravel.shop, laravel.booking brought in; the mono app stays at root for now).
-> The frontend kit is consumed as **workspace packages** (`@nreljed/platform`, `@nreljed/blog`)
-> symlinked from `node_modules` → `packages/*` — NOT vendor. The single `pnpm-lock.yaml` at the
-> root is the npm pin of record. `tsconfig.json` `paths` map `@nreljed/platform/*` →
-> `packages/platform/resources/js/*` and `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`
-> (TS can't resolve the packages' `./*` wildcard `exports`); the packages' `.d.ts` globs are in
-> `include` because `packages/platform/.../types/global.d.ts` ships the ambient `route` global +
-> the `@inertiajs/core` PageProps augmentation the whole app relies on.
-> **`packages/*` are one-way mirrors of the standalone repos** (source of truth), not
-> independent copies — keep them in sync with `scripts/sync-package-mirror.mjs` (copies the
-> repo's git-tracked tree into `packages/<pkg>`) and `scripts/diff-package-dir.mjs` (reports
-> missing/differ/excess). The `packages/platform` mirror tracks the standalone platform clone
-> (`C:\Users\nrelj\Local Sites\platform`, vX.Y.Z tag) and the blog mirror tracks
-> `C:\Users\nrelj\Local Sites\blog`. NOTE: `sync-package-mirror.mjs` uses `git ls-files`, so new
-> files must be committed (or git-added) in the standalone repo first or they are treated as
-> "excess" and deleted from the mirror.
-> **Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
-> into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0` and
-> `allowBuilds:` live **top-level in `pnpm-workspace.yaml`**; there is deliberately no `.npmrc`
-> and no `pnpm` field in `package.json` (pnpm 11 ignores both). The drift guard
-> (`scripts/check-platform-consistency.js`) now reads pnpm-lock importer versions for workspace
-> apps and `package-lock.json` for any remaining npm apps, plus each app's `composer.lock`.
+The app uses a **feature-based architecture** where each domain (Blog, future features) is
+self-contained with its own routes, controllers, models, migrations, and frontend pages.
 
 ## Tech Stack
 
@@ -69,7 +22,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 | ------------- | ----------------------------- | --------------------------------- |
 | Backend       | Laravel                       | 13.x (PHP 8.4+)                   |
 | Frontend      | React                         | 19.2                              |
-| SPA Bridge    | Inertia.js                    | 3.6                               |
+| SPA Bridge    | Inertia.js                    | 3.8                               |
 | Build         | Vite                          | 8.x                               |
 | Language      | TypeScript                    | 6.x                               |
 | Styling       | Tailwind CSS                  | 4.x                               |
@@ -79,166 +32,60 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 | Database      | SQLite (local) / MySQL (prod) | —                                 |
 | Notifications | Laravel Notifications         | database channel                  |
 | Routing (JS)  | Ziggy                         | 2.6                               |
-| AI SDK        | Laravel AI                    | 0.9                               |
+| AI SDK        | Laravel AI                    | 0.10                              |
 | AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8                         |
 
 ## Code Style
 
-- Functional components with hooks, strict TypeScript
-- 4 spaces indentation (PHP), 2 spaces (TSX)
-- Use `cn()` from `@/lib/utils` for class merging
-- All routes via Ziggy's `route()` helper — no hardcoded URLs
-- Inertia `useForm` for all form state
-- `useAuth` hook from `@/hooks/use-auth` for auth state
-- `next-themes` `<ThemeProvider>` for dark mode
-- `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
-- Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
-- Aliases (workspace-mapped in `tsconfig.json`, NOT vite): `@nreljed/platform/*` → `packages/platform/resources/js/*`; `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`. The legacy vendor aliases (`@`, `@dashboard`, `@blog`) are gone — package sources import each other via `@nreljed/*` and relative paths
-- `asChild` / `Slot` pattern is standard for component composition
+- 4-space indentation (PHP), 2-space (TSX); Laravel Pint for PHP (PSR-12).
+- Functional components with hooks, strict TypeScript.
+- All routes via Ziggy's `route()` helper — no hardcoded URLs; Inertia `useForm` for form state.
+- Component imports use the `@nreljed/platform/...` / `@nreljed/blog/...` workspace aliases —
+  the legacy vendor aliases (`@`, `@dashboard`, `@blog`) are gone; Base UI uses the `render`
+  prop, never `asChild` / `Slot`.
+- Frontend specifics (theming, `cn()`, `useAuth`, `toast.add()`, tokens) live in
+  `resources/js/AGENTS.md`.
 
 ## Architecture
 
-The app is a **platform consumer**: the dashboard platform lives in the
-`nreljed/platform` package (installed from GitHub via Composer vcs into
-`vendor/nreljed/platform`); this repo is a thin app shell + theme.
+The app is a **platform consumer**: the dashboard platform lives in the `nreljed/platform`
+package (Composer vcs → `vendor/nreljed/platform`); this repo is a thin app shell + theme.
 
 ```
-vendor/nreljed/platform/      # CORE platform (composer vcs, the product — see below)
-  PlatformServiceProvider.php  # Kernel: routes, middleware, rates, gates, schedules, mailer
-  routes/
-    web.php                         # Public, dashboard, admin, deploy, csp-report, maintenance
-    auth.php                        # Login, register, password, verification
-  config/                           # core.php, roles.php, admin.php, deploy.php, database-maintenance.php, features.php, media.php
-    core.php                        # engine gates: load_migrations, github_repo, inertia_middleware, settings groups
-    roles.php                       # base permission catalog + default roles (RoleCatalog merges + app delta + features)
-  resources/
-    js/                             # CORE frontend — components/ui, hooks, layouts, editor, Pages
-    css/core.css                    # design tokens (shadcn base-vega) — apps override, never edit
-    views/                          # Blade: app shell, errors/40x-50x, maintenance, mail, notifications, pagination
-src/
-    Ai/                             # BYOK AI feature (agents, ai providers, usage logs)
-    PublicSite/                     # Public template pages (welcome/about/services/contact, sitemap)
-    Console/Commands/               # CreateAdmin, CreateRole, ListPermissions, ...
-    Contracts/                      # FeatureProvider interface
-    Database/                       # Factories, seeders, migrations
-    Deploy/                         # DeployController (check, cacheClear, upload, reset, env)
-    Enums/                          # AuditAction
-    Http/                           # Middleware (HandleInertiaRequests, Admin, CheckPermission, ...), Controllers (Admin/Auth/Api), Requests
-    Jobs/ Mail/ Models/             # SendEmail, DynamicMailable, User, Role, Permission, Notification, ...
-    Notifications/ Observers/ Policies/ Providers/
-    Rules/ Services/ Support/ Traits/
-    Support/FoundationCheck.php     # Boundary fence monitor
-  package.json                      # npm peerDependencies + exports map (./app, ./dashboard, ./*)
-  core-manifest.json                # Boundary fence manifest (app_owned_files, forbidden paths, overridable config)
-  docs/                             # architecture, feature-provider, frontend, theme, modules, deploy, commands
-  tests/                            # core test suite (runs in core CI; consumers opt-in via core's phpunit.xml.dist)
-  .github/workflows/ci.yml          # core repo lint + phpunit; auto-release on v* tags
-vendor/nreljed/blog/                # BLOG feature package (composer vcs, standalone repo nreljed/blog)
-  BlogServiceProvider.php           # slug posts, dashboard/posts + blog routes, schedule:publish, own commands/migrations
-  src/                              # Nreljed\Blog — Controllers, Models, Requests, Routes, Services, Console, Jobs, Observers, Policies, Database
-  database/migrations/              # 11 posts/categories/tags migrations (CANONICAL — apps must not re-own these)
-  src/Resources/js/                 # Blog frontend (@blog) — pages.ts exports registerBlogPages()
-  package.json                      # npm peerDependencies
-  tests/                            # Structural/contract suite (blog CI; apps keep their own integration tests)
-  scripts/frontend-boundary-check.php
-app/                                # APP shell (thin — most logic lives in the platform/blog packages)
-  Http/Controllers/Controller.php   # Base controller
-  Providers/AppServiceProvider.php
-  Providers/TelescopeServiceProvider.php
-resources/js/                       # APP shell frontend (master) — entry + project-owned THEME
-  app.tsx                           # Entry — imports pageConfig, calls createFoundationApp()
-  page-config.ts                    # SINGLE SOURCE OF TRUTH for page resolution — buildPageMap(base + project + overrides)
-  test-setup.ts                     # Vitest setup
-  frontend/                         # FRONTEND bucket — everything the frontend team owns, one folder
-    pages/public/                   #   MARKETING pages (Home/About/Services/Contact/StyleGuide) — override core's public/* via pageOverrides
-    pages/blog/public/              #   Blog public templates (Index/Show) — override blog/public/*
-    layouts/                        #   PublicLayout (SiteRoot shell) + StoreLayout (storefront theme seam)
-    components/site/                #   Canvasly site kit (SiteHeader/SiteFooter/SiteMenuOverlay/SitePill/…) + motion/ recipes
-routes/                             # APP-only routes (most routing lives in the core package)
-  web.php                           # Reserved for project-specific routes — public/dashboard/admin/deploy/csp-report live in vendor/nreljed/platform/routes
-  channels.php
-  console.php
+vendor/nreljed/platform/   # CORE engine: routes/, config/, resources/js (kit + Pages), src/
+                           #   (Ai, PublicSite, Console, Contracts, Database, Deploy, Enums,
+                           #    Http, Jobs, Mail, Models, Notifications, Observers, Policies,
+                           #    Rules, Services, Support, Traits)
+vendor/nreljed/blog/       # BLOG feature package (Nreljed\Blog): controllers, models,
+                           #   migrations, Resources/js (@nreljed/blog)
+app/                       # APP shell (thin) — Http/Controllers/Controller.php, Providers/
+resources/js/              # APP shell frontend (master) — entry + project-owned THEME
+  app.tsx                  #   entry — imports pageConfig, calls createFoundationApp()
+  page-config.ts           #   SINGLE SOURCE OF TRUTH for page resolution (base + project + overrides)
+  frontend/                #   everything the frontend team owns: pages/, layouts/, components/site/
+routes/                    # APP-only routes (public/dashboard/admin/deploy live in the platform package)
+scripts/                   # runners, validators, deploy pipeline, mirror sync
 ```
 
-> **Platform / Theme / Module (mental model)** — the core package is the _engine_
-> (routes, controllers, shared props, RBAC, deploy, notifications, media) and ships a
-> component KIT (ui/, hooks, layouts, editor) plus PLATFORM pages (auth/dashboard/
-> admin/account/settings/error). Template/marketing pages are a **theme concern and
-> live in the project** (or a fork-me starter). "Modules" are self-contained
-> `FeatureProvider`s discovered by `FeatureRegistry` that plug routes, permissions,
-> nav items, dashboard data and their own frontend pages into the platform. Keep
-> engine code in core, keep project visuals in `resources/js`, keep project
-> features in `app/`.
-> **Platform skills** (feature-architecture, permission-system, lexical-editor-development)
-> live globally at `~/.config/opencode/skills/` — they describe the platform
-> package, not this app. App/project conventions stay in this repo's `.agents/skills/`.
-
-> **Frontend page resolution** — Inertia resolves pages by **lowercased** component name. `dashboard.ts` exposes `registerCoreTemplates()` — the opt-in CORE kit: PLATFORM pages from `./Pages/**/*.tsx`, feature pages from `../../src/*/Resources/js/Pages/**/*.tsx` prefixed `blog/`/`public/`. The blog package ships `@nreljed/blog/pages` → `registerBlogPages()`. The app entry spreads these into `basePages`, then applies its `pageOverrides` (project theme swaps). Controllers render lowercase names, e.g. `Inertia::render('dashboard/index')`, `'public/about'`, `'blog/index'` (→ `Blog/Public/Index.tsx`).
-
-> **Frontend ownership (opt-in page inventory)** — CORE never auto-registers pages. Each app's `page-config.ts` builds its own explicit pageMap:
-> `basePages: registerCoreTemplates()` (the shared control panel + template pages it wants), plus `projectPages` for namespaced project pages (`projectPrefix`), plus `pageOverrides` to swap any CORE-owned page for a project page (applied last, wins — e.g. `"public/about": () => import("./frontend/pages/public/About")`). Routes + controllers stay in CORE (they render `public/*`, `dashboard/*`, `blog/*` …) — only the page component swaps. This is how Shop/Booking ship their own marketing sites without forking core. The client entry (`app.tsx`) imports `pageConfig` — never duplicate the config block.
-
-> **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
-
-> **Frontend dependency management (workspace era)** — each package's `package.json` declares
-> `peerDependencies` for every runtime npm package it imports (React, Inertia, Lexical, Base UI,
-> shadcn, etc.) and consumes apps declare them as direct dependencies. Resolution parity
-> between apps is guaranteed by the **single root `pnpm-lock.yaml`** (workspace members cannot
-> drift from siblings) — the old per-app `package-lock.json` + `vite.dedupe.js` setup is gone.
-> To add a runtime npm dependency to a package, update that package's `package.json` peers AND
-> list it as a direct dependency in every app that imports it; then `pnpm install` once at the
-> root and commit the lockfile. Run `pnpm workspace <name> add <pkg>` / `pnpm -w add <pkg>`
-> to modify the root/workspace manifests cleanly.
-
-> **Core development model (vcs install — do NOT hand-edit vendor)** — everything under
-> `vendor/nreljed/platform` is a Composer vcs install (dist zip pinned by
-> `composer.lock`). It is overwritten on `composer update` — never edit it directly.
-> Core source lives in the standalone platform repo, cloned locally at
-> **`C:\Users\nrelj\Local Sites\platform`** (origin `github.com/nreljed/platform`). Dev loop:
->
-> 1. Edit the **core clone**, commit + push (branch → PR).
-> 2. Tag `vX.Y.Z` → core CI (`ci.yml`) creates the GitHub Release automatically.
->    The publish step bumps **both** `composer.json` `version` and `package.json`
->    `version` — the two must never drift.
-> 3. Consumers pull: `composer update nreljed/platform && npm run build`.
-> 4. Automated propagation: push to core `main` fires `repository_dispatch`
->    (`core-updated`) to consumer repos; their `core-update.yml` opens a
->    `composer update` PR (Shop has this; merge → their deploy takes over). Weekly
->    Mon 09:00 UTC cron is the fallback; manual trigger:
->    `gh workflow run core-update.yml -R <consumer>`.
->
-> - **Fast local iteration**: the vendor copy drives runtime/tests. To test core
->   changes live before tagging, temporarily switch this repo's composer entry to a
->   `path` repo, `composer update nreljed/platform`, and revert the entry
->   before pushing. There is **no `composer reinstall` shortcut** — that only worked
->   for the deleted path-repo model. Frontend consumes `vendor/...` too, so core JS
->   edits also need the updated vendor copy.
-> - Consumer CI clones the private repo via `COMPOSER_AUTH` using `secrets.GH_TOKEN` —
->   that token needs **Contents: Read** on `nreljed/platform`.
+> **Package model** — `nreljed/platform` (engine) and `nreljed/blog` are the standalone repos and
+> the source of truth; this repo consumes them (Composer vcs → `vendor/`, pnpm workspace →
+> `packages/`). `packages/**` and `apps/**` are **one-way mirrors** of their own repos — never
+> author a fix in a mirror; edit the owning repo, tag, then re-sync. Full model, workspace layout
+> and the core dev loop: `docs/packages.md`.
 
 ## Feature Architecture
 
-Each feature is self-contained and registered via `FeatureRegistry`.
-
-### How It Works
-
-1. **`FeatureRegistry`** (`vendor/nreljed/platform/src/Services/FeatureRegistry.php`) — singleton, delegates to feature service providers
-2. **Feature Service Providers** (e.g., `BlogServiceProvider`) — register routes, permissions, nav items
-3. **`HandleInertiaRequests`** calls `FeatureRegistry::getAllNavItems()` and `getAllSharedData()` to share props
-
-### Current Features
+Each feature is self-contained and registered via `FeatureRegistry` (singleton → feature service
+providers, e.g. `BlogServiceProvider`). `HandleInertiaRequests` shares `getAllNavItems()` +
+`getAllSharedData()` into every Inertia response. New features live in the owning package
+(`vendor/nreljed/platform/src/{Name}/` + a `{Name}ServiceProvider`, registered in
+`config/features.php`) and ship via the core dev loop.
 
 | Feature | Slug    | Permissions                                                | Frontend Pages                           |
 | ------- | ------- | ---------------------------------------------------------- | ---------------------------------------- |
 | Blog    | `posts` | `posts.view`, `posts.create`, `posts.edit`, `posts.delete` | Index, Form, Dashboard, Categories, Tags |
 
-### Adding a New Feature
-
-1. Create `vendor/nreljed/platform/src/{Name}/` with Controllers/, Models/, Requests/, Resources/js/Pages/
-2. Create `{Name}ServiceProvider.php` — register routes, permissions, nav items in `boot()`
-3. Register the service provider in `config/features.php` (`providers` array)
-4. Declare feature permissions in `{Name}ServiceProvider::permissions()`; grant them to roles via `config/roles.php` (package config catalog, per-app overridable)
-5. Ship it via the core dev loop: edit the core clone → tag → `composer update nreljed/platform`
+See the `feature-architecture` skill and `docs/packages.md`.
 
 ## Routes
 
@@ -251,215 +98,26 @@ Each feature is self-contained and registered via `FeatureRegistry`.
 | `/deploy/...`            | token                               | Deploy endpoints (incl. `/deploy/reset`)                                             |
 | `/api/notifications/...` | auth                                | Notification JSON endpoints                                                          |
 
-## AI Integration (BYOK)
-
-Pure **Bring Your Own Key** model — zero platform AI cost. Users manage their own API keys via Account → AI Keys.
-
-### Architecture
-
-```
-vendor/nreljed/platform/src/Ai/   # Routes registered by PlatformServiceProvider (core routes/web.php)
-  Agents/
-    SeoAgent.php               # SEO metadata generation (structured output)
-    ChatAgent.php              # Dashboard chat assistant (streaming)
-    ContentAgent.php           # Content generation (structured output)
-    Traits/
-      ResolvesUserProvider.php # Dynamic BYOK resolution via provider() method
-  Concerns/
-    LogsAiUsage.php            # Best-effort usage logging trait
-  Controllers/
-    AiProviderController.php   # CRUD + test connection
-  Exceptions/
-    MissingAiProviderException.php
-  Models/
-    AiProvider.php             # Encrypted key storage, provider metadata
-    AiUsageLog.php             # Token/cost tracking
-  Policies/
-    AiProviderPolicy.php       # Owner-only access
-  Requests/
-    StoreAiProviderRequest.php # Validated key creation
-    TestAiProviderRequest.php  # Connection test validation
-  Services/
-    AiService.php              # Centralized provider resolution + usage logging
-```
-
-### SDK Pattern
-
-Agent classes use the `provider()` method for dynamic per-user BYOK (not `#[Provider]` attributes). The method returns the **driver config key as a string**; the per-user key is injected into that provider's config via `config()->set()` (see `ResolvesUserProvider::injectProviderKey()`). It must NOT return `['driver' => ..., 'key' => ...]` — the SDK treats an array as a failover list, not inline credentials:
-
-```php
-class SeoAgent implements Agent, HasStructuredOutput
-{
-    use Promptable, ResolvesUserProvider;
-
-    public function provider(): string
-    {
-        return $this->getResolvedProvider()['driver'];
-    }
-
-    public function model(): ?string
-    {
-        return $this->getResolvedProvider()['model'];
-    }
-
-    // Per-user key is injected via config()->set("ai.providers.{driver}.key", ...)
-    // inside injectProviderKey() before prompting.
-
-    public function schema(JsonSchema $schema): array { ... }
-}
-```
-
-### Supported Providers
-
-The authoritative model list lives in `AiProvider::supportedProviders()`. Current catalog:
-
-| Slug        | Name           | Models                                                            |
-| ----------- | -------------- | ----------------------------------------------------------------- |
-| `openai`    | OpenAI         | gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5, o4-mini          |
-| `anthropic` | Anthropic      | claude-opus-4-8, claude-sonnet-5, claude-haiku-4-5                |
-| `gemini`    | Google Gemini  | gemini-3.6-flash, gemini-3.5-flash-lite, gemini-2.5-pro           |
-| `mistral`   | Mistral        | mistral-medium-latest, mistral-small-latest, mistral-large-latest |
-| `deepseek`  | DeepSeek       | deepseek-chat, deepseek-reasoner                                  |
-| `xai`       | xAI (Grok)     | grok-4.5, grok-4.3, grok-4.20-reasoning                           |
-| `ollama`    | Ollama (Local) | configurable                                                      |
-
-### Key Rules
-
-- **BYOK key injection (required)**: The Laravel AI SDK's `provider()` returns a `Lab|array|string` _config key_ (e.g. `'openai'`). An array return is a **failover** list (provider→model pairs), NOT inline credentials — `\Laravel\Ai\Providers\Provider::providerCredentials()` reads `key` from the provider's **config**. So per-user keys MUST be set via `config()->set("ai.providers.{$driver}.key", $key)` before prompting (see `ResolvesUserProvider::injectProviderKey()`). This is safe per-request in PHP; "never use `config()->set()`" guidance is wrong for this SDK.
-- **Encrypted storage**: Keys stored via `Crypt::encryptString()`, decrypted on demand
-- **Owner-only access**: `AiProviderPolicy` ensures users can only manage their own keys
-- **Usage logging**: Best-effort via `LogsAiUsage` trait — failures don't block requests
-
 ## Key Patterns
 
-- **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`, `notificationUnreadCount`, `flash`, `featureNavItems`, `userCapabilities`, `emailSettings`, `brand`, `impersonating`
-- **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`
-- **Feature authorization**: Route middleware `permission:feature.view`, controller `$this->authorize()`, or FormRequest `authorize()`
-- **Roles & permissions (config catalog)**: Custom slug-based RBAC, package-owned (`Nreljed\Platform\Models\Role`/`Permission` — NOT Spatie). Core permission catalog + default roles live in `vendor/nreljed/platform/config/roles.php`; roles are `'*'`/slug-mapped, per-app overridable via a published `config/roles.php`. Gates auto-register from `FeatureRegistry::permissions()` + `permissions` table (`PermissionGateServiceProvider`). Seeder: `Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder` (idempotent, config-driven). Slug convention: kebab for global (`manage-users`), dot for features (`posts.view`) — never snake_case.
-- **Rate limiting**: Login (5 attempts/60s), auth routes (5/min IP-based), admin (60/min)
-- **Validation**: `$request->validate()` or FormRequest classes
-- **Error handling**: Inertia renders `Error.tsx` for all HTTP exceptions
-- **Password policy**: `MinPasswordLength` rule reads `password_min_length` from DB
-- **Max login attempts**: `LoginRequest::ensureIsNotRateLimited()` reads `max_login_attempts` from DB
-- **Session lifetime**: Enforced via `ConfigureSessionLifetime` middleware (extracted from AppServiceProvider)
-- **Maintenance mode**: Enforced via `CheckMaintenanceMode` middleware — admins bypass, non-admins see 503 Blade template
-- **SMTP config**: Backend complete (`EmailSettingsService` + `UpdateEmailSettingsRequest`), `SmtpSection.tsx` frontend
-- **CSRF exemptions**: Narrow patterns (`profile/avatar`, `deploy/*`, specific `api/notifications/*` paths)
-
-## Known Blockers (Do Not Re-Suggest)
-
-These items were reviewed during the 2026-07-22 audit. Do not suggest them again unless the blocker is resolved.
-
-### TypeScript 7 + @typescript-eslint
-
-TypeScript 7.x is not supported by `@typescript-eslint/eslint-plugin` yet. The plugin throws at runtime:
-
-> `typescript-eslint does not support TS 7.0.`
-
-Tracking: https://github.com/typescript-eslint/typescript-eslint/issues/4904
-
-**Action**: Keep TypeScript at `^6.0.0` until `@typescript-eslint` v9+ adds TS 7 support.
-
-### React 19 Hooks vs Inertia Patterns
-
-`useOptimistic` and `useActionState` are React 19 hooks designed for React Server Components and native form actions. They are **not compatible** with Inertia's architecture:
-
-- `useOptimistic` — designed for RSC server mutations, not Inertia page visits. Inertia's `router.post()` with `onSuccess` callbacks is the correct pattern.
-- `useActionState` — designed for React `<form action={}>`. Inertia's `useForm` hook provides better integration (validation, redirects, flash messages, processing state).
-
-**Action**: Continue using Inertia `useForm` and `router.post()` with callbacks.
-
-### useHttp vs fetch for Notification Polling
-
-Inertia v3's `useHttp` hook is a form-centric API (validation, precognition, processing state). The notification polling system (`use-notifications.ts`) makes standalone GET/POST/DELETE requests that don't fit the form model. It uses **native `fetch()`** with `X-Requested-With` + `X-CSRF-TOKEN` headers (helpers from `@/lib/gallery-utils`).
-
-**Action**: Keep native `fetch()` for notification polling and any standalone HTTP requests.
-
-### SettingsService Static Methods
-
-`SettingsService` uses static methods (`SettingsService::get()`, `SettingsService::set()`, etc.) with 38 call sites across the codebase. Converting to an injectable service would require changing every call site. The static pattern is stateless, works correctly with `Cache::remember`, and is testable with `RefreshDatabase`.
-
-**Action**: Leave as-is unless a specific testability issue arises.
-
-### ESLint Strict-Type-Checked Preset
-
-The `@typescript-eslint/strict-type-checked` preset requires type-aware linting (parserOptions.project). This is heavyweight and slow for this project. The current setup (`no-explicit-any: warn`, `no-empty-object-type: warn`) provides sufficient type safety without the performance penalty.
-
-**Action**: Keep current config. Enable strict preset only after TS 7 support lands.
-
-## Dev Environment
-
-- Runs via LocalWP (Local by Flywheel) serving production build
-- `public/hot` should NOT exist — causes `ERR_CONNECTION_REFUSED` on Vite dev server
-- Always run `npm run build` after code changes
-- CSP middleware only applies in production
-- Site: `https://laravel.local/`
-- **Seed users**: All demo role users (editor/author/user/admin in `DemoUsersSeeder`) share the same password `azerty123/*` — never forget this. Admin: `nstudio.webdesign@gmail.com` (username `nstudio`).
-
-## Playwright MCP
-
-Playwright MCP is configured in `~/.config/opencode/opencode.jsonc` (NOT a separate `playwright-mcp.json`).
-
-- **User data dir**: `C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\profile-crm-dashboard` — persistent browser profile (cookies, cache, localStorage survive restarts via `--user-data-dir` + `--save-session`)
-- **Output dir**: `C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\output` — screenshots, logs, session state files
-- **Session persistence**: `--save-session` saves cookies + localStorage on MCP server shutdown (opencode exit or reconnect). The `--user-data-dir` also persists browser profile data across sessions. Sessions survive opencode restarts automatically — **do not delete the output dir unless you want a fresh session**.
-- **Dark mode**: Set via `browser_evaluate` (`localStorage.setItem("theme", "dark")`) before navigating. The `colorScheme: "dark"` context option is unreliable on Windows persistent contexts. Theme persists across sessions automatically via localStorage key `"theme"` (saved by `--save-session`).
-
-### Session-Cleanup (only when explicitly requested)
-
-When you need a completely fresh browser (new login, reset state), run:
-
-```powershell
-Remove-Item -LiteralPath "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright" -Recurse -Force -ErrorAction SilentlyContinue; $null = New-Item -ItemType Directory -Path "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\profile-crm-dashboard" -Force; $null = New-Item -ItemType Directory -Path "C:\Users\nrelj\AppData\Local\Temp\opencode\playwright\output" -Force
-```
-
-**Do NOT run this for normal use** — it destroys all saved sessions and you'll have to re-login.
-
-### Rules
-
-- Never save screenshots or logs to the project root — always use `outputDir`
-- `.gitignore` has `/*.png` as safety net, but output should never land in root
-- `--no-sandbox`: Not used in our config. Chromium on Windows works fine with sandbox. If you see this message, it's from a previous config or environment variable (`PLAYWRIGHT_MCP_NO_SANDBOX`).
-
-## Self-Hosted Runners
-
-GitHub-hosted runners are billing-blocked account-wide, so CI/CD runs on seven self-hosted
-runners on this laptop — one per repo, all under `C:\runners\<suffix>` (moved from flat
-`C:\actions-runner-*` on 2026-08-31): `C:\runners\shop` (`win-runner-shop` → laravel.shop),
-`C:\runners\laravel` (`win-runner-laravel` → laravel), `C:\runners\booking` (`win-runner-booking` →
-laravel.booking), `C:\runners\core` (`win-runner-core` → nreljed/platform), `C:\runners\shopmodule`,
-`C:\runners\bookingmodule`, `C:\runners\projectwp`. Plain `run.cmd` processes (NO Windows services,
-no UAC), label `self-hosted`. Runners do NOT auto-start — start them on-demand via
-`pwsh -NoProfile -File C:\tools\gha-runner.ps1 <name|all>`.
-
-### Runner switch (self-hosted ⇄ GitHub-hosted)
-
-All nreljed workflows read `runs-on` from **per-repo Actions variables** (set on all 7 repos),
-so choosing the runner is a variable flip, not a code change:
-
-| Variable                                                                | self-hosted (default) | GitHub-hosted    |
-| ----------------------------------------------------------------------- | --------------------- | ---------------- |
-| `RUNNER_CI` (validators, push-deploy, update workflows, core/module CI) | `self-hosted`         | `ubuntu-latest`  |
-| `RUNNER_PACKAGE` (Windows-bound build/packaging: pwsh, 7-Zip)           | `self-hosted`         | `windows-latest` |
-
-- Flip all repos at once: `pwsh -NoProfile -File C:\tools\switch-runners.ps1 self|cloud`.
-  Single repo: `gh variable set RUNNER_CI -R nreljed/laravel --body ubuntu-latest`.
-- `runs-on` is `${{ vars.RUNNER_CI || 'self-hosted' }}` — missing var degrades safely.
-- `workflow_call` reusables (consumer-ci.yml) resolve `vars` against the **calling** repo —
-  laravel/shop/booking must each have `RUNNER_CI` set.
-- `consumer-ci.yml` cache steps are gated `RUNNER_CI != 'self-hosted'` — cache is re-enabled
-  only on GitHub-hosted (ephemeral) runners; self-hosted stays cache-free (upload-stall trap).
-- Two vars (not one) because GitHub-hosted bills Linux 1x vs Windows 2x; validators run on
-  cheap ubuntu, only pwsh `Compress-Archive`/7-Zip packaging is Windows-bound.
-- GitHub has NO native auto-failover between runner types — this variable is the mechanism.
-  `nreljed` is a User account → no org-level vars; per-repo only.
-- **Project-WP caveat:** its workflows hardcode `C:\php` (preinstalled toolchain) — a cloud
-  flip breaks those jobs until setup-php is added. Staged for consistency only.
-
-> Full setup/reproduction steps, the `.env` PATH override, and the failure-modes table live in the
-> **`self-hosted-runners` skill** (`~/.config/opencode/skills/self-hosted-runners/SKILL.md`) — read it
-> before touching runner config. Never force-kill listeners repeatedly (ghost broker sessions = jobs
-> stuck queued; fix is API-delete + re-register).
+- **Shared props**: `HandleInertiaRequests` shares `auth.user`, `latestNotifications`,
+  `notificationUnreadCount`, `flash`, `featureNavItems`, `userCapabilities`, `emailSettings`,
+  `brand`, `impersonating`.
+- **Admin check**: `useAuth().isAdmin` + `admin` middleware + `User::isAdmin()`.
+- **Feature authorization**: route middleware `permission:feature.view`, controller
+  `$this->authorize()`, or FormRequest `authorize()`.
+- **Roles & permissions (config catalog)**: custom slug-based RBAC, package-owned
+  (`Nreljed\Platform\Models\Role`/`Permission` — NOT Spatie). Core catalog + default roles live in
+  `vendor/nreljed/platform/config/roles.php`; roles are `'*'`/slug-mapped, per-app overridable.
+  Gates auto-register from `FeatureRegistry::permissions()` + the `permissions` table. Seeder:
+  `Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder` (idempotent, config-driven).
+  Slug convention: kebab for global (`manage-users`), dot for features (`posts.view`).
+- **Rate limiting**: login (5/60s), auth routes (5/min IP-based), admin (60/min).
+- **Error handling**: Inertia renders `Error.tsx` for all HTTP exceptions.
+- **Password policy**: `MinPasswordLength` reads `password_min_length` from DB.
+- **Session lifetime**: enforced via `ConfigureSessionLifetime` middleware.
+- **Maintenance mode**: `CheckMaintenanceMode` — admins bypass, non-admins see the 503 Blade template.
+- **CSRF exemptions**: narrow patterns (`profile/avatar`, `deploy/*`, specific `api/notifications/*`).
 
 ## Commands
 
@@ -481,271 +139,32 @@ php artisan permissions:list          # List all permissions
 php artisan app:create-admin           # Bootstrap/update admin user
 ```
 
-The pre-commit hook (lint-staged) is **scoped to the files this app owns** — `resources/js/**`,
-`app/**` for TS/TSX eslint+prettier, and `{app,bootstrap,config,database,routes,tests,resources}/**`
-for Pint. `packages/**` and `apps/**` are upstream mirrors, so they are excluded from the root lint-staged AND root ESLint
-(`eslint.config.js` `ignores`) — those trees are owned by their own repos/apps and run their own
-toolchains (shop/booking `check:ci`, package repo CIs). Never widen the catch-all back to `*.{ts,tsx}`
-/ `*.php` or the root hook will reformat foreign package sources.
-
 Also useful: `pnpm -w update <pkg>` (roll a `^` range forward in the workspace lock),
 `pnpm workspace <name> add <pkg>` (per-package manifest change), `pnpm approve-builds`
-(add postinstall scripts to `allowBuilds` in `pnpm-workspace.yaml` — pnpm 11 blocks them
-by default and ignores the `package.json` `pnpm` field).
+(add postinstall scripts to `allowBuilds` in `pnpm-workspace.yaml`). Pre-commit/CI scope and the
+deploy pipeline are in `scripts/AGENTS.md`.
 
-## Deployment
+## Dev Environment
 
-### CI/CD Pipeline (GitHub Actions → Release + Server Deploy)
+- Runs via LocalWP (Local by Flywheel) serving the production build.
+- `public/hot` should NOT exist — causes `ERR_CONNECTION_REFUSED` on the Vite dev server.
+- Always run `npm run build` after code changes; CSP middleware only applies in production.
+- Site: `https://laravel.local/`.
+- **Seed users**: all demo role users (editor/author/user/admin) share the password
+  `azerty123/*`. Admin: `nstudio.webdesign@gmail.com` (username `nstudio`).
 
-Deploys automatically on push to `main`. Uses **reusable workflows** for cross-repo reuse:
+## Scoped Context & Docs
 
-```
-push main → deploy.yml
-  ├─ ci.yml (reusable workflow_call)    — RUNNER_CI, full validation
-  ├─ deploy-package.yml (reusable)      — RUNNER_PACKAGE, builds deploy.zip
-  ├─ release                            — creates GitHub Release
-  └─ push-deploy                        — canonical check-first deploy (env-push → check → upload → FTP)
+Read these when a task touches their area (lazy-loaded — do not register them in `instructions[]`):
 
-pull_request → pr.yml
-  └─ ci.yml (reusable workflow_call)    — same validation as deploy
-```
-
-**ci.yml** (reusable `workflow_call`, `RUNNER_CI`):
-
-- PHP 8.4 + Node 22, Composer + npm caches
-- SQLite .env + migrate, then: lint, typecheck, format:check, vitest, build, phpunit, pint
-- Inputs: `skip-php-tests`, `skip-npm-tests` (boolean, default false)
-
-**deploy-package.yml** (reusable `workflow_call`, `RUNNER_PACKAGE`):
-
-- git-cliff version bump → SQLite build .env → full build pipeline
-- Strip dev deps → production .env → `deploy.zip` artifact
-- Output: `version` string
-
-**deploy.yml** (orchestrator, push main):
-
-- Calls `ci.yml` → `deploy-package.yml` → creates GitHub Release → canonical `push-deploy`
-- `push-deploy` job (shared shape with `laravel.shop`):
-  1. **env-push** — `POST /deploy/env` with unified `GITHUB_TOKEN` (`if: always()`, `continue-on-error`)
-  2. **Poll `/deploy/check`** (8 × 45s) — accept `"deployed"` or `"current"` matching the release tag
-  3. **Fallback `/deploy/upload`** only if check didn't confirm, then re-confirm via check (response can be lost mid-extract)
-  4. **FTP fallback** (`continue-on-error`) — DirectAdmin account (`laravel@tunispromo.tn`), home IS the project root, uploads `deploy.zip` to root. Skips itself when `FTP_*` secrets are unset.
-- Resilience: if CI is blocked by the host's security layer (datacenter IPs):
-  - **Release-layout host (this app since 2026-09):** `deploy:auto` is a **no-op** —
-    `DeployService::check()` returns `release-layout` and refuses the in-place swap. The net
-    is the CI-side scheduled `Deploy Runner (Auto-Repair)` workflow (or manual
-    `workflow_dispatch`), which runs the runner's `release-install`.
-  - **Host cron runs the app scheduler only** (not deploy logic): `* * * * * <php>
-<home>/current/artisan schedule:run` — must target the `current` symlink, never a
-    legacy root `artisan`.
-  - **`.env` backups**: `/deploy/env` snapshots `.env` → `.env.backup.<ts>` and prunes to
-    `deploy.env_backup_retention` (default 5). On release-layout hosts they land inside the
-    active release dir (pruned by `release-cleanup`); root `.env.backup.*` are legacy residue
-    (archived 2026-09-14 to `legacy-root-env-backups-2026-09-14/`).
-
-**pr.yml** (pull_request to main):
-
-- Calls `ci.yml` — identical validation, no secrets needed
-
-**Server (`DeployController::check()`):**
-
-1. Verify token + lock file (10 min TTL)
-2. Fetch latest release from GitHub API (via `GITHUB_TOKEN` in server `.env`)
-3. Download `deploy.zip`, extract, restore `.env`
-4. Run: migrate, create-admin, cache, storage:link
-
-**database-maintenance.yml** (`workflow_dispatch`, manual only):
-
-- Inputs: `command` (`migrate` | `reset`), `confirm` (`yes` for migrate, `RESET` for reset),
-  `with_demo`, `purge_media` (reset only)
-- `migrate` curls `POST /deploy/migrate`; `reset` curls `POST /deploy/reset` with
-  `secrets.DEPLOY_TOKEN`
-- Requires `DB_MAINTENANCE_ENABLED=true` in production `.env` for reset (the endpoint itself is always
-  available — it just calls `DatabaseMaintenanceService::resetDatabase()`)
-
-### Account Data Backup & Restore (data-feature conventions)
-
-The **Data** feature (`dashboard → Account → Data`) lets a user export or restore *their own*
-account data. It is the canonical example of the **module contract**: a feature is not
-data-owning unless it says so. Backend lives in `vendor/nreljed/platform`.
-
-- **Contract**: a data-owning feature returns capability objects from
-  `FeatureProvider::getDataBackupCapabilities()`. Each is an instance of
-  `Nreljed\Platform\Support\DataBackupCapability` — a **class**, not an interface — built with
-  a constructor and exposing `getKey()`, `getLabel()`, `getDescription()`, `supportsExport()`,
-  `supportsRestore()`, `getActions()` and `toArray()`. `toArray()` is the serializer, so the
-  export shape is whatever the capability returns; there is no versioned envelope to extend.
-- **Registry**: `FeatureRegistry::getDataBackupModules()` returns
-  `list<array{provider: FeatureProvider, capability: DataBackupCapability}>`;
-  `FeatureRegistry::resolveDataBackupModule(string $key)` resolves one by key and returns
-  `null` for an unknown key (the controller surfaces that as "Unknown data module").
-- **Routes** (`AccountDataController`, prefix `/dashboard/account`):
-  `GET /data` (page, `dashboard.account.page.data`),
-  `GET /data/export/{module}` (download, `dashboard.account.data.export`) — note it is **GET**,
-  not POST, because it streams a file response —
-  and `POST /data/restore/{module}` (`throttle:10,1`). Restore is validated by
-  `RestoreAccountDataRequest`: `backup` required file `mimes:json,text/plain` `max:20480`
-  (KiB) plus `confirmation` `in:restore my data` — restore is **not** a password-confirmed
-  flow, the typed phrase + throttle are the gate. It **replaces only the user's own rows**
-  and is idempotent via the capability's restore key.
-- **Audits**: `AuditAction::DataExported` (`data_exported`, severity `info`) and
-  `AuditAction::DataRestored` (`data_restored`, severity `warning` — not `critical`).
-- **Frontend**: `packages/platform/resources/js/Pages/dashboard/account/data.tsx` renders
-  `DataBackupSection` (`packages/platform/resources/js/Components/account/sections/`).
-  Uses the shared `SettingsAccordion` pattern; export is a plain `router.get` download,
-  restore is a `useForm` with a file input.
-- **Known gap (pinned versions)**: no feature supplies a capability yet, so the page lists
-  zero modules and every export/restore returns "Unknown data module". `vendor/nreljed/blog` does
-  not implement `getDataBackupCapabilities()` in the version this app pins. Add the
-  capability in the **owning feature repo**, tag, then update this app's lock — do not patch
-  the vendor tree or the mirror.
-- Local dev cache: keep `CACHE_STORE=file` in the app `.env` — a `database` store on a
-  shared SQLite cache table causes intermittent read flapping (settings/feature props);
-  middleware reads are `Cache::remember` + fail-closed, controllers `Cache::forget` on toggle.
-
-### Database Maintenance Feature
-
-`vendor/nreljed/platform` ships an environment-gated reset/reseed feature:
-
-| Surface         | Gate                                                  | Route                                       |
-| --------------- | ----------------------------------------------------- | ------------------------------------------- |
-| Admin UI page   | `admin` + `manage-options` + `DB_MAINTENANCE_ENABLED` | `dashboard.admin.database(.reset\|.reseed)` |
-| Deploy endpoint | `DEPLOY_TOKEN` + `confirm=RESET`                      | `POST /deploy/reset`                        |
-
-- Shared logic lives in `Nreljed\Platform\Services\DatabaseMaintenanceService` —
-  `resetDatabase()` runs `migrate:fresh` + baseline seeders (roles/permissions + settings) +
-  `app:create-admin`; demo-tier seeders (`demo_users`, `blog`) only run when `demo: true`
-  (`with_demo` on the endpoint, UI always resets baseline-only). `reseedDatabase()` re-runs
-  only the selected seeder groups via `db:seed --class`. Seeder groups are a config catalog
-  (`config/database-maintenance.php` → `seeders`; baseline/destructive flags). Optional media
-  purge of `storage/app/public`, `.maintenance-lock` file (15 min TTL), toggles maintenance
-  mode, writes a `critical` audit log, and notifies all admins.
-- `DB_MAINTENANCE_ENABLED` defaults to enabled everywhere **except** production. Keep it `false`
-  in production unless you intend to use the GitHub Action reset. `.env.example` and
-  `.env.production.example` both ship `DB_MAINTENANCE_ENABLED=false`.
-- UI reset ends the session and redirects to `/login`; deploy reset returns JSON.
-- Tests: `tests/Feature/Admin/DatabaseMaintenanceTest.php`, `tests/Feature/Admin/DatabaseMaintenanceServiceTest.php`, `tests/Feature/Deploy/DatabaseResetDeployEndpointTest.php`.
-
-### GitHub Secrets
-
-| Secret                                                      | Purpose                                                                                                                                             |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DEPLOY_TOKEN`                                              | Must match `config('app.deploy_token')` — **per-repo** (this app's server)                                                                          |
-| `GH_TOKEN`                                                  | ONE unified fine-grained PAT covering all repos (`laravel`, `laravel.shop`, `laravel.booking`, `platform`, `blog`, `shop-module`, `booking-module`) |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`               | Production MySQL                                                                                                                                    |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`             | Initial admin bootstrap                                                                                                                             |
-| `FTP_SERVER` / `FTP_PORT` / `FTP_USERNAME` / `FTP_PASSWORD` | DirectAdmin FTP fallback for this app's own domain (`laravel@tunispromo.tn`)                                                                        |
-
-> Full secrets table + `gh` cheat sheet: [`docs/github-cli.md`](docs/github-cli.md).
-> Deploy contract (config keys, endpoints, FeatureProvider checklist, publish flow):
-> [`docs/core-dashboard-package.md`](docs/core-dashboard-package.md) §7.1.
-
-### After Schema/Seeder Changes
-
-```bash
-php artisan migrate
-php artisan db:seed --class=RolesAndPermissionsSeeder
-```
-
-Then run typecheck + build + phpunit and deliver results. Do not wait for user approval to deploy.
-
-## Testing
-
-### Structure
-
-```
-tests/
-  Concerns/
-    CreatesTestUsers.php          # Shared trait: admin(), editor(), contributor(), regularUser(), createUserWithRole(), seedRolesAndPermissions()
-  Feature/
-    Ai/
-      AiProviderCrudTest.php      # Provider CRUD + validation (6 tests)
-      AiProviderTestConnectionTest.php  # Connection test validation (4 tests)
-    Admin/
-      UserManagementTest.php      # Admin user CRUD (10 tests)
-      UserCreationTest.php        # Default role assignment, audit logging (13 tests)
-      RoleCreationTest.php        # Role CRUD + admin role protection (6 tests)
-      ImpersonationTest.php       # Impersonation flows + edge cases (7 tests)
-      BulkOperationsTest.php      # Bulk user actions (6 tests)
-    Auth/
-      AuthenticationTest.php, RegistrationTest.php, RateLimitingTest.php, PasswordUpdateTest.php, PasswordResetTest.php, PasswordConfirmationTest.php, EmailVerificationTest.php
-    Blog/
-      BlogCrudTest.php            # Post CRUD lifecycle (7 tests)
-      BlogPermissionsTest.php     # Role-based access (6 tests)
-      BlogCategoryTest.php        # Category CRUD (5 tests)
-      BlogTagTest.php             # Tag CRUD (5 tests)
-      BlogPublicTest.php          # Public blog routes (5 tests)
-      BlogSeoTest.php, BlogBulkActionTest.php
-    Console/
-      CreateAdminCommandTest.php  # Admin bootstrap incl. email_verified_at (5 tests)
-      CleanupOrphanMediaCommandTest.php  # Orphan media cleanup (3 tests)
-      ListPermissionsCommandTest.php     # Permission listing + --role filter (5 tests)
-      NotificationPurgeCommandTest.php   # Notification purge (2 tests)
-      PruneAuditLogsCommandTest.php      # Audit pruning incl. --days (3 tests)
-      PublishScheduledContentCommandTest.php  # Scheduled publishing (3 tests)
-    Deploy/
-      DeployEndpointTest.php      # Token auth, verification, upload, cache-clear pipeline (11 tests)
-    Jobs/
-      SendEmailTest.php           # Mailable dispatch + retry (3 tests)
-      GenerateSeoForPostTest.php  # SEO generation incl. missing provider (4 tests)
-    Maintenance/
-      MaintenanceModeTest.php     # 503 Blade + bypass flows (19 tests)
-    Media/
-      MediaUploadTest.php         # Upload/destroy, traversal safety (9 tests)
-    Notifications/
-      NotificationPollTest.php    # Poll endpoints, auth, filters (8 tests)
-      NotificationServiceTest.php # Cached count, purge (3 tests)
-    Performance/
-      DatabaseIndexTest.php       # Index presence assertions (6 tests)
-      DatabasePerformanceTest.php # Cache TTL + N+1 guard (6 tests)
-    Public/
-      PublicPagesTest.php         # Welcome, about, services, contact (4 tests)
-    Security/
-      XssSanitizationTest.php     # HTML sanitizer allowlists (7 tests)
-      MediaPathTraversalTest.php  # Path traversal guards (4 tests)
-      ContentSecurityPolicyTest.php      # CSP headers (4 tests)
-      ConfigureSessionLifetimeTest.php   # DB-driven session timeout (3 tests)
-      MaintenanceBypassTest.php, IpAccessControlTest.php, PasswordComplexityTest.php
-    DataIsolationTest.php         # HTTP-level data isolation checks
-    FeatureRegistryTest.php       # Singleton, nav items, permissions (5 tests)
-```
-
-### Factories
-
-| Model          | File                                                             | States                                             |
-| -------------- | ---------------------------------------------------------------- | -------------------------------------------------- |
-| `User`         | `packages/platform/src/Database/Factories/UserFactory.php`        | `admin()`, default: unverified                     |
-| `Post`         | `packages/blog/src/Database/Factories/PostFactory.php`           | `published()`, `draft()`, `archived()`, `future()` |
-| `PostCategory` | `packages/blog/src/Database/Factories/PostCategoryFactory.php`   | —                                                  |
-| `PostTag`      | `packages/blog/src/Database/Factories/PostTagFactory.php`        | —                                                  |
-
-These are **upstream mirrors** — edit the owning repo (`nreljed/platform`,
-`nreljed/blog`), never the copy under `packages/**`.
-
-### Key Patterns
-
-- **Shared trait**: `CreatesTestUsers` provides `admin()`, `regularUser()`, `createUserWithRole()` for consistent user creation across all tests
-- **Permissions**: Use `seedRolesAndPermissions()` in `setUp()` to ensure roles exist before testing
-- **Testing auth**: `$this->actingAs($user)` with `$user->forceFill(['email_verified_at' => now])->save()` for verified users
-- **Testing permissions**: Create role with `Permission::create()`, assign via `$user->assignRole()`, then assert 403 for unauthorized
-- **AI tests**: Validation-only (no API mocking — tests auth, required fields, invalid providers)
-- **Deploy tests**: Token via POST body (`['token' => $this->token]`), unauthenticated returns 403 (not 401)
-- **Notification tests**: Unauthenticated requests return 401 JSON (not redirect) due to JSON exception handler
-- **Performance**: `$this->captureQueryCount(callable)` / `$this->assertQueryCount(int, callable)` helpers on `tests/TestCase.php` for cache-hit and N+1 assertions; `Cache::flush()` in `setUp()` to avoid cross-test pollution
-
-### Running Tests
-
-```bash
-php artisan test --compact                           # All tests (compact output)
-php artisan test --parallel --compact                # All tests, parallel via paratest
-php artisan test --compact tests/Feature/Blog/       # All blog tests
-php artisan test --compact --filter=testName         # Specific test
-npm run test                                         # Vitest frontend tests
-npm run check:ci                                     # Full CI pipeline
-```
-
-- `main` — production-ready
-- `beta` — active development
+- **`resources/js/AGENTS.md`** — frontend shell, page resolution, ownership, theming, site kit.
+- **`tests/AGENTS.md`** — PHPUnit/Vitest structure, factories, patterns, run commands.
+- **`scripts/AGENTS.md`** — deploy pipeline, GitHub Actions, self-hosted runners, secrets.
+- **`docs/packages.md`** — package model, workspace layout, core dev loop, BYOK AI feature.
+- **`docs/known-blockers.md`** — reviewed blockers; do not re-suggest them.
+- **`docs/playwright-mcp.md`** — browser session/profile config and cleanup.
+- **`.ai/rules/`** — path-scoped rules (index at `.ai/rules/index.md`).
+- **`.agents/skills/`** and **`.opencode/skills/`** — project skills.
 
 ===
 
@@ -942,7 +361,7 @@ When the task touches the platform package / consumer core sync (updating or rel
 - This application uses PHPUnit for testing. All tests must be written as PHPUnit classes. Use `php artisan make:test --phpunit {name}` to create a new test.
 - If you see a test using "Pest", convert it to PHPUnit.
 - Every time a test has been updated, run that singular test.
-- When the tests relating to your feature are passing, ask the user if they would like to also run the entire test suite to make sure everything is still passing.
+- When the tests relating to your feature are passing, ask the user if they would also like to run the entire test suite to make sure everything is still passing.
 - Tests should cover all happy paths, failure paths, and edge cases.
 - You must not remove any tests or test files from the tests directory without approval. These are not temporary or helper files; these are core to the application.
 

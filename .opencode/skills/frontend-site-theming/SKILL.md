@@ -42,7 +42,7 @@ Examples: `bg-site-bg`, `text-site-ink/70`, `text-site-secondary`,
 ### Adding a new site theme
 
 1. Open `resources/css/site.css`.
-2. Copy the `[data-site-theme="canvasly"]` block, rename the attribute
+2. Copy the `[data-site-theme="cb360"]` block, rename the attribute
    value to your theme slug, and re-map every token to your palette/type.
    Add the Google-Fonts `<link>` your theme needs (see below).
 3. Set `data-site-theme="<slug>"` on the page root element. Tokens cascade —
@@ -57,7 +57,7 @@ Site themes must state their dark variant explicitly, same pattern the
 app uses elsewhere. Inside the theme block add:
 
 ```css
-[data-site-theme="canvasly"][data-theme="dark"] { … }
+[data-site-theme="cb360"][data-theme="dark"] { … }
 ```
 
 Scope it to the theme; never leak `dark:` variants that depend on the
@@ -84,7 +84,7 @@ read-only (mirror). This project therefore owns its layout + chrome:
 Shared presentational primitives used across pages. Keep them generic and
 token-driven (no per-brand literals):
 
-- `SiteRoot` — sets `data-site-theme="canvasly"` on the page root, injects
+- `SiteRoot` — sets `data-site-theme="cb360"` on the page root, injects
   the Instrument Sans webfont once, wraps the page in a flex-column shell
   (`min-h-screen bg-site-bg font-site-body text-site-ink`) and mounts
   `SmoothScroll` (Lenis).
@@ -111,7 +111,7 @@ A living design-system spec on the project route (`routes/web.php` →
 `Inertia::render('public/styleguide')`; `page-config.ts` override
 `public/styleguide`). Sections: Colors (live swatches via
 `getComputedStyle`), Typography, Buttons, Tags & pills, Cards, Pagination. It
-is the theme's proof — the recipe for a new theme is to copy the canvasly
+is the theme's proof — the recipe for a new theme is to copy the cb360
 token block in `site.css`, re-map values, and this page resolves the new
 tokens automatically (no raw hex in components).
 

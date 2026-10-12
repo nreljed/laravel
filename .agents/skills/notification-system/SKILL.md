@@ -11,8 +11,8 @@ metadata:
 ## Architecture
 
 - **Channel**: Database (not mail, not broadcast)
-- **Service**: `App\Services\NotificationService` — cached unread count, preference-aware dispatch
-- **Registry**: `App\Services\NotificationTypeRegistry` — type configs aggregated from feature providers via `FeatureRegistry::getAllNotificationTypes()`
+- **Service**: `Nreljed\Platform\Services\NotificationService` — cached unread count, preference-aware dispatch
+- **Registry**: `Nreljed\Platform\Services\NotificationTypeRegistry` — type configs aggregated from feature providers via `FeatureRegistry::getAllNotificationTypes()`
 - **Polling**: Adaptive (10s → 30s → 60s) via `use-notifications.ts`
 - **UI**: `NotificationBell.tsx` + `NotificationPanel.tsx`
 
@@ -57,7 +57,7 @@ public function getNotificationTypes(): array
 ### Notification Preference Model
 
 ```php
-// App\Models\NotificationPreference
+// Nreljed\Platform\Models\NotificationPreference
 // Columns: user_id, type, channel, enabled
 NotificationPreference::where('user_id', $userId)
     ->where('type', $type)
@@ -84,7 +84,7 @@ NotificationPreference::where('user_id', $userId)
 ## Dispatching Notifications
 
 ```php
-use App\Services\NotificationService;
+use Nreljed\Platform\Services\NotificationService;
 
 $notificationService->notifyViaPreferences(
     $user,

@@ -1,6 +1,6 @@
 ---
 name: lexical-editor-development
-description: "Rich text editor built with Lexical v0.48 + React 19. Activate when creating custom Lexical nodes, modifying plugins, editor theme, toolbar, slash commands, image handling, table features, layout columns, YouTube embeds, code highlighting, find-and-replace, or any editor integration work."
+description: "Rich text editor built with Lexical v0.49 + React 19. Activate when creating custom Lexical nodes, modifying plugins, editor theme, toolbar, slash commands, image handling, table features, layout columns, YouTube embeds, code highlighting, find-and-replace, or any editor integration work."
 license: MIT
 metadata:
   author: costbreaker
@@ -27,7 +27,7 @@ Use `search-docs` with `packages: ["lexical"]` or `packages: ["@lexical/react"]`
 
 - **Lexical version**: `^0.49.0` (all packages)
 - **Composer**: `LexicalExtensionComposer` with `defineExtension` (modern pattern)
-- **Additional deps**: `@floating-ui/react` ^0.27, `@atlaskit/pragmatic-drag-and-drop` ^2.0, `prismjs` ^1.30
+- **Additional deps**: `@floating-ui/react` ^0.27, `@atlaskit/pragmatic-drag-and-drop` `^2.0.1 || ^3.0.0`, `@lexical/code-shiki` ^0.49.0 (Shiki syntax highlighting — **no prismjs**)
 - **Editor owner**: the **blog package** `nreljed/blog` (NOT the platform core). The editor subtree lives at `src/Resources/js/Components/editor/` in the standalone blog repo `C:\Users\nrelj\Local Sites\blog` and its workspace mirror `packages/blog/src/Resources/js/Components/editor/` (keep both in sync — mirrors are one-way copies of the standalone repo, driven by `scripts/sync-package-mirror.mjs`).
 - **Blog integration**: `src/Resources/js/Components/PostEditor.tsx` in the blog package (lazy-imports `./editor`; used by the blog post form pages via `@nreljed/blog/pages`)
 
@@ -42,54 +42,81 @@ src/Resources/js/Components/editor/   # in nreljed/blog (standalone + packages/b
 ├── toolbar/
 │   ├── editor-toolbar.tsx        # Formatting toolbar (bold, italic, etc.)
 │   ├── TextFormatDropdown.tsx    # Strikethrough, sub/super, highlight, case, clear
-│   ├── InsertMenu.tsx           # Insert dropdown (link, image, table, embed, layout)
-│   └── ElementFormatDropdown.tsx # Alignment, indent
+│   ├── InsertMenu.tsx            # Insert dropdown (link, image, table, embed, layout)
+│   ├── ElementFormatDropdown.tsx # Alignment, indent
+│   ├── ColorPicker.tsx           # Text/background color
+│   └── index.ts
 │
 ├── floating/
 │   ├── FloatingTextFormatPlugin.tsx  # Selection-based format toolbar
-│   └── FloatingLinkEditor.tsx       # Inline link editor (create/edit/remove)
+│   ├── FloatingLinkEditor.tsx        # Inline link editor (create/edit/remove)
+│   └── index.ts
+│
+├── plugins/
+│   ├── SlashCommandsPlugin.tsx       # "/" typeahead menu
+│   ├── FindAndReplacePlugin.tsx
+│   ├── KeyboardShortcutsPlugin.tsx
+│   ├── WordCountPlugin.tsx
+│   ├── DraggableBlockPlugin.tsx      # Block drag handle
+│   ├── CursorGuardPlugin.tsx         # Table-selection cursor guard
+│   ├── CodeBlockActionsPlugin.tsx    # Code-block language selector (Shiki)
+│   ├── TableOfContentsPlugin.tsx
+│   └── span-style-import.ts          # HTML import transform for inline span styles
 │
 ├── components/
 │   ├── on-change-emitter.tsx     # HTML export (debounced 100ms)
-│   ├── html-loader.tsx          # HTML import from Laravel (legacy plugin)
-│   ├── floating-plugins.tsx     # Floating plugin composition
-│   ├── context-menu-wrapper.tsx # Right-click context menu
-│   └── code-highlight-plugin.tsx # Prism.js syntax highlighting (legacy plugin)
+│   ├── html-loader.tsx           # HTML import from Laravel
+│   ├── floating-plugins.tsx      # Floating plugin composition
+│   └── context-menu-wrapper.tsx  # Right-click context menu
 │
 ├── shared/
-│   └── block-options.tsx        # Shared block option definitions
+│   ├── block-options.tsx         # Shared block option definitions
+│   ├── block-picker-menu.tsx
+│   ├── drop-indicator.tsx
+│   └── DecoratorErrorBoundary.tsx
+│
+├── hooks/
+│   ├── use-floating-position.ts
+│   └── use-container-position.ts
 │
 ├── image/
-│   ├── ImageNode.tsx            # Custom image DecoratorNode (updateFromJSON pattern)
-│   ├── ImageComponent.tsx       # Image rendering with selection/resize
-│   ├── ImageResizer.tsx         # 8-direction image resizer
-│   ├── ImagePlugin.tsx          # Image commands, paste/drop, upload/delete
-│   ├── ImageToolbarPlugin.tsx   # Image floating toolbar
-│   ├── EditImageDialog.tsx      # Edit image dialog
-│   └── ImageInsertDialog.tsx    # Image insert dialog
+│   ├── ImageNode.tsx             # Custom image DecoratorNode (updateFromJSON pattern)
+│   ├── ImageComponent.tsx        # Image rendering with selection/resize
+│   ├── ImageResizer.tsx          # 8-direction image resizer
+│   ├── ImagePlugin.tsx           # Image commands, paste/drop, upload/delete
+│   ├── ImageToolbarPlugin.tsx    # Image floating toolbar
+│   ├── EditImageDialog.tsx       # Edit image dialog
+│   ├── ImageInsertDialog.tsx     # Image insert dialog
+│   └── index.ts
 │
 ├── table/
 │   ├── TableActionMenuPlugin.tsx    # Cell action menu (insert/delete/merge)
 │   ├── TableCellResizer.tsx         # Cell resize handles
 │   ├── TableHoverActionsPlugin.tsx  # Hover buttons, column reorder, sort
-│   └── TableScrollShadowPlugin.tsx  # Scroll shadow indicators
+│   ├── TableScrollShadowPlugin.tsx  # Scroll shadow indicators
+│   ├── InsertTableDialog.tsx
+│   ├── table-hover-utils.ts
+│   └── index.ts
 │
 ├── layout/
 │   ├── ColumnsPlugin.tsx            # Layout commands, transforms, arrow nav
 │   ├── LayoutContainerNode.ts       # Custom LayoutContainer ElementNode
 │   ├── LayoutItemNode.ts            # Custom LayoutItem ElementNode
 │   ├── LayoutControlsPlugin.tsx     # Column controls (add/remove/drag)
-│   └── InsertLayoutDialog.tsx       # Layout template picker
+│   ├── InsertLayoutDialog.tsx       # Layout template picker
+│   └── index.ts
 │
-├── youtube/
-│   ├── YouTubeNode.tsx              # Custom YouTube DecoratorNode (updateFromJSON pattern)
-│   └── YouTubePlugin.tsx            # YouTube embed registration
+├── toc/
+│   ├── TableOfContentsNode.tsx
+│   ├── TableOfContentsView.tsx
+│   ├── TableOfContentsSettingsDialog.tsx
+│   ├── headings.ts
+│   └── index.ts
 │
-└── plugin-helpers/
-    ├── registerCommandWithPlugin.tsx
-    ├── getNodesFromSelectedElements.tsx
-    ├── useEditorRef.ts
-    └── useReportValue.ts
+└── youtube/
+    ├── YouTubeNode.tsx              # Custom YouTube DecoratorNode (updateFromJSON pattern)
+    ├── YouTubeEmbedDialog.tsx
+    └── index.ts
 ```
 
 ## Key Patterns
@@ -106,7 +133,7 @@ import { HistoryExtension } from "@lexical/history";
 import { ListExtension, CheckListExtension } from "@lexical/list";
 import { LinkExtension, AutoLinkExtension } from "@lexical/link";
 import { TableExtension } from "@lexical/table";
-import { CodePrismExtension } from "@lexical/code-prism";
+import { CodeShikiExtension, ShikiTokenizer } from "@lexical/code-shiki";
 import { OverflowExtension } from "@lexical/overflow";
 import { HorizontalRuleExtension, AutoFocusExtension } from "@lexical/extension";
 import { DragonExtension } from "@lexical/dragon";
@@ -123,7 +150,9 @@ const editorExtension = defineExtension({
     configExtension(LinkExtension, { validateUrl, attributes: undefined }),
     configExtension(AutoLinkExtension, { matchers, excludeParents }),
     configExtension(TableExtension, { hasHorizontalScroll: true, hasCellMerge: true }),
-    CodePrismExtension,
+    configExtension(CodeShikiExtension, {
+      tokenizer: { ...ShikiTokenizer, defaultTheme: "github-dark", defaultLanguage: null },
+    }),
     OverflowExtension,
     HorizontalRuleExtension,
     configExtension(AutoFocusExtension, { defaultSelection: "rootStart", disabled: false }),
@@ -149,7 +178,7 @@ const editorExtension = defineExtension({
 | `LinkExtension`           | `LinkPlugin` + `LinkNode`                                      |
 | `AutoLinkExtension`       | `AutoLinkPlugin` + `AutoLinkNode`                              |
 | `TableExtension`          | `TablePlugin` + `TableNode` + `TableRowNode` + `TableCellNode` |
-| `CodePrismExtension`      | `CodeHighlightPlugin` + `CodeNode` + `CodeHighlightNode`       |
+| `CodeShikiExtension`      | `CodeHighlightPlugin` + `CodeNode` + Shiki tokenizer           |
 | `OverflowExtension`       | `OverflowNode`                                                 |
 | `HorizontalRuleExtension` | `HorizontalRulePlugin` + `HorizontalRuleNode`                  |
 | `AutoFocusExtension`      | `AutoFocusPlugin`                                              |
@@ -316,7 +345,7 @@ Theme is in `editor-theme.ts`. Use Tailwind CSS classes. Structure follows Lexic
 - Image upload uses backend routes: `POST blog/posts/upload-image` and `DELETE blog/posts/delete-image` (route names `upload-image` / `delete-image`, permission-gated `posts.create` / `posts.edit`)
 - Floating UI via `@floating-ui/react` — use `useFloating` hook for positioned elements
 - Drag and drop via `@atlaskit/pragmatic-drag-and-drop`
-- Code highlighting via `prismjs` (via `CodePrismExtension`)
+- Code highlighting via `@lexical/code-shiki` (`CodeShikiExtension` + `ShikiTokenizer`)
 - Slash commands via `@lexical/react/LexicalTypeaheadMenuPlugin`
 - Extension definition MUST be stable — define at module scope or use `useMemo`
 

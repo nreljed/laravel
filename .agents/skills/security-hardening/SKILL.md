@@ -25,7 +25,7 @@ Order in `bootstrap/app.php` (web group append): `ConfigureSessionLifetime` → 
 ## Content Security Policy
 
 ```php
-// app/Http/Middleware/ContentSecurityPolicy.php
+// vendor/nreljed/platform/src/Http/Middleware/ContentSecurityPolicy.php
 // Only applies in production — nonce-based, not 'unsafe-inline'
 // Generates a per-request nonce and applies it via Vite::useCspNonce($nonce)
 // Directives: default-src, script-src, style-src, font-src, img-src, connect-src, worker-src, frame-src, object-src, base-uri, form-action, report-uri
@@ -76,7 +76,7 @@ Narrow patterns only:
 ### Password Policy
 
 ```php
-// app/Rules/MinPasswordLength.php
+// vendor/nreljed/platform/src/Rules/MinPasswordLength.php
 // Reads password_min_length from DB — configurable per deployment
 ```
 
@@ -90,7 +90,7 @@ Narrow patterns only:
 ### Session Lifetime
 
 ```php
-// app/Http/Middleware/ConfigureSessionLifetime.php
+// vendor/nreljed/platform/src/Http/Middleware/ConfigureSessionLifetime.php
 // DB-driven session timeout — not config-based
 ```
 

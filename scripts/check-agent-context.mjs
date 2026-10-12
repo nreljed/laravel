@@ -46,11 +46,11 @@ const SESSION_CONTEXT_MAX_BYTES = 16 * 1024
  *
  * `error` fails the run. `warn` prints and is tracked, because a validator that
  * blocks work on a pre-existing condition gets deleted instead of fixed. The
- * AGENTS.md size budget is `warn` until the split lands in Phase 3, then flips
- * to `error` -- see the check for the note.
+ * AGENTS.md split landed (root is now an index + scoped files), so the size
+ * budget is enforced as an error -- keep it that way.
  */
 const SEVERITY = {
-    agentsSize: "warn",
+    agentsSize: "error",
 }
 
 /**
@@ -361,7 +361,7 @@ check("permission-shape", "error", () => {
             }
         }
     }
-    if (perm.bash && typeof perm.bash === "object" && !("*in perm.bash")) {
+    if (perm.bash && typeof perm.bash === "object" && !("*" in perm.bash)) {
         issues.push(
             'permission.bash has no "*" catch-all; unmatched patterns fall through to the default',
         )
@@ -466,9 +466,7 @@ check("skill-routable", "warn", () => {
                 /\bwhenever\b/i.test(description) ||
                 /\bwhen\b/i.test(description) ||
                 /\btrigger/i.test(description) ||
-                /\bapply\b/i.test(description) ||
-                /\bactivate\b/i.test(description) ||
-                /\bfor\b/i.test(description)
+                /\bactivate\b/i.test(description)
             if (!hasTrigger) {
                 issues.push(`${rel} description states no trigger condition; routing needs an explicit "when ..." clause`)
             }
@@ -770,13 +768,26 @@ check("version-claims", "warn", () => {
     if (!existsSync(join(ROOT, "AGENTS.md"))) return issues
     const text = read("AGENTS.md")
     const pkg = existsSync(join(ROOT, "package.json")) ? JSON.parse(read("package.json")) : {}
-    const expected = {
-        react: /React\s*\|\s*([0-9][0-9.]*)/.exec(text)?.[1],
-        laravel: /Laravel\s*\|\s*([0-9][0-9.x]*)/.exec(text)?.[1],
+    const composer = existsSync(join(ROOT, "composer.json")) ? JSON.parse(read("composer.json")) : {}
+    const numeric = (s) => String(s).match(/[0-9]+(?:\.[0-9]+)*/)?.[0] ?? ""
+    // Compare at the precision the claim states; an "x" placeholder compares the major only.
+    const agrees = (claimed, declared) => {
+        if (!claimed || !declared) return true
+        const c = claimed.split(".")
+        const d = declared.split(".")
+        if (c.some((part) => /x/i.test(part))) return c[0] === d[0]
+        return c.every((part, index) => part === d[index])
     }
-    const declaredReact = (pkg.dependencies?.react ?? pkg.devDependencies?.react ?? "").match(/[\d.]+/)?.[0]
-    if (expected.react && declaredReact && !declaredReact.startsWith(expected.react.split(".")[0])) {
-        issues.push(`AGENTS.md claims React ${expected.react} but package.json declares ${declaredReact}`)
+    const claims = [
+        ["React", /React\s*\|\s*([0-9][0-9.]*)/.exec(text)?.[1], numeric(pkg.dependencies?.react ?? pkg.devDependencies?.react ?? "")],
+        ["Inertia", /Inertia\.js\s*\|\s*([0-9][0-9.]*)/.exec(text)?.[1], numeric(pkg.dependencies?.["@inertiajs/react"] ?? pkg.devDependencies?.["@inertiajs/react"] ?? "")],
+        ["Laravel", /Laravel\s*\|\s*([0-9][0-9.x]*)/.exec(text)?.[1], numeric(composer.require?.["laravel/framework"] ?? composer["require-dev"]?.["laravel/framework"] ?? "")],
+        ["Laravel AI", /Laravel AI\s*\|\s*([0-9][0-9.]*)/.exec(text)?.[1], numeric(composer.require?.["laravel/ai"] ?? composer["require-dev"]?.["laravel/ai"] ?? "")],
+    ]
+    for (const [label, claimed, declared] of claims) {
+        if (claimed && declared && !agrees(claimed, declared)) {
+            issues.push(`AGENTS.md claims ${label} ${claimed} but the manifest declares ${declared}`)
+        }
     }
     return issues
 })

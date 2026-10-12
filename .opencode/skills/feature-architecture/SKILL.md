@@ -185,7 +185,7 @@ export const pageConfig: FoundationAppConfig = {
 
 Frontend page *keys* must be lowercase (Inertia lowercases controller component
 names). Template/marketing pages are a **theme concern**: the app ships forked
-theme templates under its own `resources/js/Pages/` and declares them in
+theme templates under its own `resources/js/frontend/pages/` and declares them in
 `pageOverrides` (applied last). No starter theme package is auto-registered.
 
 ## Shipped Platform Modules
