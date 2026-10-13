@@ -1,73 +1,146 @@
 #!/usr/bin/env node
 /**
  * diff-package-dir — report how a workspace mirror dir (packages/*) differs from a
- * standalone package repo's **git working tree**. Dev aid, NOT the parity gate.
+ * standalone package repo's RELEASED tree.
  *
- * Its reference is `git ls-files` + raw working-tree bytes of the upstream repo, so
- * it flags three things that are not real gate drift:
- *   - `.gitattributes export-ignore` files (e.g. blog's AGENTS.md ships in the repo
- *     but not in the tree Composer installs),
- *   - CRLF working-tree bytes vs the stored LF blob,
- *   - any commit the upstream has **ahead of its last release tag**.
+ * The reference is `git archive <latest-release-tag>` of the upstream repo — the same
+ * tree Composer installs into `vendor/nreljed/*`. That means `.gitattributes
+ * export-ignore` is honored (so a file that ships in the repo but not in the Composer
+ * install, like blog's AGENTS.md, is correctly absent), and a commit ahead of the last
+ * release tag is NOT counted. Content is EOL-normalized (CRLF→LF, final newline
+ * stripped) exactly like `check-platform-consistency`, so a CRLF checkout never reads
+ * as drift. The result therefore agrees with the authoritative gate.
  *
- * The authoritative check is `npm run check:platform-consistency` (mirror vs
- * `vendor/nreljed/*`, export-ignore respected). If the two disagree, trust the gate.
- *
- * Usage: node scripts/diff-package-dir.mjs <mirror-dir> <repo-dir>
+ * Usage:
+ *   node scripts/diff-package-dir.mjs <mirror-dir> <repo-dir> [--ref <git-ref>]
+ *   --ref  compare against an explicit git ref instead of the latest v* tag.
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
-const mirror = path.resolve(process.argv[2]);
-const repo = path.resolve(process.argv[3]);
+const IGNORE_DIRS = new Set([
+  ".git",
+  ".github",
+  "node_modules",
+  "vendor",
+  ".phpunit.cache",
+  ".phpunit.result.cache",
+  ".phpstan",
+]);
+const IGNORE_FILES = new Set(["composer.lock", "package-lock.json", ".phpunit.result.cache"]);
 
-function tracked(repoDir) {
-  return execSync(`git -C "${repoDir}" ls-files`, { encoding: "utf8" })
-    .split(/\r?\n/)
-    .filter(Boolean);
+const argv = process.argv.slice(2);
+let explicitRef = null;
+const positional = [];
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === "--ref") {
+    explicitRef = argv[++i];
+    continue;
+  }
+  positional.push(argv[i]);
 }
 
-function hash(file) {
-  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+if (positional.length !== 2) {
+  console.error("usage: node scripts/diff-package-dir.mjs <mirror-dir> <repo-dir> [--ref <git-ref>]");
+  process.exit(1);
 }
 
-function readAll(dir, root) {
-  const out = [];
+const mirror = path.resolve(positional[0]);
+const repo = path.resolve(positional[1]);
+
+/** Latest `v*` release tag (version-sorted), else HEAD. */
+function latestReleaseRef(repoDir) {
+  try {
+    const out = execFileSync("git", ["-C", repoDir, "tag", "-l", "v*", "--sort=-v:refname"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (out) return out.split(/\r?\n/)[0].trim();
+  } catch {
+    // fall through to HEAD
+  }
+  return "HEAD";
+}
+
+/** Materialize `git archive <ref>` (export-ignore honored) into a temp dir. */
+function materializeRef(repoDir, ref) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-release-"));
+  const tree = path.join(tmp, "tree");
+  fs.mkdirSync(tree);
+  const tarPath = path.join(tmp, "release.tar");
+  fs.writeFileSync(tarPath, execFileSync("git", ["-C", repoDir, "archive", "--format=tar", ref], {
+    maxBuffer: 512 * 1024 * 1024,
+  }));
+  execFileSync("tar", ["-xf", tarPath, "-C", tree], { maxBuffer: 512 * 1024 * 1024 });
+  fs.rmSync(tarPath, { force: true });
+  return { tree, cleanup: () => fs.rmSync(tmp, { recursive: true, force: true }) };
+}
+
+/** EOL-normalize like check-platform-consistency: drop CRLF, strip one trailing LF. */
+function normalize(buf) {
+  const out = Buffer.alloc(buf.length);
+  let j = 0;
+  for (let i = 0; i < buf.length; i++) {
+    if (buf[i] === 13 && buf[i + 1] === 10) continue;
+    out[j++] = buf[i];
+  }
+  let end = j;
+  if (end > 0 && out[end - 1] === 10) end--;
+  return out.subarray(0, end);
+}
+
+function sha(buf) {
+  return crypto.createHash("sha256").update(normalize(buf)).digest("hex");
+}
+
+function walk(dir, root = dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === "vendor" || entry.name === ".git") continue;
-    const f = path.join(dir, entry.name);
-    const rel = path.relative(root, f);
     if (entry.isDirectory()) {
-      out.push(...readAll(f, root));
-    } else {
-      out.push(rel);
+      if (IGNORE_DIRS.has(entry.name)) continue;
+      walk(path.join(dir, entry.name), root, out);
+    } else if (entry.isFile()) {
+      if (IGNORE_FILES.has(entry.name)) continue;
+      out.push(path.relative(root, path.join(dir, entry.name)));
     }
   }
   return out;
 }
 
-const trackedFiles = new Set(tracked(repo).map((f) => f.replace(/\//g, path.sep)));
+const ref = explicitRef ?? latestReleaseRef(repo);
+const { tree, cleanup } = materializeRef(repo, ref);
 
-const missing = [];
-const differ = [];
-const excess = [];
+try {
+  const refFiles = new Set(walk(tree));
+  const missing = [];
+  const differ = [];
 
-for (const rel of trackedFiles) {
-  const m = path.join(mirror, rel);
-  const r = path.join(repo, rel);
-  if (!fs.existsSync(m)) {
-    missing.push(rel);
-  } else if (hash(m) !== hash(r)) {
-    differ.push(rel);
+  for (const rel of refFiles) {
+    const m = path.join(mirror, rel);
+    if (!fs.existsSync(m)) {
+      missing.push(rel);
+    } else if (sha(fs.readFileSync(m)) !== sha(fs.readFileSync(path.join(tree, rel)))) {
+      differ.push(rel);
+    }
   }
-}
 
-for (const rel of readAll(mirror, mirror)) {
-  if (!trackedFiles.has(rel)) {
-    excess.push(rel);
-  }
-}
+  const excess = walk(mirror).filter((rel) => !refFiles.has(rel));
+  const sort = (a, b) => a.localeCompare(b);
 
-console.log(JSON.stringify({ missing: [...missing].sort((a, b) => a.localeCompare(b)), differ: differ.sort((a, b) => a.localeCompare(b)), excess: [...excess].sort((a, b) => a.localeCompare(b)) }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        ref,
+        missing: missing.sort(sort),
+        differ: differ.sort(sort),
+        excess: excess.sort(sort),
+      },
+      null,
+      2,
+    ),
+  );
+} finally {
+  cleanup();
+}

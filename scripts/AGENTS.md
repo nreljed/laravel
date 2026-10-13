@@ -212,23 +212,21 @@ keyed by glob rather than a bare string.
 
 ## Package mirrors & parity
 
-`packages/**` are one-way mirrors of the standalone package repos, and two tools touch them
-with **different contracts** — pick the right reference:
+`packages/**` are one-way mirrors of the standalone package repos, and both tools now reference
+the **released tree** — the tree at the upstream's latest `v*` tag as `git archive` emits it
+(`.gitattributes export-ignore` honored), i.e. exactly what Composer installs into
+`vendor/nreljed/*`:
 
-- `scripts/diff-package-dir.mjs` / `scripts/sync-package-mirror.mjs` compare a mirror against
-  the upstream repo's **git working tree** (`git ls-files` + raw bytes). They are a dev aid
-  only, and report "drift" that is not real gate drift: `.gitattributes export-ignore` files
-  (e.g. blog's `AGENTS.md` ships in the repo but not in Composer's install), CRLF-vs-LF, and
-  **any commit ahead of the last release tag**.
-- `npm run check:platform-consistency` compares each mirror against **`vendor/nreljed/*`** —
-  the tree Composer actually installs (export-ignore respected). **This is the authoritative
-  gate; commit drift only when it agrees.**
+- `scripts/sync-package-mirror.mjs <repo> <mirror>` / `scripts/diff-package-dir.mjs <mirror> <repo>`
+  drive/report the mirror from that released tree. They materialize `git archive <latest-tag>`
+  (`--ref <git-ref>` overrides it), EOL-normalize before comparing, and ignore `composer.lock` /
+  `.github` / tool caches — so their result **agrees with the gate**. A CRLF checkout, an
+  export-ignored file, or an unreleased commit no longer reads as drift.
+- `npm run check:platform-consistency` is the authoritative gate (mirror vs `vendor/nreljed/*`).
 
-Rule: refresh mirrors only from a **released** upstream via `/sync-mirror`, then prove it with
-`npm run check:platform-consistency`. If a mirror "drifts" only under `diff-package-dir`, run
-the gate first — the upstream is probably ahead of its release (author + tag upstream, re-sync,
-then update the consumer lock). Never hand-edit a version string to silence either check, and
-never sync a mirror from an upstream that is not at its released tag.
+Rule: to land a change in a mirror you must commit **and tag/release** it upstream, then re-sync
+and update the consumer lock. Never hand-edit a version string to silence a check, and never sync
+a mirror from an unreleased upstream — the archive would simply be missing your commit.
 
 ## Pre-commit scope
 

@@ -1,123 +1,180 @@
 #!/usr/bin/env node
 /**
  * sync-package-mirror — reconcile a workspace mirror dir (packages/*) with a
- * standalone package repo so the mirror exactly equals the repo's tracked
- * file set at the same content hash.
+ * standalone package repo's RELEASED tree.
  *
  * Why one-way repo→mirror: the standalone repos (nreljed/platform, nreljed/blog,
- * shopping/shop-module, ...) are the source of truth and keep their own release
+ * nreljed/shop-module, ...) are the source of truth and keep their own release
  * cadence. The workspace mirrors exist so the monorepo apps can consume them via
- * pnpm `workspace:*` and the Vite/tsconfig path maps. Driving the mirror one-way
- * from the repo guarantees the apps test/build against the *published* content,
- * never a divergent mirror copy.
+ * pnpm `workspace:*` and the Vite/tsconfig path maps. Driving the mirror from the
+ * upstream guarantees the apps test/build against the *published* content, never a
+ * divergent mirror copy.
+ *
+ * Reference = `git archive <latest-release-tag>` (export-ignore honored) — the same
+ * tree Composer installs into `vendor/nreljed/*`. This is deliberately NOT the raw
+ * working tree: that would copy a CRLF checkout, export-ignored files (e.g. blog's
+ * AGENTS.md), and unreleased commits, and desync the mirror from the gate. Files are
+ * written exactly as the release contains them, and parity is proven with
+ * `npm run check:platform-consistency` (mirror vs vendor).
  *
  * Usage:
- *   node scripts/sync-package-mirror.mjs <repo-dir> <mirror-dir> [--dry-run]
+ *   node scripts/sync-package-mirror.mjs <repo-dir> <mirror-dir> [--dry-run] [--ref <git-ref>]
+ *   --ref  sync from an explicit git ref instead of the latest v* tag.
  *
  * Exit codes: 0 = mirror already consistent (or synced cleanly), 1 = error.
- * Honors `diff-package-dir.mjs` semantics: tracked = `git ls-files` of the repo;
  * node_modules/vendor/.git are never removed or counted.
- *
- * CAVEAT — this drives the mirror from the upstream's WORKING TREE, not from the
- * tree Composer installs. Copying a CRLF checkout, or an upstream commit that is
- * ahead of the last release tag, will desync the mirror from `vendor/nreljed/*` and
- * fail `check-platform-consistency`. Run it only against an upstream that sits on
- * its released tag, then prove parity with `npm run check:platform-consistency`.
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
-const args = process.argv.slice(2);
-const dryRun = args.includes("--dry-run");
-const positional = args.filter((a) => a !== "--dry-run");
+const IGNORE_DIRS = new Set([
+  ".git",
+  ".github",
+  "node_modules",
+  "vendor",
+  ".phpunit.cache",
+  ".phpunit.result.cache",
+  ".phpstan",
+]);
+const IGNORE_FILES = new Set(["composer.lock", "package-lock.json", ".phpunit.result.cache"]);
+
+const argv = process.argv.slice(2);
+const dryRun = argv.includes("--dry-run");
+let explicitRef = null;
+const positional = [];
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === "--dry-run") continue;
+  if (argv[i] === "--ref") {
+    explicitRef = argv[++i];
+    continue;
+  }
+  positional.push(argv[i]);
+}
 
 if (positional.length !== 2) {
-  console.error("usage: node scripts/sync-package-mirror.mjs <repo-dir> <mirror-dir> [--dry-run]");
+  console.error(
+    "usage: node scripts/sync-package-mirror.mjs <repo-dir> <mirror-dir> [--dry-run] [--ref <git-ref>]",
+  );
   process.exit(1);
 }
 
 const repo = path.resolve(positional[0]);
 const mirror = path.resolve(positional[1]);
 
-const IGNORE = new Set(["node_modules", "vendor", ".git"]);
-
-function tracked(repoDir) {
-  return execSync(`git -C "${repoDir}" ls-files`, { encoding: "utf8" })
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((f) => f.replace(/\//g, path.sep));
+/** Latest `v*` release tag (version-sorted), else HEAD. */
+function latestReleaseRef(repoDir) {
+  try {
+    const out = execFileSync("git", ["-C", repoDir, "tag", "-l", "v*", "--sort=-v:refname"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (out) return out.split(/\r?\n/)[0].trim();
+  } catch {
+    // fall through to HEAD
+  }
+  return "HEAD";
 }
 
-function hash(file) {
-  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+/** Materialize `git archive <ref>` (export-ignore honored) into a temp dir. */
+function materializeRef(repoDir, ref) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-release-"));
+  const tree = path.join(tmp, "tree");
+  fs.mkdirSync(tree);
+  const tarPath = path.join(tmp, "release.tar");
+  fs.writeFileSync(tarPath, execFileSync("git", ["-C", repoDir, "archive", "--format=tar", ref], {
+    maxBuffer: 512 * 1024 * 1024,
+  }));
+  execFileSync("tar", ["-xf", tarPath, "-C", tree], { maxBuffer: 512 * 1024 * 1024 });
+  fs.rmSync(tarPath, { force: true });
+  return { tree, cleanup: () => fs.rmSync(tmp, { recursive: true, force: true }) };
 }
 
-function readAll(dir, root) {
-  const out = [];
+/** EOL-normalize like check-platform-consistency: drop CRLF, strip one trailing LF. */
+function normalize(buf) {
+  const out = Buffer.alloc(buf.length);
+  let j = 0;
+  for (let i = 0; i < buf.length; i++) {
+    if (buf[i] === 13 && buf[i + 1] === 10) continue;
+    out[j++] = buf[i];
+  }
+  let end = j;
+  if (end > 0 && out[end - 1] === 10) end--;
+  return out.subarray(0, end);
+}
+
+function sha(buf) {
+  return crypto.createHash("sha256").update(normalize(buf)).digest("hex");
+}
+
+function walk(dir, root = dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (IGNORE.has(entry.name)) continue;
-    const f = path.join(dir, entry.name);
-    const rel = path.relative(root, f);
     if (entry.isDirectory()) {
-      out.push(...readAll(f, root));
-    } else {
-      out.push(rel);
+      if (IGNORE_DIRS.has(entry.name)) continue;
+      walk(path.join(dir, entry.name), root, out);
+    } else if (entry.isFile()) {
+      if (IGNORE_FILES.has(entry.name)) continue;
+      out.push(path.relative(root, path.join(dir, entry.name)));
     }
   }
   return out;
 }
 
-const trackedFiles = new Set(tracked(repo));
+const ref = explicitRef ?? latestReleaseRef(repo);
+const { tree, cleanup } = materializeRef(repo, ref);
 
-const missing = [];
-const differ = [];
-const excess = [];
+try {
+  const refFiles = new Set(walk(tree));
+  const missing = [];
+  const differ = [];
 
-for (const rel of trackedFiles) {
-  const m = path.join(mirror, rel);
-  const r = path.join(repo, rel);
-  if (!fs.existsSync(m)) {
-    missing.push(rel);
-  } else if (hash(m) !== hash(r)) {
-    differ.push(rel);
+  for (const rel of refFiles) {
+    const m = path.join(mirror, rel);
+    if (!fs.existsSync(m)) {
+      missing.push(rel);
+    } else if (sha(fs.readFileSync(m)) !== sha(fs.readFileSync(path.join(tree, rel)))) {
+      differ.push(rel);
+    }
   }
-}
 
-const mirrorFiles = readAll(mirror, mirror);
-for (const rel of mirrorFiles) {
-  if (!trackedFiles.has(rel)) {
-    excess.push(rel);
+  const excess = walk(mirror).filter((rel) => !refFiles.has(rel));
+
+  if (!dryRun && missing.length === 0 && differ.length === 0 && excess.length === 0) {
+    console.log(
+      `[sync-package-mirror] OK — ${path.basename(mirror)} already matches ${path.basename(repo)} @ ${ref}.`,
+    );
+    process.exit(0);
   }
-}
 
-if (!dryRun && missing.length === 0 && differ.length === 0 && excess.length === 0) {
-  console.log(`[sync-package-mirror] OK — ${path.basename(mirror)} already matches ${path.basename(repo)}.`);
-  process.exit(0);
-}
+  if (dryRun) {
+    console.log(
+      `[sync-package-mirror] DRY-RUN would sync ${path.basename(mirror)} <- ${path.basename(repo)} @ ${ref}`,
+    );
+    console.log(`  missing  : ${missing.length}`);
+    console.log(`  differ   : ${differ.length}`);
+    console.log(`  excess   : ${excess.length}`);
+    for (const rel of [...missing, ...differ]) console.log(`    + ${rel}`);
+    for (const rel of excess) console.log(`    - ${rel}`);
+    process.exit(0);
+  }
 
-if (dryRun) {
-  console.log(`[sync-package-mirror] DRY-RUN would sync ${path.basename(mirror)} <- ${path.basename(repo)}`);
-  console.log(`  missing  : ${missing.length}`);
-  console.log(`  differ   : ${differ.length}`);
-  console.log(`  excess   : ${excess.length}`);
-  for (const rel of [...missing, ...differ]) console.log(`    + ${rel}`);
-  for (const rel of excess) console.log(`    - ${rel}`);
-  process.exit(0);
-}
+  for (const rel of [...missing, ...differ]) {
+    const dst = path.join(mirror, rel);
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    fs.copyFileSync(path.join(tree, rel), dst);
+  }
+  for (const rel of excess) {
+    remove(mirror, rel);
+  }
 
-for (const rel of missing) copy(repo, mirror, rel);
-for (const rel of differ) copy(repo, mirror, rel);
-for (const rel of excess) remove(mirror, rel);
-
-console.log(`[sync-package-mirror] OK — ${path.basename(mirror)} synced to ${path.basename(repo)}: +${missing.length} copied, +${differ.length} overwritten, -${excess.length} removed.`);
-
-function copy(srcRoot, dstRoot, rel) {
-  const src = path.join(srcRoot, rel);
-  const dst = path.join(dstRoot, rel);
-  fs.mkdirSync(path.dirname(dst), { recursive: true });
-  fs.copyFileSync(src, dst);
+  console.log(
+    `[sync-package-mirror] OK — ${path.basename(mirror)} synced to ${path.basename(repo)} @ ${ref}: ` +
+      `+${missing.length} copied, +${differ.length} overwritten, -${excess.length} removed.`,
+  );
+} finally {
+  cleanup();
 }
 
 function remove(root, rel) {

@@ -218,8 +218,8 @@ global permissions (`manage-users`). Grant to roles via `config/roles.php`.
    → `src/{Name}/` (tag → release → composer update). Module package: edit its
    standalone repo (e.g. `C:\Users\nrelj\Local Sites\blog`). Project module:
    `app/{Name}/`. **Keep `packages/*` mirrors in sync** via
-   `scripts/sync-package-mirror.mjs` (commit new files in the standalone repo
-   first — `git ls-files` drives the sync).
+   `scripts/sync-package-mirror.mjs` (references the upstream's latest
+   release tag — commit **and tag/release** the standalone repo first).
 2. Create `{Name}ServiceProvider.php` implementing the platform
    `FeatureProvider` contract + use `InteractsWithFeatures`; implement
    `name()`/`slug()` and whatever else you need; register routes/policies in

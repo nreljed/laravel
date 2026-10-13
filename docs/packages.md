@@ -35,13 +35,14 @@ vendor. The single `pnpm-lock.yaml` at the root is the npm pin of record. `tscon
 `@inertiajs/core` PageProps augmentation the whole app relies on.
 
 **`packages/*` are one-way mirrors of the standalone repos** (source of truth), not
-independent copies — keep them in sync with `scripts/sync-package-mirror.mjs` (copies the
-repo's git-tracked tree into `packages/<pkg>`) and `scripts/diff-package-dir.mjs` (reports
-missing/differ/excess). The `packages/platform` mirror tracks the standalone platform clone
+independent copies — keep them in sync with `scripts/sync-package-mirror.mjs` and inspect
+with `scripts/diff-package-dir.mjs` (both report missing/differ/excess). The
+`packages/platform` mirror tracks the standalone platform clone
 (`C:\Users\nrelj\Local Sites\platform`, vX.Y.Z tag) and the blog mirror tracks
-`C:\Users\nrelj\Local Sites\blog`. NOTE: `sync-package-mirror.mjs` uses `git ls-files`, so
-new files must be committed (or git-added) in the standalone repo first or they are treated
-as "excess" and deleted from the mirror.
+`C:\Users\nrelj\Local Sites\blog`. Both tools reference the upstream's **released tree** —
+`git archive` of its latest `v*` tag, so `.gitattributes export-ignore` is honored and the
+result matches `vendor/nreljed/*` (and the `check-platform-consistency` gate). To land a change
+in a mirror, commit **and tag/release** it in the standalone repo, then re-sync.
 
 **Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
 into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0`

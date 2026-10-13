@@ -28,7 +28,8 @@ Use `search-docs` with `packages: ["lexical"]` or `packages: ["@lexical/react"]`
 - **Lexical version**: `^0.49.0` (all packages)
 - **Composer**: `LexicalExtensionComposer` with `defineExtension` (modern pattern)
 - **Additional deps**: `@floating-ui/react` ^0.27, `@atlaskit/pragmatic-drag-and-drop` `^2.0.1 || ^3.0.0`, `@lexical/code-shiki` ^0.49.0 (Shiki syntax highlighting — **no prismjs**)
-- **Editor owner**: the **blog package** `nreljed/blog` (NOT the platform core). The editor subtree lives at `src/Resources/js/Components/editor/` in the standalone blog repo `C:\Users\nrelj\Local Sites\blog` and its workspace mirror `packages/blog/src/Resources/js/Components/editor/` (keep both in sync — mirrors are one-way copies of the standalone repo, driven by `scripts/sync-package-mirror.mjs`).
+- **Editor owner**: the **blog package** `nreljed/blog` (NOT the platform core). The editor subtree lives at `src/Resources/js/Components/editor/` in the standalone blog repo `C:\Users\nrelj\Local Sites\blog` and its workspace mirror `packages/blog/src/Resources/js/Components/editor/` (keep both in sync — mirrors are one-way copies of the standalone repo, driven by `scripts/sync-package-mirror.mjs`, which references the upstream's latest release tag, so changes must be released upstream before mirroring).
+
 - **Blog integration**: `src/Resources/js/Components/PostEditor.tsx` in the blog package (lazy-imports `./editor`; used by the blog post form pages via `@nreljed/blog/pages`)
 
 ## Architecture
