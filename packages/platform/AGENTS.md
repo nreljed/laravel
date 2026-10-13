@@ -103,7 +103,7 @@ Controllers render lowercase names: `Inertia::render('dashboard/index')`,
 ## Feature architecture
 
 Features are self-contained and register through `FeatureRegistry`. See
-`docs/feature-architecture.md` and the `feature-architecture` skill. Each
+`docs/feature-provider.md` and the `feature-architecture` skill. Each
 feature declares its own permissions, nav items, and shared data; the core
 permission catalog merges with the app delta and the enabled features.
 
@@ -119,6 +119,13 @@ permission catalog merges with the app delta and the enabled features.
 
 ## Agents
 
-`.agents/skills/` holds repo skills; `.opencode/` holds OpenCode config, plugins,
-and commands. Use `/release-package` before tagging rather than improvising the
-version-bump sequence.
+Skills live in the global OpenCode config (`~/.config/opencode/skills`), not in
+this repo. `.opencode/` holds this repo's OpenCode config, plugins, and commands
+(e.g. `/release-package`, `/save-memory`). Use `/release-package` before tagging
+rather than improvising the version-bump sequence.
+
+## Project Memory
+
+- docs/memory/ - conventions, gotchas, glossary, lessons learned
+- docs/decisions/ - ADRs
+- docs/history/ - release/deploy history and curated summaries
