@@ -17,6 +17,12 @@
  * Exit codes: 0 = mirror already consistent (or synced cleanly), 1 = error.
  * Honors `diff-package-dir.mjs` semantics: tracked = `git ls-files` of the repo;
  * node_modules/vendor/.git are never removed or counted.
+ *
+ * CAVEAT — this drives the mirror from the upstream's WORKING TREE, not from the
+ * tree Composer installs. Copying a CRLF checkout, or an upstream commit that is
+ * ahead of the last release tag, will desync the mirror from `vendor/nreljed/*` and
+ * fail `check-platform-consistency`. Run it only against an upstream that sits on
+ * its released tag, then prove parity with `npm run check:platform-consistency`.
  */
 import fs from "node:fs";
 import path from "node:path";

@@ -210,6 +210,26 @@ and `git`, so we do not scope-allow them here. The validator reports this as a t
 (advisory, not a defect); if you ever tighten it, set `permission.bash` explicitly as a map
 keyed by glob rather than a bare string.
 
+## Package mirrors & parity
+
+`packages/**` are one-way mirrors of the standalone package repos, and two tools touch them
+with **different contracts** — pick the right reference:
+
+- `scripts/diff-package-dir.mjs` / `scripts/sync-package-mirror.mjs` compare a mirror against
+  the upstream repo's **git working tree** (`git ls-files` + raw bytes). They are a dev aid
+  only, and report "drift" that is not real gate drift: `.gitattributes export-ignore` files
+  (e.g. blog's `AGENTS.md` ships in the repo but not in Composer's install), CRLF-vs-LF, and
+  **any commit ahead of the last release tag**.
+- `npm run check:platform-consistency` compares each mirror against **`vendor/nreljed/*`** —
+  the tree Composer actually installs (export-ignore respected). **This is the authoritative
+  gate; commit drift only when it agrees.**
+
+Rule: refresh mirrors only from a **released** upstream via `/sync-mirror`, then prove it with
+`npm run check:platform-consistency`. If a mirror "drifts" only under `diff-package-dir`, run
+the gate first — the upstream is probably ahead of its release (author + tag upstream, re-sync,
+then update the consumer lock). Never hand-edit a version string to silence either check, and
+never sync a mirror from an upstream that is not at its released tag.
+
 ## Pre-commit scope
 
 The pre-commit hook (lint-staged) is **scoped to the files this app owns** — `resources/js/**`,

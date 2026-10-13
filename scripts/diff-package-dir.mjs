@@ -1,3 +1,20 @@
+#!/usr/bin/env node
+/**
+ * diff-package-dir — report how a workspace mirror dir (packages/*) differs from a
+ * standalone package repo's **git working tree**. Dev aid, NOT the parity gate.
+ *
+ * Its reference is `git ls-files` + raw working-tree bytes of the upstream repo, so
+ * it flags three things that are not real gate drift:
+ *   - `.gitattributes export-ignore` files (e.g. blog's AGENTS.md ships in the repo
+ *     but not in the tree Composer installs),
+ *   - CRLF working-tree bytes vs the stored LF blob,
+ *   - any commit the upstream has **ahead of its last release tag**.
+ *
+ * The authoritative check is `npm run check:platform-consistency` (mirror vs
+ * `vendor/nreljed/*`, export-ignore respected). If the two disagree, trust the gate.
+ *
+ * Usage: node scripts/diff-package-dir.mjs <mirror-dir> <repo-dir>
+ */
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
