@@ -82,7 +82,7 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
       ref={rootRef}
       aria-hidden={!open}
       className={cn(
-        "fixed top-0 right-0 left-0 z-20 h-0 overflow-hidden bg-[#11130f] text-[#edf0e3]",
+        "fixed top-0 right-0 left-0 z-20 h-0 overflow-hidden bg-site-invert-bg text-site-invert-ink",
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
     >
@@ -97,10 +97,10 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
               key={link.label}
               href={link.href}
               onClick={onClose}
-              className="group flex items-baseline gap-6 border-b border-white/15 py-5 sm:gap-8"
+              className="group flex items-baseline gap-6 border-b border-site-invert-ink/15 py-5 sm:gap-8"
             >
-              <span className="text-sm text-white/40">{link.number}</span>
-              <span className="font-site-display text-[clamp(2.5rem,9vw,7rem)] leading-[0.95] font-bold tracking-[-0.03em] text-[#edf0e3] uppercase transition-all duration-300 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent sm:py-0">
+              <span className="text-sm text-site-invert-ink/40">{link.number}</span>
+              <span className="font-site-display text-[clamp(2.5rem,9vw,7rem)] leading-[0.95] font-bold tracking-[-0.03em] text-site-invert-ink uppercase transition-all duration-300 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent sm:py-0">
                 {link.label}
               </span>
             </Link>
@@ -108,13 +108,13 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
         </nav>
 
         {brand || logo ? (
-          <div className="mx-auto mt-10 flex w-full max-w-site items-center justify-between gap-4 text-sm text-white/50">
+          <div className="mx-auto mt-10 flex w-full max-w-site items-center justify-between gap-4 text-sm text-site-invert-ink/50">
             <span className="flex items-center gap-3">
               {logo ? (
                 <img
                   src={logo}
                   alt=""
-                  className="h-10 w-10 rounded-full bg-[#edf0e3] object-contain p-1.5"
+                  className="h-10 w-10 rounded-full bg-site-invert-ink object-contain p-1.5"
                 />
               ) : null}
               {brand}
@@ -128,7 +128,7 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
                     target="_blank"
                     rel="noreferrer noopener"
                     aria-label={social.label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-[#edf0e3]/60 transition-colors hover:bg-white/10 hover:text-[#edf0e3]"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-site-invert-ink/60 transition-colors hover:bg-site-invert-ink/10 hover:text-site-invert-ink"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current">
                       <path d={social.path} />

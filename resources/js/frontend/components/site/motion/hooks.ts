@@ -2,7 +2,7 @@ import { useEffect, type RefObject } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, SplitText } from "./gsap";
 
-// Reusable canvasly-recipe motion hooks. Each one:
+// Reusable site motion-kit hooks. Each one:
 //   - scopes to the caller's root ref (data-site-theme wrapper),
 //   - gates on `(prefers-reduced-motion: no-preference)` via gsap.matchMedia
 //     so reduced-motion users get static, fully-revealed content, and
@@ -36,7 +36,7 @@ export interface ScrubConfig {
   once?: boolean;
 }
 
-// canvasly `fading-chars` (interaction i-e9b799f3): hero title characters
+// `fading-chars` (source interaction i-e9b799f3): hero title characters
 // start at 15% opacity and fill to full as the title scolls through the
 // viewport. Recipe: start "top 60%" / end "center 30%", scrub 0.85,
 // stagger 0.05, duration 0.64 — cloned verbatim below.
@@ -87,7 +87,7 @@ export function useFadingChars(
   );
 }
 
-// canvasly `word-reveal`: words rise out of their line mask as the heading
+// `word-reveal`: words rise out of their line mask as the heading
 // enters the viewport. Markup must wrap the heading in an overflow-hidden
 // container for the mask to read. Cloned to match the fading-chars teardown
 // contract (SplitText.revert() in the cleanup).
@@ -136,7 +136,7 @@ export function useWordReveal(
   );
 }
 
-// canvasly `text-fill`: a reading-progress fill — the whole block fades from
+// `text-fill`: a reading-progress fill — the whole block fades from
 // a faint fill to full ink as it scrolls through the viewport.
 export function useTextFill(
   scope: RefObject<HTMLElement | null>,
@@ -174,7 +174,7 @@ export function useTextFill(
   );
 }
 
-// canvasly `scale-in`: scale + fade a block in as it crossess the viewport
+// `scale-in`: scale + fade a block in as it crossess the viewport
 // (used for the statement/footer titles the template grows from the bottom
 // of the page).
 export function useScaleIn(
@@ -295,7 +295,7 @@ export function useReveal(
   );
 }
 
-// canvasly `parallax`: the image inside an overflow-hidden wrap drifts ±6%
+// `parallax`: the image inside an overflow-hidden wrap drifts ±6%
 // relative to the scroll. Mirror of the inline recipe Home.tsx uses for its
 // work grid.
 export function useParallax(scope: RefObject<HTMLElement | null>, selector = "[data-parallax]") {
@@ -331,7 +331,7 @@ export function useParallax(scope: RefObject<HTMLElement | null>, selector = "[d
   );
 }
 
-// canvasly spotlight: on pointermove over the ref, writes the cursor position
+// Cursor spotlight: on pointermove over the ref, writes the cursor position
 // to --site-cursor-x/y so `.site-spotlight::after` (site.css) can track the
 // radial glow behind the CTA text.
 export function useCursorSpotlight(ref: RefObject<HTMLElement | null>) {

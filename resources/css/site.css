@@ -6,15 +6,15 @@
    reads from these tokens ONLY — never raw hex in components.
 
    `:root` below holds the NEUTRAL fallback — used only when a site
-   subtree renders with no [data-site-theme]. Real palettes live as
-   isolated, swappable theme modules under resources/css/themes/ and
-   are imported here. SiteRoot (resources/js/frontend/components/site/
-   SiteRoot.tsx) applies data-site-theme="<slug>" to the public
-   sub-tree, and the style guide can swap it live. The Dashboard admin
-   UI keeps its own shadcn tokens in core.css — never mix the layers.
+   subtree renders with no [data-site-theme]. The shipped palette is the
+   CB360 "Ledger" module in resources/css/themes/cb360.css, imported here.
+   SiteRoot (resources/js/frontend/components/site/SiteRoot.tsx) applies
+   data-site-theme="<slug>" to the public sub-tree (default "cb360"). The
+   Dashboard admin UI keeps its own shadcn tokens in core.css — never mix
+   the layers.
 
    Adding a theme:
-    1. Copy resources/css/themes/canvasly.css to themes/<slug>.css
+    1. Copy resources/css/themes/cb360.css to themes/<slug>.css
     2. Change the [data-site-theme="<slug>"] value and the palette —
        including the :where(html.dark) variant, because every theme
        states its own dark palette
@@ -27,10 +27,9 @@
    reduced-motion `@media` overrides can follow below. */
 @import "lenis/dist/lenis.css";
 
-/* Swappable theme modules — one palette per file, all scoped under
+/* Theme modules — one palette per file, all scoped under
    [data-site-theme="<slug>"]. */
 @import "./themes/cb360.css";
-@import "./themes/canvasly.css";
 
 @utility animate-marquee {
   animation: site-marquee 32s linear infinite;
@@ -52,9 +51,8 @@
   }
 
   /* Neutral palette — applied to <html> as the no-theme fallback AND to any
-     explicit [data-site-theme="neutral"] subtree (the style-guide swapper
-     uses it). Kept here rather than in a theme module because it is the
-     base every module layers over. */
+     explicit [data-site-theme="neutral"] subtree. Kept here rather than in a
+     theme module because it is the base every module layers over. */
   :root,
   [data-site-theme="neutral"] {
     /* Surfaces */
@@ -82,6 +80,12 @@
     /* Hairlines + outline/fill text */
     --site-border: rgba(24, 24, 27, 0.15);
     --site-outline: #18181b;
+
+    /* Inverted surface — deliberately dark in BOTH light and dark mode,
+       so it is NOT re-declared by any theme's dark block. The full-screen
+       nav overlay sits on this; only --site-accent follows the theme. */
+    --site-invert-bg: #11130f;
+    --site-invert-ink: #edf0e3;
 
     /* Type */
     --font-body-family: ui-sans-serif, system-ui, sans-serif;
@@ -141,6 +145,9 @@
 
   --color-site-border: var(--site-border);
   --color-site-outline: var(--site-outline);
+
+  --color-site-invert-bg: var(--site-invert-bg);
+  --color-site-invert-ink: var(--site-invert-ink);
 
   --font-site-body: var(--font-body-family);
   --font-site-display: var(--font-display-family);
@@ -239,8 +246,8 @@
    Blog article prose on the site theme
    ------------------------------------------------------------------
    The platform's core.css styles .prose with shadcn/dark-mode tokens
-   (e.g. .dark .prose a uses var(--link) with !important). On a cream
-   Canvasly page those dashboard colors clash, so we re-map the pieces
+   (e.g. .dark .prose a uses var(--link) with !important). On a    cream
+   Ledger page those dashboard colors clash, so we re-map the pieces
    the blog article actually uses. site.css loads AFTER core.css, and
    these rules carry !important where core.css does, so they win. */
 [data-site-theme] .prose {
@@ -286,7 +293,7 @@
    its reduced-motion degradation.
    ------------------------------------------------------------------ */
 
-/* canvasly footer-lights cursor glow: useCursorSpotlight writes
+/* footer-lights cursor glow: useCursorSpotlight writes
    --site-cursor-x/y on pointermove; the ::after radial follows them.
    z-index:-1 keeps the glow behind the CTA text; isolation:isolate
    contains the negative z-index so it never dips under the page bg. */

@@ -14,7 +14,7 @@ export function UserMenu() {
     <Link
       href={route(isLoggedIn ? "dashboard.index" : "login")}
       aria-label={isLoggedIn ? "Dashboard" : "Sign in"}
-      className="inline-flex h-[53px] w-[53px] items-center justify-center rounded-site-card bg-[#191c16] text-[#edf0e3] transition-transform duration-200 hover:scale-[1.05]"
+      className="inline-flex h-[53px] w-[53px] items-center justify-center rounded-site-card bg-site-invert-bg text-site-invert-ink transition-transform duration-200 hover:scale-[1.05]"
     >
       {isLoggedIn ? (
         avatar ? (

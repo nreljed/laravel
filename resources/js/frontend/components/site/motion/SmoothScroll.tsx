@@ -4,7 +4,7 @@ import type { PropsWithChildren } from "react";
 import { gsap, ScrollTrigger } from "./gsap";
 import { setActiveLenis } from "./lenis-store";
 
-// canvasly scroll: Lenis smooth-scrolling driven on the GSAP ticker so the
+// Site smooth-scroll: Lenis driven on the GSAP ticker so the
 // smoothed scroll position and ScrollTrigger scrubs share one clock. Lenis
 // forwards every scroll step to ScrollTrigger.update, which is the standard
 // glue that keeps `scrub` timelines in step with the page.

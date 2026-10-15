@@ -129,8 +129,9 @@ instrument-grade, no hype, no gradient tells.
 - **Motion:** GSAP `useReveal` from the site motion kit — per-element scroll
   reveals (`data-reveal`) plus one `group` load intro for hero items
   (`data-hero`); `prefers-reduced-motion` degrades to static.
-- **Canvasly** (`themes/canvasly.css`) is retained as an alternate theme for the
-  style guide / forks; CB360 is the default (`SiteRoot` default prop).
+- **Single theme:** CB360 "Ledger" (`themes/cb360.css`) is the only shipped
+  palette; `SiteRoot` defaults to it. `themes/` stays the extension point for
+  forks that want another palette.
 
 ## Public page architecture (project-owned)
 
@@ -153,8 +154,8 @@ one `h1`, a single primary CTA per viewport, and GSAP reveals that respect
 
 Remaining backlog:
 
-- `StyleGuide` — live theme swapper; re-check the CB360 specimen after each
-  theme change.
+- `StyleGuide` — token reference for the CB360 "Ledger" palette; re-check the
+  specimen after any token change.
 - Optional: a featured-post treatment on the blog index (first post wider).
 
 ## Pre-ship checklist (every public page)

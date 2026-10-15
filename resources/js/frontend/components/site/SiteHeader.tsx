@@ -75,7 +75,7 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-[53px] min-w-28 items-center justify-center gap-2 rounded-site-card bg-[#191c16] px-7 text-[#edf0e3] transition-transform duration-200 hover:scale-[1.03]"
+              className="inline-flex h-[53px] min-w-28 items-center justify-center gap-2 rounded-site-card bg-site-invert-bg px-7 text-site-invert-ink transition-transform duration-200 hover:scale-[1.03]"
             >
               {menuOpen ? "Close" : "Menu"}
             </button>

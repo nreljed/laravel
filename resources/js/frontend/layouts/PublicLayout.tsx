@@ -20,9 +20,9 @@ interface PublicLayoutProps {
 
 // Project-owned public layout for the marketing site. Mirrors the shared
 // PublicLayout's props and structure (SeoHead + skip link + header + main +
-// footer) but renders inside data-site-theme="canvasly" with the project's
-// site-token chrome, so every interior page (About/Services/Contact/Blog)
-// shares the Canvasly look without touching the platform mirror.
+// footer) but renders inside the project's site-token chrome (SiteRoot,
+// default theme "cb360" = Ledger), so every interior page (About/Services/
+// Contact/Blog) shares the Ledger look without touching the platform mirror.
 export default function PublicLayout({
   children,
   title,

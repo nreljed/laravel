@@ -19,15 +19,15 @@ const colorGroups: { title: string; note: string; colors: ColorSwatch[] }[] = [
     title: "Brand colors",
     note: "The accents that identify the site: primary, panels and callouts.",
     colors: [
-      { label: "Accent · bitter lime", varName: "--site-accent", className: "bg-site-accent" },
+      { label: "Accent · signal green", varName: "--site-accent", className: "bg-site-accent" },
       {
-        label: "Secondary · emerald city",
+        label: "Secondary",
         varName: "--site-secondary",
         className: "bg-site-secondary",
       },
-      { label: "Stoic white", varName: "--site-alt-1", className: "bg-site-alt-1" },
-      { label: "Grey teal", varName: "--site-alt-2", className: "bg-site-alt-2" },
-      { label: "Creamy axolotl", varName: "--site-pink", className: "bg-site-pink" },
+      { label: "Sand", varName: "--site-alt-1", className: "bg-site-alt-1" },
+      { label: "Forest", varName: "--site-alt-2", className: "bg-site-alt-2" },
+      { label: "Clay", varName: "--site-pink", className: "bg-site-pink" },
     ],
   },
   {
@@ -154,22 +154,12 @@ const sections = [
   { id: "pagination", label: "Pagination", number: "09" },
 ];
 
-// Palettes available to the live swapper: the cb360 brand module
-// (resources/css/themes/cb360.css), the canvasly module, and the base
-// neutral fallback.
-const themeOptions = [
-  { slug: "cb360", label: "Ledger" },
-  { slug: "canvasly", label: "Canvasly" },
-  { slug: "neutral", label: "Neutral" },
-];
-
 export default function StyleGuide() {
   const rootRef = useRef<HTMLDivElement>(null);
   const mobileNavPanelRef = useRef<HTMLDivElement>(null);
   const [resolved, setResolved] = useState<Record<string, string>>({});
   const [active, setActive] = useState<string>("colors");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [theme, setTheme] = useState<string>("cb360");
 
   useEffect(() => {
     const root = rootRef.current?.closest("[data-site-theme]");
@@ -184,7 +174,7 @@ export default function StyleGuide() {
       }
     }
     setResolved(values);
-  }, [theme]);
+  }, []);
 
   // Scroll-spy: highlight the sidebar/mobile entry that matches the section
   // currently crossing the upper third of the viewport.
@@ -306,7 +296,6 @@ export default function StyleGuide() {
     >
       <div
         ref={rootRef}
-        data-site-theme={theme}
         className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-6 lg:px-10 lg:py-14"
       >
         {/* Sidebar (desktop sticky) + content */}
@@ -373,30 +362,6 @@ export default function StyleGuide() {
                     Style Guide
                   </h1>
                 </div>
-
-                {/* Live theme swapper — proves the token layer re-skins at runtime. */}
-                <div
-                  role="group"
-                  aria-label="Theme"
-                  className="inline-flex rounded-site-pill border border-site-border bg-site-surface p-1"
-                >
-                  {themeOptions.map((option) => (
-                    <button
-                      key={option.slug}
-                      type="button"
-                      onClick={() => setTheme(option.slug)}
-                      aria-pressed={theme === option.slug}
-                      className={cn(
-                        "rounded-site-pill px-4 py-1.5 text-sm font-medium transition-colors",
-                        theme === option.slug
-                          ? "bg-site-ink text-site-bg-strong"
-                          : "text-site-ink-soft hover:text-site-ink",
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <p className="mt-5 max-w-2xl text-base leading-7 text-site-ink-soft">
@@ -406,13 +371,13 @@ export default function StyleGuide() {
                 </code>{" "}
                 tokens scoped under{" "}
                 <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
-                  [data-site-theme="…"]
+                  [data-site-theme="cb360"]
                 </code>
-                . Each palette is an isolated module in{" "}
+                , the CB360 "Ledger" palette module in{" "}
                 <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
                   resources/css/themes/
                 </code>
-                ; use the switcher above to re-theme this page live.
+                .
               </p>
             </header>
 
