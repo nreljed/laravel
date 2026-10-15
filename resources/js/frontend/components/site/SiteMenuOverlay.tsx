@@ -1,7 +1,8 @@
 import { Link } from "@inertiajs/react";
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
 import { cn } from "cn";
+import { gsap } from "./motion/gsap";
 import { useBodyScrollLock } from "./motion/use-body-scroll-lock";
 
 export interface SiteMenuLink {
@@ -45,51 +46,70 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
   useBodyScrollLock(open);
   const rootRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const initialised = useRef(false);
 
-  useEffect(() => {
-    const root = rootRef.current;
-    const content = contentRef.current;
-    if (!root || !content) return;
+  // Drawer-tier motion: the panel slides down out of the header (transform
+  // only — never height — so it costs no layout), the links stagger in behind
+  // it, and closing walks the same path in reverse. GSAP owns the transform
+  // outright; there is no translate utility on the element to double it up.
+  // The first run snaps to the closed position before paint so the panel can
+  // never flash open, and reduced motion keeps a short cross-fade instead.
+  useGSAP(
+    () => {
+      const root = rootRef.current;
+      const content = contentRef.current;
+      if (!root || !content) return;
 
-    const tl = gsap.timeline();
-    if (open) {
-      tl.fromTo(
-        root,
-        { height: 0 },
-        { height: window.innerHeight, duration: 1, ease: "power4.inOut" },
-        0,
-      );
-      tl.fromTo(
-        content,
-        { y: 80, autoAlpha: 0, skewY: 6 },
-        { y: 0, autoAlpha: 1, skewY: 0, duration: 0.75, ease: "power3.out" },
-        0.5,
-      );
-    } else {
-      tl.to(content, { y: 80, autoAlpha: 0, skewY: 6, duration: 0.75, ease: "power2.in" }, 0);
-      tl.to(root, { height: 0, duration: 1, ease: "power4.inOut" }, 0.1);
-    }
+      const items = gsap.utils.toArray<HTMLElement>("[data-menu-item]", content);
 
-    return () => {
-      tl.kill();
-      gsap.set(root, { height: 0 });
-      gsap.set(content, { autoAlpha: 0 });
-    };
-  }, [open]);
+      if (!initialised.current) {
+        initialised.current = true;
+        gsap.set(root, { yPercent: open ? 0 : -100 });
+        gsap.set(items, { opacity: open ? 1 : 0 });
+        return;
+      }
+
+      const instant = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      gsap.killTweensOf([root, ...items]);
+      const tl = gsap.timeline();
+
+      if (open) {
+        tl.to(root, { yPercent: 0, duration: instant ? 0 : 0.4, ease: "power3.out" }, 0);
+        tl.fromTo(
+          items,
+          { y: instant ? 0 : 24, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: instant ? 0.15 : 0.35,
+            ease: "power3.out",
+            stagger: instant ? 0 : 0.04,
+          },
+          instant ? 0 : 0.1,
+        );
+      } else {
+        tl.to(items, { opacity: 0, duration: instant ? 0 : 0.18, ease: "power2.in" }, 0);
+        tl.to(root, { yPercent: -100, duration: instant ? 0 : 0.35, ease: "power2.in" }, 0);
+      }
+    },
+    { dependencies: [open], revertOnUpdate: false },
+  );
 
   return (
     <div
       ref={rootRef}
       aria-hidden={!open}
+      inert={!open}
       className={cn(
-        "fixed top-0 right-0 left-0 z-20 h-0 overflow-hidden bg-site-invert-bg text-site-invert-ink",
+        "fixed inset-x-0 top-0 z-20 h-dvh overflow-hidden bg-site-bg text-site-ink",
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
     >
       <div
         ref={contentRef}
         data-lenis-prevent
-        className="flex h-full w-full flex-col overflow-y-auto overscroll-contain px-6 pt-28 pb-[8vh] opacity-0 sm:px-10"
+        className="flex h-full w-full flex-col overflow-y-auto overscroll-contain px-6 pt-28 pb-[8vh] sm:px-10"
       >
         <nav className="mx-auto my-auto flex w-full max-w-site flex-col">
           {links.map((link) => (
@@ -97,10 +117,11 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
               key={link.label}
               href={link.href}
               onClick={onClose}
-              className="group flex items-baseline gap-6 border-b border-site-invert-ink/15 py-5 sm:gap-8"
+              data-menu-item
+              className="group flex items-baseline gap-6 border-b border-site-ink/15 py-5 sm:gap-8"
             >
-              <span className="text-sm text-site-invert-ink/40">{link.number}</span>
-              <span className="font-site-display text-[clamp(2.5rem,9vw,7rem)] leading-[0.95] font-bold tracking-[-0.03em] text-site-invert-ink uppercase transition-all duration-300 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent sm:py-0">
+              <span className="text-sm text-site-ink/40">{link.number}</span>
+              <span className="site-title text-site-ink uppercase transition-all duration-300 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent">
                 {link.label}
               </span>
             </Link>
@@ -108,13 +129,16 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
         </nav>
 
         {brand || logo ? (
-          <div className="mx-auto mt-10 flex w-full max-w-site items-center justify-between gap-4 text-sm text-site-invert-ink/50">
+          <div
+            data-menu-item
+            className="mx-auto mt-10 flex w-full max-w-site items-center justify-between gap-4 text-sm text-site-ink/50"
+          >
             <span className="flex items-center gap-3">
               {logo ? (
                 <img
                   src={logo}
                   alt=""
-                  className="h-10 w-10 rounded-full bg-site-invert-ink object-contain p-1.5"
+                  className="h-10 w-10 rounded-full bg-site-ink object-contain p-1.5"
                 />
               ) : null}
               {brand}
@@ -128,7 +152,7 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
                     target="_blank"
                     rel="noreferrer noopener"
                     aria-label={social.label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-site-invert-ink/60 transition-colors hover:bg-site-invert-ink/10 hover:text-site-invert-ink"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-site-ink/60 transition-colors hover:bg-site-ink/10 hover:text-site-ink"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current">
                       <path d={social.path} />
