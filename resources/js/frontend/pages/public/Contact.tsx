@@ -49,7 +49,7 @@ export default function Contact() {
                 <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
                 Contact
               </p>
-              <h1 data-hero className="site-title mt-6 max-w-[16ch]">
+              <h1 data-hero className="site-display mt-6 max-w-[16ch]">
                 Tell us where the money leaks.
               </h1>
             </div>
@@ -75,7 +75,7 @@ export default function Contact() {
                     </span>
                     <channel.icon className="h-5 w-5 text-site-ink-faint" />
                   </div>
-                  <h2 className="site-heading-sm mt-6">{channel.title}</h2>
+                  <h3 className="site-title-sm mt-6">{channel.title}</h3>
                   <p className="mt-2 text-sm font-semibold text-site-ink">{channel.value}</p>
                   <p className="mt-2 leading-relaxed text-site-ink-soft">{channel.note}</p>
                 </div>
@@ -91,7 +91,7 @@ export default function Contact() {
             className="mx-auto flex max-w-site flex-col items-start justify-between gap-6 rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14 lg:flex-row lg:items-center"
           >
             <div>
-              <h2 className="site-title-sm flex items-center gap-3">
+              <h2 className="site-title flex items-center gap-3">
                 <MessageSquareText className="h-7 w-7 text-site-accent" />
                 Prefer to start on your own?
               </h2>

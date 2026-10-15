@@ -59,9 +59,9 @@ export function SiteFooter() {
           </div>
 
           <nav aria-label="Explore">
-            <h3 className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
+            <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               Explore
-            </h3>
+            </p>
             <ul className="mt-5 space-y-3 text-sm">
               {exploreLinks.map((link) => (
                 <li key={link.label}>
@@ -77,9 +77,9 @@ export function SiteFooter() {
           </nav>
 
           <nav aria-label="Product">
-            <h3 className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
+            <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               Product
-            </h3>
+            </p>
             <ul className="mt-5 space-y-3 text-sm">
               {productLinks.map((link) => (
                 <li key={link.label}>

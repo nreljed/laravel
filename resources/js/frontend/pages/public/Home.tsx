@@ -249,7 +249,7 @@ export default function Home() {
                   <span className="font-site-display text-sm font-bold text-site-accent">
                     {capability.n}
                   </span>
-                  <h3 className="site-heading-sm mt-4">{capability.title}</h3>
+                  <h3 className="site-title-sm mt-4">{capability.title}</h3>
                   <p className="mt-3 leading-relaxed text-site-ink-soft">{capability.body}</p>
                 </div>
               ))}
@@ -269,7 +269,7 @@ export default function Home() {
                   <span className="font-site-display text-5xl font-bold tracking-tight text-site-ink/15">
                     {step.n}
                   </span>
-                  <h3 className="site-heading-sm mt-4">{step.title}</h3>
+                  <h3 className="site-title-sm mt-4">{step.title}</h3>
                   <p className="mt-2 leading-relaxed text-site-ink-soft">{step.body}</p>
                 </li>
               ))}
@@ -311,7 +311,7 @@ export default function Home() {
         {/* ---------- CLOSING STATEMENT ---------- */}
         <section className="px-6 pt-10 pb-24 sm:px-10">
           <div className="mx-auto max-w-site text-center">
-            <h2 data-reveal className="site-hero">
+            <h2 data-reveal className="site-title">
               Break every cost.
             </h2>
             <p data-reveal className="site-lead mx-auto mt-6 max-w-[46ch]">

@@ -95,9 +95,22 @@ the semantic `--site-*` tokens from `resources/css/site.css`, scoped by
   live from the style guide.
 - Type scale: `site-hero` / `site-display` / `site-title` / `site-title-sm` /
   `site-heading` / `site-heading-sm` / `site-heading-xs` / `site-lead` (fluid
-  clamps). These are **visual size tokens, not heading levels** — apply one to
-  any heading tag and let the tag carry the semantics (one `h1` per page);
-  `site-hero` is the display crown reserved for the landing head.
+  clamps). Each SEO heading level maps to **exactly one** size token — pick by
+  level, never a bespoke size. One `h1` per page.
+
+  | Level | Token           | Fluid (mobile → desktop) |
+  | ----- | --------------- | ------------------------ |
+  | `h1`  | `site-display`  | 44 → 90px                |
+  | `h2`  | `site-title`    | 36 → 72px                |
+  | `h3`  | `site-title-sm` | 30 → 48px                |
+  | `h4`  | `site-heading`  | 24 → 36px                |
+  | `h5`  | `site-heading-sm` | 20 → 26px              |
+  | `h6`  | `site-heading-xs` | 17 → 20px              |
+
+  Two tokens sit outside the level map: `site-hero` is the display **crown**,
+  reserved for the landing `h1` (Home); `site-lead` is the deck paragraph that
+  follows a heading. Eyebrow labels (`text-xs … uppercase tracking-[0.2em]`)
+  and numeric displays are **not** headings and take no level token.
 
 ### CB360 "Ledger" identity (default public theme)
 

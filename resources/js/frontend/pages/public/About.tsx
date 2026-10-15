@@ -45,7 +45,7 @@ export default function About() {
               <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               About
             </p>
-            <h1 data-hero className="site-title mt-6 max-w-[18ch]">
+            <h1 data-hero className="site-display mt-6 max-w-[18ch]">
               We built the cost tool our own budgets needed.
             </h1>
             <p data-hero className="site-lead mt-7 max-w-[56ch]">
@@ -91,7 +91,7 @@ export default function About() {
                     </span>
                     <principle.icon className="h-5 w-5 text-site-ink-faint" />
                   </div>
-                  <h3 className="site-heading-sm mt-6">{principle.title}</h3>
+                  <h3 className="site-title-sm mt-6">{principle.title}</h3>
                   <p className="mt-3 leading-relaxed text-site-ink-soft">{principle.body}</p>
                 </div>
               ))}

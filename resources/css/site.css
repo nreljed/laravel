@@ -81,9 +81,9 @@
     --site-border: rgba(24, 24, 27, 0.15);
     --site-outline: #18181b;
 
-    /* Inverted surface — deliberately dark in BOTH light and dark mode,
-       so it is NOT re-declared by any theme's dark block. The full-screen
-       nav overlay sits on this; only --site-accent follows the theme. */
+    /* Inverted surface — the header pills (dark-mode toggle, user control,
+       menu button) keep a fixed dark plate in both modes. --site-accent
+       always follows the theme. */
     --site-invert-bg: #11130f;
     --site-invert-ink: #edf0e3;
 
@@ -162,13 +162,15 @@
 /* ------------------------------------------------------------------
    Fluid heading scale (desktop -> mobile)
    ------------------------------------------------------------------
-   Reusable class API for site headings. These classes are a VISUAL
-   SIZE ramp, not heading levels — put one on any heading tag and let
-   the tag carry the semantics (one `h1` per page). `site-hero` is the
-   display crown reserved for the landing head; `site-lead` is the deck
-   paragraph. Base properties are zero-specificity (:where) so per-
-   element classes and Tailwind utilities can tune/override; each class
-   clamps between a mobile floor and a desktop cap.
+   Reusable class API for site headings. Each SEO heading level maps to
+   exactly one token (see DESIGN.md → "Type scale"); pick by level, never
+   a bespoke size:  h1 site-display · h2 site-title · h3 site-title-sm ·
+   h4 site-heading · h5 site-heading-sm · h6 site-heading-xs.
+   `site-hero` is the display crown reserved for the landing h1;
+   `site-lead` is the deck paragraph. Base properties are zero-
+   specificity (:where) so per-element classes and Tailwind utilities
+   can tune/override; each class clamps between a mobile floor and a
+   desktop cap.
    ------------------------------------------------------------------ */
 @layer components {
   [data-site-theme]

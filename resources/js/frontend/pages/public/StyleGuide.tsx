@@ -87,49 +87,49 @@ const headingClasses: {
   {
     tag: "p",
     className: "site-hero",
-    sample: "The display crown — the home hero head.",
+    sample: "Crown · landing h1 (used once)",
     meta: "site-hero · clamp(3.25rem, 9vw, 7rem) · 700 · lh .85 · −.05em",
   },
   {
     tag: "p",
     className: "site-display",
-    sample: "Display — the largest page title.",
+    sample: "H1 · page title",
     meta: "site-display · clamp(2.75rem, 7vw, 5.6rem) · 700 · lh .9 · −.05em",
   },
   {
     tag: "p",
     className: "site-title",
-    sample: "Title — page heads and major section titles.",
+    sample: "H2 · section heading",
     meta: "site-title · clamp(2.25rem, 5.5vw, 4.5rem) · 700 · lh .95 · −.04em",
   },
   {
     tag: "p",
     className: "site-title-sm",
-    sample: "Title sm — subsection leads.",
+    sample: "H3 · card / subsection",
     meta: "site-title-sm · clamp(1.875rem, 4vw, 3rem) · 700 · lh 1 · −.03em",
   },
   {
     tag: "p",
     className: "site-heading",
-    sample: "Heading — card titles.",
+    sample: "H4 · small card title",
     meta: "site-heading · clamp(1.5rem, 3vw, 2.25rem) · 700 · lh 1.1 · −.02em",
   },
   {
     tag: "p",
     className: "site-heading-sm",
-    sample: "Heading sm — small card titles.",
+    sample: "H5 · dense list title",
     meta: "site-heading-sm · clamp(1.25rem, 2.5vw, 1.6rem) · 600 · lh 1.15 · −.02em",
   },
   {
     tag: "p",
     className: "site-heading-xs",
-    sample: "Heading xs — eyebrow labels.",
+    sample: "H6 · micro heading",
     meta: "site-heading-xs · clamp(1.05rem, 1.6vw, 1.25rem) · 700 · lh 1.3 · −.01em",
   },
   {
     tag: "p",
     className: "site-lead",
-    sample: "Lead paragraph — the intro line that follows a heading.",
+    sample: "Lead · deck paragraph (not a heading)",
     meta: "site-lead · clamp(1.125rem, 1.7vw, 1.5rem) · lh 1.65 · −.015em",
   },
 ];
@@ -200,7 +200,7 @@ export default function StyleGuide() {
   }, []);
 
   const sectionHeading = (number: string, label: string) => (
-    <h2 className="font-site-display text-2xl font-bold tracking-tight text-site-ink sm:text-3xl">
+    <h2 className="site-title">
       <span className="mr-3 text-sm font-semibold tabular-nums tracking-[0.2em] text-site-ink-faint">
         {number}
       </span>
@@ -358,9 +358,7 @@ export default function StyleGuide() {
                   <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
                     Design system
                   </p>
-                  <h1 className="mt-3 font-site-display text-4xl font-bold tracking-tight text-site-ink sm:text-5xl">
-                    Style Guide
-                  </h1>
+                  <h1 className="site-display mt-3">Style Guide</h1>
                 </div>
               </div>
 
@@ -395,9 +393,9 @@ export default function StyleGuide() {
               <div className="mt-8 grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
                 {colorGroups.map((group) => (
                   <div key={group.title}>
-                    <h3 className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
+                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
                       {group.title}
-                    </h3>
+                    </p>
                     <p className="mt-1 text-xs text-site-ink-faint">{group.note}</p>
                     <div className="mt-3 space-y-2">
                       {group.colors.map((swatch) => (
@@ -427,8 +425,8 @@ export default function StyleGuide() {
             <section id="typography" className="mb-16 scroll-mt-28">
               {sectionHeading("02", "Typography")}
               <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
-                One base size and a set of heading size tokens. There are no ad-hoc text sizes;
-                everything else derives from these two layers.
+                One base size plus a heading token per SEO level. There are no ad-hoc text sizes;
+                every heading, label and number derives from these tokens.
               </p>
 
               <div className="mt-6 rounded-site-card border border-site-border bg-site-surface p-6">
@@ -451,8 +449,10 @@ export default function StyleGuide() {
                   Heading classes
                 </p>
                 <p className="mt-2 max-w-2xl text-sm text-site-ink-soft">
-                  These are visual size tokens, not heading levels — apply one to any heading tag
-                  and let the tag carry the semantics (one <code>h1</code> per page).
+                  Each SEO heading level maps to exactly one token — pick by level, never a bespoke
+                  size. <code>h1</code> is <code>site-display</code> (the landing <code>h1</code>{" "}
+                  uses the <code>site-hero</code> crown), <code>h2</code> is <code>site-title</code>
+                  , and so on down. One <code>h1</code> per page.
                 </p>
                 <div className="mt-2">
                   {headingClasses.map((item) => {
@@ -479,9 +479,9 @@ export default function StyleGuide() {
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 {fonts.map((font) => (
                   <div key={font.label} className="rounded-site-card bg-site-surface p-6">
-                    <h3 className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
+                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
                       {font.label}
-                    </h3>
+                    </p>
                     <p className={cn("mt-4 text-2xl", font.className)}>
                       The quick brown fox jumps over the lazy dog
                     </p>
@@ -609,24 +609,24 @@ export default function StyleGuide() {
             <section id="menu" className="mb-16 scroll-mt-28">
               {sectionHeading("07", "Menu overlay links")}
               <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
-                Full-screen dark overlay: numbered uppercase links that skew/italicize on hover,
-                with the brand chip in the footer.
+                Full-screen theme-matched overlay: numbered uppercase links that skew/italicize on
+                hover, with the brand chip in the footer.
               </p>
-              <div className="mt-8 rounded-site-card bg-site-ink p-6 sm:p-10">
+              <div className="mt-8 rounded-site-card border border-site-border bg-site-bg p-6 sm:p-10">
                 <div>
                   {["Home", "About", "Works", "Contact"].map((label, index) => (
                     <div
                       key={label}
-                      className="group flex items-baseline gap-4 border-b border-site-bg/15 py-2 sm:gap-6 sm:py-3"
+                      className="group flex items-baseline gap-4 border-b border-site-ink/15 py-2 sm:gap-6 sm:py-3"
                     >
-                      <span className="text-xs font-medium text-site-bg/40">0{index + 1}</span>
-                      <span className="font-site-display text-[clamp(1.8rem,5vw,4rem)] font-bold uppercase leading-[0.95] tracking-[-0.03em] text-site-bg transition-all duration-500 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent">
+                      <span className="text-xs font-medium text-site-ink/40">0{index + 1}</span>
+                      <span className="site-title text-site-ink uppercase transition-all duration-500 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent">
                         {label}
                       </span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-8 flex items-center gap-3 border-t border-site-bg/15 pt-6 text-site-bg/60">
+                <div className="mt-8 flex items-center gap-3 border-t border-site-ink/15 pt-6 text-site-ink/60">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-site-pink text-xs font-bold text-site-ink">
                     CB
                   </span>
@@ -644,7 +644,7 @@ export default function StyleGuide() {
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-site-display text-lg font-bold tracking-tight">Surface</h3>
+                    <h3 className="site-title-sm">Surface</h3>
                     <p className="mt-2 text-sm leading-6 text-site-ink-soft">
                       Default content card on the cream background.
                     </p>
@@ -655,7 +655,7 @@ export default function StyleGuide() {
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-site-display text-lg font-bold tracking-tight">Alt-1</h3>
+                    <h3 className="site-title-sm">Alt-1</h3>
                     <p className="mt-2 text-sm leading-6 text-site-ink-soft">
                       Soft callout panel for highlights.
                     </p>
@@ -666,7 +666,7 @@ export default function StyleGuide() {
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-site-display text-lg font-bold tracking-tight">Alt-2</h3>
+                    <h3 className="site-title-sm">Alt-2</h3>
                     <p className="mt-2 text-sm leading-6 text-site-ink-soft">
                       Deep teal panel for emphasis.
                     </p>

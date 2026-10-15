@@ -120,9 +120,7 @@ export default function BlogShow({ post }: BlogShowProps) {
               {post.category.name}
             </Link>
           )}
-          <h1 className="font-site-display text-4xl font-bold tracking-tight text-site-ink text-balance sm:text-5xl">
-            {post.title}
-          </h1>
+          <h1 className="site-display text-balance">{post.title}</h1>
           <div className="mt-4 flex items-center gap-3 text-sm text-site-ink-faint">
             <span>{post.user.name}</span>
             {post.published_at && (
