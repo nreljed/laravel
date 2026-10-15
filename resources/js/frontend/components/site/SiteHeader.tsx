@@ -22,10 +22,11 @@ const menuLinks: SiteMenuLink[] = navLinks.map((link, index) => ({
 
 // Shared public-site header. Fixed-height (h-20) bar pinned to the viewport so
 // it is always visible; transparent at the top of the page and a glass surface
-// once scrolled (or while the menu overlay is open, so it never disappears over
-// the dark menu). Carries the three global controls — dark-mode toggle, user
-// control (→ dashboard/login), and the Menu pill that opens the full-screen nav
-// overlay — so every public page shares one chrome without forking.
+// once scrolled (or while the menu overlay is open, so it stays legible over
+// the menu). Carries the three global controls — the theme-mode icon (light /
+// dark / automatic), the user icon → account menu (avatar when signed in), and
+// the Menu pill, which is the header's only button — so every public page
+// shares one chrome without forking.
 export function SiteHeader() {
   const { props } = usePage();
   const brand = (props.brand as { name?: string; logo?: string }) || {};
@@ -75,7 +76,7 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-[53px] min-w-28 items-center justify-center gap-2 rounded-site-card bg-site-invert-bg px-7 text-site-invert-ink transition-transform duration-200 hover:scale-[1.03]"
+              className="inline-flex h-[53px] min-w-28 items-center justify-center gap-2 rounded-site-card bg-site-invert-bg px-7 text-site-invert-ink"
             >
               {menuOpen ? "Close" : "Menu"}
             </button>

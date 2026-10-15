@@ -1,23 +1,54 @@
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import type { KeyboardEvent } from "react";
 
-// Project-owned dark-mode switch for the public site chrome. Sits on the fixed
-// non-inverting "inverted" surface tokens (site-invert-bg / site-invert-ink) so
-// it stays dark and legible in both themes. `resolvedTheme` is undefined until
-// next-themes hydrates, so the server and first client render both fall through
-// to the moon icon — no SSR/hydration mismatch without a mount effect.
+// Project-owned theme switch for the public site chrome: a bare icon — no
+// button wrapper, the Menu pill is the only button in the header — cycling
+// light → dark → automatic, with the glyph changing form per mode (Sun /
+// Moon / Monitor). next-themes resolves `theme` only after hydration, so the
+// server and first client render both fall back to the automatic glyph; no
+// SSR/hydration mismatch without a mount effect.
+const modeLabels = {
+  light: "Light",
+  dark: "Dark",
+  system: "Automatic",
+} as const;
+
+type ThemeMode = keyof typeof modeLabels;
+
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const { theme, setTheme } = useTheme();
+
+  const current: ThemeMode = theme === "light" || theme === "dark" ? theme : "system";
+  const next: ThemeMode = current === "light" ? "dark" : current === "dark" ? "system" : "light";
+
+  const advance = () => setTheme(next);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    advance();
+  };
 
   return (
-    <button
-      type="button"
-      aria-label="Toggle dark mode"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex h-[53px] w-[53px] items-center justify-center rounded-site-card bg-site-invert-bg text-site-invert-ink transition-transform duration-200 hover:scale-[1.05]"
+    <div
+      role="button"
+      tabIndex={0}
+      title={modeLabels[current]}
+      aria-label={`Theme mode: ${modeLabels[current]}. Activate to switch.`}
+      onClick={advance}
+      onKeyDown={handleKeyDown}
+      className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-site-ink"
     >
-      {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </button>
+      {current === "system" ? (
+        <Monitor className="h-5 w-5" />
+      ) : current === "dark" ? (
+        <Moon className="h-5 w-5" />
+      ) : (
+        <Sun className="h-5 w-5" />
+      )}
+    </div>
   );
 }

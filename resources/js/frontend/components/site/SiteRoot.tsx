@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { SmoothScroll } from "./motion/SmoothScroll";
+import { SiteThemeContext } from "./site-theme";
 
 interface SiteRootProps {
   children: ReactNode;
@@ -27,11 +28,13 @@ export function SiteRoot({ children, theme = "cb360" }: SiteRootProps) {
   }, []);
 
   return (
-    <div
-      data-site-theme={theme}
-      className="flex min-h-screen flex-col bg-site-bg font-site-body text-site-ink"
-    >
-      <SmoothScroll>{children}</SmoothScroll>
-    </div>
+    <SiteThemeContext value={theme}>
+      <div
+        data-site-theme={theme}
+        className="flex min-h-screen flex-col bg-site-bg font-site-body text-site-ink"
+      >
+        <SmoothScroll>{children}</SmoothScroll>
+      </div>
+    </SiteThemeContext>
   );
 }

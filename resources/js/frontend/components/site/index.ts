@@ -8,4 +8,5 @@ export { SitePill } from "./SitePill";
 export { SitePagination } from "./SitePagination";
 export { ThemeToggle } from "./ThemeToggle";
 export { UserMenu } from "./UserMenu";
+export { useSiteTheme } from "./site-theme";
 export * from "./motion";
