@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0bfaeb6305c17eca038d2bad55a72fcf",
+    "content-hash": "b363255df37bdd457f34d4deb6fe4ddd",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3321,16 +3321,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.4",
+            "version": "0.1.5",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "c7037792ae70bdfb7dfd127868fc9f1ba44059b1"
+                "reference": "d7df7df62093d5878ad55a59d54f19d348841abf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/c7037792ae70bdfb7dfd127868fc9f1ba44059b1",
-                "reference": "c7037792ae70bdfb7dfd127868fc9f1ba44059b1",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/d7df7df62093d5878ad55a59d54f19d348841abf",
+                "reference": "d7df7df62093d5878ad55a59d54f19d348841abf",
                 "shasum": ""
             },
             "require": {
@@ -3371,10 +3371,10 @@
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
             "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.4",
+                "source": "https://github.com/nreljed/blog/tree/v0.1.5",
                 "issues": "https://github.com/nreljed/blog/issues"
             },
-            "time": "2026-10-01T15:17:32+00:00"
+            "time": "2026-10-16T17:27:49+00:00"
         },
         {
             "name": "nreljed/platform",
