@@ -488,12 +488,6 @@ const APP_MANIFEST_FIELDS = {
   },
 };
 
-/** Files the workspace adds on purpose; they are not forks. */
-const APP_WORKSPACE_OVERLAY = new Set([
-  "scripts/frontend-boundary-check.php",
-  "tests/Unit/BoundaryIntegrityTest.php",
-]);
-
 function canonicalJson(value, ignoreKey) {
   if (Array.isArray(value)) {
     return `[${value.map((item) => canonicalJson(item, ignoreKey)).join(",")}]`;
@@ -660,7 +654,6 @@ function checkAppUpstreamDrift() {
     }
     for (const rel of mine.keys()) {
       if (APP_INTEGRATION_FILES.has(rel)) continue;
-      if (APP_WORKSPACE_OVERLAY.has(rel)) continue;
       if (!upstream.has(rel)) extra.push(rel);
     }
 

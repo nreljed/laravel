@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Nreljed\Platform\Database\Seeders\SettingsSeeder;
 
 class DatabaseSeeder extends Seeder
 {

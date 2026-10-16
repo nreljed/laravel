@@ -1,10 +1,10 @@
 <?php
 
-use Database\Seeders\CurrencySeeder;
 use Database\Seeders\DemoDataSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
-use Database\Seeders\SettingsSeeder;
 use Database\Seeders\ShopProductSeeder;
+use Nreljed\Platform\Database\Seeders\SettingsSeeder;
+use Nreljed\ShopModule\Database\Seeders\CurrencySeeder;
 
 /*
 |--------------------------------------------------------------------------

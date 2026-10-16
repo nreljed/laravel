@@ -69,13 +69,13 @@ swap a core page for a marketing page without forking core).
 
 ## Route ownership
 
-| Prefix              | Owner                     | Notes                                    |
-| ------------------- | ------------------------- | ---------------------------------------- |
-| `/` public, `/dashboard`, `/dashboard/admin`, `/deploy/*`, `/api/notifications`, auth, maintainance, csp-report | **platform** (`packages/platform/routes`) | platform-owned |
-| `/dashboard/posts`, blog public | **blog** | blog service provider, gated on `enabled()` |
-| `/dashboard/shop`, `/store`, webhooks | **shop-module** | shop service provider |
-| `/dashboard/bookings`, `/dashboard/properties`, guest flow | **booking-module** | booking + properties providers |
-| anything else       | **consumer app**          | `routes/web.php` (thin)                  |
+| Prefix                                                                                                          | Owner                                     | Notes                                       |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------- |
+| `/` public, `/dashboard`, `/dashboard/admin`, `/deploy/*`, `/api/notifications`, auth, maintainance, csp-report | **platform** (`packages/platform/routes`) | platform-owned                              |
+| `/dashboard/posts`, blog public                                                                                 | **blog**                                  | blog service provider, gated on `enabled()` |
+| `/dashboard/shop`, `/store`, webhooks                                                                           | **shop-module**                           | shop service provider                       |
+| `/dashboard/bookings`, `/dashboard/properties`, guest flow                                                      | **booking-module**                        | booking + properties providers              |
+| anything else                                                                                                   | **consumer app**                          | `routes/web.php` (thin)                     |
 
 Consumers never re-own a dependency's routes, migrations, or models — those are
 canonical in the package. The app shell only adds app-specific routes.
@@ -110,13 +110,24 @@ Modules release independently: `vX.Y.Z` tag → GitHub Release →
 
 ## Two consumption models (recap)
 
-|                        | Model A — standalone           | Model B — workspace mono (default)  |
-| ---------------------- | ------------------------------ | ----------------------------------- |
-| PHP resolution         | Composer VCS → `vendor/`       | Composer path repos → `vendor/`     |
-| npm resolution         | direct install (npm/pnpm root) | pnpm workspace symlinks             |
-| App ownership          | own git repo + CI/CD           | tree owned by the mono              |
-| Module iteration       | tag → update                   | edit package, migrate, HMR          |
-| Use for               | real product deployments       | this dev monorepo, module dev loop  |
+The **same** app can be consumed either way; the difference is _where the package tree comes
+from_ and _who owns the deploy_, not the app code.
+
+|                | Model A — standalone           | Model B — workspace mono                                                            |
+| -------------- | ------------------------------ | ----------------------------------------------------------------------------------- |
+| PHP resolution | Composer VCS → `vendor/`       | Composer **VCS at rest**; flip to `path` repos for dev (`switch-composer-repos.js`) |
+| npm resolution | direct install (npm/pnpm root) | pnpm workspace symlinks                                                             |
+| App ownership  | own git repo + CI/CD           | tree owned by the mono                                                              |
+| Module iter.   | tag → update                   | edit package, migrate, HMR                                                          |
+| Use for        | self-contained release deploys | this dev monorepo, module dev loop                                                  |
+
+- **All three apps sit at Composer `vcs` at rest** — `node scripts/switch-composer-repos.js`
+  prints the current mode. The `path` flip is opt-in dev convenience (`path` repos only resolve
+  while flipped); release/CI builds stay on `vcs` so `deploy.zip` is self-contained.
+- **Deploy ownership follows the tree, not the model.** The root app deploys from _this_ repo
+  (`deploy.yml`); `apps/laravel.shop` / `apps/laravel.booking` mirror **out** to the standalone
+  `nreljed/laravel.shop` / `nreljed/laravel.booking` repos, and those repos own their deploys.
+  The mono has **no per-app deploy workflows** (`docs/packages.md`, `scripts/AGENTS.md`).
 
 For a new project follow `docs/new-project.md` (Model A) and
 `docs/module-development.md` (writing a new module).

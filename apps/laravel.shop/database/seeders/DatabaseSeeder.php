@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Nreljed\Platform\Database\Seeders\SettingsSeeder;
 use Nreljed\Platform\Models\Role;
+use Nreljed\ShopModule\Database\Seeders\CurrencySeeder;
 
 class DatabaseSeeder extends Seeder
 {

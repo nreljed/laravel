@@ -10,7 +10,8 @@ use SplFileInfo;
 /**
  * Structural boundary guard for the consuming app (mirrors the package-level
  * NamespaceIntegrityTest): the app must never declare the Nreljed\* package
- * namespaces, must not ship byte-identical copies of package sources, and the
+ * namespaces, must not ship byte-identical copies of package sources, must not
+ * shadow a package factory/seeder with a non-subclass reimplementation, and the
  * boundary scripts (foundation-check, frontend-boundary-check) must stay clean.
  *
  * This test intentionally does NOT boot the application.
@@ -74,16 +75,59 @@ final class BoundaryIntegrityTest extends TestCase
         );
     }
 
-    public function test_boundary_scripts_report_clean(): void
+    /**
+     * The app may subclass a package factory/seeder (a thin seam so the class
+     * resolves to App\Models\*), but it must never keep a full reimplementation
+     * under the same class name. A stale fork silently keeps running with
+     * package fixes (e.g. a new column) missing, so a name collision that is
+     * not a subclass of the package class is a defect.
+     */
+    public function test_app_factories_and_seeders_do_not_fork_package_classes(): void
+    {
+        $packageClasses = $this->packageFactoryAndSeederClasses();
+        $violations = [];
+
+        foreach ($this->phpFiles([$this->root.'/database/factories', $this->root.'/database/seeders']) as $file) {
+            $basename = pathinfo($file, PATHINFO_FILENAME);
+
+            if (! isset($packageClasses[$basename])) {
+                continue;
+            }
+
+            $content = (string) file_get_contents($file);
+
+            if (! preg_match('/\bclass\s+\w+\s+extends\s+(\w+)/', $content, $matches)) {
+                continue;
+            }
+
+            // A thin seam extends a class imported from Nreljed\*; anything else
+            // that merely shares the package class name is a stale fork.
+            if ($this->extendsPackageClass($content, $matches[1])) {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($file, strlen($this->root.'/')));
+
+            $violations[] = $relative.'  ->  '.$packageClasses[$basename];
+        }
+
+        $this->assertSame(
+            [],
+            $violations,
+            'App factory/seeder files shadowing a package class without extending it:'.PHP_EOL.implode(PHP_EOL, $violations)
+        );
+    }
+
+    public function test_boundary_scripts_are_clean(): void
     {
         foreach (['foundation-check.php', 'frontend-boundary-check.php'] as $script) {
-            $path = $this->root.'/scripts/'.$script;
+            $result = $this->runScript($script);
 
-            $this->assertFileExists($path, "Missing boundary script: $path");
-
-            $exit = $this->runScript($script);
-
-            $this->assertSame(0, $exit['code'], "{$script} failed: {$exit['stdout']}{$exit['stderr']}");
+            $this->assertSame(
+                0,
+                $result['code'],
+                'Boundary script failed: '.$script.PHP_EOL.$result['stdout'].$result['stderr']
+            );
         }
     }
 
@@ -94,17 +138,15 @@ final class BoundaryIntegrityTest extends TestCase
     {
         $lines = [];
 
-        foreach ($duplicates as $appFile => $packageTwin) {
-            $lines[] = sprintf('%s  ->  %s', $appFile, $packageTwin[0]);
+        foreach ($duplicates as $appFile => $packageFiles) {
+            $lines[] = $appFile.'  ->  '.implode(', ', $packageFiles);
         }
 
         $this->assertSame([], $duplicates, $message.PHP_EOL.implode(PHP_EOL, $lines));
     }
 
     /**
-     * Hash index of package sources, then find app files colliding with it.
-     *
-     * @return array<string, list<string>> app file => list of package twin paths
+     * @return array<string, list<string>>
      */
     private function phpDuplicates(string $appScope, string $packageScope): array
     {
@@ -116,8 +158,8 @@ final class BoundaryIntegrityTest extends TestCase
 
         $index = [];
 
-        foreach ($packageFiles as $packageFile => $label) {
-            $hash = (string) sha1_file($packageFile);
+        foreach ($packageFiles as $file => $label) {
+            $hash = (string) sha1_file($file);
 
             $index[$hash][] = $label;
         }
@@ -168,7 +210,59 @@ final class BoundaryIntegrityTest extends TestCase
     }
 
     /**
-     * Sibling workspace package frontend sources this app depends on.
+     * Package factory/seeder class basenames => package label. Any app file with
+     * a matching basename must be a thin subclass, never a reimplementation.
+     *
+     * @return array<string, string>
+     */
+    private function packageFactoryAndSeederClasses(): array
+    {
+        $classes = [];
+
+        foreach ($this->packagePhpSourceFiles() as $file => $label) {
+            if (! preg_match('#/Database/(Factories|Seeders)/#', str_replace('\\', '/', $file))) {
+                continue;
+            }
+
+            $classes[pathinfo($file, PATHINFO_FILENAME)] = $label;
+        }
+
+        return $classes;
+    }
+
+    /**
+     * Whether the given content extends a class imported from the Nreljed\*
+     * namespace (the thin-subclass seam pattern), rather than reimplementing a
+     * package class under the same name. The alias is what matters: an import
+     * `use Nreljed\...\Foo as Bar;` satisfies `class X extends Bar`.
+     */
+    private function extendsPackageClass(string $content, string $extends): bool
+    {
+        if (! preg_match_all('/^use\s+(Nreljed\\\\[^;]+);/m', $content, $matches)) {
+            return false;
+        }
+
+        foreach ($matches[1] as $import) {
+            $import = trim((string) preg_replace('/\s+/', ' ', $import));
+
+            if (preg_match('/^.+?\s+as\s+(\w+)$/i', $import, $alias)) {
+                $local = $alias[1];
+            } else {
+                $local = substr($import, (int) strrpos($import, '\\') + 1);
+            }
+
+            if ($local === $extends) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Package frontend sources this app depends on. Resolved from the installed
+     * vendor tree (upstream deploy repos) or the workspace sibling (mono), so
+     * the guard works in both layouts.
      *
      * @return array<string, string> absolute path => label
      */
@@ -177,14 +271,23 @@ final class BoundaryIntegrityTest extends TestCase
         $files = [];
 
         foreach ($this->requiredPackageNames() as $name) {
-            $dir = $this->root.'/../../packages/'.$name;
+            $candidates = [
+                'vendor/nreljed/'.$name.'/resources/js',
+                'vendor/nreljed/'.$name.'/src/Resources/js',
+                '../../packages/'.$name.'/resources/js',
+                '../../packages/'.$name.'/src/Resources/js',
+            ];
 
-            if (! is_dir($dir)) {
-                continue;
-            }
+            foreach ($candidates as $relative) {
+                $dir = $this->root.'/'.$relative;
 
-            foreach ($this->frontendFiles($dir) as $file) {
-                $files[$file] = 'packages/'.$name.'/'.str_replace('\\', '/', substr($file, strlen($dir.'/')));
+                if (! is_dir($dir)) {
+                    continue;
+                }
+
+                foreach ($this->frontendFiles($dir) as $file) {
+                    $files[$file] = $relative.'/'.str_replace('\\', '/', substr($file, strlen($dir.'/')));
+                }
             }
         }
 
@@ -276,6 +379,7 @@ final class BoundaryIntegrityTest extends TestCase
     private function runScript(string $script): array
     {
         $descriptors = [
+            0 => ['pipe', 'r'],
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
@@ -283,20 +387,25 @@ final class BoundaryIntegrityTest extends TestCase
         $process = proc_open(
             [PHP_BINARY, $this->root.'/scripts/'.$script, $this->root],
             $descriptors,
-            $pipes,
-            $this->root
+            $pipes
         );
 
-        $stdout = stream_get_contents($pipes[1]);
-        $stderr = stream_get_contents($pipes[2]);
+        if (! is_resource($process)) {
+            return ['code' => 1, 'stdout' => '', 'stderr' => 'Unable to run '.$script];
+        }
+
+        fclose($pipes[0]);
+
+        $stdout = (string) stream_get_contents($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
 
         fclose($pipes[1]);
         fclose($pipes[2]);
 
         return [
             'code' => proc_close($process),
-            'stdout' => (string) $stdout,
-            'stderr' => (string) $stderr,
+            'stdout' => $stdout,
+            'stderr' => $stderr,
         ];
     }
 }

@@ -1,13 +1,30 @@
 # Platform Modernization Plan
 
 Date: 2026-09-14. Scope: nreljed platform + 3 consumer apps (mono, shop, booking).
-Status: **APPROVED by owner — execution started**. Decisions locked:
+Status: **APPROVED by owner — execution started** (⚠️ **partly superseded — see the 2026-10-16 status update below**). Decisions locked:
 
 1. **Architecture direction:** Option A — keep Inertia bridge; packages become real dual artifacts (composer + npm).
 2. **Repo layout:** single pnpm+turbo monorepo, **converted from the existing `nreljed/laravel` repo** (`C:\Users\nrelj\Local Sites\laravel\app`).
 3. **Deploy topology:** 3 deploy workflows with path filters (deploy only changed apps).
 4. **Runners:** fold 7 self-hosted runners into 1 for the monorepo.
 5. **Composer prod resolution:** dev = `path` repositories; production deploy = GitHub tags (self-contained artifact).
+
+> **Status update (2026-10-16) — partially superseded.** This plan is ~80% executed, but two
+> locked decisions were **dropped** in favor of the model that actually shipped
+> (**Model A/B — see [`architecture.md`](architecture.md)**):
+>
+> - ~~**#3 deploy topology** — 3 path-filtered deploy workflows in the mono~~ → **DROPPED.**
+>   The mono carries no per-app deploy workflows. `apps/laravel.shop` / `apps/laravel.booking`
+>   are **one-way mirrors out** to the standalone `nreljed/laravel.shop` / `nreljed/laravel.booking`
+>   repos, and **those** own their deploys. The mono deploys only itself (`deploy.yml`).
+>   See `docs/packages.md` + `scripts/AGENTS.md` § Package mirrors & parity.
+> - ~~**#4 fold 7 self-hosted runners → 1**~~ → **DROPPED.** Runners remain **per-repo**
+>   (8 today, `C:\runners\*`); see `scripts/AGENTS.md` § Self-Hosted Runners.
+> - **#1 #2 #5 DONE.** Packages are consumed as dual artifacts (composer + npm workspace
+>   package); the `packages/*` + `apps/*` workspace exists; dev flips to `path` repos via
+>   `scripts/switch-composer-repos.js`, prod stays `vcs`. **All three apps sit at `vcs` at
+>   rest** — the `path` flip is opt-in, not the default.
+> - Turbo was **not** adopted (no `turbo.json`); the workspace is plain pnpm + composer.
 
 ---
 
@@ -65,6 +82,10 @@ nreljed/laravel  (the monorepo)
 │  └─ laravel.booking/ # Booking app (moved in)
 └─ .github/workflows/  # path-filtered CI/CD per app
 ```
+
+> **Caveat (2026-10-16):** this target landed with two deviations — the mono app stayed at the
+> repo **root** (not `apps/laravel`), and CI/CD is **per-repo** (each app's standalone repo owns
+> its deploy) rather than path-filtered in the mono. See the status note at the top.
 
 ### Modern packaging rules (non-negotiable once landed)
 
@@ -125,7 +146,7 @@ Do first: safe, no structural change, unblocks everything.
   - ⚠️ pnpm 11 supply-chain quirks (do not re-litigate): `minimumReleaseAge` default 24h blackholes freshly-published packages — must set `minimumReleaseAge: 0` TOP-LEVEL in pnpm-workspace.yaml (`.npmrc` key + `settings:` wrapper DON'T work); build scripts need `allowBuilds:` (add via `pnpm approve-builds esbuild unrs-resolver`). Stale registry metadata cache at `C:\Users\nrelj\AppData\Local\pnpm-cache\v11\metadata` was the mdn-data/vite-ecosystem version conflict ROOT CAUSE (clear the dir, not overrides). `UND_ERR_DESTROYED` fetch flakiness → `--network-concurrency 6 --fetch-retries 10`.
 
 3. Composer: dev `path` repos + a **sync script** that switches each app's composer.json between `path`/vcs per environment; document in deploy skill.
-   - ✅ 2026-09-15: `scripts/switch-composer-repos.js` — standalone ESM, mirrors the drift-guard style. `node scripts/switch-composer-repos.js [status|path|vcs] [app...]` (env refs `SWITCH_COMPOSER_MONO/SHOP/BOOKING`). Rewrites each app's composer.json `repositories[].type` (`path` ∋ `packages/<pkg>` | `vcs` ∋ `nreljed/<pkg>.git`), preserves indent, prints next steps (`composer update nreljed/platform nreljed/blog […]`). Status: mono/shop/booking all vcs today.
+   - ✅ 2026-09-15: `scripts/switch-composer-repos.js` — standalone ESM, mirrors the drift-guard style. `node scripts/switch-composer-repos.js [<path|vcs>] [app...]` — no mode arg prints the current mode per app (env refs `SWITCH_COMPOSER_MONO/SHOP/BOOKING`). Rewrites each app's composer.json `repositories[].type` (`path` ∋ `packages/<pkg>` | `vcs` ∋ `nreljed/<pkg>.git`), preserves indent, prints next steps (`composer update nreljed/platform nreljed/blog […]`). Status: mono/shop/booking all vcs today.
    - Mono stays VCS at rest (pinned by lock); shop/booking are the flip targets in PATH mode for dev — verified `composer update` green in both, lock records `dist.type=path` / `dist.url=../../packages/<name>`, `vendor/nreljed/*` become junctions into the workspace packages.
    - ⚠️ `packages/*/composer.json` must keep the `version` field (path repos only respect `^0.1` matches if NPP `version` + root requires align — platform 0.1.48, blog 0.1.0, shop-module/booking-module 0.1.39 all carry it).
    - STOP on phpunit bootstrap: fresh app dirs imported WITHOUT `.env`/`.env.example`, `storage/`, or `database/database.sqlite` → tests die with `No application encryption key has been specified` → `Please provide a valid cache path`. Fix: per-app `.env` (`php artisan key:generate`), storage skeleton (`storage/app/public`, `framework/{cache/data,sessions,views,testing}`, `logs`, `bootstrap/cache`), touch sqlite. Plus per-app `APP_NAME` (brand prop falls back to `config('app.name')` → storefront `assertSee('Shop App')` fails with the default "Laravel").
@@ -133,13 +154,20 @@ Do first: safe, no structural change, unblocks everything.
    - LocalWP docroot (review 2026-09-15): `shop-laravel` / `booking-laravel` sites serve the OLD standalone checkouts at `{site}\app` — Apache `site.conf.hbs` `DocumentRoot "{{root}}"` = `…\shop-laravel\app`, and the root `.htaccess` rewrites everything to `public/` (that's why a repo-root docroot works). `apps/laravel.shop` + `apps/laravel.booking` carry the identical root `.htaccess`, so they're directly servoable.
    - ✅ APPLIED 2026-09-15 — LocalWP twins swapped to junctions: stopped-out (`app` → renamed `app.standalone`, preserving the old git checkouts) and fresh `app` ≈ **directory junction** → `…\laravel\app\apps\laravel.{shop,booking}` (`New-Item -ItemType Junction`; PHP resolves realpath so `base_path()` stays in `apps/*`). `APP_URL` set per app (.env) to the LocalWP domains. Verified: `artisan about` boots through the junction and live `php -S` smoke test returns **HTTP 200 + Inertia shell + correct brand on both** (`shop-laravel.local`/`booking-laravel.local`). DB context is now each app's **sqlite** (fresh — `artisan migrate`/seeders needed to repopulate), not the twins' LocalWP MySQL demo data. **Rollback**: stop the site, `Remove-Item {site}\app` (junction only), rename `app.standalone` → `app`. Twin-only artifacts left behind in `app.standalone`: `dist/`, `runner/`, `.playwright-mcp`, `sql/`, `AUDIT.md`, `.env`(MySQL).
 4. CI/CD: path-filtered workflows (monorepo), fold 7 runners → 1, deploy.yml semantics preserved (3 deploy workflows).
+   - ❌ **DROPPED (2026-10-16).** Shipped instead: each app keeps its own repo + deploy workflow (mirror-out model, see the status note at the top and `docs/packages.md`). The mono has no per-app deploy workflows; runners stay per-repo.
 
 ## Phase 2 — Package Data Ownership
 
+> **✅ DONE (2026-10-16).** All four items complete; the stale app-owned forks were deleted in the upstream repos (`nreljed/laravel.shop`, `nreljed/laravel.booking`) and the mirrors re-synced. Details per item below.
+
 1. shop-module: add factories (Product/Order/Cart/Coupon/…). booking-module: add factories (Booking/Property/…) — namespaced in package.
+   - ✅ DONE — `packages/{platform,blog,shop-module,booking-module}/src/Database/Factories/` ship the full factory set.
 2. Move baseline seeders into owning packages; app keeps demo-tier only.
+   - ✅ DONE (2026-10-16) — packages own the baselines (`platform`: `SettingsSeeder`, `RolesAndPermissionsSeeder`; `shop-module`: `CurrencySeeder`). The app-owned full copies were deleted upstream and every caller repointed: shop `database/seeders/DatabaseSeeder.php` + `config/database_maintenance.php`, booking `database/seeders/DatabaseSeeder.php` + `public/seed-admin.php`. Apps keep only thin-subclass seams (`RolesAndPermissionsSeeder extends Base…`) and demo-tier seeders (`ShopProductSeeder`, `DemoDataSeeder`, `DatabaseSeeder`).
 3. Delete duplicated app factories (shop + booking `PermissionFactory`/`RoleFactory`/`UserFactory`).
+   - ✅ DONE (2026-10-16) — the duplicated `RoleFactory`/`PermissionFactory` were deleted upstream; `UserFactory` stays as a thin subclass seam (`extends BaseUserFactory`). `Role`/`Permission` resolve the package factory through the base model's `newFactory()`, so the app copies were dead code.
 4. Structural boundary tests (extend blog's `frontend-boundary-check.php` pattern): no `vendor/` imports from frontend, no duplicated package code in apps.
+   - ✅ DONE (2026-10-16) — the guard previously lived only as a dormant mono-only overlay in `apps/**` (allowlisted via `check-platform-consistency.js`'s `APP_WORKSPACE_OVERLAY`, and run by **no** CI: the mono `apps` job is frontend-only and `apps/**` has no `vendor/`). It was relocated into the upstream repos so each app's own `php artisan test` runs it: `tests/Unit/BoundaryIntegrityTest.php` + `scripts/frontend-boundary-check.php`. Hardened with a factory/seeder fork check — an app file that shadows a package factory/seeder class must be a thin subclass, otherwise it is flagged (this is what caught the stale forks in item 3). The `APP_WORKSPACE_OVERLAY` allowlist was removed; both files are now ordinary mirrored files and the parity check compares them.
 
 ## Phase 3 — Clean Layer Discipline (Option A scope)
 
@@ -199,7 +227,7 @@ are tracked as future booking-module release candidates, not acted on here.
 2. Extend `DeployController::check()` / release notes to list bundled package versions. **DONE (2026-09-22)** — `CoreVersionService::bundled()` enumerating every installed `nreljed/*` package from `vendor/composer/installed.json`, surfaced as `bundled` in every `DeployService::check()` response. Shipped as **`nreljed/platform` v0.1.58**: bump `d98f06d` (+ tag `v0.1.58`, release `2026-09-21T22:59:39Z`, tree diff v0.1.57..v0.1.58 = exactly 7 files incl. feature + contract test) → `repository_dispatch core-updated` → auto lock-bump PRs merged in **mono `475a354`/#68**, **shop `e3fbf8f`/#67**, **booking `40e920e`/#50** → mono mirror re-synced (`2ff3aef`) → **all three hosts deployed + CI-green on 0.1.58** (mono deploy `35668870201`, shop `35668924002`, booking `35668924351`).
 3. Document full update chain: package tag → `core-updated`/`blog-updated` dispatch → `core-update.yml` weekly cron → consumer update PR → CI → deploy. **DONE** — see `docs/workflow/deploy.md` § Versions & update chain; mechanics verified against `.github/workflows/core-update.yml` (mono) and `.github/workflows/ci.yml` (platform, `release` job).
 
-> **Release-time fixes along the way:** (a) `scripts/check-platform-consistency.js` had machine-path-hardcoded `defaultDirs` — consumer-repo deploys read the *runner's* local locks and failed "mono=0.1.57 but shop=0.1.51". Made `defaultDirs` repo-relative (`path.resolve(__dirname, '..')`) in **all three** repo copies (mono `7fc9c0b`, shop `0bb9de0`, booking `f405ae4`): standalone repos find no `apps/` subtree → reachable==1 → skip; the monorepo enforces real 3-app parity. (b) The `bundled` SBOM key was dropped at the HTTP layer (`DeployController::check()` never serialized it; v0.1.58's `/deploy/check` returned `bundled: null`). Fixed + released as **v0.1.60** (`067498e`, every response branch surfaces `bundled`); v0.1.59 was a version-only no-op release caused by an edit mis-placed in the mono mirror. Runtime-verified: `GET /deploy/check` → `core: 0.1.60` + `bundled` = `nreljed/platform 0.1.60` + `nreljed/blog 0.1.2`. Regression net in `tests/Feature/Deploy/DeployEndpointTest.php`. (c) mono `packages/platform` mirror is now **pint-normalized** under the default Laravel preset (`37869d3`) because root CI runs `vendor/bin/pint --test` repo-wide via platform `consumer-ci.yml`. Resolved at the source: platform repo normalized + **`Laravel Pint (style gate)` added to its CI validate** (`aecf7f0`), so released trees stay clean and mirror syncs stay byte-equal.
+> **Release-time fixes along the way:** (a) `scripts/check-platform-consistency.js` had machine-path-hardcoded `defaultDirs` — consumer-repo deploys read the _runner's_ local locks and failed "mono=0.1.57 but shop=0.1.51". Made `defaultDirs` repo-relative (`path.resolve(__dirname, '..')`) in **all three** repo copies (mono `7fc9c0b`, shop `0bb9de0`, booking `f405ae4`): standalone repos find no `apps/` subtree → reachable==1 → skip; the monorepo enforces real 3-app parity. (b) The `bundled` SBOM key was dropped at the HTTP layer (`DeployController::check()` never serialized it; v0.1.58's `/deploy/check` returned `bundled: null`). Fixed + released as **v0.1.60** (`067498e`, every response branch surfaces `bundled`); v0.1.59 was a version-only no-op release caused by an edit mis-placed in the mono mirror. Runtime-verified: `GET /deploy/check` → `core: 0.1.60` + `bundled` = `nreljed/platform 0.1.60` + `nreljed/blog 0.1.2`. Regression net in `tests/Feature/Deploy/DeployEndpointTest.php`. (c) mono `packages/platform` mirror is now **pint-normalized** under the default Laravel preset (`37869d3`) because root CI runs `vendor/bin/pint --test` repo-wide via platform `consumer-ci.yml`. Resolved at the source: platform repo normalized + **`Laravel Pint (style gate)` added to its CI validate** (`aecf7f0`), so released trees stay clean and mirror syncs stay byte-equal.
 
 ---
 
