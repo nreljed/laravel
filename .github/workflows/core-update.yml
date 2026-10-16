@@ -64,10 +64,32 @@ jobs:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
         run: composer update nreljed/platform nreljed/blog --with-dependencies --no-scripts --no-interaction
 
+      # The workspace app mirrors (apps/laravel.shop, apps/laravel.booking) each
+      # carry their own composer.lock, and check:platform-consistency requires
+      # every consumer to resolve identical core versions. Bumping only the root
+      # lock lands the mono ahead of the mirrors, so the validate/parity gate
+      # fails and the job never merges (root silently stays a core release
+      # behind). Update the mirrors in the same run so the whole fleet moves as
+      # one -- this is the guard's own remedy: "run composer update in the
+      # drifters".
+      - name: Update workspace app mirror locks
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
+        run: |
+          for app in apps/laravel.shop apps/laravel.booking; do
+            # --no-install: the mirrors have no vendor tree in CI and only the
+            # lock is committed; --no-scripts: no .env/artisan in the mirror.
+            # booking does not require the blog, so composer only warns it is
+            # "not locked" and still exits 0.
+            composer update nreljed/platform nreljed/blog \
+              --with-dependencies --no-install --no-scripts --no-interaction \
+              --working-dir="$app"
+          done
+
       - name: Check for changes
         id: check
         run: |
-          if git diff --exit-code -- composer.lock > /dev/null; then
+          if git diff --exit-code -- composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock > /dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Core is already up to date."
           else
@@ -151,7 +173,7 @@ jobs:
           git checkout -b "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock
+          git add composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock
           git commit -m "chore: update platform + blog to v${{ steps.version.outputs.version }}"
           git push -u origin "$BRANCH"
           gh pr create \
@@ -161,7 +183,7 @@ jobs:
             --body "Automated update of \`nreljed/platform\` + \`nreljed/blog\` (\`core-update.yml\`).
 
             - Resolved version: v${{ steps.version.outputs.version }} (platform)
-            - Only \`composer.lock\` changed; full validation (tests, typecheck, build) ran on this exact tree before merge.
+            - \`composer.lock\` + both workspace app mirrors (\`apps/laravel.shop\`, \`apps/laravel.booking\`) bumped so every consumer resolves identical core versions; full validation (tests, typecheck, build) ran on this exact tree before merge.
             "
 
       # Free private repos have no branch protection rules, so the merge is
