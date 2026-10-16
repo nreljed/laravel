@@ -24,7 +24,7 @@ const menuLinks: SiteMenuLink[] = navLinks.map((link, index) => ({
 // it is always visible; transparent at the top of the page and a glass surface
 // once scrolled (or while the menu overlay is open, so it stays legible over
 // the menu). Carries the three global controls — the theme-mode icon (light /
-// dark / automatic), the user icon → account menu (avatar when signed in), and
+// dark), the user icon → account menu (avatar when signed in), and
 // the Menu pill, which is the header's only button — so every public page
 // shares one chrome without forking.
 export function SiteHeader() {
