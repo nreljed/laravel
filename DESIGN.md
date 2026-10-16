@@ -52,8 +52,40 @@ headlines with no tracking treatment, gray-on-colored-background text.
 ## Shape & space
 
 - Radius token: `--radius: 0.625rem` (10px). Cards 10–16px; pills `rounded-full`.
-- Spacing: Tailwind scale; section padding on public pages `py-16`→`py-28`,
-  container `max-w-7xl px-4 sm:px-6 lg:px-8`.
+- **Spacing**: one base unit — `--spacing` = **4px**, the default minimum that
+  every numeric utility multiplies (`p-1`, `gap-2`, …) — plus the named
+  `site-*` stops below. Use the named stops (not raw numbers) so cards, grids
+  and sections keep one rhythm; never go below the base unit.
+
+  | Token                | rem  | px  | Use                                    |
+  | -------------------- | ---- | --- | -------------------------------------- |
+  | `--spacing` (base)   | 0.25 | 4   | default minimum — icon / hairline gaps |
+  | `--spacing-site-xs`  | 0.5  | 8   | label & meta stacks                    |
+  | `--spacing-site-sm`  | 0.75 | 12  | pill and tight control padding         |
+  | `--spacing-site-md`  | 1    | 16  | default padding; card body             |
+  | `--spacing-site-lg`  | 1.5  | 24  | card padding; grid gutters             |
+  | `--spacing-site-xl`  | 2    | 32  | block gaps within a section            |
+  | `--spacing-site-2xl` | 2.5  | 40  | section sub-spacing                    |
+  | `--spacing-site-3xl` | 3    | 48  | section padding (tight)                |
+  | `--spacing-site-4xl` | 4    | 64  | section padding (default)              |
+  | `--spacing-site-5xl` | 6    | 96  | section padding (generous)             |
+  | `--spacing-site-6xl` | 8    | 128 | hero / full-band spacing               |
+
+  Exposed as Tailwind utilities (`p-site-md`, `gap-site-lg`, `mt-site-2xl` …).
+
+- **Rhythm**: public-page section padding `py-16` → `py-28`; page gutter
+  `px-6 sm:px-10`; card grids `gap-10`; card body `p-6`/`p-8`; hairline grids
+  `gap-px` over `bg-site-border`.
+- **Width**: public pages use the site container — `--container-site` =
+  1280px → `max-w-site` with `px-6 sm:px-10` gutters. Long-form prose (blog
+  article body) uses the reading measure — `--container-site-measure` = 65ch →
+  `max-w-site-measure`. A headline inside a full-width header block is capped by
+  the display measure — `--container-site-display` = 56rem → `max-w-site-display`,
+  so a wide hero's title never runs the whole container. Chrome (heroes, figures)
+  may run the full container width; the prose column never exceeds the measure.
+  Blog article: the masthead (category · title · byline · tags) is centered from
+  `sm:` up and the body sits at the reading measure on the same center axis, with
+  the featured figure breaking out to the full container width.
 - Borders are hairline (`border-border`); prefer `border` + subtle
   `bg-card` over heavy shadows. Shadows only for genuinely elevated layers
   (popovers, dialogs) via the kit.
@@ -98,14 +130,14 @@ the semantic `--site-*` tokens from `resources/css/site.css`, scoped by
   clamps). Each SEO heading level maps to **exactly one** size token — pick by
   level, never a bespoke size. One `h1` per page.
 
-  | Level | Token           | Fluid (mobile → desktop) |
-  | ----- | --------------- | ------------------------ |
-  | `h1`  | `site-display`  | 44 → 90px                |
-  | `h2`  | `site-title`    | 36 → 72px                |
-  | `h3`  | `site-title-sm` | 30 → 48px                |
-  | `h4`  | `site-heading`  | 24 → 36px                |
-  | `h5`  | `site-heading-sm` | 20 → 26px              |
-  | `h6`  | `site-heading-xs` | 17 → 20px              |
+  | Level | Token             | Fluid (mobile → desktop) |
+  | ----- | ----------------- | ------------------------ |
+  | `h1`  | `site-display`    | 44 → 90px                |
+  | `h2`  | `site-title`      | 36 → 72px                |
+  | `h3`  | `site-title-sm`   | 30 → 48px                |
+  | `h4`  | `site-heading`    | 24 → 36px                |
+  | `h5`  | `site-heading-sm` | 20 → 26px                |
+  | `h6`  | `site-heading-xs` | 17 → 20px                |
 
   Two tokens sit outside the level map: `site-hero` is the display **crown**,
   reserved for the landing `h1` (Home); `site-lead` is the deck paragraph that

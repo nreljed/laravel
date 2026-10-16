@@ -49,25 +49,18 @@ const colorGroups: { title: string; note: string; colors: ColorSwatch[] }[] = [
   },
 ];
 
-const spacingScale = [
-  { key: "zero", em: 0 },
-  { key: "4x-small", em: 0.125 },
-  { key: "3x-small", em: 0.25 },
-  { key: "2x-small", em: 0.35 },
-  { key: "x-small", em: 0.5 },
-  { key: "small", em: 0.75 },
-  { key: "medium", em: 1 },
-  { key: "large", em: 1.25 },
-  { key: "x-large", em: 1.5 },
-  { key: "2x-large", em: 2 },
-  { key: "3x-large", em: 3 },
-  { key: "4x-large", em: 4 },
-  { key: "5x-large", em: 5 },
-  { key: "6x-large", em: 6 },
-  { key: "7x-large", em: 8 },
-  { key: "8x-large", em: 10 },
-  { key: "huge", em: 12 },
-  { key: "x-huge", em: 14 },
+const spacingScale: { varName: string; rem: number; note?: string }[] = [
+  { varName: "--spacing", rem: 0.25, note: "base · default minimum" },
+  { varName: "--spacing-site-xs", rem: 0.5 },
+  { varName: "--spacing-site-sm", rem: 0.75 },
+  { varName: "--spacing-site-md", rem: 1 },
+  { varName: "--spacing-site-lg", rem: 1.5 },
+  { varName: "--spacing-site-xl", rem: 2 },
+  { varName: "--spacing-site-2xl", rem: 2.5 },
+  { varName: "--spacing-site-3xl", rem: 3 },
+  { varName: "--spacing-site-4xl", rem: 4 },
+  { varName: "--spacing-site-5xl", rem: 6 },
+  { varName: "--spacing-site-6xl", rem: 8 },
 ];
 
 const fonts = [
@@ -172,6 +165,9 @@ export default function StyleGuide() {
           values[swatch.varName] = style.getPropertyValue(swatch.varName).trim();
         }
       }
+    }
+    for (const step of spacingScale) {
+      values[step.varName] = style.getPropertyValue(step.varName).trim();
     }
     setResolved(values);
   }, []);
@@ -495,24 +491,25 @@ export default function StyleGuide() {
             <section id="spacing" className="mb-16 scroll-mt-28">
               {sectionHeading("04", "Spacing scale")}
               <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
-                Em-based fluid gaps used across every section. Bars are 20px per em.
+                One base unit drives every numeric utility (<code>p-1</code>, <code>gap-2</code> …):{" "}
+                <code>--spacing</code> is 4px — the default minimum. The named <code>site-*</code>{" "}
+                stops are the shared rhythm for cards, grids and sections; reach for them instead of
+                raw numbers so the whole site keeps one measure.
               </p>
-              <div className="mt-8 space-y-2 overflow-hidden">
+              <div className="mt-8 space-y-2">
                 {spacingScale.map((step) => (
-                  <div key={step.key} className="flex items-center gap-4">
-                    <span className="w-32 shrink-0 text-xs font-medium uppercase tracking-[0.1em] text-site-ink-faint">
-                      {step.key}
+                  <div key={step.varName} className="flex items-center gap-4">
+                    <span className="w-44 shrink-0 text-xs font-medium text-site-ink">
+                      {step.varName}
                     </span>
-                    <span className="w-16 shrink-0 text-xs tabular-nums text-site-ink-faint">
-                      {step.em}em
+                    <span className="w-24 shrink-0 text-xs tabular-nums text-site-ink-faint">
+                      {(resolved[step.varName] || `${step.rem}rem`) + ` · ${step.rem * 16}px`}
                     </span>
                     <span
                       className="h-4 rounded-site-card border border-site-border bg-site-secondary"
-                      style={{
-                        width: `${Math.max(step.em, 0.125) * 20}px`,
-                        opacity: step.em === 0 ? 0.15 : 1,
-                      }}
+                      style={{ width: `${step.rem * 8}px` }}
                     />
+                    {step.note && <span className="text-xs text-site-ink-faint">{step.note}</span>}
                   </div>
                 ))}
               </div>

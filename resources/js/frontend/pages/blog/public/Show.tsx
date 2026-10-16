@@ -6,6 +6,7 @@ import { SitePill } from "../../../components/site/SitePill";
 import ProseContent from "@nreljed/platform/Components/blog/ProseContent";
 import { useAuth } from "@nreljed/platform/hooks/use-auth";
 import { highlightAllCodeBlocks } from "@nreljed/platform/lib/shiki-highlight";
+import { demoteBodyHeadings } from "./demote-headings";
 
 interface Author {
   id: number;
@@ -100,8 +101,8 @@ export default function BlogShow({ post }: BlogShowProps) {
         />
       </Head>
 
-      <article className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <header className="relative mb-8">
+      <article className="mx-auto w-full max-w-site px-site-lg py-site-4xl sm:px-site-2xl sm:py-site-5xl">
+        <header className="relative sm:text-center">
           {canEdit && (
             <Link
               href={route("dashboard.posts.edit", post.id)}
@@ -120,13 +121,13 @@ export default function BlogShow({ post }: BlogShowProps) {
               {post.category.name}
             </Link>
           )}
-          <h1 className="site-display text-balance">{post.title}</h1>
-          <div className="mt-4 flex items-center gap-3 text-sm text-site-ink-faint">
+          <h1 className="site-display max-w-site-display text-balance sm:mx-auto">{post.title}</h1>
+          <div className="mt-site-md flex items-center gap-3 text-sm text-site-ink-faint sm:justify-center">
             <span>{post.user.name}</span>
             {post.published_at && (
               <>
                 <span>&middot;</span>
-                <time>
+                <time dateTime={post.published_at}>
                   {new Date(post.published_at).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -137,7 +138,7 @@ export default function BlogShow({ post }: BlogShowProps) {
             )}
           </div>
           {post.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-site-md flex flex-wrap gap-2 sm:justify-center">
               {post.tags.map((tag) => (
                 <SitePill key={tag.id} href={route("blog.index", { tag: tag.slug })}>
                   {tag.name}
@@ -148,32 +149,34 @@ export default function BlogShow({ post }: BlogShowProps) {
         </header>
 
         {post.featured_image && (
-          <div className="mb-8 overflow-hidden rounded-site-card">
+          <figure className="mt-site-3xl overflow-hidden rounded-site-card">
             <img
               src={post.featured_image}
               srcSet={post.featured_image_srcset || undefined}
-              sizes="(min-width: 768px) 768px, 100vw"
+              sizes="(min-width: 1280px) 1280px, 100vw"
               alt={post.title}
               loading="lazy"
               decoding="async"
               className="h-auto w-full object-cover"
             />
+          </figure>
+        )}
+
+        <div className="mx-auto mt-site-3xl max-w-site-measure">
+          {post.excerpt && (
+            <p className="mb-site-xl text-lg leading-relaxed text-site-ink-soft">{post.excerpt}</p>
+          )}
+
+          {post.content && <ProseContent html={demoteBodyHeadings(post.content)} />}
+
+          <div className="mt-site-3xl border-t border-site-border pt-site-xl">
+            <Link
+              href={route("blog.index")}
+              className="text-sm font-medium text-site-secondary hover:text-site-ink"
+            >
+              &larr; Back to all posts
+            </Link>
           </div>
-        )}
-
-        {post.excerpt && (
-          <p className="mb-8 text-lg leading-relaxed text-site-ink-soft">{post.excerpt}</p>
-        )}
-
-        {post.content && <ProseContent html={post.content} />}
-
-        <div className="mt-12 border-t border-site-border pt-8">
-          <Link
-            href={route("blog.index")}
-            className="text-sm font-medium text-site-secondary hover:text-site-ink"
-          >
-            &larr; Back to all posts
-          </Link>
         </div>
       </article>
     </PublicLayout>
