@@ -28,40 +28,64 @@ Current token set (add tokens here, then use the new utility):
 ```
 Surfaces:  bg         bg-strong   surface
 Text:      ink        ink-soft    ink-faint
-Accents:   accent     accent-ink  secondary  alt-1  alt-2
-Chrome:    border     outline (stroke/fill text)
-Type:      font-site-body  font-site-display
+Accents:   accent     accent-ink  secondary  alt-1  alt-2  pink (panel tint)
+Chrome:    border     outline (stroke/fill text)  invert-bg / invert-ink (fixed dark header plate)
+Type:      font-site-body  font-site-display  font-site-secondary
 Radii:     radius-site-card   radius-site-pill
-Layout:    container-site (1280px)
+Layout:    container-site (1280px)  container-site-measure (65ch)  container-site-display (56rem)
+Spacing:   --spacing-site-{xs,sm,md,lg,xl,2xl,3xl,4xl,5xl,6xl} → p-site-*, m-site-*, gap-site-*, space-y-site-*
 ```
 
 Examples: `bg-site-bg`, `text-site-ink/70`, `text-site-secondary`,
 `bg-site-accent text-site-accent-ink`, `border-site-border`,
-`rounded-site-card`, `font-site-display`, `max-w-site`.
+`rounded-site-card`, `font-site-display`, `max-w-site`, `max-w-site-measure`,
+`px-site-lg`, `gap-site-2xl`, `py-site-5xl`.
+
+The color / type / radius / container utilities come from `@theme inline`
+(runtime `var()` references, so a theme swap restyles the sub-tree). The
+spacing stops come from a plain `@theme` block, so they are also emitted as
+real `--spacing-site-*` custom properties (readable at runtime).
+
+Heading scale: pick a class by SEO level, never a bespoke size — h1
+`site-display` (the landing crown is `site-hero`), h2 `site-title`, h3
+`site-title-sm`, h4 `site-heading`, h5 `site-heading-sm`, h6
+`site-heading-xs`; deck paragraph `site-lead`. They clamp mobile→desktop and
+are zero-specificity (`:where`), so Tailwind utilities can still tune them.
 
 ### Adding a new site theme
 
-1. Open `resources/css/site.css`.
-2. Copy the `[data-site-theme="cb360"]` block, rename the attribute
-   value to your theme slug, and re-map every token to your palette/type.
+Themes are one file per palette under `resources/css/themes/` (e.g.
+`themes/cb360.css`), each scoped under `[data-site-theme="<slug>"]` and
+imported by `site.css`.
+
+1. Copy `resources/css/themes/cb360.css` to `resources/css/themes/<slug>.css`.
+2. Change the `[data-site-theme="<slug>"]` attribute value and re-map every
+   token to your palette/type — including the dark block, which must be
+   scoped `:where(html.dark) [data-site-theme="<slug>"]` (see Dark mode).
    Add the Google-Fonts `<link>` your theme needs (see below).
-3. Set `data-site-theme="<slug>"` on the page root element. Tokens cascade —
-   one attribute restyles the page. Pages using `frontend/layouts/PublicLayout`
-   get it centrally from `SiteRoot`, so don't set it per page.
-4. Verify at `/style-guide` first — swatch values, type scale, pills and
+3. Import it in `resources/css/site.css`: `@import "./themes/<slug>.css";`.
+4. Pass `theme="<slug>"` to `SiteRoot` (or set `data-site-theme="<slug>"` on
+   a page root). Tokens cascade — one attribute restyles the page. Pages
+   using `frontend/layouts/PublicLayout` get it centrally from `SiteRoot`, so
+   don't set it per page.
+5. Verify at `/style-guide` first — swatch values, type scale, pills and
    cards all re-resolve from the new token block automatically.
 
 ### Dark mode
 
-Site themes must state their dark variant explicitly, same pattern the
-app uses elsewhere. Inside the theme block add:
+Dark mode keys off the app's global `html.dark` class (next-themes), NOT a
+`data-theme` attribute. Site themes must state their dark variant explicitly
+— never inherit it from the light values. Inside the theme module add a
+`:where(html.dark)`-scoped block:
 
 ```css
-[data-site-theme="cb360"][data-theme="dark"] { … }
+:where(html.dark) [data-site-theme="cb360"] { … }
 ```
 
-Scope it to the theme; never leak `dark:` variants that depend on the
-global `.dark` toggle unless the page has opted in.
+The neutral fallback in `site.css` does the same (`html.dark` /
+`html.dark [data-site-theme="neutral"]`). Scope every dark rule to the
+theme; never leak `dark:` variants that assume the page follows the global
+toggle unless it actually does.
 
 ## Separation model (platform vs project chrome)
 
@@ -84,10 +108,11 @@ read-only (mirror). This project therefore owns its layout + chrome:
 Shared presentational primitives used across pages. Keep them generic and
 token-driven (no per-brand literals):
 
-- `SiteRoot` — sets `data-site-theme="cb360"` on the page root, injects
-  the Instrument Sans webfont once, wraps the page in a flex-column shell
-  (`min-h-screen bg-site-bg font-site-body text-site-ink`) and mounts
-  `SmoothScroll` (Lenis).
+- `SiteRoot` — takes a `theme` prop (default `"cb360"`), applies
+  `data-site-theme="<theme>"` to the page root and exposes it via
+  `SiteThemeContext`, injects the Instrument Sans webfont once, wraps the
+  page in a flex-column shell (`min-h-screen bg-site-bg font-site-body
+  text-site-ink`) and mounts `SmoothScroll` (Lenis).
 - `SiteHeader` — sticky `h-20` bar (transparent → glass on scroll): brand
   wordmark, then the controls cluster — `ThemeToggle`, `UserMenu`
   (→ dashboard/login), and a Menu button toggling `SiteMenuOverlay`
@@ -109,11 +134,12 @@ composition (hero, works grid, services rows, testimonial track) stays in
 
 A living design-system spec on the project route (`routes/web.php` →
 `Inertia::render('public/styleguide')`; `page-config.ts` override
-`public/styleguide`). Sections: Colors (live swatches via
-`getComputedStyle`), Typography, Buttons, Tags & pills, Cards, Pagination. It
-is the theme's proof — the recipe for a new theme is to copy the cb360
-token block in `site.css`, re-map values, and this page resolves the new
-tokens automatically (no raw hex in components).
+`public/styleguide`). Sections: 01 Colors (live swatches via
+`getComputedStyle`), 02 Typography, 03 Fonts, 04 Spacing scale, 05 Buttons,
+06 Tags & pills, 07 Menu overlay links, 08 Cards, 09 Pagination. It is the
+theme's proof — the recipe for a new theme is to copy
+`resources/css/themes/cb360.css`, re-map values, and this page resolves the
+new tokens automatically (no raw hex in components).
 
 ## Blog prose on the site theme
 
@@ -134,17 +160,20 @@ Load the theme's display/body fonts with `<link>` tags. The current theme
 uses **Instrument Sans** (a variable font): `resources/views/app.blade.php`
 preconnects to `fonts.bunny.net`, and `SiteRoot` injects the Google-Fonts
 variable-font stylesheet once. The `--font-body-family` /
-`--font-display-family` tokens in `site.css` declare the same stack with a
-system fallback so text is readable before/without the webfont.
+`--font-display-family` / `--font-secondary-family` tokens declare the same
+stack with a system fallback so text is readable before/without the webfont —
+declared in the theme module (`themes/<slug>.css`) and, for the neutral
+fallback, in `site.css`.
 
 For a new theme: add its font stylesheet the same way and update the
-`--font-*-family` tokens in `site.css`.
+`--font-*-family` tokens in the theme module.
 
 ## Rules
 
-- Public pages read colors/type/radii via `site-*` utilities ONLY.
-- Theme values live in `site.css`; never inline a hex in TSX.
+- Public pages read colors/type/spacing/radii via `site-*` utilities ONLY.
+- Theme values live in `resources/css/themes/<slug>.css` (the neutral fallback
+  lives in `site.css`); never inline a hex in TSX.
 - Add a reusable primitive to `Components/site/` when a pattern repeats
   across pages (menu, CTA pill).
 - Do NOT touch `core.css` / `packages/**` for site theming — the marketing
-  layer is project-owned in `resources/css/site.css`.
+  layer is project-owned in `resources/css/site.css` + `resources/css/themes/`.
