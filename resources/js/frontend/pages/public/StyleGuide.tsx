@@ -498,11 +498,11 @@ export default function StyleGuide() {
               </p>
               <div className="mt-site-xl space-y-site-xs">
                 {spacingScale.map((step) => (
-                  <div key={step.varName} className="flex items-center gap-site-md">
-                    <span className="w-44 shrink-0 text-xs font-medium text-site-ink">
+                  <div key={step.varName} className="flex flex-wrap items-center gap-site-md">
+                    <span className="w-28 shrink-0 text-xs font-medium text-site-ink sm:w-44">
                       {step.varName}
                     </span>
-                    <span className="w-24 shrink-0 text-xs tabular-nums text-site-ink-faint">
+                    <span className="w-20 shrink-0 text-xs tabular-nums text-site-ink-faint sm:w-24">
                       {(resolved[step.varName] || `${step.rem}rem`) + ` · ${step.rem * 16}px`}
                     </span>
                     <span
