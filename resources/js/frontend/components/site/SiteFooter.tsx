@@ -35,9 +35,9 @@ export function SiteFooter() {
   const year = useMemo(() => new Date().getFullYear(), []);
 
   return (
-    <footer className="mt-24 border-t border-site-border px-6 pt-16 pb-10 sm:px-10">
+    <footer className="mt-site-5xl border-t border-site-border px-site-lg pt-site-4xl pb-site-2xl sm:px-site-2xl">
       <div className="mx-auto max-w-site">
-        <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr_1fr]">
+        <div className="grid gap-site-3xl lg:grid-cols-[1.6fr_1fr_1fr]">
           <div className="max-w-sm">
             <Link
               href={route("home")}
@@ -45,13 +45,13 @@ export function SiteFooter() {
             >
               {appName}
             </Link>
-            <p className="mt-4 text-site-ink-soft">
+            <p className="mt-site-md text-site-ink-soft">
               One honest ledger for every team, project and vendor &mdash; so finance and ops can
               see where the money goes, and cut what it shouldn&apos;t.
             </p>
             <Link
               href={route("register")}
-              className="mt-8 inline-flex items-center gap-2 text-sm font-bold tracking-[0.02em]"
+              className="mt-site-xl inline-flex items-center gap-site-xs text-sm font-bold tracking-[0.02em]"
             >
               Start free
               <ArrowUpRight className="h-4 w-4" />
@@ -62,7 +62,7 @@ export function SiteFooter() {
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               Explore
             </p>
-            <ul className="mt-5 space-y-3 text-sm">
+            <ul className="mt-5 space-y-site-sm text-sm">
               {exploreLinks.map((link) => (
                 <li key={link.label}>
                   <Link
@@ -80,7 +80,7 @@ export function SiteFooter() {
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               Product
             </p>
-            <ul className="mt-5 space-y-3 text-sm">
+            <ul className="mt-5 space-y-site-sm text-sm">
               {productLinks.map((link) => (
                 <li key={link.label}>
                   <Link
@@ -95,12 +95,12 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="mt-16 flex flex-col gap-6 border-t border-site-border pt-8 text-sm text-site-ink-faint sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-site-4xl flex flex-col gap-site-lg border-t border-site-border pt-site-xl text-sm text-site-ink-faint sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {year} {appName}. All rights reserved.
           </p>
 
-          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+          <ul className="flex flex-wrap gap-x-site-lg gap-y-site-xs">
             {legalLinks.map((link) => (
               <li key={link.label}>
                 <a href={link.href} className="transition-colors hover:text-site-ink">

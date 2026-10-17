@@ -197,7 +197,7 @@ export default function StyleGuide() {
 
   const sectionHeading = (number: string, label: string) => (
     <h2 className="site-title">
-      <span className="mr-3 text-sm font-semibold tabular-nums tracking-[0.2em] text-site-ink-faint">
+      <span className="mr-site-sm text-sm font-semibold tabular-nums tracking-[0.2em] text-site-ink-faint">
         {number}
       </span>
       {label}
@@ -250,7 +250,7 @@ export default function StyleGuide() {
           href={`#${item.id}`}
           onClick={() => setMobileNavOpen(false)}
           className={cn(
-            "group flex items-center gap-3 rounded-site-card px-3 py-2 text-sm transition-colors",
+            "group flex items-center gap-site-sm rounded-site-card px-site-sm py-site-xs text-sm transition-colors",
             active === item.id
               ? "bg-site-ink text-site-bg-strong"
               : "text-site-ink-soft hover:bg-site-surface hover:text-site-ink",
@@ -273,7 +273,7 @@ export default function StyleGuide() {
             void waitForMobileNavCollapse().then(() => scrollToSection(item.id));
           }}
           className={cn(
-            "group flex w-full items-center gap-3 rounded-site-card px-3 py-2 text-left text-sm transition-colors",
+            "group flex w-full items-center gap-site-sm rounded-site-card px-site-sm py-site-xs text-left text-sm transition-colors",
             active === item.id
               ? "bg-site-ink text-site-bg-strong"
               : "text-site-ink-soft hover:bg-site-surface hover:text-site-ink",
@@ -292,18 +292,18 @@ export default function StyleGuide() {
     >
       <div
         ref={rootRef}
-        className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-6 lg:px-10 lg:py-14"
+        className="mx-auto w-full max-w-[1440px] px-site-md py-site-2xl sm:px-site-lg lg:px-site-2xl lg:py-14"
       >
         {/* Sidebar (desktop sticky) + content */}
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16">
+        <div className="grid grid-cols-1 gap-site-2xl lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-site-4xl">
           {/* Sidebar column */}
-          <aside className="min-w-0 lg:self-start lg:sticky lg:top-[86px] lg:max-h-[calc(100vh-106px)] lg:overflow-y-auto lg:pr-2">
+          <aside className="min-w-0 lg:self-start lg:sticky lg:top-[86px] lg:max-h-[calc(100vh-106px)] lg:overflow-y-auto lg:pr-site-xs">
             {/* Mobile nav — collapsed top bar with a dropdown */}
             <div className="lg:hidden">
               <button
                 type="button"
                 onClick={() => setMobileNavOpen((value) => !value)}
-                className="flex w-full items-center justify-between rounded-site-card border border-site-border bg-site-surface px-4 py-3.5 text-sm font-medium text-site-ink transition-colors hover:border-site-ink"
+                className="flex w-full items-center justify-between rounded-site-card border border-site-border bg-site-surface px-site-md py-3.5 text-sm font-medium text-site-ink transition-colors hover:border-site-ink"
               >
                 <span>Jump to section</span>
                 <ChevronDown
@@ -321,7 +321,7 @@ export default function StyleGuide() {
                 )}
               >
                 <div className="min-w-0 overflow-hidden">
-                  <div className="mt-2 rounded-site-card border border-site-border bg-site-surface p-3">
+                  <div className="mt-site-xs rounded-site-card border border-site-border bg-site-surface p-site-sm">
                     {mobileNav}
                   </div>
                 </div>
@@ -329,8 +329,8 @@ export default function StyleGuide() {
             </div>
 
             {/* Desktop sticky sidebar */}
-            <div className="hidden rounded-site-card border border-site-border bg-site-surface p-6 lg:block">
-              <div className="flex items-center gap-3 border-b border-site-border pb-5">
+            <div className="hidden rounded-site-card border border-site-border bg-site-surface p-site-lg lg:block">
+              <div className="flex items-center gap-site-sm border-b border-site-border pb-5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-site-ink text-xs font-bold text-site-bg-strong">
                   CB
                 </span>
@@ -348,13 +348,13 @@ export default function StyleGuide() {
           {/* Content column */}
           <div>
             {/* Hero */}
-            <header className="mb-12 border-b border-site-border pb-8 lg:mb-8">
-              <div className="flex flex-wrap items-start justify-between gap-6">
+            <header className="mb-site-3xl border-b border-site-border pb-site-xl lg:mb-site-xl">
+              <div className="flex flex-wrap items-start justify-between gap-site-lg">
                 <div>
                   <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
                     Design system
                   </p>
-                  <h1 className="site-display mt-3">Style Guide</h1>
+                  <h1 className="site-display mt-site-sm">Style Guide</h1>
                 </div>
               </div>
 
@@ -376,9 +376,9 @@ export default function StyleGuide() {
             </header>
 
             {/* Colors */}
-            <section id="colors" className="mb-16 scroll-mt-28">
+            <section id="colors" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("01", "Colors")}
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
                 Three groups, no more: brand accents, the grey scale and the helpers used on top of
                 them. Every swatch resolves live from a{" "}
                 <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
@@ -386,16 +386,16 @@ export default function StyleGuide() {
                 </code>{" "}
                 token.
               </p>
-              <div className="mt-8 grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-site-xl grid gap-site-xl sm:grid-cols-2 xl:grid-cols-3">
                 {colorGroups.map((group) => (
                   <div key={group.title}>
                     <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
                       {group.title}
                     </p>
                     <p className="mt-1 text-xs text-site-ink-faint">{group.note}</p>
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-site-sm space-y-site-xs">
                       {group.colors.map((swatch) => (
-                        <div key={swatch.varName} className="flex items-center gap-3">
+                        <div key={swatch.varName} className="flex items-center gap-site-sm">
                           <span
                             className={cn(
                               "h-12 w-12 shrink-0 rounded-site-card border border-site-border",
@@ -418,45 +418,45 @@ export default function StyleGuide() {
             </section>
 
             {/* Typography */}
-            <section id="typography" className="mb-16 scroll-mt-28">
+            <section id="typography" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("02", "Typography")}
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
                 One base size plus a heading token per SEO level. There are no ad-hoc text sizes;
                 every heading, label and number derives from these tokens.
               </p>
 
-              <div className="mt-6 rounded-site-card border border-site-border bg-site-surface p-6">
+              <div className="mt-site-lg rounded-site-card border border-site-border bg-site-surface p-site-lg">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
                   Base font size
                 </p>
-                <div className="mt-2">
+                <div className="mt-site-xs">
                   <span className="text-xs font-medium uppercase tracking-[0.1em] text-site-ink-faint">
                     body · 1rem · Instrument Sans 400 · lh 1.65 · site-ink-soft
                   </span>
-                  <p className="mt-3 max-w-2xl text-base leading-[1.65] text-site-ink-soft">
+                  <p className="mt-site-sm max-w-2xl text-base leading-[1.65] text-site-ink-soft">
                     Body copy is a single size: 16px Instrument Sans Regular at 1.65 line height,
                     set in ink soft. Long-form text, cards and form labels all read at this size.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-site-card border border-site-border bg-site-surface p-6">
+              <div className="mt-site-lg rounded-site-card border border-site-border bg-site-surface p-site-lg">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
                   Heading classes
                 </p>
-                <p className="mt-2 max-w-2xl text-sm text-site-ink-soft">
+                <p className="mt-site-xs max-w-2xl text-sm text-site-ink-soft">
                   Each SEO heading level maps to exactly one token — pick by level, never a bespoke
                   size. <code>h1</code> is <code>site-display</code> (the landing <code>h1</code>{" "}
                   uses the <code>site-hero</code> crown), <code>h2</code> is <code>site-title</code>
                   , and so on down. One <code>h1</code> per page.
                 </p>
-                <div className="mt-2">
+                <div className="mt-site-xs">
                   {headingClasses.map((item) => {
                     const Tag = item.tag;
                     return (
                       <div
                         key={item.className}
-                        className="flex flex-col gap-2 border-b border-site-border py-5 last:border-0"
+                        className="flex flex-col gap-site-xs border-b border-site-border py-5 last:border-0"
                       >
                         <span className="text-xs font-medium uppercase tracking-[0.1em] text-site-ink-faint">
                           {item.meta}
@@ -470,35 +470,35 @@ export default function StyleGuide() {
             </section>
 
             {/* Fonts */}
-            <section id="fonts" className="mb-16 scroll-mt-28">
+            <section id="fonts" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("03", "Fonts")}
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="mt-site-xl grid gap-site-md sm:grid-cols-2">
                 {fonts.map((font) => (
-                  <div key={font.label} className="rounded-site-card bg-site-surface p-6">
+                  <div key={font.label} className="rounded-site-card bg-site-surface p-site-lg">
                     <p className="text-sm font-medium uppercase tracking-[0.2em] text-site-secondary">
                       {font.label}
                     </p>
-                    <p className={cn("mt-4 text-2xl", font.className)}>
+                    <p className={cn("mt-site-md text-2xl", font.className)}>
                       The quick brown fox jumps over the lazy dog
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-site-ink-soft">{font.note}</p>
+                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">{font.note}</p>
                   </div>
                 ))}
               </div>
             </section>
 
             {/* Spacing */}
-            <section id="spacing" className="mb-16 scroll-mt-28">
+            <section id="spacing" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("04", "Spacing scale")}
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
                 One base unit drives every numeric utility (<code>p-1</code>, <code>gap-2</code> …):{" "}
                 <code>--spacing</code> is 4px — the default minimum. The named <code>site-*</code>{" "}
                 stops are the shared rhythm for cards, grids and sections; reach for them instead of
                 raw numbers so the whole site keeps one measure.
               </p>
-              <div className="mt-8 space-y-2">
+              <div className="mt-site-xl space-y-site-xs">
                 {spacingScale.map((step) => (
-                  <div key={step.varName} className="flex items-center gap-4">
+                  <div key={step.varName} className="flex items-center gap-site-md">
                     <span className="w-44 shrink-0 text-xs font-medium text-site-ink">
                       {step.varName}
                     </span>
@@ -516,18 +516,18 @@ export default function StyleGuide() {
             </section>
 
             {/* Buttons */}
-            <section id="buttons" className="mb-16 scroll-mt-28">
+            <section id="buttons" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("05", "Buttons")}
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
                 Five variants, three sizes and three states. Height 53px is the default; compact and
                 large are the deliberate exceptions.
               </p>
 
-              <div className="mt-8 rounded-site-card border border-site-border bg-site-surface p-6">
+              <div className="mt-site-xl rounded-site-card border border-site-border bg-site-surface p-site-lg">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
                   Variants
                 </p>
-                <div className="mt-4 flex flex-wrap items-center gap-4">
+                <div className="mt-site-md flex flex-wrap items-center gap-site-md">
                   <PillButton href={route("about")}>Primary pill</PillButton>
                   <PillButton href={route("about")}>
                     With icon
@@ -535,46 +535,46 @@ export default function StyleGuide() {
                   </PillButton>
                   <a
                     href={route("about")}
-                    className="inline-flex h-[53px] items-center gap-2 rounded-site-pill border border-site-border bg-site-bg-strong px-8 text-site-ink transition-colors hover:border-site-ink"
+                    className="inline-flex h-[53px] items-center gap-site-xs rounded-site-pill border border-site-border bg-site-bg-strong px-site-xl text-site-ink transition-colors hover:border-site-ink"
                   >
                     Outline
                   </a>
                   <a
                     href={route("about")}
-                    className="inline-flex h-[53px] items-center gap-2 rounded-site-card bg-site-accent px-8 text-site-accent-ink transition-colors hover:opacity-90"
+                    className="inline-flex h-[53px] items-center gap-site-xs rounded-site-card bg-site-accent px-site-xl text-site-accent-ink transition-colors hover:opacity-90"
                   >
                     <Sparkles className="h-4 w-4" />
                     Accent square
                   </a>
                   <a
                     href={route("about")}
-                    className="inline-flex h-[53px] items-center gap-2 px-2 text-sm font-medium text-site-ink underline decoration-site-ink/40 underline-offset-8 transition-colors hover:decoration-site-ink"
+                    className="inline-flex h-[53px] items-center gap-site-xs px-site-xs text-sm font-medium text-site-ink underline decoration-site-ink/40 underline-offset-8 transition-colors hover:decoration-site-ink"
                   >
                     Text link
                   </a>
                 </div>
               </div>
 
-              <div className="mt-4 rounded-site-card border border-site-border bg-site-surface p-6">
+              <div className="mt-site-md rounded-site-card border border-site-border bg-site-surface p-site-lg">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
                   Sizes
                 </p>
-                <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <PillButton href={route("about")} className="h-11 px-6 text-sm">
+                <div className="mt-site-md flex flex-wrap items-center gap-site-md">
+                  <PillButton href={route("about")} className="h-11 px-site-lg text-sm">
                     Compact
                   </PillButton>
                   <PillButton href={route("about")}>Default</PillButton>
-                  <PillButton href={route("about")} className="h-[60px] px-10 text-lg">
+                  <PillButton href={route("about")} className="h-[60px] px-site-2xl text-lg">
                     Large
                   </PillButton>
                 </div>
               </div>
 
-              <div className="mt-4 rounded-site-card border border-site-border bg-site-surface p-6">
+              <div className="mt-site-md rounded-site-card border border-site-border bg-site-surface p-site-lg">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
                   States
                 </p>
-                <div className="mt-4 flex flex-wrap items-center gap-4">
+                <div className="mt-site-md flex flex-wrap items-center gap-site-md">
                   <PillButton href={route("about")}>Default</PillButton>
                   <PillButton href={route("about")} className="pointer-events-none bg-site-ink/90">
                     Hover
@@ -590,31 +590,31 @@ export default function StyleGuide() {
             </section>
 
             {/* Pills */}
-            <section id="pills" className="mb-16 scroll-mt-28">
+            <section id="pills" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("06", "Tags & pills")}
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-site-xl flex flex-wrap items-center gap-site-sm">
                 <SitePill href={route("blog.index")}>Design</SitePill>
                 <SitePill href={route("blog.index", { tag: "engineering" })}>Engineering</SitePill>
                 <SitePill href={route("blog.index", { tag: "strategy" })}>Strategy</SitePill>
-                <span className="inline-flex items-center rounded-site-pill bg-site-ink px-4 py-1.5 text-sm text-site-bg-strong">
+                <span className="inline-flex items-center rounded-site-pill bg-site-ink px-site-md py-1.5 text-sm text-site-bg-strong">
                   Active filter
                 </span>
               </div>
             </section>
 
             {/* Menu overlay */}
-            <section id="menu" className="mb-16 scroll-mt-28">
+            <section id="menu" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("07", "Menu overlay links")}
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-site-ink-soft">
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
                 Full-screen theme-matched overlay: numbered uppercase links that skew/italicize on
                 hover, with the brand chip in the footer.
               </p>
-              <div className="mt-8 rounded-site-card border border-site-border bg-site-bg p-6 sm:p-10">
+              <div className="mt-site-xl rounded-site-card border border-site-border bg-site-bg p-site-lg sm:p-site-2xl">
                 <div>
                   {["Home", "About", "Works", "Contact"].map((label, index) => (
                     <div
                       key={label}
-                      className="group flex items-baseline gap-4 border-b border-site-ink/15 py-2 sm:gap-6 sm:py-3"
+                      className="group flex items-baseline gap-site-md border-b border-site-ink/15 py-site-xs sm:gap-site-lg sm:py-site-sm"
                     >
                       <span className="text-xs font-medium text-site-ink/40">0{index + 1}</span>
                       <span className="site-title text-site-ink uppercase transition-all duration-500 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent">
@@ -623,7 +623,7 @@ export default function StyleGuide() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-8 flex items-center gap-3 border-t border-site-ink/15 pt-6 text-site-ink/60">
+                <div className="mt-site-xl flex items-center gap-site-sm border-t border-site-ink/15 pt-site-lg text-site-ink/60">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-site-pink text-xs font-bold text-site-ink">
                     CB
                   </span>
@@ -633,38 +633,38 @@ export default function StyleGuide() {
             </section>
 
             {/* Cards */}
-            <section id="cards" className="mb-16 scroll-mt-28">
+            <section id="cards" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("08", "Cards")}
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div className="flex flex-col justify-between rounded-site-card bg-site-surface p-6">
-                  <div className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
+              <div className="mt-site-xl grid gap-site-md sm:grid-cols-2 xl:grid-cols-3">
+                <div className="flex flex-col justify-between rounded-site-card bg-site-surface p-site-lg">
+                  <div className="mb-site-lg inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
                     <h3 className="site-title-sm">Surface</h3>
-                    <p className="mt-2 text-sm leading-6 text-site-ink-soft">
+                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">
                       Default content card on the cream background.
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col justify-between rounded-site-card bg-site-alt-1 p-6">
-                  <div className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
+                <div className="flex flex-col justify-between rounded-site-card bg-site-alt-1 p-site-lg">
+                  <div className="mb-site-lg inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
                     <h3 className="site-title-sm">Alt-1</h3>
-                    <p className="mt-2 text-sm leading-6 text-site-ink-soft">
+                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">
                       Soft callout panel for highlights.
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col justify-between rounded-site-card bg-site-alt-2 p-6">
-                  <div className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
+                <div className="flex flex-col justify-between rounded-site-card bg-site-alt-2 p-site-lg">
+                  <div className="mb-site-lg inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
                     <h3 className="site-title-sm">Alt-2</h3>
-                    <p className="mt-2 text-sm leading-6 text-site-ink-soft">
+                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">
                       Deep teal panel for emphasis.
                     </p>
                   </div>
@@ -675,17 +675,17 @@ export default function StyleGuide() {
             {/* Pagination */}
             <section id="pagination" className="scroll-mt-28">
               {sectionHeading("09", "Pagination")}
-              <div className="mt-8">
+              <div className="mt-site-xl">
                 <SitePagination links={sampleLinks} />
               </div>
             </section>
 
-            <div className="mt-16 flex items-center justify-between border-t border-site-border pt-8">
+            <div className="mt-site-4xl flex items-center justify-between border-t border-site-border pt-site-xl">
               <p className="text-sm text-site-ink-faint">End of the style guide.</p>
               <button
                 type="button"
                 onClick={() => scrollTo({ top: 0, behavior: "smooth" })}
-                className="rounded-site-card border border-site-border bg-site-surface px-4 py-2 text-sm font-medium text-site-ink transition-colors hover:border-site-ink"
+                className="rounded-site-card border border-site-border bg-site-surface px-site-md py-site-xs text-sm font-medium text-site-ink transition-colors hover:border-site-ink"
               >
                 Back to top
               </button>

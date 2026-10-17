@@ -62,17 +62,17 @@ export default function Services() {
     >
       <div ref={rootRef}>
         {/* ---------- HERO ---------- */}
-        <section className="px-6 pt-16 pb-16 sm:px-10 sm:pt-24">
-          <div className="mx-auto grid max-w-site items-end gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-20">
+        <section className="px-site-lg pt-site-4xl pb-site-4xl sm:px-site-2xl sm:pt-site-5xl">
+          <div className="mx-auto grid max-w-site items-end gap-site-2xl lg:grid-cols-[1.2fr_0.8fr] lg:gap-20">
             <div>
               <p
                 data-hero
-                className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
+                className="inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
                 Services
               </p>
-              <h1 data-hero className="site-display mt-6 max-w-[16ch]">
+              <h1 data-hero className="site-display mt-site-lg max-w-[16ch]">
                 Everything you need to break every cost.
               </h1>
             </div>
@@ -84,22 +84,22 @@ export default function Services() {
         </section>
 
         {/* ---------- SERVICE GRID ---------- */}
-        <section className="px-6 pb-24 sm:px-10">
+        <section className="px-site-lg pb-site-5xl sm:px-site-2xl">
           <div className="mx-auto max-w-site">
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               What&apos;s included
             </p>
-            <div className="mt-10 grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-site-2xl grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2 lg:grid-cols-3">
               {services.map((service) => (
-                <div key={service.n} data-reveal className="bg-site-surface p-8">
+                <div key={service.n} data-reveal className="bg-site-surface p-site-xl">
                   <div className="flex items-center justify-between">
                     <span className="font-site-display text-sm font-bold text-site-accent">
                       {service.n}
                     </span>
                     <service.icon className="h-5 w-5 text-site-ink-faint" />
                   </div>
-                  <h3 className="site-title-sm mt-6">{service.title}</h3>
-                  <p className="mt-3 leading-relaxed text-site-ink-soft">{service.body}</p>
+                  <h3 className="site-title-sm mt-site-lg">{service.title}</h3>
+                  <p className="mt-site-sm leading-relaxed text-site-ink-soft">{service.body}</p>
                 </div>
               ))}
             </div>
@@ -107,14 +107,14 @@ export default function Services() {
         </section>
 
         {/* ---------- CLOSING ---------- */}
-        <section className="px-6 pb-24 sm:px-10">
+        <section className="px-site-lg pb-site-5xl sm:px-site-2xl">
           <div
             data-reveal
-            className="mx-auto flex max-w-site flex-col items-start justify-between gap-6 rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14 lg:flex-row lg:items-center"
+            className="mx-auto flex max-w-site flex-col items-start justify-between gap-site-lg rounded-site-card border border-site-border bg-site-alt-1 p-site-xl sm:p-14 lg:flex-row lg:items-center"
           >
             <div>
               <h2 className="site-title max-w-[18ch]">Not sure where your money goes?</h2>
-              <p className="site-lead mt-4 max-w-[46ch]">
+              <p className="site-lead mt-site-md max-w-[46ch]">
                 Start tracking today \u2014 it takes less than a minute to set up.
               </p>
             </div>

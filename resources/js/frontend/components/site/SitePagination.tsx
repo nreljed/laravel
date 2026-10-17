@@ -17,7 +17,7 @@ export function SitePagination({ links }: SitePaginationProps) {
   if (links.length === 0) return null;
 
   return (
-    <nav aria-label="Pagination" className="flex flex-wrap items-center justify-center gap-2">
+    <nav aria-label="Pagination" className="flex flex-wrap items-center justify-center gap-site-xs">
       {links.map((link, i) => {
         const isPrevious = link.label.includes("Previous");
         const isNext = link.label.includes("Next");
@@ -28,7 +28,7 @@ export function SitePagination({ links }: SitePaginationProps) {
               key={i}
               aria-hidden={isPrevious}
               className={cn(
-                "inline-flex h-10 items-center rounded-site-pill px-4 text-sm text-site-ink-faint",
+                "inline-flex h-10 items-center rounded-site-pill px-site-md text-sm text-site-ink-faint",
                 isPrevious && "border border-site-border bg-site-surface text-site-ink-soft",
               )}
             >
@@ -42,7 +42,7 @@ export function SitePagination({ links }: SitePaginationProps) {
             <Link
               key={i}
               href={link.url}
-              className="inline-flex h-10 items-center rounded-site-pill border border-site-border bg-site-surface px-4 text-sm text-site-ink-soft transition-colors hover:border-site-ink hover:text-site-ink"
+              className="inline-flex h-10 items-center rounded-site-pill border border-site-border bg-site-surface px-site-md text-sm text-site-ink-soft transition-colors hover:border-site-ink hover:text-site-ink"
             >
               {link.label.replaceAll(/&laquo;|&raquo;/g, "")}
             </Link>
@@ -54,7 +54,7 @@ export function SitePagination({ links }: SitePaginationProps) {
             <span
               key={i}
               aria-current="page"
-              className="inline-flex h-10 items-center rounded-site-pill bg-site-ink px-4 text-sm font-medium text-site-bg-strong"
+              className="inline-flex h-10 items-center rounded-site-pill bg-site-ink px-site-md text-sm font-medium text-site-bg-strong"
             >
               {link.label}
             </span>
@@ -65,7 +65,7 @@ export function SitePagination({ links }: SitePaginationProps) {
           <Link
             key={i}
             href={link.url}
-            className="inline-flex h-10 items-center rounded-site-pill border border-site-border bg-site-surface px-4 text-sm text-site-ink-soft transition-colors hover:border-site-ink hover:text-site-ink"
+            className="inline-flex h-10 items-center rounded-site-pill border border-site-border bg-site-surface px-site-md text-sm text-site-ink-soft transition-colors hover:border-site-ink hover:text-site-ink"
           >
             {link.label}
           </Link>

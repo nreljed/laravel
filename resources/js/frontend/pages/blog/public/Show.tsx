@@ -115,14 +115,14 @@ export default function BlogShow({ post }: BlogShowProps) {
           {post.category && (
             <Link
               href={route("blog.index", { category: post.category.slug })}
-              className="mb-5 inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase transition-colors hover:text-site-ink"
+              className="mb-5 inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase transition-colors hover:text-site-ink"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               {post.category.name}
             </Link>
           )}
           <h1 className="site-display max-w-site-display text-balance sm:mx-auto">{post.title}</h1>
-          <div className="mt-site-md flex items-center gap-3 text-sm text-site-ink-faint sm:justify-center">
+          <div className="mt-site-md flex items-center gap-site-sm text-sm text-site-ink-faint sm:justify-center">
             <span>{post.user.name}</span>
             {post.published_at && (
               <>
@@ -138,7 +138,7 @@ export default function BlogShow({ post }: BlogShowProps) {
             )}
           </div>
           {post.tags.length > 0 && (
-            <div className="mt-site-md flex flex-wrap gap-2 sm:justify-center">
+            <div className="mt-site-md flex flex-wrap gap-site-xs sm:justify-center">
               {post.tags.map((tag) => (
                 <SitePill key={tag.id} href={route("blog.index", { tag: tag.slug })}>
                   {tag.name}

@@ -73,11 +73,17 @@ headlines with no tracking treatment, gray-on-colored-background text.
 
   Exposed as Tailwind utilities (`p-site-md`, `gap-site-lg`, `mt-site-2xl` …).
 
-- **Rhythm**: public-page section padding `py-16` → `py-28`; page gutter
-  `px-6 sm:px-10`; card grids `gap-10`; card body `p-6`/`p-8`; hairline grids
-  `gap-px` over `bg-site-border`.
+- **Rhythm**: page gutter `px-site-lg sm:px-site-2xl`; section padding
+  `pt-site-4xl pb-site-4xl sm:pt-site-5xl` (tall bands `py-site-5xl`/`pb-site-5xl`);
+  card grids `gap-site-xl`/`gap-site-2xl`; card body `p-site-lg`/`p-site-xl`;
+  hairline grids `gap-px` over `bg-site-border`.
+- **Off-scale exceptions** (intentionally raw, not on the named stops): sub-base
+  hairlines (`gap-1`, `py-1.5`, `px-2.5`, `py-0.5` — 2–6px, tighter than
+  `site-xs`), hero/feature band padding (`pt-14`, `py-20`, `sm:pt-20`,
+  `sm:p-14`, `pt-28` — 3.5–7rem), and a few 1.25/1.75rem steps (`mt-5`,
+  `mt-7`, `gap-5`, `px-7`). Anchor offsets stay raw (`scroll-mt-24`/`scroll-mt-28`).
 - **Width**: public pages use the site container — `--container-site` =
-  1280px → `max-w-site` with `px-6 sm:px-10` gutters. Long-form prose (blog
+  1280px → `max-w-site` with `px-site-lg sm:px-site-2xl` gutters. Long-form prose (blog
   article body) uses the reading measure — `--container-site-measure` = 65ch →
   `max-w-site-measure`. A headline inside a full-width header block is capped by
   the display measure — `--container-site-display` = 56rem → `max-w-site-display`,

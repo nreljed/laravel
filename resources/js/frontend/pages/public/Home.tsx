@@ -125,18 +125,18 @@ export default function Home() {
     >
       <div ref={rootRef}>
         {/* ---------- HERO ---------- */}
-        <section className="px-6 pt-14 pb-20 sm:px-10 sm:pt-20">
+        <section className="px-site-lg pt-14 pb-20 sm:px-site-2xl sm:pt-20">
           <div className="mx-auto grid max-w-site items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
             <div>
               <p
                 data-hero-item
-                className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
+                className="inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
                 Cost management for finance &amp; ops
               </p>
 
-              <h1 data-hero-item className="site-hero mt-6">
+              <h1 data-hero-item className="site-hero mt-site-lg">
                 Break every cost.
               </h1>
 
@@ -145,14 +145,14 @@ export default function Home() {
                 then shows you where the money actually goes, and what to cut first.
               </p>
 
-              <div data-hero-item className="mt-10 flex flex-wrap items-center gap-5">
+              <div data-hero-item className="mt-site-2xl flex flex-wrap items-center gap-5">
                 <PillButton href={route("register")}>
                   Start free
                   <ArrowRight className="h-4 w-4" />
                 </PillButton>
                 <a
                   href="#how"
-                  className="inline-flex items-center gap-2 text-base font-bold tracking-tight text-site-ink"
+                  className="inline-flex items-center gap-site-xs text-base font-bold tracking-tight text-site-ink"
                 >
                   See how it works
                   <ArrowUpRight className="h-4 w-4" />
@@ -163,16 +163,16 @@ export default function Home() {
             {/* Signature element: the cost ledger */}
             <div
               data-ledger
-              className="rounded-site-card border border-site-border bg-site-surface p-6 sm:p-8"
+              className="rounded-site-card border border-site-border bg-site-surface p-site-lg sm:p-site-xl"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-site-md">
                 <div>
                   <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
                     Q3 spend review
                   </p>
                   <p className="mt-1 text-sm text-site-ink-soft">All teams &middot; illustrative</p>
                 </div>
-                <span className="rounded-site-pill border border-site-border px-3 py-1 text-xs font-semibold text-site-secondary">
+                <span className="rounded-site-pill border border-site-border px-site-sm py-1 text-xs font-semibold text-site-secondary">
                   Review
                 </span>
               </div>
@@ -180,13 +180,13 @@ export default function Home() {
               <ul className="mt-7 space-y-5">
                 {spend.map((row) => (
                   <li key={row.name}>
-                    <div className="flex items-baseline justify-between gap-4">
+                    <div className="flex items-baseline justify-between gap-site-md">
                       <span className="text-sm font-medium">{row.name}</span>
                       <span className="font-site-display text-base font-bold tabular-nums">
                         {currency(row.amount)}
                       </span>
                     </div>
-                    <div className="mt-2 flex items-center gap-3">
+                    <div className="mt-site-xs flex items-center gap-site-sm">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-site-ink/10">
                         <div
                           data-ledger-bar
@@ -224,8 +224,8 @@ export default function Home() {
         </section>
 
         {/* ---------- THE PROBLEM ---------- */}
-        <section className="px-6 pb-6 sm:px-10">
-          <div className="mx-auto grid max-w-site gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-20">
+        <section className="px-site-lg pb-site-lg sm:px-site-2xl">
+          <div className="mx-auto grid max-w-site gap-site-2xl lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-20">
             <h2 data-reveal className="site-title max-w-[18ch]">
               Most teams can&apos;t say where a third of their spend goes.
             </h2>
@@ -238,19 +238,23 @@ export default function Home() {
         </section>
 
         {/* ---------- CAPABILITIES ---------- */}
-        <section className="px-6 py-24 sm:px-10">
+        <section className="px-site-lg py-site-5xl sm:px-site-2xl">
           <div className="mx-auto max-w-site">
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               What you get
             </p>
-            <div className="mt-10 grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2">
+            <div className="mt-site-2xl grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2">
               {capabilities.map((capability) => (
-                <div key={capability.n} data-reveal className="bg-site-surface p-8 sm:p-10">
+                <div
+                  key={capability.n}
+                  data-reveal
+                  className="bg-site-surface p-site-xl sm:p-site-2xl"
+                >
                   <span className="font-site-display text-sm font-bold text-site-accent">
                     {capability.n}
                   </span>
-                  <h3 className="site-title-sm mt-4">{capability.title}</h3>
-                  <p className="mt-3 leading-relaxed text-site-ink-soft">{capability.body}</p>
+                  <h3 className="site-title-sm mt-site-md">{capability.title}</h3>
+                  <p className="mt-site-sm leading-relaxed text-site-ink-soft">{capability.body}</p>
                 </div>
               ))}
             </div>
@@ -258,19 +262,19 @@ export default function Home() {
         </section>
 
         {/* ---------- HOW IT WORKS ---------- */}
-        <section id="how" className="scroll-mt-24 px-6 py-20 sm:px-10">
+        <section id="how" className="scroll-mt-24 px-site-lg py-20 sm:px-site-2xl">
           <div className="mx-auto max-w-site">
             <h2 data-reveal className="site-title max-w-[20ch]">
               Three moves to a leaner budget.
             </h2>
-            <ol className="mt-14 grid gap-10 sm:grid-cols-3">
+            <ol className="mt-14 grid gap-site-2xl sm:grid-cols-3">
               {steps.map((step) => (
-                <li key={step.n} data-reveal className="border-t border-site-border pt-6">
+                <li key={step.n} data-reveal className="border-t border-site-border pt-site-lg">
                   <span className="font-site-display text-5xl font-bold tracking-tight text-site-ink/15">
                     {step.n}
                   </span>
-                  <h3 className="site-title-sm mt-4">{step.title}</h3>
-                  <p className="mt-2 leading-relaxed text-site-ink-soft">{step.body}</p>
+                  <h3 className="site-title-sm mt-site-md">{step.title}</h3>
+                  <p className="mt-site-xs leading-relaxed text-site-ink-soft">{step.body}</p>
                 </li>
               ))}
             </ol>
@@ -278,13 +282,13 @@ export default function Home() {
         </section>
 
         {/* ---------- AI (BYOK) ---------- */}
-        <section className="px-6 py-20 sm:px-10">
+        <section className="px-site-lg py-20 sm:px-site-2xl">
           <div className="mx-auto max-w-site">
             <div
               data-reveal
-              className="overflow-hidden rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14"
+              className="overflow-hidden rounded-site-card border border-site-border bg-site-alt-1 p-site-xl sm:p-14"
             >
-              <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase">
+              <span className="inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase">
                 <Sparkles className="h-4 w-4" />
                 Bring your own AI
               </span>
@@ -296,7 +300,7 @@ export default function Home() {
                 {appName} is bring-your-own-key \u2014 your models, your data, no platform AI
                 markup.
               </p>
-              <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+              <ul className="mt-site-xl grid gap-site-sm sm:grid-cols-2">
                 {aiPoints.map((point) => (
                   <li key={point} className="flex items-center gap-2.5 text-sm font-medium">
                     <Check className="h-4 w-4 shrink-0 text-site-accent" />
@@ -309,22 +313,25 @@ export default function Home() {
         </section>
 
         {/* ---------- CLOSING STATEMENT ---------- */}
-        <section className="px-6 pt-10 pb-24 sm:px-10">
+        <section className="px-site-lg pt-site-2xl pb-site-5xl sm:px-site-2xl">
           <div className="mx-auto max-w-site text-center">
             <h2 data-reveal className="site-title">
               Break every cost.
             </h2>
-            <p data-reveal className="site-lead mx-auto mt-6 max-w-[46ch]">
+            <p data-reveal className="site-lead mx-auto mt-site-lg max-w-[46ch]">
               Start with one ledger and see what your budget looks like when the guesswork is gone.
             </p>
-            <div data-reveal className="mt-10 flex flex-wrap items-center justify-center gap-5">
+            <div
+              data-reveal
+              className="mt-site-2xl flex flex-wrap items-center justify-center gap-5"
+            >
               <PillButton href={route("register")}>
                 Start free
                 <ArrowRight className="h-4 w-4" />
               </PillButton>
               <Link
                 href={route("contact")}
-                className="inline-flex items-center gap-2 text-base font-bold tracking-tight"
+                className="inline-flex items-center gap-site-xs text-base font-bold tracking-tight"
               >
                 Talk to us
                 <ArrowUpRight className="h-4 w-4" />

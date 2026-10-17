@@ -54,7 +54,7 @@ export default function PublicLayout({
       />
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-site-ink focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-site-bg-strong focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-site-ink focus:px-site-md focus:py-site-xs focus:text-sm focus:font-medium focus:text-site-bg-strong focus:shadow-lg"
       >
         Skip to content
       </a>

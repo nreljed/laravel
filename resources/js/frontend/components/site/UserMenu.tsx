@@ -16,7 +16,7 @@ const triggerClass =
   "inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-site-ink";
 
 const itemClass =
-  "flex w-full cursor-default items-center gap-2.5 rounded-site-card px-3 py-2 text-sm text-site-ink outline-hidden select-none data-highlighted:bg-site-alt-1";
+  "flex w-full cursor-default items-center gap-2.5 rounded-site-card px-site-sm py-site-xs text-sm text-site-ink outline-hidden select-none data-highlighted:bg-site-alt-1";
 
 const popupClass =
   "min-w-56 origin-(--transform-origin) rounded-site-card border border-site-border bg-site-bg-strong p-1.5 text-site-ink shadow-lg outline-none";
@@ -66,7 +66,7 @@ export function UserMenu() {
           <MenuPrimitive.Popup className={popupClass}>
             {isLoggedIn ? (
               <>
-                <div className="flex items-center gap-3 px-2 py-2">
+                <div className="flex items-center gap-site-sm px-site-xs py-site-xs">
                   {avatarNode}
                   <div className="grid min-w-0 flex-1 leading-tight">
                     <span className="truncate text-sm font-semibold text-site-ink">{name}</span>

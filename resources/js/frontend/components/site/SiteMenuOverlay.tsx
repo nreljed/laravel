@@ -109,7 +109,7 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
       <div
         ref={contentRef}
         data-lenis-prevent
-        className="flex h-full w-full flex-col overflow-y-auto overscroll-contain px-6 pt-28 pb-[8vh] sm:px-10"
+        className="flex h-full w-full flex-col overflow-y-auto overscroll-contain px-site-lg pt-28 pb-[8vh] sm:px-site-2xl"
       >
         <nav className="mx-auto my-auto flex w-full max-w-site flex-col">
           {links.map((link) => (
@@ -118,7 +118,7 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
               href={link.href}
               onClick={onClose}
               data-menu-item
-              className="group flex items-baseline gap-6 border-b border-site-ink/15 py-5 sm:gap-8"
+              className="group flex items-baseline gap-site-lg border-b border-site-ink/15 py-5 sm:gap-site-xl"
             >
               <span className="text-sm text-site-ink/40">{link.number}</span>
               <span className="site-title text-site-ink uppercase transition-all duration-300 group-hover:-skew-x-6 group-hover:italic group-hover:text-site-accent">
@@ -131,9 +131,9 @@ export function SiteMenuOverlay({ open, onClose, links, brand, logo }: SiteMenuO
         {brand || logo ? (
           <div
             data-menu-item
-            className="mx-auto mt-10 flex w-full max-w-site items-center justify-between gap-4 text-sm text-site-ink/50"
+            className="mx-auto mt-site-2xl flex w-full max-w-site items-center justify-between gap-site-md text-sm text-site-ink/50"
           >
-            <span className="flex items-center gap-3">
+            <span className="flex items-center gap-site-sm">
               {logo ? (
                 <img
                   src={logo}

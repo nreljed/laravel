@@ -10,7 +10,7 @@ interface SitePillProps {
 // link when `href` is provided, otherwise a static span.
 export function SitePill({ href, className, children }: SitePillProps) {
   const classes = cn(
-    "inline-flex items-center rounded-site-pill border border-site-border bg-site-surface px-4 py-1.5 text-sm text-site-ink-soft",
+    "inline-flex items-center rounded-site-pill border border-site-border bg-site-surface px-site-md py-1.5 text-sm text-site-ink-soft",
     className,
   );
 

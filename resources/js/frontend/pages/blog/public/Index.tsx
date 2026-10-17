@@ -94,16 +94,16 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
 
       <div ref={rootRef}>
         {/* ---------- HERO ---------- */}
-        <section className="px-6 pt-16 pb-10 sm:px-10 sm:pt-24">
+        <section className="px-site-lg pt-site-4xl pb-site-2xl sm:px-site-2xl sm:pt-site-5xl">
           <div className="mx-auto max-w-site">
             <p
               data-hero
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
+              className="inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               From the blog
             </p>
-            <h1 data-hero className="site-display mt-6">
+            <h1 data-hero className="site-display mt-site-lg">
               {heading}
             </h1>
             <p data-hero className="site-lead mt-7 max-w-[52ch]">
@@ -114,13 +114,13 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
 
         {/* ---------- ACTIVE FILTER ---------- */}
         {(category || tag) && (
-          <section className="px-6 pb-10 sm:px-10">
+          <section className="px-site-lg pb-site-2xl sm:px-site-2xl">
             <div className="mx-auto max-w-site">
               <SitePill>
                 {category ? `Category: ${category.name}` : `Tag: ${tag!.name}`}
                 <Link
                   href={route("blog.index")}
-                  className="ml-2 text-site-ink-faint transition-colors hover:text-site-ink"
+                  className="ml-site-xs text-site-ink-faint transition-colors hover:text-site-ink"
                   aria-label="Clear filter"
                 >
                   &times;
@@ -131,7 +131,7 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
         )}
 
         {/* ---------- POSTS ---------- */}
-        <section className="px-6 pb-24 sm:px-10">
+        <section className="px-site-lg pb-site-5xl sm:px-site-2xl">
           <div className="mx-auto max-w-site">
             {posts.data.length === 0 ? (
               <div
@@ -163,9 +163,9 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
                           />
                         </div>
                       )}
-                      <div className="flex flex-1 flex-col p-6 sm:p-8">
+                      <div className="flex flex-1 flex-col p-site-lg sm:p-site-xl">
                         {post.category && (
-                          <span className="mb-3 inline-flex items-center gap-2 text-xs font-bold tracking-[0.15em] text-site-secondary uppercase">
+                          <span className="mb-site-sm inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.15em] text-site-secondary uppercase">
                             <span className="h-1 w-1 rounded-full bg-site-accent" />
                             {post.category.name}
                           </span>
@@ -174,11 +174,11 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
                           {post.title}
                         </h3>
                         {post.excerpt && (
-                          <p className="mt-3 flex-1 text-sm leading-6 text-site-ink-soft line-clamp-3">
+                          <p className="mt-site-sm flex-1 text-sm leading-6 text-site-ink-soft line-clamp-3">
                             {post.excerpt}
                           </p>
                         )}
-                        <div className="mt-5 flex items-center gap-2 text-xs text-site-ink-faint">
+                        <div className="mt-5 flex items-center gap-site-xs text-xs text-site-ink-faint">
                           <span>{post.user.name}</span>
                           {post.published_at && (
                             <>

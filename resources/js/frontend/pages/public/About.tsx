@@ -36,16 +36,16 @@ export default function About() {
     >
       <div ref={rootRef}>
         {/* ---------- HERO ---------- */}
-        <section className="px-6 pt-16 pb-16 sm:px-10 sm:pt-24">
+        <section className="px-site-lg pt-site-4xl pb-site-4xl sm:px-site-2xl sm:pt-site-5xl">
           <div className="mx-auto max-w-site">
             <p
               data-hero
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
+              className="inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-site-accent" />
               About
             </p>
-            <h1 data-hero className="site-display mt-6 max-w-[18ch]">
+            <h1 data-hero className="site-display mt-site-lg max-w-[18ch]">
               We built the cost tool our own budgets needed.
             </h1>
             <p data-hero className="site-lead mt-7 max-w-[56ch]">
@@ -57,8 +57,8 @@ export default function About() {
         </section>
 
         {/* ---------- STORY ---------- */}
-        <section className="px-6 pb-8 sm:px-10">
-          <div className="mx-auto grid max-w-site gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-20">
+        <section className="px-site-lg pb-site-xl sm:px-site-2xl">
+          <div className="mx-auto grid max-w-site gap-site-2xl lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-20">
             <h2 data-reveal className="site-title max-w-[16ch]">
               A cost platform that doesn&apos;t eat your budget.
             </h2>
@@ -77,22 +77,26 @@ export default function About() {
         </section>
 
         {/* ---------- PRINCIPLES ---------- */}
-        <section className="px-6 py-24 sm:px-10">
+        <section className="px-site-lg py-site-5xl sm:px-site-2xl">
           <div className="mx-auto max-w-site">
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               What we hold to
             </p>
-            <div className="mt-10 grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-3">
+            <div className="mt-site-2xl grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-3">
               {principles.map((principle) => (
-                <div key={principle.n} data-reveal className="bg-site-surface p-8 sm:p-10">
+                <div
+                  key={principle.n}
+                  data-reveal
+                  className="bg-site-surface p-site-xl sm:p-site-2xl"
+                >
                   <div className="flex items-center justify-between">
                     <span className="font-site-display text-sm font-bold text-site-accent">
                       {principle.n}
                     </span>
                     <principle.icon className="h-5 w-5 text-site-ink-faint" />
                   </div>
-                  <h3 className="site-title-sm mt-6">{principle.title}</h3>
-                  <p className="mt-3 leading-relaxed text-site-ink-soft">{principle.body}</p>
+                  <h3 className="site-title-sm mt-site-lg">{principle.title}</h3>
+                  <p className="mt-site-sm leading-relaxed text-site-ink-soft">{principle.body}</p>
                 </div>
               ))}
             </div>
@@ -100,14 +104,14 @@ export default function About() {
         </section>
 
         {/* ---------- DOGFOOD ---------- */}
-        <section className="px-6 pb-24 sm:px-10">
+        <section className="px-site-lg pb-site-5xl sm:px-site-2xl">
           <div
             data-reveal
-            className="mx-auto max-w-site overflow-hidden rounded-site-card border border-site-border bg-site-alt-1 p-8 sm:p-14"
+            className="mx-auto max-w-site overflow-hidden rounded-site-card border border-site-border bg-site-alt-1 p-site-xl sm:p-14"
           >
-            <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+            <div className="grid gap-site-xl lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
               <div>
-                <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-site-secondary uppercase">
+                <span className="inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.2em] text-site-secondary uppercase">
                   <HeartHandshake className="h-4 w-4" />
                   Dogfooding
                 </span>

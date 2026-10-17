@@ -51,7 +51,7 @@ export function SiteHeader() {
             : "border-transparent bg-transparent",
         )}
       >
-        <div className="mx-auto flex h-full w-full max-w-site items-center justify-between px-6 sm:px-10">
+        <div className="mx-auto flex h-full w-full max-w-site items-center justify-between px-site-lg sm:px-site-2xl">
           <Link
             href={route("home")}
             aria-label={appName || "Home"}
@@ -70,13 +70,13 @@ export function SiteHeader() {
             )}
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-site-sm">
             <ThemeToggle />
             <UserMenu />
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-[53px] min-w-28 items-center justify-center gap-2 rounded-site-card bg-site-invert-bg px-7 text-site-invert-ink"
+              className="inline-flex h-[53px] min-w-28 items-center justify-center gap-site-xs rounded-site-card bg-site-invert-bg px-7 text-site-invert-ink"
             >
               {menuOpen ? "Close" : "Menu"}
             </button>
