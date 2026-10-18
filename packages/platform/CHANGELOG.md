@@ -4,6 +4,28 @@ All notable changes to `nreljed/platform` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.84] - 2026-10-18
+
+### Added
+
+- Email settings: new `TemplateCatalogSection` on `/dashboard/admin/settings/email` listing every registered notification type grouped by area, with channel, required and severity badges, the template it renders, and explicit `Not wired` / `Missing template` flags for types that have no `email_template` or point at a Blade file that does not exist. A Preview button drives the existing simulation dialog.
+- Email settings: `TemplateSimulationSection` is now controllable via optional `selectedTemplate` / `onSelectTemplate` props, so selecting a catalog entry opens its preview.
+- Email templates: `EmailTemplateService` exposes public `layoutView()` and `globalData()`, so notifications render through the same template + layout pipeline the settings preview uses.
+- Public site: a real contact form. `POST /contact` (throttled 3/min, honeypot-guarded, silently discarded when trapped) stores a `ContactSubmission` and notifies every admin via the new required `contact.received` type.
+- Notifications: new core type `contact.received` (group Contact, required, in-app + email) bound to the new `contact-received` template.
+- Admin: contact message triage at `/dashboard/admin/contact` — list with status/search filters and pagination, a detail view that marks messages read, an inline status changer and destructive delete — behind a new `manage-contact` permission (Administration group).
+
+### Changed
+
+- Auth emails (`VerifyEmail`, `ResetPassword`, `WelcomeNewUser`) now render through `EmailTemplateService` instead of hand-rolled Blade partials.
+- `user.registered` now points at the `new-user-admin` template (was `new-user`, which is the user-facing login confirmation and never received that payload).
+- Registration dispatches the previously dead `user.welcome` email to the new user and `user.registered` (in-app + email) to every admin.
+
+### Fixed
+
+- The email settings preview was fiction for auth mail: `VerifyEmail` and `ResetPassword` rendered their own partials, so what admins previewed never matched what recipients received.
+- The `welcome` template now accepts a missing token and falls back to a log-in call to action, matching self-registration where no set-password token exists.
+
 ## [0.1.34] - 2026-09-10
 
 ### Changed

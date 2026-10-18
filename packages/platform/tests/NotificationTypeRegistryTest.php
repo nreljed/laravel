@@ -23,6 +23,7 @@ final class NotificationTypeRegistryTest extends TestCase
             'password.reset',
             'email.changed',
             'account.deleted',
+            'contact.received',
             'database.maintenance',
         ];
 
@@ -31,7 +32,7 @@ final class NotificationTypeRegistryTest extends TestCase
 
     public function test_security_and_account_events_are_required(): void
     {
-        foreach (['password.changed', 'password.reset', 'email.changed', 'account.deleted', 'user.registered'] as $type) {
+        foreach (['password.changed', 'password.reset', 'email.changed', 'account.deleted', 'user.registered', 'contact.received'] as $type) {
             $this->assertTrue(
                 $this->coreTypes()[$type]['required'] ?? false,
                 "$type must be required (not user-mutable)."
@@ -51,7 +52,7 @@ final class NotificationTypeRegistryTest extends TestCase
 
     public function test_security_types_deliver_via_email_by_default(): void
     {
-        foreach (['user.welcome', 'password.changed', 'password.reset', 'email.changed', 'account.deleted'] as $type) {
+        foreach (['user.registered', 'user.welcome', 'password.changed', 'password.reset', 'email.changed', 'account.deleted', 'contact.received'] as $type) {
             $channels = $this->coreTypes()[$type]['default_channels'] ?? [];
             $this->assertContains('email', $channels, "$type must default to email delivery.");
         }
@@ -60,12 +61,13 @@ final class NotificationTypeRegistryTest extends TestCase
     public function test_security_types_reference_registered_email_templates(): void
     {
         $expected = [
-            'user.registered' => 'new-user',
+            'user.registered' => 'new-user-admin',
             'user.welcome' => 'welcome',
             'password.changed' => 'password-changed',
             'password.reset' => 'password-reset',
             'email.changed' => 'email-changed',
             'account.deleted' => 'account-deleted',
+            'contact.received' => 'contact-received',
         ];
 
         foreach ($expected as $type => $template) {

@@ -1239,16 +1239,16 @@
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "3.1.0",
+            "version": "3.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "a3059ba1a84c9139c4ae03cf0f45bea276c97c74"
+                "reference": "cdc139396207a5eba10c242d241fb014cb098390"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/a3059ba1a84c9139c4ae03cf0f45bea276c97c74",
-                "reference": "a3059ba1a84c9139c4ae03cf0f45bea276c97c74",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/cdc139396207a5eba10c242d241fb014cb098390",
+                "reference": "cdc139396207a5eba10c242d241fb014cb098390",
                 "shasum": ""
             },
             "require": {
@@ -1338,7 +1338,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/3.1.0"
+                "source": "https://github.com/guzzle/psr7/tree/3.2.0"
             },
             "funding": [
                 {
@@ -1354,7 +1354,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-24T11:02:13+00:00"
+            "time": "2026-10-17T23:57:19+00:00"
         },
         {
             "name": "guzzlehttp/uri-template",
@@ -3614,16 +3614,16 @@
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.83",
+            "version": "0.1.84",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/platform.git",
-                "reference": "01fe2e686757dea514e2ea343d8256bf95cb0119"
+                "reference": "01c50401dd49507c759a3c4183b795aaaeef2758"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/01fe2e686757dea514e2ea343d8256bf95cb0119",
-                "reference": "01fe2e686757dea514e2ea343d8256bf95cb0119",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/01c50401dd49507c759a3c4183b795aaaeef2758",
+                "reference": "01c50401dd49507c759a3c4183b795aaaeef2758",
                 "shasum": ""
             },
             "require": {
@@ -3670,11 +3670,7 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.83",
-                "issues": "https://github.com/nreljed/platform/issues"
-            },
-            "time": "2026-10-09T17:33:38+00:00"
+            "time": "2026-10-18T14:36:57+00:00"
         },
         {
             "name": "nunomaduro/termwind",

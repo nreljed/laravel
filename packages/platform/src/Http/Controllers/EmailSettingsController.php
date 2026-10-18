@@ -10,6 +10,7 @@ use Nreljed\Platform\Services\EmailSettingsService;
 use Nreljed\Platform\Services\EmailTemplateService;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Nreljed\Platform\Services\MailService;
+use Nreljed\Platform\Services\NotificationTypeRegistry;
 
 class EmailSettingsController extends Controller
 {
@@ -210,6 +211,65 @@ class EmailSettingsController extends Controller
         return $templates;
     }
 
+    /**
+     * Join every registered notification type with its email template so the
+     * settings UI can show which user action triggers which email, and which
+     * templates are shipped but not yet wired to a notification type.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getEmailCatalog(): array
+    {
+        $templates = $this->getTemplates();
+        $types = app(NotificationTypeRegistry::class)->all();
+
+        $catalog = [];
+
+        foreach ($types as $typeKey => $type) {
+            $templateKey = $type['email_template'] ?? null;
+
+            $catalog[] = [
+                'type_key' => $typeKey,
+                'label' => $type['label'] ?? $typeKey,
+                'description' => $type['description'] ?? '',
+                'group' => $type['group'] ?? 'Other',
+                'template_key' => $templateKey,
+                'template_label' => $templateKey !== null ? ($templates[$templateKey]['label'] ?? $templateKey) : null,
+                'has_template' => $templateKey !== null && $this->templateService->exists($templateKey),
+                'default_channels' => $type['default_channels'] ?? [],
+                'default_enabled' => (bool) ($type['default_enabled'] ?? true),
+                'required' => (bool) ($type['required'] ?? false),
+                'severity' => $type['severity'] ?? 'info',
+            ];
+        }
+
+        $wiredTemplates = array_filter(array_column($catalog, 'template_key'));
+
+        foreach ($templates as $templateKey => $template) {
+            if (in_array($templateKey, $wiredTemplates, true)) {
+                continue;
+            }
+
+            $catalog[] = [
+                'type_key' => null,
+                'label' => $template['label'] ?? $templateKey,
+                'description' => 'Template is available but not wired to a notification type.',
+                'group' => $template['group'] ?? 'Other',
+                'template_key' => $templateKey,
+                'template_label' => $template['label'] ?? $templateKey,
+                'has_template' => true,
+                'default_channels' => [],
+                'default_enabled' => true,
+                'required' => false,
+                'severity' => 'info',
+            ];
+        }
+
+        usort($catalog, fn (array $a, array $b) => [$a['group'], $a['label']] <=> [$b['group'], $b['label']]);
+
+        return $catalog;
+    }
+
     protected function getCoreTemplates(): array
     {
         $user = request()->user();
@@ -297,6 +357,30 @@ class EmailSettingsController extends Controller
                 'group' => 'Account',
                 'sample_data' => [
                     'userName' => $this->recipientName($user),
+                    'siteName' => config('app.name'),
+                ],
+            ],
+            'welcome' => [
+                'label' => 'Account Welcome',
+                'group' => 'Account',
+                'sample_data' => [
+                    'userName' => $this->recipientName($user),
+                    'setPasswordUrl' => route('password.request'),
+                    'loginUrl' => route('login'),
+                    'expireMinutes' => 60,
+                    'siteName' => config('app.name'),
+                ],
+            ],
+            'contact-received' => [
+                'label' => 'Contact Form Message',
+                'group' => 'Contact',
+                'sample_data' => [
+                    'senderName' => 'Jane Visitor',
+                    'senderEmail' => 'jane@example.com',
+                    'subjectLine' => 'Question about pricing',
+                    'messageBody' => "Hi,\n\nCould you tell me more about your pricing plans?\n\nThanks!",
+                    'submittedAt' => now()->toDateTimeString(),
+                    'contactUrl' => route('dashboard.admin.contact.index'),
                     'siteName' => config('app.name'),
                 ],
             ],

@@ -52,6 +52,7 @@ return [
         ['name' => 'Manage Media', 'slug' => 'media.manage', 'description' => 'View and delete media uploaded by any user', 'group' => 'Administration'],
         ['name' => 'Export Audit Logs', 'slug' => 'export-audit-logs', 'description' => 'Export audit log data as CSV', 'group' => 'Administration'],
         ['name' => 'Manage Email Settings', 'slug' => 'manage-email-settings', 'description' => 'Configure email settings', 'group' => 'Administration'],
+        ['name' => 'Manage Contact Messages', 'slug' => 'manage-contact', 'description' => 'Read, triage and delete public contact form submissions', 'group' => 'Administration'],
     ],
 
     /*

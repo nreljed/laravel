@@ -4,7 +4,7 @@ namespace Nreljed\Platform\Notifications;
 
 use Illuminate\Auth\Notifications\VerifyEmail as BaseVerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
-use Nreljed\Platform\Services\SettingsService;
+use Nreljed\Platform\Services\EmailTemplateService;
 
 class VerifyEmail extends BaseVerifyEmail
 {
@@ -17,27 +17,21 @@ class VerifyEmail extends BaseVerifyEmail
     #[\Override]
     public function toMail($notifiable): MailMessage
     {
+        $templates = app(EmailTemplateService::class);
+
         $verificationUrl = $this->preGeneratedUrl ?? $this->verificationUrl($notifiable);
+        $subject = '['.config('app.name').'] Verify Your Email Address';
 
-        $logoUrl = SettingsService::get('app_logo', '');
-        $siteName = SettingsService::get('app_name', config('app.name'));
-        $siteUrl = SettingsService::get('app_url', url('/'));
-
-        $body = view('email.partials.verify-email-body', [
+        $body = $templates->render('verify-email', [
             'userName' => $notifiable->name ?? 'there',
             'verificationUrl' => $verificationUrl,
-            'siteName' => $siteName,
-        ])->render();
+        ]);
 
         return (new MailMessage)
-            ->subject("[$siteName] Verify Your Email Address")
-            ->view('email.layouts.email', [
-                'logoUrl' => $logoUrl,
-                'siteName' => $siteName,
-                'siteUrl' => $siteUrl,
-                'year' => date('Y'),
+            ->subject($subject)
+            ->view($templates->layoutView(), $templates->globalData([
                 'body' => $body,
-                'subject' => "[$siteName] Verify Your Email Address",
-            ]);
+                'subject' => $subject,
+            ]));
     }
 }

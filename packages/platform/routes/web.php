@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\AccountDataController;
 use Nreljed\Platform\Http\Controllers\Admin\AuditLogController;
 use Nreljed\Platform\Http\Controllers\Admin\BulkUserController;
+use Nreljed\Platform\Http\Controllers\Admin\ContactSubmissionController;
 use Nreljed\Platform\Http\Controllers\Admin\DatabaseMaintenanceController;
 use Nreljed\Platform\Http\Controllers\Admin\FeatureController;
 use Nreljed\Platform\Http\Controllers\Admin\ImpersonationController;
@@ -285,6 +286,14 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
     Route::middleware('permission:manage-audit-logs')->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->middleware('permission:export-audit-logs')->name('audit-logs.export');
+    });
+
+    // Public contact form submissions
+    Route::middleware('permission:manage-contact')->prefix('/contact')->name('contact.')->group(function () {
+        Route::get('/', [ContactSubmissionController::class, 'index'])->name('index');
+        Route::get('/{submission}', [ContactSubmissionController::class, 'show'])->name('show');
+        Route::patch('/{submission}', [ContactSubmissionController::class, 'update'])->name('update');
+        Route::delete('/{submission}', [ContactSubmissionController::class, 'destroy'])->name('destroy');
     });
 
     // Developer tools (admin only)

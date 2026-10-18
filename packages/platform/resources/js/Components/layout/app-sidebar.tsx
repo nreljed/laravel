@@ -10,6 +10,7 @@ import {
   Shield,
   ShieldCheck,
   ScrollText,
+  Mail,
   Beaker,
   FlaskConical,
   Database,
@@ -95,6 +96,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: safeRoute("dashboard.admin.settings.general"),
       icon: Settings,
       permission: "manage-settings",
+    },
+    {
+      title: "Contact Messages",
+      url: safeRoute("dashboard.admin.contact.index"),
+      icon: Mail,
+      permission: "manage-contact",
     },
     {
       title: "Audit Logs",

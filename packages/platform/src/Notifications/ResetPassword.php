@@ -4,38 +4,33 @@ namespace Nreljed\Platform\Notifications;
 
 use Illuminate\Auth\Notifications\ResetPassword as BaseResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
-use Nreljed\Platform\Services\SettingsService;
+use Nreljed\Platform\Services\EmailTemplateService;
 
 class ResetPassword extends BaseResetPassword
 {
     #[\Override]
     public function toMail($notifiable): MailMessage
     {
-        $resetUrl = $this->resetUrl($notifiable);
+        $templates = app(EmailTemplateService::class);
 
-        $logoUrl = SettingsService::get('app_logo', '');
-        $siteName = SettingsService::get('app_name', config('app.name'));
-        $siteUrl = SettingsService::get('app_url', url('/'));
+        $subject = '['.config('app.name').'] Reset Your Password';
 
-        $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
-
-        $body = view('email.templates.password-reset', [
+        $body = $templates->render('password-reset', [
             'userName' => $notifiable->name ?? 'there',
-            'resetUrl' => $resetUrl,
-            'siteName' => $siteName,
-            'siteUrl' => $siteUrl,
-            'expireMinutes' => $expireMinutes,
-        ])->render();
+            'resetUrl' => $this->resetUrl($notifiable),
+            'expireMinutes' => $this->expireMinutes(),
+        ]);
 
         return (new MailMessage)
-            ->subject("[$siteName] Reset Your Password")
-            ->view('email.layouts.email', [
-                'logoUrl' => $logoUrl,
-                'siteName' => $siteName,
-                'siteUrl' => $siteUrl,
-                'year' => date('Y'),
+            ->subject($subject)
+            ->view($templates->layoutView(), $templates->globalData([
                 'body' => $body,
-                'subject' => "[$siteName] Reset Your Password",
-            ]);
+                'subject' => $subject,
+            ]));
+    }
+
+    protected function expireMinutes(): int
+    {
+        return (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
     }
 }
