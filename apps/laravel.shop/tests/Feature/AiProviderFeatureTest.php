@@ -163,7 +163,7 @@ class AiProviderFeatureTest extends TestCase
         $snapshot = $this->actingAs($user)->getJson('/dashboard/account/ai-keys/usage')
             ->assertOk()
             ->assertJsonPath('usage.cap.requests', AiUsageSetting::DEFAULT_CAP_REQUESTS)
-            ->assertJsonPath('usage.cap.tokens', AiUsageSetting::DEFAULT_CAP_TOKENS)
+            ->assertJsonPath('usage.cap.cost_cents', AiUsageSetting::DEFAULT_CAP_COST_CENTS)
             ->assertJsonPath('usage.today.totals.requests', 1)
             ->assertJsonPath('usage.today.totals.tokens', 8)
             ->assertJsonPath('usage.all_time.totals.requests', 1)
@@ -189,32 +189,39 @@ class AiProviderFeatureTest extends TestCase
 
         $this->actingAs($user)->putJson('/dashboard/account/ai-keys/usage-cap', [
             'requests' => 42,
-            'tokens' => 5000,
+            'cost_cents' => 5000,
         ])->assertOk()
             ->assertJsonPath('cap.requests', 42)
-            ->assertJsonPath('cap.tokens', 5000);
+            ->assertJsonPath('cap.cost_cents', 5000);
 
         $this->assertDatabaseHas('ai_usage_settings', [
             'user_id' => $user->id,
             'cap_requests' => 42,
-            'cap_tokens' => 5000,
+            'cap_cents' => 5000,
         ]);
 
         $this->actingAs($user)->putJson('/dashboard/account/ai-keys/usage-cap', [
             'requests' => 99999999999,
-            'tokens' => 999999999999,
+            'cost_cents' => 5000,
         ])->assertOk()
             ->assertJsonPath('cap.requests', AiUsageSetting::CAP_REQUESTS_MAX)
-            ->assertJsonPath('cap.tokens', AiUsageSetting::CAP_TOKENS_MAX);
+            ->assertJsonPath('cap.cost_cents', 5000);
+
+        // cost_cents is validated, not clamped: above the ceiling is a 422.
+        $this->actingAs($user)->putJson('/dashboard/account/ai-keys/usage-cap', [
+            'requests' => 42,
+            'cost_cents' => 999999999999,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['cost_cents']);
     }
 
     public function test_usage_caps_validation(): void
     {
         $this->actingAs($this->user())->putJson('/dashboard/account/ai-keys/usage-cap', [
             'requests' => 0,
-            'tokens' => 500,
+            'cost_cents' => 0,
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['requests', 'tokens']);
+            ->assertJsonValidationErrors(['requests', 'cost_cents']);
     }
 
     public function test_ai_provider_mass_assignment_encrypts_api_key_via_mutator(): void
@@ -253,16 +260,18 @@ class AiProviderFeatureTest extends TestCase
         $user = $this->user();
         $service = app(AiService::class);
 
-        $service->updateCaps($user, 2, 1000);
-        $service->logUsage(user: $user, agentClass: 'Tests', provider: 'gemini', model: 'm', inputTokens: 400, outputTokens: 0);
+        // Caps are requests/day and USD spend/day. The spend check prices the
+        // day's accumulated cost, so a breach is detected between requests.
+        $service->updateCaps($user, 2, 1);
 
-        $this->assertNull($service->exceedsCaps($user, 100, 0));
+        $this->assertNull($service->exceedsCaps($user));
 
-        $service->logUsage(user: $user, agentClass: 'Tests', provider: 'gemini', model: 'm', inputTokens: 400, outputTokens: 0);
-        $this->assertTrue($service->exceedsCaps($user, 0, 0)['requests']);
+        // 4000 input tokens on openai is 0.5c against the 100 cents/1M rate.
+        $service->logUsage(user: $user, agentClass: 'Tests', provider: 'openai', model: 'm', inputTokens: 4000, outputTokens: 0);
+        $this->assertNull($service->exceedsCaps($user));
 
-        $exceeded = $service->exceedsCaps($user, 300, 0);
-        $this->assertSame(['requests' => true, 'tokens' => true], $exceeded);
+        $service->logUsage(user: $user, agentClass: 'Tests', provider: 'openai', model: 'm', inputTokens: 4000, outputTokens: 0);
+        $this->assertSame(['requests' => true, 'cost' => true], $service->exceedsCaps($user));
     }
 
     public function test_ai_task_runner_prompts_and_logs_usage(): void
