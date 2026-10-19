@@ -3671,24 +3671,20 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.5",
-                "issues": "https://github.com/nreljed/blog/issues"
-            },
             "time": "2026-10-16T17:27:49+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.84",
+            "version": "0.1.85",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/platform.git",
-                "reference": "01c50401dd49507c759a3c4183b795aaaeef2758"
+                "reference": "90a1a1b81441189af2bc1ad331433c662d53ecd3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/01c50401dd49507c759a3c4183b795aaaeef2758",
-                "reference": "01c50401dd49507c759a3c4183b795aaaeef2758",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/90a1a1b81441189af2bc1ad331433c662d53ecd3",
+                "reference": "90a1a1b81441189af2bc1ad331433c662d53ecd3",
                 "shasum": ""
             },
             "require": {
@@ -3735,11 +3731,7 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.84",
-                "issues": "https://github.com/nreljed/platform/issues"
-            },
-            "time": "2026-10-18T14:36:57+00:00"
+            "time": "2026-10-19T15:21:00+00:00"
         },
         {
             "name": "nreljed/shop-module",

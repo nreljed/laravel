@@ -11,7 +11,7 @@ import { AccountSettingsNav } from "../../../Components/account/AccountSettingsN
 import AiKeysSection from "../../../Components/account/sections/AiKeysSection";
 
 interface AiUsageSnapshot {
-  cap: { requests: number; tokens: number };
+  cap: { requests: number; cost_cents: number };
   today: {
     date: string;
     providers: Record<
@@ -20,13 +20,14 @@ interface AiUsageSnapshot {
         requests: number;
         input_tokens: number;
         output_tokens: number;
+        cost_cents: number;
         last_model: string | null;
         last_run_at: string | null;
         last_latency_ms: number | null;
         last_error: string | null;
       }
     >;
-    totals: { requests: number; tokens: number };
+    totals: { requests: number; tokens: number; cost_cents: number };
   };
   all_time: {
     providers: Record<
@@ -35,13 +36,14 @@ interface AiUsageSnapshot {
         requests: number;
         input_tokens: number;
         output_tokens: number;
+        cost_cents: number;
         last_model: string | null;
         last_run_at: string | null;
         last_latency_ms: number | null;
         last_error: string | null;
       }
     >;
-    totals: { requests: number; tokens: number };
+    totals: { requests: number; tokens: number; cost_cents: number };
   };
 }
 

@@ -71,6 +71,7 @@ interface ProviderUsage {
   requests: number;
   input_tokens: number;
   output_tokens: number;
+  cost_cents: number;
   last_model: string | null;
   last_run_at: string | null;
   last_latency_ms: number | null;
@@ -78,15 +79,15 @@ interface ProviderUsage {
 }
 
 interface AiUsageSnapshot {
-  cap: { requests: number; tokens: number };
+  cap: { requests: number; cost_cents: number };
   today: {
     date: string;
     providers: Record<string, ProviderUsage>;
-    totals: { requests: number; tokens: number };
+    totals: { requests: number; tokens: number; cost_cents: number };
   };
   all_time: {
     providers: Record<string, ProviderUsage>;
-    totals: { requests: number; tokens: number };
+    totals: { requests: number; tokens: number; cost_cents: number };
   };
 }
 
@@ -94,6 +95,11 @@ interface AiKeysSectionProps {
   providers?: AiProvider[];
   supportedProviders?: Record<string, ProviderConfig>;
   usageSnapshot?: AiUsageSnapshot;
+}
+
+/** Format stored fractional cents as a dollar string (spend-cap UI). */
+function fmtCost(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 const DEFAULT_SUPPORTED_PROVIDERS: Record<string, ProviderConfig> = {
@@ -139,7 +145,9 @@ export default function AiKeysSection({
 
   const [capDialogOpen, setCapDialogOpen] = useState(false);
   const [capRequests, setCapRequests] = useState(String(usageSnapshot?.cap.requests ?? 100));
-  const [capTokens, setCapTokens] = useState(String(usageSnapshot?.cap.tokens ?? 250000));
+  const [capSpend, setCapSpend] = useState(
+    String(((usageSnapshot?.cap.cost_cents ?? 500) / 100).toFixed(2)),
+  );
   const [savingCaps, setSavingCaps] = useState(false);
 
   const availableProviders = Object.entries(supportedProviders).filter(([key]) =>
@@ -257,16 +265,16 @@ export default function AiKeysSection({
 
   function handleSaveCaps() {
     const requests = Number(capRequests);
-    const tokens = Number(capTokens);
-    if (!Number.isFinite(requests) || requests < 1 || !Number.isFinite(tokens) || tokens < 1000) {
-      toast.add({ title: "Enter valid caps (requests ≥ 1, tokens ≥ 1000)", type: "error" });
+    const spend = Number(capSpend);
+    if (!Number.isFinite(requests) || requests < 1 || !Number.isFinite(spend) || spend < 0.01 || spend > 1000) {
+      toast.add({ title: "Enter valid caps (requests ≥ 1, spend $0.01–$1000)", type: "error" });
       return;
     }
     setSavingCaps(true);
 
     router.put(
       route("dashboard.account.ai-keys.usage-cap"),
-      { requests, tokens },
+      { requests, cost_cents: Math.round(spend * 100) },
       {
         preserveState: true,
         onSuccess: () => {
@@ -491,14 +499,14 @@ export default function AiKeysSection({
       </p>
     );
 
-  const cap = usageSnapshot?.cap ?? { requests: 100, tokens: 250000 };
+  const cap = usageSnapshot?.cap ?? { requests: 100, cost_cents: 500 };
   const today = usageSnapshot?.today;
   const allTime = usageSnapshot?.all_time;
 
   const requestPct = today && cap.requests > 0 ? Math.min(100, Math.round((today.totals.requests / cap.requests) * 100)) : 0;
-  const tokenPct = today && cap.tokens > 0 ? Math.min(100, Math.round((today.totals.tokens / cap.tokens) * 100)) : 0;
+  const spendPct = today && cap.cost_cents > 0 ? Math.min(100, Math.round(((today.totals.cost_cents ?? 0) / cap.cost_cents) * 100)) : 0;
   const requestExceeded = today ? today.totals.requests >= cap.requests : false;
-  const tokenExceeded = today ? today.totals.tokens >= cap.tokens : false;
+  const spendExceeded = today ? (today.totals.cost_cents ?? 0) >= cap.cost_cents : false;
 
   const usageCard = (
     <div className="mt-6 border rounded-lg p-4 space-y-4">
@@ -510,7 +518,7 @@ export default function AiKeysSection({
         </div>
         <Button variant="outline" size="sm" onClick={() => {
           setCapRequests(String(cap.requests));
-          setCapTokens(String(cap.tokens));
+          setCapSpend(String((cap.cost_cents / 100).toFixed(2)));
           setCapDialogOpen(true);
         }}>
           <Gauge className="mr-1.5 h-3.5 w-3.5" />
@@ -518,42 +526,42 @@ export default function AiKeysSection({
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Requests ({today?.totals.requests ?? 0}/{cap.requests})</span>
-            {requestExceeded && (
-              <span className="inline-flex items-center gap-1 text-destructive">
-                <AlertTriangle className="h-3 w-3" />
-                Limit reached
-              </span>
-            )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Requests ({today?.totals.requests ?? 0}/{cap.requests})</span>
+              {requestExceeded && (
+                <span className="inline-flex items-center gap-1 text-destructive">
+                  <AlertTriangle className="h-3 w-3" />
+                  Limit reached
+                </span>
+              )}
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${requestExceeded ? "bg-destructive" : "bg-primary"}`}
+                style={{ width: `${Math.max(requestPct, 2)}%` }}
+              />
+            </div>
           </div>
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${requestExceeded ? "bg-destructive" : "bg-primary"}`}
-              style={{ width: `${Math.max(requestPct, 2)}%` }}
-            />
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Spend ({fmtCost(today?.totals.cost_cents ?? 0)}/{fmtCost(cap.cost_cents)})</span>
+              {spendExceeded && (
+                <span className="inline-flex items-center gap-1 text-destructive">
+                  <AlertTriangle className="h-3 w-3" />
+                  Limit reached
+                </span>
+              )}
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${spendExceeded ? "bg-destructive" : "bg-primary"}`}
+                style={{ width: `${Math.max(spendPct, 2)}%` }}
+              />
+            </div>
           </div>
         </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Tokens ({today ? today.totals.tokens.toLocaleString() : 0}/{cap.tokens.toLocaleString()})</span>
-            {tokenExceeded && (
-              <span className="inline-flex items-center gap-1 text-destructive">
-                <AlertTriangle className="h-3 w-3" />
-                Limit reached
-              </span>
-            )}
-          </div>
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${tokenExceeded ? "bg-destructive" : "bg-primary"}`}
-              style={{ width: `${Math.max(tokenPct, 2)}%` }}
-            />
-          </div>
-        </div>
-      </div>
 
       {today && Object.keys(today.providers).length > 0 && (
         <div className="space-y-2">
@@ -567,7 +575,7 @@ export default function AiKeysSection({
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{providerName}</span>
                   <span className="text-muted-foreground">
-                    {p.requests} req · {(p.input_tokens + p.output_tokens).toLocaleString()} tokens
+                    {p.requests} req · {(p.input_tokens + p.output_tokens).toLocaleString()} tokens · {fmtCost(p.cost_cents ?? 0)}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
@@ -596,7 +604,7 @@ export default function AiKeysSection({
       {allTime && (
         <p className="text-xs text-muted-foreground border-t pt-2">
           All-time: {allTime.totals.requests.toLocaleString()} requests ·{" "}
-          {allTime.totals.tokens.toLocaleString()} tokens
+          {allTime.totals.tokens.toLocaleString()} tokens · {fmtCost(allTime.totals.cost_cents ?? 0)}
         </p>
       )}
     </div>
@@ -618,18 +626,21 @@ export default function AiKeysSection({
               id="cap-requests"
               type="number"
               min={1}
+              step={1}
               value={capRequests}
               onChange={(e) => setCapRequests(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cap-tokens">Tokens per day</Label>
+            <Label htmlFor="cap-spend">Spend per day (USD)</Label>
             <Input
-              id="cap-tokens"
+              id="cap-spend"
               type="number"
-              min={1000}
-              value={capTokens}
-              onChange={(e) => setCapTokens(e.target.value)}
+              min={0.01}
+              max={1000}
+              step={0.01}
+              value={capSpend}
+              onChange={(e) => setCapSpend(e.target.value)}
             />
           </div>
         </div>

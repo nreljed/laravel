@@ -44,13 +44,8 @@ class AiTaskRunner
         ?string $providerName = null,
         ?int $timeout = null,
     ): AgentResponse {
+        $this->assertWithinCaps($user);
         $resolved = $this->prepare($agent, $user, $providerName);
-        $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
-        if ($exceeded !== null) {
-            throw new \RuntimeException(
-                $this->capMessage($exceeded),
-            );
-        }
         $attempts = 0;
         while (true) {
             $attempts++;
@@ -98,13 +93,8 @@ class AiTaskRunner
         string $prompt,
         ?string $providerName = null,
     ): StreamableAgentResponse {
+        $this->assertWithinCaps($user);
         $resolved = $this->prepare($agent, $user, $providerName);
-        $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
-        if ($exceeded !== null) {
-            throw new \RuntimeException(
-                $this->capMessage($exceeded),
-            );
-        }
         $start = microtime(true);
         $stream = $agent->stream(
             $prompt,
@@ -135,12 +125,7 @@ class AiTaskRunner
         string $prompt,
         ?string $providerName = null,
     ): QueuedAgentResponse {
-        $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
-        if ($exceeded !== null) {
-            throw new \RuntimeException(
-                $this->capMessage($exceeded),
-            );
-        }
+        $this->assertWithinCaps($user);
 
         return new QueuedAgentResponse(dispatch(new InvokeAiTask(
             userId: $user->id,
@@ -204,17 +189,20 @@ class AiTaskRunner
         $this->aiService->recordError($user, $provider, $e->getMessage());
     }
 
-    private function capMessage(array $exceeded): string
+    /**
+     * Throw when the user's soft daily caps (requests / USD spend) are spent.
+     * Checked before provider resolution so a capped user never decrypts or
+     * injects a key.
+     */
+    private function assertWithinCaps(User $user): void
     {
-        $parts = [];
-        if (! empty($exceeded['requests'])) {
-            $parts[] = 'daily request limit';
-        }
-        if (! empty($exceeded['tokens'])) {
-            $parts[] = 'daily token limit';
-        }
+        $exceeded = $this->aiService->exceedsCaps($user);
 
-        return 'Your AI daily '.implode(' and ', $parts).' has been reached.';
+        if ($exceeded !== null) {
+            throw new \RuntimeException(
+                $this->aiService->capMessage($user, $exceeded),
+            );
+        }
     }
 
     private function delaySeconds(int $attempt): int

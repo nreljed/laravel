@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Laravel\Ai\Ai;
 use Laravel\Ai\Exceptions\AiException;
 use Nreljed\Platform\Ai\Models\AiProvider;
+use Nreljed\Platform\Ai\Models\AiUsageSetting;
 use Nreljed\Platform\Ai\Requests\StoreAiProviderRequest;
 use Nreljed\Platform\Ai\Requests\TestAiProviderRequest;
 use Nreljed\Platform\Ai\Services\AiService;
@@ -41,13 +42,13 @@ class AiProviderController extends Controller
     {
         $validated = $request->validate([
             'requests' => ['required', 'integer', 'min:1'],
-            'tokens' => ['required', 'integer', 'min:1000'],
+            'cost_cents' => ['required', 'integer', 'min:1', 'max:'.AiUsageSetting::CAP_COST_MAX],
         ]);
 
         $caps = $this->aiService->updateCaps(
             user: $request->user(),
             requests: $validated['requests'],
-            tokens: $validated['tokens'],
+            costCents: $validated['cost_cents'],
         );
 
         if ($request->inertia()) {
