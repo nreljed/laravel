@@ -159,9 +159,12 @@ jobs:
 
       # Assets must exist before PHP tests: view-rendering tests hit @vite()
       # and 500 without public/build/manifest.json (same order as ci.yml).
+      # --parallel mirrors ci.yml (php-tests-parallel: true): the whole suite in
+      # one process exceeds the self-hosted runner's 60s max_execution_time and
+      # is killed mid-run ("Premature end of PHP process").
       - name: Validate - PHP tests
         if: steps.check.outputs.changed == 'true'
-        run: php -d memory_limit=512M artisan test --compact
+        run: php -d memory_limit=512M artisan test --parallel --compact
 
       - name: Validate - Pint
         if: steps.check.outputs.changed == 'true'
