@@ -86,10 +86,19 @@ jobs:
               --working-dir="$app"
           done
 
+      # The pnpm-workspace mirror (packages/*) is a committed copy of the
+      # released package; composer only refreshes vendor/. Without this step the
+      # mirror stays on the old release while vendor moves, and
+      # check:platform-consistency (below) fails on every source-changing
+      # release -- the job could never merge. Refresh it from vendor/ (the
+      # released source of truth) so the gate sees one tree.
+      - name: Refresh workspace package mirrors
+        run: node scripts/sync-mirrors.mjs
+
       - name: Check for changes
         id: check
         run: |
-          if git diff --exit-code -- composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock > /dev/null; then
+          if git diff --exit-code -- composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/ > /dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Core is already up to date."
           else
@@ -173,7 +182,7 @@ jobs:
           git checkout -b "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock
+          git add composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/
           git commit -m "chore: update platform + blog to v${{ steps.version.outputs.version }}"
           git push -u origin "$BRANCH"
           gh pr create \
@@ -183,7 +192,7 @@ jobs:
             --body "Automated update of \`nreljed/platform\` + \`nreljed/blog\` (\`core-update.yml\`).
 
             - Resolved version: v${{ steps.version.outputs.version }} (platform)
-            - \`composer.lock\` + both workspace app mirrors (\`apps/laravel.shop\`, \`apps/laravel.booking\`) bumped so every consumer resolves identical core versions; full validation (tests, typecheck, build) ran on this exact tree before merge.
+            - \`composer.lock\` + both workspace app mirrors (\`apps/laravel.shop\`, \`apps/laravel.booking\`) bumped, and the pnpm mirrors (\`packages/*\`) refreshed from \`vendor/\` so every consumer resolves identical core versions; full validation (tests, typecheck, build) ran on this exact tree before merge.
             "
 
       # Free private repos have no branch protection rules, so the merge is
