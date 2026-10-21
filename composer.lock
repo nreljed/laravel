@@ -3656,11 +3656,11 @@
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.87",
+            "version": "0.1.88",
             "dist": {
                 "type": "path",
                 "url": "C:/Users/nrelj/Local Sites/platform",
-                "reference": "e1155c7d7cb682b65d7bd3c93782084d74556855"
+                "reference": "e1abf06f9b7e57bc9f28223a06560f76dacfbef0"
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",

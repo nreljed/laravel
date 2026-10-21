@@ -4,6 +4,16 @@ All notable changes to `nreljed/platform` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.88] - 2026-10-21
+
+### Added
+
+- **`FormSubmitted` event.** A stored public form submission is now announced through `Nreljed\Platform\Events\FormSubmitted` (form key, submission model, validated payload). It is the supported seam for a feature that wants a submission to become a contact, a lead or a segment member - no controller wrapping required. Only stored submissions are announced: a honeypot hit or a deduplicated replay never reaches a listener, so a bot cannot learn that its submission was rejected. A throwing listener is logged and never breaks the visitor's thank-you redirect.
+
+### Fixed
+
+- **`make:feature` registers the provider where the registry looks.** The generator wrote the scaffolded provider into a `features` array in `config/core.php`, which does not exist - the file holds engine gates. The provider was therefore never discovered, and the command reported a success that changed nothing. The generator now inserts the class into the `providers` array of `config/features.php` (the file the FeatureRegistry actually reads), expands an empty array, stays idempotent on a second run, and tells the developer which array to confirm. The system-health fix hint for feature configuration points at `config/features.php` too.
+
 ## [0.1.87] - 2026-10-21
 
 ### Fixed

@@ -46,7 +46,7 @@ class MakeFeature extends Command
         $this->components->twoColumnDetail('Namespace', $namespace);
 
         $this->info('To complete setup:');
-        $this->line('  1. Add a "features" entry to config/core.php pointing at '.$namespace.'\\'.$className);
+        $this->line('  1. Confirm config/features.php lists '.$namespace.'\\'.$className.'::class in its providers array');
         $this->line('  2. Implement any optional capability methods your feature supports');
         $this->line('  3. Run "php artisan permissions:list" and "php artisan permissions:sync" to sync permissions');
 
@@ -141,37 +141,98 @@ class MakeFeature extends Command
 
     protected function registerInConfig(string $className, string $namespace): void
     {
-        $configPath = config_path('core.php');
+        $configPath = config_path('features.php');
 
         if (! is_file($configPath)) {
-            $this->warn('config/core.php not found — skipping config registration.');
+            $this->warn('config/features.php not found — skipping config registration.');
 
             return;
         }
 
-        $config = file_get_contents($configPath);
         $fqcn = $namespace.'\\'.$className;
 
-        if (str_contains($config, $fqcn)) {
+        if (! $this->insertProvider($configPath, $fqcn)) {
+            $this->warn('Could not auto-register the provider in config/features.php — add it manually to the providers array.');
+
             return;
         }
 
-        // Append to the "features" array before the closing bracket if present.
-        if (preg_match('/^(\s*)features\s*=>\s*\[/m', $config, $matches, PREG_OFFSET_CAPTURE)) {
-            $indent = $matches[1][0] ?? '        ';
-            $search = "{$indent}];";
-            $replacement = "{$indent}    {$fqcn}::class,\n{$indent}];";
+        $this->info("Registered [{$fqcn}] in config/features.php providers array.");
+    }
 
-            if (str_contains($config, $search)) {
-                $config = Str::replaceLast($search, $replacement, $config);
-                file_put_contents($configPath, $config);
-                $this->info("Registered [{$fqcn}] in config/core.php features array.");
+    /**
+     * Insert the provider class into the `providers` array of a features config
+     * file. The FeatureRegistry only discovers providers listed there, so the
+     * generator has to write to that array — not to config/core.php, which
+     * holds engine gates and has no features list at all.
+     *
+     * Returns false when the file has no `providers` array to extend.
+     */
+    protected function insertProvider(string $configPath, string $fqcn): bool
+    {
+        $config = (string) file_get_contents($configPath);
 
-                return;
+        if (str_contains($config, $fqcn)) {
+            return true;
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $config);
+
+        $start = null;
+
+        foreach ($lines as $index => $line) {
+            if (preg_match("/'providers'\s*=>\s*\[/", $line)) {
+                $start = $index;
+
+                break;
             }
         }
 
-        $this->warn('Could not auto-register the provider in config/core.php — add it manually to the features array.');
+        if ($start === null) {
+            return false;
+        }
+
+        $indent = $this->indentOf($lines[$start]);
+        $entry = $indent.'    '.$fqcn.'::class,';
+
+        // An empty array lives on one line: expand it before inserting.
+        if (preg_match("/'providers'\s*=>\s*\[\s*\],/", $lines[$start])) {
+            $lines[$start] = $indent."'providers' => [\n".$entry."\n".$indent.']';
+
+            file_put_contents($configPath, implode(PHP_EOL, $lines));
+
+            return true;
+        }
+
+        $depth = 0;
+        $end = null;
+
+        for ($index = $start; $index < count($lines); $index++) {
+            $depth += substr_count($lines[$index], '[') - substr_count($lines[$index], ']');
+
+            if ($depth <= 0) {
+                $end = $index;
+
+                break;
+            }
+        }
+
+        if ($end === null) {
+            return false;
+        }
+
+        array_splice($lines, $end, 0, [$entry]);
+
+        file_put_contents($configPath, implode(PHP_EOL, $lines));
+
+        return true;
+    }
+
+    protected function indentOf(string $line): string
+    {
+        preg_match('/^\s*/', $line, $matches);
+
+        return $matches[0] ?? '';
     }
 
     protected function makeDirectory(string $path): void

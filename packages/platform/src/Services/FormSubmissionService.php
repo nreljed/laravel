@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Nreljed\Platform\Events\FormSubmitted;
 use Nreljed\Platform\Jobs\DispatchFormSubmissionNotification;
 use Nreljed\Platform\Models\FormSubmission;
 use Nreljed\Platform\Support\FormRegistry;
@@ -24,6 +25,10 @@ use Nreljed\Platform\Support\FormRegistry;
  * notification fan-out — and guarantees the visitor always receives the same
  * "thank you" redirect whether their submission was stored, rejected as a
  * duplicate, or swallowed by the honeypot.
+ *
+ * A stored submission is also announced through the {@see FormSubmitted} event,
+ * so a feature can turn a submission into a contact or a lead without wrapping
+ * the controller.
  */
 class FormSubmissionService
 {
@@ -77,6 +82,8 @@ class FormSubmissionService
         ], $this->identityColumns($definition, $payload)));
 
         $this->notify($formKey, $submission);
+
+        $this->announce($formKey, $submission, $payload);
 
         return $submission;
     }
@@ -237,6 +244,26 @@ class FormSubmissionService
         } catch (\Throwable $e) {
             Log::error(
                 '[FormSubmissions] Failed to queue notification for '.$formKey
+                .' submission #'.$submission->id.' | Error: '.$e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Announce a stored submission to the application.
+     *
+     * A listener is third-party code: it may throw, and it must never take the
+     * visitor's thank-you redirect down with it.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function announce(string $formKey, FormSubmission $submission, array $payload): void
+    {
+        try {
+            event(new FormSubmitted($formKey, $submission, $payload));
+        } catch (\Throwable $e) {
+            Log::error(
+                '[FormSubmissions] A FormSubmitted listener failed for '.$formKey
                 .' submission #'.$submission->id.' | Error: '.$e->getMessage()
             );
         }
