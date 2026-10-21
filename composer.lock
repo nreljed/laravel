@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1f05d1b5e1abcd6a7df22540af8cd24f",
+    "content-hash": "66d3e663a1ef141c357b47b7f05169fb",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3604,10 +3604,16 @@
         {
             "name": "nreljed/marketing-module",
             "version": "0.1.1",
-            "dist": {
-                "type": "path",
-                "url": "C:/Users/nrelj/Local Sites/marketing-module",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/marketing-module.git",
                 "reference": "bf6e4ccef2c0abdb2f5ae4eb95a0f56f6f3228b9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/bf6e4ccef2c0abdb2f5ae4eb95a0f56f6f3228b9",
+                "reference": "bf6e4ccef2c0abdb2f5ae4eb95a0f56f6f3228b9",
+                "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -3651,18 +3657,25 @@
                 }
             ],
             "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
-            "transport-options": {
-                "symlink": true,
-                "relative": false
-            }
+            "support": {
+                "source": "https://github.com/nreljed/marketing-module/tree/v0.1.1",
+                "issues": "https://github.com/nreljed/marketing-module/issues"
+            },
+            "time": "2026-10-21T17:32:49+00:00"
         },
         {
             "name": "nreljed/platform",
             "version": "0.1.88",
-            "dist": {
-                "type": "path",
-                "url": "C:/Users/nrelj/Local Sites/platform",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:nreljed/platform.git",
                 "reference": "e1abf06f9b7e57bc9f28223a06560f76dacfbef0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/e1abf06f9b7e57bc9f28223a06560f76dacfbef0",
+                "reference": "e1abf06f9b7e57bc9f28223a06560f76dacfbef0",
+                "shasum": ""
             },
             "require": {
                 "inertiajs/inertia-laravel": "^3.0",
@@ -3708,10 +3721,11 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "transport-options": {
-                "symlink": true,
-                "relative": false
-            }
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.88",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
+            "time": "2026-10-21T19:31:57+00:00"
         },
         {
             "name": "nunomaduro/termwind",

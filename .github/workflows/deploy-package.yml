@@ -223,6 +223,39 @@ jobs:
           $size = [Math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Output "deploy.zip created: $size MB"
 
+      - name: Verify deploy.zip carries the nreljed packages
+        # A `path` composer repo installs as a junction, and Compress-Archive does
+        # not follow junctions: the archive then ships an EMPTY vendor/nreljed/*
+        # and the host boots without the platform classes ("Target class [view]
+        # does not exist", every route 500). Fail the build here instead of
+        # shipping that.
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = Join-Path (Get-Location) "deploy.zip"
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            $entries = @{}
+            foreach ($entry in $archive.Entries) { $entries[$entry.FullName] = $entry.Length }
+          } finally {
+            $archive.Dispose()
+          }
+          $required = @(
+            "vendor/nreljed/platform/src/PlatformServiceProvider.php",
+            "vendor/nreljed/blog/composer.json",
+            "vendor/nreljed/marketing-module/src/MarketingServiceProvider.php"
+          )
+          $missing = @()
+          foreach ($needle in $required) {
+            if (-not $entries.ContainsKey($needle) -or $entries[$needle] -le 0) {
+              $missing += $needle
+            }
+          }
+          if ($missing.Count -gt 0) {
+            throw "deploy.zip is missing package files: $($missing -join ', ')"
+          }
+          Write-Output "deploy.zip carries: $($required -join ', ')"
+
       - name: Generate release notes
         shell: pwsh
         run: |

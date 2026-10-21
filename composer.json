@@ -10,26 +10,12 @@
     "license": "MIT",
     "repositories": [
         {
-            "type": "path",
-            "url": "C:/Users/nrelj/Local Sites/platform",
-            "options": {
-                "symlink": true
-            }
-        },
-        {
             "type": "vcs",
             "url": "https://github.com/nreljed/platform.git"
         },
         {
             "type": "vcs",
             "url": "https://github.com/nreljed/blog.git"
-        },
-        {
-            "type": "path",
-            "url": "C:/Users/nrelj/Local Sites/marketing-module",
-            "options": {
-                "symlink": true
-            }
         },
         {
             "type": "vcs",

@@ -40,10 +40,11 @@ const packages = {
     blog: { dir: 'packages/blog', repo: 'https://github.com/nreljed/blog.git' },
     'shop-module': { dir: 'packages/shop-module', repo: 'https://github.com/nreljed/shop-module.git' },
     'booking-module': { dir: 'packages/booking-module', repo: 'https://github.com/nreljed/booking-module.git' },
+    'marketing-module': { dir: 'packages/marketing-module', repo: 'https://github.com/nreljed/marketing-module.git' },
 };
 
 const apps = [
-    { name: 'mono', dir: process.env.SWITCH_COMPOSER_MONO ?? defaultDirs.mono, names: ['platform', 'blog'] },
+    { name: 'mono', dir: process.env.SWITCH_COMPOSER_MONO ?? defaultDirs.mono, names: ['platform', 'blog', 'marketing-module'] },
     { name: 'shop', dir: process.env.SWITCH_COMPOSER_SHOP ?? defaultDirs.shop, names: ['platform', 'blog', 'shop-module'] },
     { name: 'booking', dir: process.env.SWITCH_COMPOSER_BOOKING ?? defaultDirs.booking, names: ['platform', 'blog', 'booking-module'] },
 ];
