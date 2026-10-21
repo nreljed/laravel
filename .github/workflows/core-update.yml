@@ -1,4 +1,4 @@
-name: Core Update (platform + blog)
+name: Core Update (platform + blog + marketing)
 
 on:
   schedule:
@@ -6,7 +6,9 @@ on:
     - cron: "0 9 * * 1"
   workflow_dispatch:
   repository_dispatch:
-    types: [core-updated, blog-updated]
+    # core-updated: nreljed/platform. blog-updated: nreljed/blog.
+    # marketing-updated: nreljed/marketing-module.
+    types: [core-updated, blog-updated, marketing-updated]
 
 permissions:
   contents: write
@@ -56,13 +58,14 @@ jobs:
         with:
           node-version: "26"
 
-      # nreljed/platform (kernel) + nreljed/blog (feature) are private vcs repos;
-      # the single GH_TOKEN authenticates both clones. --no-scripts avoids
-      # booting Laravel in a bare checkout (no .env needed for the lock update).
-      - name: Update platform + blog
+      # nreljed/platform (kernel) + nreljed/blog (feature) + nreljed/marketing-module
+      # (feature) are private vcs repos; the single GH_TOKEN authenticates all
+      # clones. --no-scripts avoids booting Laravel in a bare checkout (no .env
+      # needed for the lock update).
+      - name: Update platform + blog + marketing
         env:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
-        run: composer update nreljed/platform nreljed/blog --with-dependencies --no-scripts --no-interaction
+        run: composer update nreljed/platform nreljed/blog nreljed/marketing-module --with-dependencies --no-scripts --no-interaction
 
       # The workspace app mirrors (apps/laravel.shop, apps/laravel.booking) each
       # carry their own composer.lock, and check:platform-consistency requires

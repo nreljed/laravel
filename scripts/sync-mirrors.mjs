@@ -36,6 +36,7 @@ const MIRROR_IGNORED = new Set([
   ".phpunit.cache",
   ".phpunit.result.cache",
   ".phpstan",
+  ".kilo",
 ]);
 const MIRROR_IGNORED_FILES = new Set([
   "composer.lock",
