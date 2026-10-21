@@ -76,6 +76,7 @@ class ConfigRoleCatalogTest extends TestCase
             'manage-audit-logs',
             'export-audit-logs',
             'manage-email-settings',
+            'manage-submissions',
         ];
 
         foreach (Permission::pluck('slug') as $slug) {
@@ -104,6 +105,7 @@ class ConfigRoleCatalogTest extends TestCase
             'manage-audit-logs',
             'export-audit-logs',
             'manage-email-settings',
+            'manage-submissions',
             'posts.categories.manage',
             'posts.tags.manage',
         ];
