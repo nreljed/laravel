@@ -47,6 +47,26 @@ interface AiUsageSnapshot {
   };
 }
 
+interface AiProviderRow {
+  id: number;
+  provider: string;
+  provider_name: string;
+  masked_key: string;
+  preferred_model: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_tested_at: string | null;
+  last_test_ok: boolean | null;
+}
+
+interface ProviderConfig {
+  name: string;
+  models: string[];
+  default_model?: string | null;
+  testable?: boolean;
+  capabilities?: string[];
+}
+
 export default function Integrations() {
   const { props } = usePage();
 
@@ -76,21 +96,9 @@ export default function Integrations() {
           <AccountSettingsNav />
           <div className="flex-1 min-w-0 space-y-6">
             <AiKeysSection
-              providers={
-                props.aiProviders as Array<{
-                  id: number;
-                  provider: string;
-                  provider_name: string;
-                  masked_key: string;
-                  preferred_model: string | null;
-                  is_active: boolean;
-                  created_at: string;
-                }>
-              }
+              providers={props.aiProviders as AiProviderRow[]}
               supportedProviders={
-                props.supportedProviders as
-                  | Record<string, { name: string; models: string[] }>
-                  | undefined
+                props.supportedProviders as Record<string, ProviderConfig> | undefined
               }
               usageSnapshot={props.aiUsageSnapshot as AiUsageSnapshot | undefined}
             />

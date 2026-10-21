@@ -24,7 +24,23 @@ Route::get('/about', [PublicController::class, 'about'])->name('about');
 Route::get('/services', [PublicController::class, 'services'])->name('services');
 Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
 
-// Throttled per IP so the public form cannot be used to flood the admin inbox.
+/*
+|--------------------------------------------------------------------------
+| Form submission collect endpoints
+|--------------------------------------------------------------------------
+|
+| Every declared form is collectable at POST /forms/{form_key}, with the
+| contact form additionally reachable at POST /contact for the existing
+| public page. Both throttle per form via the `public-form` named limiter,
+| which reads the form's `rate_limit` from config at request time.
+|
+*/
+
 Route::post('/contact', [PublicController::class, 'submit'])
-    ->middleware('throttle:3,1')
+    ->defaults('form_key', 'contact')
+    ->middleware('throttle:public-form')
     ->name('contact.store');
+
+Route::post('/forms/{form_key}', [PublicController::class, 'submit'])
+    ->middleware('throttle:public-form')
+    ->name('forms.store');

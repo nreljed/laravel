@@ -225,6 +225,25 @@ final class NavItemsFeatureRegistryTest extends TestCase
         );
     }
 
+    public function test_every_top_level_nav_item_carries_an_icon(): void
+    {
+        $this->register(FlatModule::class);
+        $this->register(DescriptorlessModule::class);
+
+        $items = $this->registry()->getAllNavItems();
+
+        $this->assertNotEmpty($items);
+
+        foreach ($items as $item) {
+            $this->assertArrayHasKey(
+                'icon',
+                $item,
+                'A nav item without an icon renders as a blank row in the sidebar.',
+            );
+            $this->assertNotSame('', $item['icon']);
+        }
+    }
+
     public function test_a_provider_returning_several_collapsible_groups_is_left_alone(): void
     {
         $this->register(AmbiguousModule::class);

@@ -91,6 +91,9 @@ importers:
       '@nreljed/blog':
         specifier: workspace:*
         version: link:packages/blog
+      '@nreljed/marketing-module':
+        specifier: workspace:*
+        version: link:packages/marketing-module
       '@nreljed/platform':
         specifier: workspace:*
         version: link:packages/platform
@@ -436,7 +439,7 @@ importers:
         version: 4.1.1
       axios:
         specifier: ^1.20.0
-        version: 1.20.0(debug@4.4.3)
+        version: 1.20.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -752,7 +755,7 @@ importers:
         version: 4.1.1
       axios:
         specifier: ^1.20.0
-        version: 1.20.0(debug@4.4.3)
+        version: 1.20.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1091,6 +1094,46 @@ importers:
       zod:
         specifier: ^4.4.3
         version: 4.6.4
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.3.0(@types/react@19.3.0)
+
+  packages/marketing-module:
+    dependencies:
+      '@inertiajs/core':
+        specifier: 3.8.0
+        version: 3.8.0(axios@1.20.0)
+      '@inertiajs/react':
+        specifier: 3.8.0
+        version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@tanstack/react-table':
+        specifier: ^9.2.3
+        version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      date-fns:
+        specifier: ^4.0.0
+        version: 4.4.0
+      lucide-react:
+        specifier: ^1.44.0
+        version: 1.51.0(@types/react@19.3.0)(react@19.3.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+      react-day-picker:
+        specifier: ^10.0.1
+        version: 10.0.2(@types/react@19.3.0)(react@19.3.0)
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.0(react@19.3.0)
+      react-hook-form:
+        specifier: ^7.87.0
+        version: 7.89.0(@types/react@19.3.0)(react@19.3.0)
+      zod:
+        specifier: ^4.4.3
+        version: 4.6.5
     devDependencies:
       '@types/react':
         specifier: ^19.0.0
@@ -6823,7 +6866,7 @@ snapshots:
       es-toolkit: 1.52.0
       laravel-precognition: 2.1.0(axios@1.20.0)
     optionalDependencies:
-      axios: 1.20.0(debug@4.4.3)
+      axios: 1.20.0
 
   '@inertiajs/react@3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -8129,9 +8172,9 @@ snapshots:
 
   attr-accept@4.0.0: {}
 
-  axios@1.20.0(debug@4.4.3):
+  axios@1.20.0:
     dependencies:
-      follow-redirects: 1.16.0(debug@4.4.3)
+      follow-redirects: 1.16.0
       form-data: 4.0.6
       https-proxy-agent: 5.0.1
       proxy-from-env: 2.1.0
@@ -8968,9 +9011,7 @@ snapshots:
 
   flatted@3.4.4: {}
 
-  follow-redirects@1.16.0(debug@4.4.3):
-    optionalDependencies:
-      debug: 4.4.3
+  follow-redirects@1.16.0: {}
 
   form-data@4.0.6:
     dependencies:
@@ -9311,7 +9352,7 @@ snapshots:
     dependencies:
       es-toolkit: 1.52.0
     optionalDependencies:
-      axios: 1.20.0(debug@4.4.3)
+      axios: 1.20.0
 
   laravel-vite-plugin@3.2.0(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)):
     dependencies:

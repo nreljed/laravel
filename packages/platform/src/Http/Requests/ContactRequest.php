@@ -4,6 +4,15 @@ namespace Nreljed\Platform\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * Legacy form request for the contact form.
+ *
+ * The collect path no longer type-hints this class — FormSubmissionService
+ * builds its rules from the `contact` entry in config/forms.php. This request
+ * is retained so a consumer type-hinting it keeps working, and
+ * FormSubmissionsContractTest pins its rules to the registry's output so the
+ * two can never silently drift.
+ */
 class ContactRequest extends FormRequest
 {
     public function authorize(): bool

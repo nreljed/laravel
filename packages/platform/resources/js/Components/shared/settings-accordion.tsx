@@ -24,6 +24,7 @@ interface SettingsAccordionItemProps {
   isOpen?: boolean;
   onOpenChange?: (_open: boolean) => void;
   persist?: boolean;
+  trailing?: React.ReactNode;
 }
 
 function SettingsAccordionItem({
@@ -38,6 +39,7 @@ function SettingsAccordionItem({
   isOpen: controlledIsOpen,
   onOpenChange,
   persist = false,
+  trailing,
 }: SettingsAccordionItemProps) {
   const isDestructive = variant === "destructive";
   const controlled = controlledIsOpen !== undefined;
@@ -88,7 +90,7 @@ function SettingsAccordionItem({
         <AccordionItem value={value} className="border-0 m-0">
           <AccordionTrigger
             className={cn(
-              "hover:no-underline transition-colors px-4 py-3",
+              "hover:no-underline transition-colors px-4 py-3 items-center",
               isDestructive ? "hover:bg-destructive/10" : "hover:bg-muted/50",
             )}
           >
@@ -117,6 +119,7 @@ function SettingsAccordionItem({
                 )}
               </div>
             </div>
+            {trailing}
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-4 pt-4 pb-3 px-4 border-t border-border">{children}</div>
@@ -139,6 +142,7 @@ interface SettingsAccordionItemConfig {
   isOpen?: boolean;
   onOpenChange?: (_open: boolean) => void;
   persist?: boolean;
+  trailing?: React.ReactNode;
 }
 
 function SettingsAccordion({
@@ -169,6 +173,7 @@ function SettingsAccordion({
           isOpen={item.isOpen}
           onOpenChange={item.onOpenChange}
           persist={item.persist ?? persist}
+          trailing={item.trailing}
         >
           {item.content}
         </SettingsAccordionItem>

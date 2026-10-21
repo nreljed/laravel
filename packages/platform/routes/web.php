@@ -7,9 +7,9 @@ use Inertia\Inertia;
 use Nreljed\Platform\Http\Controllers\AccountDataController;
 use Nreljed\Platform\Http\Controllers\Admin\AuditLogController;
 use Nreljed\Platform\Http\Controllers\Admin\BulkUserController;
-use Nreljed\Platform\Http\Controllers\Admin\ContactSubmissionController;
 use Nreljed\Platform\Http\Controllers\Admin\DatabaseMaintenanceController;
 use Nreljed\Platform\Http\Controllers\Admin\FeatureController;
+use Nreljed\Platform\Http\Controllers\Admin\FormSubmissionController;
 use Nreljed\Platform\Http\Controllers\Admin\ImpersonationController;
 use Nreljed\Platform\Http\Controllers\Admin\IpAccessRuleController;
 use Nreljed\Platform\Http\Controllers\Admin\PermissionController;
@@ -288,12 +288,25 @@ Route::middleware(['auth', 'maintenance', 'throttle:60,1'])->prefix('dashboard/a
         Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->middleware('permission:export-audit-logs')->name('audit-logs.export');
     });
 
-    // Public contact form submissions
+    // Form submissions — one universal inbox for every declared form.
+    Route::middleware('permission:manage-submissions')->prefix('/submissions')->name('submissions.')->group(function () {
+        Route::get('/', [FormSubmissionController::class, 'index'])->name('index');
+        Route::post('/bulk', [FormSubmissionController::class, 'bulk'])->name('bulk');
+        Route::get('/export', [FormSubmissionController::class, 'export'])->name('export');
+        Route::get('/{submission}', [FormSubmissionController::class, 'show'])->name('show');
+        Route::patch('/{submission}', [FormSubmissionController::class, 'update'])->name('update');
+        Route::delete('/{submission}', [FormSubmissionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Per-form view kept at the legacy contact path so every existing
+    // notification link (dashboard/admin/contact/{id}) keeps resolving.
     Route::middleware('permission:manage-contact')->prefix('/contact')->name('contact.')->group(function () {
-        Route::get('/', [ContactSubmissionController::class, 'index'])->name('index');
-        Route::get('/{submission}', [ContactSubmissionController::class, 'show'])->name('show');
-        Route::patch('/{submission}', [ContactSubmissionController::class, 'update'])->name('update');
-        Route::delete('/{submission}', [ContactSubmissionController::class, 'destroy'])->name('destroy');
+        Route::get('/', [FormSubmissionController::class, 'index'])->defaults('form_key', 'contact')->name('index');
+        Route::get('/export', [FormSubmissionController::class, 'export'])->defaults('form_key', 'contact')->name('export');
+        Route::post('/bulk', [FormSubmissionController::class, 'bulk'])->defaults('form_key', 'contact')->name('bulk');
+        Route::get('/{submission}', [FormSubmissionController::class, 'show'])->defaults('form_key', 'contact')->name('show');
+        Route::patch('/{submission}', [FormSubmissionController::class, 'update'])->defaults('form_key', 'contact')->name('update');
+        Route::delete('/{submission}', [FormSubmissionController::class, 'destroy'])->defaults('form_key', 'contact')->name('destroy');
     });
 
     // Developer tools (admin only)

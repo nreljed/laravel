@@ -33,12 +33,15 @@
         "paths": {
             "@nreljed/platform/*": ["packages/platform/resources/js/*"],
             "@nreljed/blog/*": ["packages/blog/src/Resources/js/*"],
-            "@nreljed/shop-module/*": ["packages/shop-module/src/Resources/js/*"]
+            "@nreljed/shop-module/*": ["packages/shop-module/src/Resources/js/*"],
+            "@nreljed/marketing-module/*": ["packages/marketing-module/src/Resources/js/*"]
         }
     },
     "include": [
         "packages/shop-module/src/Resources/js/**/*.ts",
         "packages/shop-module/src/Resources/js/**/*.tsx",
+        "packages/marketing-module/src/Resources/js/**/*.ts",
+        "packages/marketing-module/src/Resources/js/**/*.tsx",
         "packages/blog/src/Resources/js/**/*.ts",
         "packages/blog/src/Resources/js/**/*.tsx",
         "packages/platform/resources/js/types/**/*.d.ts",

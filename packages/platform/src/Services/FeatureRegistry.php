@@ -2,6 +2,7 @@
 
 namespace Nreljed\Platform\Services;
 
+use Composer\InstalledVersions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Contracts\FeatureProvider;
@@ -10,6 +11,14 @@ use Nreljed\Platform\Support\ResourceDefinition;
 
 class FeatureRegistry
 {
+    /**
+     * Icon used when a nav item reaches the sidebar without one.
+     *
+     * Every top-level nav entry is rendered as an icon plus a title, so an
+     * item that arrives without an icon would render as a blank row.
+     */
+    public const string DEFAULT_NAV_ICON = 'FileText';
+
     /** @var array<string, FeatureProvider> */
     protected array $providers = [];
 
@@ -181,7 +190,7 @@ class FeatureRegistry
                 }
 
                 if ($resourceItems === []) {
-                    $items = [...$items, ...$providerItems];
+                    $items = [...$items, ...array_map($this->withNavIcon(...), $providerItems)];
 
                     continue;
                 }
@@ -194,25 +203,49 @@ class FeatureRegistry
                 $groupIndex = $this->collapsibleGroupIndex($providerItems);
 
                 if ($groupIndex === null) {
-                    $items = [...$items, ...$providerItems];
+                    $items = [...$items, ...array_map($this->withNavIcon(...), $providerItems)];
 
                     // No group to nest into, so the resources need a heading of their own.
                     foreach ($resourceItems as $resourceItem) {
-                        $items[] = ['groupLabel' => 'Resources', ...$resourceItem];
+                        $items[] = $this->withNavIcon(['groupLabel' => 'Resources', ...$resourceItem]);
                     }
 
                     continue;
                 }
 
                 foreach ($providerItems as $index => $item) {
-                    $items[] = $index === $groupIndex
-                        ? $this->withResourceSubItems($item, $resourceItems)
-                        : $item;
+                    $items[] = $this->withNavIcon(
+                        $index === $groupIndex
+                            ? $this->withResourceSubItems($item, $resourceItems)
+                            : $item
+                    );
                 }
             }
 
             return $items;
         });
+    }
+
+    /**
+     * Guarantee a nav item carries an icon.
+     *
+     * A top-level nav entry is rendered as an icon plus a title, so an item
+     * that arrives without one would render as a blank row. Providers that
+     * declare their own icon keep it; everything else falls back to the
+     * generic file icon.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    protected function withNavIcon(array $item): array
+    {
+        $icon = $item['icon'] ?? null;
+
+        if (! is_string($icon) || $icon === '') {
+            $item['icon'] = self::DEFAULT_NAV_ICON;
+        }
+
+        return $item;
     }
 
     /**
@@ -849,8 +882,23 @@ class FeatureRegistry
             return 'unknown';
         }
 
-        $file = str_replace('\\', '/', $file);
-        $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
+        $file = $this->normalizePath($file);
+
+        if ($file === '') {
+            return 'unknown';
+        }
+
+        // A vendor directory installed through a symlink or a Windows junction
+        // resolves to its real location, so the provider file no longer sits
+        // under base_path(). Compare against the real path of the platform
+        // package before falling back to the path-relative checks.
+        foreach ($this->platformSourcePaths() as $platformPath) {
+            if ($file === $platformPath || str_starts_with($file, $platformPath.'/')) {
+                return 'platform';
+            }
+        }
+
+        $base = rtrim($this->normalizePath(base_path()), '/').'/';
 
         if (str_starts_with($file, $base.'vendor/nreljed/platform/')) {
             return 'platform';
@@ -873,6 +921,46 @@ class FeatureRegistry
         }
 
         return 'unknown';
+    }
+
+    /**
+     * Real paths of every location the platform package can be loaded from.
+     *
+     * @return list<string>
+     */
+    protected function platformSourcePaths(): array
+    {
+        $paths = [];
+
+        try {
+            $installed = InstalledVersions::getInstallPath('nreljed/platform');
+
+            if (is_string($installed)) {
+                $paths[] = $installed;
+            }
+        } catch (\Throwable) {
+            // The platform is not installed as a composer package in this
+            // application - the workspace checks below still apply.
+        }
+
+        $paths[] = base_path('packages/platform');
+
+        $normalized = [];
+
+        foreach ($paths as $path) {
+            $real = realpath($path);
+            $normalized[] = rtrim($this->normalizePath($real !== false ? $real : $path), '/');
+        }
+
+        return array_values(array_unique(array_filter($normalized)));
+    }
+
+    /**
+     * Normalise a filesystem path for prefix comparisons.
+     */
+    protected function normalizePath(string $path): string
+    {
+        return str_replace('\\', '/', $path);
     }
 
     /**

@@ -7,7 +7,7 @@ provider keys in the account → Integrations page; agents resolve the key per u
 
 | Model             | Table                | Notes                                                                                                                                                                                                                                                                                          |
 | ----------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AiProvider`      | `ai_providers`       | Per-user provider config: `provider` (slug, e.g. `openai`), `api_key_encrypted` (written through the `api_key` attribute via `Crypt::encryptString()`), `preferred_model`, `is_active`. `getDecryptedKey()`, `getMaskedKey()`, scopes `active()` / `forProvider()`, `supportedProviders()` list. |
+| `AiProvider`      | `ai_providers`       | Per-user provider config: `provider` (slug, e.g. `openai`), `api_key_encrypted` (written through the `api_key` attribute via `Crypt::encryptString()`), `preferred_model`, `is_active`, plus stored-test status `last_tested_at` / `last_test_ok`. `getDecryptedKey()`, `getMaskedKey()`, scopes `active()` / `forProvider()`, `supportedProviders()` catalog (name, models, `default_model`, `testable`, `capabilities`). |
 | `AiUsageLog`      | `ai_usage_logs`      | Best-effort usage logging per request: user, agent, provider, model, `input_tokens`, `output_tokens`, `cost_cents` (fractional cents), `latency_ms`, `error`. Error rows are excluded from rollups.                                                                                             |
 | `AiUsageSetting`  | `ai_usage_settings`  | One row per user (`user_id` is the primary key) holding the soft daily caps: `cap_requests`, `cap_cents` (spend in cents). The legacy `cap_tokens` column still exists but is **ignored** — never read or written.                                                                               |
 
@@ -76,12 +76,20 @@ BYOK traits above. Structured output is available via `HasStructuredOutput` +
 ## Controller & UI
 
 - `AiProviderController` (`/dashboard/account/integrations`) — CRUD for the user's provider
-  keys, `test()` endpoint validating connectivity, `usage()` returning the usage snapshot, and
-  `usage-cap` persisting the daily request + spend caps. Authorized via `AiProviderPolicy`.
-- Account "Integrations" page (`dashboard/account/integrations.tsx`) — add OpenAI/Anthropic/
-  etc. key, pick model, set default, test, delete. Key is masked after save. The usage panel
-  shows today's requests, tokens and **spend** per provider, the progress bars against each
-  cap, and a cap dialog with "Requests per day" + "Spend per day (USD)".
+  keys, `test()` validating a key *before* save, `testStored` (`POST /ai-keys/{id}/test`)
+  re-testing a *saved* key and recording `last_test_ok` + `last_tested_at` on the row,
+  `usage()` returning the usage snapshot, and `usage-cap` persisting the daily request + spend
+  caps. Both test paths share one runner (`runConnectionTest()`) so they exercise the same SDK
+  driver stack; non-testable providers (`testable: false`, e.g. Ollama) are rejected with 422.
+  Authorized via `AiProviderPolicy`.
+- Account "Integrations" page (`dashboard/account/integrations.tsx` + `AiKeysSection`) —
+  per-provider accordion cards with a **status pill** (Connected / Active / Failed / Disabled
+  from `last_test_ok` and today's `last_error`), masked key, Replace / Remove, preferred-model
+  select, **Test connection** (stored-key round-trip with "Last tested …" timestamp),
+  capability badges, per-provider usage bars (warning color at 80% of cap), and Enable /
+  Disable. Unconfigured providers appear in an **Available providers** list with per-row
+  Configure. A separate **Usage & Limits** accordion shows today's totals against the caps and
+  an inline **Daily soft limits** form (requests/day + spend/day, UTC reset note).
 - SeoAgent UI lives in the Blog post form (SEO tab, "Generate" + bulk actions).
 
 ## Patterns (per `AGENTS.md` — Laravel AI SDK)

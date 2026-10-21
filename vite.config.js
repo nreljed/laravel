@@ -15,6 +15,7 @@ export default defineConfig({
                 'app/**/Resources/js/**',
                 'packages/platform/resources/js/**',
                 'packages/blog/src/Resources/js/**',
+                'packages/marketing-module/src/Resources/js/**',
             ],
         }),
         react(),

@@ -122,6 +122,8 @@ class UserAccountController extends Controller
                 'preferred_model' => $provider->preferred_model,
                 'is_active' => $provider->is_active,
                 'created_at' => $provider->created_at?->toDateString(),
+                'last_tested_at' => $provider->last_tested_at?->toDateTimeString(),
+                'last_test_ok' => $provider->last_test_ok,
             ]);
 
         return Inertia::render('dashboard/account/integrations', [

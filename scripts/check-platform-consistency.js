@@ -294,6 +294,7 @@ function compareAcrossApps(label, keyPackages, resolveVersion, fixHint) {
  *   - node_modules / vendor: install output, never tracked.
  *   - .github: CI config belongs to the owning repo, not the mirror payload.
  *   - .phpunit.cache / .phpstan / .phpunit.result.cache: local tool caches.
+ *   - .kilo: agent worktrees, local checkouts that are never shipped.
  */
 const MIRROR_IGNORED = new Set([
   ".git",
@@ -303,6 +304,7 @@ const MIRROR_IGNORED = new Set([
   ".phpunit.cache",
   ".phpunit.result.cache",
   ".phpstan",
+  ".kilo",
 ]);
 const MIRROR_IGNORED_FILES = new Set([
   "composer.lock",

@@ -1,5 +1,6 @@
 import type { FoundationAppConfig, PageImport } from "@nreljed/platform/app";
 import { registerBlogPages } from "@nreljed/blog/pages";
+import { registerMarketingPages } from "@nreljed/marketing-module/pages";
 import { registerCoreTemplates } from "@nreljed/platform/dashboard";
 
 /**
@@ -14,6 +15,7 @@ export const pageConfig: FoundationAppConfig = {
   basePages: {
     ...registerCoreTemplates(),
     ...registerBlogPages(),
+    ...registerMarketingPages(),
   },
   pageOverrides: {
     // Project-owned THEME pages — override core's template pages, applied last.

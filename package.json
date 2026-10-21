@@ -123,6 +123,7 @@
     "@lexical/table": "^0.49.0",
     "@lexical/utils": "^0.49.0",
     "@nreljed/blog": "workspace:*",
+    "@nreljed/marketing-module": "workspace:*",
     "@nreljed/platform": "workspace:*",
     "@shadcn/react": "^0.3.0",
     "@shikijs/engine-javascript": "^4.5.0",

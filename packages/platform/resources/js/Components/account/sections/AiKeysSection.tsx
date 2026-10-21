@@ -1,27 +1,19 @@
 import { router } from "@inertiajs/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Brain,
-  Plus,
-  MoreHorizontal,
+  Activity,
   CheckCircle2,
-  XCircle,
-  Loader2,
+  CircleDashed,
   Eye,
   EyeOff,
-  Activity,
-  Gauge,
-  AlertTriangle,
+  KeyRound,
+  Plug,
+  Plus,
+  XCircle,
 } from "lucide-react";
 import { Button } from "../../ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../../ui/dropdown-menu";
-import { SettingsAccordionItem } from "../../shared/settings-accordion";
+import { Badge } from "../../ui/badge";
+import { StatusBadge } from "../../ui/status-badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../ui/alert-dialog";
+import { SettingsAccordionItem } from "../../shared/settings-accordion";
 import {
   Dialog,
   DialogContent,
@@ -60,11 +53,16 @@ interface AiProvider {
   preferred_model: string | null;
   is_active: boolean;
   created_at: string;
+  last_tested_at: string | null;
+  last_test_ok: boolean | null;
 }
 
 interface ProviderConfig {
   name: string;
   models: string[];
+  default_model?: string | null;
+  testable?: boolean;
+  capabilities?: string[];
 }
 
 interface ProviderUsage {
@@ -97,39 +95,170 @@ interface AiKeysSectionProps {
   usageSnapshot?: AiUsageSnapshot;
 }
 
-/** Format stored fractional cents as a dollar string (spend-cap UI). */
-function fmtCost(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
+const CAPABILITY_LABELS: Record<string, string> = {
+  chat: "Chat",
+  streaming: "Streaming",
+  structured_output: "Structured output",
+  embeddings: "Embeddings",
+  audio: "Audio",
+  transcription: "Transcription",
+  images: "Images",
+  local: "Local",
+};
 
 const DEFAULT_SUPPORTED_PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: "OpenAI",
     models: ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5", "o4-mini"],
+    default_model: "gpt-5.6-luna",
+    testable: true,
+    capabilities: ["chat", "streaming", "structured_output", "embeddings", "audio", "transcription"],
   },
   anthropic: {
     name: "Anthropic",
     models: ["claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5"],
+    default_model: "claude-sonnet-5",
+    testable: true,
+    capabilities: ["chat", "streaming", "structured_output"],
   },
   gemini: {
     name: "Google Gemini",
     models: ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-pro"],
+    default_model: "gemini-3.5-flash-lite",
+    testable: true,
+    capabilities: ["chat", "streaming", "structured_output", "images"],
   },
   mistral: {
     name: "Mistral",
     models: ["mistral-medium-latest", "mistral-small-latest", "mistral-large-latest"],
+    default_model: "mistral-small-latest",
+    testable: true,
+    capabilities: ["chat", "streaming", "structured_output"],
   },
-  deepseek: { name: "DeepSeek", models: ["deepseek-chat", "deepseek-reasoner"] },
-  xai: { name: "xAI (Grok)", models: ["grok-4.5", "grok-4.3", "grok-4.20-reasoning"] },
-  ollama: { name: "Ollama (Local)", models: [] },
+  deepseek: {
+    name: "DeepSeek",
+    models: ["deepseek-chat", "deepseek-reasoner"],
+    default_model: "deepseek-chat",
+    testable: true,
+    capabilities: ["chat", "streaming", "structured_output"],
+  },
+  xai: {
+    name: "xAI (Grok)",
+    models: ["grok-4.5", "grok-4.3", "grok-4.20-reasoning"],
+    default_model: "grok-4.3",
+    testable: true,
+    capabilities: ["chat", "streaming", "structured_output"],
+  },
+  ollama: {
+    name: "Ollama (Local)",
+    models: [],
+    default_model: "llama3.2",
+    testable: false,
+    capabilities: ["chat", "streaming", "structured_output", "local"],
+  },
 };
 
+const fmtInt = (n: number) => n.toLocaleString("en-US");
+const fmtCost = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const usagePercent = (used: number, cap: number) =>
+  cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+
+function formatLatency(ms: number | null): string | null {
+  if (ms == null || ms <= 0) return null;
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+}
+
+function providerStatus(provider: AiProvider, usage?: AiUsageSnapshot) {
+  if (!provider.is_active) return { label: "Disabled" as const, variant: null };
+  const usageEntry = usage?.today.providers[provider.provider];
+  if (provider.last_test_ok === false || usageEntry?.last_error) {
+    return { label: "Failed" as const, variant: "critical" as const };
+  }
+  return provider.last_test_ok === true
+    ? { label: "Connected" as const, variant: "success" as const }
+    : { label: "Active" as const, variant: "info" as const };
+}
+
+function ProviderStatusPill({
+  provider,
+  usage,
+}: {
+  provider: AiProvider;
+  usage?: AiUsageSnapshot;
+}) {
+  const status = providerStatus(provider, usage);
+  if (status.variant === null) {
+    return (
+      <Badge variant="outline" className="shrink-0 text-muted-foreground border-border">
+        {status.label}
+      </Badge>
+    );
+  }
+  return (
+    <StatusBadge variant={status.variant} className="shrink-0">
+      {status.label}
+    </StatusBadge>
+  );
+}
+
+function UsageBar({ label, used, cap }: { label: string; used: number; cap: number }) {
+  const pct = usagePercent(used, cap);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="text-foreground tabular-nums">
+          {fmtInt(used)} / {fmtInt(cap)} ({pct}%)
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full transition-all ${
+            pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-warning" : "bg-primary"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CostUsageBar({
+  label,
+  usedCents,
+  capCents,
+}: {
+  label: string;
+  usedCents: number;
+  capCents: number;
+}) {
+  const pct = usagePercent(usedCents, capCents);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="text-foreground tabular-nums">
+          {fmtCost(usedCents)} / {fmtCost(capCents)} ({pct}%)
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full transition-all ${
+            pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-warning" : "bg-primary"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function AiKeysSection({
-  providers: providersProp,
+  providers: providersProp = [],
   supportedProviders: supportedProp,
   usageSnapshot,
 }: AiKeysSectionProps) {
-  const providers = providersProp ?? [];
+  const providers = providersProp;
   const supportedProviders = supportedProp ?? DEFAULT_SUPPORTED_PROVIDERS;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -138,20 +267,33 @@ export default function AiKeysSection({
   const [preferredModel, setPreferredModel] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
+    null,
+  );
   const [saving, setSaving] = useState(false);
 
   const [deleteProviderId, setDeleteProviderId] = useState<number | null>(null);
 
-  const [capDialogOpen, setCapDialogOpen] = useState(false);
   const [capRequests, setCapRequests] = useState(String(usageSnapshot?.cap.requests ?? 100));
   const [capSpend, setCapSpend] = useState(
     String(((usageSnapshot?.cap.cost_cents ?? 500) / 100).toFixed(2)),
   );
   const [savingCaps, setSavingCaps] = useState(false);
 
-  const availableProviders = Object.entries(supportedProviders).filter(([key]) =>
-    providers.every((p) => p.provider !== key),
+  const [storedTestingId, setStoredTestingId] = useState<number | null>(null);
+  const [storedTestResults, setStoredTestResults] = useState<
+    Record<number, { success: boolean; message: string }>
+  >({});
+
+  useEffect(() => {
+    if (!usageSnapshot) return;
+    setCapRequests(String(usageSnapshot.cap.requests));
+    setCapSpend((usageSnapshot.cap.cost_cents / 100).toFixed(2));
+  }, [usageSnapshot?.cap.requests, usageSnapshot?.cap.cost_cents]);
+
+  const configuredProviderKeys = new Set(providers.map((p) => p.provider));
+  const unconfiguredEntries = Object.entries(supportedProviders).filter(
+    ([key]) => !configuredProviderKeys.has(key),
   );
 
   function resetDialog() {
@@ -161,6 +303,16 @@ export default function AiKeysSection({
     setShowKey(false);
     setTesting(false);
     setTestResult(null);
+  }
+
+  function openReplaceDialog(provider: AiProvider) {
+    setSelectedProvider(provider.provider);
+    setApiKey("");
+    setPreferredModel(provider.preferred_model ?? "");
+    setShowKey(false);
+    setTesting(false);
+    setTestResult(null);
+    setDialogOpen(true);
   }
 
   async function handleTest() {
@@ -179,23 +331,18 @@ export default function AiKeysSection({
         }),
       });
 
-      if (!response.ok) {
-        let data: Record<string, string> = {};
-        try {
-          data = await response.json();
-        } catch {
-          /*
-          ignore parse errors
-          */
-        }
-        const msg =
-          data?.api_key ??
-          data?.provider ??
-          data?.message ??
-          "Connection failed. Please check your API key.";
-        setTestResult({ success: false, message: msg });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success) {
+        setTestResult({
+          success: true,
+          message: data.message || "Connection verified successfully.",
+        });
       } else {
-        setTestResult({ success: true, message: "Connection verified successfully." });
+        setTestResult({
+          success: false,
+          message: data.message || "Connection failed. Please check your API key.",
+        });
       }
     } catch {
       setTestResult({ success: false, message: "Connection failed. Please check your API key." });
@@ -241,6 +388,7 @@ export default function AiKeysSection({
       route("dashboard.account.ai-keys.update", provider.id),
       { is_active: !provider.is_active },
       {
+        preserveState: true,
         onSuccess: () =>
           toast.add({
             title: provider.is_active ? "Provider disabled" : "Provider enabled",
@@ -263,11 +411,53 @@ export default function AiKeysSection({
     );
   }
 
+  async function handleStoredTest(provider: AiProvider) {
+    setStoredTestingId(provider.id);
+
+    try {
+      const response = await fetch(route("dashboard.account.ai-keys.test-stored", provider.id), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      setStoredTestResults((prev) => ({
+        ...prev,
+        [provider.id]: {
+          success: response.ok && data.success === true,
+          message:
+            data.message ||
+            (response.ok
+              ? "Connection verified successfully."
+              : "Connection failed. Please check your API key."),
+        },
+      }));
+
+      // Pull refreshed props so last_test_ok / last_tested_at in the status
+      // pill reflect the test that just ran.
+      router.reload({ only: ["aiProviders"] });
+    } catch {
+      setStoredTestResults((prev) => ({
+        ...prev,
+        [provider.id]: { success: false, message: "Connection failed." },
+      }));
+    } finally {
+      setStoredTestingId(null);
+    }
+  }
+
   function handleSaveCaps() {
     const requests = Number(capRequests);
     const spend = Number(capSpend);
-    if (!Number.isFinite(requests) || requests < 1 || !Number.isFinite(spend) || spend < 0.01 || spend > 1000) {
-      toast.add({ title: "Enter valid caps (requests ≥ 1, spend $0.01–$1000)", type: "error" });
+    if (
+      !Number.isFinite(requests) ||
+      requests < 1 ||
+      !Number.isFinite(spend) ||
+      spend < 0.01 ||
+      spend > 1000
+    ) {
+      toast.add({ title: "Enter valid daily limits (min 1 request / $0.01, max $1,000)", type: "error" });
       return;
     }
     setSavingCaps(true);
@@ -277,17 +467,15 @@ export default function AiKeysSection({
       { requests, cost_cents: Math.round(spend * 100) },
       {
         preserveState: true,
-        onSuccess: () => {
-          toast.add({ title: "Usage caps updated", type: "success" });
-          setCapDialogOpen(false);
-        },
-        onError: () => toast.add({ title: "Failed to update usage caps", type: "error" }),
+        onSuccess: () => toast.add({ title: "Daily AI usage limits updated", type: "success" }),
+        onError: () => toast.add({ title: "Failed to update limits", type: "error" }),
         onFinish: () => setSavingCaps(false),
       },
     );
   }
 
   const selectedConfig = supportedProviders[selectedProvider];
+  const isReplacing = providers.some((p) => p.provider === selectedProvider);
 
   const addProviderButton = (
     <Dialog
@@ -297,41 +485,47 @@ export default function AiKeysSection({
         if (!open) resetDialog();
       }}
     >
-      <DialogTrigger render={<Button size="sm" disabled={availableProviders.length === 0} />}>
+      <DialogTrigger render={<Button size="sm" disabled={unconfiguredEntries.length === 0} />}>
         <Plus className="mr-2 h-4 w-4" />
         Add Provider
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add AI Provider</DialogTitle>
+          <DialogTitle>
+            {isReplacing
+              ? `Replace ${selectedConfig?.name ?? selectedProvider} key`
+              : "Add AI Provider"}
+          </DialogTitle>
           <DialogDescription>
             Enter your API key to enable AI features. Your key is encrypted and stored securely.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="provider-select">Provider</Label>
-            <Select
-              value={selectedProvider}
-              onValueChange={(value) => {
-                setSelectedProvider(value ?? "");
-                setPreferredModel("");
-                setTestResult(null);
-              }}
-            >
-              <SelectTrigger id="provider-select">
-                <SelectValue placeholder="Select a provider" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableProviders.map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!isReplacing && (
+            <div className="space-y-2">
+              <Label htmlFor="provider-select">Provider</Label>
+              <Select
+                value={selectedProvider}
+                onValueChange={(value) => {
+                  setSelectedProvider(value ?? "");
+                  setPreferredModel("");
+                  setTestResult(null);
+                }}
+              >
+                <SelectTrigger id="provider-select" className="w-full">
+                  <SelectValue placeholder="Select a provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {unconfiguredEntries.map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {selectedProvider && (
             <div className="space-y-2">
@@ -346,7 +540,7 @@ export default function AiKeysSection({
                     setTestResult(null);
                   }}
                   placeholder={
-                    selectedProvider === "ollama"
+                    selectedConfig?.testable === false
                       ? "Enter any value (e.g. 'ollama')"
                       : `Enter your ${selectedConfig?.name ?? ""} API key`
                   }
@@ -372,7 +566,7 @@ export default function AiKeysSection({
                 value={preferredModel}
                 onValueChange={(value) => setPreferredModel(value ?? "")}
               >
-                <SelectTrigger id="preferred-model">
+                <SelectTrigger id="preferred-model" className="w-full">
                   <SelectValue placeholder="Use default model" />
                 </SelectTrigger>
                 <SelectContent>
@@ -390,7 +584,7 @@ export default function AiKeysSection({
             <div
               className={`flex items-start gap-2 text-sm p-3 rounded-md ${
                 testResult.success
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                  ? "bg-status-success/10 text-status-success"
                   : "bg-destructive/10 text-destructive"
               }`}
             >
@@ -408,257 +602,100 @@ export default function AiKeysSection({
           <Button variant="outline" onClick={() => setDialogOpen(false)}>
             Cancel
           </Button>
-          {selectedProvider && selectedProvider !== "ollama" && (
+          {selectedProvider && selectedConfig?.testable !== false && (
             <Button variant="outline" onClick={handleTest} disabled={!apiKey || testing}>
-              {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Test
+              {testing ? "Testing..." : "Test"}
             </Button>
           )}
           <Button onClick={handleSave} disabled={!selectedProvider || !apiKey || saving}>
-            {saving ? "Saving..." : "Save"}
+            {saving ? "Saving..." : isReplacing ? "Replace" : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+
+  const usageAccordion = usageSnapshot ? (
+    <SettingsAccordionItem value="ai-usage" icon={Activity} title="Usage & Limits">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-foreground">
+            Today&apos;s AI usage — all providers
+          </p>
+          <span className="text-xs text-muted-foreground">{usageSnapshot.today.date}</span>
+        </div>
+
+        {usageSnapshot.today.totals.requests === 0 &&
+        usageSnapshot.today.totals.tokens === 0 &&
+        usageSnapshot.today.totals.cost_cents === 0 ? (
+          <p className="text-sm text-muted-foreground">No AI usage recorded yet today.</p>
+        ) : (
+          <>
+            <UsageBar
+              label="Requests today"
+              used={usageSnapshot.today.totals.requests}
+              cap={usageSnapshot.cap.requests}
+            />
+            <CostUsageBar
+              label="Spend today"
+              usedCents={usageSnapshot.today.totals.cost_cents}
+              capCents={usageSnapshot.cap.cost_cents}
+            />
+            <p className="text-xs text-muted-foreground">
+              {fmtInt(usageSnapshot.today.totals.tokens)} tokens today · All time:{" "}
+              {fmtInt(usageSnapshot.all_time.totals.requests)} req ·{" "}
+              {fmtInt(usageSnapshot.all_time.totals.tokens)} tokens ·{" "}
+              {fmtCost(usageSnapshot.all_time.totals.cost_cents)}
+            </p>
+          </>
+        )}
+
+        <div className="space-y-3 rounded-lg border border-dashed p-3">
+          <p className="text-xs font-medium text-muted-foreground">Daily soft limits</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="cap-requests">Requests / day</Label>
+              <Input
+                id="cap-requests"
+                type="number"
+                min={1}
+                max={100_000}
+                value={capRequests}
+                onChange={(e) => setCapRequests(e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="cap-spend">Spend / day ($)</Label>
+              <Input
+                id="cap-spend"
+                type="number"
+                min={0.01}
+                max={1000}
+                step={0.5}
+                value={capSpend}
+                onChange={(e) => setCapSpend(e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <Button size="sm" onClick={handleSaveCaps} disabled={savingCaps}>
+              {savingCaps ? "Saving..." : "Save limits"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Limits count every provider together and reset at 00:00 UTC. Spend is estimated from
+            pinned per-model rates and may lag actual provider billing. Reaching either limit
+            blocks further AI requests until it resets.
+          </p>
+        </div>
+      </div>
+    </SettingsAccordionItem>
+  ) : null;
 
   const deleteProvider = providers.find((p) => p.id === deleteProviderId);
 
-  const providersList =
-    providers.length > 0 ? (
-      <div className="space-y-3">
-        {providers.map((provider) => {
-          const config = supportedProviders[provider.provider];
-          return (
-            <div key={provider.id} className="p-4 border rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className={`inline-block h-2.5 w-2.5 rounded-full ring-1 ring-inset shrink-0 ${
-                      provider.is_active
-                        ? "bg-emerald-500 ring-emerald-500/30 dark:bg-emerald-400 dark:ring-emerald-400/30"
-                        : "bg-red-500 ring-red-500/30 dark:bg-red-400 dark:ring-red-400/30"
-                    }`}
-                  />
-                  <p className="text-sm font-medium truncate">{provider.provider_name}</p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={<Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" />}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem onClick={() => handleToggleActive(provider)}>
-                      {provider.is_active ? "Disable" : "Enable"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setDeleteProviderId(provider.id)}
-                    >
-                      Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <span className="block text-xs text-muted-foreground font-mono">
-                {provider.masked_key}
-              </span>
-              {config && config.models.length > 0 ? (
-                <Select
-                  value={provider.preferred_model ?? ""}
-                  onValueChange={(value) => handleUpdateModel(provider, value ?? "")}
-                >
-                  <SelectTrigger className="h-8 text-xs w-full">
-                    <SelectValue placeholder="Default model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {config.models.map((model) => (
-                      <SelectItem key={model} value={model}>
-                        {model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : provider.preferred_model ? (
-                <span className="block text-xs text-muted-foreground">
-                  Model: {provider.preferred_model}
-                </span>
-              ) : null}
-              <span className="block text-xs text-muted-foreground">
-                Added {provider.created_at}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    ) : (
-      <p className="text-sm text-muted-foreground">
-        No AI providers configured. Add one above to start using AI features.
-      </p>
-    );
-
-  const cap = usageSnapshot?.cap ?? { requests: 100, cost_cents: 500 };
-  const today = usageSnapshot?.today;
-  const allTime = usageSnapshot?.all_time;
-
-  const requestPct = today && cap.requests > 0 ? Math.min(100, Math.round((today.totals.requests / cap.requests) * 100)) : 0;
-  const spendPct = today && cap.cost_cents > 0 ? Math.min(100, Math.round(((today.totals.cost_cents ?? 0) / cap.cost_cents) * 100)) : 0;
-  const requestExceeded = today ? today.totals.requests >= cap.requests : false;
-  const spendExceeded = today ? (today.totals.cost_cents ?? 0) >= cap.cost_cents : false;
-
-  const usageCard = (
-    <div className="mt-6 border rounded-lg p-4 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium">Today's AI Usage</p>
-          {today && <span className="text-xs text-muted-foreground">{today.date}</span>}
-        </div>
-        <Button variant="outline" size="sm" onClick={() => {
-          setCapRequests(String(cap.requests));
-          setCapSpend(String((cap.cost_cents / 100).toFixed(2)));
-          setCapDialogOpen(true);
-        }}>
-          <Gauge className="mr-1.5 h-3.5 w-3.5" />
-          Edit Caps
-        </Button>
-      </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Requests ({today?.totals.requests ?? 0}/{cap.requests})</span>
-              {requestExceeded && (
-                <span className="inline-flex items-center gap-1 text-destructive">
-                  <AlertTriangle className="h-3 w-3" />
-                  Limit reached
-                </span>
-              )}
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${requestExceeded ? "bg-destructive" : "bg-primary"}`}
-                style={{ width: `${Math.max(requestPct, 2)}%` }}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Spend ({fmtCost(today?.totals.cost_cents ?? 0)}/{fmtCost(cap.cost_cents)})</span>
-              {spendExceeded && (
-                <span className="inline-flex items-center gap-1 text-destructive">
-                  <AlertTriangle className="h-3 w-3" />
-                  Limit reached
-                </span>
-              )}
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${spendExceeded ? "bg-destructive" : "bg-primary"}`}
-                style={{ width: `${Math.max(spendPct, 2)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-      {today && Object.keys(today.providers).length > 0 && (
-        <div className="space-y-2">
-          {Object.entries(today.providers).map(([key, p]) => {
-            const config = supportedProviders[key];
-            const providerName = config?.name ?? key;
-            const error = p.last_error;
-
-            return (
-              <div key={key} className="flex flex-col gap-1 text-xs border-t pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{providerName}</span>
-                  <span className="text-muted-foreground">
-                    {p.requests} req · {(p.input_tokens + p.output_tokens).toLocaleString()} tokens · {fmtCost(p.cost_cents ?? 0)}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
-                  {p.last_model && <span>Model: {p.last_model}</span>}
-                  {p.last_latency_ms != null && <span>Latency: {p.last_latency_ms}ms</span>}
-                  {error ? (
-                    <span className="inline-flex items-center gap-1 text-destructive">
-                      <XCircle className="h-3 w-3" />
-                      <span className="truncate max-w-[280px]" title={error}>
-                        {error}
-                      </span>
-                    </span>
-                  ) : p.last_run_at ? (
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Last run {p.last_run_at}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {allTime && (
-        <p className="text-xs text-muted-foreground border-t pt-2">
-          All-time: {allTime.totals.requests.toLocaleString()} requests ·{" "}
-          {allTime.totals.tokens.toLocaleString()} tokens · {fmtCost(allTime.totals.cost_cents ?? 0)}
-        </p>
-      )}
-    </div>
-  );
-
-  const capDialog = (
-    <Dialog open={capDialogOpen} onOpenChange={setCapDialogOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>AI Daily Usage Caps</DialogTitle>
-          <DialogDescription>
-            Set your soft daily limits. When reached, AI features will pause until the next day.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="cap-requests">Requests per day</Label>
-            <Input
-              id="cap-requests"
-              type="number"
-              min={1}
-              step={1}
-              value={capRequests}
-              onChange={(e) => setCapRequests(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cap-spend">Spend per day (USD)</Label>
-            <Input
-              id="cap-spend"
-              type="number"
-              min={0.01}
-              max={1000}
-              step={0.01}
-              value={capSpend}
-              onChange={(e) => setCapSpend(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setCapDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveCaps} disabled={savingCaps}>
-            {savingCaps ? "Saving..." : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-
   return (
-    <>
-      {capDialog}
+    <div className="space-y-4">
       <AlertDialog
         open={!!deleteProviderId}
         onOpenChange={(open) => {
@@ -667,44 +704,252 @@ export default function AiKeysSection({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Provider Key</AlertDialogTitle>
+            <AlertDialogTitle>Remove {deleteProvider?.provider_name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove the API key for{" "}
-              <strong>{deleteProvider?.provider_name}</strong>? This action cannot be undone and AI
+              This will permanently delete the API key for {deleteProvider?.provider_name}. Any AI
               features using this provider will stop working.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (deleteProviderId) handleDelete(deleteProviderId);
+                setDeleteProviderId(null);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <SettingsAccordionItem
-        value="ai-provider-keys"
-        icon={Brain}
-        title="AI Provider Keys"
-        description="Add your own API keys to use AI features. Your keys are encrypted and never shared."
-        defaultOpen={false}
-      >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
-          <span className="text-sm text-muted-foreground">
+
+      <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">AI Integrations</h2>
+          <p className="text-sm text-muted-foreground">
             {providers.length > 0
               ? `${providers.length} provider${providers.length === 1 ? "" : "s"} configured`
-              : "No providers configured"}
-          </span>
-          {addProviderButton}
+              : "No providers configured yet"}
+          </p>
         </div>
-        {providersList}
-        {usageCard}
-      </SettingsAccordionItem>
-    </>
+        {addProviderButton}
+      </div>
+
+      {providers.map((provider) => {
+        const config = supportedProviders[provider.provider];
+        const providerUsage = usageSnapshot?.today.providers[provider.provider];
+        const providerAllTime = usageSnapshot?.all_time.providers[provider.provider];
+        const storedTest = storedTestResults[provider.id];
+        return (
+          <SettingsAccordionItem
+            key={provider.id}
+            value={`ai-provider-${provider.id}`}
+            icon={KeyRound}
+            title={provider.provider_name}
+            trailing={<ProviderStatusPill provider={provider} usage={usageSnapshot} />}
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs text-muted-foreground">
+                  {provider.masked_key}
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => openReplaceDialog(provider)}>
+                    Replace
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteProviderId(provider.id)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+
+              {config && config.models.length > 0 ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor={`model-${provider.id}`} className="text-xs text-muted-foreground">
+                    Preferred model
+                  </Label>
+                  <Select
+                    value={provider.preferred_model ?? ""}
+                    onValueChange={(value) => handleUpdateModel(provider, value ?? "")}
+                  >
+                    <SelectTrigger id={`model-${provider.id}`} className="h-8 w-full text-xs">
+                      <SelectValue
+                        placeholder={`Default (${config.default_model ?? "provider default"})`}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {config.models.map((model) => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Default model:{" "}
+                  {provider.preferred_model ?? config?.default_model ?? "provider default"}
+                </p>
+              )}
+
+              {config?.testable !== false && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={storedTestingId === provider.id}
+                      onClick={() => handleStoredTest(provider)}
+                    >
+                      <Plug className="mr-1.5 h-3.5 w-3.5" />
+                      {storedTestingId === provider.id ? "Testing..." : "Test connection"}
+                    </Button>
+                    {provider.last_tested_at && (
+                      <span className="text-xs text-muted-foreground">
+                        Last tested {provider.last_tested_at}
+                      </span>
+                    )}
+                  </div>
+                  {storedTest && (
+                    <div
+                      className={`flex items-start gap-2 rounded-md p-2.5 text-xs ${
+                        storedTest.success
+                          ? "bg-status-success/10 text-status-success"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {storedTest.success ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      ) : (
+                        <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      )}
+                      <p>{storedTest.message}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {config?.capabilities && config.capabilities.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {config.capabilities.map((cap) => (
+                    <Badge
+                      key={cap}
+                      variant="outline"
+                      className="text-[11px] text-muted-foreground"
+                    >
+                      {CAPABILITY_LABELS[cap] ?? cap}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {usageSnapshot && providerUsage ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-foreground">Today&apos;s usage</p>
+                    <span className="text-[11px] text-muted-foreground">
+                      {usageSnapshot.today.date}
+                    </span>
+                  </div>
+
+                  <UsageBar
+                    label="Requests today"
+                    used={providerUsage.requests}
+                    cap={usageSnapshot.cap.requests}
+                  />
+                  <CostUsageBar
+                    label="Spend today"
+                    usedCents={providerUsage.cost_cents}
+                    capCents={usageSnapshot.cap.cost_cents}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {fmtInt(providerUsage.requests)} requests ·{" "}
+                    {fmtInt(providerUsage.input_tokens + providerUsage.output_tokens)} tokens today
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    {providerUsage.last_run_at ? (
+                      <span>Last run {providerUsage.last_run_at}</span>
+                    ) : null}
+                    {providerUsage.last_model ? (
+                      <span>Model: {providerUsage.last_model}</span>
+                    ) : null}
+                    {formatLatency(providerUsage.last_latency_ms) ? (
+                      <span>Latency: {formatLatency(providerUsage.last_latency_ms)}</span>
+                    ) : null}
+                    <span>
+                      All time: {fmtInt(providerAllTime?.requests ?? 0)} req ·{" "}
+                      {fmtInt(
+                        (providerAllTime?.input_tokens ?? 0) +
+                          (providerAllTime?.output_tokens ?? 0),
+                      )}{" "}
+                      tokens · {fmtCost(providerAllTime?.cost_cents ?? 0)}
+                    </span>
+                  </div>
+
+                  {providerUsage.last_error ? (
+                    <p
+                      className="truncate text-xs text-destructive"
+                      title={providerUsage.last_error}
+                    >
+                      {providerUsage.last_error}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No AI usage recorded yet today.</p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="text-xs text-muted-foreground">Added {provider.created_at}</span>
+                <Button variant="ghost" size="sm" onClick={() => handleToggleActive(provider)}>
+                  {provider.is_active ? "Disable" : "Enable"}
+                </Button>
+              </div>
+            </div>
+          </SettingsAccordionItem>
+        );
+      })}
+
+      {unconfiguredEntries.length > 0 && (
+        <div className="rounded-lg border border-dashed p-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Available providers</p>
+          <div className="space-y-1">
+            {unconfiguredEntries.map(([key, config]) => (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
+              >
+                <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+                  <CircleDashed className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  {config.name}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    resetDialog();
+                    setSelectedProvider(key);
+                    setDialogOpen(true);
+                  }}
+                >
+                  Configure
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {usageAccordion}
+    </div>
   );
 }

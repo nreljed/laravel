@@ -51,7 +51,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: php vendor/phpunit/phpunit/phpunit
+        run: php -d max_execution_time=0 vendor/phpunit/phpunit/phpunit
 
       - name: Laravel Pint (style gate)
         # Consumers run `vendor/bin/pint --test` repo-wide (consumer-ci.yml),

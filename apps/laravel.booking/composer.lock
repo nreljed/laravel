@@ -62,16 +62,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.399.1",
+            "version": "3.401.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "cd7cf43b7d42e49579bf3f09ab58d4724d64152c"
+                "reference": "b5941e2da9fb860f06ad5046d96219c4288ab6b8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/cd7cf43b7d42e49579bf3f09ab58d4724d64152c",
-                "reference": "cd7cf43b7d42e49579bf3f09ab58d4724d64152c",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/b5941e2da9fb860f06ad5046d96219c4288ab6b8",
+                "reference": "b5941e2da9fb860f06ad5046d96219c4288ab6b8",
                 "shasum": ""
             },
             "require": {
@@ -153,9 +153,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.399.1"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.401.4"
             },
-            "time": "2026-10-02T18:16:16+00:00"
+            "time": "2026-10-20T18:15:27+00:00"
         },
         {
             "name": "barryvdh/laravel-dompdf",
@@ -1444,16 +1444,16 @@
         },
         {
             "name": "inertiajs/inertia-laravel",
-            "version": "v3.3.4",
+            "version": "v3.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/inertiajs/inertia-laravel.git",
-                "reference": "15fb5a7b2f984780ff968d9da3787aef6138326d"
+                "reference": "35a27ea62b8a53ec40269c4c675db5d9d0e02426"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/15fb5a7b2f984780ff968d9da3787aef6138326d",
-                "reference": "15fb5a7b2f984780ff968d9da3787aef6138326d",
+                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/35a27ea62b8a53ec40269c4c675db5d9d0e02426",
+                "reference": "35a27ea62b8a53ec40269c4c675db5d9d0e02426",
                 "shasum": ""
             },
             "require": {
@@ -1510,9 +1510,9 @@
             ],
             "support": {
                 "issues": "https://github.com/inertiajs/inertia-laravel/issues",
-                "source": "https://github.com/inertiajs/inertia-laravel/tree/v3.3.4"
+                "source": "https://github.com/inertiajs/inertia-laravel/tree/v3.5.1"
             },
-            "time": "2026-09-11T13:57:53+00:00"
+            "time": "2026-10-01T10:38:10+00:00"
         },
         {
             "name": "intervention/gif",
@@ -1880,16 +1880,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v13.34.0",
+            "version": "v13.35.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "c829b4982d29344cbcf1d7ad78eb5d2bb8ae66c4"
+                "reference": "a413a9da94884e5e9d58f4e6612884f712827804"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/c829b4982d29344cbcf1d7ad78eb5d2bb8ae66c4",
-                "reference": "c829b4982d29344cbcf1d7ad78eb5d2bb8ae66c4",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/a413a9da94884e5e9d58f4e6612884f712827804",
+                "reference": "a413a9da94884e5e9d58f4e6612884f712827804",
                 "shasum": ""
             },
             "require": {
@@ -2107,7 +2107,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-09-29T12:46:21+00:00"
+            "time": "2026-10-06T13:52:37+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -3610,20 +3610,24 @@
                 }
             ],
             "description": "Booking & properties feature for the Nreljed dashboard platform (property listings, availability calendar, bookings pipeline, guest portal, iCal sync, payments).",
+            "support": {
+                "source": "https://github.com/nreljed/booking-module/tree/v0.1.42",
+                "issues": "https://github.com/nreljed/booking-module/issues"
+            },
             "time": "2026-10-04T19:47:32+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.85",
+            "version": "0.1.87",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/platform.git",
-                "reference": "90a1a1b81441189af2bc1ad331433c662d53ecd3"
+                "reference": "e1155c7d7cb682b65d7bd3c93782084d74556855"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/90a1a1b81441189af2bc1ad331433c662d53ecd3",
-                "reference": "90a1a1b81441189af2bc1ad331433c662d53ecd3",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/e1155c7d7cb682b65d7bd3c93782084d74556855",
+                "reference": "e1155c7d7cb682b65d7bd3c93782084d74556855",
                 "shasum": ""
             },
             "require": {
@@ -3671,10 +3675,10 @@
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
             "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.85",
+                "source": "https://github.com/nreljed/platform/tree/v0.1.87",
                 "issues": "https://github.com/nreljed/platform/issues"
             },
-            "time": "2026-10-19T15:21:00+00:00"
+            "time": "2026-10-21T17:30:54+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -5334,16 +5338,16 @@
         },
         {
             "name": "symfony/console",
-            "version": "v8.1.8",
+            "version": "v8.1.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "4b81146e3ee248ea969186f85499b54fbc78db08"
+                "reference": "630e74196a2635ec0f06c12bd3fb47cfedf85157"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/4b81146e3ee248ea969186f85499b54fbc78db08",
-                "reference": "4b81146e3ee248ea969186f85499b54fbc78db08",
+                "url": "https://api.github.com/repos/symfony/console/zipball/630e74196a2635ec0f06c12bd3fb47cfedf85157",
+                "reference": "630e74196a2635ec0f06c12bd3fb47cfedf85157",
                 "shasum": ""
             },
             "require": {
@@ -5410,7 +5414,7 @@
                 "terminal"
             ],
             "support": {
-                "source": "https://github.com/symfony/console/tree/v8.1.8"
+                "source": "https://github.com/symfony/console/tree/v8.1.9"
             },
             "funding": [
                 {
@@ -5430,7 +5434,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-18T16:00:27+00:00"
+            "time": "2026-10-12T19:11:16+00:00"
         },
         {
             "name": "symfony/css-selector",
@@ -8269,16 +8273,16 @@
         },
         {
             "name": "tightenco/ziggy",
-            "version": "v2.6.4",
+            "version": "v2.6.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tighten/ziggy.git",
-                "reference": "c32a3eaad1574df8b953281680bba89bd3217dc2"
+                "reference": "d250c158c75bb10d33e6ebc9b67d65872593ae1a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tighten/ziggy/zipball/c32a3eaad1574df8b953281680bba89bd3217dc2",
-                "reference": "c32a3eaad1574df8b953281680bba89bd3217dc2",
+                "url": "https://api.github.com/repos/tighten/ziggy/zipball/d250c158c75bb10d33e6ebc9b67d65872593ae1a",
+                "reference": "d250c158c75bb10d33e6ebc9b67d65872593ae1a",
                 "shasum": ""
             },
             "require": {
@@ -8333,9 +8337,9 @@
             ],
             "support": {
                 "issues": "https://github.com/tighten/ziggy/issues",
-                "source": "https://github.com/tighten/ziggy/tree/v2.6.4"
+                "source": "https://github.com/tighten/ziggy/tree/v2.6.5"
             },
-            "time": "2026-08-18T17:28:45+00:00"
+            "time": "2026-10-10T22:16:55+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -9401,16 +9405,16 @@
         },
         {
             "name": "laravel/telescope",
-            "version": "v5.24.0",
+            "version": "v5.26.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/telescope.git",
-                "reference": "50cbcf4553ddfd8d4bd456b04f97dfed923007d9"
+                "reference": "bedfc50a3561c93cd89064643139a51c56bfd8a6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/telescope/zipball/50cbcf4553ddfd8d4bd456b04f97dfed923007d9",
-                "reference": "50cbcf4553ddfd8d4bd456b04f97dfed923007d9",
+                "url": "https://api.github.com/repos/laravel/telescope/zipball/bedfc50a3561c93cd89064643139a51c56bfd8a6",
+                "reference": "bedfc50a3561c93cd89064643139a51c56bfd8a6",
                 "shasum": ""
             },
             "require": {
@@ -9463,9 +9467,9 @@
                 "monitoring"
             ],
             "support": {
-                "source": "https://github.com/laravel/telescope/tree/v5.24.0"
+                "source": "https://github.com/laravel/telescope/tree/v5.26.0"
             },
-            "time": "2026-09-08T16:15:16+00:00"
+            "time": "2026-09-22T21:38:44+00:00"
         },
         {
             "name": "mockery/mockery",

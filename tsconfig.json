@@ -16,6 +16,7 @@
     "noEmit": true,
     "paths": {
       "@nreljed/blog/*": ["./packages/blog/src/Resources/js/*"],
+      "@nreljed/marketing-module/*": ["./packages/marketing-module/src/Resources/js/*"],
       "@nreljed/platform/*": ["./packages/platform/resources/js/*"],
       "@nreljed/platform/themes/*": ["./packages/platform/resources/themes/*"]
     }
@@ -25,6 +26,7 @@
     "resources/js/**/*.tsx",
     "resources/js/**/*.d.ts",
     "packages/platform/resources/js/**/*.d.ts",
-    "packages/blog/src/Resources/js/**/*.d.ts"
+    "packages/blog/src/Resources/js/**/*.d.ts",
+    "packages/marketing-module/src/Resources/js/**/*.d.ts"
   ]
 }

@@ -226,7 +226,12 @@ jobs:
 
       - name: PHP tests
         if: ${{ !inputs.skip-php-tests }}
-        run: ${{ inputs.php-tests-parallel && 'php -d memory_limit=512M artisan test --parallel --compact' || 'php -d memory_limit=512M artisan test --compact' }}
+        # Every test runs in one PHP process unless --parallel splits it, and the
+        # Windows self-hosted runner's PHP enforces a 60s max_execution_time that
+        # kills the suite mid-run ("Premature end of PHP process"). Force it to 0
+        # on the command line (wins over any ini/default) so a long-but-valid run
+        # is never truncated.
+        run: ${{ inputs.php-tests-parallel && 'php -d max_execution_time=0 -d memory_limit=512M artisan test --parallel --compact' || 'php -d max_execution_time=0 -d memory_limit=512M artisan test --compact' }}
 
       - name: Laravel Pint
         if: ${{ !inputs.skip-php-tests }}

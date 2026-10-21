@@ -39,8 +39,10 @@ use Nreljed\Platform\Services\ContentRegistry;
 use Nreljed\Platform\Services\CoreVersionService;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Nreljed\Platform\Services\FormattingService;
+use Nreljed\Platform\Services\FormSubmissionService;
 use Nreljed\Platform\Services\MailerConfigurator;
 use Nreljed\Platform\Services\NotificationService;
+use Nreljed\Platform\Support\FormRegistry;
 
 class PlatformServiceProvider extends ServiceProvider
 {
@@ -55,10 +57,13 @@ class PlatformServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/deploy.php', 'deploy');
         $this->mergeConfigFrom(__DIR__.'/../config/features.php', 'features');
         $this->mergeConfigFrom(__DIR__.'/../config/media.php', 'media');
+        $this->mergeConfigFrom(__DIR__.'/../config/forms.php', 'forms');
 
         $this->app->singleton(FormattingService::class);
         $this->app->singleton(FeatureRegistry::class);
         $this->app->singleton(ContentRegistry::class);
+        $this->app->singleton(FormRegistry::class);
+        $this->app->singleton(FormSubmissionService::class);
     }
 
     public function boot(): void
@@ -281,5 +286,21 @@ class PlatformServiceProvider extends ServiceProvider
         RateLimiter::for('register', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
 
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+
+        // Public form submissions — each form owns its throttle window, read
+        // from config('forms.forms.{key}.rate_limit') at request time so a
+        // consuming app can retune it without a code change.
+        RateLimiter::for('public-form', function (Request $request) {
+            $key = (string) $request->route('form_key');
+            $definition = $key !== '' ? app(FormRegistry::class)->get($key) : null;
+            $raw = is_array($definition) ? ($definition['rate_limit'] ?? '3,1') : '3,1';
+            $parts = array_map('intval', explode(',', (string) $raw));
+
+            $max = $parts[0] ?? 3;
+            $minutes = $parts[1] ?? 1;
+
+            return Limit::perMinutes(max(1, $minutes), max(1, $max))
+                ->by('public-form:'.($key !== '' ? $key : 'unknown').'|'.$request->ip());
+        });
     }
 }

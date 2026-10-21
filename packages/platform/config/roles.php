@@ -53,6 +53,7 @@ return [
         ['name' => 'Export Audit Logs', 'slug' => 'export-audit-logs', 'description' => 'Export audit log data as CSV', 'group' => 'Administration'],
         ['name' => 'Manage Email Settings', 'slug' => 'manage-email-settings', 'description' => 'Configure email settings', 'group' => 'Administration'],
         ['name' => 'Manage Contact Messages', 'slug' => 'manage-contact', 'description' => 'Read, triage and delete public contact form submissions', 'group' => 'Administration'],
+        ['name' => 'Manage Form Submissions', 'slug' => 'manage-submissions', 'description' => 'Read, triage, export and delete submissions from every public form', 'group' => 'Administration'],
     ],
 
     /*
@@ -122,6 +123,7 @@ return [
                 '!manage-audit-logs',
                 '!export-audit-logs',
                 '!manage-email-settings',
+                '!manage-submissions',
                 // Legacy Blog term-management slugs retained as no-op
                 // exclusions so orphaned rows granted via '*' never resurface.
                 '!manage-categories',
@@ -147,6 +149,7 @@ return [
                 '!manage-audit-logs',
                 '!export-audit-logs',
                 '!manage-email-settings',
+                '!manage-submissions',
             ],
         ],
 
