@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5c9433fc7315da4cdeaa29d6d215ce72",
+    "content-hash": "7e7cd67944f65aab3f406c96ee04c616",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3357,16 +3357,16 @@
         },
         {
             "name": "nreljed/platform",
-            "version": "0.1.86",
+            "version": "0.1.90",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/platform.git",
-                "reference": "f68adbbdacb353c061de34401d3cf4690905687b"
+                "reference": "20cf8d186b2a321dbc76867144f5290ff1263ae2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/f68adbbdacb353c061de34401d3cf4690905687b",
-                "reference": "f68adbbdacb353c061de34401d3cf4690905687b",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/20cf8d186b2a321dbc76867144f5290ff1263ae2",
+                "reference": "20cf8d186b2a321dbc76867144f5290ff1263ae2",
                 "shasum": ""
             },
             "require": {
@@ -3413,7 +3413,11 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "time": "2026-10-21T00:51:50+00:00"
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.90",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
+            "time": "2026-10-22T14:02:37+00:00"
         },
         {
             "name": "nunomaduro/termwind",

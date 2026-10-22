@@ -14,6 +14,7 @@ use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Requests\StoreSocialPostRequest;
 use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Services\PostPublisher;
+use Nreljed\MarketingModule\Support\PostMedia;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Platform\Support\ResourceRenderer;
 
@@ -180,6 +181,14 @@ class PostsController extends Controller
             'id' => $post->id,
             'preview' => Str::limit(trim((string) $post->body), 80),
             'body' => $post->body,
+            'media' => array_map(
+                static fn (array $item): array => [
+                    'url' => $item['url'],
+                    'alt' => $item['title'] ?? '',
+                    'order' => $item['order'] ?? 0,
+                ],
+                PostMedia::normalize((array) ($post->media ?? [])),
+            ),
             'link' => $post->link,
             'hashtags' => implode(', ', (array) ($post->hashtags ?? [])),
             'status' => $post->status?->label(),
@@ -216,6 +225,7 @@ class PostsController extends Controller
 
         return [
             'body' => $data['body'] ?? null,
+            'media' => PostMedia::normalize((array) ($data['media'] ?? [])),
             'link' => $data['link'] ?? null,
             'hashtags' => $this->parseHashtags($data['hashtags'] ?? null),
             'scheduled_at' => $scheduledAt,

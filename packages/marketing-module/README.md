@@ -14,13 +14,15 @@ publish to them.
 
 Phase 1 — accounts, contacts, tags, segments, and the OAuth connect flow.
 Phase 2 — the composer, scheduled publishing, per-account deliveries and approvals.
+Phase 3 — media upload on posts.
 
 | Area | State |
 |------|-------|
 | Social accounts + OAuth connect (Meta, Instagram, LinkedIn, X, Pinterest) | shipped |
 | Contacts, tags, segments (CRUD) | shipped |
 | Composer, scheduling, approvals, publishing + retries | shipped |
-| Media upload on posts, campaigns, workflows, analytics | not started |
+| Media upload on posts (up to 4 JPEG images, adapter-ready media payload) | shipped |
+| Campaigns, workflows, analytics | not started |
 
 Publishing runs on the scheduler (`marketing:publish-due`, once a minute). Each post
 fans out to one delivery per selected account, so a five-platform post can succeed on

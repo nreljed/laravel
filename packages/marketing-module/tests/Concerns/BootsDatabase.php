@@ -56,6 +56,12 @@ trait BootsDatabase
                 'approval_required' => false,
                 'max_targets' => 5,
             ]);
+            $config->set('marketing.media', [
+                'subdirectory' => 'social',
+                'max_files' => 4,
+                'max_file_size' => 10 * 1024 * 1024,
+                'output_quality' => 85,
+            ]);
 
             return $config;
         });

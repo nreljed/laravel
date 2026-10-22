@@ -5,9 +5,28 @@ All notable changes to `nreljed/marketing-module` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-22
 
-Nothing yet.
+### Added
+
+- **Media upload on posts.** The composer now has a gallery field backed by
+  `POST`/`DELETE` `dashboard.marketing.posts.media.*` endpoints. Uploads are
+  stored as JPEG (social platforms reject WebP), recorded in the media library
+  under the `social` folder, and normalised to the `{url, path, mime, title}`
+  shape the adapters already consume. Posts accept up to four images.
+- `PostMedia` support class for the upload profile, normalisation and the
+  managed-folder check; `PostMediaController` for upload/delete.
+- `SocialCapabilities` now rejects a media item whose MIME type is not in
+  `allowedMimeTypes`, and video where `supportsVideo` is false, before the
+  platform API ever sees the post.
+- Tests: `PostMediaTest` (normalisation, URL/path handling, folder scoping,
+  profile shape) and `SocialCapabilitiesTest` (MIME/video acceptance).
+
+### Changed
+
+- `nreljed/platform` media pipeline honours a profile's `outputExtension`
+  (`jpg`/`png` now encode as JPEG/PNG instead of always WebP); responsive
+  variants remain WebP-only.
 
 ## [0.2.0] - 2026-10-22
 

@@ -8,8 +8,8 @@ use Nreljed\Platform\Support\ResourceDefinition;
  * Declarative admin resource for the composer.
  *
  * Phase 2 ships one content type - text, link, hashtags - addressed to the
- * accounts the author connected. Media is carried by `PostContent` and the
- * adapters already accept it; the upload control is the next slice.
+ * accounts the author connected. Media rides the same post: the composer
+ * uploads JPEG images, the adapters receive them through `PostContent`.
  */
 final class SocialPostResource
 {
@@ -66,6 +66,17 @@ final class SocialPostResource
                             'required' => true,
                         ],
                         ['name' => 'link', 'type' => 'text', 'label' => 'Link'],
+                        [
+                            'name' => 'media',
+                            'type' => 'media',
+                            'label' => 'Images',
+                            'multiple' => true,
+                            'maxImages' => 4,
+                            'uploadUrl' => 'dashboard.marketing.posts.media.upload',
+                            'deleteUrl' => 'dashboard.marketing.posts.media.destroy',
+                            'subdirectory' => 'social',
+                            'help' => 'Up to four images. Stored as JPEG for social delivery.',
+                        ],
                         [
                             'name' => 'hashtags',
                             'type' => 'text',

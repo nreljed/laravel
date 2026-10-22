@@ -153,6 +153,12 @@ return [
 
     'media' => [
         'subdirectory' => 'social',
+
+        // The composer's gallery enforces these; the upload endpoint repeats
+        // the size check server-side.
+        'max_files' => 4,
+        'max_file_size' => 10 * 1024 * 1024, // 10MB
+        'output_quality' => 85,
     ],
 
     /*

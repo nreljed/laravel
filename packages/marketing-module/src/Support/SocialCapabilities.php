@@ -49,6 +49,22 @@ final class SocialCapabilities
             if (count($content->media) > $this->maxMediaCount) {
                 return false;
             }
+
+            foreach ($content->media as $item) {
+                $mime = $item['mime'] ?? null;
+
+                if (! is_string($mime) || $mime === '') {
+                    continue;
+                }
+
+                if (str_starts_with($mime, 'video/') && ! $this->supportsVideo) {
+                    return false;
+                }
+
+                if (! in_array($mime, $this->allowedMimeTypes, true)) {
+                    return false;
+                }
+            }
         } elseif ($this->requiresMedia) {
             return false;
         }
@@ -90,6 +106,26 @@ final class SocialCapabilities
                     $this->maxMediaCount,
                     count($content->media),
                 );
+            }
+
+            foreach ($content->media as $item) {
+                $mime = $item['mime'] ?? null;
+
+                if (! is_string($mime) || $mime === '') {
+                    continue;
+                }
+
+                if (str_starts_with($mime, 'video/') && ! $this->supportsVideo) {
+                    $problems[] = 'This platform does not accept video.';
+
+                    break;
+                }
+
+                if (! in_array($mime, $this->allowedMimeTypes, true)) {
+                    $problems[] = sprintf('This platform does not accept %s files.', $mime);
+
+                    break;
+                }
             }
         } elseif ($this->requiresMedia) {
             $problems[] = 'This platform requires at least one image.';
