@@ -5,6 +5,7 @@ use App\Providers\FrontendRouteServiceProvider;
 use App\Providers\TelescopeServiceProvider;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
 use Nreljed\Blog\BlogServiceProvider;
+use Nreljed\MarketingModule\MarketingServiceProvider;
 use Nreljed\Platform\Ai\AiServiceProvider;
 use Nreljed\Platform\PlatformServiceProvider;
 use Nreljed\Platform\Providers\PermissionGateServiceProvider;
@@ -17,6 +18,7 @@ return array_filter([
     AppServiceProvider::class,
     ShopServiceProvider::class,
     BlogServiceProvider::class,
+    MarketingServiceProvider::class,
     PublicSiteServiceProvider::class,
     AiServiceProvider::class,
     PermissionGateServiceProvider::class,

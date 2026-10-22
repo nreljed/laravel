@@ -13,16 +13,20 @@ publish to them.
 ## Status
 
 Phase 1 — accounts, contacts, tags, segments, and the OAuth connect flow.
+Phase 2 — the composer, scheduled publishing, per-account deliveries and approvals.
 
 | Area | State |
 |------|-------|
 | Social accounts + OAuth connect (Meta, Instagram, LinkedIn, X, Pinterest) | shipped |
 | Contacts, tags, segments (CRUD) | shipped |
-| Scheduled posts, campaigns, workflows, analytics | not started |
+| Composer, scheduling, approvals, publishing + retries | shipped |
+| Media upload on posts, campaigns, workflows, analytics | not started |
 
-The publishing pipeline's seams are in place (`SocialChannelAdapter`, `TokenSet`,
-`PostContent`, `PublishResult`, `NormalizedError`) so later phases add the composer and the
-scheduler without reshaping what already ships.
+Publishing runs on the scheduler (`marketing:publish-due`, once a minute). Each post
+fans out to one delivery per selected account, so a five-platform post can succeed on
+four and be retried on the fifth. Retryable failures follow the configured backoff
+(`marketing.publishing.retry_backoff`), and posts can be held behind an approval gate
+(`marketing.publishing.approval_required`, overridable per post).
 
 ## Requirements
 
@@ -97,6 +101,7 @@ non-empty — an app that keeps its credentials in `services/` keeps working. Th
 | `marketing.contacts.manage` | manage contacts |
 | `marketing.tags.manage` | manage contact tags |
 | `marketing.segments.manage` | manage audience segments |
+| `marketing.posts.manage` | compose, schedule, approve, and publish posts |
 
 Access is enforced by policies, not by a blanket route middleware, so a user with only one
 of these permissions still sees — and can reach — only that area.
@@ -111,6 +116,8 @@ of these permissions still sees — and can reach — only that area.
 | `TokenVault` | encrypts and masks provider tokens (`Crypt`, app key) |
 | `SocialChannelAdapter` | one platform's rules: scopes, discovery, publishing, error mapping |
 | `AbstractSocialAdapter` | shared HTTP, token hydration, and error normalisation |
+| `PostPublisher` | due-post selection, capability gates, retries/backoff, approval gate, delivery roll-up |
+| `PublishDuePosts` | `marketing:publish-due` — the scheduler entry point (`--dry-run` supported) |
 
 Tokens are encrypted before they touch the database and never leave the vault in plain
 text — not in logs, not in API payloads, not in a delivery record.

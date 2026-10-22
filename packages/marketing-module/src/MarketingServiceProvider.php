@@ -2,22 +2,29 @@
 
 namespace Nreljed\MarketingModule;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Nreljed\MarketingModule\Console\Commands\PublishDuePosts;
+use Nreljed\MarketingModule\Enums\PostStatus;
 use Nreljed\MarketingModule\Models\Contact;
 use Nreljed\MarketingModule\Models\Segment;
 use Nreljed\MarketingModule\Models\SocialAccount;
+use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\Tag;
 use Nreljed\MarketingModule\Policies\ContactPolicy;
 use Nreljed\MarketingModule\Policies\SegmentPolicy;
 use Nreljed\MarketingModule\Policies\SocialAccountPolicy;
+use Nreljed\MarketingModule\Policies\SocialPostPolicy;
 use Nreljed\MarketingModule\Policies\TagPolicy;
 use Nreljed\MarketingModule\Resources\ContactResource;
 use Nreljed\MarketingModule\Resources\SegmentResource;
 use Nreljed\MarketingModule\Resources\SocialAccountResource;
+use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Resources\TagResource;
+use Nreljed\MarketingModule\Services\PostPublisher;
 use Nreljed\MarketingModule\Services\SocialAuthService;
 use Nreljed\MarketingModule\Services\SocialChannelRegistry;
 use Nreljed\MarketingModule\Services\TokenVault;
@@ -30,8 +37,9 @@ use SocialiteProviders\Pinterest\PinterestExtendSocialite;
 use Throwable;
 
 /**
- * The Marketing feature: social accounts, the audience, and — from the next
- * phase — scheduled publishing, campaigns and workflow automations.
+ * The Marketing feature: social accounts, the audience, and the publishing
+ * pipeline (scheduled posts with per-account deliveries, retries and
+ * approvals). Campaigns and workflow automations are the next phase.
  *
  * The provider owns four things a consumer never has to wire by hand: the
  * routes, the policies, the OAuth driver extensions, and the declarative
@@ -51,6 +59,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             fn () => new SocialChannelRegistry((array) config('marketing.channels', [])),
         );
         $this->app->singleton(SocialAuthService::class);
+        $this->app->singleton(PostPublisher::class);
     }
 
     public function boot(): void
@@ -62,6 +71,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
 
         if ($this->enabled()) {
             $this->loadRoutes();
+            $this->loadCommands();
+            $this->configureSchedules();
         }
     }
 
@@ -89,6 +100,31 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         Gate::policy(Contact::class, ContactPolicy::class);
         Gate::policy(Tag::class, TagPolicy::class);
         Gate::policy(Segment::class, SegmentPolicy::class);
+        Gate::policy(SocialPost::class, SocialPostPolicy::class);
+    }
+
+    /**
+     * The command the scheduler runs. Registering it only while enabled keeps
+     * a disabled module from appearing as an available artisan command.
+     */
+    protected function loadCommands(): void
+    {
+        $this->commands([
+            PublishDuePosts::class,
+        ]);
+    }
+
+    /**
+     * Publish due posts once a minute. `withoutOverlapping` is what keeps a
+     * slow platform from stacking two runs on the same delivery.
+     */
+    protected function configureSchedules(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('marketing:publish-due')
+                ->everyMinute()
+                ->withoutOverlapping();
+        });
     }
 
     /**
@@ -159,6 +195,11 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'name' => 'Manage Segments',
                 'description' => 'Create, edit and delete the segments that target your audience.',
             ],
+            [
+                'slug' => 'marketing.posts.manage',
+                'name' => 'Manage Posts',
+                'description' => 'Compose, schedule, approve and publish posts to connected social accounts.',
+            ],
         ];
     }
 
@@ -181,10 +222,10 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         }
 
         try {
-            // Only links a descriptor cannot express belong here. The four
-            // resources (accounts, contacts, tags, segments) are appended by
-            // the platform registry into this same group, each carrying its
-            // own read permission.
+            // Only links a descriptor cannot express belong here. The
+            // resources (accounts, posts, contacts, tags, segments) are
+            // appended by the platform registry into this same group, each
+            // carrying its own read permission.
             return [[
                 'title' => 'Marketing',
                 'url' => route('dashboard.marketing.dashboard', [], false),
@@ -213,6 +254,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             'total' => SocialAccount::query()->count(),
             'contacts' => Contact::query()->count(),
             'segments' => Segment::query()->count(),
+            'posts' => SocialPost::query()->count(),
+            'scheduled' => SocialPost::query()->where('status', PostStatus::Scheduled->value)->count(),
         ];
     }
 
@@ -220,6 +263,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
     {
         return [
             SocialAccountResource::definition(),
+            SocialPostResource::definition(),
             ContactResource::definition(),
             TagResource::definition(),
             SegmentResource::definition(),
@@ -234,6 +278,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'contacts_table' => Schema::hasTable('contacts'),
                 'tags_table' => Schema::hasTable('tags'),
                 'segments_table' => Schema::hasTable('segments'),
+                'social_posts_table' => Schema::hasTable('social_posts'),
+                'social_post_targets_table' => Schema::hasTable('social_post_targets'),
             ];
         } catch (Throwable) {
             return [];
@@ -242,9 +288,11 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
 
     public function getScheduledTasks(): array
     {
-        // Publishing runs on the scheduler from the next phase; Phase 1 has
-        // no recurring work of its own.
-        return [];
+        return [[
+            'command' => 'marketing:publish-due',
+            'frequency' => 'every:60',
+            'description' => 'Publishes scheduled posts and retries failed deliveries.',
+        ]];
     }
 
     public function getMediaSubdirectory(): ?string
@@ -254,6 +302,10 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
 
     public function onUserDelete(int $userId): void
     {
+        // A post addressed to the user's accounts has no audience once the
+        // accounts are gone; deleting the post takes its targets with it.
+        SocialPost::query()->where('user_id', $userId)->delete();
+
         // A social account holds credentials the connected user granted.
         // Leaving them behind after the account is deleted would keep a live
         // grant nobody can revoke.
@@ -271,7 +323,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
      */
     protected function canView(User $user): bool
     {
-        foreach (['accounts', 'contacts', 'tags', 'segments'] as $area) {
+        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments'] as $area) {
             if ($user->hasPermission("marketing.{$area}.manage")) {
                 return true;
             }
@@ -288,6 +340,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
     {
         try {
             return Schema::hasTable('social_accounts')
+                && Schema::hasTable('social_posts')
+                && Schema::hasTable('social_post_targets')
                 && Schema::hasTable('contacts')
                 && Schema::hasTable('tags')
                 && Schema::hasTable('segments');

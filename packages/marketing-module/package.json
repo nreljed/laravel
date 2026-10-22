@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/marketing-module",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform - social accounts, scheduled posts, campaigns, audience segments, workflow automation and analytics frontend kit.",
   "license": "proprietary",
   "type": "module",

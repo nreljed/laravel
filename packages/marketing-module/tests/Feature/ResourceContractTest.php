@@ -6,6 +6,7 @@ use Nreljed\MarketingModule\MarketingServiceProvider;
 use Nreljed\MarketingModule\Resources\ContactResource;
 use Nreljed\MarketingModule\Resources\SegmentResource;
 use Nreljed\MarketingModule\Resources\SocialAccountResource;
+use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Resources\TagResource;
 use Nreljed\MarketingModule\Tests\Concerns\BootsFeatureRegistry;
 use Nreljed\Platform\Support\ResourceDefinition;
@@ -13,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The four Phase 1 resources on the kernel's declarative admin path.
+ * The module's resources on the kernel's declarative admin path.
  */
 final class ResourceContractTest extends TestCase
 {
@@ -35,6 +36,7 @@ final class ResourceContractTest extends TestCase
     {
         return [
             'accounts' => [SocialAccountResource::class, 'marketing.accounts'],
+            'posts' => [SocialPostResource::class, 'marketing.posts'],
             'contacts' => [ContactResource::class, 'marketing.contacts'],
             'tags' => [TagResource::class, 'marketing.tags'],
             'segments' => [SegmentResource::class, 'marketing.segments'],
@@ -97,5 +99,19 @@ final class ResourceContractTest extends TestCase
                 $this->assertContains($slug, $declared, "The permission slug [{$slug}] must be declared in permissions().");
             }
         }
+    }
+
+    public function test_the_provider_declares_the_publishing_command_and_permission(): void
+    {
+        $provider = new MarketingServiceProvider($this->container);
+
+        $tasks = $provider->getScheduledTasks();
+
+        $this->assertSame('marketing:publish-due', $tasks[0]['command'] ?? null);
+        $this->assertSame('every:60', $tasks[0]['frequency'] ?? null);
+
+        $slugs = array_column($provider->permissions(), 'slug');
+
+        $this->assertContains('marketing.posts.manage', $slugs);
     }
 }

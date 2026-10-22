@@ -1,6 +1,7 @@
 import type { FoundationAppConfig, PageImport } from "@nreljed/platform/app";
 import { registerCoreTemplates } from "@nreljed/platform/dashboard";
 import { registerBlogPages } from "@nreljed/blog/pages";
+import { registerMarketingPages } from "@nreljed/marketing-module/pages";
 import { registerShopPages } from "@nreljed/shop-module/pages";
 
 /**
@@ -34,6 +35,7 @@ export const pageConfig: FoundationAppConfig = {
   basePages: {
     ...registerCoreTemplates(),
     ...registerBlogPages(),
+    ...registerMarketingPages(),
     ...registerShopPages(),
     ...localPages,
   },

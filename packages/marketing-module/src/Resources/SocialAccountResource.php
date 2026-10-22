@@ -43,7 +43,10 @@ final class SocialAccountResource
                 'headerActions' => [
                     [
                         'label' => 'Connect account',
-                        'routeName' => 'dashboard.marketing.accounts.connect',
+                        // Accounts are created by an OAuth handshake that needs a
+                        // platform, and a header action has no parameter to bind.
+                        // The dashboard owns the per-platform connect buttons.
+                        'routeName' => 'dashboard.marketing.dashboard',
                         'method' => 'get',
                     ],
                 ],

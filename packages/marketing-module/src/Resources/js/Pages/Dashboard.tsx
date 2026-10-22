@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import type { PageProps } from "@inertiajs/core";
-import { Layers, Megaphone, Plus, Tags, Users } from "lucide-react";
+import { CalendarClock, Layers, Megaphone, Plus, Send, Tags, Users } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
 import { Button } from "@nreljed/platform/Components/ui/button";
@@ -20,6 +20,8 @@ interface MarketingSummary {
     contacts: number;
     tags: number;
     segments: number;
+    posts: number;
+    scheduled: number;
 }
 
 interface MarketingDashboardProps extends PageProps {
@@ -49,6 +51,8 @@ export default function MarketingDashboard() {
 
     const stats = [
         { label: "Connected accounts", value: summary.accounts, icon: Megaphone },
+        { label: "Posts", value: summary.posts, icon: Send },
+        { label: "Scheduled", value: summary.scheduled, icon: CalendarClock },
         { label: "Contacts", value: summary.contacts, icon: Users },
         { label: "Tags", value: summary.tags, icon: Tags },
         { label: "Segments", value: summary.segments, icon: Layers },

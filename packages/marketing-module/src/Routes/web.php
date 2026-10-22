@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Nreljed\MarketingModule\Http\Controllers\ContactsController;
 use Nreljed\MarketingModule\Http\Controllers\MarketingDashboardController;
+use Nreljed\MarketingModule\Http\Controllers\PostsController;
 use Nreljed\MarketingModule\Http\Controllers\SegmentsController;
 use Nreljed\MarketingModule\Http\Controllers\SocialAccountsController;
 use Nreljed\MarketingModule\Http\Controllers\SocialAuthController;
@@ -21,6 +22,20 @@ Route::get('/accounts/callback/{platform}', [SocialAuthController::class, 'callb
 Route::get('/accounts/{record}/edit', [SocialAccountsController::class, 'edit'])->name('accounts.edit');
 Route::put('/accounts/{record}', [SocialAccountsController::class, 'update'])->name('accounts.update');
 Route::delete('/accounts/{record}', [SocialAccountsController::class, 'destroy'])->name('accounts.destroy');
+
+// Posts
+//
+// `account-options` feeds the composer's account picker, so it is declared
+// before the record-scoped routes for the same reason `connect` is above.
+Route::get('/posts', [PostsController::class, 'index'])->name('posts.index');
+Route::get('/posts/create', [PostsController::class, 'create'])->name('posts.create');
+Route::get('/posts/account-options', [PostsController::class, 'accountOptions'])->name('posts.account-options');
+Route::post('/posts', [PostsController::class, 'store'])->name('posts.store');
+Route::get('/posts/{record}/edit', [PostsController::class, 'edit'])->name('posts.edit');
+Route::put('/posts/{record}', [PostsController::class, 'update'])->name('posts.update');
+Route::delete('/posts/{record}', [PostsController::class, 'destroy'])->name('posts.destroy');
+Route::post('/posts/{record}/publish', [PostsController::class, 'publish'])->name('posts.publish');
+Route::post('/posts/{record}/approve', [PostsController::class, 'approve'])->name('posts.approve');
 
 // Contacts
 Route::get('/contacts', [ContactsController::class, 'index'])->name('contacts.index');

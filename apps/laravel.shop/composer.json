@@ -20,12 +20,17 @@
     {
       "type": "vcs",
       "url": "https://github.com/nreljed/shop-module.git"
+    },
+    {
+      "type": "vcs",
+      "url": "https://github.com/nreljed/marketing-module.git"
     }
   ],
   "require": {
     "php": "^8.4",
     "fakerphp/faker": "^1.23",
     "nreljed/blog": "^0.1",
+    "nreljed/marketing-module": "^0.2",
     "nreljed/platform": "^0.1",
     "nreljed/shop-module": "^0.1",
     "inertiajs/inertia-laravel": "^3.3.3",

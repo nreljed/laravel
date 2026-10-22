@@ -9,6 +9,35 @@ this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 Nothing yet.
 
+## [0.2.0] - 2026-10-22
+
+### Added
+
+- **Scheduled posts and a publishing pipeline.** Social posts are composed
+  against one or more connected accounts, created as a post plus one delivery
+  target per account, and published independently per target.
+- `SocialPost` / `SocialPostTarget` models, factories, migrations, enums
+  (`PostStatus`, `DeliveryStatus`), `SocialPostPolicy`, and the
+  `dashboard.marketing.posts.*` routes.
+- `PostPublisher` service and the `marketing:publish-due` command (scheduled
+  every minute, `--dry-run` supported, `withoutOverlapping`) with retries
+  bounded by `publishing.max_attempts`.
+- Approval flow: with `publishing.approval_required` enabled, a due post is
+  only published after `approved_at` is set from the row action.
+- Deliveries fail gracefully when an account has no stored access token
+  (`token_missing`) instead of aborting the run.
+- A sixth dashboard stat for scheduled posts, plus `tablesExist`,
+  `getScheduledTasks`, and `onUserDelete` wiring.
+- Tests: `PostPublisherTest` (14 cases), `ResourceContractTest` coverage for the
+  new resource, and a shared `BootsDatabase` concern.
+
+### Fixed
+
+- The Social Accounts "Connect account" header action no longer targets the
+  parameterized `dashboard.marketing.accounts.connect` route (which crashed the
+  index page); it points at the dashboard, which owns per-platform connect
+  buttons.
+
 ## [0.1.1] - 2026-10-21
 
 ### Fixed
