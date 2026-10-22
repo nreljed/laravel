@@ -4,6 +4,12 @@ All notable changes to `nreljed/platform` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.91] - 2026-10-22
+
+### Fixed
+
+- **Hydrated gallery images keep their file size.** `ServerGalleryImage` now carries optional `size` and `type` values, and converting a stored image no longer hard-codes `size: 0`. The sortable tile hides the size line when it is unknown instead of showing a misleading `0 B`, and newly uploaded images include their size in the persisted gallery payload.
+
 ## [0.1.90] - 2026-10-22
 
 ### Added

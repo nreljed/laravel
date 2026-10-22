@@ -7,8 +7,8 @@ use Nreljed\Platform\Services\MediaService;
 /**
  * The media contract between the composer, storage and the adapters.
  *
- * The gallery control posts URLs and returns `{url, alt, order}` items; the
- * adapters consume `{url, path, mime, title}`. Normalising once here keeps
+ * The gallery control posts URLs and returns `{url, alt, order, size}` items;
+ * the adapters consume `{url, path, mime, title}`. Normalising once here keeps
  * both sides stable and gives the upload endpoint a single place to decide
  * which formats are accepted.
  */
@@ -51,7 +51,7 @@ final class PostMedia
      * Normalise the composer's gallery value into the adapter's media shape.
      *
      * @param  array<int|string, mixed>  $items
-     * @return list<array{url: string, path: string, mime: string, title: string|null, order: int}>
+     * @return list<array{url: string, path: string, mime: string, title: string|null, size: int, order: int}>
      */
     public static function normalize(array $items): array
     {
@@ -84,11 +84,16 @@ final class PostMedia
                 ? ($item['title'] ?? $item['alt'] ?? $item['caption'] ?? null)
                 : null;
 
+            $size = is_array($item) && is_numeric($item['size'] ?? null)
+                ? max(0, (int) $item['size'])
+                : 0;
+
             $media[] = [
                 'url' => $url,
                 'path' => $path,
                 'mime' => $mime,
                 'title' => is_string($title) ? $title : null,
+                'size' => $size,
                 'order' => count($media),
             ];
         }

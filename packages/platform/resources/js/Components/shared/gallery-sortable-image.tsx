@@ -107,7 +107,9 @@ const SortableImage = React.memo(function SortableImage({
       {isDone && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <p className="text-xs text-white truncate font-medium">{image.name}</p>
-          <p className="text-[10px] text-white/70">{formatFileSize(image.size)}</p>
+          {image.size > 0 && (
+            <p className="text-[10px] text-white/70">{formatFileSize(image.size)}</p>
+          )}
         </div>
       )}
 

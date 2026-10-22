@@ -5,6 +5,14 @@ All notable changes to `nreljed/marketing-module` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-10-22
+
+### Fixed
+
+- **Gallery images show their real size after reopening a post.** Normalised
+  post media now carries `size`, and the edit form falls back to the stored
+  file's size for media saved before the payload included it.
+
 ## [0.3.0] - 2026-10-22
 
 ### Added

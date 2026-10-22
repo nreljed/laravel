@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nreljed\MarketingModule\Enums\DeliveryStatus;
 use Nreljed\MarketingModule\Enums\PostStatus;
@@ -186,6 +187,7 @@ class PostsController extends Controller
                     'url' => $item['url'],
                     'alt' => $item['title'] ?? '',
                     'order' => $item['order'] ?? 0,
+                    'size' => self::mediaSize($item),
                 ],
                 PostMedia::normalize((array) ($post->media ?? [])),
             ),
@@ -203,6 +205,27 @@ class PostsController extends Controller
             'requires_approval' => (bool) $post->requires_approval,
             'approved_at' => $post->approved_at?->toDateTimeString(),
         ];
+    }
+
+    /**
+     * The stored byte size, with a disk fallback for media saved before the
+     * gallery carried size in its payload.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    protected static function mediaSize(array $item): int
+    {
+        $size = (int) ($item['size'] ?? 0);
+
+        if ($size > 0) {
+            return $size;
+        }
+
+        $path = (string) ($item['path'] ?? '');
+
+        return $path !== '' && Storage::disk('public')->exists($path)
+            ? (int) Storage::disk('public')->size($path)
+            : 0;
     }
 
     /**
