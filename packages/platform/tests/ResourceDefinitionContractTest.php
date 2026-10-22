@@ -655,7 +655,7 @@ final class ResourceDefinitionContractTest extends TestCase
                         'deleteUrl' => 'dashboard.shop.products.destroy-image',
                         'subdirectory' => 'products',
                     ],
-                    ['name' => 'images', 'type' => 'media', 'multiple' => true],
+                    ['name' => 'images', 'type' => 'media', 'multiple' => true, 'maxImages' => 4],
                 ]],
             ],
         );
@@ -678,6 +678,8 @@ final class ResourceDefinitionContractTest extends TestCase
                         'deleteUrl' => ['x'],
                         'subdirectory' => 7,
                         'multiple' => 'yes',
+                        'maxImages' => 0,
+                        'featuredField' => '',
                         'unexpected' => 'nope',
                     ],
                 ]],
@@ -690,6 +692,8 @@ final class ResourceDefinitionContractTest extends TestCase
         $this->assertStringContainsString('form.0.fields[0].deleteUrl must be a non-empty route name (string)', $joined);
         $this->assertStringContainsString('form.0.fields[0].subdirectory must be a non-empty string', $joined);
         $this->assertStringContainsString('form.0.fields[0].multiple must be a boolean', $joined);
+        $this->assertStringContainsString('form.0.fields[0].maxImages must be a positive integer', $joined);
+        $this->assertStringContainsString('form.0.fields[0].featuredField must be a non-empty field name', $joined);
         $this->assertStringContainsString('form.0.fields[0].unexpected is not expressible in a PHP descriptor', $joined);
     }
 
