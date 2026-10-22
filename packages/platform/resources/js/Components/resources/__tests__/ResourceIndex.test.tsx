@@ -629,7 +629,7 @@ describe("ResourceIndex row actions", () => {
 
         expect(item).not.toBeNull();
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         expect(onRowAction).toHaveBeenCalledOnce();
         expect(routerMock.delete).not.toHaveBeenCalled();
@@ -642,7 +642,7 @@ describe("ResourceIndex row actions", () => {
 
         expect(item).not.toBeNull();
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         // Selecting must only open the dialog. Deleting on click is the bug the
         // confirm step exists to prevent.
@@ -658,7 +658,7 @@ describe("ResourceIndex row actions", () => {
         const column = lastDataTableProps().columns.at(-1)!;
         const cell = (column.cell as (context: unknown) => unknown)({ row: { original: widgets[0] } });
 
-        act(() => findItem(cell, "Delete")?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => findItem(cell, "Delete")?.props.onClick?.());
 
         const confirm = screen.getByRole("button", { name: "Delete" });
 
@@ -707,7 +707,7 @@ describe("ResourceIndex row actions", () => {
 
         expect(item).not.toBeNull();
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         expect(routerMock.post).toHaveBeenCalledWith("/widgets/1/approve", {}, { preserveScroll: true });
     });
@@ -729,7 +729,7 @@ describe("ResourceIndex row actions", () => {
 
         expect(item).not.toBeNull();
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         expect(routerMock.patch).toHaveBeenCalledWith("/widgets/1/status", {}, { preserveScroll: true });
         expect(routerMock.put).not.toHaveBeenCalled();
@@ -745,7 +745,7 @@ describe("ResourceIndex row actions", () => {
 
         const item = findItem(actionCellFor(resource), "Rename");
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         expect(routerMock.put).toHaveBeenCalledWith("/widgets/1", {}, { preserveScroll: true });
         expect(routerMock.patch).not.toHaveBeenCalled();
@@ -768,7 +768,7 @@ describe("ResourceIndex row actions", () => {
 
         const item = findItem(actionCellFor(resource), "Approve");
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         // Selecting only opens the dialog - none of it runs yet.
         expect(routerMock.post).not.toHaveBeenCalled();
@@ -791,7 +791,7 @@ describe("ResourceIndex row actions", () => {
 
         const item = findItem(actionCellFor(resource), "Hard delete");
 
-        act(() => item?.props.onSelect?.({ preventDefault: () => undefined }));
+        act(() => item?.props.onClick?.());
 
         expect(routerMock.delete).toHaveBeenCalledWith("/widgets/1/purge", { preserveScroll: true });
     });
@@ -800,14 +800,14 @@ describe("ResourceIndex row actions", () => {
 /**
  * Depth-first search for the menu item carrying the given label.
  */
-function findItem(node: unknown, label: string): { props: { onSelect?: (event: { preventDefault: () => void }) => void } } | null {
+function findItem(node: unknown, label: string): { props: { onClick?: () => void } } | null {
     if (!node || typeof node !== "object") {
         return null;
     }
 
-    const element = node as { props?: { children?: unknown; onSelect?: unknown } };
+    const element = node as { props?: { children?: unknown; onClick?: unknown } };
 
-    if (typeof element.props?.onSelect === "function" && collectLabels(node).includes(label)) {
+    if (typeof element.props?.onClick === "function" && collectLabels(node).includes(label)) {
         return element as never;
     }
 

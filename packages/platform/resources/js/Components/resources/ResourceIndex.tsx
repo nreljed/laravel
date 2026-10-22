@@ -209,13 +209,9 @@ const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction;
                                 );
 
                                 // A non-destructive GET action is navigation, so
-                                // the whole row is the link. Leaving it to
-                                // `onSelect` instead meant clicking the item's
-                                // padding did nothing while clicking its text
-                                // navigated - the two halves of one item
-                                // behaving differently, which reads as a bug. A
-                                // POST/PUT/DELETE action is not navigation and
-                                // always goes through `runAction`.
+                                // the whole row is the link. A POST/PUT/DELETE
+                                // action is not navigation and always goes
+                                // through `runAction`.
                                 const isGet = !action.method || action.method === "get";
                                 if (action.route && !action.destructive && isGet) {
                                     return (
@@ -232,13 +228,11 @@ const [bulkDialog, setBulkDialog] = React.useState<{ action: ResourceBulkAction;
                                     <DropdownMenuItem
                                         key={action.label}
                                         className={action.destructive ? "text-destructive" : undefined}
-                                        onSelect={(event) => {
-                                            // A select handler that then navigates has
-                                            // to stop the menu's own dismissal from
-                                            // racing the Inertia visit.
-                                            event.preventDefault();
-                                            runAction(action, row);
-                                        }}
+                                        // Base UI's Menu.Item fires `onClick`;
+                                        // `onSelect` is the Radix spelling and is
+                                        // silently dropped here, which made every
+                                        // non-link row action a no-op.
+                                        onClick={() => runAction(action, row)}
                                     >
                                         {label}
                                     </DropdownMenuItem>

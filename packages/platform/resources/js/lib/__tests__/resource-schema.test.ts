@@ -81,6 +81,15 @@ const flag = (column: ReturnType<typeof toColumnDef>, key: "id" | "accessorKey" 
         expect((column.meta as { className?: string }).className).toBe("text-right font-mono");
     });
 
+    it("does not overwrite TanStack's default cell for a plain column", () => {
+        // `cell: undefined` is not the same as omitting the key: the column def
+        // is spread over TanStack's defaults, so an undefined cell replaces the
+        // built-in `renderValue()` renderer and every value renders blank.
+        const column = toColumnDef({ name: "email" });
+
+        expect("cell" in (column as unknown as Record<string, unknown>)).toBe(false);
+    });
+
     it("defaults to sorting and hiding enabled", () => {
         const column = toColumnDef({ name: "email" });
 
@@ -352,6 +361,39 @@ describe("toResource", () => {
         expect(resource.table?.headerActions).toEqual([
             { label: "Export CSV", route: "dashboard.shop.products.export", method: "get" },
             { label: "Import", route: "dashboard.shop.products.import", method: "post", fileInput: true, accept: ".csv" },
+        ]);
+    });
+
+    it("hides a header action whose route needs a parameter it cannot supply", () => {
+        // A descriptor can name a route with a parameter (`.../connect/{platform}`),
+        // but a header action has no row to bind. Throwing here would take the
+        // whole index page down; the button must simply not render.
+        const throwingRouteRef = (name: string) => {
+            if (name === "dashboard.marketing.accounts.connect") {
+                throw new Error("'platform' parameter is required");
+            }
+
+            return name;
+        };
+
+        const resource = toResource(
+            {
+                key: "marketing.accounts",
+                label: "Social Accounts",
+                table: {
+                    columns: [{ name: "account_name" }],
+                    headerActions: [
+                        { label: "Connect account", routeName: "dashboard.marketing.accounts.connect" },
+                        { label: "Export", routeName: "dashboard.marketing.accounts.export" },
+                    ],
+                },
+            },
+            throwingRouteRef,
+        );
+
+        expect(resource.table?.headerActions).toEqual([
+            { label: "Connect account", method: "get" },
+            { label: "Export", route: "dashboard.marketing.accounts.export", method: "get" },
         ]);
     });
 
