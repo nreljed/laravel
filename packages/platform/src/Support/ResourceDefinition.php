@@ -111,6 +111,8 @@ class ResourceDefinition
         'deleteUrl',
         'subdirectory',
         'multiple',
+        'maxImages',
+        'featuredField',
         'rows',
         'rowTitleField',
         'defaultValue',
@@ -726,6 +728,14 @@ class ResourceDefinition
 
         if (isset($field['subdirectory']) && (! is_string($field['subdirectory']) || $field['subdirectory'] === '')) {
             $issues[] = $where.'.subdirectory must be a non-empty string';
+        }
+
+        if (isset($field['maxImages']) && (! is_int($field['maxImages']) || $field['maxImages'] < 1)) {
+            $issues[] = $where.'.maxImages must be a positive integer';
+        }
+
+        if (isset($field['featuredField']) && (! is_string($field['featuredField']) || $field['featuredField'] === '')) {
+            $issues[] = $where.'.featuredField must be a non-empty field name';
         }
 
         foreach (['label', 'help', 'placeholder'] as $stringKey) {

@@ -653,6 +653,7 @@ function MultipleMediaInput({ value, setValue, setField, field }: FieldControlPr
             onChange={(next: ServerGalleryImage[]) => setValue(next)}
             uploadUrl={field.uploadUrl ?? ""}
             deleteUrl={field.deleteUrl ?? ""}
+            maxImages={field.maxImages}
             onSetFeatured={
                 field.featuredField
                     ? (image) => setField(field.featuredField!, getGalleryImageUrl(image))

@@ -4,6 +4,13 @@ All notable changes to `nreljed/platform` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.90] - 2026-10-22
+
+### Added
+
+- **Media profiles can choose their output format.** `MediaService` now honours a profile's `outputExtension`: `jpg`/`jpeg` encode as JPEG and `png` as PNG, while WebP stays the default. Social platforms (Instagram, Pinterest, LinkedIn) reject WebP, so a feature that delivers uploads to them can store JPEG without bypassing the media pipeline. Responsive variants remain WebP-only and are skipped for non-WebP primaries.
+- **`maxImages` on declarative `media` fields.** A `multiple` media field can cap the gallery (`maxImages => 4`) instead of accepting the uploader's default 20; `featuredField` is now accepted in PHP descriptors too.
+
 ## [0.1.88] - 2026-10-21
 
 ### Added

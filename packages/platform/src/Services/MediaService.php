@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\JpegEncoder;
+use Intervention\Image\Encoders\PngEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageInterface;
@@ -510,8 +512,7 @@ class MediaService
             $image->scaleDown($maxDimension, $maxDimension);
         }
 
-        $quality = (int) ($profile['outputQuality'] ?? self::QUALITY);
-        $encoded = $image->encode(new WebpEncoder(quality: $quality));
+        $encoded = $this->encodeImage($image, $profile);
 
         $filename = $this->buildFilename($profile);
         $base = pathinfo($filename, PATHINFO_FILENAME);
@@ -532,8 +533,46 @@ class MediaService
         ];
     }
 
+    /**
+     * Encode an image in the profile's declared output format.
+     *
+     * WebP stays the default; a profile that declares `outputExtension` of
+     * jpg/jpeg or png gets that format instead (social platforms such as
+     * Instagram and Pinterest reject WebP).
+     */
+    private function encodeImage(ImageInterface $image, array $profile): string
+    {
+        $quality = (int) ($profile['outputQuality'] ?? self::QUALITY);
+        $extension = strtolower(preg_replace(
+            '/[^a-z0-9]/i',
+            '',
+            (string) ($profile['outputExtension'] ?? 'webp'),
+        ));
+
+        $encoder = match ($extension) {
+            'jpg', 'jpeg' => new JpegEncoder(quality: $quality),
+            'png' => new PngEncoder(quality: $quality),
+            default => new WebpEncoder(quality: $quality),
+        };
+
+        return (string) $image->encode($encoder);
+    }
+
     private function storeVariants(ImageInterface $image, string $relativeFolder, string $base, array $profile): void
     {
+        // Responsive variants are WebP-only today: the orphan scanner and
+        // delete() locate them by the `-{width}.webp` suffix, so deriving
+        // them beside a JPEG/PNG primary would leave untrackable files.
+        $extension = strtolower(preg_replace(
+            '/[^a-z0-9]/i',
+            '',
+            (string) ($profile['outputExtension'] ?? 'webp'),
+        ));
+
+        if ($extension !== 'webp') {
+            return;
+        }
+
         $widths = $profile['variants'] ?? self::RESPONSIVE_WIDTHS;
         $quality = (int) ($profile['outputQuality'] ?? self::QUALITY);
 

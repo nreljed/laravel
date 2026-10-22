@@ -123,6 +123,8 @@ export interface FieldDefinition {
     subdirectory?: string;
     /** Render a multi-image gallery (`GalleryUploader`) instead of a single picker. */
     multiple?: boolean;
+    /** Maximum images a `multiple` media gallery accepts (defaults to the uploader's 20). */
+    maxImages?: number;
     /**
      * Companion field that mirrors the gallery's cover image, for a `multiple`
      * media field. `GalleryUploader` treats the first image as the cover, so
