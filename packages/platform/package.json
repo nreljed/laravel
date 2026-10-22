@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/platform",
-  "version": "0.1.88",
+  "version": "0.1.89",
   "description": "SaaS platform kernel — React frontend for Laravel dashboards, admin panels, auth, settings, media, deploy, and AI.",
   "license": "proprietary",
   "type": "module",

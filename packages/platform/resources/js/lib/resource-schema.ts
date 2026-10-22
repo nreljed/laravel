@@ -404,7 +404,7 @@ export function toColumnDef<TData extends ResourceRecord>(column: ResourceColumn
     // TanStack reads a non-function header as a plain string label.
     const declared = column.headerCell;
 
-    return {
+    const translated = {
         id: column.id ?? column.name,
         // Only an accessor-backed column gets `accessorKey`; a display-only
         // `id` stays valueless so TanStack reports it as unsortable instead of
@@ -417,11 +417,20 @@ export function toColumnDef<TData extends ResourceRecord>(column: ResourceColumn
             : column.header,
         enableSorting: column.sortable ?? true,
         enableHiding: column.hideable ?? true,
-        cell: column.cell ? (context: { row: { original: TData } }) => column.cell!(context.row.original, (context.row.original as ResourceRecord)[column.name as string]) : undefined,
         meta: {
             className: [alignment, column.className].filter(Boolean).join(" "),
         },
-    } as ColumnDef<AppTableFeatures, TData, CellData>;
+    };
+
+    // Only write `cell` when the declaration supplies one. Assigning
+    // `cell: undefined` would overwrite TanStack's default cell renderer
+    // (`renderValue()`), leaving every column without a custom cell blank.
+    if (column.cell) {
+        (translated as Record<string, unknown>).cell = (context: { row: { original: TData } }) =>
+            column.cell!(context.row.original, (context.row.original as ResourceRecord)[column.name as string]);
+    }
+
+    return translated as ColumnDef<AppTableFeatures, TData, CellData>;
 }
 
 /** Flatten sections into the single field list a control lookup needs. */
@@ -707,9 +716,13 @@ export function mapSerializedHeaderActions(
 
     return headerActions.map((declared) => {
         const action = declared as Partial<SerializedHeaderAction>;
+        // A header action has no row to bind, so a route that requires a
+        // parameter cannot resolve here. Resolve defensively: a descriptor that
+        // names such a route must hide its button, not throw during render and
+        // take the whole index page down with it.
         const resolved =
             typeof action.routeName === "string" && action.routeName !== ""
-                ? routeRef(action.routeName)
+                ? resolveResourceRoute(action.routeName, undefined, routeRef)
                 : action.route;
 
         return {
