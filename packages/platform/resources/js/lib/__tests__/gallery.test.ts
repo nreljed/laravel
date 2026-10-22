@@ -105,7 +105,7 @@ describe("createGalleryImageFromFile", () => {
 
 describe("Server format conversion", () => {
   const serverImages: ServerGalleryImage[] = [
-    { url: "/storage/test-posts/img1.webp", alt: "Image 1", order: 0 },
+    { url: "/storage/test-posts/img1.webp", alt: "Image 1", order: 0, size: 4096 },
     { url: "/storage/test-posts/img2.webp", alt: "Image 2", order: 1 },
   ];
 
@@ -140,6 +140,13 @@ describe("Server format conversion", () => {
     if (isGalleryImageDone(first!)) {
       expect(first!.url).toBe("/storage/test-posts/img1.webp");
       expect(first!.name).toBe("Image 1");
+      expect(first!.size).toBe(4096);
+    }
+
+    const second = internal[1];
+    expect(second).toBeDefined();
+    if (isGalleryImageDone(second!)) {
+      expect(second!.size).toBe(0);
     }
   });
 
@@ -150,6 +157,7 @@ describe("Server format conversion", () => {
     expect(server[0]).toBeDefined();
     expect(server[0]!.url).toBe("/storage/test-posts/img1.webp");
     expect(server[0]!.order).toBe(0);
+    expect(server[0]!.size).toBe(1024);
     expect(server[1]!.order).toBe(1);
   });
 

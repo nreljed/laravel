@@ -20,7 +20,7 @@ class PostMediaTest extends TestCase
     public function test_it_normalises_gallery_items_into_the_adapter_shape(): void
     {
         $media = PostMedia::normalize([
-            ['url' => '/storage/social/2026/10/one.jpg', 'alt' => 'First', 'order' => 0],
+            ['url' => '/storage/social/2026/10/one.jpg', 'alt' => 'First', 'order' => 0, 'size' => 4096],
             '/storage/social/2026/10/two.png',
         ]);
 
@@ -30,6 +30,7 @@ class PostMediaTest extends TestCase
                 'path' => 'social/2026/10/one.jpg',
                 'mime' => 'image/jpeg',
                 'title' => 'First',
+                'size' => 4096,
                 'order' => 0,
             ],
             [
@@ -37,6 +38,7 @@ class PostMediaTest extends TestCase
                 'path' => 'social/2026/10/two.png',
                 'mime' => 'image/png',
                 'title' => null,
+                'size' => 0,
                 'order' => 1,
             ],
         ], $media);
@@ -54,6 +56,17 @@ class PostMediaTest extends TestCase
         $this->assertCount(1, $media);
         $this->assertSame('social/a.webp', $media[0]['path']);
         $this->assertSame('image/webp', $media[0]['mime']);
+        $this->assertSame(0, $media[0]['size']);
+    }
+
+    public function test_it_rejects_negative_sizes_from_the_gallery_payload(): void
+    {
+        $media = PostMedia::normalize([
+            ['url' => '/storage/social/one.jpg', 'size' => -10],
+        ]);
+
+        $this->assertCount(1, $media);
+        $this->assertSame(0, $media[0]['size']);
     }
 
     public function test_it_only_manages_paths_inside_the_social_folder(): void
