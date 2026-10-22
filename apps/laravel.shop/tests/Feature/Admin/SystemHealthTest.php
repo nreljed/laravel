@@ -57,6 +57,7 @@ class SystemHealthTest extends TestCase
 
         $shopVersion = null;
         $blogVersion = null;
+        $marketingVersion = null;
         foreach ($installed['packages'] as $package) {
             if (($package['name'] ?? null) === 'nreljed/shop-module') {
                 $shopVersion = $package['version'] ?? null;
@@ -64,21 +65,28 @@ class SystemHealthTest extends TestCase
             if (($package['name'] ?? null) === 'nreljed/blog') {
                 $blogVersion = $package['version'] ?? null;
             }
+            if (($package['name'] ?? null) === 'nreljed/marketing-module') {
+                $marketingVersion = $package['version'] ?? null;
+            }
         }
 
         $this->assertNotNull($shopVersion, 'nreljed/shop-module not found in installed.json');
+        $this->assertNotNull($marketingVersion, 'nreljed/marketing-module not found in installed.json');
 
         $response = $this->actingAs($this->admin())
             ->get(route('dashboard.admin.system-health'));
 
         $response->assertInertia(fn (Assert $page) => $page
-            ->has('modules', 4)
-            ->where('modules.3.slug', 'shop')
-            ->where('modules.3.package', 'nreljed/shop-module')
-            ->where('modules.3.composer_version', $shopVersion)
+            ->has('modules', 5)
+            ->where('modules.4.slug', 'shop')
+            ->where('modules.4.package', 'nreljed/shop-module')
+            ->where('modules.4.composer_version', $shopVersion)
+            ->where('modules.2.slug', 'marketing')
+            ->where('modules.2.package', 'nreljed/marketing-module')
+            ->where('modules.2.composer_version', $marketingVersion)
             ->where('modules.1.composer_version', $blogVersion)
             ->where('modules.0.composer_version', null)
-            ->where('modules.2.composer_version', null));
+            ->where('modules.3.composer_version', null));
     }
 
     public function test_package_version_service_resolves_installed_versions(): void
