@@ -5,6 +5,57 @@ All notable changes to `nreljed/marketing-module` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-10-23
+
+### Fixed
+
+- Creating or updating a campaign or workflow now returns to its index instead
+  of re-rendering the form, so the saved row is visible immediately.
+- A campaign with only an end date no longer fails the `after_or_equal`
+  comparison against an empty start date.
+- A workflow using the default contact-status action now submits the visible
+  default (`Lead`) instead of failing validation because the select was never
+  touched.
+- Installation and upgrade notes now run migrations before the seeder and name
+  the platform seeder explicitly.
+
+## [0.4.0] - 2026-10-22
+
+### Added
+
+- **Campaigns.** Posts can be grouped under a campaign with an objective,
+  status and optional window, while keeping their own schedule and deliveries.
+  New `campaigns` resource (`marketing.campaigns.manage`), a nullable
+  `campaign_id` on posts with `nullOnDelete`, and a campaign picker in the
+  composer.
+- **Workflow automations.** `WorkflowEngine` reacts to `contact_created` and
+  `post_published`, optionally gated on an existing contact tag, and applies
+  add/remove tag, contact-status or webhook actions. Every attempt is recorded
+  in `workflow_runs` with success/failure; a failed action never fails the
+  request that triggered it. New workflows resource
+  (`marketing.workflows.manage`).
+- **Analytics.** A `marketing/analytics` page and `MarketingAnalytics` service
+  report delivery totals, success rate, per-platform breakdown, a 14-day
+  delivery series, campaign performance, and recent workflow runs
+  (`marketing.analytics.view`).
+- Campaign and workflow counts on the marketing dashboard, an analytics link in
+  the sidebar, and a `workflow_runs` health check.
+- Tests: `WorkflowEngineTest` (conditions, actions, webhooks, failure logging),
+  `MarketingAnalyticsTest`, and descriptor coverage for both new resources.
+
+### Upgrade notes
+
+- Run `php artisan migrate` for the four new migrations.
+- Re-run `php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder'` so the three
+  new permissions exist; `*` roles only expand at seed time.
+
+### Changed
+
+- The composer's publishing section gains an optional campaign selector.
+- `SocialPost` exposes a `campaign` relation.
+- Marketing navigation now names Analytics explicitly; campaigns and workflows
+  arrive through the resource registry.
+
 ## [0.3.1] - 2026-10-22
 
 ### Fixed

@@ -97,6 +97,13 @@ final class SocialPostResource
                             'help' => 'Only the accounts you connected are listed.',
                         ],
                         [
+                            'name' => 'campaign_id',
+                            'type' => 'select',
+                            'label' => 'Campaign',
+                            'optionsUrl' => 'dashboard.marketing.campaigns.options',
+                            'help' => 'Optional. Groups the post for reporting without changing when it runs.',
+                        ],
+                        [
                             'name' => 'scheduled_at',
                             'type' => 'datetime',
                             'label' => 'Scheduled for',

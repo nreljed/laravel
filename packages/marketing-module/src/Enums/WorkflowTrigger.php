@@ -1,0 +1,39 @@
+<?php
+
+namespace Nreljed\MarketingModule\Enums;
+
+/**
+ * The event a workflow listens for.
+ */
+enum WorkflowTrigger: string
+{
+    case ContactCreated = 'contact_created';
+    case PostPublished = 'post_published';
+
+    /**
+     * @return list<array{label: string, value: string}>
+     */
+    public static function options(): array
+    {
+        return array_map(
+            static fn (self $case): array => ['label' => $case->label(), 'value' => $case->value],
+            self::cases(),
+        );
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::ContactCreated => 'Contact created',
+            self::PostPublished => 'Post published',
+        };
+    }
+
+    /**
+     * Whether the trigger carries a contact into the action.
+     */
+    public function isContactEvent(): bool
+    {
+        return $this === self::ContactCreated;
+    }
+}

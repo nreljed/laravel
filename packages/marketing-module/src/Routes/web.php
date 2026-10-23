@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Nreljed\MarketingModule\Http\Controllers\AnalyticsController;
+use Nreljed\MarketingModule\Http\Controllers\CampaignsController;
 use Nreljed\MarketingModule\Http\Controllers\ContactsController;
 use Nreljed\MarketingModule\Http\Controllers\MarketingDashboardController;
 use Nreljed\MarketingModule\Http\Controllers\PostMediaController;
@@ -9,9 +11,13 @@ use Nreljed\MarketingModule\Http\Controllers\SegmentsController;
 use Nreljed\MarketingModule\Http\Controllers\SocialAccountsController;
 use Nreljed\MarketingModule\Http\Controllers\SocialAuthController;
 use Nreljed\MarketingModule\Http\Controllers\TagsController;
+use Nreljed\MarketingModule\Http\Controllers\WorkflowsController;
 
 // Dashboard
 Route::get('/', [MarketingDashboardController::class, 'index'])->name('dashboard');
+
+// Analytics
+Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
 
 // Social accounts.
 //
@@ -63,3 +69,24 @@ Route::post('/segments', [SegmentsController::class, 'store'])->name('segments.s
 Route::get('/segments/{record}/edit', [SegmentsController::class, 'edit'])->name('segments.edit');
 Route::put('/segments/{record}', [SegmentsController::class, 'update'])->name('segments.update');
 Route::delete('/segments/{record}', [SegmentsController::class, 'destroy'])->name('segments.destroy');
+
+// Campaigns
+//
+// `options` feeds the composer's campaign picker, so it stays ahead of the
+// record-scoped routes.
+Route::get('/campaigns/options', [CampaignsController::class, 'options'])->name('campaigns.options');
+Route::get('/campaigns', [CampaignsController::class, 'index'])->name('campaigns.index');
+Route::get('/campaigns/create', [CampaignsController::class, 'create'])->name('campaigns.create');
+Route::post('/campaigns', [CampaignsController::class, 'store'])->name('campaigns.store');
+Route::get('/campaigns/{record}/edit', [CampaignsController::class, 'edit'])->name('campaigns.edit');
+Route::put('/campaigns/{record}', [CampaignsController::class, 'update'])->name('campaigns.update');
+Route::delete('/campaigns/{record}', [CampaignsController::class, 'destroy'])->name('campaigns.destroy');
+
+// Workflows
+Route::get('/workflows/tag-options', [WorkflowsController::class, 'tagOptions'])->name('workflows.tag-options');
+Route::get('/workflows', [WorkflowsController::class, 'index'])->name('workflows.index');
+Route::get('/workflows/create', [WorkflowsController::class, 'create'])->name('workflows.create');
+Route::post('/workflows', [WorkflowsController::class, 'store'])->name('workflows.store');
+Route::get('/workflows/{record}/edit', [WorkflowsController::class, 'edit'])->name('workflows.edit');
+Route::put('/workflows/{record}', [WorkflowsController::class, 'update'])->name('workflows.update');
+Route::delete('/workflows/{record}', [WorkflowsController::class, 'destroy'])->name('workflows.destroy');

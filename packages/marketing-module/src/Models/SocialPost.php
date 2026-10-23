@@ -27,6 +27,7 @@ class SocialPost extends Model
 
     protected $fillable = [
         'user_id',
+        'campaign_id',
         'body',
         'media',
         'link',
@@ -59,6 +60,11 @@ class SocialPost extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class);
     }
 
     /**

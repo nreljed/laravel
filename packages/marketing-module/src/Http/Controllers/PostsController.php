@@ -182,6 +182,7 @@ class PostsController extends Controller
             'id' => $post->id,
             'preview' => Str::limit(trim((string) $post->body), 80),
             'body' => $post->body,
+            'campaign_id' => $post->campaign_id,
             'media' => array_map(
                 static fn (array $item): array => [
                     'url' => $item['url'],
@@ -248,6 +249,7 @@ class PostsController extends Controller
 
         return [
             'body' => $data['body'] ?? null,
+            'campaign_id' => $data['campaign_id'] ?? null,
             'media' => PostMedia::normalize((array) ($data['media'] ?? [])),
             'link' => $data['link'] ?? null,
             'hashtags' => $this->parseHashtags($data['hashtags'] ?? null),

@@ -15,6 +15,7 @@ publish to them.
 Phase 1 — accounts, contacts, tags, segments, and the OAuth connect flow.
 Phase 2 — the composer, scheduled publishing, per-account deliveries and approvals.
 Phase 3 — media upload on posts.
+Phase 4 — campaigns, workflow automations and delivery analytics.
 
 | Area | State |
 |------|-------|
@@ -22,7 +23,7 @@ Phase 3 — media upload on posts.
 | Contacts, tags, segments (CRUD) | shipped |
 | Composer, scheduling, approvals, publishing + retries | shipped |
 | Media upload on posts (up to 4 JPEG images, adapter-ready media payload) | shipped |
-| Campaigns, workflows, analytics | not started |
+| Campaigns, workflow automations, analytics | shipped |
 
 Publishing runs on the scheduler (`marketing:publish-due`, once a minute). Each post
 fans out to one delivery per selected account, so a five-platform post can succeed on
@@ -45,9 +46,9 @@ four and be retried on the fifth. Retryable failures follow the configured backo
 
 ```bash
 composer config repositories.marketing vcs https://github.com/nreljed/marketing-module.git
-composer require nreljed/marketing-module:^0.1
-php artisan db:seed --class=RolesAndPermissionsSeeder
+composer require nreljed/marketing-module:^0.4
 php artisan migrate
+php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder'
 ```
 
 1. **Composer:** declare the package as a VCS repository (private; requires a GitHub token,
@@ -59,6 +60,19 @@ php artisan migrate
    dashboard data, and admin resources.
 4. **Migrations / config:** auto-loaded — `loadMigrationsFrom(__DIR__.'/../database/migrations')`
    and `mergeConfigFrom(..., 'marketing')`.
+
+### Upgrading to 0.4
+
+Campaigns, workflows and analytics add three permissions. Re-run the seeder after the
+update so they reach the database and the `*` roles pick them up:
+
+```bash
+php artisan migrate
+php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder'
+```
+
+Without the seeder an existing admin can still reach nothing new, because permissions are
+stored rows rather than config lookups.
 
 ### Frontend wiring (host)
 
@@ -104,6 +118,9 @@ non-empty — an app that keeps its credentials in `services/` keeps working. Th
 | `marketing.tags.manage` | manage contact tags |
 | `marketing.segments.manage` | manage audience segments |
 | `marketing.posts.manage` | compose, schedule, approve, and publish posts |
+| `marketing.campaigns.manage` | create and edit campaign groupings |
+| `marketing.workflows.manage` | create and edit audience and publishing automations |
+| `marketing.analytics.view` | see delivery, campaign, and workflow reporting |
 
 Access is enforced by policies, not by a blanket route middleware, so a user with only one
 of these permissions still sees — and can reach — only that area.
@@ -119,6 +136,8 @@ of these permissions still sees — and can reach — only that area.
 | `SocialChannelAdapter` | one platform's rules: scopes, discovery, publishing, error mapping |
 | `AbstractSocialAdapter` | shared HTTP, token hydration, and error normalisation |
 | `PostPublisher` | due-post selection, capability gates, retries/backoff, approval gate, delivery roll-up |
+| `WorkflowEngine` | evaluates active workflow rules, applies tag/status actions or webhooks, and writes a run record per outcome |
+| `MarketingAnalytics` | delivery, platform, campaign, and workflow totals for the analytics page |
 | `PublishDuePosts` | `marketing:publish-due` — the scheduler entry point (`--dry-run` supported) |
 
 Tokens are encrypted before they touch the database and never leave the vault in plain

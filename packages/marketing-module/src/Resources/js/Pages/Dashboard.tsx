@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import type { PageProps } from "@inertiajs/core";
-import { CalendarClock, Layers, Megaphone, Plus, Send, Tags, Users } from "lucide-react";
+import { BarChart3, CalendarClock, GitBranch, Layers, Megaphone, Plus, Send, Tags, Target, Users } from "lucide-react";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
 import { Button } from "@nreljed/platform/Components/ui/button";
@@ -22,6 +22,8 @@ interface MarketingSummary {
     segments: number;
     posts: number;
     scheduled: number;
+    campaigns: number;
+    workflows: number;
 }
 
 interface MarketingDashboardProps extends PageProps {
@@ -56,6 +58,8 @@ export default function MarketingDashboard() {
         { label: "Contacts", value: summary.contacts, icon: Users },
         { label: "Tags", value: summary.tags, icon: Tags },
         { label: "Segments", value: summary.segments, icon: Layers },
+        { label: "Campaigns", value: summary.campaigns, icon: Target },
+        { label: "Active workflows", value: summary.workflows, icon: GitBranch },
     ];
 
     return (
@@ -63,7 +67,14 @@ export default function MarketingDashboard() {
             <Head title="Marketing" />
 
             <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="flex justify-end">
+                    <Button variant="outline" render={<Link href={route("dashboard.marketing.analytics")} />}>
+                        <BarChart3 />
+                        Open analytics
+                    </Button>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {stats.map((stat) => (
                         <Card key={stat.label}>
                             <CardHeader className="pb-2">
@@ -173,6 +184,22 @@ export default function MarketingDashboard() {
                             >
                                 Segments
                                 <span className="text-muted-foreground">{summary.segments}</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-between"
+                                render={<Link href={route("dashboard.marketing.campaigns.index")} />}
+                            >
+                                Campaigns
+                                <span className="text-muted-foreground">{summary.campaigns}</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-between"
+                                render={<Link href={route("dashboard.marketing.workflows.index")} />}
+                            >
+                                Workflows
+                                <span className="text-muted-foreground">{summary.workflows}</span>
                             </Button>
                         </CardContent>
                     </Card>

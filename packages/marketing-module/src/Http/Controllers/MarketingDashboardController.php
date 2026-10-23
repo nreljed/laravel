@@ -5,11 +5,13 @@ namespace Nreljed\MarketingModule\Http\Controllers;
 use Inertia\Inertia;
 use Inertia\Response;
 use Nreljed\MarketingModule\Enums\PostStatus;
+use Nreljed\MarketingModule\Models\Campaign;
 use Nreljed\MarketingModule\Models\Contact;
 use Nreljed\MarketingModule\Models\Segment;
 use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\Tag;
+use Nreljed\MarketingModule\Models\Workflow;
 use Nreljed\MarketingModule\Services\SocialChannelRegistry;
 use Nreljed\Platform\Http\Controllers\Controller;
 use Nreljed\Platform\Models\User;
@@ -39,6 +41,8 @@ class MarketingDashboardController extends Controller
                 'scheduled' => SocialPost::query()
                     ->where('status', PostStatus::Scheduled->value)
                     ->count(),
+                'campaigns' => Campaign::query()->count(),
+                'workflows' => Workflow::query()->where('is_active', true)->count(),
             ],
             'accounts' => SocialAccount::query()
                 ->where('user_id', $user->id)
@@ -64,12 +68,12 @@ class MarketingDashboardController extends Controller
      */
     protected function canView(User $user): bool
     {
-        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments'] as $area) {
+        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments', 'campaigns', 'workflows'] as $area) {
             if ($user->hasPermission("marketing.{$area}.manage")) {
                 return true;
             }
         }
 
-        return false;
+        return $user->hasPermission('marketing.analytics.view');
     }
 }

@@ -9,25 +9,33 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Nreljed\MarketingModule\Console\Commands\PublishDuePosts;
 use Nreljed\MarketingModule\Enums\PostStatus;
+use Nreljed\MarketingModule\Models\Campaign;
 use Nreljed\MarketingModule\Models\Contact;
 use Nreljed\MarketingModule\Models\Segment;
 use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\Tag;
+use Nreljed\MarketingModule\Models\Workflow;
+use Nreljed\MarketingModule\Policies\CampaignPolicy;
 use Nreljed\MarketingModule\Policies\ContactPolicy;
 use Nreljed\MarketingModule\Policies\SegmentPolicy;
 use Nreljed\MarketingModule\Policies\SocialAccountPolicy;
 use Nreljed\MarketingModule\Policies\SocialPostPolicy;
 use Nreljed\MarketingModule\Policies\TagPolicy;
+use Nreljed\MarketingModule\Policies\WorkflowPolicy;
+use Nreljed\MarketingModule\Resources\CampaignResource;
 use Nreljed\MarketingModule\Resources\ContactResource;
 use Nreljed\MarketingModule\Resources\SegmentResource;
 use Nreljed\MarketingModule\Resources\SocialAccountResource;
 use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Resources\TagResource;
+use Nreljed\MarketingModule\Resources\WorkflowResource;
+use Nreljed\MarketingModule\Services\MarketingAnalytics;
 use Nreljed\MarketingModule\Services\PostPublisher;
 use Nreljed\MarketingModule\Services\SocialAuthService;
 use Nreljed\MarketingModule\Services\SocialChannelRegistry;
 use Nreljed\MarketingModule\Services\TokenVault;
+use Nreljed\MarketingModule\Services\WorkflowEngine;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
 use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Models\User;
@@ -60,6 +68,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         );
         $this->app->singleton(SocialAuthService::class);
         $this->app->singleton(PostPublisher::class);
+        $this->app->singleton(WorkflowEngine::class);
+        $this->app->singleton(MarketingAnalytics::class);
     }
 
     public function boot(): void
@@ -73,6 +83,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             $this->loadRoutes();
             $this->loadCommands();
             $this->configureSchedules();
+            $this->registerWorkflowHooks();
         }
     }
 
@@ -101,6 +112,48 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         Gate::policy(Tag::class, TagPolicy::class);
         Gate::policy(Segment::class, SegmentPolicy::class);
         Gate::policy(SocialPost::class, SocialPostPolicy::class);
+        Gate::policy(Campaign::class, CampaignPolicy::class);
+        Gate::policy(Workflow::class, WorkflowPolicy::class);
+    }
+
+    /**
+     * Listen for the two events workflows can react to.
+     *
+     * The listeners are registered only while the feature is enabled and only
+     * act once the workflow tables exist, so a half-migrated install or a
+     * disabled module never turns a contact create into a boot failure.
+     */
+    protected function registerWorkflowHooks(): void
+    {
+        Contact::created(function (Contact $contact): void {
+            if (! $this->workflowTablesExist()) {
+                return;
+            }
+
+            try {
+                $this->app->make(WorkflowEngine::class)->contactCreated($contact);
+            } catch (Throwable) {
+                // An automation must never fail the request that created the
+                // contact; the engine records its own failures per workflow.
+            }
+        });
+
+        SocialPost::updated(function (SocialPost $post): void {
+            if (! $post->wasChanged('status') || $post->status !== PostStatus::Published) {
+                return;
+            }
+
+            if (! $this->workflowTablesExist()) {
+                return;
+            }
+
+            try {
+                $this->app->make(WorkflowEngine::class)->postPublished($post);
+            } catch (Throwable) {
+                // The post is already published; a workflow failure is logged
+                // in workflow_runs rather than unwound into the publisher.
+            }
+        });
     }
 
     /**
@@ -200,6 +253,21 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'name' => 'Manage Posts',
                 'description' => 'Compose, schedule, approve and publish posts to connected social accounts.',
             ],
+            [
+                'slug' => 'marketing.campaigns.manage',
+                'name' => 'Manage Campaigns',
+                'description' => 'Create and edit the campaigns that group posts for reporting.',
+            ],
+            [
+                'slug' => 'marketing.workflows.manage',
+                'name' => 'Manage Workflows',
+                'description' => 'Create and edit the automations that tag, update or notify on audience and publishing events.',
+            ],
+            [
+                'slug' => 'marketing.analytics.view',
+                'name' => 'View Marketing Analytics',
+                'description' => 'See delivery, campaign and workflow reporting for the marketing module.',
+            ],
         ];
     }
 
@@ -235,6 +303,11 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'showModeBadge' => false,
                 'items' => [
                     ['title' => 'Dashboard', 'url' => route('dashboard.marketing.dashboard', [], false)],
+                    [
+                        'title' => 'Analytics',
+                        'url' => route('dashboard.marketing.analytics', [], false),
+                        'permission' => 'marketing.analytics.view',
+                    ],
                 ],
             ]];
         } catch (Throwable) {
@@ -256,6 +329,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             'segments' => Segment::query()->count(),
             'posts' => SocialPost::query()->count(),
             'scheduled' => SocialPost::query()->where('status', PostStatus::Scheduled->value)->count(),
+            'campaigns' => Campaign::query()->count(),
+            'workflows' => Workflow::query()->where('is_active', true)->count(),
         ];
     }
 
@@ -267,6 +342,8 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             ContactResource::definition(),
             TagResource::definition(),
             SegmentResource::definition(),
+            CampaignResource::definition(),
+            WorkflowResource::definition(),
         ];
     }
 
@@ -280,6 +357,9 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'segments_table' => Schema::hasTable('segments'),
                 'social_posts_table' => Schema::hasTable('social_posts'),
                 'social_post_targets_table' => Schema::hasTable('social_post_targets'),
+                'campaigns_table' => Schema::hasTable('campaigns'),
+                'workflows_table' => Schema::hasTable('workflows'),
+                'workflow_runs_table' => Schema::hasTable('workflow_runs'),
             ];
         } catch (Throwable) {
             return [];
@@ -323,13 +403,26 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
      */
     protected function canView(User $user): bool
     {
-        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments'] as $area) {
+        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments', 'campaigns', 'workflows'] as $area) {
             if ($user->hasPermission("marketing.{$area}.manage")) {
                 return true;
             }
         }
 
-        return false;
+        return $user->hasPermission('marketing.analytics.view');
+    }
+
+    /**
+     * Whether the automation tables exist. The contact observer runs on every
+     * contact create, so this check must stay cheap and exception-safe.
+     */
+    protected function workflowTablesExist(): bool
+    {
+        try {
+            return Schema::hasTable('workflows') && Schema::hasTable('workflow_runs');
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -344,7 +437,10 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 && Schema::hasTable('social_post_targets')
                 && Schema::hasTable('contacts')
                 && Schema::hasTable('tags')
-                && Schema::hasTable('segments');
+                && Schema::hasTable('segments')
+                && Schema::hasTable('campaigns')
+                && Schema::hasTable('workflows')
+                && Schema::hasTable('workflow_runs');
         } catch (Throwable) {
             return false;
         }

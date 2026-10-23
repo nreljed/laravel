@@ -2,12 +2,15 @@
 
 namespace Nreljed\MarketingModule\Tests\Feature;
 
+use Nreljed\MarketingModule\Enums\ContactStatus;
 use Nreljed\MarketingModule\MarketingServiceProvider;
+use Nreljed\MarketingModule\Resources\CampaignResource;
 use Nreljed\MarketingModule\Resources\ContactResource;
 use Nreljed\MarketingModule\Resources\SegmentResource;
 use Nreljed\MarketingModule\Resources\SocialAccountResource;
 use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Resources\TagResource;
+use Nreljed\MarketingModule\Resources\WorkflowResource;
 use Nreljed\MarketingModule\Tests\Concerns\BootsFeatureRegistry;
 use Nreljed\Platform\Support\ResourceDefinition;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,6 +43,8 @@ final class ResourceContractTest extends TestCase
             'contacts' => [ContactResource::class, 'marketing.contacts'],
             'tags' => [TagResource::class, 'marketing.tags'],
             'segments' => [SegmentResource::class, 'marketing.segments'],
+            'campaigns' => [CampaignResource::class, 'marketing.campaigns'],
+            'workflows' => [WorkflowResource::class, 'marketing.workflows'],
         ];
     }
 
@@ -113,5 +118,14 @@ final class ResourceContractTest extends TestCase
         $slugs = array_column($provider->permissions(), 'slug');
 
         $this->assertContains('marketing.posts.manage', $slugs);
+    }
+
+    public function test_the_workflow_contact_status_field_submits_its_visible_default(): void
+    {
+        $fields = collect(WorkflowResource::definition()->getForm())
+            ->flatMap(fn (array $section): array => $section['fields'] ?? [])
+            ->keyBy('name');
+
+        $this->assertSame(ContactStatus::Lead->value, $fields['contact_status']['defaultValue'] ?? null);
     }
 }
