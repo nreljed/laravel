@@ -18,6 +18,7 @@ Route::get('/', [MarketingDashboardController::class, 'index'])->name('dashboard
 
 // Analytics
 Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
+Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
 
 // Social accounts.
 //

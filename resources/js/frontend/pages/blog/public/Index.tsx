@@ -3,7 +3,7 @@ import { Head, Link, usePage } from "@inertiajs/react";
 import PublicLayout from "../../../layouts/PublicLayout";
 import { SitePill } from "../../../components/site/SitePill";
 import { SitePagination } from "../../../components/site/SitePagination";
-import { useReveal } from "../../../components/site";
+import { BlogCard, SiteCardGrid, useReveal } from "../../../components/site";
 
 interface Author {
   id: number;
@@ -142,55 +142,11 @@ export default function BlogIndex({ posts, category, tag }: BlogIndexProps) {
               </div>
             ) : (
               <>
-                <div className="grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2 lg:grid-cols-3">
+                <SiteCardGrid className="sm:grid-cols-2 lg:grid-cols-3">
                   {posts.data.map((post) => (
-                    <Link
-                      key={post.id}
-                      href={route("blog.show", post.slug)}
-                      data-reveal
-                      className="group flex flex-col bg-site-surface transition-colors hover:bg-site-alt-1/40"
-                    >
-                      {post.featured_image && (
-                        <div className="aspect-video overflow-hidden">
-                          <img
-                            src={post.featured_image}
-                            srcSet={post.featured_image_srcset || undefined}
-                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                            alt={post.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          />
-                        </div>
-                      )}
-                      <div className="flex flex-1 flex-col p-site-lg sm:p-site-xl">
-                        {post.category && (
-                          <span className="mb-site-sm inline-flex items-center gap-site-xs text-xs font-bold tracking-[0.15em] text-site-secondary uppercase">
-                            <span className="h-1 w-1 rounded-full bg-site-accent" />
-                            {post.category.name}
-                          </span>
-                        )}
-                        <h3 className="site-title-sm transition-colors group-hover:text-site-secondary">
-                          {post.title}
-                        </h3>
-                        {post.excerpt && (
-                          <p className="mt-site-sm flex-1 text-sm leading-6 text-site-ink-soft line-clamp-3">
-                            {post.excerpt}
-                          </p>
-                        )}
-                        <div className="mt-5 flex items-center gap-site-xs text-xs text-site-ink-faint">
-                          <span>{post.user.name}</span>
-                          {post.published_at && (
-                            <>
-                              <span>&middot;</span>
-                              <time>{new Date(post.published_at).toLocaleDateString()}</time>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
+                    <BlogCard key={post.id} post={post} reveal />
                   ))}
-                </div>
+                </SiteCardGrid>
 
                 {posts.links.length > 3 && (
                   <div className="mt-14">

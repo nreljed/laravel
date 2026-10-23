@@ -5,6 +5,53 @@ All notable changes to `nreljed/marketing-module` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-10-23
+
+### Added
+
+- **Period-scoped analytics v2.** The analytics page now reports 7, 30 or 90
+  days across every section: delivery counts, impressions, reach, engagements,
+  clicks and rates, workflow runs, campaigns and tracked links. The selected
+  period is carried in the URL and used by the page and CSV exports.
+- `MarketingAnalytics` now reads the **latest cumulative snapshot per
+  delivery** instead of summing daily snapshot rows, and reports coverage and
+  freshness (`with_metrics`, `pending`, `unavailable`, `errors`,
+  `coverage_rate`, `last_synced_at`).
+- Top posts, per-platform engagement/click totals, campaign performance with
+  metrics, and tracked-link click aggregates.
+- **CSV exports.** `GET /dashboard/marketing/analytics/export` accepts
+  `posts`, `campaigns` or `links` and streams formula-safe CSV for the selected
+  period behind `marketing.analytics.view`.
+- `AnalyticsCsvExporter` prefixes spreadsheet formula markers in string cells
+  and omits contact data, raw IPs, tokens and provider payloads.
+- `docs/analytics.md` documents metric definitions, denominators, period rules,
+  coverage and CSV behaviour.
+
+### Changed
+
+- `Analytics.tsx` uses period buttons, the platform `ChartContainer` with
+  Recharts, coverage/freshness cards, and semantic tables for top posts,
+  campaigns and links. The hand-rolled bar chart is removed.
+- `MarketingAnalytics::overview()` defaults to 30 days and returns `period`,
+  `summary`, `coverage`, `series`, `platforms`, `top_posts`, `campaigns`,
+  `workflows` and `links`.
+- `recharts` is now a peer dependency (`^3.10.1`), matching the platform and
+  consumer chart stack.
+- Analytics summaries include contacts created in the period, campaigns with
+  activity in the period, and current active workflow counts.
+
+### Upgrade notes
+
+- No migrations are required for this release.
+- Consumers should install the new peer dependency through their workspace or
+  package manager so the Recharts page compiles:
+  `recharts@^3.10.1`.
+- Metrics collection remains disabled by default. A page can show delivery data
+  with zero measured deliveries until a consumer enables and verifies provider
+  scopes.
+- A manual "Sync now" action is intentionally not included, so no new permission
+  is required.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

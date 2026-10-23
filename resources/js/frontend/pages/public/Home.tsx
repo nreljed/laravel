@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton } from "../../components/site";
+import { PillButton, SiteCardGrid, SiteFeatureCard } from "../../components/site";
 
 const spend = [
   { name: "Cloud infrastructure", amount: 182400, pct: 100, delta: "+12%", down: false },
@@ -243,21 +243,18 @@ export default function Home() {
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               What you get
             </p>
-            <div className="mt-site-2xl grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2">
+            <SiteCardGrid className="mt-site-2xl sm:grid-cols-2">
               {capabilities.map((capability) => (
-                <div
+                <SiteFeatureCard
                   key={capability.n}
-                  data-reveal
-                  className="bg-site-surface p-site-xl sm:p-site-2xl"
+                  index={capability.n}
+                  title={capability.title}
+                  reveal
                 >
-                  <span className="font-site-display text-sm font-bold text-site-accent">
-                    {capability.n}
-                  </span>
-                  <h3 className="site-title-sm mt-site-md">{capability.title}</h3>
-                  <p className="mt-site-sm leading-relaxed text-site-ink-soft">{capability.body}</p>
-                </div>
+                  {capability.body}
+                </SiteFeatureCard>
               ))}
-            </div>
+            </SiteCardGrid>
           </div>
         </section>
 

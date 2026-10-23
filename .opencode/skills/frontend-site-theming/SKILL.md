@@ -51,6 +51,9 @@ Heading scale: pick a class by SEO level, never a bespoke size — h1
 `site-title-sm`, h4 `site-heading`, h5 `site-heading-sm`, h6
 `site-heading-xs`; deck paragraph `site-lead`. They clamp mobile→desktop and
 are zero-specificity (`:where`), so Tailwind utilities can still tune them.
+One **component role** opts out of the level map: a card title
+(`SiteCardTitle`) renders an `h3` but uses `site-heading-sm` — a card is a
+component context, sized below the section `h3`.
 
 ### Adding a new site theme
 
@@ -124,6 +127,22 @@ token-driven (no per-brand literals):
   `PaginationLinks`; active page = ink pill with `aria-current="page"`.
 - `PillButton` — pill CTA (internal `Link` or external `<a>`). Renders its
   own `Link` — never wrap it in another.
+- `SiteCardGrid` / `SiteCard` / `SiteCardTitle` — the card system: a
+  `grid gap-site-lg` grid of discrete bordered `bg-site-surface` cards
+  (`rounded-site-card border border-site-border overflow-hidden`), **never** a
+  painted `gap-px`/`bg-site-border` hairline plate — a plate only reads as a
+  grid when every row is full and leaks its background into empty cells.
+  `SiteCard` is a `Link` when given `href`; cards are static (no hover tint,
+  no image zoom). `SiteCardTitle` uses the `site-heading-sm` token.
+- `SiteFeatureCard` — numbered/icon feature card (index, optional `LucideIcon`,
+  title, optional value line, body) for Home/Services/About/Contact.
+- `BlogCard` — blog archive card: featured image, category eyebrow, title,
+  excerpt, author byline (`SiteAvatar` · name · date).
+- `SiteAvatar` — author avatar: the user's image when `avatar_url` is set, else
+  an accent initials monogram (`getUserInitials`) — never a broken/empty image.
+  Sizes `sm`/`md`/`lg` (lg = header account menu).
+- `formatSiteDate(value, "short" | "long")` — the one site date formatter, pinned
+  to `en-US` so server and client render the same string; `null` for empty input.
 - `SiteMenuOverlay` — full-screen menu overlay driven by `SiteMenuLink[]`.
 
 Project-owned; lives in the app shell, not the platform package. Page-level
@@ -136,7 +155,8 @@ A living design-system spec on the project route (`routes/web.php` →
 `Inertia::render('public/styleguide')`; `page-config.ts` override
 `public/styleguide`). Sections: 01 Colors (live swatches via
 `getComputedStyle`), 02 Typography, 03 Fonts, 04 Spacing scale, 05 Buttons,
-06 Tags & pills, 07 Menu overlay links, 08 Cards, 09 Pagination. It is the
+06 Tags & pills, 07 Menu overlay links, 08 Cards (feature + blog + avatar),
+09 Pagination. It is the
 theme's proof — the recipe for a new theme is to copy
 `resources/css/themes/cb360.css`, re-map values, and this page resolves the
 new tokens automatically (no raw hex in components).

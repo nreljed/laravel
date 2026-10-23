@@ -18,6 +18,7 @@ Phase 3 — media upload on posts.
 Phase 4 — campaigns, workflow automations and delivery analytics.
 Phase 5A — scheduled engagement metric ingestion (disabled by default).
 Phase 5B — tracked links, UTMs, public redirects, and click events.
+Phase 5C — period-scoped engagement, click, campaign and link reporting with CSV exports.
 
 | Area | State |
 |------|-------|
@@ -28,10 +29,12 @@ Phase 5B — tracked links, UTMs, public redirects, and click events.
 | Campaigns, workflow automations, analytics | shipped |
 | Scheduled engagement metrics and daily snapshots | 5A implemented, disabled by default |
 | Tracked links, UTMs, public redirects, and click events | 5B implemented, opt-in per post |
+| Period-scoped engagement, link and campaign analytics with CSV export | 5C implemented |
 
 Roadmap and the Phase 5 measurement design live in
 [docs/roadmap.md](docs/roadmap.md) and
-[docs/phase-5-measurement.md](docs/phase-5-measurement.md).
+[docs/phase-5-measurement.md](docs/phase-5-measurement.md). Metric
+definitions and reporting caveats live in [docs/analytics.md](docs/analytics.md).
 
 Publishing runs on the scheduler (`marketing:publish-due`, once a minute). Each post
 fans out to one delivery per selected account, so a five-platform post can succeed on
@@ -63,7 +66,7 @@ never accepts a destination from the request.
 
 ```bash
 composer config repositories.marketing vcs https://github.com/nreljed/marketing-module.git
-composer require nreljed/marketing-module:^0.5
+composer require nreljed/marketing-module:^0.6
 php artisan migrate
 php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder'
 ```
@@ -143,7 +146,7 @@ variables documented in [docs/phase-5-measurement.md](docs/phase-5-measurement.m
 | `marketing.posts.manage` | compose, schedule, approve, and publish posts |
 | `marketing.campaigns.manage` | create and edit campaign groupings |
 | `marketing.workflows.manage` | create and edit audience and publishing automations |
-| `marketing.analytics.view` | see delivery, campaign, and workflow reporting |
+| `marketing.analytics.view` | see period-scoped delivery, engagement, link, campaign, and workflow reporting |
 
 Access is enforced by policies, not by a blanket route middleware, so a user with only one
 of these permissions still sees — and can reach — only that area.
@@ -160,7 +163,8 @@ of these permissions still sees — and can reach — only that area.
 | `AbstractSocialAdapter` | shared HTTP, token hydration, and error normalisation |
 | `PostPublisher` | due-post selection, capability gates, retries/backoff, approval gate, delivery roll-up |
 | `WorkflowEngine` | evaluates active workflow rules, applies tag/status actions or webhooks, and writes a run record per outcome |
-| `MarketingAnalytics` | delivery, platform, campaign, and workflow totals for the analytics page |
+| `MarketingAnalytics` | period-scoped delivery, engagement, platform, campaign, workflow and link reporting |
+| `AnalyticsCsvExporter` | formula-safe CSV exports for posts, campaigns and links |
 | `TrackedLinkService` | tracked-link creation, UTM URL building, click recording, and short-code lookup |
 | `PublishDuePosts` | `marketing:publish-due` — the scheduler entry point (`--dry-run` supported) |
 

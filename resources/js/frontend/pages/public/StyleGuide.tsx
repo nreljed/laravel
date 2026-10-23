@@ -5,6 +5,8 @@ import PublicLayout from "../../layouts/PublicLayout";
 import { PillButton } from "../../components/site/PillButton";
 import { SitePill } from "../../components/site/SitePill";
 import { SitePagination } from "../../components/site/SitePagination";
+import { SiteCardGrid, SiteFeatureCard } from "../../components/site/SiteCard";
+import { BlogCard } from "../../components/site/BlogCard";
 
 interface ColorSwatch {
   label: string;
@@ -133,6 +135,42 @@ const sampleLinks = [
   { url: "https://example.com?page=2", label: "2", active: true },
   { url: "https://example.com?page=3", label: "3", active: false },
   { url: "https://example.com?page=3", label: "Next &raquo;", active: false },
+];
+
+const samplePosts = [
+  {
+    id: 1,
+    title: "Welcome to the Cost Breaker 360 Blog",
+    slug: "welcome-to-the-cost-breaker-360-blog",
+    excerpt:
+      "A warm welcome and a quick guide to what you will find here — cost strategy, engineering notes and product updates.",
+    featured_image: "https://picsum.photos/seed/welcome-blog/1200/630",
+    published_at: "2026-01-15",
+    user: { name: "nstudio", avatar_url: null },
+    category: { name: "Announcements" },
+  },
+  {
+    id: 2,
+    title: "Building a Modern Blog with Laravel 13 and React 19",
+    slug: "building-a-modern-blog-with-laravel-13-and-react-19",
+    excerpt:
+      "How the blog package wires content blocks, scheduled publishing and a themeable public front end.",
+    featured_image: "https://picsum.photos/seed/laravel-blog-tutorial/1200/630",
+    published_at: "2026-02-02",
+    user: { name: "Sami Bouazizi", avatar_url: "https://i.pravatar.cc/64?img=12" },
+    category: { name: "Engineering" },
+  },
+  {
+    id: 3,
+    title: "Laravel AI: Bring Your Own Key Agents",
+    slug: "laravel-ai-bring-your-own-key-agents",
+    excerpt:
+      "A look at per-user provider keys, encrypted at rest, and how the platform delegates model choice to you.",
+    featured_image: "https://picsum.photos/seed/ai-agents/1200/630",
+    published_at: "2026-03-11",
+    user: { name: "nstudio", avatar_url: null },
+    category: { name: "Strategy" },
+  },
 ];
 
 const sections = [
@@ -635,41 +673,42 @@ export default function StyleGuide() {
             {/* Cards */}
             <section id="cards" className="mb-site-4xl scroll-mt-28">
               {sectionHeading("08", "Cards")}
-              <div className="mt-site-xl grid gap-site-md sm:grid-cols-2 xl:grid-cols-3">
-                <div className="flex flex-col justify-between rounded-site-card bg-site-surface p-site-lg">
-                  <div className="mb-site-lg inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="site-title-sm">Surface</h3>
-                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">
-                      Default content card on the cream background.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col justify-between rounded-site-card bg-site-alt-1 p-site-lg">
-                  <div className="mb-site-lg inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="site-title-sm">Alt-1</h3>
-                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">
-                      Soft callout panel for highlights.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col justify-between rounded-site-card bg-site-alt-2 p-site-lg">
-                  <div className="mb-site-lg inline-flex h-10 w-10 items-center justify-center rounded-full bg-site-ink text-site-bg-strong">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="site-title-sm">Alt-2</h3>
-                    <p className="mt-site-xs text-sm leading-6 text-site-ink-soft">
-                      Deep teal panel for emphasis.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
+                Discrete cards on the site tokens — bordered, rounded, static (no hover tint, no
+                image zoom). Card grids use real gaps (<code>SiteCardGrid</code>), never a painted
+                hairline plate. Card titles use{" "}
+                <code className="rounded bg-site-surface px-1.5 py-0.5 text-sm text-site-secondary">
+                  site-heading
+                </code>{" "}
+                (the H4 &ldquo;small card title&rdquo;), not the page h3 size.
+              </p>
+
+              <p className="mt-site-xl text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
+                Feature card
+              </p>
+              <SiteCardGrid className="mt-site-md sm:grid-cols-2 lg:grid-cols-3">
+                <SiteFeatureCard index="01" title="One ledger">
+                  Every team, project and vendor in a single source of truth — no more reconciling
+                  spreadsheets.
+                </SiteFeatureCard>
+                <SiteFeatureCard index="02" icon={Sparkles} title="Budgets & alerts">
+                  Set thresholds per team or vendor and get told before you overspend, not after the
+                  invoice lands.
+                </SiteFeatureCard>
+                <SiteFeatureCard index="03" icon={Sparkles} title="Vendor & SaaS spend">
+                  See renewals, overlaps and dormant seats in one place, and cut what you quietly
+                  stopped using.
+                </SiteFeatureCard>
+              </SiteCardGrid>
+
+              <p className="mt-site-2xl text-xs font-medium uppercase tracking-[0.2em] text-site-secondary">
+                Blog card
+              </p>
+              <SiteCardGrid className="mt-site-md sm:grid-cols-2 lg:grid-cols-3">
+                {samplePosts.map((post) => (
+                  <BlogCard key={post.id} post={post} />
+                ))}
+              </SiteCardGrid>
             </section>
 
             {/* Pagination */}

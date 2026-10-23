@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { ArrowRight, HeartHandshake, LineChart, Lock, Target } from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton, useReveal } from "../../components/site";
+import { PillButton, SiteCardGrid, SiteFeatureCard, useReveal } from "../../components/site";
 
 const principles = [
   {
@@ -82,24 +82,19 @@ export default function About() {
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               What we hold to
             </p>
-            <div className="mt-site-2xl grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-3">
+            <SiteCardGrid className="mt-site-2xl sm:grid-cols-3">
               {principles.map((principle) => (
-                <div
+                <SiteFeatureCard
                   key={principle.n}
-                  data-reveal
-                  className="bg-site-surface p-site-xl sm:p-site-2xl"
+                  index={principle.n}
+                  icon={principle.icon}
+                  title={principle.title}
+                  reveal
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-site-display text-sm font-bold text-site-accent">
-                      {principle.n}
-                    </span>
-                    <principle.icon className="h-5 w-5 text-site-ink-faint" />
-                  </div>
-                  <h3 className="site-title-sm mt-site-lg">{principle.title}</h3>
-                  <p className="mt-site-sm leading-relaxed text-site-ink-soft">{principle.body}</p>
-                </div>
+                  {principle.body}
+                </SiteFeatureCard>
               ))}
-            </div>
+            </SiteCardGrid>
           </div>
         </section>
 

@@ -75,8 +75,8 @@ headlines with no tracking treatment, gray-on-colored-background text.
 
 - **Rhythm**: page gutter `px-site-lg sm:px-site-2xl`; section padding
   `pt-site-4xl pb-site-4xl sm:pt-site-5xl` (tall bands `py-site-5xl`/`pb-site-5xl`);
-  card grids `gap-site-xl`/`gap-site-2xl`; card body `p-site-lg`/`p-site-xl`;
-  hairline grids `gap-px` over `bg-site-border`.
+  card grids a single `gap-site-lg` gutter (`SiteCardGrid`); card body
+  `p-site-lg sm:p-site-xl` (blog card) / `p-site-xl sm:p-site-2xl` (feature card).
 - **Off-scale exceptions** (intentionally raw, not on the named stops): sub-base
   hairlines (`gap-1`, `py-1.5`, `px-2.5`, `py-0.5` — 2–6px, tighter than
   `site-xs`), hero/feature band padding (`pt-14`, `py-20`, `sm:pt-20`,
@@ -150,6 +150,35 @@ the semantic `--site-*` tokens from `resources/css/site.css`, scoped by
   follows a heading. Eyebrow labels (`text-xs … uppercase tracking-[0.2em]`)
   and numeric displays are **not** headings and take no level token.
 
+  One **component role** is deliberately outside the level map too: a **card
+  title** (`SiteCardTitle`) renders an `h3` but takes the **`site-heading-sm`**
+  token (20 → 26px) — a card is a component context, not a page section, so its
+  title sits below the section `h3`. Body headings still follow the level map.
+
+### Site kit components (`resources/js/frontend/components/site/`)
+
+- **`SiteCardGrid`** — the card grid: `grid gap-site-lg` (24px) with column
+  counts passed in (`sm:grid-cols-2 lg:grid-cols-3`). Discrete bordered cards,
+  **never** a painted plate (`gap-px` over `bg-site-border`) — a hairlines plate
+  only reads as a grid when every row is full and leaks its background into any
+  empty cells.
+- **`SiteCard`** — one card: `rounded-site-card border border-site-border
+  bg-site-surface overflow-hidden`; renders a `Link` when given `href`. Static by
+  design — no hover tint, no image zoom.
+- **`SiteCardTitle`** — card heading (`h3` default) using the `site-heading-sm`
+  token (the card component role, below the section `h3`).
+- **`SiteFeatureCard`** — numbered/icon feature card (Home / Services / About /
+  Contact): index + optional icon, title, optional value line, body.
+- **`BlogCard`** — blog archive card: featured image, category eyebrow, title,
+  excerpt, author byline (`SiteAvatar` · name · date). Static (no zoom/hover).
+- **`SiteAvatar`** — author avatar: the user's image when `avatar_url` exists,
+  else an accent initials monogram (`getUserInitials`), so a byline never shows a
+  broken or empty image. Sizes: `sm` (byline) · `md` · `lg` (header account menu).
+- **`formatSiteDate(value, format)`** — one date formatter for the site, pinned to
+  `en-US` so the string is identical server- and client-side (`short` = "Jan 15,
+  2026" byline form, `long` = "January 15, 2026" masthead form); returns `null`
+  for empty/invalid input.
+
 ### CB360 "Ledger" identity (default public theme)
 
 The original Cost Breaker 360 brand — `resources/css/themes/cb360.css`.
@@ -169,8 +198,9 @@ instrument-grade, no hype, no gradient tells.
 - **Typography:** Instrument Sans only; personality from weight + tracking + size
   contrast. Numeric voice is `tabular-nums`.
 - **Layout language:** asymmetric two-column heroes
-  (`lg:grid-cols-[1.05fr_0.95fr]`), hairline grids (`grid gap-px` over
-  `bg-site-border`, cells `bg-site-surface`), numbered items (`01`/`02` in
+  (`lg:grid-cols-[1.05fr_0.95fr]`), discrete bordered card grids (`SiteCardGrid`
+  — real `gap-site-lg` gutters between rounded `bg-site-surface` cards, never a
+  painted `gap-px`/`bg-site-border` plate), numbered items (`01`/`02` in
   `font-site-display text-site-accent`) and accent-dot eyebrow labels
   (`text-xs font-bold tracking-[0.2em] uppercase` with an
   `h-1.5 w-1.5 rounded-full bg-site-accent` dot).

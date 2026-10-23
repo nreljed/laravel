@@ -81,6 +81,9 @@
     --site-border: rgba(24, 24, 27, 0.15);
     --site-outline: #18181b;
 
+    /* Status */
+    --site-danger: #dc2626;
+
     /* Inverted surface — the header pills (dark-mode toggle, user control,
        menu button) keep a fixed dark plate in both modes. --site-accent
        always follows the theme. */
@@ -120,6 +123,8 @@
 
     --site-border: rgba(250, 250, 250, 0.14);
     --site-outline: #fafafa;
+
+    --site-danger: #f87171;
   }
 }
 
@@ -138,6 +143,8 @@
   --color-site-accent: var(--site-accent);
   --color-site-accent-ink: var(--site-accent-ink);
   --color-site-secondary: var(--site-secondary);
+
+  --color-site-danger: var(--site-danger);
 
   --color-site-alt-1: var(--site-alt-1);
   --color-site-alt-2: var(--site-alt-2);

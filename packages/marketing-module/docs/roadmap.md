@@ -1,6 +1,6 @@
 # Marketing module roadmap
 
-Status: 5A and 5B implemented; 5C proposed
+Status: 5A, 5B and 5C implemented in `0.6.0`
 Owner: marketing module
 Last updated: 2026-10-23
 
@@ -38,19 +38,17 @@ attribution it cannot prove.
 | 4 | Campaigns, workflow automations, delivery analytics | shipped in `0.4.x` |
 | 5A | Scheduled metric ingestion and daily snapshots | implemented |
 | 5B | Tracked links, UTMs, public redirects, and click events | implemented |
+| 5C | Period-scoped analytics, coverage, Recharts UI, and CSV exports | shipped in `0.6.0` |
 
-Phase 4 deliberately stops at delivery reporting. Phase 5A now stores platform
-metrics and Phase 5B records clicks, but `MarketingAnalytics` and `Analytics.tsx`
-still report delivery only; the engagement and link UI arrives with 5C. Revenue
-remains shop-owned.
+Phase 4 deliberately stops at delivery reporting. Phase 5A stores platform
+metrics, Phase 5B records clicks, and Phase 5C reports engagement, click-through
+and link performance over the same selected period. Revenue remains shop-owned.
 
 ## Current gaps
 
 | Gap | Consequence |
 |-----|-------------|
-| Metrics are stored but not reported | The dashboard cannot yet answer which content performed |
-| Delivery-only analytics | The dashboard cannot show engagement or coverage |
-| Clicks are stored but not reported | The dashboard cannot show click-through or link performance yet |
+| No conversion ingest contract | Link clicks are reported, but the shop still owns conversions and revenue |
 | Contacts are not a channel | Contacts and segments have no email or SMS send path |
 | Shallow workflow engine | Two triggers, four actions, no delays, branches, or metric conditions |
 | No content planning loop | No calendar, briefs, variants, experiments, or AI recommendations |
@@ -83,7 +81,7 @@ Still required before enabling in production:
 - Verify provider scopes in one consumer. LinkedIn and Pinterest are the most
   likely to return unavailable metrics with the current grants.
 - Run a small real backfill and confirm coverage/error counts.
-- Build the period-scoped reporting in 5C; 5A intentionally adds no UI.
+- 5C now exposes the recorded coverage and freshness in the analytics UI.
 
 ### 5B - Links and attribution
 
@@ -105,20 +103,27 @@ Still required:
   the module stores a reference and reported value only.
 - Keep attribution last-click by default. Any other model is an explicit,
   documented decision.
-- Surface clicks and link performance in 5C.
+- Click and link performance is reported in 5C; conversions still show `0` until
+  the contract exists.
 - Add click retention cleanup in Phase 8.
 
 ### 5C - Analytics v2
 
-- Scope every report to one selected period: 7, 30, or 90 days.
-- Add engagement, click-through, and link-performance views next to delivery
-  reporting.
-- Add top posts and campaign performance tables.
-- Add coverage and freshness indicators.
-- Replace the hand-rolled bar chart with the platform's shadcn `ChartContainer`
-  and Recharts primitives.
-- Add CSV export for posts, campaigns, and links.
-- Document every metric definition and denominator.
+Implemented in `0.6.0`:
+
+- Every report is scoped to one selected period: 7, 30, or 90 days.
+- Engagement, click-through, campaign, platform and tracked-link views sit next
+  to delivery reporting.
+- Top posts and campaign performance tables use the latest cumulative snapshot
+  per delivery rather than summing daily snapshots.
+- Coverage and freshness indicators show measured, pending, unavailable and
+  error counts.
+- The hand-rolled bar chart is replaced by the platform's shadcn
+  `ChartContainer` and Recharts primitives.
+- CSV export is available for posts, campaigns, and links, with spreadsheet
+  formula-injection protection.
+- Metric definitions and denominators are documented in
+  [analytics.md](analytics.md).
 
 **Exit criteria:** a published post has a stored metric snapshot, the dashboard
 shows engagement for the same period as delivery, a tracked link records clicks,
@@ -198,7 +203,7 @@ read-only list.
 1. Phase 5A must land before Phase 6. AI recommendations without engagement data
    are generic advice.
 2. Phase 5B ships after 5A; clicks are useful even before conversion ingest.
-3. Phase 5C should follow the first two so the UI is built on stable data.
+3. Phase 5C followed the first two so the UI was built on stable data.
 4. Phase 6 starts with the planner and calendar; experiments come after there is
    enough history to compare.
 5. Phase 7 starts with consent and email infrastructure, not with a send button.

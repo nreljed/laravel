@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/marketing-module",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform - social accounts, scheduled posts, campaigns, audience segments, workflow automation and analytics frontend kit.",
   "license": "proprietary",
   "type": "module",
@@ -19,6 +19,7 @@
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.87.0",
+    "recharts": "^3.10.1",
     "zod": "^4.4.3"
   },
   "peerDependenciesMeta": {

@@ -45,6 +45,9 @@
     --site-border: rgba(25, 26, 23, 0.14);
     --site-outline: #191a17;
 
+    /* Status */
+    --site-danger: #b91c1c;
+
     /* Type */
     --font-body-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
     --font-display-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
@@ -76,5 +79,7 @@
 
     --site-border: rgba(242, 239, 230, 0.14);
     --site-outline: #f2efe6;
+
+    --site-danger: #f87171;
   }
 }

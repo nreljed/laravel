@@ -1,8 +1,9 @@
 import { Link, router } from "@inertiajs/react";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { CircleUserRound, LayoutDashboard, LogIn, LogOut, UserPlus } from "lucide-react";
-import { useAuth, getUserInitials } from "@nreljed/platform/hooks/use-auth";
+import { useAuth } from "@nreljed/platform/hooks/use-auth";
 import { cn } from "cn";
+import { SiteAvatar } from "./SiteAvatar";
 import { useSiteTheme } from "./site-theme";
 
 // Public-site user control. Signed out it falls back to a bare user icon;
@@ -26,18 +27,8 @@ export function UserMenu() {
   const theme = useSiteTheme();
   const name = user?.name || "Account";
   const email = user?.email || "";
-  const avatar = user?.avatar || null;
 
-  const avatarNode = avatar ? (
-    <img src={avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-  ) : (
-    <span
-      aria-hidden="true"
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-site-accent text-sm font-bold text-site-accent-ink"
-    >
-      {getUserInitials(name)}
-    </span>
-  );
+  const avatarNode = <SiteAvatar name={name} src={user?.avatar ?? null} size="lg" />;
 
   return (
     <MenuPrimitive.Root>

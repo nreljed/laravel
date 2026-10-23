@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { Pencil } from "lucide-react";
 import PublicLayout from "../../../layouts/PublicLayout";
 import { SitePill } from "../../../components/site/SitePill";
+import { SiteAvatar } from "../../../components/site/SiteAvatar";
+import { formatSiteDate } from "../../../components/site/format-date";
 import ProseContent from "@nreljed/platform/Components/blog/ProseContent";
 import { useAuth } from "@nreljed/platform/hooks/use-auth";
 import { highlightAllCodeBlocks } from "@nreljed/platform/lib/shiki-highlight";
@@ -11,6 +13,7 @@ import { demoteBodyHeadings } from "./demote-headings";
 interface Author {
   id: number;
   name: string;
+  avatar_url?: string | null;
 }
 
 interface Category {
@@ -54,6 +57,7 @@ export default function BlogShow({ post }: BlogShowProps) {
   const ogImageUrl = post.og_image || post.featured_image || undefined;
   const { user, capabilities } = useAuth();
   const canEdit = user && (user.id === post.user.id || capabilities.can["posts.edit"]);
+  const publishedAt = formatSiteDate(post.published_at, "long");
 
   useEffect(() => {
     highlightAllCodeBlocks();
@@ -123,17 +127,12 @@ export default function BlogShow({ post }: BlogShowProps) {
           )}
           <h1 className="site-display max-w-site-display text-balance sm:mx-auto">{post.title}</h1>
           <div className="mt-site-md flex items-center gap-site-sm text-sm text-site-ink-faint sm:justify-center">
+            <SiteAvatar name={post.user.name} src={post.user.avatar_url} />
             <span>{post.user.name}</span>
-            {post.published_at && (
+            {publishedAt && (
               <>
                 <span>&middot;</span>
-                <time dateTime={post.published_at}>
-                  {new Date(post.published_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </time>
+                <time dateTime={post.published_at ?? undefined}>{publishedAt}</time>
               </>
             )}
           </div>

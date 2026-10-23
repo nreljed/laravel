@@ -1,16 +1,15 @@
 # Phase 5 - Measurement and attribution
 
-Status: 5A and 5B implemented; 5C proposed
+Status: 5A, 5B and 5C implemented in `0.6.0`
 Parent: [roadmap.md](roadmap.md)
 Last updated: 2026-10-23
 
 ## Summary
 
 Phase 4 can publish and report whether a delivery succeeded, but it cannot say
-what happened afterwards. Phase 5A now ingests and stores platform metrics, and
-Phase 5B records tracked-link clicks. `MarketingAnalytics` and `Analytics.tsx`
-still report delivery, campaign, and workflow counts only; the engagement and
-link reports arrive with 5C. Revenue remains shop-owned.
+what happened afterwards. Phase 5A ingests and stores platform metrics, Phase 5B
+records tracked-link clicks, and Phase 5C reports both over a selected period.
+Revenue remains shop-owned.
 
 Phase 5 closes that gap:
 
@@ -33,8 +32,8 @@ expose them.
 | `social_post_targets` | Stores `external_post_id`, `external_url`, `published_at`, and 5A metric state |
 | `marketing_links` | One tracked link per delivery target, with UTMs, short code, and click count |
 | `marketing_link_clicks` | Privacy-safe click events behind the public redirect |
-| `MarketingAnalytics` | Delivery, platform, campaign, and workflow totals only |
-| `Analytics.tsx` | Hand-rolled bar chart; hardcoded emerald success text |
+| `MarketingAnalytics` | Period-scoped delivery, engagement, platform, campaign, workflow and link reporting |
+| `Analytics.tsx` | Period tabs, Recharts engagement chart, coverage, top posts, campaigns, links and CSV actions |
 | Scheduling | `marketing:publish-due` every minute; `marketing:sync-metrics` when enabled |
 
 Before 5A, the adapters swallowed HTTP failures and returned an empty array.
@@ -425,8 +424,9 @@ Suggested response:
 [
     'period' => [
         'days' => 30,
-        'from' => '2026-09-24',
-        'to' => '2026-10-23',
+        'start' => '2026-09-24',
+        'end' => '2026-10-23',
+        'label' => 'Sep 24 - Oct 23, 2026',
     ],
     'summary' => [
         'posts', 'scheduled', 'published', 'partial', 'failed',
@@ -436,7 +436,8 @@ Suggested response:
         'contacts', 'campaigns', 'active_workflows',
     ],
     'coverage' => [
-        'deliveries', 'with_metrics', 'unavailable', 'errors', 'last_synced_at',
+        'metrics_enabled', 'delivered', 'with_metrics', 'unavailable', 'errors',
+        'pending', 'last_synced_at', 'coverage_rate',
     ],
     'series' => [
         ['date', 'delivered', 'impressions', 'engagements', 'clicks'],
@@ -480,17 +481,17 @@ Replace that with the platform kit.
 
 Components:
 
-- `Tabs` for 7 / 30 / 90 days. The selected period is a URL query parameter so
-  the view is linkable and survives a refresh.
+- Period buttons for 7 / 30 / 90 days. The selected period is a URL query
+  parameter so the view is linkable and survives a refresh.
 - `ChartContainer` plus `AreaChart` or `BarChart` from `recharts`.
 - `ChartTooltip` / `ChartTooltipContent`.
 - `Card`, `CardHeader`, `CardContent`, `CardDescription`.
-- `StatusBadge` for delivery and sync states.
-- `Empty` for no-data and no-coverage states.
-- `DataTable` for top posts and links when sorting or pagination is useful;
-  otherwise use a semantic table with explicit `text-foreground` cells.
+- `Badge` for delivery, campaign and sync states.
+- Empty-state text for no-data and no-coverage states.
+- A semantic table for top posts, campaigns and links.
 - `Button` with `render` for links; never `asChild`.
-- `toast.add({ title, type })` for manual sync feedback; never sonner.
+- The manual "Sync now" action is deferred; a read-only user never triggers
+  provider calls.
 
 Chart rules:
 
@@ -506,7 +507,7 @@ Chart rules:
 
 Suggested layout:
 
-1. Period tabs and "Sync now" action.
+1. Period buttons and CSV export actions.
 2. KPI cards: delivered, success rate, impressions, engagement rate, clicks.
 3. Delivery and engagement trend chart.
 4. Platform comparison.
@@ -537,6 +538,32 @@ Suggested layout:
 - Add `POST /dashboard/marketing/analytics/sync` behind that permission, with
   throttling and a small per-request limit.
 - The scheduler runs without a user permission.
+
+### 5C implementation notes
+
+- `MarketingAnalytics::overview()` accepts `7`, `30`, or `90` days and defaults
+  to 30. The returned `period` carries `days`, `start`, `end`, and a display
+  `label`; every section uses that range.
+- `AnalyticsController::index()` reads `days`, rejects anything outside the
+  supported periods, and renders the page with the period-scoped payload.
+- `AnalyticsController::export()` serves `GET
+  /dashboard/marketing/analytics/export?dataset=posts|campaigns|links&days=30`
+  behind the same `marketing.analytics.view` permission. `AnalyticsCsvExporter`
+  streams rows and prefixes formula-leading string cells with an apostrophe.
+- Metric aggregates use each delivery's latest `metric_date` snapshot. They do
+  not sum snapshot rows; cumulative counters would otherwise grow with every
+  sync day.
+- Posts use `COALESCE(published_at, scheduled_at, created_at)` for period
+  membership; deliveries use `COALESCE(published_at, last_attempted_at,
+  created_at)`.
+- The UI has period buttons, a Recharts chart over the platform chart kit,
+  coverage/freshness, platform comparison, top posts, campaign and link tables,
+  workflow activity, and CSV actions. Charts render `-` for null metrics and a
+  coverage note when no snapshots exist.
+- A manual "Sync now" action is intentionally not exposed in 0.6.0, so no
+  `marketing.metrics.sync` permission is added yet.
+- Metric definitions and denominator rules live in
+  [analytics.md](analytics.md).
 
 ## Failure handling
 

@@ -1,7 +1,7 @@
 {
     "name": "nreljed/marketing-module",
     "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "type": "library",
     "license": "proprietary",
     "authors": [

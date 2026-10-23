@@ -9,7 +9,7 @@ import {
   Wallet,
 } from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton, useReveal } from "../../components/site";
+import { PillButton, SiteCardGrid, SiteFeatureCard, useReveal } from "../../components/site";
 
 const services = [
   {
@@ -89,20 +89,19 @@ export default function Services() {
             <p className="text-xs font-bold tracking-[0.2em] text-site-ink-faint uppercase">
               What&apos;s included
             </p>
-            <div className="mt-site-2xl grid gap-px overflow-hidden rounded-site-card border border-site-border bg-site-border sm:grid-cols-2 lg:grid-cols-3">
+            <SiteCardGrid className="mt-site-2xl sm:grid-cols-2 lg:grid-cols-3">
               {services.map((service) => (
-                <div key={service.n} data-reveal className="bg-site-surface p-site-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="font-site-display text-sm font-bold text-site-accent">
-                      {service.n}
-                    </span>
-                    <service.icon className="h-5 w-5 text-site-ink-faint" />
-                  </div>
-                  <h3 className="site-title-sm mt-site-lg">{service.title}</h3>
-                  <p className="mt-site-sm leading-relaxed text-site-ink-soft">{service.body}</p>
-                </div>
+                <SiteFeatureCard
+                  key={service.n}
+                  index={service.n}
+                  icon={service.icon}
+                  title={service.title}
+                  reveal
+                >
+                  {service.body}
+                </SiteFeatureCard>
               ))}
-            </div>
+            </SiteCardGrid>
           </div>
         </section>
 

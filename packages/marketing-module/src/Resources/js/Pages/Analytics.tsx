@@ -1,10 +1,35 @@
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import type { PageProps } from "@inertiajs/core";
-import { AlertTriangle, BarChart3, CheckCircle2, GitBranch, Megaphone, Send, Users } from "lucide-react";
+import {
+    AlertTriangle,
+    BarChart3,
+    CheckCircle2,
+    Download,
+    ExternalLink,
+    GitBranch,
+    Megaphone,
+    MousePointerClick,
+    Send,
+    Users,
+} from "lucide-react";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import AuthenticatedLayout from "@nreljed/platform/Layouts/AuthenticatedLayout";
 import { Badge } from "@nreljed/platform/Components/ui/badge";
 import { Button } from "@nreljed/platform/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@nreljed/platform/Components/ui/card";
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@nreljed/platform/Components/ui/chart";
+
+interface AnalyticsPeriod {
+    days: number;
+    start: string;
+    end: string;
+    label: string;
+}
 
 interface AnalyticsSummary {
     posts: number;
@@ -19,6 +44,23 @@ interface AnalyticsSummary {
     contacts: number;
     campaigns: number;
     active_workflows: number;
+    impressions: number | null;
+    reach: number | null;
+    engagements: number | null;
+    clicks: number | null;
+    engagement_rate: number | null;
+    click_through_rate: number | null;
+}
+
+interface AnalyticsCoverage {
+    metrics_enabled: boolean;
+    delivered: number;
+    with_metrics: number;
+    unavailable: number;
+    errors: number;
+    pending: number;
+    last_synced_at: string | null;
+    coverage_rate: number;
 }
 
 interface PlatformRow {
@@ -27,11 +69,39 @@ interface PlatformRow {
     total: number;
     delivered: number;
     failed: number;
+    with_metrics: number;
+    impressions: number | null;
+    engagements: number | null;
+    clicks: number | null;
 }
 
 interface SeriesPoint {
     date: string;
-    count: number;
+    label: string;
+    delivered: number;
+    impressions: number;
+    engagements: number;
+    clicks: number;
+}
+
+interface PostRow {
+    id: number;
+    body: string;
+    campaign_id: number | null;
+    campaign: string | null;
+    status: string | null;
+    status_label: string | null;
+    platforms: string[];
+    deliveries: number;
+    delivered: number;
+    failed: number;
+    impressions: number | null;
+    reach: number | null;
+    engagements: number | null;
+    clicks: number | null;
+    engagement_rate: number | null;
+    click_through_rate: number | null;
+    published_at: string | null;
 }
 
 interface CampaignRow {
@@ -47,6 +117,24 @@ interface CampaignRow {
     delivered: number;
     failed: number;
     delivery_rate: number;
+    impressions: number | null;
+    reach: number | null;
+    engagements: number | null;
+    clicks: number | null;
+    engagement_rate: number | null;
+    click_through_rate: number | null;
+}
+
+interface LinkRow {
+    id: number;
+    social_post_id: number | null;
+    destination_url: string;
+    utm_campaign: string | null;
+    short_code: string;
+    short_url: string;
+    clicks: number;
+    conversions: number;
+    last_clicked_at: string | null;
 }
 
 interface WorkflowRunRow {
@@ -69,47 +157,105 @@ interface WorkflowStats {
 
 interface AnalyticsProps extends PageProps {
     analytics: {
+        period: AnalyticsPeriod;
         summary: AnalyticsSummary;
-        platforms: PlatformRow[];
+        coverage: AnalyticsCoverage;
         series: SeriesPoint[];
+        platforms: PlatformRow[];
+        top_posts: PostRow[];
         campaigns: CampaignRow[];
         workflows: WorkflowStats;
+        links: LinkRow[];
     };
+}
+
+const periods = [7, 30, 90];
+
+const chartConfig = {
+    impressions: { label: "Impressions", color: "hsl(var(--chart-1))" },
+    engagements: { label: "Engagements", color: "hsl(var(--chart-2))" },
+    clicks: { label: "Clicks", color: "hsl(var(--chart-3))" },
+} satisfies ChartConfig;
+
+const number = new Intl.NumberFormat("en-US");
+
+function formatNumber(value: number | null | undefined) {
+    return value === null || value === undefined ? "—" : number.format(value);
+}
+
+function formatRate(value: number | null | undefined) {
+    return value === null || value === undefined ? "—" : `${value}%`;
+}
+
+function formatDateTime(value: string | null | undefined) {
+    if (!value) {
+        return "Never";
+    }
+
+    return new Date(value).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
 }
 
 const statusVariant = (status: string | null) => {
     switch (status) {
         case "completed":
         case "success":
+        case "published":
             return "success" as const;
         case "active":
             return "default" as const;
         case "archived":
+        case "cancelled":
             return "outline" as const;
         case "failed":
+        case "partial":
             return "destructive" as const;
         default:
             return "secondary" as const;
     }
 };
 
-/**
- * Delivery, campaign and workflow reporting.
- *
- * The page reports what the engine recorded. It deliberately does not claim
- * attribution the module cannot observe: revenue still belongs to the shop.
- */
 export default function MarketingAnalyticsPage() {
     const { analytics } = usePage<AnalyticsProps>().props;
-    const { summary, platforms, series, campaigns, workflows } = analytics;
+    const { period, summary, coverage, series, platforms, top_posts, campaigns, workflows, links } = analytics;
 
-    const peak = Math.max(1, ...series.map((point) => point.count));
+    const changePeriod = (days: number) => {
+        router.get(
+            route("dashboard.marketing.analytics"),
+            { days },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    };
 
     const stats = [
-        { label: "Delivered", value: summary.delivered, detail: `${summary.deliveries} attempts`, icon: Send },
-        { label: "Success rate", value: `${summary.success_rate}%`, detail: `${summary.delivery_failures} failed`, icon: CheckCircle2 },
-        { label: "Contacts", value: summary.contacts, detail: "audience members", icon: Users },
-        { label: "Active workflows", value: summary.active_workflows, detail: `${workflows.runs} runs in 30 days`, icon: GitBranch },
+        {
+            label: "Delivered",
+            value: formatNumber(summary.delivered),
+            detail: `${formatNumber(summary.deliveries)} attempts · ${summary.success_rate}% success`,
+            icon: Send,
+        },
+        {
+            label: "Impressions",
+            value: formatNumber(summary.impressions),
+            detail: `${formatNumber(summary.reach)} reach`,
+            icon: BarChart3,
+        },
+        {
+            label: "Engagements",
+            value: formatNumber(summary.engagements),
+            detail: `${formatRate(summary.engagement_rate)} rate`,
+            icon: Users,
+        },
+        {
+            label: "Clicks",
+            value: formatNumber(summary.clicks),
+            detail: `${formatRate(summary.click_through_rate)} CTR`,
+            icon: MousePointerClick,
+        },
     ];
 
     return (
@@ -117,16 +263,62 @@ export default function MarketingAnalyticsPage() {
             <Head title="Marketing analytics" />
 
             <div className="space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h2 className="text-lg font-semibold">What the engine recorded</h2>
-                        <p className="text-sm text-muted-foreground">
-                            Deliveries, campaign grouping and automation activity. Revenue attribution stays in the shop.
+                        <p className="max-w-2xl text-sm text-muted-foreground">
+                            Deliveries, audience response and campaign grouping for {period.label}. Revenue attribution stays in the shop.
                         </p>
                     </div>
-                    <Button variant="outline" render={<Link href={route("dashboard.marketing.dashboard")} />}>
-                        Back to dashboard
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="outline" render={<Link href={route("dashboard.marketing.dashboard")} />}>
+                            Back to dashboard
+                        </Button>
+                        {(["posts", "campaigns", "links"] as const).map((dataset) => (
+                            <Button
+                                key={dataset}
+                                variant="outline"
+                                size="sm"
+                                render={
+                                    <a
+                                        href={route("dashboard.marketing.analytics.export", {
+                                            dataset,
+                                            days: period.days,
+                                        })}
+                                    />
+                                }
+                            >
+                                <Download className="size-4" />
+                                {dataset}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Reporting period</span>
+                        <div className="flex gap-1">
+                            {periods.map((days) => (
+                                <Button
+                                    key={days}
+                                    size="sm"
+                                    variant={period.days === days ? "default" : "ghost"}
+                                    onClick={() => changePeriod(days)}
+                                >
+                                    {days} days
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant={coverage.metrics_enabled ? "success" : "outline"}>
+                            {coverage.metrics_enabled ? "Metrics on" : "Metrics off"}
+                        </Badge>
+                        <span>
+                            {coverage.with_metrics} / {coverage.delivered} deliveries measured
+                        </span>
+                    </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -139,67 +331,210 @@ export default function MarketingAnalyticsPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-2xl font-bold">{stat.value}</p>
+                                <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
                                 <p className="text-xs text-muted-foreground">{stat.detail}</p>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <BarChart3 className="size-4" />
-                                Published deliveries
+                                Audience response
                             </CardTitle>
-                            <CardDescription>Successful deliveries per day over the last 14 days.</CardDescription>
+                            <CardDescription>
+                                Latest cumulative snapshot per delivery, grouped by the day it was delivered.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex h-40 items-end gap-1.5" role="img" aria-label="Deliveries per day">
-                                {series.map((point) => (
-                                    <div key={point.date} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2">
-                                        <div
-                                            className="w-full rounded-t bg-primary/80"
-                                            style={{
-                                                height: `${Math.max(4, (point.count / peak) * 100)}%`,
-                                                maxHeight: "calc(100% - 1.25rem)",
-                                            }}
-                                            title={`${point.date}: ${point.count}`}
+                            {coverage.with_metrics === 0 ? (
+                                <div className="flex h-72 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                                    No engagement snapshots for this period yet.
+                                </div>
+                            ) : (
+                                <ChartContainer config={chartConfig} className="aspect-auto h-72 w-full">
+                                    <AreaChart data={series} margin={{ left: 0, right: 8, top: 8 }}>
+                                        <defs>
+                                            <linearGradient id="fillImpressions" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--color-impressions)" stopOpacity={0.35} />
+                                                <stop offset="95%" stopColor="var(--color-impressions)" stopOpacity={0.02} />
+                                            </linearGradient>
+                                            <linearGradient id="fillEngagements" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--color-engagements)" stopOpacity={0.35} />
+                                                <stop offset="95%" stopColor="var(--color-engagements)" stopOpacity={0.02} />
+                                            </linearGradient>
+                                            <linearGradient id="fillClicks" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--color-clicks)" stopOpacity={0.35} />
+                                                <stop offset="95%" stopColor="var(--color-clicks)" stopOpacity={0.02} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis
+                                            dataKey="label"
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tickMargin={8}
+                                            minTickGap={32}
                                         />
-                                        <span className="text-center text-[10px] text-muted-foreground">
-                                            {point.date}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
+                                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                                        <Area
+                                            dataKey="impressions"
+                                            type="natural"
+                                            fill="url(#fillImpressions)"
+                                            stroke="var(--color-impressions)"
+                                            strokeWidth={2}
+                                        />
+                                        <Area
+                                            dataKey="engagements"
+                                            type="natural"
+                                            fill="url(#fillEngagements)"
+                                            stroke="var(--color-engagements)"
+                                            strokeWidth={2}
+                                        />
+                                        <Area
+                                            dataKey="clicks"
+                                            type="natural"
+                                            fill="url(#fillClicks)"
+                                            stroke="var(--color-clicks)"
+                                            strokeWidth={2}
+                                        />
+                                    </AreaChart>
+                                </ChartContainer>
+                            )}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Platforms</CardTitle>
-                            <CardDescription>Where each delivery went and how it fared.</CardDescription>
+                            <CardTitle className="text-lg">Metric coverage</CardTitle>
+                            <CardDescription>How much of the period has provider data.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <div className="flex items-end justify-between">
+                                    <p className="text-3xl font-bold tabular-nums">{coverage.coverage_rate}%</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {coverage.with_metrics} of {coverage.delivered}
+                                    </p>
+                                </div>
+                                <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className="h-full rounded-full bg-primary"
+                                        style={{ width: `${Math.min(100, Math.max(0, coverage.coverage_rate))}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <dl className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="rounded-lg border px-3 py-2">
+                                    <dt className="text-xs text-muted-foreground">Pending</dt>
+                                    <dd className="font-medium tabular-nums">{coverage.pending}</dd>
+                                </div>
+                                <div className="rounded-lg border px-3 py-2">
+                                    <dt className="text-xs text-muted-foreground">Unavailable</dt>
+                                    <dd className="font-medium tabular-nums">{coverage.unavailable}</dd>
+                                </div>
+                                <div className="rounded-lg border px-3 py-2">
+                                    <dt className="text-xs text-muted-foreground">Errors</dt>
+                                    <dd className="font-medium tabular-nums">{coverage.errors}</dd>
+                                </div>
+                                <div className="rounded-lg border px-3 py-2">
+                                    <dt className="text-xs text-muted-foreground">Success rate</dt>
+                                    <dd className="font-medium tabular-nums">{summary.success_rate}%</dd>
+                                </div>
+                            </dl>
+
+                            <p className="text-xs text-muted-foreground">
+                                Last sync: {formatDateTime(coverage.last_synced_at)}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <Megaphone className="size-4" />
+                                Platforms
+                            </CardTitle>
+                            <CardDescription>Where each delivery went and what came back.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {platforms.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No deliveries yet.</p>
+                                <p className="text-sm text-muted-foreground">No deliveries in this period.</p>
                             ) : (
                                 <ul className="space-y-3">
                                     {platforms.map((platform) => (
-                                        <li key={platform.platform} className="flex items-center justify-between gap-3">
+                                        <li
+                                            key={platform.platform}
+                                            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2"
+                                        >
                                             <div className="flex items-center gap-2">
                                                 <Megaphone className="size-4 text-muted-foreground" />
                                                 <span className="text-sm font-medium">{platform.label}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm">
-                                                <span className="text-muted-foreground">{platform.total} total</span>
-                                                <span className="text-emerald-600 dark:text-emerald-400">
-                                                    {platform.delivered} delivered
+                                                <span className="text-xs text-muted-foreground">
+                                                    {platform.delivered} / {platform.total} delivered
                                                 </span>
                                                 {platform.failed > 0 && (
-                                                    <span className="text-destructive">{platform.failed} failed</span>
+                                                    <Badge variant="destructive">{platform.failed} failed</Badge>
                                                 )}
+                                            </div>
+                                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                <span>{formatNumber(platform.impressions)} impressions</span>
+                                                <span>{formatNumber(platform.engagements)} engagements</span>
+                                                <span>{formatNumber(platform.clicks)} clicks</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <GitBranch className="size-4" />
+                                Workflow activity
+                            </CardTitle>
+                            <CardDescription>
+                                {workflows.runs} runs in this period, {workflows.failures} failed · {workflows.active} active workflows.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {workflows.recent.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No workflow runs in this period.</p>
+                            ) : (
+                                <ul className="space-y-3">
+                                    {workflows.recent.map((run) => (
+                                        <li
+                                            key={run.id}
+                                            className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2"
+                                        >
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium">
+                                                    {run.workflow ?? "Deleted workflow"}
+                                                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                                        {run.event}
+                                                    </span>
+                                                </p>
+                                                {run.message && (
+                                                    <p className="truncate text-xs text-muted-foreground">{run.message}</p>
+                                                )}
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-2">
+                                                {run.status === "failed" ? (
+                                                    <AlertTriangle className="size-4 text-destructive" />
+                                                ) : (
+                                                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                                )}
+                                                <Badge variant={statusVariant(run.status)}>
+                                                    {run.status_label ?? run.status ?? "success"}
+                                                </Badge>
                                             </div>
                                         </li>
                                     ))}
@@ -211,12 +546,75 @@ export default function MarketingAnalyticsPage() {
 
                 <Card>
                     <CardHeader>
+                        <CardTitle className="text-lg">Top posts</CardTitle>
+                        <CardDescription>Posts with the strongest measured response in this period.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {top_posts.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No delivered posts with metrics in this period.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Post</th>
+                                            <th className="py-2 pr-4 font-medium">Platforms</th>
+                                            <th className="py-2 pr-4 font-medium">Delivered</th>
+                                            <th className="py-2 pr-4 font-medium">Impressions</th>
+                                            <th className="py-2 pr-4 font-medium">Engagements</th>
+                                            <th className="py-2 pr-4 font-medium">Clicks</th>
+                                            <th className="py-2 pr-4 font-medium">Eng. rate</th>
+                                            <th className="py-2 font-medium">CTR</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {top_posts.map((post) => (
+                                            <tr key={post.id} className="border-b align-top last:border-0">
+                                                <td className="max-w-xs py-3 pr-4">
+                                                    <Link
+                                                        href={route("dashboard.marketing.posts.edit", post.id)}
+                                                        className="line-clamp-2 font-medium hover:underline"
+                                                    >
+                                                        {post.body}
+                                                    </Link>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {post.campaign ?? "No campaign"}
+                                                    </p>
+                                                </td>
+                                                <td className="py-3 pr-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {post.platforms.map((platform) => (
+                                                            <Badge key={platform} variant="outline">
+                                                                {platform}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 pr-4 tabular-nums">
+                                                    {post.delivered} / {post.deliveries}
+                                                </td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatNumber(post.impressions)}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatNumber(post.engagements)}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatNumber(post.clicks)}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatRate(post.engagement_rate)}</td>
+                                                <td className="py-3 tabular-nums">{formatRate(post.click_through_rate)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
                         <CardTitle className="text-lg">Campaigns</CardTitle>
-                        <CardDescription>Posts grouped for planning, with their delivery outcome.</CardDescription>
+                        <CardDescription>Posts grouped for planning, with their delivery and audience outcome.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {campaigns.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No campaigns yet.</p>
+                            <p className="text-sm text-muted-foreground">No campaign activity in this period.</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -226,24 +624,27 @@ export default function MarketingAnalyticsPage() {
                                             <th className="py-2 pr-4 font-medium">Status</th>
                                             <th className="py-2 pr-4 font-medium">Posts</th>
                                             <th className="py-2 pr-4 font-medium">Delivered</th>
-                                            <th className="py-2 font-medium">Rate</th>
+                                            <th className="py-2 pr-4 font-medium">Impressions</th>
+                                            <th className="py-2 pr-4 font-medium">Engagements</th>
+                                            <th className="py-2 pr-4 font-medium">Clicks</th>
+                                            <th className="py-2 font-medium">Delivery rate</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {campaigns.map((campaign) => (
-                                            <tr key={campaign.id} className="border-b last:border-0">
-                                                <td className="py-2 pr-4">
+                                            <tr key={campaign.id} className="border-b align-top last:border-0">
+                                                <td className="py-3 pr-4">
                                                     <p className="font-medium">{campaign.name}</p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {campaign.objective_label ?? campaign.objective ?? "No objective"}
                                                     </p>
                                                 </td>
-                                                <td className="py-2 pr-4">
+                                                <td className="py-3 pr-4">
                                                     <Badge variant={statusVariant(campaign.status)}>
                                                         {campaign.status_label ?? campaign.status ?? "draft"}
                                                     </Badge>
                                                 </td>
-                                                <td className="py-2 pr-4">
+                                                <td className="py-3 pr-4 tabular-nums">
                                                     {campaign.posts}
                                                     {campaign.scheduled > 0 && (
                                                         <span className="text-xs text-muted-foreground">
@@ -252,13 +653,16 @@ export default function MarketingAnalyticsPage() {
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-2 pr-4">
+                                                <td className="py-3 pr-4 tabular-nums">
                                                     {campaign.delivered} / {campaign.deliveries}
                                                     {campaign.failed > 0 && (
                                                         <span className="text-xs text-destructive"> · {campaign.failed} failed</span>
                                                     )}
                                                 </td>
-                                                <td className="py-2">{campaign.delivery_rate}%</td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatNumber(campaign.impressions)}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatNumber(campaign.engagements)}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{formatNumber(campaign.clicks)}</td>
+                                                <td className="py-3 tabular-nums">{campaign.delivery_rate}%</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -271,44 +675,50 @@ export default function MarketingAnalyticsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg">
-                            <GitBranch className="size-4" />
-                            Workflow activity
+                            <MousePointerClick className="size-4" />
+                            Tracked links
                         </CardTitle>
-                        <CardDescription>
-                            {workflows.runs} runs in the last 30 days, {workflows.failures} failed.
-                        </CardDescription>
+                        <CardDescription>Clicks recorded on links created by the module in this period.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {workflows.recent.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No workflow runs yet.</p>
+                        {links.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No tracked link clicks in this period.</p>
                         ) : (
-                            <ul className="space-y-3">
-                                {workflows.recent.map((run) => (
-                                    <li key={run.id} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2">
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium">
-                                                {run.workflow ?? "Deleted workflow"}
-                                                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                                    {run.event}
-                                                </span>
-                                            </p>
-                                            {run.message && (
-                                                <p className="truncate text-xs text-muted-foreground">{run.message}</p>
-                                            )}
-                                        </div>
-                                        <div className="flex shrink-0 items-center gap-2">
-                                            {run.status === "failed" ? (
-                                                <AlertTriangle className="size-4 text-destructive" />
-                                            ) : (
-                                                <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-                                            )}
-                                            <Badge variant={statusVariant(run.status)}>
-                                                {run.status_label ?? run.status ?? "success"}
-                                            </Badge>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Destination</th>
+                                            <th className="py-2 pr-4 font-medium">Campaign</th>
+                                            <th className="py-2 pr-4 font-medium">Clicks</th>
+                                            <th className="py-2 pr-4 font-medium">Conversions</th>
+                                            <th className="py-2 font-medium">Last click</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {links.map((link) => (
+                                            <tr key={link.id} className="border-b last:border-0">
+                                                <td className="max-w-md py-3 pr-4">
+                                                    <a
+                                                        href={link.short_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex items-center gap-1 font-medium hover:underline"
+                                                    >
+                                                        <span className="line-clamp-1">{link.destination_url}</span>
+                                                        <ExternalLink className="size-3 shrink-0" />
+                                                    </a>
+                                                    <p className="text-xs text-muted-foreground">{link.short_url}</p>
+                                                </td>
+                                                <td className="py-3 pr-4">{link.utm_campaign ?? "—"}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{link.clicks}</td>
+                                                <td className="py-3 pr-4 tabular-nums">{link.conversions}</td>
+                                                <td className="py-3 text-muted-foreground">{formatDateTime(link.last_clicked_at)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
