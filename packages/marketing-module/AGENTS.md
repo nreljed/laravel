@@ -17,7 +17,7 @@ pnpm workspace.
 | npm package | `@nreljed/marketing-module` |
 | Namespace | `Nreljed\MarketingModule\` (PSR-4 → `src/`) |
 | Feature slug | `marketing` |
-| Routes | `/dashboard/marketing/*` (named `dashboard.marketing.*`) |
+| Routes | `/dashboard/marketing/*` (named `dashboard.marketing.*`) and public `/m/{code}` (`marketing.links.*`) |
 
 ## Ownership boundaries
 
@@ -29,6 +29,8 @@ pnpm workspace.
   they do not fork the file.
 - `database/migrations/` — the module's own schema. It ships with the package
   and runs through `loadMigrationsFrom()`.
+- `src/Routes/public.php` — unauthenticated redirect routes loaded outside the
+  dashboard group.
 - `scripts/` — the structural guards CI runs (frontend boundary, migrations).
 
 Do not add app-specific routes, migrations, or pages here. Anything an app owns
@@ -37,7 +39,7 @@ belongs in the app.
 ## Consumer wiring
 
 1. `composer config repositories.marketing vcs https://github.com/nreljed/marketing-module.git`
-   and `composer require nreljed/marketing-module:^0.1`.
+   and `composer require nreljed/marketing-module:^0.5`.
 2. Register `Nreljed\MarketingModule\MarketingServiceProvider` in
    `bootstrap/providers.php`.
 3. Add the provider class to the `providers` array in `config/features.php` so

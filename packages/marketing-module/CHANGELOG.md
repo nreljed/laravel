@@ -5,6 +5,60 @@ All notable changes to `nreljed/marketing-module` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-23
+
+### Added
+
+- **Engagement metrics.** Published deliveries now have daily snapshots in
+  `social_post_metrics`: canonical counters (impressions, reach, likes,
+  comments, shares, saves, clicks, video views and more), plus sanitised
+  provider-specific values. Missing numbers stay `null`; a failed request is
+  never recorded as zero.
+- `marketing:sync-metrics` collects metrics on a configurable cadence with
+  `--days`, `--limit`, `--platform`, `--force` and `--dry-run`. Collection is
+  off by default until the consumer verifies its provider scopes, and each
+  delivery records its own sync status and error.
+- All five adapters fetch platform metrics, refreshing an expiring grant first
+  through the shared `AccountTokenRefresher`. `MetricNormalizer` maps provider
+  names to the canonical vocabulary and strips credential-like keys from raw
+  payloads.
+- **Tracked links and click redirects.** Posts can opt into `track_clicks`;
+  each delivery gets a stable short link (`/m/{code}` by default) whose UTM
+  parameters are appended at redirect time. The destination remains the post's
+  canonical link, so changing a platform never changes the stored target.
+- Click events are recorded with a keyed IP hash, truncated user agent and
+  referer, and no third-party lookup; a failed click write never blocks the
+  redirect. Unknown or inactive links return 404, and request input cannot
+  replace the stored destination.
+- Public redirects are rate-limited per IP, cached as `no-store`, and sent with
+  `Referrer-Policy: no-referrer`.
+- Tests for metric normalisation, adapter semantics, sync selection/status,
+  tracked-link creation, redirects/open-redirect protection, the configurable
+  route prefix, and the `track_clicks` resource contract.
+
+### Changed
+
+- `SocialChannelAdapter` gains `fetchMetrics()`. Custom adapters must implement
+  it; a provider failure throws `MetricFetchException` so an empty result is
+  never confused with a successful request that has no metrics.
+- `PostPublisher` refreshes tokens through `AccountTokenRefresher` and injects
+  each delivery's tracked URL when the post opts in. Tracking failures are
+  logged and the original URL is published.
+- Social post targets expose metric-sync state, metric history and their tracked
+  link; social posts expose `track_clicks` in the composer and API resource.
+- Marketing health checks now cover the three new tables, and the scheduler
+  reports the metric command when collection is enabled.
+
+### Upgrade notes
+
+- Run `php artisan migrate` for the five new migrations.
+- Metrics collection remains disabled. Set `MARKETING_METRICS_ENABLED=true`
+  after confirming the provider's insight scopes, then run
+  `php artisan marketing:sync-metrics --dry-run` before the first live run.
+- Tracked links are opt-in per post. Override the public prefix, base URL, code
+  length and rate limit with the `MARKETING_LINKS_*` variables when the app
+  needs a short host or a different path.
+
 ## [0.4.1] - 2026-10-23
 
 ### Fixed

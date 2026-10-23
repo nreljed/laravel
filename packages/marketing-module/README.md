@@ -1,14 +1,14 @@
 # Marketing Module (`nreljed/marketing-module`)
 
 A self-contained marketing-automation feature provider for the Laravel dashboard — social
-accounts (OAuth), contacts, tags, audience segments, and the platform adapters that will
-publish to them.
+accounts (OAuth), contacts, tags, audience segments, and the platform adapters that publish
+to them.
 
 **Namespace:** `Nreljed\MarketingModule\` (PSR-4 → `src/`)
 **Composer package:** `nreljed/marketing-module` (private GitHub repo, installed via VCS)
 **npm package:** `@nreljed/marketing-module`
 **Feature slug:** `marketing`
-**Routes:** `/dashboard/marketing/*` (named `dashboard.marketing.*`)
+**Routes:** `/dashboard/marketing/*` (named `dashboard.marketing.*`) and public `/m/{code}` (`marketing.links.*`)
 
 ## Status
 
@@ -16,6 +16,8 @@ Phase 1 — accounts, contacts, tags, segments, and the OAuth connect flow.
 Phase 2 — the composer, scheduled publishing, per-account deliveries and approvals.
 Phase 3 — media upload on posts.
 Phase 4 — campaigns, workflow automations and delivery analytics.
+Phase 5A — scheduled engagement metric ingestion (disabled by default).
+Phase 5B — tracked links, UTMs, public redirects, and click events.
 
 | Area | State |
 |------|-------|
@@ -24,12 +26,27 @@ Phase 4 — campaigns, workflow automations and delivery analytics.
 | Composer, scheduling, approvals, publishing + retries | shipped |
 | Media upload on posts (up to 4 JPEG images, adapter-ready media payload) | shipped |
 | Campaigns, workflow automations, analytics | shipped |
+| Scheduled engagement metrics and daily snapshots | 5A implemented, disabled by default |
+| Tracked links, UTMs, public redirects, and click events | 5B implemented, opt-in per post |
+
+Roadmap and the Phase 5 measurement design live in
+[docs/roadmap.md](docs/roadmap.md) and
+[docs/phase-5-measurement.md](docs/phase-5-measurement.md).
 
 Publishing runs on the scheduler (`marketing:publish-due`, once a minute). Each post
 fans out to one delivery per selected account, so a five-platform post can succeed on
 four and be retried on the fifth. Retryable failures follow the configured backoff
 (`marketing.publishing.retry_backoff`), and posts can be held behind an approval gate
 (`marketing.publishing.approval_required`, overridable per post).
+
+Metric collection is opt-in (`MARKETING_METRICS_ENABLED=true`). When enabled,
+`marketing:sync-metrics` runs every six hours and stores one daily snapshot per
+delivery; missing provider data is recorded as unavailable, never as zero.
+
+Link tracking is opt-in per post. When enabled, each delivery target publishes a
+stable `/m/{code}` URL, and the public redirect records a privacy-safe click
+before forwarding to the original destination. The redirect is rate limited and
+never accepts a destination from the request.
 
 ## Requirements
 
@@ -46,7 +63,7 @@ four and be retried on the fifth. Retryable failures follow the configured backo
 
 ```bash
 composer config repositories.marketing vcs https://github.com/nreljed/marketing-module.git
-composer require nreljed/marketing-module:^0.4
+composer require nreljed/marketing-module:^0.5
 php artisan migrate
 php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder'
 ```
@@ -87,7 +104,8 @@ stored rows rather than config lookups.
 ## Configuration
 
 `config/marketing.php` holds the driver map, the OAuth app credentials and scopes per
-platform, publishing defaults, media settings, and audience defaults.
+platform, publishing defaults, media settings, audience defaults, link tracking, and
+metric ingestion.
 
 ```php
 'marketing' => [
@@ -106,8 +124,13 @@ platform, publishing defaults, media settings, and audience defaults.
 ```
 
 Credentials set here win over a host `services.<driver>` entry, but only when they are
-non-empty — an app that keeps its credentials in `services/` keeps working. The OAuth
+non-empty - an app that keeps its credentials in `services/` keeps working. The OAuth
 `redirect` always points at the module's own callback.
+
+Tracked links read `MARKETING_LINKS_PREFIX` (default `m`), optional
+`MARKETING_LINKS_BASE_URL`, `MARKETING_LINKS_CODE_LENGTH`, and
+`MARKETING_LINKS_RATE_LIMIT`. Metric ingestion reads the `MARKETING_METRICS_*`
+variables documented in [docs/phase-5-measurement.md](docs/phase-5-measurement.md).
 
 ## Permissions
 
@@ -138,6 +161,7 @@ of these permissions still sees — and can reach — only that area.
 | `PostPublisher` | due-post selection, capability gates, retries/backoff, approval gate, delivery roll-up |
 | `WorkflowEngine` | evaluates active workflow rules, applies tag/status actions or webhooks, and writes a run record per outcome |
 | `MarketingAnalytics` | delivery, platform, campaign, and workflow totals for the analytics page |
+| `TrackedLinkService` | tracked-link creation, UTM URL building, click recording, and short-code lookup |
 | `PublishDuePosts` | `marketing:publish-due` — the scheduler entry point (`--dry-run` supported) |
 
 Tokens are encrypted before they touch the database and never leave the vault in plain

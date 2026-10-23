@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Nreljed\MarketingModule\Database\Factories\SocialPostFactory;
 use Nreljed\MarketingModule\Enums\PostStatus;
 use Nreljed\MarketingModule\Support\PostContent;
@@ -31,6 +32,7 @@ class SocialPost extends Model
         'body',
         'media',
         'link',
+        'track_clicks',
         'hashtags',
         'status',
         'scheduled_at',
@@ -47,6 +49,7 @@ class SocialPost extends Model
         'metadata' => 'array',
         'status' => PostStatus::class,
         'scheduled_at' => 'datetime',
+        'track_clicks' => 'boolean',
         'requires_approval' => 'boolean',
         'approved_at' => 'datetime',
         'published_at' => 'datetime',
@@ -73,6 +76,19 @@ class SocialPost extends Model
     public function targets(): HasMany
     {
         return $this->hasMany(SocialPostTarget::class);
+    }
+
+    /**
+     * @return HasManyThrough<SocialPostMetric, SocialPostTarget, $this>
+     */
+    public function metrics(): HasManyThrough
+    {
+        return $this->hasManyThrough(SocialPostMetric::class, SocialPostTarget::class);
+    }
+
+    public function links(): HasMany
+    {
+        return $this->hasMany(MarketingLink::class);
     }
 
     /**
@@ -122,12 +138,12 @@ class SocialPost extends Model
     /**
      * The platform-neutral content an adapter receives.
      */
-    public function toPostContent(): PostContent
+    public function toPostContent(?string $link = null): PostContent
     {
         return PostContent::make(
             (string) ($this->body ?? ''),
             (array) ($this->media ?? []),
-            $this->link,
+            $link ?? $this->link,
             array_values(array_filter((array) ($this->hashtags ?? []), 'is_string')),
         );
     }

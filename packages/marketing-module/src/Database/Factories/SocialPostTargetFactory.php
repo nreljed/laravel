@@ -4,6 +4,7 @@ namespace Nreljed\MarketingModule\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Nreljed\MarketingModule\Enums\DeliveryStatus;
+use Nreljed\MarketingModule\Enums\MetricSyncStatus;
 use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\SocialPostTarget;
@@ -32,6 +33,10 @@ class SocialPostTargetFactory extends Factory
             'error_code' => null,
             'error_message' => null,
             'published_at' => null,
+            'metrics_status' => MetricSyncStatus::Pending,
+            'metrics_attempted_at' => null,
+            'metrics_synced_at' => null,
+            'metrics_error' => null,
         ];
     }
 

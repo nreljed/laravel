@@ -193,6 +193,7 @@ class PostsController extends Controller
                 PostMedia::normalize((array) ($post->media ?? [])),
             ),
             'link' => $post->link,
+            'track_clicks' => (bool) $post->track_clicks,
             'hashtags' => implode(', ', (array) ($post->hashtags ?? [])),
             'status' => $post->status?->label(),
             'delivery' => sprintf(
@@ -252,6 +253,7 @@ class PostsController extends Controller
             'campaign_id' => $data['campaign_id'] ?? null,
             'media' => PostMedia::normalize((array) ($data['media'] ?? [])),
             'link' => $data['link'] ?? null,
+            'track_clicks' => (bool) ($data['track_clicks'] ?? false),
             'hashtags' => $this->parseHashtags($data['hashtags'] ?? null),
             'scheduled_at' => $scheduledAt,
             'timezone' => $timezone,

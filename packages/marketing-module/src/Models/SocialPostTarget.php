@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Nreljed\MarketingModule\Database\Factories\SocialPostTargetFactory;
 use Nreljed\MarketingModule\Enums\DeliveryStatus;
+use Nreljed\MarketingModule\Enums\MetricSyncStatus;
 
 /**
  * One post -> one account delivery.
@@ -32,6 +35,10 @@ class SocialPostTarget extends Model
         'error_code',
         'error_message',
         'published_at',
+        'metrics_status',
+        'metrics_attempted_at',
+        'metrics_synced_at',
+        'metrics_error',
     ];
 
     protected $casts = [
@@ -40,6 +47,9 @@ class SocialPostTarget extends Model
         'last_attempted_at' => 'datetime',
         'next_attempt_at' => 'datetime',
         'published_at' => 'datetime',
+        'metrics_status' => MetricSyncStatus::class,
+        'metrics_attempted_at' => 'datetime',
+        'metrics_synced_at' => 'datetime',
     ];
 
     protected static function newFactory(): Factory
@@ -55,6 +65,24 @@ class SocialPostTarget extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(SocialAccount::class, 'social_account_id');
+    }
+
+    /**
+     * @return HasMany<SocialPostMetric, $this>
+     */
+    public function metrics(): HasMany
+    {
+        return $this->hasMany(SocialPostMetric::class);
+    }
+
+    public function latestMetric(): HasOne
+    {
+        return $this->hasOne(SocialPostMetric::class)->latestOfMany('metric_date');
+    }
+
+    public function link(): HasOne
+    {
+        return $this->hasOne(MarketingLink::class);
     }
 
     /**

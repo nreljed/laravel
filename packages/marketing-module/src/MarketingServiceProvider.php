@@ -2,12 +2,16 @@
 
 namespace Nreljed\MarketingModule;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Nreljed\MarketingModule\Console\Commands\PublishDuePosts;
+use Nreljed\MarketingModule\Console\Commands\SyncMarketingMetrics;
 use Nreljed\MarketingModule\Enums\PostStatus;
 use Nreljed\MarketingModule\Models\Campaign;
 use Nreljed\MarketingModule\Models\Contact;
@@ -30,11 +34,15 @@ use Nreljed\MarketingModule\Resources\SocialAccountResource;
 use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Resources\TagResource;
 use Nreljed\MarketingModule\Resources\WorkflowResource;
+use Nreljed\MarketingModule\Services\AccountTokenRefresher;
 use Nreljed\MarketingModule\Services\MarketingAnalytics;
+use Nreljed\MarketingModule\Services\MetricNormalizer;
 use Nreljed\MarketingModule\Services\PostPublisher;
 use Nreljed\MarketingModule\Services\SocialAuthService;
 use Nreljed\MarketingModule\Services\SocialChannelRegistry;
+use Nreljed\MarketingModule\Services\SocialMetricSync;
 use Nreljed\MarketingModule\Services\TokenVault;
+use Nreljed\MarketingModule\Services\TrackedLinkService;
 use Nreljed\MarketingModule\Services\WorkflowEngine;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
 use Nreljed\Platform\Contracts\FeatureProvider;
@@ -45,9 +53,9 @@ use SocialiteProviders\Pinterest\PinterestExtendSocialite;
 use Throwable;
 
 /**
- * The Marketing feature: social accounts, the audience, and the publishing
+ * The Marketing feature: social accounts, the audience, the publishing
  * pipeline (scheduled posts with per-account deliveries, retries and
- * approvals). Campaigns and workflow automations are the next phase.
+ * approvals), campaigns, workflow automations and delivery analytics.
  *
  * The provider owns four things a consumer never has to wire by hand: the
  * routes, the policies, the OAuth driver extensions, and the declarative
@@ -67,7 +75,11 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             fn () => new SocialChannelRegistry((array) config('marketing.channels', [])),
         );
         $this->app->singleton(SocialAuthService::class);
+        $this->app->singleton(AccountTokenRefresher::class);
+        $this->app->singleton(MetricNormalizer::class);
         $this->app->singleton(PostPublisher::class);
+        $this->app->singleton(SocialMetricSync::class);
+        $this->app->singleton(TrackedLinkService::class);
         $this->app->singleton(WorkflowEngine::class);
         $this->app->singleton(MarketingAnalytics::class);
     }
@@ -80,6 +92,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         $this->registerSocialiteExtensions();
 
         if ($this->enabled()) {
+            $this->registerRateLimiters();
             $this->loadRoutes();
             $this->loadCommands();
             $this->configureSchedules();
@@ -99,10 +112,22 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
      */
     protected function loadRoutes(): void
     {
+        Route::middleware('throttle:marketing-links')
+            ->prefix(trim((string) config('marketing.links.prefix', 'm'), '/'))
+            ->name('marketing.links.')
+            ->group(__DIR__.'/Routes/public.php');
+
         Route::middleware(['web', 'auth', 'verified'])
             ->prefix('/dashboard/marketing')
             ->name('dashboard.marketing.')
             ->group(__DIR__.'/Routes/web.php');
+    }
+
+    protected function registerRateLimiters(): void
+    {
+        RateLimiter::for('marketing-links', static fn (Request $request) => Limit::perMinute(
+            max(1, (int) config('marketing.links.rate_limit_per_minute', 60)),
+        )->by((string) $request->ip()));
     }
 
     protected function registerPolicies(): void
@@ -164,6 +189,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
     {
         $this->commands([
             PublishDuePosts::class,
+            SyncMarketingMetrics::class,
         ]);
     }
 
@@ -176,6 +202,17 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             $schedule->command('marketing:publish-due')
                 ->everyMinute()
+                ->withoutOverlapping();
+
+            if (! (bool) config('marketing.metrics.enabled', false)) {
+                return;
+            }
+
+            $hours = max(1, min(24, (int) config('marketing.metrics.sync_interval_hours', 6)));
+            $expression = $hours === 24 ? '0 0 * * *' : "0 */{$hours} * * *";
+
+            $schedule->command('marketing:sync-metrics')
+                ->cron($expression)
                 ->withoutOverlapping();
         });
     }
@@ -357,6 +394,9 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'segments_table' => Schema::hasTable('segments'),
                 'social_posts_table' => Schema::hasTable('social_posts'),
                 'social_post_targets_table' => Schema::hasTable('social_post_targets'),
+                'social_post_metrics_table' => Schema::hasTable('social_post_metrics'),
+                'marketing_links_table' => Schema::hasTable('marketing_links'),
+                'marketing_link_clicks_table' => Schema::hasTable('marketing_link_clicks'),
                 'campaigns_table' => Schema::hasTable('campaigns'),
                 'workflows_table' => Schema::hasTable('workflows'),
                 'workflow_runs_table' => Schema::hasTable('workflow_runs'),
@@ -368,11 +408,23 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
 
     public function getScheduledTasks(): array
     {
-        return [[
+        $tasks = [[
             'command' => 'marketing:publish-due',
             'frequency' => 'every:60',
             'description' => 'Publishes scheduled posts and retries failed deliveries.',
         ]];
+
+        if ((bool) config('marketing.metrics.enabled', false)) {
+            $hours = max(1, min(24, (int) config('marketing.metrics.sync_interval_hours', 6)));
+
+            $tasks[] = [
+                'command' => 'marketing:sync-metrics',
+                'frequency' => 'every:'.($hours * 3600),
+                'description' => 'Collects engagement metrics for published deliveries.',
+            ];
+        }
+
+        return $tasks;
     }
 
     public function getMediaSubdirectory(): ?string

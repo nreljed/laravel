@@ -8,12 +8,14 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Nreljed\MarketingModule\Contracts\SocialChannelAdapter;
 use Nreljed\MarketingModule\Enums\DeliveryStatus;
 use Nreljed\MarketingModule\Enums\PostStatus;
+use Nreljed\MarketingModule\Models\MarketingLink;
 use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\SocialPostTarget;
 use Nreljed\MarketingModule\Services\PostPublisher;
 use Nreljed\MarketingModule\Services\SocialChannelRegistry;
 use Nreljed\MarketingModule\Services\TokenVault;
+use Nreljed\MarketingModule\Services\TrackedLinkService;
 use Nreljed\MarketingModule\Support\NormalizedError;
 use Nreljed\MarketingModule\Support\PostContent;
 use Nreljed\MarketingModule\Support\PublishResult;
@@ -54,7 +56,10 @@ final class PostPublisherTest extends TestCase
         $this->adapter = new PublishingAdapter;
 
         $registry = new SocialChannelRegistry(
-            ['default' => 'fake', 'drivers' => ['fake' => PublishingAdapter::class]],
+            ['default' => 'fake', 'drivers' => [
+                'fake' => PublishingAdapter::class,
+                'instagram' => PublishingAdapter::class,
+            ]],
             fn (): SocialChannelAdapter => $this->adapter,
         );
 
@@ -319,6 +324,43 @@ final class PostPublisherTest extends TestCase
 
         $this->assertArrayNotHasKey('access_token_encrypted', $account->fresh()->toArray());
         $this->assertSame('secret-token', $account->fresh()->accessToken());
+    }
+
+    public function test_tracking_injects_a_per_platform_link_without_changing_the_post(): void
+    {
+        $account = $this->account(['platform' => 'instagram']);
+        $post = $this->post([$account], [
+            'link' => 'https://shop.test/offer',
+            'track_clicks' => true,
+        ]);
+
+        $this->publisher->publishDue($this->now);
+
+        $this->assertCount(1, $this->adapter->published);
+        $this->assertSame(PostStatus::Published, $post->refresh()->status);
+
+        $link = MarketingLink::query()->sole();
+        $expected = (new TrackedLinkService)->trackedUrl($link);
+
+        $this->assertSame('https://shop.test/offer', $post->refresh()->link);
+        $this->assertSame('instagram', $link->utm_source);
+        $this->assertSame('social', $link->utm_medium);
+        $this->assertSame('post-'.$post->id.'-instagram', $link->utm_content);
+        $this->assertSame($expected, $this->adapter->published[0]->link);
+    }
+
+    public function test_tracking_failure_does_not_block_publishing(): void
+    {
+        $post = $this->post([$this->account()], [
+            'link' => 'ftp://shop.test/offer',
+            'track_clicks' => true,
+        ]);
+
+        $this->publisher->publishDue($this->now);
+
+        $this->assertSame('ftp://shop.test/offer', $this->adapter->published[0]->link);
+        $this->assertSame(0, MarketingLink::query()->count());
+        $this->assertSame(PostStatus::Published, $post->refresh()->status);
     }
 
     /**

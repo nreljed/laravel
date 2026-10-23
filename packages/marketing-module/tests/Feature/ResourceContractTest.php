@@ -128,4 +128,14 @@ final class ResourceContractTest extends TestCase
 
         $this->assertSame(ContactStatus::Lead->value, $fields['contact_status']['defaultValue'] ?? null);
     }
+
+    public function test_the_post_form_offers_click_tracking(): void
+    {
+        $fields = collect(SocialPostResource::definition()->getForm())
+            ->flatMap(fn (array $section): array => $section['fields'] ?? [])
+            ->keyBy('name');
+
+        $this->assertSame('boolean', $fields['track_clicks']['type'] ?? null);
+        $this->assertFalse($fields['track_clicks']['defaultValue'] ?? null);
+    }
 }

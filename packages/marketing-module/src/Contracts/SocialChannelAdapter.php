@@ -77,6 +77,11 @@ interface SocialChannelAdapter
     /**
      * Fetch engagement metrics for a published post.
      *
+     * Throw on transport, authentication, and API errors so the caller can
+     * distinguish a failed request from a platform that exposed no metrics.
+     * Return an empty array only when the request succeeded but no metrics are
+     * available. A reported zero is data and must be returned as zero.
+     *
      * @return array<string, int|float>
      */
     public function fetchMetrics(string $externalPostId, SocialAccount $account): array;

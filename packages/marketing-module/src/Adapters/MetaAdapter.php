@@ -132,7 +132,7 @@ class MetaAdapter extends AbstractSocialAdapter
         $token = $account->accessToken();
 
         if ($token === null) {
-            return [];
+            $this->throwMetricsTokenMissing();
         }
 
         $response = $this->get(self::GRAPH.'/'.$externalPostId.'/insights', [
@@ -140,7 +140,7 @@ class MetaAdapter extends AbstractSocialAdapter
         ], $token);
 
         if (! $response->successful()) {
-            return [];
+            $this->throwMetricsFailure($response);
         }
 
         $metrics = [];
@@ -153,9 +153,16 @@ class MetaAdapter extends AbstractSocialAdapter
             }
 
             $values = Arr::get($entry, 'values', []);
-            $total = Arr::get((array) ($values[0] ?? []), 'total', 0);
+            $total = Arr::get((array) ($values[0] ?? []), 'total');
 
-            $metrics[$this->metricName($name)] = is_numeric($total) ? (int) $total : 0;
+            // Reactions are returned as a map of reaction type => count.
+            if (is_array($total)) {
+                $total = array_sum(array_filter($total, 'is_numeric'));
+            }
+
+            if (is_numeric($total)) {
+                $metrics[$this->metricName($name)] = (int) $total;
+            }
         }
 
         return $metrics;

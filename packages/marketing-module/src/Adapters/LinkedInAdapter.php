@@ -131,7 +131,7 @@ class LinkedInAdapter extends AbstractSocialAdapter
         $token = $account->accessToken();
 
         if ($token === null) {
-            return [];
+            $this->throwMetricsTokenMissing();
         }
 
         $response = $this->get(self::API.'/socialActions/'.$externalPostId, [
@@ -140,10 +140,14 @@ class LinkedInAdapter extends AbstractSocialAdapter
         ], $token);
 
         if (! $response->successful()) {
-            return [];
+            $this->throwMetricsFailure($response);
         }
 
         $elements = (array) Arr::get($response->json(), 'elements', []);
+
+        if ($elements === []) {
+            return [];
+        }
 
         $likes = 0;
         $comments = 0;
@@ -160,10 +164,10 @@ class LinkedInAdapter extends AbstractSocialAdapter
             }
         }
 
-        return array_filter([
-            'reactions' => $likes,
+        return [
+            'likes' => $likes,
             'comments' => $comments,
-        ], static fn (int $value): bool => $value > 0);
+        ];
     }
 
     /**

@@ -24,6 +24,7 @@ class SocialPostFactory extends Factory
             'body' => fake()->sentence(12),
             'media' => [],
             'link' => null,
+            'track_clicks' => false,
             'hashtags' => [],
             'status' => PostStatus::Draft,
             'scheduled_at' => null,

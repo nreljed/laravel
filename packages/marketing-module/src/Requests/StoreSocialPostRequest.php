@@ -38,7 +38,13 @@ class StoreSocialPostRequest extends FormRequest
         return [
             'body' => 'required|string|max:63206',
             'campaign_id' => ['nullable', 'integer', Rule::exists('campaigns', 'id')],
-            'link' => 'nullable|url|max:2048',
+            'link' => [
+                'nullable',
+                'url:http,https',
+                'max:2048',
+                Rule::requiredIf(fn (): bool => $this->boolean('track_clicks')),
+            ],
+            'track_clicks' => 'sometimes|boolean',
             'hashtags' => 'nullable|string|max:255',
             'scheduled_at' => 'nullable|date',
             'requires_approval' => 'sometimes|boolean',

@@ -123,31 +123,39 @@ class XAdapter extends AbstractSocialAdapter
         $token = $account->accessToken();
 
         if ($token === null) {
-            return [];
+            $this->throwMetricsTokenMissing();
         }
 
         $response = $this->get(self::API.'/tweets/'.$externalPostId, [
-            'tweet.fields' => 'public_metrics,non_public_metrics',
+            'tweet.fields' => 'public_metrics',
         ], $token);
 
         if (! $response->successful()) {
+            $this->throwMetricsFailure($response);
+        }
+
+        $metrics = Arr::get($response->json(), 'data.public_metrics');
+
+        if (! is_array($metrics) || $metrics === []) {
             return [];
         }
 
-        $metrics = Arr::get($response->json(), 'data.public_metrics', []);
+        $normalized = [];
 
-        if (! is_array($metrics)) {
-            return [];
+        foreach ([
+            'impression_count' => 'impressions',
+            'like_count' => 'likes',
+            'reply_count' => 'replies',
+            'retweet_count' => 'reposts',
+            'quote_count' => 'quotes',
+            'bookmark_count' => 'bookmarks',
+        ] as $source => $target) {
+            if (array_key_exists($source, $metrics) && is_numeric($metrics[$source])) {
+                $normalized[$target] = (int) $metrics[$source];
+            }
         }
 
-        return array_filter([
-            'impressions' => (int) ($metrics['impression_count'] ?? 0),
-            'likes' => (int) ($metrics['like_count'] ?? 0),
-            'replies' => (int) ($metrics['reply_count'] ?? 0),
-            'reposts' => (int) ($metrics['retweet_count'] ?? 0),
-            'quotes' => (int) ($metrics['quote_count'] ?? 0),
-            'bookmarks' => (int) ($metrics['bookmark_count'] ?? 0),
-        ], static fn (int $value): bool => $value > 0);
+        return $normalized;
     }
 
     /**

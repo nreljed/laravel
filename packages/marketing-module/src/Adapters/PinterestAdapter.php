@@ -144,24 +144,41 @@ class PinterestAdapter extends AbstractSocialAdapter
         $token = $account->accessToken();
 
         if ($token === null) {
-            return [];
+            $this->throwMetricsTokenMissing();
         }
 
         $response = $this->get(self::API.'/pins/'.$externalPostId.'/analytics', [], $token);
 
         if (! $response->successful()) {
-            return [];
+            $this->throwMetricsFailure($response);
         }
 
         $metrics = [];
 
-        foreach ((array) $response->json() as $key => $value) {
-            if (is_numeric($value)) {
+        $this->collectMetrics((array) $response->json(), $metrics);
+
+        return $metrics;
+    }
+
+    /**
+     * Pinterest nests its counters under summary/all-time blocks.
+     *
+     * @param  array<string|int, mixed>  $payload
+     * @param  array<string, int>  $metrics
+     */
+    protected function collectMetrics(array $payload, array &$metrics): void
+    {
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $this->collectMetrics($value, $metrics);
+
+                continue;
+            }
+
+            if (is_string($key) && is_numeric($value)) {
                 $metrics[$key] = (int) $value;
             }
         }
-
-        return $metrics;
     }
 
     /**

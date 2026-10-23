@@ -167,7 +167,7 @@ class InstagramAdapter extends AbstractSocialAdapter
         $token = $account->accessToken();
 
         if ($token === null) {
-            return [];
+            $this->throwMetricsTokenMissing();
         }
 
         $response = $this->get($this->graph().'/'.$externalPostId.'/insights', [
@@ -175,7 +175,7 @@ class InstagramAdapter extends AbstractSocialAdapter
         ], $token);
 
         if (! $response->successful()) {
-            return [];
+            $this->throwMetricsFailure($response);
         }
 
         $metrics = [];
@@ -183,7 +183,7 @@ class InstagramAdapter extends AbstractSocialAdapter
         foreach ((array) Arr::get($response->json(), 'data', []) as $entry) {
             $name = Arr::get($entry, 'name');
             $values = (array) Arr::get($entry, 'values', []);
-            $total = Arr::get((array) ($values[0] ?? []), 'total', 0);
+            $total = Arr::get((array) ($values[0] ?? []), 'total');
 
             if (is_string($name) && is_numeric($total)) {
                 $metrics[$name] = (int) $total;

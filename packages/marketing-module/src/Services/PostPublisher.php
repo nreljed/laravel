@@ -4,8 +4,8 @@ namespace Nreljed\MarketingModule\Services;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use Nreljed\MarketingModule\Contracts\SocialChannelAdapter;
 use Nreljed\MarketingModule\Enums\DeliveryStatus;
 use Nreljed\MarketingModule\Enums\PostStatus;
 use Nreljed\MarketingModule\Enums\SocialAccountStatus;
@@ -13,7 +13,6 @@ use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\SocialPostTarget;
 use Nreljed\MarketingModule\Support\PublishResult;
-use Nreljed\MarketingModule\Support\TokenSet;
 use Throwable;
 
 /**
@@ -26,10 +25,19 @@ use Throwable;
  */
 class PostPublisher
 {
+    protected AccountTokenRefresher $refresher;
+
+    protected TrackedLinkService $links;
+
     public function __construct(
         protected SocialChannelRegistry $channels,
-        protected TokenVault $vault,
-    ) {}
+        TokenVault $vault,
+        ?AccountTokenRefresher $refresher = null,
+        ?TrackedLinkService $links = null,
+    ) {
+        $this->refresher = $refresher ?? new AccountTokenRefresher($vault);
+        $this->links = $links ?? new TrackedLinkService;
+    }
 
     /**
      * Publish every post that is due, once.
@@ -204,9 +212,9 @@ class PostPublisher
             );
         }
 
-        $this->refreshAccountIfNeeded($account, $adapter);
+        $this->refresher->refreshIfNeeded($account, $adapter);
 
-        $content = $post->toPostContent();
+        $content = $post->toPostContent($this->trackedLink($target, $post, $account));
 
         $violations = $adapter->capabilities()->violations($content);
 
@@ -246,40 +254,31 @@ class PostPublisher
             );
     }
 
-    /**
-     * Persist a refreshed grant so the next attempt does not re-refresh.
-     */
-    protected function refreshAccountIfNeeded(SocialAccount $account, SocialChannelAdapter $adapter): void
-    {
-        if (! $account->needsRefresh()) {
-            return;
+    protected function trackedLink(
+        SocialPostTarget $target,
+        SocialPost $post,
+        SocialAccount $account,
+    ): ?string {
+        if (! $post->track_clicks) {
+            return null;
         }
 
-        $refreshToken = $account->refreshToken();
+        try {
+            $link = $this->links->ensureForTarget($target, $post, $account);
 
-        if ($refreshToken === null) {
-            return;
+            return $link !== null ? $this->links->trackedUrl($link) : null;
+        } catch (Throwable $e) {
+            try {
+                Log::warning('marketing.link_tracking_failed', [
+                    'post_id' => $post->getKey(),
+                    'target_id' => $target->getKey(),
+                    'error' => $e->getMessage(),
+                ]);
+            } catch (Throwable) {
+            }
+
+            return null;
         }
-
-        $refreshed = $adapter->refreshTokens(TokenSet::make(
-            $account->accessToken(),
-            $refreshToken,
-            $account->expires_at?->getTimestamp(),
-            array_values((array) $account->scopes),
-        ));
-
-        if ($refreshed->accessToken === null) {
-            return;
-        }
-
-        $account->forceFill([
-            'access_token_encrypted' => $this->vault->encrypt($refreshed->accessToken),
-            'refresh_token_encrypted' => $this->vault->encrypt($refreshed->refreshToken ?? $refreshToken),
-            'expires_at' => $refreshed->expiresAt !== null
-                ? CarbonImmutable::createFromTimestamp($refreshed->expiresAt)
-                : $account->expires_at,
-            'last_validated_at' => CarbonImmutable::now(),
-        ])->save();
     }
 
     protected function succeed(SocialPostTarget $target, PublishResult $result, CarbonInterface $now): PublishResult

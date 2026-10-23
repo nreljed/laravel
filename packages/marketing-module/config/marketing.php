@@ -147,6 +147,45 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Links
+    |--------------------------------------------------------------------------
+    |
+    | Tracked links are served from a public prefix outside the dashboard. A
+    | dedicated base URL can keep them on a short host; otherwise the app URL
+    | is used. Tracking itself is opt-in per post.
+    |
+    */
+
+    'links' => [
+        'prefix' => trim((string) env('MARKETING_LINKS_PREFIX', 'm'), '/'),
+        'base_url' => env('MARKETING_LINKS_BASE_URL'),
+        'code_length' => (int) env('MARKETING_LINKS_CODE_LENGTH', 8),
+        'rate_limit_per_minute' => (int) env('MARKETING_LINKS_RATE_LIMIT', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metrics
+    |--------------------------------------------------------------------------
+    |
+    | Engagement collection ships disabled until a consumer has verified the
+    | provider scopes. A rejected grant is recorded per delivery rather than
+    | zero-filling the report.
+    |
+    */
+
+    'metrics' => [
+        'enabled' => (bool) env('MARKETING_METRICS_ENABLED', false),
+        'sync_days' => (int) env('MARKETING_METRICS_SYNC_DAYS', 30),
+        'sync_interval_hours' => (int) env('MARKETING_METRICS_SYNC_INTERVAL_HOURS', 6),
+        'retry_after_minutes' => (int) env('MARKETING_METRICS_RETRY_AFTER_MINUTES', 60),
+        'max_per_run' => (int) env('MARKETING_METRICS_MAX_PER_RUN', 100),
+        'requests_per_minute' => (int) env('MARKETING_METRICS_REQUESTS_PER_MINUTE', 30),
+        'retention_days' => (int) env('MARKETING_METRICS_RETENTION_DAYS', 365),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Media
     |--------------------------------------------------------------------------
     */

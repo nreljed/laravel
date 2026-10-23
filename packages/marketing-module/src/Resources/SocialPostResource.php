@@ -67,6 +67,13 @@ final class SocialPostResource
                         ],
                         ['name' => 'link', 'type' => 'text', 'label' => 'Link'],
                         [
+                            'name' => 'track_clicks',
+                            'type' => 'boolean',
+                            'label' => 'Track clicks',
+                            'defaultValue' => false,
+                            'help' => 'Create a tracked link for each platform and add UTM parameters. The post keeps the original URL.',
+                        ],
+                        [
                             'name' => 'media',
                             'type' => 'media',
                             'label' => 'Images',

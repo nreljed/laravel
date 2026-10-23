@@ -13,6 +13,7 @@ use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Events\Dispatcher;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\DateFactory;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Schema;
@@ -41,6 +42,8 @@ trait BootsDatabase
             $config = new ConfigRepository([]);
 
             $config->set('app.timezone', 'UTC');
+            $config->set('app.url', 'https://laravel.test');
+            $config->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
             $config->set('database.default', 'sqlite');
             $config->set('database.connections.sqlite', [
                 'driver' => 'sqlite',
@@ -62,6 +65,21 @@ trait BootsDatabase
                 'max_file_size' => 10 * 1024 * 1024,
                 'output_quality' => 85,
             ]);
+            $config->set('marketing.links', [
+                'prefix' => 'm',
+                'base_url' => null,
+                'code_length' => 8,
+                'rate_limit_per_minute' => 60,
+            ]);
+            $config->set('marketing.metrics', [
+                'enabled' => true,
+                'sync_days' => 30,
+                'sync_interval_hours' => 6,
+                'retry_after_minutes' => 60,
+                'max_per_run' => 100,
+                'requests_per_minute' => 0,
+                'retention_days' => 365,
+            ]);
 
             return $config;
         });
@@ -77,6 +95,7 @@ trait BootsDatabase
 
         $container->instance('encrypter', new Encrypter(str_repeat('a', 32), 'AES-256-CBC'));
         $container->instance('date', new DateFactory);
+        $container->instance('http', new HttpFactory);
         $container->instance(Generator::class, FakerFactory::create());
 
         // Facades cache the instance they resolved on first use, so a previous

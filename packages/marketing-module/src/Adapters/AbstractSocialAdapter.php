@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Nreljed\MarketingModule\Contracts\SocialChannelAdapter;
+use Nreljed\MarketingModule\Exceptions\MetricFetchException;
 use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Support\NormalizedError;
 use Nreljed\MarketingModule\Support\PostContent;
@@ -133,6 +134,23 @@ abstract class AbstractSocialAdapter implements SocialChannelAdapter
         }
 
         return NormalizedError::permanent('rejected', $message);
+    }
+
+    /**
+     * Metric calls must fail loudly; an empty array means "no metrics", not
+     * "the request did not work".
+     */
+    protected function throwMetricsFailure(Response $response): never
+    {
+        throw MetricFetchException::fromNormalized($this->mapResponse($response));
+    }
+
+    protected function throwMetricsTokenMissing(): never
+    {
+        throw MetricFetchException::fromNormalized(NormalizedError::permanent(
+            'token_missing',
+            'The account has no stored access token.',
+        ));
     }
 
     /**
