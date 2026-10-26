@@ -84,7 +84,7 @@ jobs:
             # lock is committed; --no-scripts: no .env/artisan in the mirror.
             # booking does not require the blog, so composer only warns it is
             # "not locked" and still exits 0.
-            composer update nreljed/platform nreljed/blog \
+            composer update nreljed/platform nreljed/blog nreljed/marketing-module \
               --with-dependencies --no-install --no-scripts --no-interaction \
               --working-dir="$app"
           done
