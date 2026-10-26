@@ -1,6 +1,16 @@
-import { Head, router, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import AdminLayout from "../../../../Layouts/AdminLayout";
 import { Card, CardContent } from "../../../../Components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../../Components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -128,6 +138,7 @@ export default function AdminSubmissionsIndex() {
   const [dateTo, setDateTo] = useState(filters.date_to ?? "");
   const [selected, setSelected] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const basePath = pinnedForm
     ? route("dashboard.admin.contact.index")
@@ -188,6 +199,13 @@ export default function AdminSubmissionsIndex() {
   const filtersActive =
     status !== ALL || form !== ALL || search !== "" || dateFrom !== "" || dateTo !== "";
 
+  // Base UI's Select.Value renders the raw value unless given children, so the
+  // trigger would otherwise read "all"/"read" instead of the human label.
+  const formLabel =
+    form === ALL ? "All forms" : (forms.find((option) => option.key === form)?.label ?? form);
+  const statusLabel =
+    status === ALL ? "All statuses" : (statusMeta[status]?.label ?? status);
+
   const allSelected =
     submissions.data.length > 0 && selected.length === submissions.data.length;
 
@@ -203,12 +221,6 @@ export default function AdminSubmissionsIndex() {
 
   const runBulk = (action: BulkAction) => {
     if (selected.length === 0) return;
-    if (
-      action === "delete" &&
-      !window.confirm(`Delete ${selected.length} submission(s) permanently?`)
-    ) {
-      return;
-    }
 
     setBusy(true);
     router.post(
@@ -233,23 +245,30 @@ export default function AdminSubmissionsIndex() {
   const exportQuery = exportParams.toString();
   const exportUrl = exportQuery ? `${exportPath}?${exportQuery}` : exportPath;
 
-  const SortHeader = ({ column, label, className }: { column: string; label: string; className?: string }) => (
-    <TableHead className={cn("cursor-pointer select-none hover:text-foreground", className)}>
-      <button
-        type="button"
-        onClick={() => changeSort(column)}
-        className="inline-flex items-center gap-1 font-medium"
+  const SortHeader = ({ column, label, className }: { column: string; label: string; className?: string }) => {
+    const active = filters.sort === column;
+
+    return (
+      <TableHead
+        className={cn("cursor-pointer select-none hover:text-foreground", className)}
+        aria-sort={active ? (filters.direction === "asc" ? "ascending" : "descending") : "none"}
       >
-        {label}
-        {filters.sort === column &&
-          (filters.direction === "asc" ? (
-            <ArrowUp className="size-3" />
-          ) : (
-            <ArrowDown className="size-3" />
-          ))}
-      </button>
-    </TableHead>
-  );
+        <button
+          type="button"
+          onClick={() => changeSort(column)}
+          className="inline-flex items-center gap-1 font-medium"
+        >
+          {label}
+          {active &&
+            (filters.direction === "asc" ? (
+              <ArrowUp className="size-3" aria-hidden="true" />
+            ) : (
+              <ArrowDown className="size-3" aria-hidden="true" />
+            ))}
+        </button>
+      </TableHead>
+    );
+  };
 
   return (
     <AdminLayout title="Form Submissions">
@@ -259,10 +278,10 @@ export default function AdminSubmissionsIndex() {
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
             <div className="rounded-lg bg-blue-100 dark:bg-blue-900 p-2.5">
-              <Mail className="size-5 text-blue-700 dark:text-blue-300" />
+              <Mail className="size-5 text-blue-700 dark:text-blue-300" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
+              <p className="text-2xl font-bold tabular-nums">{stats.total.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
           </CardContent>
@@ -270,10 +289,10 @@ export default function AdminSubmissionsIndex() {
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
             <div className="rounded-lg bg-amber-100 dark:bg-amber-900 p-2.5">
-              <Inbox className="size-5 text-amber-700 dark:text-amber-300" />
+              <Inbox className="size-5 text-amber-700 dark:text-amber-300" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.new.toLocaleString()}</p>
+              <p className="text-2xl font-bold tabular-nums">{stats.new.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Unread</p>
             </div>
           </CardContent>
@@ -281,10 +300,10 @@ export default function AdminSubmissionsIndex() {
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
             <div className="rounded-lg bg-green-100 dark:bg-green-900 p-2.5">
-              <Mail className="size-5 text-green-700 dark:text-green-300" />
+              <Mail className="size-5 text-green-700 dark:text-green-300" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.read.toLocaleString()}</p>
+              <p className="text-2xl font-bold tabular-nums">{stats.read.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Read</p>
             </div>
           </CardContent>
@@ -292,10 +311,10 @@ export default function AdminSubmissionsIndex() {
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
             <div className="rounded-lg bg-cyan-100 dark:bg-cyan-900 p-2.5">
-              <Archive className="size-5 text-cyan-700 dark:text-cyan-300" />
+              <Archive className="size-5 text-cyan-700 dark:text-cyan-300" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.archived.toLocaleString()}</p>
+              <p className="text-2xl font-bold tabular-nums">{stats.archived.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Archived</p>
             </div>
           </CardContent>
@@ -312,8 +331,8 @@ export default function AdminSubmissionsIndex() {
                 applyFilters({ form: value });
               }}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All forms" />
+              <SelectTrigger className="w-[180px]" aria-label="Form">
+                <SelectValue placeholder="All forms">{formLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>All forms</SelectItem>
@@ -333,8 +352,8 @@ export default function AdminSubmissionsIndex() {
               applyFilters({ status: value });
             }}
           >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="All statuses" />
+            <SelectTrigger className="w-[160px]" aria-label="Status">
+              <SelectValue placeholder="All statuses">{statusLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>All statuses</SelectItem>
@@ -347,7 +366,10 @@ export default function AdminSubmissionsIndex() {
           </Select>
 
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -379,7 +401,7 @@ export default function AdminSubmissionsIndex() {
 
           {filtersActive && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <RotateCcw className="size-4" />
+              <RotateCcw className="size-4" aria-hidden="true" />
               Clear
             </Button>
           )}
@@ -389,7 +411,7 @@ export default function AdminSubmissionsIndex() {
           <div className="flex items-center gap-2">
             <Select value={String(filters.per_page)} onValueChange={changePerPage}>
               <SelectTrigger className="w-[110px]" aria-label="Rows per page">
-                <SelectValue />
+                <SelectValue>{filters.per_page} / page</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {perPages.map((value) => (
@@ -402,7 +424,7 @@ export default function AdminSubmissionsIndex() {
 
             {selected.length > 0 && (
               <div className="flex items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-1">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground" role="status" aria-live="polite">
                   {selected.length} selected
                 </span>
                 <Button
@@ -411,7 +433,7 @@ export default function AdminSubmissionsIndex() {
                   disabled={busy}
                   onClick={() => runBulk("mark_read")}
                 >
-                  <CheckCheck className="size-4" />
+                  <CheckCheck className="size-4" aria-hidden="true" />
                   Mark read
                 </Button>
                 <Button
@@ -420,16 +442,16 @@ export default function AdminSubmissionsIndex() {
                   disabled={busy}
                   onClick={() => runBulk("archive")}
                 >
-                  <Archive className="size-4" />
+                  <Archive className="size-4" aria-hidden="true" />
                   Archive
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
                   disabled={busy}
-                  onClick={() => runBulk("delete")}
+                  onClick={() => setBulkDeleteOpen(true)}
                 >
-                  <Trash2 className="size-4" />
+                  <Trash2 className="size-4" aria-hidden="true" />
                   Delete
                 </Button>
               </div>
@@ -441,7 +463,7 @@ export default function AdminSubmissionsIndex() {
             size="sm"
             render={<a href={exportUrl} download aria-label="Export CSV" />}
           >
-            <Download className="size-4" />
+            <Download className="size-4" aria-hidden="true" />
             Export CSV
           </Button>
         </div>
@@ -514,7 +536,9 @@ export default function AdminSubmissionsIndex() {
                               ? "bg-amber-500"
                               : "bg-muted-foreground/40",
                           )}
+                          aria-hidden="true"
                         />
+                        {submission.status === "new" && <span className="sr-only">Unread</span>}
                         {new Date(submission.created_at).toLocaleDateString()}
                       </span>
                       <span className="block pl-3 text-muted-foreground/70">
@@ -527,22 +551,34 @@ export default function AdminSubmissionsIndex() {
                       </TableCell>
                     )}
                     <TableCell className="text-xs">
-                      <span className="block font-medium truncate">{submission.name}</span>
-                      <span className="block text-muted-foreground truncate">
-                        {submission.email}
-                      </span>
+                      <div className="max-w-[220px]">
+                        <Link
+                          href={showPath(submission.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="block truncate rounded-sm font-medium hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                          {submission.name || submission.email || `Submission #${submission.id}`}
+                        </Link>
+                        {submission.name && submission.email && (
+                          <span className="block truncate text-muted-foreground">
+                            {submission.email}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[280px]">
-                      <span className="block truncate">{submission.summary || "—"}</span>
-                      <span className="block truncate text-muted-foreground/70">
-                        {submission.excerpt}
-                      </span>
+                    <TableCell className="text-xs text-muted-foreground">
+                      <div className="max-w-[280px]">
+                        <span className="block truncate">{submission.summary || "—"}</span>
+                        <span className="block truncate text-muted-foreground/70">
+                          {submission.excerpt}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <StatusBadge variant={meta.variant}>{meta.label}</StatusBadge>
                     </TableCell>
                     <TableCell>
-                      <ChevronRight className="size-4 text-muted-foreground" />
+                      <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
                     </TableCell>
                   </TableRow>
                 );
@@ -560,23 +596,35 @@ export default function AdminSubmissionsIndex() {
           <Pagination>
             <PaginationContent>
               {submissions.links.map((link, i) => {
+                const disabled = !link.url;
+
                 if (link.label.includes("Previous")) {
                   return (
                     <PaginationItem key={i}>
-                      <PaginationPrevious href={link.url ?? "#"} />
+                      <PaginationPrevious
+                        href={link.url ?? undefined}
+                        aria-disabled={disabled || undefined}
+                        tabIndex={disabled ? -1 : undefined}
+                        className={disabled ? "pointer-events-none opacity-50" : undefined}
+                      />
                     </PaginationItem>
                   );
                 }
                 if (link.label.includes("Next")) {
                   return (
                     <PaginationItem key={i}>
-                      <PaginationNext href={link.url ?? "#"} />
+                      <PaginationNext
+                        href={link.url ?? undefined}
+                        aria-disabled={disabled || undefined}
+                        tabIndex={disabled ? -1 : undefined}
+                        className={disabled ? "pointer-events-none opacity-50" : undefined}
+                      />
                     </PaginationItem>
                   );
                 }
                 return (
                   <PaginationItem key={i}>
-                    <PaginationLink href={link.url ?? "#"} isActive={link.active}>
+                    <PaginationLink href={link.url ?? undefined} isActive={link.active}>
                       {link.label}
                     </PaginationLink>
                   </PaginationItem>
@@ -586,6 +634,31 @@ export default function AdminSubmissionsIndex() {
           </Pagination>
         </div>
       )}
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selected.length} {selected.length === 1 ? "submission" : "submissions"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              The selected submissions are removed permanently. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                setBulkDeleteOpen(false);
+                runBulk("delete");
+              }}
+            >
+              Delete permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

@@ -25,3 +25,9 @@ overrides:
   "@inertiajs/core": 3.8.0
   "@inertiajs/react": 3.8.0
   "@inertiajs/vite": 3.8.0
+  # GHSA-mrhx-c7xc-m3w5 (high): zod <4.6.6 exhausts memory on oversized
+  # constrained collections. The package manifests are upstream-owned mirrors and
+  # keep their own `^4.4.3` / `^4.5.4` ranges; this pins the resolved version for
+  # the whole workspace so `pnpm audit --prod --audit-level=high` stays clean.
+  # Drop it once every mirror manifest ships a range that resolves >=4.6.6.
+  zod: 4.6.7

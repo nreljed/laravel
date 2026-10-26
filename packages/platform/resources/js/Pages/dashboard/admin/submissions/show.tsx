@@ -12,11 +12,22 @@ import {
 } from "../../../../Components/ui/select";
 import { Separator } from "../../../../Components/ui/separator";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../../Components/ui/alert-dialog";
+import { useState } from "react";
+import {
   ArrowLeft,
-  Archive,
   Clock,
   Globe,
   Languages,
+  Mail,
   Monitor,
   MousePointerClick,
   ShieldCheck,
@@ -77,6 +88,8 @@ export default function AdminSubmissionShow() {
   const { submission, definition, statuses = ["new", "read", "archived"], pinnedForm } =
     props as unknown as PageProps;
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
   const meta = statusMeta[submission.status] ?? {
     label: submission.status,
     variant: "info" as const,
@@ -110,7 +123,6 @@ export default function AdminSubmissionShow() {
   };
 
   const destroy = () => {
-    if (!window.confirm("Delete this submission permanently?")) return;
     router.delete(destroyPath);
   };
 
@@ -118,11 +130,17 @@ export default function AdminSubmissionShow() {
 
   return (
     <AdminLayout title="Form Submission">
-      <Head title={`${submission.form_label} — ${submission.name}`} />
+      <Head
+        title={
+          submission.name
+            ? `${submission.form_label} — ${submission.name}`
+            : submission.form_label
+        }
+      />
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" size="sm" onClick={() => router.get(basePath)}>
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-4" aria-hidden="true" />
           Back to submissions
         </Button>
 
@@ -131,7 +149,7 @@ export default function AdminSubmissionShow() {
 
           <Select value={submission.status} onValueChange={updateStatus}>
             <SelectTrigger className="w-[140px]" aria-label="Status">
-              <SelectValue />
+              <SelectValue>{meta.label}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {statuses.map((value) => (
@@ -142,8 +160,8 @@ export default function AdminSubmissionShow() {
             </SelectContent>
           </Select>
 
-          <Button variant="destructive" size="sm" onClick={destroy}>
-            <Trash2 className="size-4" />
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="size-4" aria-hidden="true" />
             Delete
           </Button>
         </div>
@@ -154,39 +172,41 @@ export default function AdminSubmissionShow() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Archive className="size-4" />
+                <Mail className="size-4" aria-hidden="true" />
                 {submission.summary || "No subject"}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {declaredFields.map((field) => {
-                const value = submission.payload?.[field.name];
-                const isLong = (value ?? "").length > 120 || field.type === "textarea";
+            <CardContent>
+              <dl className="space-y-4">
+                {declaredFields.map((field) => {
+                  const value = submission.payload?.[field.name];
+                  const isLong = (value ?? "").length > 120 || field.type === "textarea";
 
-                return (
-                  <div key={field.name}>
-                    <p className="text-xs text-muted-foreground">
-                      {labelFor(field.name, field.label)}
-                    </p>
-                    {isLong ? (
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {value || "—"}
-                      </p>
-                    ) : (
-                      <p className="text-sm font-medium break-words">{value || "—"}</p>
-                    )}
+                  return (
+                    <div key={field.name}>
+                      <dt className="text-xs text-muted-foreground">
+                        {labelFor(field.name, field.label)}
+                      </dt>
+                      {isLong ? (
+                        <dd className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {value || "—"}
+                        </dd>
+                      ) : (
+                        <dd className="text-sm font-medium break-words">{value || "—"}</dd>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {extraKeys.map((key) => (
+                  <div key={key}>
+                    <dt className="text-xs text-muted-foreground">{labelFor(key)}</dt>
+                    <dd className="text-sm break-words">
+                      {String(submission.payload?.[key] ?? "—")}
+                    </dd>
                   </div>
-                );
-              })}
-
-              {extraKeys.map((key) => (
-                <div key={key}>
-                  <p className="text-xs text-muted-foreground">{labelFor(key)}</p>
-                  <p className="text-sm break-words">
-                    {String(submission.payload?.[key] ?? "—")}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </dl>
             </CardContent>
           </Card>
         </div>
@@ -195,7 +215,7 @@ export default function AdminSubmissionShow() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <User className="size-4" />
+                <User className="size-4" aria-hidden="true" />
                 Sender
               </CardTitle>
             </CardHeader>
@@ -229,7 +249,7 @@ export default function AdminSubmissionShow() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="size-4" />
+                <Clock className="size-4" aria-hidden="true" />
                 Details
               </CardTitle>
             </CardHeader>
@@ -251,7 +271,7 @@ export default function AdminSubmissionShow() {
               <div>
                 <p className="text-xs text-muted-foreground">IP address</p>
                 <p className="flex items-center gap-1.5 font-mono text-xs">
-                  <Globe className="size-3.5" />
+                  <Globe className="size-3.5" aria-hidden="true" />
                   {submission.ip ?? "—"}
                 </p>
               </div>
@@ -260,8 +280,8 @@ export default function AdminSubmissionShow() {
                   <Separator />
                   <div>
                     <p className="text-xs text-muted-foreground">Browser</p>
-                    <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                      <Monitor className="size-3.5 shrink-0 mt-0.5" />
+                    <p className="flex items-start gap-1.5 break-words text-xs text-muted-foreground">
+                      <Monitor className="size-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                       {submission.user_agent}
                     </p>
                   </div>
@@ -273,7 +293,7 @@ export default function AdminSubmissionShow() {
                   <div>
                     <p className="text-xs text-muted-foreground">Referrer</p>
                     <p className="flex items-start gap-1.5 break-all text-xs text-muted-foreground">
-                      <MousePointerClick className="size-3.5 shrink-0 mt-0.5" />
+                      <MousePointerClick className="size-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                       {submission.referrer}
                     </p>
                   </div>
@@ -286,7 +306,7 @@ export default function AdminSubmissionShow() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Languages className="size-4" />
+                  <Languages className="size-4" aria-hidden="true" />
                   Attribution
                 </CardTitle>
               </CardHeader>
@@ -305,7 +325,7 @@ export default function AdminSubmissionShow() {
                     {hasUtm && <Separator />}
                     <div>
                       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <ShieldCheck className="size-3.5" />
+                        <ShieldCheck className="size-3.5" aria-hidden="true" />
                         Consent given
                       </p>
                       <p>{new Date(submission.consent_at).toLocaleString()}</p>
@@ -317,6 +337,29 @@ export default function AdminSubmissionShow() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this submission?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The submission is removed permanently. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                setDeleteOpen(false);
+                destroy();
+              }}
+            >
+              Delete permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

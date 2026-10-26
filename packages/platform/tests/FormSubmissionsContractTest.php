@@ -177,6 +177,7 @@ final class FormSubmissionsContractTest extends TestCase
 
         $slugs = array_column($roles['base_permissions'], 'slug');
         $this->assertContains('manage-submissions', $slugs);
+        $this->assertContains('manage-contact', $slugs);
 
         foreach (['editor', 'author'] as $role) {
             $this->assertArrayHasKey($role, $roles['base_roles']);
@@ -184,6 +185,11 @@ final class FormSubmissionsContractTest extends TestCase
                 '!manage-submissions',
                 $roles['base_roles'][$role]['permissions'],
                 "the universal inbox must not be granted to [{$role}] via the '*' wildcard",
+            );
+            $this->assertContains(
+                '!manage-contact',
+                $roles['base_roles'][$role]['permissions'],
+                "the contact inbox must not be granted to [{$role}] via the '*' wildcard",
             );
         }
     }

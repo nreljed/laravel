@@ -124,6 +124,7 @@ return [
                 '!export-audit-logs',
                 '!manage-email-settings',
                 '!manage-submissions',
+                '!manage-contact',
                 // Legacy Blog term-management slugs retained as no-op
                 // exclusions so orphaned rows granted via '*' never resurface.
                 '!manage-categories',
@@ -150,6 +151,7 @@ return [
                 '!export-audit-logs',
                 '!manage-email-settings',
                 '!manage-submissions',
+                '!manage-contact',
             ],
         ],
 

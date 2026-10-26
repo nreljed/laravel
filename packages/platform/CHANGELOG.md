@@ -4,6 +4,25 @@ All notable changes to `nreljed/platform` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.92] - 2026-10-26
+
+### Added
+
+- **A sidebar route into the universal inbox.** "Form Submissions" now sits in the Administration group (behind `manage-submissions`) instead of leaving the inbox reachable only by URL or notification. Roles that hold the legacy `manage-contact` permission without `manage-submissions` keep a direct "Contact Messages" entry, so the two views never compete for the same operator.
+
+### Changed
+
+- **Filter and status selects show labels, not raw values.** The inbox form/status filters read "All forms" and "All statuses" instead of `all`, and the detail-page status control reads "Read" instead of `read`.
+- **`manage-contact` is no longer granted to editor or author.** Both catch-all roles reach it through `'*'`, so the contact inbox was admin-adjacent content open to every editor and author. It is now excluded alongside `manage-submissions`.
+- **A catalog deny now reaches installs that already migrated.** Reconciliation moved into `RoleCatalogSynchroniser`, and an explicit `!slug` in `config/roles.php` detaches that permission from a role that still carries it (typically granted by `'*'` before the exclusion existed). Hand-granted permissions on roles outside the catalog are still never touched.
+
+### Fixed
+
+- **The `manage-contact` revocation was shipping as a no-op.** The first attempt changed the body of `2026_10_20_000001_provision_config_permissions_into_database`, but that migration shipped in 0.1.86 and has already run everywhere — a migration runs once, so its edited body could never execute in production and the over-grant to editor/author would have stayed live. The reconciliation is now reachable from a new `2026_10_26_000001_sync_catalog_role_permissions` migration, which depends on nothing but the catalog and is safe to re-run. Ship a new dated migration calling the synchroniser whenever the catalog's denials change.
+- **Accessibility of the inbox and detail pages.** The two filter comboboxes have accessible names, sortable column headers expose `aria-sort`, unread rows announce "Unread" rather than relying on a coloured dot, sender names are real links (so rows are keyboard-navigable), and decorative icons are hidden from assistive technology. The detail payload is now a description list, which pairs each label with its value for screen readers.
+- **Destructive actions use a dialog instead of `window.confirm`.** Both the bulk bar and the single-submission Delete open an `AlertDialog` that names the consequence and states that it cannot be undone.
+- **Disabled pagination no longer jumps to the top of the page.** A disabled Previous/Next rendered `href="#"`; it now renders as a non-focusable, visually muted control.
+
 ## [0.1.91] - 2026-10-22
 
 ### Fixed

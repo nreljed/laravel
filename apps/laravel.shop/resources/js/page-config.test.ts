@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { PageImport } from "@nreljed/platform/app";
 import { registerCoreTemplates } from "@nreljed/platform/dashboard";
 import { registerBlogPages } from "@nreljed/blog/pages";
+import { registerMarketingPages } from "@nreljed/marketing-module/pages";
 import { registerShopPages } from "@nreljed/shop-module/pages";
 
 /**
@@ -16,6 +17,7 @@ found" errors.
 */
 const coreKit = registerCoreTemplates();
 const blogKit = registerBlogPages();
+const marketingKit = registerMarketingPages();
 const shopKit = registerShopPages();
 
 const localPages: Record<string, PageImport> = Object.fromEntries(
@@ -27,6 +29,7 @@ const localPages: Record<string, PageImport> = Object.fromEntries(
 const pageMap = {
   ...coreKit,
   ...blogKit,
+  ...marketingKit,
   ...shopKit,
   ...localPages,
   "public/about": () => import("./public/about"),
@@ -90,6 +93,18 @@ const POSTS_PAGE_KEYS = [
 ] as const;
 
 /**
+Keys rendered by the MARKETING feature module.
+*/
+const MARKETING_PAGE_KEYS = [
+  "marketing/analytics",
+  "marketing/calendar",
+  "marketing/dashboard",
+  "marketing/insights",
+  "marketing/synchealth",
+  "marketing/workflows/builder",
+] as const;
+
+/**
 Keys provided by the host-owned page map (forked marketing pages + blog public templates).
 */
 const HOST_PAGE_KEYS = [
@@ -130,6 +145,12 @@ describe("feature page kits", () => {
     }
   });
 
+  it("registers every MARKETING page key under the marketing/ prefix", () => {
+    for (const key of MARKETING_PAGE_KEYS) {
+      expect(pageMap, `missing page map entry for ${key}`).toHaveProperty(key);
+    }
+  });
+
   it("registers host-owned pages (public marketing + blog/public templates)", () => {
     for (const key of HOST_PAGE_KEYS) {
       expect(pageMap, `missing page map entry for ${key}`).toHaveProperty(key);
@@ -149,7 +170,7 @@ describe("feature page kits", () => {
   });
 
   it("no two kits shadow the same key (deterministic merge, no silent override)", () => {
-    const kits = [coreKit, blogKit, shopKit, localPages];
+    const kits = [coreKit, blogKit, marketingKit, shopKit, localPages];
     const seen = new Set<string>();
     const collisions: string[] = [];
 
