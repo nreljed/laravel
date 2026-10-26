@@ -1,55 +1,33 @@
 {
-    "compilerOptions": {
-        "allowJs": true,
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "jsx": "react-jsx",
-        "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noUncheckedIndexedAccess": true,
-        "isolatedModules": true,
-        "target": "ESNext",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": false,
-        "skipLibCheck": true,
-        "noEmit": true,
-        "typeRoots": [
-            "./node_modules/@types"
-        ],
-        "paths": {
-            "@nreljed/platform/*": ["./vendor/nreljed/platform/resources/js/*"],
-            "@nreljed/blog/*": ["./vendor/nreljed/blog/src/Resources/js/*"],
-            "@nreljed/marketing-module/*": ["./vendor/nreljed/marketing-module/src/Resources/js/*"],
-            "@nreljed/shop-module/*": ["./vendor/nreljed/shop-module/src/Resources/js/*"],
-            "ziggy-js": ["./vendor/tightenco/ziggy"],
-            "@inertiajs/core": ["./node_modules/@inertiajs/core"],
-            "@inertiajs/react": ["./node_modules/@inertiajs/react"],
-            "@inertiajs/vite": ["./node_modules/@inertiajs/vite"],
-            "react": ["./node_modules/@types/react/index.d.ts"],
-            "react/*": ["./node_modules/@types/react/*"],
-            "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
-            "react-dom/*": ["./node_modules/@types/react-dom/*"]
-        }
-    },
-    "include": [
-        "resources/js/**/*.ts",
-        "resources/js/**/*.tsx",
-        "resources/js/**/*.d.ts",
-        "vendor/nreljed/platform/resources/js/**/*.ts",
-        "vendor/nreljed/platform/resources/js/**/*.tsx",
-        "vendor/nreljed/platform/resources/js/**/*.d.ts",
-        "vendor/nreljed/platform/src/**/Resources/js/**/*.ts",
-        "vendor/nreljed/platform/src/**/Resources/js/**/*.tsx",
-        "vendor/nreljed/platform/src/**/Resources/js/**/*.d.ts",
-        "vendor/nreljed/blog/src/Resources/js/**/*.ts",
-        "vendor/nreljed/blog/src/Resources/js/**/*.tsx",
-        "vendor/nreljed/blog/src/Resources/js/**/*.d.ts",
-        "vendor/nreljed/marketing-module/src/Resources/js/**/*.ts",
-        "vendor/nreljed/marketing-module/src/Resources/js/**/*.tsx",
-        "vendor/nreljed/marketing-module/src/Resources/js/**/*.d.ts",
-        "vendor/nreljed/shop-module/src/Resources/js/**/*.ts",
-        "vendor/nreljed/shop-module/src/Resources/js/**/*.tsx",
-        "vendor/nreljed/shop-module/src/Resources/js/**/*.d.ts"
-    ]
+  "compilerOptions": {
+    "allowJs": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@nreljed/platform/*": ["../../packages/platform/resources/js/*"],
+      "@nreljed/blog/*": ["../../packages/blog/src/Resources/js/*"],
+      "@nreljed/marketing-module/*": ["../../packages/marketing-module/src/Resources/js/*"],
+      "@nreljed/shop-module/*": ["../../packages/shop-module/src/Resources/js/*"]
+    }
+  },
+  "include": [
+    "resources/js/**/*.ts",
+    "resources/js/**/*.tsx",
+    "resources/js/**/*.d.ts",
+    "../../packages/platform/resources/js/**/*.d.ts",
+    "../../packages/blog/src/Resources/js/**/*.d.ts",
+    "../../packages/marketing-module/src/Resources/js/**/*.d.ts",
+    "../../packages/shop-module/src/Resources/js/**/*.d.ts"
+  ]
 }
