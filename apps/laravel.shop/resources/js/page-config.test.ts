@@ -94,15 +94,65 @@ const POSTS_PAGE_KEYS = [
 
 /**
 Keys rendered by the MARKETING feature module.
+
+`marketing/sync-health` is dashed on purpose: the controller renders
+`Inertia::render('marketing/sync-health')`, and the kit must produce the same
+key (lowercasing alone used to yield `marketing/synchealth`, which threw
+"Page not found: marketing/sync-health" at runtime).
 */
 const MARKETING_PAGE_KEYS = [
   "marketing/analytics",
   "marketing/calendar",
   "marketing/dashboard",
   "marketing/insights",
-  "marketing/synchealth",
+  "marketing/sync-health",
   "marketing/workflows/builder",
 ] as const;
+
+/**
+Page names some package still declares in unrouted controller methods. They
+must never appear in a route - if one is wired up, its page has to be added to
+a kit and this entry removed.
+
+`dashboard/admin/settings` is `AdminController::settings()`, which no route
+references (the live settings pages are `dashboard/admin/settings/*`).
+*/
+const UNROUTED_RENDER_KEYS = new Set(["dashboard/admin/settings"]);
+
+/**
+Collect every `Inertia::render('...')` page name declared by an installed
+feature package. The app resolves pages with `pageMap[name.toLowerCase()]`,
+so the comparison below lowercases both sides.
+
+The PHP sources are pulled in as raw modules (not via node:fs) so the test
+also type-checks against the host's browser-only tsconfig.
+*/
+function renderedPageKeys(): string[] {
+  const sources = {
+    ...(import.meta.glob("../../vendor/nreljed/{platform,blog,shop-module,marketing-module}/src/**/*.php", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    }) as Record<string, string>),
+    ...(import.meta.glob("../../vendor/nreljed/{platform,blog,shop-module,marketing-module}/routes/**/*.php", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    }) as Record<string, string>),
+  };
+
+  const keys = new Set<string>();
+
+  for (const source of Object.values(sources)) {
+    for (const match of source.matchAll(/Inertia::render\(\s*'([^']+)'/g)) {
+      const pageName = match[1];
+
+      if (pageName) keys.add(pageName.toLowerCase());
+    }
+  }
+
+  return [...keys].toSorted((a, b) => a.localeCompare(b));
+}
 
 /**
 Keys provided by the host-owned page map (forked marketing pages + blog public templates).
@@ -155,6 +205,15 @@ describe("feature page kits", () => {
     for (const key of HOST_PAGE_KEYS) {
       expect(pageMap, `missing page map entry for ${key}`).toHaveProperty(key);
     }
+  });
+
+  it("resolves every page name a module controller renders", () => {
+    const registered = new Set(Object.keys(pageMap).map((key) => key.toLowerCase()));
+    const missing = renderedPageKeys()
+      .filter((key) => !UNROUTED_RENDER_KEYS.has(key))
+      .filter((key) => !registered.has(key));
+
+    expect(missing, `controllers render pages the map does not provide: ${missing.join(", ")}`).toEqual([]);
   });
 
   it("registers the core control-panel pages", () => {
