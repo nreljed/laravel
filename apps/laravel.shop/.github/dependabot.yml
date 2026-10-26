@@ -1,0 +1,43 @@
+version: 2
+updates:
+  # Frontend dependencies (npm).
+  # NOTE: composer ecosystem intentionally omitted — nreljed/* packages are
+  # private VCS deps that dependabot cannot auth to; package updates are
+  # handled by the core-update/shop-update workflows instead.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "typescript"
+        versions: ["7.x"]
+      # Core's peer range is ^0.49.0 (pre-1.0 semver: <0.50.0). A lexical
+      # 0.50 bump needs a coordinated core peer-range bump first - dependabot
+      # auto-bumps would fail the check:core-deps parity gate.
+      - dependency-name: "lexical"
+        versions: [">=0.50.0"]
+      - dependency-name: "@lexical/*"
+        versions: [">=0.50.0"]
+      # cn is a required core peer (^0.2.6). App-level bumps to 0.3.x fail
+      # the check-core-deps parity gate. Platform controls the cn version.
+      - dependency-name: "cn"
+        versions: [">=0.3.0"]
+      # Core + blog declare this as a peer with range ^2.0.1 || ^3.0.0. App-
+      # level 4.x bumps fail the check:core-deps parity gate until platform and
+      # blog widen the peer range and release.
+      - dependency-name: "@atlaskit/pragmatic-drag-and-drop"
+        versions: [">=4.0.0"]
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions ecosystem intentionally removed - workflows reference
+  # private reusable workflows (nreljed/platform/.github/workflows/...@main)
+  # that dependabot cannot auth to, so every github-actions run fails with
+  # git_dependencies_not_reachable. Action pin updates are handled manually.
