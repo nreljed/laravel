@@ -43,7 +43,7 @@ return new class extends Migration
             $table->timestamp('last_validated_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['user_id', 'platform', 'account_id']);
+            $table->unique(['user_id', 'platform', 'account_id'], 'social_accounts_user_platform_account_unique');
             $table->index(['platform', 'status']);
         });
     }

@@ -28,7 +28,7 @@ return new class extends Migration
 
             // A caller-supplied idempotency key. Replaying the same key
             // returns the original conversion instead of creating a duplicate.
-            $table->string('idempotency_key', 191)->nullable()->unique();
+            $table->string('idempotency_key', 191)->nullable()->unique('marketing_conversions_idempotency_key_unique');
 
             // Reported value only. Revenue remains owned by the shop.
             $table->decimal('value', 12, 2)->nullable();

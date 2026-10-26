@@ -934,16 +934,16 @@
         },
         {
             "name": "guzzlehttp/guzzle",
-            "version": "8.3.0",
+            "version": "8.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/guzzle.git",
-                "reference": "b920e5fcaf81d761b8fabe600ca90999beaefdb7"
+                "reference": "7d9b1f430bb65ac664e120af227bf9a795ad6333"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/b920e5fcaf81d761b8fabe600ca90999beaefdb7",
-                "reference": "b920e5fcaf81d761b8fabe600ca90999beaefdb7",
+                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/7d9b1f430bb65ac664e120af227bf9a795ad6333",
+                "reference": "7d9b1f430bb65ac664e120af227bf9a795ad6333",
                 "shasum": ""
             },
             "require": {
@@ -1040,7 +1040,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/guzzle/issues",
-                "source": "https://github.com/guzzle/guzzle/tree/8.3.0"
+                "source": "https://github.com/guzzle/guzzle/tree/8.3.1"
             },
             "funding": [
                 {
@@ -1056,7 +1056,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-18T13:38:43+00:00"
+            "time": "2026-10-25T21:35:34+00:00"
         },
         {
             "name": "guzzlehttp/promises",
@@ -3603,16 +3603,16 @@
         },
         {
             "name": "nreljed/marketing-module",
-            "version": "0.14.0",
+            "version": "0.14.3",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/marketing-module.git",
-                "reference": "f1bc94eef2ad8a84328e1a360a878505b7e2fc91"
+                "reference": "f26709ffc764d6546e5702eb47978a3e10a0f49d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/f1bc94eef2ad8a84328e1a360a878505b7e2fc91",
-                "reference": "f1bc94eef2ad8a84328e1a360a878505b7e2fc91",
+                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/f26709ffc764d6546e5702eb47978a3e10a0f49d",
+                "reference": "f26709ffc764d6546e5702eb47978a3e10a0f49d",
                 "shasum": ""
             },
             "require": {
@@ -3658,10 +3658,10 @@
             ],
             "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
             "support": {
-                "source": "https://github.com/nreljed/marketing-module/tree/v0.14.0",
+                "source": "https://github.com/nreljed/marketing-module/tree/v0.14.3",
                 "issues": "https://github.com/nreljed/marketing-module/issues"
             },
-            "time": "2026-10-26T09:08:09+00:00"
+            "time": "2026-10-26T13:08:02+00:00"
         },
         {
             "name": "nreljed/platform",
