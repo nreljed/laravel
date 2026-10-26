@@ -5,6 +5,88 @@ All notable changes to `nreljed/marketing-module` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-10-25
+
+### Added
+
+- **Metric sync governance.** Per-platform request pacing and a UTC daily request
+  budget; exhausted platforms defer the rest of their batch instead of
+  overshooting.
+- **Dead-letter queue.** Permanent failures and deliveries past
+  `marketing.metrics.max_attempts` stop retrying until replayed. New
+  `marketing:metrics-dead-letters` command lists and replays them, scoped by
+  platform.
+- **Sync health page** (`marketing/sync-health`, `marketing.analytics.view`) with
+  per-platform delivery state, budget usage and dead-letter replay.
+- **Workflow run retention** via `marketing.workflows.retention_days`; terminal
+  runs are pruned by `marketing:prune`, pending runs are kept.
+- `MetricSyncBudget`, `MetricSyncHealth` and `MarketingRetention` services, plus
+  a migration adding `metrics_attempts` to `social_post_targets`.
+- Documentation in `docs/metric-sync-governance.md`.
+
+### Changed
+
+- Metric failures now record an attempt count in `metrics_error`, and permanent
+  provider errors surface as `dead_letter` rather than `error`.
+- `marketing:prune` reports workflow runs alongside metrics and clicks.
+- `marketing:check-sync-alerts` counts dead letters separately.
+
+## [0.13.0] - 2026-10-25
+
+### Added
+
+- **Plan approval workflow.** `MarketingPlan::approve()`/`archive()` and a
+  `MarketingPlanService` that turns strategist drafts into reviewable plans.
+- **Workflow execution tests** for delayed steps and failure branches.
+
+## [0.12.0] - 2026-10-25
+
+### Added
+
+- **AI insight analysis.** The insights page can now generate AI-backed
+  insights through the BYOK analyst agent.
+
+## [0.11.0] - 2026-10-25
+
+### Added
+
+- **Visual workflow builder.** A step editor for delays, conditions, branches,
+  actions, tags, statuses and webhooks without editing JSON.
+
+## [0.10.0] - 2026-10-25
+
+### Added
+
+- **Workflow metric conditions.** Delayed workflow steps can now branch on
+  engagement, coverage, delivery and tracked-click metrics.
+
+## [0.9.0] - 2026-10-25
+
+### Added
+
+- **SMS/WhatsApp channels.** `SmsChannel` and `WhatsAppChannel` contracts with
+  log providers, contact consent and opt-out fields, and multi-channel
+  broadcasts.
+- `BroadcastServiceTest`.
+
+## [0.8.0] - 2026-10-25
+
+### Added
+
+- **Conversion ingest contract.** Shop-reported conversions are attributed to
+  tracked links with last-click attribution and idempotent ingest. Analytics and
+  CSV now report attributed conversions.
+- `ConversionIngest` contract and `ConversionIngestService`.
+- `marketing_conversions` table for references and reported values only.
+
+## [0.7.0] - 2026-10-25
+
+### Added
+
+- Phase 6 core: plans, briefs, experiments, calendar, insights, recommendations.
+- Phase 7 core: consent, unsubscribe, suppression, bounces, broadcasts.
+- Phase 8 core: retention pruning, sync alerts, delayed workflow steps.
+
 ## [0.6.0] - 2026-10-23
 
 ### Added

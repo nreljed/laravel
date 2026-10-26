@@ -29,11 +29,29 @@ class Contact extends Model
         'source',
         'metadata',
         'last_contacted_at',
+        'email_consent_at',
+        'sms_consent_at',
+        'whatsapp_consent_at',
+        'unsubscribed_at',
+        'sms_opted_out_at',
+        'whatsapp_opted_out_at',
+        'suppressed_at',
+        'bounce_count',
+        'last_bounced_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'last_contacted_at' => 'datetime',
+        'email_consent_at' => 'datetime',
+        'sms_consent_at' => 'datetime',
+        'whatsapp_consent_at' => 'datetime',
+        'unsubscribed_at' => 'datetime',
+        'sms_opted_out_at' => 'datetime',
+        'whatsapp_opted_out_at' => 'datetime',
+        'suppressed_at' => 'datetime',
+        'bounce_count' => 'integer',
+        'last_bounced_at' => 'datetime',
         'status' => ContactStatus::class,
     ];
 
@@ -60,5 +78,53 @@ class Contact extends Model
         $name = trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
 
         return $name !== '' ? $name : (string) ($this->email ?? '');
+    }
+
+    public function canReceiveEmail(): bool
+    {
+        return $this->email !== null
+            && $this->email !== ''
+            && $this->unsubscribed_at === null
+            && $this->suppressed_at === null;
+    }
+
+    public function canReceiveSms(): bool
+    {
+        return $this->phone !== null
+            && $this->phone !== ''
+            && $this->sms_consent_at !== null
+            && $this->sms_opted_out_at === null
+            && $this->suppressed_at === null;
+    }
+
+    public function canReceiveWhatsApp(): bool
+    {
+        return $this->phone !== null
+            && $this->phone !== ''
+            && $this->whatsapp_consent_at !== null
+            && $this->whatsapp_opted_out_at === null
+            && $this->suppressed_at === null;
+    }
+
+    public function unsubscribe(): void
+    {
+        $this->forceFill(['unsubscribed_at' => now()])->save();
+    }
+
+    public function suppress(): void
+    {
+        $this->forceFill(['suppressed_at' => now()])->save();
+    }
+
+    public function recordBounce(): void
+    {
+        $this->forceFill([
+            'bounce_count' => $this->bounce_count + 1,
+            'last_bounced_at' => now(),
+        ])->save();
+
+        if ($this->bounce_count >= 3) {
+            $this->suppress();
+        }
     }
 }

@@ -6,6 +6,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nreljed\MarketingModule\Database\Factories\CampaignFactory;
 use Nreljed\MarketingModule\Enums\CampaignObjective;
@@ -23,6 +24,7 @@ class Campaign extends Model
     use HasFactory;
 
     protected $fillable = [
+        'marketing_plan_id',
         'name',
         'description',
         'objective',
@@ -43,6 +45,11 @@ class Campaign extends Model
     protected static function newFactory(): Factory
     {
         return CampaignFactory::new();
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(MarketingPlan::class, 'marketing_plan_id');
     }
 
     /**

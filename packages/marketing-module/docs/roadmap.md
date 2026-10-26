@@ -1,8 +1,8 @@
 # Marketing module roadmap
 
-Status: 5A, 5B and 5C implemented in `0.6.0`
+Status: Phases 1-8 core plus conversion ingest, SMS/WhatsApp channels, AI insights, visual workflow builder, plan approval and metric sync governance implemented; release `0.14.0` shipped.
 Owner: marketing module
-Last updated: 2026-10-23
+Last updated: 2026-10-25
 
 This roadmap describes what the module ships today, what is still missing, and
 the order in which the missing pieces should be built. It is deliberately
@@ -39,6 +39,9 @@ attribution it cannot prove.
 | 5A | Scheduled metric ingestion and daily snapshots | implemented |
 | 5B | Tracked links, UTMs, public redirects, and click events | implemented |
 | 5C | Period-scoped analytics, coverage, Recharts UI, and CSV exports | shipped in `0.6.0` |
+| 6 | Strategy plans, briefs, experiments, calendar, insights, recommendations | shipped in `0.7.0`-`0.13.0` |
+| 7 | Owned audience: consent, unsubscribe, suppression, bounces, email/SMS/WhatsApp broadcasts | shipped in `0.9.0` |
+| 8 | Retention pruning, sync alerts, delayed workflow steps, metric conditions, visual builder, rate limits, budgets, dead letters | shipped in `0.10.0`-`0.14.0` |
 
 Phase 4 deliberately stops at delivery reporting. Phase 5A stores platform
 metrics, Phase 5B records clicks, and Phase 5C reports engagement, click-through
@@ -48,11 +51,9 @@ and link performance over the same selected period. Revenue remains shop-owned.
 
 | Gap | Consequence |
 |-----|-------------|
-| No conversion ingest contract | Link clicks are reported, but the shop still owns conversions and revenue |
-| Contacts are not a channel | Contacts and segments have no email or SMS send path |
-| Shallow workflow engine | Two triggers, four actions, no delays, branches, or metric conditions |
-| No content planning loop | No calendar, briefs, variants, experiments, or AI recommendations |
-| No operational guardrails | No per-provider metric rate limits, sync alerting, or retention policy |
+| Production SMS/WhatsApp providers | Abstractions and log providers exist; real providers wait on credentials |
+| Social inbox | Only in scope if replies and direct messages are required |
+| Ads/audience sync | Deferred until the organic loop is reliable |
 
 ## Phase 5 - Measurement and attribution
 
@@ -190,13 +191,23 @@ read-only list.
 
 ## Phase 8 - Scale and governance
 
-- Per-provider rate limits and sync budgets.
-- Dead-letter handling, retry dashboards, and alerting.
-- Data retention and deletion for metrics, clicks, and contact events.
+Implemented in `0.14.0`:
+
+- Per-provider request pacing, per-run caps and a UTC daily request budget.
+  Per-platform overrides live under `marketing.metrics.platforms`.
+- Dead-letter queue for permanent failures and exhausted retries, with
+  `marketing:metrics-dead-letters` and a Sync health dashboard for replay.
+- Daily alerting that separates retrying failures from dead letters.
+- Retention for metric snapshots, link clicks and terminal workflow runs.
+
+Still open:
+
 - Multi-brand/workspace scoping if the host needs it.
 - Ads/audience sync and spend reporting only after the organic loop is reliable.
 - Permission and audit review for every new automation that can act on a
   customer's behalf.
+
+Operating notes: [metric-sync-governance.md](metric-sync-governance.md).
 
 ## Sequencing
 

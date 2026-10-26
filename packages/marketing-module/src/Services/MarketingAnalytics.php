@@ -11,6 +11,7 @@ use Nreljed\MarketingModule\Enums\PostStatus;
 use Nreljed\MarketingModule\Enums\WorkflowRunStatus;
 use Nreljed\MarketingModule\Models\Campaign;
 use Nreljed\MarketingModule\Models\Contact;
+use Nreljed\MarketingModule\Models\MarketingConversion;
 use Nreljed\MarketingModule\Models\MarketingLink;
 use Nreljed\MarketingModule\Models\SocialPost;
 use Nreljed\MarketingModule\Models\SocialPostMetric;
@@ -501,9 +502,17 @@ class MarketingAnalytics
             $query->limit($limit);
         }
 
-        return $query
-            ->get()
-            ->map(function (object $row): array {
+        $rows = $query->get();
+
+        $conversionCounts = MarketingConversion::query()
+            ->whereIn('marketing_link_id', $rows->pluck('id')->all())
+            ->whereBetween('occurred_at', [$period['start'], $period['end']])
+            ->selectRaw('marketing_link_id, COUNT(*) as conversions')
+            ->groupBy('marketing_link_id')
+            ->pluck('conversions', 'marketing_link_id');
+
+        return $rows
+            ->map(function (object $row) use ($conversionCounts): array {
                 return [
                     'id' => (int) $row->id,
                     'social_post_id' => $row->social_post_id !== null ? (int) $row->social_post_id : null,
@@ -512,7 +521,7 @@ class MarketingAnalytics
                     'short_code' => (string) $row->short_code,
                     'short_url' => $this->trackedUrl((string) $row->short_code),
                     'clicks' => (int) $row->clicks,
-                    'conversions' => 0,
+                    'conversions' => (int) ($conversionCounts[(int) $row->id] ?? 0),
                     'last_clicked_at' => $row->last_clicked_at !== null
                         ? CarbonImmutable::parse((string) $row->last_clicked_at)->toIso8601String()
                         : null,

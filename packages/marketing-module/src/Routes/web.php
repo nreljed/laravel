@@ -4,12 +4,19 @@ use Illuminate\Support\Facades\Route;
 use Nreljed\MarketingModule\Http\Controllers\AnalyticsController;
 use Nreljed\MarketingModule\Http\Controllers\CampaignsController;
 use Nreljed\MarketingModule\Http\Controllers\ContactsController;
+use Nreljed\MarketingModule\Http\Controllers\MarketingBriefsController;
+use Nreljed\MarketingModule\Http\Controllers\MarketingBroadcastsController;
+use Nreljed\MarketingModule\Http\Controllers\MarketingCalendarController;
 use Nreljed\MarketingModule\Http\Controllers\MarketingDashboardController;
+use Nreljed\MarketingModule\Http\Controllers\MarketingExperimentsController;
+use Nreljed\MarketingModule\Http\Controllers\MarketingInsightsController;
+use Nreljed\MarketingModule\Http\Controllers\MarketingPlansController;
 use Nreljed\MarketingModule\Http\Controllers\PostMediaController;
 use Nreljed\MarketingModule\Http\Controllers\PostsController;
 use Nreljed\MarketingModule\Http\Controllers\SegmentsController;
 use Nreljed\MarketingModule\Http\Controllers\SocialAccountsController;
 use Nreljed\MarketingModule\Http\Controllers\SocialAuthController;
+use Nreljed\MarketingModule\Http\Controllers\SyncHealthController;
 use Nreljed\MarketingModule\Http\Controllers\TagsController;
 use Nreljed\MarketingModule\Http\Controllers\WorkflowsController;
 
@@ -19,6 +26,54 @@ Route::get('/', [MarketingDashboardController::class, 'index'])->name('dashboard
 // Analytics
 Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
 Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
+
+// Sync health (operational view of metric collection and its dead letters)
+Route::get('/sync-health', [SyncHealthController::class, 'index'])->name('sync-health.index');
+Route::post('/sync-health/dead-letters/replay', [SyncHealthController::class, 'replay'])->name('sync-health.replay');
+Route::post('/sync-health/dead-letters/{target}/replay', [SyncHealthController::class, 'replayTarget'])->name('sync-health.dead-letters.replay');
+
+// Insights & strategy
+Route::get('/insights', [MarketingInsightsController::class, 'index'])->name('insights.index');
+Route::post('/insights/refresh', [MarketingInsightsController::class, 'refresh'])->name('insights.refresh');
+Route::post('/insights/analyze', [MarketingInsightsController::class, 'analyze'])->name('insights.analyze');
+Route::post('/insights/{insight}/apply', [MarketingInsightsController::class, 'apply'])->name('insights.apply');
+
+// Plans
+Route::get('/plans', [MarketingPlansController::class, 'index'])->name('plans.index');
+Route::get('/plans/create', [MarketingPlansController::class, 'create'])->name('plans.create');
+Route::post('/plans', [MarketingPlansController::class, 'store'])->name('plans.store');
+Route::post('/plans/generate', [MarketingPlansController::class, 'generate'])->name('plans.generate');
+Route::get('/plans/{record}/edit', [MarketingPlansController::class, 'edit'])->name('plans.edit');
+Route::put('/plans/{record}', [MarketingPlansController::class, 'update'])->name('plans.update');
+Route::delete('/plans/{record}', [MarketingPlansController::class, 'destroy'])->name('plans.destroy');
+
+// Briefs
+Route::get('/briefs', [MarketingBriefsController::class, 'index'])->name('briefs.index');
+Route::get('/briefs/create', [MarketingBriefsController::class, 'create'])->name('briefs.create');
+Route::post('/briefs', [MarketingBriefsController::class, 'store'])->name('briefs.store');
+Route::get('/briefs/{record}/edit', [MarketingBriefsController::class, 'edit'])->name('briefs.edit');
+Route::put('/briefs/{record}', [MarketingBriefsController::class, 'update'])->name('briefs.update');
+Route::delete('/briefs/{record}', [MarketingBriefsController::class, 'destroy'])->name('briefs.destroy');
+
+// Broadcasts
+Route::get('/broadcasts', [MarketingBroadcastsController::class, 'index'])->name('broadcasts.index');
+Route::get('/broadcasts/create', [MarketingBroadcastsController::class, 'create'])->name('broadcasts.create');
+Route::post('/broadcasts', [MarketingBroadcastsController::class, 'store'])->name('broadcasts.store');
+Route::get('/broadcasts/{record}/edit', [MarketingBroadcastsController::class, 'edit'])->name('broadcasts.edit');
+Route::put('/broadcasts/{record}', [MarketingBroadcastsController::class, 'update'])->name('broadcasts.update');
+Route::delete('/broadcasts/{record}', [MarketingBroadcastsController::class, 'destroy'])->name('broadcasts.destroy');
+Route::post('/broadcasts/{record}/send', [MarketingBroadcastsController::class, 'send'])->name('broadcasts.send');
+
+// Experiments
+Route::get('/experiments', [MarketingExperimentsController::class, 'index'])->name('experiments.index');
+Route::get('/experiments/create', [MarketingExperimentsController::class, 'create'])->name('experiments.create');
+Route::post('/experiments', [MarketingExperimentsController::class, 'store'])->name('experiments.store');
+Route::get('/experiments/{record}/edit', [MarketingExperimentsController::class, 'edit'])->name('experiments.edit');
+Route::put('/experiments/{record}', [MarketingExperimentsController::class, 'update'])->name('experiments.update');
+Route::delete('/experiments/{record}', [MarketingExperimentsController::class, 'destroy'])->name('experiments.destroy');
+
+// Calendar
+Route::get('/calendar', [MarketingCalendarController::class, 'index'])->name('calendar.index');
 
 // Social accounts.
 //
@@ -88,6 +143,7 @@ Route::get('/workflows/tag-options', [WorkflowsController::class, 'tagOptions'])
 Route::get('/workflows', [WorkflowsController::class, 'index'])->name('workflows.index');
 Route::get('/workflows/create', [WorkflowsController::class, 'create'])->name('workflows.create');
 Route::post('/workflows', [WorkflowsController::class, 'store'])->name('workflows.store');
+Route::get('/workflows/{record}/builder', [WorkflowsController::class, 'builder'])->name('workflows.builder');
 Route::get('/workflows/{record}/edit', [WorkflowsController::class, 'edit'])->name('workflows.edit');
 Route::put('/workflows/{record}', [WorkflowsController::class, 'update'])->name('workflows.update');
 Route::delete('/workflows/{record}', [WorkflowsController::class, 'destroy'])->name('workflows.destroy');

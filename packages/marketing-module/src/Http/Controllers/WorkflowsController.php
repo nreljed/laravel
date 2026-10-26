@@ -3,6 +3,8 @@
 namespace Nreljed\MarketingModule\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 use Nreljed\MarketingModule\Models\Tag;
 use Nreljed\MarketingModule\Models\Workflow;
 use Nreljed\MarketingModule\Requests\StoreWorkflowRequest;
@@ -47,6 +49,23 @@ class WorkflowsController extends Controller
         return redirect()
             ->route('dashboard.marketing.workflows.index')
             ->with('status', 'Workflow created.');
+    }
+
+    public function builder(Workflow $record): InertiaResponse
+    {
+        $this->authorize('update', $record);
+
+        return Inertia::render('marketing/workflows/builder', [
+            'workflow' => $this->row($record->load(['tag', 'conditionTag'])),
+            'tags' => Tag::query()
+                ->orderBy('name')
+                ->get()
+                ->map(static fn (Tag $tag): array => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                ])
+                ->all(),
+        ]);
     }
 
     public function edit(ResourceRenderer $renderer, Workflow $record)
@@ -117,6 +136,7 @@ class WorkflowsController extends Controller
             'tag_id' => $workflow->tag_id,
             'contact_status' => $workflow->contact_status,
             'webhook_url' => $workflow->webhook_url,
+            'steps' => $workflow->steps,
             'is_active' => (bool) $workflow->is_active,
             'run_count' => (int) $workflow->run_count,
             'last_run_at' => $workflow->last_run_at?->toDateTimeString(),

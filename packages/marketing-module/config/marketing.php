@@ -161,6 +161,7 @@ return [
         'base_url' => env('MARKETING_LINKS_BASE_URL'),
         'code_length' => (int) env('MARKETING_LINKS_CODE_LENGTH', 8),
         'rate_limit_per_minute' => (int) env('MARKETING_LINKS_RATE_LIMIT', 60),
+        'retention_days' => (int) env('MARKETING_LINKS_RETENTION_DAYS', 365),
     ],
 
     /*
@@ -182,6 +183,41 @@ return [
         'max_per_run' => (int) env('MARKETING_METRICS_MAX_PER_RUN', 100),
         'requests_per_minute' => (int) env('MARKETING_METRICS_REQUESTS_PER_MINUTE', 30),
         'retention_days' => (int) env('MARKETING_METRICS_RETENTION_DAYS', 365),
+
+        // Governance: a failed delivery is retried this many times before it
+        // is parked as a dead letter. Non-retryable provider errors dead-letter
+        // immediately.
+        'max_attempts' => (int) env('MARKETING_METRICS_MAX_ATTEMPTS', 5),
+
+        // Governance: provider calls allowed per platform per UTC day. 0 means
+        // no daily cap. The counter lives in the application cache.
+        'daily_request_budget' => (int) env('MARKETING_METRICS_DAILY_BUDGET', 0),
+
+        // Per-platform overrides, merged over the defaults above:
+        //   'linkedin' => [
+        //       'requests_per_minute' => 10,
+        //       'max_per_run' => 25,
+        //       'daily_request_budget' => 500,
+        //   ],
+        'platforms' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email
+    |--------------------------------------------------------------------------
+    */
+
+    'email' => [
+        'driver' => env('MARKETING_EMAIL_DRIVER', 'log'),
+    ],
+
+    'sms' => [
+        'driver' => env('MARKETING_SMS_DRIVER', 'log'),
+    ],
+
+    'whatsapp' => [
+        'driver' => env('MARKETING_WHATSAPP_DRIVER', 'log'),
     ],
 
     /*
@@ -211,6 +247,21 @@ return [
         // resolver refuses to run, so a mis-written condition cannot pull the
         // whole contact table into a broadcast.
         'segment_limit' => (int) env('MARKETING_SEGMENT_LIMIT', 50000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retention
+    |--------------------------------------------------------------------------
+    |
+    | `marketing:prune` uses these windows. Workflow runs are the audit trail of
+    | every automation step, so they keep a longer default window than the
+    | high-volume metric and click tables.
+    |
+    */
+
+    'workflows' => [
+        'retention_days' => (int) env('MARKETING_WORKFLOW_RUN_RETENTION_DAYS', 180),
     ],
 
 ];

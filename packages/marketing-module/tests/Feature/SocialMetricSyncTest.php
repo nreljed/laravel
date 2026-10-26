@@ -132,7 +132,7 @@ final class SocialMetricSyncTest extends TestCase
         $this->assertSame(0, SocialPostMetric::query()->count());
     }
 
-    public function test_a_failed_sync_keeps_the_previous_snapshot_and_expires_the_account(): void
+    public function test_a_permanent_failure_keeps_the_previous_snapshot_and_expires_the_account(): void
     {
         $target = $this->target();
         $this->adapter->metrics = ['impressions' => 10];
@@ -148,11 +148,107 @@ final class SocialMetricSyncTest extends TestCase
         $this->assertSame(1, $summary['errors']);
 
         $target->refresh();
-        $this->assertSame(MetricSyncStatus::Error, $target->metrics_status);
-        $this->assertSame('The platform rejected the token.', $target->metrics_error);
+        $this->assertSame(MetricSyncStatus::DeadLetter, $target->metrics_status);
+        $this->assertSame(1, $target->metrics_attempts);
+        $this->assertStringContainsString('The platform rejected the token.', (string) $target->metrics_error);
+        $this->assertStringContainsString('Dead letter', (string) $target->metrics_error);
         $this->assertSame(SocialAccountStatus::Expired, $target->account->status);
         $this->assertSame(1, SocialPostMetric::query()->count());
         $this->assertSame(10, SocialPostMetric::query()->sole()->impressions);
+    }
+
+    public function test_a_transient_failure_is_retried_until_the_attempt_budget_then_dead_lettered(): void
+    {
+        $this->container['config']->set('marketing.metrics.max_attempts', 2);
+
+        $target = $this->target();
+        $this->adapter->throws = MetricFetchException::fromNormalized(
+            NormalizedError::transient('rate_limited', 'Slow down.'),
+        );
+
+        $first = $this->sync->sync($this->now, force: true);
+
+        $this->assertSame(1, $first['errors']);
+
+        $target->refresh();
+        $this->assertSame(MetricSyncStatus::Error, $target->metrics_status);
+        $this->assertSame(1, $target->metrics_attempts);
+        $this->assertStringContainsString('Attempt 1 of 2', (string) $target->metrics_error);
+
+        $second = $this->sync->sync($this->now->addMinutes(5), force: true);
+
+        $this->assertSame(1, $second['errors']);
+
+        $target->refresh();
+        $this->assertSame(MetricSyncStatus::DeadLetter, $target->metrics_status);
+        $this->assertSame(2, $target->metrics_attempts);
+        $this->assertStringContainsString('Dead letter after 2 attempt(s)', (string) $target->metrics_error);
+    }
+
+    public function test_dead_letters_are_skipped_until_replayed(): void
+    {
+        $target = $this->target();
+        $this->adapter->throws = MetricFetchException::fromNormalized(
+            NormalizedError::permanent('unsupported_metric', 'The platform does not expose metrics.'),
+        );
+
+        $this->sync->sync($this->now, force: true);
+
+        $target->refresh();
+        $this->assertSame(MetricSyncStatus::DeadLetter, $target->metrics_status);
+
+        $again = $this->sync->sync($this->now->addHour(), force: true);
+        $this->assertSame(0, $again['selected'], 'dead letters are not selected');
+
+        $this->assertTrue($this->sync->replayDeadLetter($target));
+
+        $target->refresh();
+        $this->assertSame(MetricSyncStatus::Pending, $target->metrics_status);
+        $this->assertSame(0, $target->metrics_attempts);
+        $this->assertNull($target->metrics_attempted_at);
+
+        $this->adapter->throws = null;
+        $this->adapter->metrics = ['impressions' => 7];
+
+        $replayed = $this->sync->sync($this->now->addHours(2));
+        $this->assertSame(1, $replayed['ok']);
+        $this->assertSame(MetricSyncStatus::Ok, $target->refresh()->metrics_status);
+    }
+
+    public function test_replay_dead_letters_can_be_scoped_to_one_platform(): void
+    {
+        $meta = $this->target($this->account(['platform' => 'fake']));
+        $other = $this->target($this->account(['platform' => 'fake-other']));
+
+        foreach ([$meta, $other] as $target) {
+            $target->forceFill([
+                'metrics_status' => MetricSyncStatus::DeadLetter,
+                'metrics_attempts' => 3,
+                'metrics_error' => 'Permanent failure.',
+            ])->save();
+        }
+
+        $this->assertSame(1, $this->sync->replayDeadLetters('fake'));
+
+        $this->assertSame(MetricSyncStatus::Pending, $meta->refresh()->metrics_status);
+        $this->assertSame(MetricSyncStatus::DeadLetter, $other->refresh()->metrics_status);
+    }
+
+    public function test_an_exhausted_daily_budget_defers_the_rest_of_the_platform_run(): void
+    {
+        $this->container['config']->set('marketing.metrics.daily_request_budget', 1);
+        $this->adapter->metrics = ['impressions' => 5];
+
+        $this->target();
+        $this->target();
+
+        $summary = $this->sync->sync($this->now);
+
+        $this->assertSame(2, $summary['selected']);
+        $this->assertSame(1, $summary['processed']);
+        $this->assertSame(1, $summary['ok']);
+        $this->assertSame(1, $summary['budget_exhausted']);
+        $this->assertSame(1, $this->adapter->fetchCalls);
     }
 
     public function test_it_refreshes_an_expiring_account_once(): void
@@ -221,7 +317,7 @@ final class SocialMetricSyncTest extends TestCase
         $this->assertSame(1, $this->sync->sync($this->now->addMinute(), force: true)['selected']);
     }
 
-    public function test_an_unsupported_platform_is_recorded_as_an_error(): void
+    public function test_an_unsupported_platform_is_dead_lettered_immediately(): void
     {
         $target = $this->target($this->account(['platform' => 'unsupported']));
 
@@ -230,7 +326,7 @@ final class SocialMetricSyncTest extends TestCase
         $this->assertSame(1, $summary['errors']);
 
         $target->refresh();
-        $this->assertSame(MetricSyncStatus::Error, $target->metrics_status);
+        $this->assertSame(MetricSyncStatus::DeadLetter, $target->metrics_status);
         $this->assertStringContainsString('unsupported', (string) $target->metrics_error);
     }
 

@@ -2,13 +2,17 @@
 
 namespace Nreljed\MarketingModule\Tests\Feature;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Nreljed\MarketingModule\Enums\ContactStatus;
 use Nreljed\MarketingModule\Enums\WorkflowAction;
 use Nreljed\MarketingModule\Enums\WorkflowRunStatus;
 use Nreljed\MarketingModule\Enums\WorkflowTrigger;
 use Nreljed\MarketingModule\Models\Contact;
+use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
+use Nreljed\MarketingModule\Models\SocialPostMetric;
+use Nreljed\MarketingModule\Models\SocialPostTarget;
 use Nreljed\MarketingModule\Models\Tag;
 use Nreljed\MarketingModule\Models\Workflow;
 use Nreljed\MarketingModule\Models\WorkflowRun;
@@ -178,6 +182,145 @@ final class WorkflowEngineTest extends TestCase
     /**
      * @param  array<string, mixed>  $attributes
      */
+    public function test_a_metric_condition_can_gate_a_post_workflow_step(): void
+    {
+        DB::table('users')->insert(['id' => 1, 'name' => 'Author', 'email' => 'author@example.test']);
+
+        $account = SocialAccount::create([
+            'user_id' => 1,
+            'platform' => 'linkedin',
+            'account_name' => 'page',
+            'username' => 'page',
+            'account_id' => 'page-1',
+            'status' => 'active',
+        ]);
+
+        $post = SocialPost::create([
+            'user_id' => 1,
+            'body' => 'Launch day',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $target = SocialPostTarget::create([
+            'social_post_id' => $post->id,
+            'social_account_id' => $account->id,
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        SocialPostMetric::create([
+            'social_post_target_id' => $target->id,
+            'metric_date' => now()->toDateString(),
+            'captured_at' => now(),
+            'impressions' => 100,
+        ]);
+
+        $payloads = [];
+        $engine = new WorkflowEngine(function (array $payload) use (&$payloads): void {
+            $payloads[] = $payload;
+        });
+
+        Workflow::create([
+            'name' => 'Metric workflow',
+            'trigger' => WorkflowTrigger::PostPublished,
+            'action' => WorkflowAction::Webhook,
+            'webhook_url' => 'https://example.test/hook',
+            'is_active' => true,
+            'steps' => [
+                [
+                    'action' => WorkflowAction::Webhook->value,
+                    'condition_metric' => 'impressions',
+                    'condition_operator' => '>=',
+                    'condition_value' => 50,
+                    'webhook_url' => 'https://example.test/hook',
+                ],
+            ],
+        ]);
+
+        $engine->postPublished($post);
+        $engine->processPendingRuns();
+
+        $this->assertCount(1, $payloads);
+        $this->assertSame('post_published', $payloads[0]['event']);
+    }
+
+    public function test_a_delayed_step_waits_until_it_is_due(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-23 12:00:00'));
+
+        $contact = Contact::create(['email' => 'delayed@example.test']);
+        $tag = Tag::create(['name' => 'Delayed', 'slug' => 'delayed']);
+
+        Workflow::create([
+            'name' => 'Delayed workflow',
+            'trigger' => WorkflowTrigger::ContactCreated,
+            'action' => WorkflowAction::AddTag,
+            'tag_id' => $tag->id,
+            'is_active' => true,
+            'steps' => [
+                [
+                    'action' => WorkflowAction::AddTag->value,
+                    'tag_id' => $tag->id,
+                    'delay_minutes' => 60,
+                ],
+            ],
+        ]);
+
+        $engine = new WorkflowEngine;
+        $engine->contactCreated($contact);
+
+        $this->assertSame(0, $engine->processPendingRuns());
+        $this->assertFalse($contact->fresh()->tags->contains('id', $tag->id));
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-23 13:01:00'));
+
+        $this->assertSame(1, $engine->processPendingRuns());
+        $this->assertTrue($contact->fresh()->tags->contains('id', $tag->id));
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_a_failed_step_follows_the_failure_branch(): void
+    {
+        $contact = Contact::create(['email' => 'branch@example.test']);
+        $tag = Tag::create(['name' => 'Recovered', 'slug' => 'recovered']);
+
+        Workflow::create([
+            'name' => 'Failure branch workflow',
+            'trigger' => WorkflowTrigger::ContactCreated,
+            'action' => WorkflowAction::Webhook,
+            'webhook_url' => 'https://example.test/fail',
+            'is_active' => true,
+            'steps' => [
+                [
+                    'action' => WorkflowAction::Webhook->value,
+                    'webhook_url' => 'https://example.test/fail',
+                    'on_failure' => 1,
+                ],
+                [
+                    'action' => WorkflowAction::AddTag->value,
+                    'tag_id' => $tag->id,
+                ],
+            ],
+        ]);
+
+        $engine = new WorkflowEngine(function (): void {
+            throw new RuntimeException('Webhook failed');
+        });
+
+        $engine->contactCreated($contact);
+        $engine->processPendingRuns();
+
+        $first = WorkflowRun::query()->where('step_index', 0)->first();
+        $this->assertSame(WorkflowRunStatus::Failed, $first->status);
+
+        $engine->processPendingRuns();
+
+        $this->assertTrue($contact->fresh()->tags->contains('id', $tag->id));
+        $this->assertSame(WorkflowRunStatus::Success, WorkflowRun::query()->where('step_index', 1)->first()->status);
+    }
+
     private function workflow(WorkflowAction $action, array $attributes = []): Workflow
     {
         return Workflow::create($attributes + [

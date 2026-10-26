@@ -112,6 +112,12 @@ final class WorkflowResource
                             'label' => 'Webhook URL',
                             'help' => 'Required when sending a webhook. Receives the event payload as JSON.',
                         ],
+                        [
+                            'name' => 'steps',
+                            'type' => 'json',
+                            'label' => 'Steps',
+                            'help' => 'Optional ordered steps. Each may set delay_minutes, action, condition_tag_id, tag_id, contact_status, webhook_url, on_success and on_failure.',
+                        ],
                     ],
                 ],
             ],

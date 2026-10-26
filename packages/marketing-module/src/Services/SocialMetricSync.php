@@ -30,6 +30,7 @@ class SocialMetricSync
         protected SocialChannelRegistry $channels,
         protected MetricNormalizer $normalizer,
         protected AccountTokenRefresher $refresher,
+        protected ?MetricSyncBudget $budget = null,
     ) {}
 
     /**
@@ -39,6 +40,8 @@ class SocialMetricSync
      *     ok: int,
      *     unavailable: int,
      *     errors: int,
+     *     skipped: int,
+     *     budget_exhausted: int,
      *     dry_run: bool
      * }
      */
@@ -56,13 +59,20 @@ class SocialMetricSync
         $retryAfter = max(1, (int) config('marketing.metrics.retry_after_minutes', 60));
         $interval = max(1, (int) config('marketing.metrics.sync_interval_hours', 6));
 
+        // A platform-scoped run honors that platform's own per-run cap.
+        if ($platform !== null && $platform !== '') {
+            $limit = min($limit, $this->budget()->settings($platform)['max_per_run']);
+        }
+
         $query = SocialPostTarget::query()
             ->with('account')
             ->where('status', DeliveryStatus::Published->value)
             ->whereNotNull('external_post_id')
             ->where('external_post_id', '!=', '')
             ->whereNotNull('published_at')
-            ->where('published_at', '>=', $now->subDays($days));
+            ->where('published_at', '>=', $now->subDays($days))
+            // Dead letters only move when an operator replays them.
+            ->where('metrics_status', '!=', MetricSyncStatus::DeadLetter->value);
 
         if ($platform !== null && $platform !== '') {
             $query->whereHas('account', static function ($query) use ($platform): void {
@@ -102,6 +112,8 @@ class SocialMetricSync
             'ok' => 0,
             'unavailable' => 0,
             'errors' => 0,
+            'skipped' => 0,
+            'budget_exhausted' => 0,
             'dry_run' => $dryRun,
         ];
 
@@ -109,14 +121,40 @@ class SocialMetricSync
             return $summary;
         }
 
-        $delay = $this->requestDelay();
+        $processedByPlatform = [];
+        $exhaustedPlatforms = [];
 
         foreach ($targets as $index => $target) {
+            $targetPlatform = $target->account?->platform;
+            $platformKey = $targetPlatform ?? '';
+
+            if (($processedByPlatform[$platformKey] ?? 0) >= $this->budget()->settings($targetPlatform)['max_per_run']) {
+                $summary['skipped']++;
+
+                continue;
+            }
+
+            if ($exhaustedPlatforms[$platformKey] ?? false) {
+                $summary['budget_exhausted']++;
+
+                continue;
+            }
+
+            if (! $this->budget()->consume($targetPlatform, $now)) {
+                $exhaustedPlatforms[$platformKey] = true;
+                $summary['budget_exhausted']++;
+
+                continue;
+            }
+
             $summary['processed']++;
+            $processedByPlatform[$platformKey] = ($processedByPlatform[$platformKey] ?? 0) + 1;
 
             $result = $this->syncTarget($target, $now);
 
             $summary[$result]++;
+
+            $delay = $this->budget()->requestDelay($targetPlatform);
 
             if ($delay > 0 && $index + 1 < $targets->count()) {
                 usleep($delay);
@@ -195,6 +233,7 @@ class SocialMetricSync
         if (! $hasValue) {
             $target->forceFill([
                 'metrics_status' => MetricSyncStatus::Unavailable,
+                'metrics_attempts' => 0,
                 'metrics_synced_at' => null,
                 'metrics_error' => 'The platform returned no usable metrics for this delivery.',
             ])->save();
@@ -223,6 +262,7 @@ class SocialMetricSync
 
                 $target->forceFill([
                     'metrics_status' => MetricSyncStatus::Ok,
+                    'metrics_attempts' => 0,
                     'metrics_synced_at' => $now,
                     'metrics_error' => null,
                 ])->save();
@@ -243,9 +283,21 @@ class SocialMetricSync
         ?SocialAccount $account,
         NormalizedError $error,
     ): string {
+        $attempts = (int) $target->metrics_attempts + 1;
+        $maxAttempts = max(1, (int) config('marketing.metrics.max_attempts', 5));
+
+        // A permanent provider error cannot be fixed by trying again; park it
+        // immediately. Transient errors get `max_attempts` tries first.
+        $deadLetter = ! $error->retryable || $attempts >= $maxAttempts;
+
+        $message = $deadLetter
+            ? sprintf('%s Dead letter after %d attempt(s).', $error->message, $attempts)
+            : sprintf('%s Attempt %d of %d.', $error->message, $attempts, $maxAttempts);
+
         $target->forceFill([
-            'metrics_status' => MetricSyncStatus::Error,
-            'metrics_error' => Str::limit($error->message, 500),
+            'metrics_status' => $deadLetter ? MetricSyncStatus::DeadLetter : MetricSyncStatus::Error,
+            'metrics_attempts' => $attempts,
+            'metrics_error' => Str::limit($message, 500),
         ])->save();
 
         if (in_array($error->code, ['token_rejected', 'token_missing', 'account_revoked'], true)) {
@@ -256,17 +308,50 @@ class SocialMetricSync
     }
 
     /**
-     * Microseconds to wait between provider calls, derived from the limit.
+     * Re-queue every dead letter so the next run retries it.
      */
-    protected function requestDelay(): int
+    public function replayDeadLetters(?string $platform = null, int $limit = 100): int
     {
-        $perMinute = (int) config('marketing.metrics.requests_per_minute', 30);
+        $query = SocialPostTarget::query()
+            ->where('metrics_status', MetricSyncStatus::DeadLetter->value);
 
-        if ($perMinute <= 0) {
-            return 0;
+        if ($platform !== null && $platform !== '') {
+            $query->whereHas('account', static function ($query) use ($platform): void {
+                $query->where('platform', $platform);
+            });
         }
 
-        return (int) floor(60_000_000 / $perMinute);
+        $targets = $query->limit(max(1, $limit))->get();
+
+        foreach ($targets as $target) {
+            $this->replayDeadLetter($target);
+        }
+
+        return $targets->count();
+    }
+
+    /**
+     * Re-queue one delivery if it is parked as a dead letter.
+     */
+    public function replayDeadLetter(SocialPostTarget $target): bool
+    {
+        if ($target->metrics_status !== MetricSyncStatus::DeadLetter) {
+            return false;
+        }
+
+        $target->forceFill([
+            'metrics_status' => MetricSyncStatus::Pending,
+            'metrics_attempts' => 0,
+            'metrics_attempted_at' => null,
+            'metrics_error' => null,
+        ])->save();
+
+        return true;
+    }
+
+    protected function budget(): MetricSyncBudget
+    {
+        return $this->budget ??= new MetricSyncBudget;
     }
 
     /**

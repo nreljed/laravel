@@ -6,7 +6,7 @@ export const marketingPagePrefix = "marketing";
 
 /**
  * The MARKETING feature page kit. Returns the marketing module's frontend
- * page map under the `marketing/` prefix — e.g. `marketing/dashboard`.
+ * page map under the `marketing/` prefix - e.g. `marketing/dashboard`.
  *
  * Controllers render lowercase names (Marketing/Dashboard → `marketing/dashboard`),
  * so these keys must stay lowercase. Consuming apps spread the returned map

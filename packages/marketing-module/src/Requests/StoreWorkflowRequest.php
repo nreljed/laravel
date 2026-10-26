@@ -65,6 +65,7 @@ class StoreWorkflowRequest extends FormRequest
                 'max:2048',
             ],
             'is_active' => 'boolean',
+            'steps' => 'nullable|array',
         ];
     }
 

@@ -62,6 +62,14 @@ class SyncMarketingMetrics extends Command
             $summary['errors'],
         ));
 
+        if (($summary['skipped'] ?? 0) > 0) {
+            $this->line("{$summary['skipped']} delivery(s) skipped after their platform's per-run cap.");
+        }
+
+        if (($summary['budget_exhausted'] ?? 0) > 0) {
+            $this->warn("{$summary['budget_exhausted']} delivery(s) deferred: the platform's daily request budget is exhausted.");
+        }
+
         return self::SUCCESS;
     }
 

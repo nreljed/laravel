@@ -35,6 +35,7 @@ class Workflow extends Model
         'run_count',
         'last_run_at',
         'metadata',
+        'steps',
     ];
 
     protected $casts = [
@@ -44,7 +45,15 @@ class Workflow extends Model
         'run_count' => 'integer',
         'last_run_at' => 'datetime',
         'metadata' => 'array',
+        'steps' => 'array',
     ];
+
+    public function step(int $index): ?array
+    {
+        $steps = $this->steps ?? [];
+
+        return $steps[$index] ?? null;
+    }
 
     protected static function newFactory(): Factory
     {

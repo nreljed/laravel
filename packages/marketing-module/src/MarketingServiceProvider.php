@@ -10,11 +10,23 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Nreljed\MarketingModule\Console\Commands\CheckMarketingSyncAlerts;
+use Nreljed\MarketingModule\Console\Commands\GenerateMarketingInsights;
+use Nreljed\MarketingModule\Console\Commands\ProcessWorkflows;
+use Nreljed\MarketingModule\Console\Commands\PruneMarketingData;
 use Nreljed\MarketingModule\Console\Commands\PublishDuePosts;
+use Nreljed\MarketingModule\Console\Commands\ReplayMarketingDeadLetters;
 use Nreljed\MarketingModule\Console\Commands\SyncMarketingMetrics;
+use Nreljed\MarketingModule\Contracts\ConversionIngest;
 use Nreljed\MarketingModule\Enums\PostStatus;
+use Nreljed\MarketingModule\Http\Controllers\UnsubscribeController;
 use Nreljed\MarketingModule\Models\Campaign;
 use Nreljed\MarketingModule\Models\Contact;
+use Nreljed\MarketingModule\Models\MarketingBrief;
+use Nreljed\MarketingModule\Models\MarketingBroadcast;
+use Nreljed\MarketingModule\Models\MarketingExperiment;
+use Nreljed\MarketingModule\Models\MarketingInsight;
+use Nreljed\MarketingModule\Models\MarketingPlan;
 use Nreljed\MarketingModule\Models\Segment;
 use Nreljed\MarketingModule\Models\SocialAccount;
 use Nreljed\MarketingModule\Models\SocialPost;
@@ -22,6 +34,10 @@ use Nreljed\MarketingModule\Models\Tag;
 use Nreljed\MarketingModule\Models\Workflow;
 use Nreljed\MarketingModule\Policies\CampaignPolicy;
 use Nreljed\MarketingModule\Policies\ContactPolicy;
+use Nreljed\MarketingModule\Policies\MarketingBriefPolicy;
+use Nreljed\MarketingModule\Policies\MarketingBroadcastPolicy;
+use Nreljed\MarketingModule\Policies\MarketingExperimentPolicy;
+use Nreljed\MarketingModule\Policies\MarketingPlanPolicy;
 use Nreljed\MarketingModule\Policies\SegmentPolicy;
 use Nreljed\MarketingModule\Policies\SocialAccountPolicy;
 use Nreljed\MarketingModule\Policies\SocialPostPolicy;
@@ -29,14 +45,28 @@ use Nreljed\MarketingModule\Policies\TagPolicy;
 use Nreljed\MarketingModule\Policies\WorkflowPolicy;
 use Nreljed\MarketingModule\Resources\CampaignResource;
 use Nreljed\MarketingModule\Resources\ContactResource;
+use Nreljed\MarketingModule\Resources\MarketingBriefResource;
+use Nreljed\MarketingModule\Resources\MarketingBroadcastResource;
+use Nreljed\MarketingModule\Resources\MarketingExperimentResource;
+use Nreljed\MarketingModule\Resources\MarketingPlanResource;
 use Nreljed\MarketingModule\Resources\SegmentResource;
 use Nreljed\MarketingModule\Resources\SocialAccountResource;
 use Nreljed\MarketingModule\Resources\SocialPostResource;
 use Nreljed\MarketingModule\Resources\TagResource;
 use Nreljed\MarketingModule\Resources\WorkflowResource;
 use Nreljed\MarketingModule\Services\AccountTokenRefresher;
+use Nreljed\MarketingModule\Services\BroadcastService;
+use Nreljed\MarketingModule\Services\ConversionIngestService;
+use Nreljed\MarketingModule\Services\LaravelMailChannel;
+use Nreljed\MarketingModule\Services\LogEmailChannel;
+use Nreljed\MarketingModule\Services\LogSmsChannel;
+use Nreljed\MarketingModule\Services\LogWhatsAppChannel;
 use Nreljed\MarketingModule\Services\MarketingAnalytics;
+use Nreljed\MarketingModule\Services\MarketingInsightService;
+use Nreljed\MarketingModule\Services\MarketingRetention;
 use Nreljed\MarketingModule\Services\MetricNormalizer;
+use Nreljed\MarketingModule\Services\MetricSyncBudget;
+use Nreljed\MarketingModule\Services\MetricSyncHealth;
 use Nreljed\MarketingModule\Services\PostPublisher;
 use Nreljed\MarketingModule\Services\SocialAuthService;
 use Nreljed\MarketingModule\Services\SocialChannelRegistry;
@@ -79,9 +109,28 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         $this->app->singleton(MetricNormalizer::class);
         $this->app->singleton(PostPublisher::class);
         $this->app->singleton(SocialMetricSync::class);
+        $this->app->singleton(MetricSyncBudget::class);
+        $this->app->singleton(MetricSyncHealth::class);
+        $this->app->singleton(MarketingRetention::class);
         $this->app->singleton(TrackedLinkService::class);
         $this->app->singleton(WorkflowEngine::class);
         $this->app->singleton(MarketingAnalytics::class);
+        $this->app->singleton(MarketingInsightService::class);
+        $this->app->singleton(ConversionIngestService::class);
+        $this->app->bind(ConversionIngest::class, ConversionIngestService::class);
+        $this->app->singleton(BroadcastService::class, function ($app): BroadcastService {
+            $emailDriver = (string) config('marketing.email.driver', 'log');
+
+            $email = $emailDriver === 'mail'
+                ? $app->make(LaravelMailChannel::class)
+                : $app->make(LogEmailChannel::class);
+
+            return new BroadcastService(
+                $email,
+                $app->make(LogSmsChannel::class),
+                $app->make(LogWhatsAppChannel::class),
+            );
+        });
     }
 
     public function boot(): void
@@ -121,6 +170,13 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             ->prefix('/dashboard/marketing')
             ->name('dashboard.marketing.')
             ->group(__DIR__.'/Routes/web.php');
+
+        Route::middleware('web')
+            ->group(function (): void {
+                Route::get('/unsubscribe/{contact}', [UnsubscribeController::class, '__invoke'])
+                    ->name('marketing.unsubscribe')
+                    ->middleware('signed');
+            });
     }
 
     protected function registerRateLimiters(): void
@@ -139,6 +195,11 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         Gate::policy(SocialPost::class, SocialPostPolicy::class);
         Gate::policy(Campaign::class, CampaignPolicy::class);
         Gate::policy(Workflow::class, WorkflowPolicy::class);
+        Gate::policy(MarketingBroadcast::class, MarketingBroadcastPolicy::class);
+        Gate::policy(MarketingBrief::class, MarketingBriefPolicy::class);
+        Gate::policy(MarketingExperiment::class, MarketingExperimentPolicy::class);
+        Gate::policy(MarketingInsight::class, MarketingInsightPolicy::class);
+        Gate::policy(MarketingPlan::class, MarketingPlanPolicy::class);
     }
 
     /**
@@ -190,6 +251,11 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         $this->commands([
             PublishDuePosts::class,
             SyncMarketingMetrics::class,
+            GenerateMarketingInsights::class,
+            PruneMarketingData::class,
+            CheckMarketingSyncAlerts::class,
+            ReplayMarketingDeadLetters::class,
+            ProcessWorkflows::class,
         ]);
     }
 
@@ -305,6 +371,21 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'name' => 'View Marketing Analytics',
                 'description' => 'See delivery, campaign and workflow reporting for the marketing module.',
             ],
+            [
+                'slug' => 'marketing.plans.manage',
+                'name' => 'Manage Marketing Plans',
+                'description' => 'Create, approve, and review strategy plans, briefs and insights.',
+            ],
+            [
+                'slug' => 'marketing.insights.apply',
+                'name' => 'Apply Marketing Insights',
+                'description' => 'Apply analyst recommendations to create draft briefs or experiments.',
+            ],
+            [
+                'slug' => 'marketing.broadcasts.manage',
+                'name' => 'Manage Broadcasts',
+                'description' => 'Create and send email broadcasts to consenting contacts.',
+            ],
         ];
     }
 
@@ -345,6 +426,41 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                         'url' => route('dashboard.marketing.analytics', [], false),
                         'permission' => 'marketing.analytics.view',
                     ],
+                    [
+                        'title' => 'Sync health',
+                        'url' => route('dashboard.marketing.sync-health.index', [], false),
+                        'permission' => 'marketing.analytics.view',
+                    ],
+                    [
+                        'title' => 'Plans',
+                        'url' => route('dashboard.marketing.plans.index', [], false),
+                        'permission' => 'marketing.plans.manage',
+                    ],
+                    [
+                        'title' => 'Briefs',
+                        'url' => route('dashboard.marketing.briefs.index', [], false),
+                        'permission' => 'marketing.plans.manage',
+                    ],
+                    [
+                        'title' => 'Experiments',
+                        'url' => route('dashboard.marketing.experiments.index', [], false),
+                        'permission' => 'marketing.plans.manage',
+                    ],
+                    [
+                        'title' => 'Insights',
+                        'url' => route('dashboard.marketing.insights.index', [], false),
+                        'permission' => 'marketing.plans.manage',
+                    ],
+                    [
+                        'title' => 'Broadcasts',
+                        'url' => route('dashboard.marketing.broadcasts.index', [], false),
+                        'permission' => 'marketing.broadcasts.manage',
+                    ],
+                    [
+                        'title' => 'Calendar',
+                        'url' => route('dashboard.marketing.calendar.index', [], false),
+                        'permission' => 'marketing.plans.manage',
+                    ],
                 ],
             ]];
         } catch (Throwable) {
@@ -368,6 +484,9 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             'scheduled' => SocialPost::query()->where('status', PostStatus::Scheduled->value)->count(),
             'campaigns' => Campaign::query()->count(),
             'workflows' => Workflow::query()->where('is_active', true)->count(),
+            'plans' => MarketingPlan::query()->count(),
+            'briefs' => MarketingBrief::query()->count(),
+            'experiments' => MarketingExperiment::query()->count(),
         ];
     }
 
@@ -381,6 +500,10 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
             SegmentResource::definition(),
             CampaignResource::definition(),
             WorkflowResource::definition(),
+            MarketingPlanResource::definition(),
+            MarketingBriefResource::definition(),
+            MarketingExperimentResource::definition(),
+            MarketingBroadcastResource::definition(),
         ];
     }
 
@@ -400,6 +523,13 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'campaigns_table' => Schema::hasTable('campaigns'),
                 'workflows_table' => Schema::hasTable('workflows'),
                 'workflow_runs_table' => Schema::hasTable('workflow_runs'),
+                'marketing_plans_table' => Schema::hasTable('marketing_plans'),
+                'marketing_briefs_table' => Schema::hasTable('marketing_briefs'),
+                'marketing_experiments_table' => Schema::hasTable('marketing_experiments'),
+                'marketing_insights_table' => Schema::hasTable('marketing_insights'),
+                'marketing_broadcasts_table' => Schema::hasTable('marketing_broadcasts'),
+                'marketing_broadcast_recipients_table' => Schema::hasTable('marketing_broadcast_recipients'),
+                'marketing_conversions_table' => Schema::hasTable('marketing_conversions'),
             ];
         } catch (Throwable) {
             return [];
@@ -423,6 +553,30 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
                 'description' => 'Collects engagement metrics for published deliveries.',
             ];
         }
+
+        $tasks[] = [
+            'command' => 'marketing:generate-insights',
+            'frequency' => 'every:86400',
+            'description' => 'Generates rule-based insights and recommendations once per day.',
+        ];
+
+        $tasks[] = [
+            'command' => 'marketing:process-workflows',
+            'frequency' => 'every:60',
+            'description' => 'Processes delayed workflow steps that are due.',
+        ];
+
+        $tasks[] = [
+            'command' => 'marketing:prune',
+            'frequency' => 'every:604800',
+            'description' => 'Prunes old metric snapshots, tracked-link clicks and finished workflow runs.',
+        ];
+
+        $tasks[] = [
+            'command' => 'marketing:check-sync-alerts',
+            'frequency' => 'every:86400',
+            'description' => 'Reports failed, unavailable and dead-lettered metric syncs.',
+        ];
 
         return $tasks;
     }
@@ -455,7 +609,7 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
      */
     protected function canView(User $user): bool
     {
-        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments', 'campaigns', 'workflows'] as $area) {
+        foreach (['accounts', 'posts', 'contacts', 'tags', 'segments', 'campaigns', 'workflows', 'plans', 'broadcasts'] as $area) {
             if ($user->hasPermission("marketing.{$area}.manage")) {
                 return true;
             }

@@ -4,6 +4,7 @@ namespace Nreljed\MarketingModule\Tests\Concerns;
 
 use Faker\Factory as FakerFactory;
 use Faker\Generator;
+use Illuminate\Cache\CacheManager;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
@@ -17,6 +18,7 @@ use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\DateFactory;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Schema;
+use Psr\Log\NullLogger;
 
 /**
  * A real (sqlite, in-memory) database for the publishing tests.
@@ -52,6 +54,11 @@ trait BootsDatabase
                 'foreign_key_constraints' => true,
             ]);
             $config->set('features.providers', []);
+            $config->set('cache.default', 'array');
+            $config->set('cache.stores.array', [
+                'driver' => 'array',
+                'serialize' => false,
+            ]);
             $config->set('marketing.publishing', [
                 'max_attempts' => 3,
                 'retry_backoff' => [60, 300, 900],
@@ -79,6 +86,12 @@ trait BootsDatabase
                 'max_per_run' => 100,
                 'requests_per_minute' => 0,
                 'retention_days' => 365,
+                'max_attempts' => 5,
+                'daily_request_budget' => 0,
+                'platforms' => [],
+            ]);
+            $config->set('marketing.workflows', [
+                'retention_days' => 180,
             ]);
 
             return $config;
@@ -90,12 +103,15 @@ trait BootsDatabase
 
         $container->singleton('db.schema', static fn ($app) => $app['db']->connection()->getSchemaBuilder());
 
+        $container->singleton('cache', static fn ($app) => new CacheManager($app));
+
         $container->alias('db', ConnectionResolverInterface::class);
         $container->alias('db', DatabaseManager::class);
 
         $container->instance('encrypter', new Encrypter(str_repeat('a', 32), 'AES-256-CBC'));
         $container->instance('date', new DateFactory);
         $container->instance('http', new HttpFactory);
+        $container->instance('log', new NullLogger);
         $container->instance(Generator::class, FakerFactory::create());
 
         // Facades cache the instance they resolved on first use, so a previous

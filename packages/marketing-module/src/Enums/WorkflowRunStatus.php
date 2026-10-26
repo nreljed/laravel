@@ -7,6 +7,7 @@ namespace Nreljed\MarketingModule\Enums;
  */
 enum WorkflowRunStatus: string
 {
+    case Pending = 'pending';
     case Success = 'success';
     case Failed = 'failed';
     case Skipped = 'skipped';
@@ -25,6 +26,7 @@ enum WorkflowRunStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::Pending => 'Pending',
             self::Success => 'Success',
             self::Failed => 'Failed',
             self::Skipped => 'Skipped',

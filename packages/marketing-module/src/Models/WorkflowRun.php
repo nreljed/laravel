@@ -19,6 +19,7 @@ class WorkflowRun extends Model
 
     protected $fillable = [
         'workflow_id',
+        'step_index',
         'event',
         'subject_type',
         'subject_id',
@@ -29,6 +30,7 @@ class WorkflowRun extends Model
     ];
 
     protected $casts = [
+        'step_index' => 'integer',
         'status' => WorkflowRunStatus::class,
         'payload' => 'array',
         'ran_at' => 'datetime',

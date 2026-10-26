@@ -36,6 +36,7 @@ class SocialPostTarget extends Model
         'error_message',
         'published_at',
         'metrics_status',
+        'metrics_attempts',
         'metrics_attempted_at',
         'metrics_synced_at',
         'metrics_error',
@@ -48,6 +49,7 @@ class SocialPostTarget extends Model
         'next_attempt_at' => 'datetime',
         'published_at' => 'datetime',
         'metrics_status' => MetricSyncStatus::class,
+        'metrics_attempts' => 'integer',
         'metrics_attempted_at' => 'datetime',
         'metrics_synced_at' => 'datetime',
     ];
