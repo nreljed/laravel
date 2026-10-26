@@ -37,7 +37,7 @@ return new class extends Migration
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['social_post_id', 'social_account_id']);
+            $table->unique(['social_post_id', 'social_account_id'], 'spt_post_account_unique');
             $table->index(['status', 'next_attempt_at']);
         });
     }

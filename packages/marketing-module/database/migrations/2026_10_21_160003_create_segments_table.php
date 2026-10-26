@@ -32,7 +32,7 @@ return new class extends Migration
             $table->foreignId('contact_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['segment_id', 'contact_id']);
+            $table->unique(['segment_id', 'contact_id'], 'segment_contacts_segment_contact_unique');
             $table->index('contact_id');
         });
     }

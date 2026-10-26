@@ -42,7 +42,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['social_post_target_id', 'metric_date']);
+            $table->unique(['social_post_target_id', 'metric_date'], 'spm_target_date_unique');
             $table->index('metric_date');
         });
     }

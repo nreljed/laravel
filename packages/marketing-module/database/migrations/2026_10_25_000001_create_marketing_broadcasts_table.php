@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('marketing_broadcast_recipients');
+        Schema::dropIfExists('marketing_broadcasts');
+
         Schema::create('marketing_broadcasts', function (Blueprint $table) {
             $table->id();
             $table->string('name', 191);
@@ -37,7 +40,7 @@ return new class extends Migration
             $table->text('error')->nullable();
             $table->timestamps();
 
-            $table->unique(['marketing_broadcast_id', 'contact_id']);
+            $table->unique(['marketing_broadcast_id', 'contact_id'], 'mbc_broadcast_contact_unique');
             $table->index(['status']);
         });
     }
@@ -48,3 +51,4 @@ return new class extends Migration
         Schema::dropIfExists('marketing_broadcasts');
     }
 };
+
