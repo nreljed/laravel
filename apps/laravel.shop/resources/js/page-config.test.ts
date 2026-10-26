@@ -129,16 +129,22 @@ also type-checks against the host's browser-only tsconfig.
 */
 function renderedPageKeys(): string[] {
   const sources = {
-    ...(import.meta.glob("../../vendor/nreljed/{platform,blog,shop-module,marketing-module}/src/**/*.php", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }) as Record<string, string>),
-    ...(import.meta.glob("../../vendor/nreljed/{platform,blog,shop-module,marketing-module}/routes/**/*.php", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }) as Record<string, string>),
+    ...(import.meta.glob(
+      "../../vendor/nreljed/{platform,blog,shop-module,marketing-module}/src/**/*.php",
+      {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      },
+    ) as Record<string, string>),
+    ...(import.meta.glob(
+      "../../vendor/nreljed/{platform,blog,shop-module,marketing-module}/routes/**/*.php",
+      {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      },
+    ) as Record<string, string>),
   };
 
   const keys = new Set<string>();
@@ -213,7 +219,10 @@ describe("feature page kits", () => {
       .filter((key) => !UNROUTED_RENDER_KEYS.has(key))
       .filter((key) => !registered.has(key));
 
-    expect(missing, `controllers render pages the map does not provide: ${missing.join(", ")}`).toEqual([]);
+    expect(
+      missing,
+      `controllers render pages the map does not provide: ${missing.join(", ")}`,
+    ).toEqual([]);
   });
 
   it("registers the core control-panel pages", () => {
