@@ -7,6 +7,31 @@ import { SitePill } from "../../components/site/SitePill";
 import { SitePagination } from "../../components/site/SitePagination";
 import { SiteCardGrid, SiteFeatureCard } from "../../components/site/SiteCard";
 import { BlogCard } from "../../components/site/BlogCard";
+import {
+  SiteInput,
+  SiteTextarea,
+  SiteCheckbox,
+  SiteRadio,
+  SiteSelect,
+} from "../../components/site/SiteForm";
+import {
+  SiteBadge,
+  SiteAlert,
+  SiteEmptyState,
+  SiteSkeleton,
+  SiteProgress,
+} from "../../components/site/SiteFeedback";
+import { SitePopover, SiteDropdown, SiteTooltip } from "../../components/site/SiteOverlay";
+import { SiteBreadcrumb, SiteTabs } from "../../components/site/SiteNav";
+import { SiteContainer, SiteSection } from "../../components/site/SiteLayout";
+import {
+  SiteTable,
+  SiteTableHeader,
+  SiteTableBody,
+  SiteTableRow,
+  SiteTableHead,
+  SiteTableCell,
+} from "../../components/site/SiteTable";
 
 interface ColorSwatch {
   label: string;
@@ -183,6 +208,14 @@ const sections = [
   { id: "menu", label: "Menu overlay", number: "07" },
   { id: "cards", label: "Cards", number: "08" },
   { id: "pagination", label: "Pagination", number: "09" },
+  { id: "forms", label: "Forms", number: "10" },
+  { id: "feedback", label: "Feedback", number: "11" },
+  { id: "overlays", label: "Overlays", number: "12" },
+  { id: "navigation", label: "Navigation", number: "13" },
+  { id: "layout", label: "Layout", number: "14" },
+  { id: "data-display", label: "Data display", number: "15" },
+  { id: "motion", label: "Motion", number: "16" },
+  { id: "accessibility", label: "Accessibility", number: "17" },
 ];
 
 export default function StyleGuide() {
@@ -716,6 +749,257 @@ export default function StyleGuide() {
               {sectionHeading("09", "Pagination")}
               <div className="mt-site-xl">
                 <SitePagination links={sampleLinks} />
+              </div>
+            </section>
+
+            {/* Forms */}
+            <section id="forms" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("10", "Forms")}
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
+                Form inputs use site tokens for borders, focus rings, and error states.
+              </p>
+              <div className="mt-site-xl grid gap-site-xl sm:grid-cols-2">
+                <div className="space-y-site-md">
+                  <SiteInput label="Text input" placeholder="Enter your name" />
+                  <SiteInput
+                    label="With error"
+                    placeholder="Enter email"
+                    error="Invalid email address"
+                  />
+                  <SiteInput label="Disabled" placeholder="Disabled" disabled />
+                </div>
+                <div className="space-y-site-md">
+                  <SiteTextarea label="Textarea" placeholder="Write something..." />
+                  <SiteSelect
+                    label="Select"
+                    options={[
+                      { value: "1", label: "Option one" },
+                      { value: "2", label: "Option two" },
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="mt-site-lg flex flex-wrap gap-site-lg">
+                <SiteCheckbox label="Accept terms" />
+                <SiteCheckbox label="Subscribe" defaultChecked />
+                <div className="flex gap-site-md">
+                  <SiteRadio name="plan" label="Free" defaultChecked />
+                  <SiteRadio name="plan" label="Pro" />
+                </div>
+              </div>
+            </section>
+
+            {/* Feedback */}
+            <section id="feedback" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("11", "Feedback")}
+              <div className="mt-site-xl space-y-site-md">
+                <div className="flex flex-wrap gap-site-sm">
+                  <SiteBadge>Default</SiteBadge>
+                  <SiteBadge variant="accent">Accent</SiteBadge>
+                  <SiteBadge variant="success">Success</SiteBadge>
+                  <SiteBadge variant="danger">Danger</SiteBadge>
+                  <SiteBadge variant="warning">Warning</SiteBadge>
+                  <SiteBadge variant="muted">Muted</SiteBadge>
+                </div>
+                <SiteAlert variant="info" title="Information">
+                  This is an informational message.
+                </SiteAlert>
+                <SiteAlert variant="success" title="Success">
+                  Operation completed successfully.
+                </SiteAlert>
+                <SiteAlert variant="warning" title="Warning">
+                  Please review before proceeding.
+                </SiteAlert>
+                <SiteAlert variant="danger" title="Error" onDismiss={() => {}}>
+                  Something went wrong.
+                </SiteAlert>
+                <SiteProgress value={65} label="Upload progress" />
+                <div className="flex gap-site-md">
+                  <SiteSkeleton className="h-12 w-12 rounded-full" />
+                  <div className="flex-1 space-y-site-xs">
+                    <SiteSkeleton className="h-4 w-3/4" />
+                    <SiteSkeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+                <SiteEmptyState
+                  title="No results found"
+                  description="Try adjusting your search or filters."
+                />
+              </div>
+            </section>
+
+            {/* Overlays */}
+            <section id="overlays" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("12", "Overlays")}
+              <div className="mt-site-xl flex flex-wrap gap-site-md">
+                <SitePopover trigger={<SitePill>Popover</SitePill>}>
+                  <p className="text-sm text-site-ink">Popover content</p>
+                </SitePopover>
+                <SiteDropdown
+                  trigger={<SitePill>Dropdown</SitePill>}
+                  items={[{ label: "Edit" }, { label: "Delete", destructive: true }]}
+                />
+                <SiteTooltip content="This is a tooltip">
+                  <SitePill>Tooltip</SitePill>
+                </SiteTooltip>
+              </div>
+            </section>
+
+            {/* Navigation */}
+            <section id="navigation" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("13", "Navigation")}
+              <div className="mt-site-xl space-y-site-lg">
+                <SiteBreadcrumb
+                  items={[{ label: "About", href: route("about") }, { label: "Team" }]}
+                />
+                <SiteTabs
+                  tabs={[
+                    {
+                      id: "overview",
+                      label: "Overview",
+                      content: <p className="text-sm text-site-ink-soft">Overview content</p>,
+                    },
+                    {
+                      id: "details",
+                      label: "Details",
+                      content: <p className="text-sm text-site-ink-soft">Details content</p>,
+                    },
+                  ]}
+                />
+              </div>
+            </section>
+
+            {/* Layout */}
+            <section id="layout" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("14", "Layout")}
+              <div className="mt-site-xl space-y-site-md">
+                <SiteContainer
+                  size="default"
+                  className="rounded-site-card border border-site-border bg-site-surface p-site-md"
+                >
+                  <p className="text-sm text-site-ink">Default container</p>
+                </SiteContainer>
+                <SiteContainer
+                  size="narrow"
+                  className="rounded-site-card border border-site-border bg-site-surface p-site-md"
+                >
+                  <p className="text-sm text-site-ink">Narrow container</p>
+                </SiteContainer>
+                <SiteSection
+                  spacing="sm"
+                  className="rounded-site-card border border-site-border bg-site-surface"
+                >
+                  <p className="text-sm text-site-ink">Section with small spacing</p>
+                </SiteSection>
+              </div>
+            </section>
+
+            {/* Data display */}
+            <section id="data-display" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("15", "Data display")}
+              <div className="mt-site-xl">
+                <SiteTable>
+                  <SiteTableHeader>
+                    <SiteTableRow>
+                      <SiteTableHead>Name</SiteTableHead>
+                      <SiteTableHead>Status</SiteTableHead>
+                      <SiteTableHead>Amount</SiteTableHead>
+                    </SiteTableRow>
+                  </SiteTableHeader>
+                  <SiteTableBody>
+                    <SiteTableRow>
+                      <SiteTableCell>Cloud infra</SiteTableCell>
+                      <SiteTableCell>
+                        <SiteBadge variant="success">Active</SiteBadge>
+                      </SiteTableCell>
+                      <SiteTableCell className="tabular-nums">$182,400</SiteTableCell>
+                    </SiteTableRow>
+                    <SiteTableRow>
+                      <SiteTableCell>Vendors</SiteTableCell>
+                      <SiteTableCell>
+                        <SiteBadge variant="warning">Review</SiteBadge>
+                      </SiteTableCell>
+                      <SiteTableCell className="tabular-nums">$96,120</SiteTableCell>
+                    </SiteTableRow>
+                  </SiteTableBody>
+                </SiteTable>
+              </div>
+            </section>
+
+            {/* Motion */}
+            <section id="motion" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("16", "Motion")}
+              <p className="mt-site-sm max-w-2xl text-sm leading-6 text-site-ink-soft">
+                All motion is gated by prefers-reduced-motion. Hooks available via useReveal,
+                useFadingChars, useWordReveal, useTextFill, useScaleIn, useParallax,
+                useCursorSpotlight.
+              </p>
+              <div className="mt-site-xl grid gap-site-md sm:grid-cols-2">
+                {[
+                  "useReveal",
+                  "useFadingChars",
+                  "useWordReveal",
+                  "useTextFill",
+                  "useScaleIn",
+                  "useParallax",
+                  "useCursorSpotlight",
+                  "SmoothScroll",
+                ].map((name) => (
+                  <div
+                    key={name}
+                    className="rounded-site-card border border-site-border bg-site-surface p-site-lg"
+                  >
+                    <p className="text-sm font-medium text-site-ink">{name}</p>
+                    <p className="mt-site-xs text-xs text-site-ink-soft">
+                      Motion hook from the site motion kit.
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Accessibility */}
+            <section id="accessibility" className="mb-site-4xl scroll-mt-28">
+              {sectionHeading("17", "Accessibility")}
+              <div className="mt-site-xl space-y-site-md">
+                <div className="rounded-site-card border border-site-border bg-site-surface p-site-lg">
+                  <p className="text-sm font-medium text-site-ink">Skip link</p>
+                  <p className="mt-site-xs text-xs text-site-ink-soft">
+                    PublicLayout includes a skip-to-content link for keyboard users.
+                  </p>
+                </div>
+                <div className="rounded-site-card border border-site-border bg-site-surface p-site-lg">
+                  <p className="text-sm font-medium text-site-ink">Focus rings</p>
+                  <p className="mt-site-xs text-xs text-site-ink-soft">
+                    All interactive elements use focus:ring-[3px] focus:ring-site-accent/20. Never
+                    remove focus outlines.
+                  </p>
+                </div>
+                <div className="rounded-site-card border border-site-border bg-site-surface p-site-lg">
+                  <p className="text-sm font-medium text-site-ink">Reduced motion</p>
+                  <p className="mt-site-xs text-xs text-site-ink-soft">
+                    All animations are gated by prefers-reduced-motion via gsap.matchMedia.
+                  </p>
+                </div>
+                <div className="rounded-site-card border border-site-border bg-site-surface p-site-lg">
+                  <p className="text-sm font-medium text-site-ink">Color contrast</p>
+                  <p className="mt-site-xs text-xs text-site-ink-soft">
+                    All text tokens meet WCAG AA. site-ink on site-bg has 12:1+ contrast.
+                  </p>
+                </div>
+                <div className="rounded-site-card border border-site-border bg-site-surface p-site-lg">
+                  <p className="text-sm font-medium text-site-ink">Semantic HTML</p>
+                  <p className="mt-site-xs text-xs text-site-ink-soft">
+                    Use semantic elements. One h1 per page. Heading hierarchy must be sequential.
+                  </p>
+                </div>
+                <div className="rounded-site-card border border-site-border bg-site-surface p-site-lg">
+                  <p className="text-sm font-medium text-site-ink">Keyboard navigation</p>
+                  <p className="mt-site-xs text-xs text-site-ink-soft">
+                    All interactive elements are keyboard-accessible. Tab order follows visual
+                    order. Escape closes overlays.
+                  </p>
+                </div>
               </div>
             </section>
 

@@ -101,6 +101,152 @@ export const CASES = [
         requiredTerms: ["laravel ai", "agent", "stream"],
     },
 
+    // Design & UI skills — routing cases added to lock in trigger vocabulary.
+    {
+        id: "distinctive-visual-design",
+        expect: "frontend-design",
+        prompt: "Design a distinctive landing page with a unique visual identity",
+        requiredTerms: ["visual design", "typography", "aesthetic"],
+    },
+    {
+        id: "anti-slop-frontend",
+        expect: "design-taste-frontend",
+        prompt: "Redesign this landing page so it doesn't look like a template",
+        requiredTerms: ["frontend", "landing page", "redesign"],
+    },
+    {
+        id: "design-redesign-audit",
+        expect: "impeccable",
+        prompt: "Audit and polish this UI for accessibility and visual hierarchy",
+        requiredTerms: ["design", "redesign", "audit", "polish"],
+    },
+    {
+        id: "ui-polish-philosophy",
+        expect: "emil-design-eng",
+        prompt: "Polish this component with better animation and micro-interactions",
+        requiredTerms: ["ui polish", "component", "animation"],
+    },
+    {
+        id: "upgrade-existing-site",
+        expect: "redesign-existing-projects",
+        prompt: "Upgrade this existing website to premium quality",
+        requiredTerms: ["redesign", "upgrade", "premium"],
+    },
+    {
+        id: "site-theming-tokens",
+        expect: "frontend-site-theming",
+        prompt: "Set up site design tokens and theme for the public marketing pages",
+        requiredTerms: ["site", "theme", "design token"],
+    },
+    {
+        id: "tailwind-responsive-layout",
+        expect: "tailwindcss-development",
+        prompt: "Build a responsive grid layout with Tailwind dark mode",
+        requiredTerms: ["tailwind", "responsive", "dark mode"],
+    },
+    {
+        id: "web-interface-guidelines",
+        expect: "web-design-guidelines",
+        prompt: "Review my UI for accessibility and web interface guidelines",
+        requiredTerms: ["web interface", "guidelines", "accessibility"],
+    },
+    {
+        id: "professional-page-craft",
+        expect: "design-pagecraft",
+        prompt: "Build a professional landing page with hero and scroll animation",
+        requiredTerms: ["page", "landing", "hero", "scroll animation"],
+    },
+    {
+        id: "build-animation",
+        expect: "animate",
+        prompt: "Animate this component with a smooth transition on mount",
+        requiredTerms: ["animation", "motion", "transition"],
+    },
+    {
+        id: "find-animation-opportunities",
+        expect: "find-animation-opportunities",
+        prompt: "Find places in this UI that could be animated",
+        requiredTerms: ["animation", "animate", "motion"],
+    },
+    {
+        id: "review-animation-code",
+        expect: "review-animations",
+        prompt: "Review this animation code for performance and polish",
+        requiredTerms: ["animation", "motion", "review"],
+    },
+    {
+        id: "gsap-core-api",
+        expect: "gsap-core",
+        prompt: "Use GSAP to animate an element with easing and stagger",
+        requiredTerms: ["gsap", "animation", "tween"],
+    },
+    {
+        id: "gsap-scroll-trigger",
+        expect: "gsap-scrolltrigger",
+        prompt: "Create a scroll-triggered parallax animation with GSAP",
+        requiredTerms: ["scrolltrigger", "scroll", "gsap"],
+    },
+    {
+        id: "gsap-performance-optimization",
+        expect: "gsap-performance",
+        prompt: "Optimize GSAP animation performance and reduce jank",
+        requiredTerms: ["gsap", "performance", "optim"],
+    },
+    {
+        id: "gsap-plugin-registration",
+        expect: "gsap-plugins",
+        prompt: "Register and use a GSAP plugin like ScrollTo or Flip",
+        requiredTerms: ["gsap", "plugin"],
+    },
+    {
+        id: "gsap-react-hook",
+        expect: "gsap-react",
+        prompt: "Use useGSAP hook in React for animation cleanup",
+        requiredTerms: ["gsap", "react", "usegsap"],
+    },
+    {
+        id: "gsap-timeline-sequencing",
+        expect: "gsap-timeline",
+        prompt: "Sequence animations with a GSAP timeline",
+        requiredTerms: ["gsap", "timeline", "sequenc"],
+    },
+    {
+        id: "animation-term-glossary",
+        expect: "animation-vocabulary",
+        prompt: "What is the term for the bouncy effect when a popover opens",
+        requiredTerms: ["animation", "motion", "effect"],
+    },
+    {
+        id: "queued-job-dispatch",
+        expect: "jobs-and-queues",
+        prompt: "Dispatch a queued job with retry and backoff",
+        requiredTerms: ["queue", "job", "dispatch"],
+    },
+    {
+        id: "send-email-template",
+        expect: "mail-and-notifications",
+        prompt: "Send an email using a Mailable template",
+        requiredTerms: ["mail", "email", "mailable"],
+    },
+    {
+        id: "telescope-debug-queries",
+        expect: "telescope-debugging",
+        prompt: "Debug slow queries using Telescope",
+        requiredTerms: ["telescope", "debug", "quer"],
+    },
+    {
+        id: "react-hook-form-validation",
+        expect: "react-hook-form",
+        prompt: "Build a form with useForm and zod validation",
+        requiredTerms: ["useform", "form", "zod"],
+    },
+    {
+        id: "error-exception-handling",
+        expect: "error-handling",
+        prompt: "Handle an exception and show an error page",
+        requiredTerms: ["error", "exception", "handling"],
+    },
+
     // Disambiguation: these guard against descriptions that are too broad and
     // would steal routing from each other. Each case asserts a skill must NOT
     // look like a match for an unrelated prompt.
