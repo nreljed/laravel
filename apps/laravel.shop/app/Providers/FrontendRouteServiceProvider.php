@@ -22,7 +22,13 @@ class FrontendRouteServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->booted(function () {
-            Route::middleware('web')
+            // `maintenance` is carried by every other public page (platform
+            // owns about/services/contact, the shop and blog packages own
+            // their prefixes). `/` renders the storefront, so it needs the
+            // same gate - otherwise the home page keeps serving while the
+            // rest of the site answers 503, and during a `migrate:fresh` run
+            // that means rendering from tables that no longer exist.
+            Route::middleware(['web', 'maintenance'])
                 ->get('/', [StorefrontController::class, 'index'])
                 ->name('home');
         });
