@@ -246,6 +246,18 @@ export const CASES = [
         prompt: "Handle an exception and show an error page",
         requiredTerms: ["error", "exception", "handling"],
     },
+    {
+        id: "data-visualization-charts",
+        expect: "data-visualization",
+        prompt: "Build a chart with Recharts and KPI cards for analytics",
+        requiredTerms: ["chart", "recharts", "kpi"],
+    },
+    {
+        id: "dashboard-layout-grid",
+        expect: "dashboard-layout",
+        prompt: "Create a responsive dashboard grid with metric cards",
+        requiredTerms: ["dashboard", "grid", "metric"],
+    },
 
     // Disambiguation: these guard against descriptions that are too broad and
     // would steal routing from each other. Each case asserts a skill must NOT

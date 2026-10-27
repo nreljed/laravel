@@ -45,7 +45,15 @@ class RecoveryController extends Controller
 
         if ($user) {
             $token = RecoveryToken::generate();
-            Mail::to($user->email)->queue(new RecoveryMail($token));
+
+            // `send()`, not `queue()`: this mail IS the lockout lifeline. A
+            // queued recovery link depends on a worker that shared hosts do not
+            // run (the default database queue would silently keep the job
+            // forever), which turns "can't reach /login during maintenance" into
+            // a permanent lockout. Blocking this one request for an SMTP
+            // handshake is the correct trade - and on a log-only mailer the link
+            // at least lands in the log instead of vanishing.
+            Mail::to($user->email)->send(new RecoveryMail($token));
         }
 
         return response()->json([
@@ -89,7 +97,10 @@ class RecoveryController extends Controller
         $admins = User::whereHas('roles', fn ($q) => $q->where('slug', 'admin'))->get();
 
         foreach ($admins as $admin) {
-            Mail::to($admin->email)->queue(new RecoveryMail($token));
+            // Synchronous for the same reason as requestToken(): a queued
+            // "maintenance is on, here is your way back" mail is useless if no
+            // worker ever drains the queue.
+            Mail::to($admin->email)->send(new RecoveryMail($token));
         }
     }
 }
