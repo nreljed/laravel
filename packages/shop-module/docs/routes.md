@@ -1,7 +1,7 @@
 # Routes
 
 All Shop routes are **self-loaded** by `ShopServiceProvider::loadRoutes()` — there are no
-`routes/shop*.php` files in the host. Eleven route files live under `src/Routes/` and are
+`routes/shop*.php` files in the host. Twelve route files live under `src/Routes/` and are
 grouped with distinct prefixes, middleware, and route-name prefixes.
 
 ## Route File Overview
@@ -13,7 +13,8 @@ grouped with distinct prefixes, middleware, and route-name prefixes.
 | `customer-portal.php` | `/dashboard/my` | `dashboard.my.*` | `web`, `auth`, `verified` | Customer portal (orders, cart, checkout) |
 | `storefront.php` | `/store` | `store.*` | `web` | Public product grid / detail / category |
 | `store-cart.php` | `/store/cart` | `store.cart.*` | `web` | Guest cart (Inertia page + JSON endpoints) |
-| `store-checkout.php` | `/store/checkout` | `store.checkout.*` | `web` | Guest checkout + Stripe webhook |
+| `store-checkout.php` | `/store/checkout` | `store.checkout.*` | `web`, `maintenance` | Guest checkout |
+| `store-webhook.php` | `/store/webhook` | `store.webhook.*` | `web` (CSRF-exempt) | Stripe payment/refund callbacks |
 | `store-wishlist.php` | `/store/wishlist` | `store.wishlist.*` | `web` (+`auth` per-route) | Guest/authenticated wishlist |
 | `store-notify.php` | `/store` | `store.*` | `web` | Back-in-stock notifications |
 | `recovery.php` | `/store/cart/recover` | `store.cart.recover` | `web`, `signed` | Abandoned-cart recovery link |
@@ -38,14 +39,19 @@ Route::middleware(['web', 'auth', 'verified', 'admin', 'permission:shop.view'])
     ->prefix('/admin/shop')->name('admin.shop.')
     ->group(__DIR__.'/Routes/admin.php');
 
-// Public storefront (no auth) — several small files
-Route::middleware(['web'])->group(function () {
+// Public storefront (no auth) — gated by maintenance mode
+Route::middleware(['web', 'maintenance'])->group(function () {
     require __DIR__.'/Routes/store-checkout.php';
     require __DIR__.'/Routes/recovery.php';
     require __DIR__.'/Routes/store-cart.php';
     require __DIR__.'/Routes/store-wishlist.php';
     require __DIR__.'/Routes/storefront.php';
     require __DIR__.'/Routes/store-notify.php';
+});
+
+// Payment-provider callbacks — reachable during maintenance, CSRF-exempt
+Route::middleware(['web'])->group(function () {
+    require __DIR__.'/Routes/store-webhook.php';
 });
 
 // JSON API
@@ -251,10 +257,19 @@ All routes run with `web`, `auth`, `verified`.
 | POST | `/store/checkout/payment-intent` | `store.checkout.payment-intent` |
 | GET | `/store/order/{order}/register` | `store.checkout.register-from-order` |
 | POST | `/store/order/{order}/register` | `store.checkout.store-register` |
-| POST | `/store/webhook/stripe` | `store.webhook.stripe` |
 
-> `store.webhook.stripe` is excluded from CSRF verification in the host
-> (`PreventRequestForgery::except` in `DashboardCoreServiceProvider`).
+### Stripe webhook (`store-webhook.php`)
+
+| Method | URI | Name | Middleware |
+|--------|-----|------|------------|
+| POST | `/store/webhook/stripe` | `store.webhook.stripe` | `web` (CSRF-exempt) |
+
+> Kept out of the storefront group on purpose. It must stay reachable while maintenance
+> mode is on (an authorised payment still has to settle) and it is excluded from CSRF via
+> `PreventRequestForgery::except(['store/webhook/*'])` in `ShopServiceProvider::boot()` —
+> Stripe calls it server-to-server, so there is no session token to send. Without the
+> exemption every real delivery is answered with 419 and asynchronously-paid orders and
+> refunds never settle.
 
 ### Wishlist (`store-wishlist.php`)
 
@@ -287,8 +302,9 @@ All routes run with `web`, `auth`, `verified`.
 
 ## CSRF & Token Exclusions
 
-- `deploy/*`, `api/notifications/*`, `csp-report`, and the Stripe webhook path are excluded
-  from CSRF by the core provider (`PreventRequestForgery::except`).
+- `deploy/*`, `api/notifications/*` and `csp-report` are excluded from CSRF by the core
+  provider; `store/webhook/*` is excluded by `ShopServiceProvider::boot()` because the shop
+  package owns that route.
 - Rate limiting on the public storefront is delegated to the host's web middleware stack.
 
 ## Related

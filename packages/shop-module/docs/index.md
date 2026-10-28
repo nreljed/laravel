@@ -22,7 +22,7 @@ pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 | [Data Model](data-model.md) | All 32 models, relationships, variation system |
 | [Services](services.md) | The 18 domain services (inventory, checkout, coupons, shipping, tax, webhooks, shipments…) |
 | [Controllers](controllers.md) | Every controller + method/route/access reference |
-| [Routes](routes.md) | The 11 self-loaded route files, prefixes, middleware |
+| [Routes](routes.md) | The 12 self-loaded route files, prefixes, middleware |
 | [Frontend](frontend.md) | Inertia pages, key components, cart fetch+reload pattern |
 | [Settings](settings.md) | DB-backed Shop settings page, `ShopSettingsService`, config keys |
 | [Permissions & Policies](permissions.md) | The 17 permission slugs + 10 policies |
@@ -33,7 +33,7 @@ pattern as [`nreljed/platform`](https://github.com/nreljed/platform).
 | Attribute | Value |
 |-----------|-------|
 | **Permissions** | `shop.view`, `shop.products.create/edit/delete`, `shop.orders.view/edit/refund`, `shop.tags.manage`, `shop.brands.manage`, `shop.coupons.manage`, `shop.reviews.moderate`, `shop.shipping.manage`, `shop.shipments.manage`, `shop.taxes.manage`, `shop.webhooks.manage`, `shop.currencies.manage` |
-| **Route files** | 11 self-loaded (see [Routes](routes.md)) |
+| **Route files** | 12 self-loaded (see [Routes](routes.md)) |
 | **Models** | 32 (see [Data Model](data-model.md)) |
 | **Services** | 18 (see [Services](services.md)) |
 | **Policies** | 10 (see [Permissions](permissions.md)) |

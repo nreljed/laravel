@@ -18,7 +18,7 @@ public storefront.
 | [data-model.md](docs/data-model.md) | All 29 models + variation system |
 | [services.md](docs/services.md) | The 14 domain services |
 | [controllers.md](docs/controllers.md) | Controllers keyed by route prefix |
-| [routes.md](docs/routes.md) | All 11 self-loaded route files |
+| [routes.md](docs/routes.md) | All 12 self-loaded route files |
 | [permissions.md](docs/permissions.md) | Permissions (16) + policies (9) |
 | [workflows.md](docs/workflows.md) | Order lifecycle, hold stock, abandoned cart, checkout, coupons, webhooks |
 | [settings.md](docs/settings.md) | DB-backed shop settings (`settings` table, group `shop`) |

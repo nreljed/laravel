@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        # PHP 8.4 + composer are preinstalled on the self-hosted runner;
+        # setup-php only runs on GitHub-hosted Linux (php.ini rename not
+        # concurrency-safe on the shared Windows runners).
+        if: vars.RUNNER_CI != 'self-hosted'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies (GitHub-hosted only)
+        if: vars.RUNNER_CI != 'self-hosted'
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Lint PHP
+        shell: bash
+        run: find src tests -name "*.php" -print0 | xargs -0 -n1 php -l > /dev/null && echo "lint OK"
+
+      - name: Validate composer.json + lock sync
+        shell: bash
+        run: composer validate --no-check-all
+
+      - name: Install dependencies
+        shell: bash
+        run: composer install --prefer-dist --no-interaction --no-scripts --no-progress
+
+      - name: Run tests
+        shell: bash
+        run: php vendor/phpunit/phpunit/phpunit
+
+      - name: Laravel Pint (style gate)
+        # Consumers run `vendor/bin/pint --test` repo-wide (consumer-ci.yml),
+        # so this package's source must stay Pint-clean under the default preset
+        # or mirror syncs fail their CI. Requires vendor, so runs after Install.
+        shell: bash
+        run: vendor/bin/pint --test
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: validate
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify tag matches package versions
+        shell: bash
+        run: |
+          COMPOSER_VERSION="$(sed -n 's/.*"version":[[:space:]]*"\([^"]*\)".*/\1/p' composer.json)"
+          NPM_VERSION="$(sed -n 's/.*"version":[[:space:]]*"\([^"]*\)".*/\1/p' package.json)"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$COMPOSER_VERSION" != "$TAG_VERSION" ] || [ "$NPM_VERSION" != "$TAG_VERSION" ]; then
+            echo "version mismatch: tag v${TAG_VERSION} vs composer ${COMPOSER_VERSION} / npm ${NPM_VERSION}"
+            exit 1
+          fi
+          echo "tag v${TAG_VERSION} matches composer ${COMPOSER_VERSION} and npm ${NPM_VERSION}"
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if gh release view "$TAG" -R nreljed/platform > /dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping"
+          else
+            gh release create "$TAG" --title "platform $TAG" --generate-notes -R nreljed/platform
+          fi
+
+      - name: Contract-frozen gate (FeatureProvider)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEW_TAG="$GITHUB_REF_NAME"
+          NEW_VER="${NEW_TAG#v}"
+          OLD_TAG="$(git tag --merged HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | grep -v "^${NEW_TAG}$" | sort -V | tail -1 || true)"
+          if [ -z "$OLD_TAG" ] || git diff --quiet "$OLD_TAG" HEAD -- src/Contracts/FeatureProvider.php; then
+            echo "FeatureProvider contract unchanged since $OLD_TAG — OK"
+            exit 0
+          fi
+          OLD_MAJOR="${OLD_TAG#v}"; OLD_MAJOR="${OLD_MAJOR%%.*}"
+          NEW_MAJOR="${NEW_VER%%.*}"
+          if [ "$NEW_MAJOR" -gt "$OLD_MAJOR" ]; then
+            echo "contract changed with MAJOR bump ($OLD_TAG -> $NEW_TAG) — OK"
+            exit 0
+          fi
+          echo "FeatureProvider contract modified without a MAJOR bump (old $OLD_TAG, new v$NEW_VER)"
+          exit 1
+
+      - name: Notify consumers (core-updated)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # CORE_CONSUMERS secret overrides the default list, so adding an app
+          # never requires editing this workflow.
+          REPOS="${{ vars.CORE_CONSUMERS || 'nreljed/laravel nreljed/laravel.shop nreljed/laravel.booking' }}"
+          for repo in $REPOS; do
+            gh api -X POST "repos/$repo/dispatches" \
+              -f event_type=core-updated \
+              -f client_payload[version]="${{ github.ref_name }}" \
+              -f client_payload[repo]=nreljed/platform \
+              || echo "dispatch to $repo failed (continuing)"
+          done

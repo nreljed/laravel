@@ -1,0 +1,225 @@
+# Shared consumer validation pipeline (workflow_call only).
+#
+# Consuming apps (nreljed/laravel, nreljed/laravel.shop, nreljed/laravel.booking)
+# call this via a thin redirect in their own `ci.yml`:
+#
+#   jobs:
+#     validate:
+#       uses: nreljed/platform/.github/workflows/consumer-ci.yml@main
+#       with:
+#         skip-php-tests: false
+#         skip-npm-tests: false
+#         php-tests-parallel: false
+#         pass-with-no-tests: false
+#       secrets: inherit
+#
+# The called workflow executes inside the CALLING repo (its checkout, lockfiles,
+# secrets, self-hosted runner labels) using the callers' GH_TOKEN-based
+# COMPOSER_AUTH for the private platform vcs install.
+#
+# Cross-repo access: platform must list the consumer repos under
+# Settings → Actions → General → "Accessible from repositories" (private repos
+# cannot reuse workflows from another private repo otherwise).
+#
+# This is the single source of truth for the consumer validation pipeline.
+# Do not fork it into consumer repos — change it here and all consumers inherit.
+#
+# Runner switch (self-hosted ⇄ GitHub-hosted): the CALLER passes its RUNNER_CI
+# variable in as the `runner` input, and derives `hosted-runner` from it. The
+# `vars` context is NOT available inside a called workflow — it is empty here,
+# so a `vars.RUNNER_CI` condition silently evaluated true and setup-php ran on
+# the shared Windows runner, where it rewrites C:\php\php.ini (it left it
+# 0 bytes, and every PHP job then failed on "the openssl extension is
+# required ... but is not available"). Inputs are the supported channel.
+#   self-hosted    → local persistent runner (no setup-php, no cache steps —
+#                    the cache upload stalls the persistent runner)
+#   ubuntu-latest  → GitHub-hosted Linux (setup-php + cache steps enabled)
+# RUNNER_PACKAGE exists for Windows-bound build jobs (deploy package) — not used here.
+name: Consumer CI Validation
+
+on:
+  workflow_call:
+    inputs:
+      skip-php-tests:
+        description: "Skip PHP tests and Pint"
+        type: boolean
+        default: false
+      skip-npm-tests:
+        description: "Skip npm lint, typecheck, format, test, and build"
+        type: boolean
+        default: false
+      php-tests-parallel:
+        description: "Run PHP tests with --parallel (paratest)"
+        type: boolean
+        default: false
+      pass-with-no-tests:
+        description: "Pass when no frontend test files exist"
+        type: boolean
+        default: false
+      skip-core-versions:
+        description: "Skip the platform-core fleet version check (one core version for all apps)"
+        type: boolean
+        default: false
+      runner:
+        description: "Runner label for the validate job (the caller's RUNNER_CI variable)"
+        type: string
+        default: 'self-hosted'
+      hosted-runner:
+        description: "True when the job is on a GitHub-hosted runner: enables setup-php and the cache steps"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ${{ inputs.runner }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        # PHP 8.4 + composer are preinstalled on the self-hosted Windows
+        # runner, and setup-php is not safe there: it rewrites the shared
+        # C:\php\php.ini, which leaves every other PHP consumer on the box
+        # without openssl. Only GitHub-hosted runners need it.
+        if: inputs.hosted-runner
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          # Cache pnpm workspaces (pinned by the root pnpm-lock.yaml) and npm
+          # apps (package-lock.json) from the calling repo accordingly. pnpm is
+          # NOT installed here: setup-node@v7 has no pnpm-version input — the
+          # install step below bootstraps it when a pnpm workspace is detected.
+          cache: ${{ inputs.hosted-runner && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
+
+      - name: Cache Composer dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Cache npm dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json', 'pnpm-lock.yaml') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Create .env + SQLite database
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Composer audit
+        run: composer audit --no-interaction
+
+      - name: Enforce platform core version (fleet single-core)
+        if: ${{ !inputs.skip-core-versions }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PINNED=$(php -r '$l=json_decode(file_get_contents("composer.lock"),true);foreach(array_merge($l["packages"]??[],$l["packages-dev"]??[]) as $p){if(($p["name"]??"")==="nreljed/platform"){echo $p["version"];break;}}')
+          echo "pinned nreljed/platform: ${PINNED:-<not found>}"
+          if [ -z "${PINNED}" ]; then
+            echo "::error::nreljed/platform is not pinned in composer.lock"
+            exit 1
+          fi
+          case "${PINNED}" in
+            dev-*|9999999-*|'@dev') echo "dev build pinned — skipping fleet check"; exit 0 ;;
+          esac
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "no GH_TOKEN (e.g. Dependabot PR) — skipping fleet check"
+            exit 0
+          fi
+          LATEST=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "User-Agent: fleet-check" \
+            "https://api.github.com/repos/nreljed/platform/releases/latest" 2>/dev/null \
+            | php -r '$d=json_decode(stream_get_contents(STDIN),true);echo $d["tag_name"]??"";')
+          echo "latest nreljed/platform release: ${LATEST:-<unknown>}"
+          if [ -z "${LATEST}" ]; then
+            echo "could not resolve latest release — skipping fleet check"
+            exit 0
+          fi
+          NORM=${PINNED#v}; NORM=${NORM%% +@}
+          LATEST_NORM=${LATEST#v}
+          if [ "${NORM}" != "${LATEST_NORM}" ]; then
+            echo "::error::Platform core drift — composer.lock pins ${PINNED} but latest nreljed/platform release is ${LATEST}. All apps must run one core version; update via composer update nreljed/platform."
+            exit 1
+          fi
+          echo "core version OK (${NORM})"
+
+      - name: Foundation boundary check
+        run: php scripts/foundation-check.php
+
+      - name: Generate application key + migrate
+        run: php artisan key:generate && php artisan migrate --force
+
+      - name: Install npm dependencies
+        run: |
+          if [ -f pnpm-workspace.yaml ] || [ -f pnpm-lock.yaml ]; then
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+            pnpm install --frozen-lockfile
+          else
+            npm ci --legacy-peer-deps
+          fi
+
+      - name: Check core dependency parity
+        run: npm run check:core-deps
+
+      - name: Check cross-app platform consistency
+        run: npm run check:platform-consistency
+
+      - name: npm audit
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm audit --audit-level=high
+          else
+            npm audit --audit-level=high
+          fi
+
+      - name: ESLint
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run lint
+
+      - name: TypeScript check
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run typecheck
+
+      - name: Prettier check
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run format:check
+
+      - name: Frontend tests
+        if: ${{ !inputs.skip-npm-tests }}
+        run: ${{ inputs.pass-with-no-tests && 'npm run test -- --passWithNoTests' || 'npm run test' }}
+
+      - name: Build frontend assets
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run build
+
+      - name: PHP tests
+        if: ${{ !inputs.skip-php-tests }}
+        run: ${{ inputs.php-tests-parallel && 'php -d memory_limit=512M artisan test --parallel --compact' || 'php -d memory_limit=512M artisan test --compact' }}
+
+      - name: Laravel Pint
+        if: ${{ !inputs.skip-php-tests }}
+        run: vendor/bin/pint --test

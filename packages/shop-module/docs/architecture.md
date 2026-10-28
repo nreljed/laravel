@@ -21,7 +21,7 @@ shop-module/
     ├── Policies/                 # 10 authorization policies
     ├── Requests/                 # FormRequests (validation)
     ├── Resources/js/Pages/       # Inertia React pages (@nreljed/shop-module/Pages/...)
-    ├── Routes/                   # 11 route files, self-loaded
+    ├── Routes/                   # 12 route files, self-loaded
     ├── Services/                 # 18 domain services
     ├── Support/                  # Countries (ISO 3166 map)
     └── ShopServiceProvider.php

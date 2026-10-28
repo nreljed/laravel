@@ -14,7 +14,6 @@ use Nreljed\ShopModule\Database\Factories\OrderFactory;
 class Order extends Model
 {
     use HasFactory;
-
     protected $fillable = [
         'order_number', 'user_id', 'cart_id', 'status', 'confirmation_token',
         'subtotal', 'tax_total', 'shipping_total', 'discount_total', 'total', 'total_refunded',

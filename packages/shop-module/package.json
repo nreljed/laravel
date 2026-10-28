@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/shop-module",
-  "version": "0.1.82",
+  "version": "0.1.83",
   "description": "Shop feature for the Nreljed dashboard platform — products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks and storefront frontend kit.",
   "license": "proprietary",
   "type": "module",

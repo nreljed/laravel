@@ -3,6 +3,7 @@
 namespace Nreljed\ShopModule;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -78,6 +79,14 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'shop');
 
+        // Stripe posts to `/store/webhook/stripe` from its own servers: no
+        // session cookie, no `_token`, no `Sec-Fetch-Site`. Laravel's CSRF
+        // middleware therefore 419'd every real delivery, so a payment that
+        // settled asynchronously (or a refund) never reached the controller.
+        // Registered here rather than in the host so every consumer of the
+        // package inherits it - the route and the exemption travel together.
+        PreventRequestForgery::except(['store/webhook/*']);
+
         if ($this->enabled()) {
             $this->loadRoutes();
         }
@@ -140,7 +149,13 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
         // sits on the whole group so a renamed product or category keeps
         // answering at its old path with a 301 (PR 11A); it only ever fires
         // for paths that have a `url_aliases` row, all of which are `/store*`.
-        Route::middleware(['web', Http\Middleware\RedirectLegacyUrlAliases::class])
+        //
+        // `maintenance` gates the whole shopping surface: during a maintenance
+        // window (including the `migrate:fresh` / reseed run from the admin UI)
+        // a shopper used to reach the storefront while its tables were being
+        // rebuilt, which is the same class of 500 the platform pages already
+        // avoid. Admins bypass the middleware, so the shop stays operable.
+        Route::middleware(['web', 'maintenance', Http\Middleware\RedirectLegacyUrlAliases::class])
             ->group(function () {
                 $p = __DIR__.'/Routes/';
                 require $p.'store-checkout.php';
@@ -149,6 +164,12 @@ class ShopServiceProvider extends ServiceProvider implements FeatureProvider
                 require $p.'store-wishlist.php';
                 require $p.'storefront.php';
                 require $p.'store-notify.php';
+            });
+
+        // Payment-provider callbacks: no `maintenance`, no CSRF. See the file.
+        Route::middleware(['web'])
+            ->group(function () {
+                require __DIR__.'/Routes/store-webhook.php';
             });
 
         // Shop JSON API (sanctum / stateful) — route files declare their own api.* names
