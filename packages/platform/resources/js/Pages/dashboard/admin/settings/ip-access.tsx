@@ -1,0 +1,53 @@
+import { Head, Link } from "@inertiajs/react";
+import AdminLayout from "../../../../Layouts/AdminLayout";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "../../../../Components/ui/breadcrumb";
+import { AdminSettingsNav } from "../../../../Components/settings/AdminSettingsNav";
+import { IpAccessSection } from "../../../../Components/settings/sections/IpAccessSection";
+
+interface IpAccessProps {
+  ipRules?: {
+    id: number;
+    ip_address: string;
+    type: "allow" | "block";
+    description: string | null;
+    is_active: boolean;
+  }[];
+}
+
+export default function IpAccessSettings({ ipRules = [] }: IpAccessProps) {
+  return (
+    <AdminLayout title="Settings">
+      <Head title="IP Access Settings" />
+      <div className="space-y-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <Link
+                href={route("dashboard.index")}
+                className="transition-colors hover:text-foreground"
+              >
+                Dashboard
+              </Link>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>IP Access Settings</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <div className="flex flex-col md:flex-row gap-8">
+          <AdminSettingsNav />
+          <div className="flex-1 min-w-0 space-y-6">
+            <IpAccessSection ipRules={ipRules} asAccordion />
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}

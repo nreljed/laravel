@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "package": "nreljed/platform",
+  "description": "SaaS platform compatibility contract. The platform is the hub: every known consumer module is declared here. The ContractTest reads each module's composer.json require (nreljed/platform caret ^1.0 range) and asserts the CURRENT platform release (composer.json version) satisfies it — so a platform minor bump must land simultaneously with the modules updating their ranges. Modules run the reverse guard in their own ModuleCoreCompatibilityTest (installed platform must satisfy their declared constraint).",
+  "modules": [
+    {
+      "package": "nreljed/shop-module",
+      "repo_dir": "shop-module"
+    },
+    {
+      "package": "nreljed/booking-module",
+      "repo_dir": "booking-module"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+<?php
+
+namespace Nreljed\Platform\Http\Controllers\Admin;
+
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
+use Nreljed\Platform\Exceptions\DatabaseMaintenanceException;
+use Nreljed\Platform\Http\Controllers\Controller;
+use Nreljed\Platform\Http\Requests\DatabaseReseedRequest;
+use Nreljed\Platform\Http\Requests\DatabaseResetRequest;
+use Nreljed\Platform\Services\DatabaseMaintenanceService;
+
+class DatabaseMaintenanceController extends Controller
+{
+    public function __construct(private readonly DatabaseMaintenanceService $service) {}
+
+    public function index(): Response
+    {
+        return Inertia::render('dashboard/admin/database-maintenance', [
+            'status' => $this->service->status(),
+        ]);
+    }
+
+    public function reset(DatabaseResetRequest $request): RedirectResponse
+    {
+        abort_unless($this->service->isEnabled(), 403);
+
+        try {
+            $this->service->resetDatabase(
+                purgeMedia: $request->boolean('purge_media'),
+                userId: $request->user()->id,
+                demo: false,
+            );
+        } catch (DatabaseMaintenanceException $e) {
+            $this->endSession($request);
+
+            return redirect()->route('login')->with('flash', ['error' => 'Database reset failed: '.$e->getMessage()]);
+        }
+
+        $this->endSession($request);
+
+        return redirect()->route('login')->with('flash', ['success' => 'Database has been reset to a clean baseline. Sign in with your admin credentials to continue.']);
+    }
+
+    public function reseed(DatabaseReseedRequest $request): RedirectResponse
+    {
+        abort_unless($this->service->isEnabled(), 403);
+
+        try {
+            $this->service->reseedDatabase(
+                groupKeys: $request->input('groups', []),
+                userId: $request->user()->id,
+            );
+        } catch (DatabaseMaintenanceException $e) {
+            return back()->with('flash', ['error' => 'Database reseed failed: '.$e->getMessage()]);
+        }
+
+        return back()->with('flash', ['success' => 'Selected seeders were re-run successfully.']);
+    }
+
+    private function endSession(Request $request): void
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+}
