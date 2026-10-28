@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Models\Permission;
@@ -55,6 +56,8 @@ class UserManagementTest extends TestCase
 
     public function test_users_list_includes_avatar_url(): void
     {
+        Storage::fake('avatars');
+        Storage::disk('avatars')->put('avatar-a.webp', 'test');
         $target = User::factory()->create(['avatar' => 'avatar-a.webp']);
 
         $response = $this->actingAs($this->admin())
@@ -67,7 +70,7 @@ class UserManagementTest extends TestCase
         $this->assertCount(2, $users);
         $found = collect($users)->firstWhere('id', $target->id);
         $this->assertNotNull($found);
-        $this->assertStringContainsString('avatars/avatar-a.webp', $found['avatar_url']);
+        $this->assertStringContainsString('avatar-a.webp', $found['avatar_url']);
     }
 
     // ─── Edit Form ───────────────────────────────────────

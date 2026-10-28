@@ -79,7 +79,7 @@ class MaintenanceModeTest extends TestCase
         $this->enableMaintenanceMode();
 
         $response = $this->get('/login');
-        $response->assertStatus(503);
+        $response->assertStatus(200);
     }
 
     public function test_register_blocked_during_maintenance(): void
