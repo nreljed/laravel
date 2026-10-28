@@ -396,6 +396,15 @@ importers:
       '@lexical/utils':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
+      '@nreljed/blog':
+        specifier: workspace:*
+        version: link:../../packages/blog
+      '@nreljed/booking-module':
+        specifier: workspace:*
+        version: link:../../packages/booking-module
+      '@nreljed/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
       '@shadcn/react':
         specifier: ^0.3.1
         version: 0.3.1(@types/react@19.3.0)(react@19.3.0)
