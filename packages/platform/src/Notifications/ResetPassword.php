@@ -4,33 +4,38 @@ namespace Nreljed\Platform\Notifications;
 
 use Illuminate\Auth\Notifications\ResetPassword as BaseResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
-use Nreljed\Platform\Services\EmailTemplateService;
+use Nreljed\Platform\Services\SettingsService;
 
 class ResetPassword extends BaseResetPassword
 {
     #[\Override]
     public function toMail($notifiable): MailMessage
     {
-        $templates = app(EmailTemplateService::class);
+        $resetUrl = $this->resetUrl($notifiable);
 
-        $subject = '['.config('app.name').'] Reset Your Password';
+        $logoUrl = SettingsService::get('app_logo', '');
+        $siteName = SettingsService::get('app_name', config('app.name'));
+        $siteUrl = SettingsService::get('app_url', url('/'));
 
-        $body = $templates->render('password-reset', [
+        $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+
+        $body = view('email.templates.password-reset', [
             'userName' => $notifiable->name ?? 'there',
-            'resetUrl' => $this->resetUrl($notifiable),
-            'expireMinutes' => $this->expireMinutes(),
-        ]);
+            'resetUrl' => $resetUrl,
+            'siteName' => $siteName,
+            'siteUrl' => $siteUrl,
+            'expireMinutes' => $expireMinutes,
+        ])->render();
 
         return (new MailMessage)
-            ->subject($subject)
-            ->view($templates->layoutView(), $templates->globalData([
+            ->subject("[$siteName] Reset Your Password")
+            ->view('email.layouts.email', [
+                'logoUrl' => $logoUrl,
+                'siteName' => $siteName,
+                'siteUrl' => $siteUrl,
+                'year' => date('Y'),
                 'body' => $body,
-                'subject' => $subject,
-            ]));
-    }
-
-    protected function expireMinutes(): int
-    {
-        return (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+                'subject' => "[$siteName] Reset Your Password",
+            ]);
     }
 }

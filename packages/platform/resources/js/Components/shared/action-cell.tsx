@@ -31,18 +31,9 @@ interface ActionCellProps {
   item: ActionItem;
   baseRoute: string;
   itemLabel: string;
-  /**
-   * Verb for the `{baseRoute}/{id}/status` request.
-   *
-   * The default is `put` because that is what the blog's status route accepts,
-   * but the verb is not a platform-wide constant: shop-module's product status
-   * route is a PATCH. Hardcoding either one silently 405s the other, so the
-   * consumer that owns the route owns the verb.
-   */
-  statusMethod?: "put" | "patch";
 }
 
-export function ActionCell({ item, baseRoute, itemLabel, statusMethod = "put" }: ActionCellProps) {
+export function ActionCell({ item, baseRoute, itemLabel }: ActionCellProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -57,7 +48,7 @@ export function ActionCell({ item, baseRoute, itemLabel, statusMethod = "put" }:
   };
 
   const handleStatusChange = (newStatus: string) => {
-    router[statusMethod](
+    router.put(
       `${baseRoute}/${item.id}/status`,
       { status: newStatus },
       {

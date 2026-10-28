@@ -9,13 +9,12 @@ use Laravel\Ai\Promptable;
 use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\StreamableAgentResponse;
 use Nreljed\Platform\Ai\Agents\Traits\ResolvesUserProvider;
-use Nreljed\Platform\Ai\Concerns\EnforcesAiCaps;
 use Nreljed\Platform\Ai\Concerns\LogsAiUsage;
 use Nreljed\Platform\Models\User;
 
 class ChatAgent implements Agent, Conversational
 {
-    use EnforcesAiCaps, LogsAiUsage, Promptable, RemembersConversations, ResolvesUserProvider {
+    use LogsAiUsage, Promptable, RemembersConversations, ResolvesUserProvider {
         ResolvesUserProvider::forUser insteadof RemembersConversations;
     }
 
@@ -58,9 +57,7 @@ INSTRUCTIONS;
      */
     public function chat(User $user, string $message, ?string $conversationId = null): string
     {
-        $this->forUser($user);
-        $this->ensureWithinAiCaps($user);
-        $this->injectProviderKey();
+        $this->forUser($user)->injectProviderKey();
 
         if ($conversationId !== null) {
             $this->continue($conversationId, $user);
@@ -78,9 +75,7 @@ INSTRUCTIONS;
      */
     public function streamChat(User $user, string $message, ?string $conversationId = null): StreamableAgentResponse
     {
-        $this->forUser($user);
-        $this->ensureWithinAiCaps($user);
-        $this->injectProviderKey();
+        $this->forUser($user)->injectProviderKey();
 
         if ($conversationId !== null) {
             $this->continue($conversationId, $user);

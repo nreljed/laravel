@@ -8,7 +8,7 @@ trait UserDataTrait
 {
     public function getAvatarUrlAttribute(): ?string
     {
-        if (! $this->hasAvatarFile()) {
+        if (! $this->avatar) {
             return null;
         }
 
@@ -25,23 +25,6 @@ trait UserDataTrait
         }
 
         return $url;
-    }
-
-    /**
-     * Whether the stored avatar filename still resolves to a file.
-     *
-     * Seeded demo accounts and manually removed uploads leave dangling
-     * filenames in `users.avatar`. Returning a URL for a missing file made
-     * every page that lists those users request a 404 (one per row), so the
-     * accessor degrades to null and the UI falls back to initials.
-     */
-    public function hasAvatarFile(): bool
-    {
-        if (! $this->avatar) {
-            return false;
-        }
-
-        return Storage::disk('avatars')->exists($this->avatar);
     }
 
     public function socialLinksWithDefaults(): array

@@ -10,7 +10,6 @@ import type {
 import { flexRender, useTable } from "@tanstack/react-table";
 
 import { AppTableFeatures, tableFeaturesConfig } from "../../lib/table-features";
-import { rowMatchesSearchKeys } from "../../lib/resource-schema";
 import {
   Table,
   TableBody,
@@ -20,7 +19,7 @@ import {
   TableRow,
 } from "./table";
 import { DataTablePagination } from "./data-table-pagination";
-import { DataTableToolbar, type DataTableFilter } from "./data-table-toolbar";
+import { DataTableToolbar } from "./data-table-toolbar";
 import { Button } from "./button";
 import { Checkbox } from "./checkbox";
 import { Skeleton } from "./skeleton";
@@ -42,12 +41,7 @@ import {
 } from "./alert-dialog";
 import { AlertTriangleIcon, ChevronDownIcon } from "lucide-react";
 
-/**
- * Exported so a declarative resource schema (lib/resource-schema.ts) can build
- * `bulkActions` without restating this shape and drifting from the renderer that
- * consumes it.
- */
-export interface BulkAction {
+interface BulkAction {
   label: string;
   value: string;
   show?: (_statuses: string[]) => boolean;
@@ -55,44 +49,20 @@ export interface BulkAction {
   confirmTitle?: string;
   confirmDescription?: string;
   confirmLabel?: string;
-  /**
-   * This action needs data from the user (which categories, which price) before
-   * it can be sent. The table does not own that form, so it hands the action and
-   * the selection to `onBulkInput` and lets the caller collect and submit.
-   */
-  needsInput?: boolean;
 }
 
-export interface DataTableProps<TData extends RowData> {
+interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<AppTableFeatures, TData, CellData>[];
   data: TData[];
   searchKey?: string;
-  /**
-   * Multi-column toolbar search. Where the single `searchKey` binds to that
-   * column's filter, `searchKeys` keeps any row whose value in *any* listed
-   * column contains the query - the OR a customer search needs, applied over
-   * the rows the table was given.
-   */
-  searchKeys?: string[];
   searchPlaceholder?: string;
   filterOptions?: { label: string; value: string }[];
   filterKey?: string;
   filterTitle?: string;
-  /**
-   * Extra faceted filters, for tables that narrow on more than one column.
-   * The `filterKey` / `filterTitle` / `filterOptions` triple above stays
-   * supported and is rendered first.
-   */
-  filters?: DataTableFilter[];
   defaultPageSize?: number;
   pageSizeOptions?: number[];
   bulkActions?: BulkAction[];
   onBulkAction?: (_action: string, _ids: (number | string)[]) => void;
-  /**
-   * Called instead of `onBulkAction` when the chosen action declares
-   * `needsInput`. The caller owns the collection form and submits the result.
-   */
-  onBulkInput?: (_action: BulkAction, _ids: (number | string)[]) => void;
   emptyState?: React.ReactNode;
   loading?: boolean;
   toolbarRight?: React.ReactNode;
@@ -100,23 +70,18 @@ export interface DataTableProps<TData extends RowData> {
 
 const SKELETON_ROWS = 5;
 
-export type { DataTableFilter };
-
 export function DataTable<TData extends RowData>({
   columns,
   data,
   searchKey,
-  searchKeys,
   searchPlaceholder,
   filterOptions,
   filterKey,
   filterTitle,
-  filters,
   defaultPageSize = 10,
   pageSizeOptions = [10, 20, 50, 100],
   bulkActions,
   onBulkAction,
-  onBulkInput,
   emptyState,
   loading = false,
   toolbarRight,
@@ -125,23 +90,10 @@ export function DataTable<TData extends RowData>({
   const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [searchQuery, setSearchQuery] = React.useState("");
   const [confirmAction, setConfirmAction] = React.useState<{
     action: BulkAction;
     ids: (number | string)[];
   } | null>(null);
-
-  // `searchKeys` filters the rows the table was given before TanStack sees
-  // them, because a single column filter cannot express "matches name OR
-  // email". Empty query is a passthrough, so the memo is the single source of
-  // truth for what the table renders.
-  const filteredData = React.useMemo(
-    () =>
-      searchKeys?.length
-        ? data.filter((row) => rowMatchesSearchKeys(row as never, searchQuery, searchKeys))
-        : data,
-    [data, searchKeys, searchQuery],
-  );
 
   const tableColumns = React.useMemo<ColumnDef<AppTableFeatures, TData, CellData>[]>(() => {
     const selectCol: ColumnDef<AppTableFeatures, TData, CellData> = {
@@ -169,7 +121,7 @@ export function DataTable<TData extends RowData>({
 
   const table = useTable({
     features: tableFeaturesConfig,
-    data: filteredData,
+    data,
     columns: tableColumns,
     state: {
       sorting,
@@ -217,18 +169,14 @@ export function DataTable<TData extends RowData>({
       <DataTableToolbar
         table={table}
         searchKey={searchKey}
-        searchKeys={searchKeys}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
         searchPlaceholder={searchPlaceholder}
         filterOptions={filterOptions}
         filterKey={filterKey}
         filterTitle={filterTitle}
-        filters={filters}
         loading={loading}
         toolbarRight={toolbarRight}
       />
-      {selectedRowsCount > 0 && (onBulkAction || onBulkInput) && (
+      {selectedRowsCount > 0 && onBulkAction && (
         <div className="flex items-center gap-2 px-2 py-1">
           <span className="text-sm text-muted-foreground">
             {selectedRowsCount} selected
@@ -247,14 +195,10 @@ export function DataTable<TData extends RowData>({
                       const ids = selectedRows
                         .map((r) => (r.original as Record<string, unknown>).id as number | string)
                         .filter((id): id is number | string => id != null);
-                      if (action.needsInput) {
-                        /* The caller renders the input form; it decides whether
-                         * the result is ready to send. */
-                        onBulkInput?.(action, ids);
-                      } else if (action.destructive) {
+                      if (action.destructive) {
                         setConfirmAction({ action, ids });
                       } else {
-                        onBulkAction?.(action.value, ids);
+                        onBulkAction(action.value, ids);
                       }
                     }}
                   >
@@ -326,7 +270,7 @@ export function DataTable<TData extends RowData>({
       </div>
       <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
       <AlertDialog
-        open={!!confirmAction && !!onBulkAction}
+        open={!!confirmAction}
         onOpenChange={(open) => {
           if (!open) setConfirmAction(null);
         }}

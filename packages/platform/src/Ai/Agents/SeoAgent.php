@@ -8,13 +8,12 @@ use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 use Nreljed\Platform\Ai\Agents\Traits\ResolvesUserProvider;
-use Nreljed\Platform\Ai\Concerns\EnforcesAiCaps;
 use Nreljed\Platform\Ai\Concerns\LogsAiUsage;
 use Nreljed\Platform\Models\User;
 
 class SeoAgent implements Agent, HasStructuredOutput
 {
-    use EnforcesAiCaps, LogsAiUsage, Promptable, ResolvesUserProvider;
+    use LogsAiUsage, Promptable, ResolvesUserProvider;
 
     /**
      * System instructions for SEO analysis.
@@ -67,7 +66,6 @@ INSTRUCTIONS;
     public function generateSeo(User $user, string $title, string $content, ?string $keyword = null): array
     {
         $this->forUser($user);
-        $this->ensureWithinAiCaps($user);
 
         $prompt = $this->buildPrompt($title, $content, $keyword);
 

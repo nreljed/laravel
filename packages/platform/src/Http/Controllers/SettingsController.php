@@ -93,7 +93,6 @@ class SettingsController extends Controller
     {
         $emailSettings = [];
         $emailTemplates = [];
-        $emailCatalog = [];
 
         try {
             $emailSettings = app(EmailSettingsService::class)->forFrontend();
@@ -101,16 +100,13 @@ class SettingsController extends Controller
         }
 
         try {
-            $emailController = app(EmailSettingsController::class);
-            $emailTemplates = $emailController->getTemplates();
-            $emailCatalog = $emailController->getEmailCatalog();
+            $emailTemplates = app(EmailSettingsController::class)->getTemplates();
         } catch (\Throwable) {
         }
 
         return $this->renderPage('dashboard/admin/settings/email', [
             'emailSettings' => $emailSettings,
             'emailTemplates' => $emailTemplates,
-            'emailCatalog' => $emailCatalog,
         ]);
     }
 

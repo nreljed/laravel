@@ -2,31 +2,17 @@
 
 namespace Nreljed\Platform\Services;
 
-use Composer\InstalledVersions;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Support\DataBackupCapability;
-use Nreljed\Platform\Support\ResourceDefinition;
 
 class FeatureRegistry
 {
-    /**
-     * Icon used when a nav item reaches the sidebar without one.
-     *
-     * Every top-level nav entry is rendered as an icon plus a title, so an
-     * item that arrives without an icon would render as a blank row.
-     */
-    public const string DEFAULT_NAV_ICON = 'FileText';
-
     /** @var array<string, FeatureProvider> */
     protected array $providers = [];
 
     /** @var array<string, mixed> */
     protected array $memoized = [];
-
-    /** @var array<string, string> */
-    protected array $adminResourceOwners = [];
 
     public function __construct()
     {
@@ -139,21 +125,8 @@ class FeatureRegistry
         return $this->remember('nav_items', function () {
             $items = [];
 
-            // Descriptors are grouped by owning feature slug up front so each
-            // provider can adopt the resources it declared.
-            $descriptorsByOwner = [];
-
-            foreach ($this->getAllAdminResources() as $descriptor) {
-                $owner = $this->getAdminResourceOwners()[$descriptor->getKey()] ?? null;
-
-                if ($owner !== null) {
-                    $descriptorsByOwner[$owner][] = $descriptor;
-                }
-            }
-
             foreach ($this->enabledProviders() as $provider) {
                 $groupLabel = $provider->getNavGroupLabel();
-                $providerItems = [];
 
                 foreach ($provider->getNavItems() as $item) {
                     // Normalize group labels so the sidebar renders consistent
@@ -162,190 +135,12 @@ class FeatureRegistry
                         $item['groupLabel'] = $groupLabel;
                     }
 
-                    $providerItems[] = $item;
-                }
-
-                // Build one sidebar item per admin resource that declares an index
-                // route. The generic kernel pages (dashboard/admin/resources/*)
-                // render the payload; the provider's own route + controller stay
-                // authoritative. Only resources with a resolvable index route get
-                // an item — a descriptor awaiting its routes stays invisible.
-                $resourceItems = [];
-
-                foreach ($descriptorsByOwner[$provider->slug()] ?? [] as $descriptor) {
-                    $indexRoute = $descriptor->getRoutes()['index'] ?? null;
-
-                    if (! is_string($indexRoute) || $indexRoute === '' || ! Route::has($indexRoute)) {
-                        continue;
-                    }
-
-                    $permissions = $descriptor->getPermissions();
-
-                    $resourceItems[] = array_filter([
-                        'title' => $descriptor->getLabel(),
-                        'url' => route($indexRoute),
-                        'feature_slug' => $provider->slug(),
-                        'permission' => $permissions['view'] ?? null,
-                    ], fn ($value) => $value !== null);
-                }
-
-                if ($resourceItems === []) {
-                    $items = [...$items, ...array_map($this->withNavIcon(...), $providerItems)];
-
-                    continue;
-                }
-
-                // Adopt the resources into the provider's own collapsible group so
-                // the sidebar shows one heading per module. A provider that returns
-                // exactly one collapsible entry owns it; anything else falls back to
-                // flat emission, which keeps the contract safe for providers without
-                // a group to nest into.
-                $groupIndex = $this->collapsibleGroupIndex($providerItems);
-
-                if ($groupIndex === null) {
-                    $items = [...$items, ...array_map($this->withNavIcon(...), $providerItems)];
-
-                    // No group to nest into, so the resources need a heading of their own.
-                    foreach ($resourceItems as $resourceItem) {
-                        $items[] = $this->withNavIcon(['groupLabel' => 'Resources', ...$resourceItem]);
-                    }
-
-                    continue;
-                }
-
-                foreach ($providerItems as $index => $item) {
-                    $items[] = $this->withNavIcon(
-                        $index === $groupIndex
-                            ? $this->withResourceSubItems($item, $resourceItems)
-                            : $item
-                    );
+                    $items[] = $item;
                 }
             }
 
             return $items;
         });
-    }
-
-    /**
-     * Guarantee a nav item carries an icon.
-     *
-     * A top-level nav entry is rendered as an icon plus a title, so an item
-     * that arrives without one would render as a blank row. Providers that
-     * declare their own icon keep it; everything else falls back to the
-     * generic file icon.
-     *
-     * @param  array<string, mixed>  $item
-     * @return array<string, mixed>
-     */
-    protected function withNavIcon(array $item): array
-    {
-        $icon = $item['icon'] ?? null;
-
-        if (! is_string($icon) || $icon === '') {
-            $item['icon'] = self::DEFAULT_NAV_ICON;
-        }
-
-        return $item;
-    }
-
-    /**
-     * Resolve the index of the single collapsible group a provider returned.
-     *
-     * A collapsible entry is one that carries its own `items` array. Only an
-     * unambiguous single group is adopted; zero or several mean the provider has
-     * no obvious place to nest resources into.
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     */
-    protected function collapsibleGroupIndex(array $items): ?int
-    {
-        $indexes = [];
-
-        foreach ($items as $index => $item) {
-            if ($this->isCollapsible($item)) {
-                $indexes[] = $index;
-            }
-        }
-
-        return count($indexes) === 1 ? $indexes[0] : null;
-    }
-
-    /**
-     * Determine whether a nav item carries its own sub-item list.
-     *
-     * @param  array<string, mixed>  $item
-     */
-    protected function isCollapsible(array $item): bool
-    {
-        return isset($item['items']) && is_array($item['items']);
-    }
-
-    /**
-     * Reduce a URL to a comparable path so relative and absolute forms of the
-     * same link are recognised as duplicates.
-     *
-     * Modules write nav links with `route($name, [], false)` while the registry
-     * generates absolute ones; comparing the raw strings would let the same
-     * destination through twice.
-     *
-     * @param  mixed  $url
-     */
-    protected function normalizeUrl($url): string
-    {
-        if (! is_string($url) || $url === '') {
-            return '';
-        }
-
-        $path = parse_url($url, PHP_URL_PATH);
-
-        return is_string($path) ? $path : $url;
-    }
-
-    /**
-     * Append descriptor sub-items to a collapsible nav group, skipping any
-     * descriptor whose URL a hand-written entry already covers.
-     *
-     * The hand-written entry is authoritative: modules declare curated links
-     * (quick actions, module landing pages) that descriptors cannot express, so
-     * an existing URL wins over the generated duplicate.
-     *
-     * @param  array<string, mixed>  $item
-     * @param  array<int, array<string, mixed>>  $resourceItems
-     * @return array<string, mixed>
-     */
-    protected function withResourceSubItems(array $item, array $resourceItems): array
-    {
-        $existingUrls = [];
-
-        foreach ($item['items'] as $subItem) {
-            if (is_array($subItem) && isset($subItem['url'])) {
-                $existingUrls[] = $this->normalizeUrl($subItem['url']);
-            }
-        }
-
-        $appended = [];
-
-        foreach ($resourceItems as $resourceItem) {
-            if (in_array($this->normalizeUrl($resourceItem['url']), $existingUrls, true)) {
-                continue;
-            }
-
-            $appended[] = $resourceItem;
-        }
-
-        if ($appended === []) {
-            return $item;
-        }
-
-        // Nested sub-items inherit the group's heading; carrying a stale
-        // `groupLabel` on a sub-item would override it when rendered.
-        foreach ($appended as $index => $resourceItem) {
-            unset($appended[$index]['groupLabel']);
-        }
-
-        $item['items'] = [...array_values($item['items']), ...$appended];
-
-        return $item;
     }
 
     public function getAllSharedData(): array
@@ -458,106 +253,6 @@ class FeatureRegistry
         return array_merge(
             ...array_map(fn (FeatureProvider $provider) => $provider->getSettingsGroups(), $this->enabledProviders())
         );
-    }
-
-    /**
-     * Every declarative admin resource exposed by the enabled features.
-     *
-     * Memoized because the descriptors are config-shaped - a resource's key,
-     * label and route, with no per-user or live-DB state - which is the same
-     * condition the `remember` docblock requires. A feature toggled at runtime
-     * re-registers providers, so the cache is dropped with them.
-     *
-     * The kernel guarantee (plan 5.4): a descriptor that drifts off the
-     * shipped schema (a misspelled column key, an unknown field type, a route
-     * slot that is not a route name, a resource key colliding with another
-     * feature) fails loudly here, so no module can silently fork the shared
-     * admin surface. `assertValid()` carries the owning feature's slug so the
-     * failure names the module that must fix it.
-     *
-     * @return array<int, ResourceDefinition>
-     */
-    public function getAllAdminResources(): array
-    {
-        return $this->remember('admin_resources', function () {
-            $resources = [];
-            $keys = [];
-
-            foreach ($this->enabledProviders() as $provider) {
-                foreach ($provider->getAdminResources() as $descriptor) {
-                    if (! $descriptor instanceof ResourceDefinition) {
-                        throw new \RuntimeException(
-                            "Feature [{$provider->slug()}] returned a non-ResourceDefinition from getAdminResources(); "
-                            .'the method must return descriptor objects, not raw arrays.'
-                        );
-                    }
-
-                    $descriptor->assertValid($provider->slug());
-
-                    $key = $descriptor->getKey();
-                    if (isset($keys[$key])) {
-                        throw new \RuntimeException(
-                            "Duplicate admin resource key [{$key}] declared by features "
-                            ."[{$keys[$key]}] and [{$provider->slug()}]."
-                        );
-                    }
-
-                    $keys[$key] = $provider->slug();
-                    $resources[] = $descriptor;
-                }
-            }
-
-            $this->adminResourceOwners = $keys;
-
-            return $resources;
-        });
-    }
-
-    /**
-     * Resolve a single validated descriptor by its globally unique key.
-     */
-    public function getAdminResource(string $key): ?ResourceDefinition
-    {
-        foreach ($this->getAllAdminResources() as $descriptor) {
-            if ($descriptor->getKey() === $key) {
-                return $descriptor;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Serialize every declared descriptor for the admin inventory page and
-     * the shared Inertia prop. Keyed by resource key so the frontend can
-     * address a resource without re-querying providers.
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    public function getAllAdminResourcesArray(): array
-    {
-        return $this->remember('admin_resources_array', function () {
-            $resources = [];
-
-            foreach ($this->getAllAdminResources() as $descriptor) {
-                $resources[$descriptor->getKey()] = $descriptor->toArray();
-            }
-
-            return $resources;
-        });
-    }
-
-    /**
-     * Map resource key → owning feature slug. Populated while the validated
-     * aggregate is built, so duplicate keys fail before a nav item is emitted.
-     *
-     * @return array<string, string>
-     */
-    public function getAdminResourceOwners(): array
-    {
-        $this->getAllAdminResources();
-
-        return $this->adminResourceOwners;
     }
 
     public function getAllGalleryConfigs(): array
@@ -882,23 +577,8 @@ class FeatureRegistry
             return 'unknown';
         }
 
-        $file = $this->normalizePath($file);
-
-        if ($file === '') {
-            return 'unknown';
-        }
-
-        // A vendor directory installed through a symlink or a Windows junction
-        // resolves to its real location, so the provider file no longer sits
-        // under base_path(). Compare against the real path of the platform
-        // package before falling back to the path-relative checks.
-        foreach ($this->platformSourcePaths() as $platformPath) {
-            if ($file === $platformPath || str_starts_with($file, $platformPath.'/')) {
-                return 'platform';
-            }
-        }
-
-        $base = rtrim($this->normalizePath(base_path()), '/').'/';
+        $file = str_replace('\\', '/', $file);
+        $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
 
         if (str_starts_with($file, $base.'vendor/nreljed/platform/')) {
             return 'platform';
@@ -921,46 +601,6 @@ class FeatureRegistry
         }
 
         return 'unknown';
-    }
-
-    /**
-     * Real paths of every location the platform package can be loaded from.
-     *
-     * @return list<string>
-     */
-    protected function platformSourcePaths(): array
-    {
-        $paths = [];
-
-        try {
-            $installed = InstalledVersions::getInstallPath('nreljed/platform');
-
-            if (is_string($installed)) {
-                $paths[] = $installed;
-            }
-        } catch (\Throwable) {
-            // The platform is not installed as a composer package in this
-            // application - the workspace checks below still apply.
-        }
-
-        $paths[] = base_path('packages/platform');
-
-        $normalized = [];
-
-        foreach ($paths as $path) {
-            $real = realpath($path);
-            $normalized[] = rtrim($this->normalizePath($real !== false ? $real : $path), '/');
-        }
-
-        return array_values(array_unique(array_filter($normalized)));
-    }
-
-    /**
-     * Normalise a filesystem path for prefix comparisons.
-     */
-    protected function normalizePath(string $path): string
-    {
-        return str_replace('\\', '/', $path);
     }
 
     /**
@@ -1050,52 +690,6 @@ class FeatureRegistry
                         ];
                     }
                 }
-            }
-
-            // Resource descriptors are validated loudly when the registry
-            // aggregates them, but surface them here too so the system health
-            // page reports the drift instead of leaving it to the next
-            // dashboard render to 500 on.
-            foreach ($provider->getAdminResources() as $descriptor) {
-                if (! $descriptor instanceof ResourceDefinition) {
-                    $issues[] = [
-                        'severity' => 'critical',
-                        'provider' => $slug,
-                        'message' => 'getAdminResources() returned a raw array instead of a ResourceDefinition.',
-                    ];
-
-                    continue;
-                }
-
-                foreach ($descriptor->violations() as $violation) {
-                    $issues[] = [
-                        'severity' => 'high',
-                        'provider' => $slug,
-                        'message' => "Resource [{$descriptor->getKey()}]: {$violation}",
-                    ];
-                }
-            }
-        }
-
-        // Resource keys must be globally unique across enabled features so the
-        // registry lookup and the frontend inventory cannot be ambiguous.
-        $descriptorKeys = [];
-        foreach ($this->enabledProviders() as $provider) {
-            foreach ($provider->getAdminResources() as $descriptor) {
-                if (! $descriptor instanceof ResourceDefinition) {
-                    continue;
-                }
-
-                $key = $descriptor->getKey();
-                if (isset($descriptorKeys[$key]) && $descriptorKeys[$key] !== $provider->slug()) {
-                    $issues[] = [
-                        'severity' => 'critical',
-                        'provider' => $provider->slug(),
-                        'message' => "Duplicate admin resource key [{$key}] already declared by [{$descriptorKeys[$key]}].",
-                    ];
-                }
-
-                $descriptorKeys[$key] = $provider->slug();
             }
         }
 

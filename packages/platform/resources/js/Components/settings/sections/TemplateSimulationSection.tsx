@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Section } from "../../shared/section";
 import { router, usePage } from "@inertiajs/react";
 import { toast } from "../../ui/toast";
@@ -49,22 +49,12 @@ interface MailDebug {
   error: string | null;
 }
 
-export function TemplateSimulationSection({
-  asAccordion = false,
-  selectedTemplate: controlledTemplate,
-  onSelectTemplate,
-}: {
-  asAccordion?: boolean;
-  selectedTemplate?: string;
-  onSelectTemplate?: (templateKey: string) => void;
-}) {
+export function TemplateSimulationSection({ asAccordion = false }: { asAccordion?: boolean }) {
   const flash = usePage().props.flash as Record<string, string | MailDebug> | undefined;
   const emailTemplates = (usePage().props as unknown as Record<string, unknown>).emailTemplates as
     Record<string, EmailTemplate> | undefined;
 
-  const [internalTemplate, setInternalTemplate] = useState("");
-  const selectedTemplate = controlledTemplate ?? internalTemplate;
-  const setSelectedTemplate = onSelectTemplate ?? setInternalTemplate;
+  const [selectedTemplate, setSelectedTemplate] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogHtml, setDialogHtml] = useState<string | null>(null);
@@ -94,13 +84,13 @@ export function TemplateSimulationSection({
   if (flash?.status && typeof flash.status === "string")
     toast.add({ title: flash.status, type: "success" });
 
-  const loadPreview = useCallback(async (templateKey: string) => {
-    if (!templateKey) return;
+  const handlePreview = useCallback(async () => {
+    if (!selectedTemplate) return;
     setPreviewLoading(true);
     setDialogHtml(null);
     try {
       const url = route("dashboard.admin.settings.email.template-preview", {
-        template: templateKey,
+        template: selectedTemplate,
         fragment: "1",
       } as Record<string, unknown>);
       const response = await fetch(url);
@@ -113,26 +103,7 @@ export function TemplateSimulationSection({
     } finally {
       setPreviewLoading(false);
     }
-  }, []);
-
-  const handlePreview = useCallback(() => {
-    void loadPreview(selectedTemplate);
-  }, [loadPreview, selectedTemplate]);
-
-  const lastExternalSelection = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (controlledTemplate === undefined) return;
-
-    if (controlledTemplate === lastExternalSelection.current) return;
-
-    const isFirstSync = lastExternalSelection.current === null;
-    lastExternalSelection.current = controlledTemplate;
-
-    if (isFirstSync || !controlledTemplate) return;
-
-    void loadPreview(controlledTemplate);
-  }, [controlledTemplate, loadPreview]);
+  }, [selectedTemplate]);
 
   const handleSendTest = useCallback(() => {
     if (sending || !testEmail || !selectedTemplate) return;

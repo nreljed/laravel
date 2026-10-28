@@ -9,9 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            if (Schema::hasColumn('posts', 'focus_keyword')) {
-                return;
-            }
             $table->string('focus_keyword', 100)->nullable()->after('og_image');
         });
     }

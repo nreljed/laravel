@@ -28,7 +28,6 @@ final class FeatureProviderContractTest extends TestCase
             'description',
             'enabled',
             'exportDataBackup',
-            'getAdminResources',
             'getAnalyticsSeries',
             'getComposerPackage',
             'getContentDescription',

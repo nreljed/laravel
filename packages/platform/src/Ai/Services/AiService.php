@@ -4,7 +4,6 @@ namespace Nreljed\Platform\Ai\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
-use Nreljed\Platform\Ai\AiPricingCatalog;
 use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
 use Nreljed\Platform\Ai\Models\AiUsageLog;
 use Nreljed\Platform\Ai\Models\AiUsageSetting;
@@ -52,11 +51,6 @@ class AiService
 
     /**
      * Log an AI usage event (best-effort, failures are silent).
-     *
-     * When `$costCents` is null the event is priced from the pinned rates in
-     * {@see AiPricingCatalog} — every writer gets cost accounting for free.
-     * Fractional cents are stored: sub-cent events are common and rounding
-     * them per event would zero out a day of small calls.
      */
     public function logUsage(
         User $user,
@@ -65,7 +59,7 @@ class AiService
         string $model,
         int $inputTokens,
         int $outputTokens,
-        ?float $costCents = null,
+        ?int $costCents = null,
         ?int $latencyMs = null,
     ): AiUsageLog {
         return AiUsageLog::create([
@@ -75,7 +69,7 @@ class AiService
             'model' => $model,
             'input_tokens' => max(0, $inputTokens),
             'output_tokens' => max(0, $outputTokens),
-            'cost_cents' => $costCents ?? AiPricingCatalog::costCents($provider, $inputTokens, $outputTokens),
+            'cost_cents' => $costCents,
             'latency_ms' => $latencyMs,
             'created_at' => now(),
         ]);
@@ -108,17 +102,12 @@ class AiService
     /**
      * Check whether a pending request would breach the user's soft daily caps.
      *
-     * Caps are requests/day and USD spend/day. The spend check prices the
-     * day's accumulated cost_cents — a pending request's cost cannot be
-     * known before the provider answers, so the cap trips between requests
-     * (soft ceiling, slightly overshootable by one in-flight call).
+     * When the user has not saved caps yet, defaults are used. Returns null when
+     * within budget, otherwise an array describing which cap is exceeded.
      *
-     * When the user has not saved caps yet, defaults are used. Returns null
-     * when within budget, otherwise an array describing which cap is exceeded.
-     *
-     * @return array{requests: bool, cost: bool}|null
+     * @return array{requests: bool, tokens: bool}|null
      */
-    public function exceedsCaps(User $user): ?array
+    public function exceedsCaps(User $user, int $inputTokens, int $outputTokens): ?array
     {
         $caps = $this->getCaps($user);
         $today = $this->getDailyUsage($user);
@@ -129,8 +118,8 @@ class AiService
             $exceeded['requests'] = true;
         }
 
-        if ($today['totals']['cost_cents'] >= $caps['cost_cents']) {
-            $exceeded['cost'] = true;
+        if (($today['totals']['tokens'] + $inputTokens + $outputTokens) > $caps['tokens']) {
+            $exceeded['tokens'] = true;
         }
 
         return $exceeded === [] ? null : $exceeded;
@@ -139,10 +128,7 @@ class AiService
     /**
      * Get a user's daily caps (defaults fallback).
      *
-     * The legacy `cap_tokens` value is intentionally not surfaced — token
-     * ceilings were replaced by the USD spend cap.
-     *
-     * @return array{requests: int, cost_cents: int}
+     * @return array{requests: int, tokens: int}
      */
     public function getCaps(User $user): array
     {
@@ -150,57 +136,32 @@ class AiService
 
         return [
             'requests' => $setting->cap_requests ?? AiUsageSetting::DEFAULT_CAP_REQUESTS,
-            'cost_cents' => $setting->cap_cents ?? AiUsageSetting::DEFAULT_CAP_COST_CENTS,
+            'tokens' => $setting->cap_tokens ?? AiUsageSetting::DEFAULT_CAP_TOKENS,
         ];
     }
 
     /**
      * Persist a user's soft daily caps, clamped into legal ranges.
      *
-     * @param  int  $costCents  Daily spend ceiling in cents ($0.01–$1000).
-     * @return array{requests: int, cost_cents: int}
+     * @return array{requests: int, tokens: int}
      */
-    public function updateCaps(User $user, int $requests, int $costCents): array
+    public function updateCaps(User $user, int $requests, int $tokens): array
     {
         $requests = max(1, min(AiUsageSetting::CAP_REQUESTS_MAX, $requests));
-        $costCents = max(1, min(AiUsageSetting::CAP_COST_MAX, $costCents));
+        $tokens = max(1000, min(AiUsageSetting::CAP_TOKENS_MAX, $tokens));
 
         $user->aiUsageSetting()->updateOrCreate(
             ['user_id' => $user->id],
-            ['cap_requests' => $requests, 'cap_cents' => $costCents],
+            ['cap_requests' => $requests, 'cap_tokens' => $tokens],
         );
 
-        return ['requests' => $requests, 'cost_cents' => $costCents];
-    }
-
-    /**
-     * Human-readable message for a cap breach, with the live amounts.
-     *
-     * Shared by every enforcement path (AiTaskRunner and the agents'
-     * EnforcesAiCaps trait) so the wording cannot drift between them.
-     *
-     * @param  array{requests?: bool, cost?: bool}  $exceeded
-     */
-    public function capMessage(User $user, array $exceeded): string
-    {
-        $caps = $this->getCaps($user);
-        $parts = [];
-
-        if (! empty($exceeded['requests'])) {
-            $parts[] = 'daily request limit ('.$caps['requests'].')';
-        }
-
-        if (! empty($exceeded['cost'])) {
-            $parts[] = 'daily spend limit ($'.number_format($caps['cost_cents'] / 100, 2).')';
-        }
-
-        return 'Your AI '.implode(' and ', $parts).' has been reached.';
+        return ['requests' => $requests, 'tokens' => $tokens];
     }
 
     /**
      * Today's per-provider usage + totals for a user.
      *
-     * @return array{date: string, providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, cost_cents: float, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int, cost_cents: float}}
+     * @return array{date: string, providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int}}
      */
     public function getDailyUsage(User $user, ?CarbonImmutable $date = null): array
     {
@@ -223,7 +184,7 @@ class AiService
     /**
      * All-time per-provider usage + totals for a user.
      *
-     * @return array{providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, cost_cents: float, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int, cost_cents: float}}
+     * @return array{providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int}}
      */
     public function getAllTimeUsage(User $user): array
     {
@@ -231,9 +192,9 @@ class AiService
     }
 
     /**
-     * Get a usage snapshot shaped for the Account → Integrations UI.
+     * Get a usage snapshot shaped for the Account → AI Keys UI.
      *
-     * @return array{cap: array{requests: int, cost_cents: int}, today: array{date: string, providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, cost_cents: float, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int, cost_cents: float}}, all_time: array{providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, cost_cents: float, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int, cost_cents: float}}}
+     * @return array{cap: array{requests: int, tokens: int}, today: array{date: string, providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int}}, all_time: array{providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int}}}
      */
     public function getUsageSnapshot(User $user): array
     {
@@ -246,7 +207,7 @@ class AiService
 
     /**
      * @param  Collection<int, AiUsageLog>  $logs
-     * @return array{providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, cost_cents: float, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int, cost_cents: float}}
+     * @return array{providers: array<string, array{requests: int, input_tokens: int, output_tokens: int, last_model: string|null, last_run_at: string|null, last_latency_ms: int|null, last_error: string|null}>, totals: array{requests: int, tokens: int}}
      */
     private function rollup(Collection $logs): array
     {
@@ -262,25 +223,23 @@ class AiService
                     'requests' => 0,
                     'input_tokens' => 0,
                     'output_tokens' => 0,
-                    'cost_cents' => 0.0,
                 ];
 
                 $successCounts[$provider]['requests']++;
                 $successCounts[$provider]['input_tokens'] += $log->input_tokens;
                 $successCounts[$provider]['output_tokens'] += $log->output_tokens;
-                $successCounts[$provider]['cost_cents'] += (float) ($log->cost_cents ?? 0.0);
             }
 
             $lastByProvider[$provider] ??= [
                 'last_model' => $log->model ?: null,
-                'last_run_at' => $log->created_at->toDateTimeString(),
+                    'last_run_at' => $log->created_at->toDateTimeString(),
                 'last_latency_ms' => $log->latency_ms,
                 'last_error' => $log->error,
             ];
         }
 
         $providers = [];
-        $totals = ['requests' => 0, 'tokens' => 0, 'cost_cents' => 0.0];
+        $totals = ['requests' => 0, 'tokens' => 0];
 
         foreach ($successCounts as $provider => $counts) {
             $entry = array_merge($counts, $lastByProvider[$provider] ?? [
@@ -294,7 +253,6 @@ class AiService
 
             $totals['requests'] += $counts['requests'];
             $totals['tokens'] += $counts['input_tokens'] + $counts['output_tokens'];
-            $totals['cost_cents'] += $counts['cost_cents'];
         }
 
         return ['providers' => $providers, 'totals' => $totals];
