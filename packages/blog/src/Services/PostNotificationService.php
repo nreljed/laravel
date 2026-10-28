@@ -2,9 +2,9 @@
 
 namespace Nreljed\Blog\Services;
 
+use Nreljed\Blog\Models\Post;
 use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Notifications\AppNotification;
-use Nreljed\Blog\Models\Post;
 use Nreljed\Platform\Services\NotificationService;
 
 /**
