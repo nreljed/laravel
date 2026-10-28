@@ -36,11 +36,8 @@ importers:
         specifier: ^0.27.20
         version: 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@geoman-io/leaflet-geoman-free':
-        specifier: ^2.20.2
+        specifier: ^2.20.0
         version: 2.20.2(leaflet@1.9.4)
-      '@gsap/react':
-        specifier: ^2.1.2
-        version: 2.1.2(gsap@3.15.0)(react@19.3.0)
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.7)
@@ -92,9 +89,6 @@ importers:
       '@nreljed/blog':
         specifier: workspace:*
         version: link:packages/blog
-      '@nreljed/marketing-module':
-        specifier: workspace:*
-        version: link:packages/marketing-module
       '@nreljed/platform':
         specifier: workspace:*
         version: link:packages/platform
@@ -102,7 +96,7 @@ importers:
         specifier: ^0.3.0
         version: 0.3.1(@types/react@19.3.0)(react@19.3.0)
       '@shikijs/engine-javascript':
-        specifier: ^4.5.0
+        specifier: ^4.4.3
         version: 4.5.0
       '@stripe/react-stripe-js':
         specifier: ^6.9.0
@@ -122,6 +116,9 @@ importers:
       '@zxcvbn-ts/language-en':
         specifier: ^4.1.1
         version: 4.1.1
+      axios:
+        specifier: ^1.20.0
+        version: 1.20.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -137,9 +134,6 @@ importers:
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.3.0)
-      gsap:
-        specifier: ^3.15.0
-        version: 3.15.0
       input-otp:
         specifier: ^1.5.0
         version: 1.5.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -155,17 +149,14 @@ importers:
       leaflet.markercluster:
         specifier: ^1.5.3
         version: 1.5.3(leaflet@1.9.4)
-      lenis:
-        specifier: ^1.3.26
-        version: 1.3.26(react@19.3.0)
       lexical:
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
       libphonenumber-js:
-        specifier: ^1.13.14
+        specifier: ^1.13.12
         version: 1.13.14
       lucide-react:
-        specifier: ^1.51.0
+        specifier: ^1.46.0
         version: 1.51.0(@types/react@19.3.0)(react@19.3.0)
       next-themes:
         specifier: ^0.4.6
@@ -174,16 +165,16 @@ importers:
         specifier: ^19.2.8
         version: 19.3.0
       react-day-picker:
-        specifier: ^10.0.2
+        specifier: ^10.0.1
         version: 10.0.2(@types/react@19.3.0)(react@19.3.0)
       react-dom:
         specifier: ^19.2.8
         version: 19.3.0(react@19.3.0)
       react-dropzone:
-        specifier: ^20.1.2
+        specifier: ^20.1.1
         version: 20.1.2(@types/react@19.3.0)(react@19.3.0)
       react-hook-form:
-        specifier: ^7.89.0
+        specifier: ^7.87.0
         version: 7.89.0(@types/react@19.3.0)(react@19.3.0)
       react-image-crop:
         specifier: ^11.0.10
@@ -201,13 +192,13 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-resizable-panels:
-        specifier: ^4.14.2
+        specifier: ^4.12.3
         version: 4.14.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       recharts:
         specifier: ^3.10.1
         version: 3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1)
       shiki:
-        specifier: ^4.5.0
+        specifier: ^4.4.3
         version: 4.5.0
       tw-animate-css:
         specifier: ^1.4.0
@@ -220,10 +211,10 @@ importers:
         version: 4.6.7
     devDependencies:
       '@commitlint/cli':
-        specifier: ^21.2.3
+        specifier: ^21.2.2
         version: 21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.2)(typescript@6.0.3)
       '@commitlint/config-conventional':
-        specifier: ^21.2.3
+        specifier: ^21.2.0
         version: 21.2.3
       '@emnapi/core':
         specifier: ^1.11.1
@@ -232,7 +223,7 @@ importers:
         specifier: ^1.11.1
         version: 1.11.3
       '@eslint-react/eslint-plugin':
-        specifier: ^5.23.5
+        specifier: ^5.19.1
         version: 5.23.5(eslint@10.12.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
         specifier: 3.8.0
@@ -243,9 +234,6 @@ importers:
       '@inertiajs/vite':
         specifier: 3.8.0
         version: 3.8.0(axios@1.20.0)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
-      '@playwright/test':
-        specifier: ^1.63.0
-        version: 1.63.0
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.3.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -265,7 +253,7 @@ importers:
         specifier: ^1.9.21
         version: 1.9.22
       '@types/node':
-        specifier: ^26.6.4
+        specifier: ^26.2.0
         version: 26.6.4
       '@types/react':
         specifier: ^19.0.0
@@ -286,7 +274,7 @@ importers:
         specifier: ^0.28.2
         version: 0.28.2
       eslint:
-        specifier: ^10.12.0
+        specifier: ^10.10.0
         version: 10.12.0(jiti@2.7.0)
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -301,25 +289,25 @@ importers:
         specifier: ^7.1.1
         version: 7.1.1(eslint@10.12.0(jiti@2.7.0))
       eslint-plugin-unicorn:
-        specifier: ^77.0.0
-        version: 77.0.0(eslint@10.12.0(jiti@2.7.0))
+        specifier: ^74.0.0
+        version: 74.0.0(eslint@10.12.0(jiti@2.7.0))
       globals:
-        specifier: ^17.13.0
+        specifier: ^17.11.0
         version: 17.13.0
       husky:
         specifier: ^9.1.7
         version: 9.1.7
       jsdom:
-        specifier: ^30.1.1
+        specifier: ^30.0.1
         version: 30.1.1
       laravel-vite-plugin:
         specifier: ^3.2
         version: 3.2.0(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       lint-staged:
-        specifier: ^17.6.0
+        specifier: ^17.0.8
         version: 17.6.0
       prettier:
-        specifier: ^3.9.9
+        specifier: ^3.9.4
         version: 3.9.9
       semver:
         specifier: ^7.8.5
@@ -331,10 +319,10 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       vite:
-        specifier: ^8.3.2
+        specifier: ^8.2.2
         version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
       vitest:
-        specifier: ^5.0.3
+        specifier: ^5.0.0
         version: 5.0.3(@types/node@26.6.4)(jsdom@30.1.1)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
   apps/laravel.booking:
@@ -408,15 +396,6 @@ importers:
       '@lexical/utils':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
-      '@nreljed/blog':
-        specifier: workspace:*
-        version: link:../../packages/blog
-      '@nreljed/booking-module':
-        specifier: workspace:*
-        version: link:../../packages/booking-module
-      '@nreljed/platform':
-        specifier: workspace:*
-        version: link:../../packages/platform
       '@shadcn/react':
         specifier: ^0.3.1
         version: 0.3.1(@types/react@19.3.0)(react@19.3.0)
@@ -1167,49 +1146,49 @@ importers:
         specifier: 3.8.0
         version: 3.8.0(axios@1.20.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/code':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/code-shiki':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/dragon':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/extension':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/history':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/html':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/link':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/list':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/markdown':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/overflow':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/react':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(yjs@13.6.32)
       '@lexical/rich-text':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/selection':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/table':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@lexical/utils':
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       '@shadcn/react':
         specifier: ^0.3.0
@@ -1236,7 +1215,7 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       cn:
-        specifier: ^0.2.6
+        specifier: ^0.2.6 || ^0.5.0
         version: 0.2.6
       date-fns:
         specifier: ^4.4.0
@@ -1257,7 +1236,7 @@ importers:
         specifier: ^1.5.3
         version: 1.5.3(leaflet@1.9.4)
       lexical:
-        specifier: ^0.49.0
+        specifier: ^0.49.0 || ^0.52.0
         version: 0.49.0(typescript@6.0.3)
       libphonenumber-js:
         specifier: ^1.13.9
@@ -2062,12 +2041,6 @@ packages:
     engines: {node: '>=20.0.0'}
     peerDependencies:
       leaflet: ^1.2.0
-
-  '@gsap/react@2.1.2':
-    resolution: {integrity: sha512-JqliybO1837UcgH2hVOM4VO+38APk3ECNrsuSM4MuXp+rbf+/2IG2K1YJiqfTcXQHH7XlA0m3ykniFYstfq0Iw==}
-    peerDependencies:
-      gsap: ^3.12.5
-      react: '>=17'
 
   '@hono/node-server@2.1.1':
     resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
@@ -3668,6 +3641,10 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
+  convert-hrtime@5.0.0:
+    resolution: {integrity: sha512-lOETlkIeYSJWcbbcvjRKGxVMXJR+8+OQb/mTPbA4ObPMytYIsUbuOE0Jzy60hjARYszq1id0j8KgVhC+WGZVTg==}
+    engines: {node: '>=12'}
+
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
@@ -4068,6 +4045,12 @@ packages:
       eslint:
         optional: true
 
+  eslint-plugin-unicorn@74.0.0:
+    resolution: {integrity: sha512-AGnsGi2SxHg1HEAXxn9nSnZfyjvTWkxm8E8hpd/9tD6dLjBUdcD7+D6ZN64HmmCXTSXlrwVyUqe20Uyb2CaurA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      eslint: '>=10.4'
+
   eslint-plugin-unicorn@77.0.0:
     resolution: {integrity: sha512-aayznMCKTXlPAsoyUjRok862sz3BJAfxpQX/t79AT/uVQTmWsCx3FXfXo+9hfhL8aR2mMZQYyXoDZo3/ly6lJw==}
     engines: {node: '>=22'}
@@ -4263,6 +4246,10 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
+  function-timeout@1.0.2:
+    resolution: {integrity: sha512-939eZS4gJ3htTHAldmyyuzlrD58P03fHG49v2JfFXbV6OhvZKRC9j2yAtdHw/zrp2zXHuv05zMIy40F0ge7spA==}
+    engines: {node: '>=18'}
+
   fuzzysort@3.1.0:
     resolution: {integrity: sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ==}
 
@@ -4327,9 +4314,6 @@ packages:
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
-
-  gsap@3.15.0:
-    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -4495,6 +4479,10 @@ packages:
   is-glob@4.0.3:
     resolution: {integrity: sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==}
     engines: {node: '>=0.10.0'}
+
+  is-identifier@1.1.0:
+    resolution: {integrity: sha512-NhOds0mDx9lJu+1lBRO0xbwFo5nobA7GCk/0e5xjr6+6XugX985+0OyGX35BNrTkPAsdLcIKg02HUQJOK8D8kw==}
+    engines: {node: '>=18'}
 
   is-in-ssh@1.0.0:
     resolution: {integrity: sha512-jYa6Q9rH90kR1vKB6NM7qqd1mge3Fx4Dhw5TVlK1MUBqhEOuCagrEHMevNuCcbECmXZ0ThXkRm+Ymr51HwEPAw==}
@@ -4672,20 +4660,6 @@ packages:
 
   leaflet@1.9.4:
     resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
-
-  lenis@1.3.26:
-    resolution: {integrity: sha512-s/xTCZCxTFvHbAN1OzuhNaN5YPJH2ail0XAkctKW1b+RUAG4nUL5UHLXwNko1h8aEeT2jspBXegMgPJd8zcuag==}
-    peerDependencies:
-      '@nuxt/kit': '>=3.0.0'
-      react: '>=17.0.0'
-      vue: '>=3.0.0'
-    peerDependenciesMeta:
-      '@nuxt/kit':
-        optional: true
-      react:
-        optional: true
-      vue:
-        optional: true
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -4916,6 +4890,10 @@ packages:
   magic-string@1.3.1:
     resolution: {integrity: sha512-rm91zr2Ou+XueDTohjQQjdQEcYM6zVi8KVUCG8Ec3vHwUEKrhSdCNyfuIywkA6hcCAteIn0ZOtAHA6eGpiX+Pg==}
 
+  make-asynchronous@1.1.0:
+    resolution: {integrity: sha512-ayF7iT+44LXdxJLTrTd3TLQpFDDvPCBxXxbv+pMUSuHA5Q8zyAfwkRP6aHHwNVFBUFWtxAHqwNJxF8vMZLAbVg==}
+    engines: {node: '>=18'}
+
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
@@ -5097,6 +5075,10 @@ packages:
     resolution: {integrity: sha512-weP+BZ8MVNnlCm8c0Qdc1WSWq4Qn7I+9CJGm7Qali6g44e/PUzbjNqJX5NJ9ljlNMosfJvg1fKEGILklK9cwnw==}
     engines: {node: '>=18'}
 
+  p-event@6.0.1:
+    resolution: {integrity: sha512-Q6Bekk5wpzW5qIyUP4gdMEujObYstZl6DMMOSenwBvV0BlE5LkDwkjs5yHbZmdCEq2o4RJx4tE1vwxFVf2FG1w==}
+    engines: {node: '>=16.17'}
+
   p-limit@2.3.0:
     resolution: {integrity: sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==}
     engines: {node: '>=6'}
@@ -5112,6 +5094,10 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
+
+  p-timeout@6.1.4:
+    resolution: {integrity: sha512-MyIV3ZA/PmyBN/ud8vV9XzwTrNtR4jFrObymZYnZqMmW0zA8Z17vnT0rBgFE/TlohB+YCHqXMgZzb3Csp49vqg==}
+    engines: {node: '>=14.16'}
 
   p-try@2.2.0:
     resolution: {integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==}
@@ -5716,6 +5702,10 @@ packages:
     resolution: {integrity: sha512-SlyRoSkdh1dYP0PzclLE7r0M9sgbFKKMFXpFRUMNuKhQSbC6VQIGzq3E0qsfvGJaUFJPGv6Ws1NZ/haTAjfbMA==}
     engines: {node: '>=12'}
 
+  super-regex@1.1.0:
+    resolution: {integrity: sha512-WHkws2ZflZe41zj6AolvvmaTrWds/VuyeYr9iPVv/oQeaIoVxMKaushfFWpOGDT+GuBrM/sVqF8KUCYQlSSTdQ==}
+    engines: {node: '>=18'}
+
   systeminformation@5.33.10:
     resolution: {integrity: sha512-/NXbMVASt2UbSVgmWto4aBTIAeuYY7zOELpZybmNxqpsrbo5uYHpuEPf5nkyrPng0uG5YOb+Yv6s0FyKY4mDQg==}
     engines: {node: '>=10.0.0'}
@@ -5731,6 +5721,10 @@ packages:
   tapable@2.3.3:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
+
+  time-span@5.1.0:
+    resolution: {integrity: sha512-75voc/9G4rDIJleOo4jPvN4/YC4GRZrY8yy1uU4lwrB3XEQbWve8zXoO5No4eFrGcTAMYyoY67p8jRQdtA1HbA==}
+    engines: {node: '>=12'}
 
   tiny-invariant@1.3.3:
     resolution: {integrity: sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==}
@@ -6006,6 +6000,9 @@ packages:
   w3c-xmlserializer@6.0.0:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
+
+  web-worker@1.5.0:
+    resolution: {integrity: sha512-RiMReJrTAiA+mBjGONMnjVDP2u3p9R1vkcGz6gDIrOMT3oGuYwX2WRMYI9ipkphSuE5XKEhydbhNEJh4NY9mlw==}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
@@ -6874,11 +6871,6 @@ snapshots:
       leaflet: 1.9.4
       lodash: 4.18.1
       polyclip-ts: 0.16.8
-
-  '@gsap/react@2.1.2(gsap@3.15.0)(react@19.3.0)':
-    dependencies:
-      gsap: 3.15.0
-      react: 19.3.0
 
   '@hono/node-server@2.1.1(hono@4.13.7)':
     dependencies:
@@ -8412,6 +8404,8 @@ snapshots:
       '@simple-libs/stream-utils': 2.0.0
       argue-cli: 3.2.0
 
+  convert-hrtime@5.0.0: {}
+
   convert-source-map@2.0.0: {}
 
   cookie-signature@1.2.2: {}
@@ -8821,6 +8815,30 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  eslint-plugin-unicorn@74.0.0(eslint@10.12.0(jiti@2.7.0)):
+    dependencies:
+      '@eslint-community/eslint-utils': 4.10.1(eslint@10.12.0(jiti@2.7.0))
+      '@eslint/css-tree': 4.1.1
+      browserslist: 4.29.3
+      change-case: 5.4.4
+      ci-info: 4.4.0
+      core-js-compat: 3.50.0
+      detect-indent: 7.0.2
+      entities: 8.1.0
+      eslint: 10.12.0(jiti@2.7.0)
+      find-up-simple: 1.0.1
+      globals: 17.13.0
+      indent-string: 5.0.0
+      is-builtin-module: 5.0.0
+      is-identifier: 1.1.0
+      pluralize: 8.0.0
+      quote-js-string: 0.1.0
+      regjsparser: 0.13.4
+      reserved-identifiers: 1.2.0
+      semver: 7.8.5
+      strip-indent: 4.1.1
+      yaml: 2.9.1
+
   eslint-plugin-unicorn@77.0.0(eslint@10.12.0(jiti@2.7.0)):
     dependencies:
       '@eslint-community/eslint-utils': 4.10.1(eslint@10.12.0(jiti@2.7.0))
@@ -9092,6 +9110,8 @@ snapshots:
 
   function-bind@1.1.2: {}
 
+  function-timeout@1.0.2: {}
+
   fuzzysort@3.1.0: {}
 
   gensync@1.0.0-beta.2: {}
@@ -9150,8 +9170,6 @@ snapshots:
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
-
-  gsap@3.15.0: {}
 
   has-symbols@1.1.0: {}
 
@@ -9293,6 +9311,11 @@ snapshots:
     dependencies:
       is-extglob: 2.1.1
 
+  is-identifier@1.1.0:
+    dependencies:
+      identifier-regex: 1.1.0
+      super-regex: 1.1.0
+
   is-in-ssh@1.0.0: {}
 
   is-inside-container@1.0.0:
@@ -9428,10 +9451,6 @@ snapshots:
       leaflet: 1.9.4
 
   leaflet@1.9.4: {}
-
-  lenis@1.3.26(react@19.3.0):
-    optionalDependencies:
-      react: 19.3.0
 
   levn@0.4.1:
     dependencies:
@@ -9606,6 +9625,12 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
+  make-asynchronous@1.1.0:
+    dependencies:
+      p-event: 6.0.1
+      type-fest: 4.41.0
+      web-worker: 1.5.0
+
   math-intrinsics@1.1.0: {}
 
   mdast-util-to-hast@13.2.1:
@@ -9778,6 +9803,10 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
+  p-event@6.0.1:
+    dependencies:
+      p-timeout: 6.1.4
+
   p-limit@2.3.0:
     dependencies:
       p-try: 2.2.0
@@ -9793,6 +9822,8 @@ snapshots:
   p-locate@5.0.0:
     dependencies:
       p-limit: 3.1.0
+
+  p-timeout@6.1.4: {}
 
   p-try@2.2.0: {}
 
@@ -10450,6 +10481,12 @@ snapshots:
 
   strip-indent@4.1.1: {}
 
+  super-regex@1.1.0:
+    dependencies:
+      function-timeout: 1.0.2
+      make-asynchronous: 1.1.0
+      time-span: 5.1.0
+
   systeminformation@5.33.10: {}
 
   tabbable@6.5.0: {}
@@ -10457,6 +10494,10 @@ snapshots:
   tailwindcss@4.3.3: {}
 
   tapable@2.3.3: {}
+
+  time-span@5.1.0:
+    dependencies:
+      convert-hrtime: 5.0.0
 
   tiny-invariant@1.3.3: {}
 
@@ -10702,6 +10743,8 @@ snapshots:
   w3c-xmlserializer@6.0.0:
     dependencies:
       xml-name-validator: 5.0.0
+
+  web-worker@1.5.0: {}
 
   webidl-conversions@8.0.1: {}
 
