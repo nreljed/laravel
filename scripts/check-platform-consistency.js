@@ -73,19 +73,17 @@ for (const app of reachable) {
  * composer side: composer.lock "packages" (+ "packages-dev").
  * npm side: top-level node_modules/<name in package-lock packages>.
  */
+// Only nreljed/* packages are strictly enforced across all consumers.
+// Framework deps (laravel/framework, symfony/*, etc.) are managed by Renovate
+// per-repo and minor version differences are acceptable. Enforcing strict
+// parity on every framework dep causes false failures when Renovate updates
+// one repo before the others.
 const composerKeyPackages = [
-  "laravel/framework",
-  "inertiajs/inertia-laravel",
-  "tightenco/ziggy",
-  "laravel/sanctum",
-  "laravel/ai",
   "nreljed/platform",
   "nreljed/blog",
-  "phpunit/phpunit",
-  "nunomaduro/collision",
-  "symfony/console",
-  "laravel/telescope",
-  "aws/aws-sdk-php",
+  "nreljed/shop-module",
+  "nreljed/marketing-module",
+  "nreljed/booking-module",
 ];
 
 const npmKeyPackages = [
