@@ -3,16 +3,22 @@
   "extends": ["config:recommended"],
   "groupName": "monorepo-sync",
   "groupSlug": "monorepo-sync",
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": true,
   "packageRules": [
     {
       "matchManagers": ["composer"],
       "groupName": "php-deps",
-      "groupSlug": "php-deps"
+      "groupSlug": "php-deps",
+      "automerge": true
     },
     {
       "matchManagers": ["npm"],
       "groupName": "npm-deps",
-      "groupSlug": "npm-deps"
+      "groupSlug": "npm-deps",
+      "automerge": true
     }
   ]
 }

@@ -10,8 +10,6 @@ enum WorkflowTrigger: string
     case ContactCreated = 'contact_created';
     case PostPublished = 'post_published';
     case OrderPlaced = 'order_placed';
-    case CartAbandoned = 'cart_abandoned';
-    case ProductReviewed = 'product_reviewed';
 
     /**
      * @return list<array{label: string, value: string}>
@@ -30,8 +28,6 @@ enum WorkflowTrigger: string
             self::ContactCreated => 'Contact created',
             self::PostPublished => 'Post published',
             self::OrderPlaced => 'Order placed',
-            self::CartAbandoned => 'Cart abandoned',
-            self::ProductReviewed => 'Product reviewed',
         };
     }
 
@@ -40,6 +36,6 @@ enum WorkflowTrigger: string
      */
     public function isContactEvent(): bool
     {
-        return in_array($this, [self::ContactCreated, self::OrderPlaced, self::CartAbandoned], true);
+        return $this === self::ContactCreated || $this === self::OrderPlaced;
     }
 }
