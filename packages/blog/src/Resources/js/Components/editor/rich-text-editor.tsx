@@ -14,7 +14,6 @@ import { CodeShikiExtension, ShikiTokenizer } from "@lexical/code-shiki";
 import { OverflowExtension } from "@lexical/overflow";
 import { HorizontalRuleExtension, AutoFocusExtension } from "@lexical/extension";
 import { DragonExtension } from "@lexical/dragon";
-import { TRANSFORMERS } from "@lexical/markdown";
 import { type ElementNode } from "lexical";
 import { cn } from "@nreljed/platform/lib/utils";
 import { editorTheme } from "./editor-theme";
@@ -31,6 +30,7 @@ import { SPAN_STYLE_IMPORT } from "./plugins/span-style-import";
 import { YouTubeNode, YouTubeEmbedConfig } from "./youtube/YouTubeNode";
 import { LayoutContainerNode, LayoutItemNode, ColumnsPlugin, LayoutControlsPlugin } from "./layout";
 import { TableOfContentsNode } from "./toc";
+import { BODY_TRANSFORMERS } from "./body-heading";
 
 import { OnChangeEmitter } from "./components/on-change-emitter";
 import { HtmlLoader } from "./components/html-loader";
@@ -189,7 +189,7 @@ export function RichTextEditor({
       <ImagePlugin />
       <ColumnsPlugin />
       <LayoutControlsPlugin />
-      <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+      <MarkdownShortcutPlugin transformers={BODY_TRANSFORMERS} />
       <LexicalAutoEmbedPlugin
         embedConfigs={[YouTubeEmbedConfig]}
         onOpenEmbedModalForConfig={() => {}}

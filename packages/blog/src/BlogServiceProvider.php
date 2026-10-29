@@ -71,7 +71,12 @@ class BlogServiceProvider extends ServiceProvider implements FeatureProvider
 
     protected function loadPublicRoutes(): void
     {
-        Route::middleware(['web'])
+        // `maintenance` gates the reader-facing blog. The platform's marketing
+        // pages have carried it since the package was split; the blog did not,
+        // so a visitor reached posts (and the DB behind them) during a
+        // maintenance window. Admins bypass the middleware, so previews and
+        // scheduled-publish checks keep working for whoever is running it.
+        Route::middleware(['web', 'maintenance'])
             ->prefix('blog')
             ->group(__DIR__.'/Routes/public.php');
     }

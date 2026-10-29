@@ -22,6 +22,7 @@ class Contact extends Model
 
     protected $fillable = [
         'email',
+        'user_id',
         'first_name',
         'last_name',
         'phone',
@@ -38,6 +39,9 @@ class Contact extends Model
         'suppressed_at',
         'bounce_count',
         'last_bounced_at',
+        'total_spent',
+        'order_count',
+        'last_order_at',
     ];
 
     protected $casts = [
@@ -52,6 +56,9 @@ class Contact extends Model
         'suppressed_at' => 'datetime',
         'bounce_count' => 'integer',
         'last_bounced_at' => 'datetime',
+        'total_spent' => 'decimal:2',
+        'order_count' => 'integer',
+        'last_order_at' => 'datetime',
         'status' => ContactStatus::class,
     ];
 

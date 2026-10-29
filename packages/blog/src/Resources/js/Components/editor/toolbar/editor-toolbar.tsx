@@ -41,7 +41,6 @@ import {
   ListOrdered,
   Undo2,
   Redo2,
-  Heading1,
   Heading2,
   Heading3,
   Quote,
@@ -235,7 +234,6 @@ type BlockOption = {
 
 const BLOCK_OPTIONS: BlockOption[] = [
   { value: "paragraph", label: "Normal", icon: Type, shortcut: "Ctrl+Alt+0" },
-  { value: "h1", label: "Heading 1", icon: Heading1, shortcut: "Ctrl+Alt+1" },
   { value: "h2", label: "Heading 2", icon: Heading2, shortcut: "Ctrl+Alt+2" },
   { value: "h3", label: "Heading 3", icon: Heading3, shortcut: "Ctrl+Alt+3" },
   { value: "bullet", label: "Bullet List", icon: List, shortcut: "Ctrl+Shift+8" },

@@ -39,17 +39,6 @@ export function KeyboardShortcutsPlugin() {
         return;
       }
 
-      if (mod && altKey && key === "1") {
-        event.preventDefault();
-        editor.update(() => {
-          const selection = $getSelection();
-          if ($isRangeSelection(selection)) {
-            $setBlocksType(selection, () => $createHeadingNode("h1"));
-          }
-        });
-        return;
-      }
-
       if (mod && altKey && key === "2") {
         event.preventDefault();
         editor.update(() => {

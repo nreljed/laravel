@@ -321,6 +321,26 @@ final class WorkflowEngineTest extends TestCase
         $this->assertSame(WorkflowRunStatus::Success, WorkflowRun::query()->where('step_index', 1)->first()->status);
     }
 
+    public function test_it_runs_a_workflow_when_an_order_is_placed(): void
+    {
+        $contact = Contact::create(['email' => 'buyer@example.test', 'status' => ContactStatus::Lead]);
+        $tag = Tag::create(['name' => 'Buyer', 'slug' => 'buyer']);
+        $workflow = Workflow::create([
+            'name' => 'Tag new buyers',
+            'trigger' => WorkflowTrigger::OrderPlaced,
+            'action' => WorkflowAction::AddTag,
+            'tag_id' => $tag->id,
+            'is_active' => true,
+        ]);
+
+        (new WorkflowEngine)->orderPlaced($contact, ['order_number' => 'ORD-1', 'total' => 42.5]);
+
+        $this->assertTrue($contact->fresh()->tags->contains('id', $tag->id));
+        $this->assertSame(1, $workflow->fresh()->run_count);
+        $this->assertSame(1, WorkflowRun::query()->count());
+        $this->assertSame('order_placed', WorkflowRun::query()->first()->event);
+    }
+
     private function workflow(WorkflowAction $action, array $attributes = []): Workflow
     {
         return Workflow::create($attributes + [

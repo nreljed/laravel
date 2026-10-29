@@ -9,8 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->index('user_id');
-            $table->index(['status', 'published_at'], 'posts_status_published_at_index');
+            if (! Schema::hasIndex('posts', 'posts_user_id_index')) {
+                $table->index('user_id');
+            }
+            if (! Schema::hasIndex('posts', 'posts_status_published_at_index')) {
+                $table->index(['status', 'published_at'], 'posts_status_published_at_index');
+            }
         });
     }
 

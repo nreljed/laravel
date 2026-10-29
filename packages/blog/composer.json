@@ -1,7 +1,7 @@
 {
     "name": "nreljed/blog",
     "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-    "version": "0.1.2",
+    "version": "0.1.6",
     "type": "library",
     "license": "proprietary",
     "authors": [

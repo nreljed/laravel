@@ -25,6 +25,7 @@ class Campaign extends Model
 
     protected $fillable = [
         'marketing_plan_id',
+        'product_id',
         'name',
         'description',
         'objective',

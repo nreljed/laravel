@@ -9,6 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('post_tags', function (Blueprint $table) {
+            if (Schema::hasColumn('post_tags', 'description')) {
+                return;
+            }
             $table->text('description')->nullable()->after('slug');
         });
     }
