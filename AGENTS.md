@@ -69,7 +69,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 | ------------- | ----------------------------- | --------------------------------- |
 | Backend       | Laravel                       | 13.x (PHP 8.4+)                   |
 | Frontend      | React                         | 19.2                              |
-| SPA Bridge    | Inertia.js                    | 3.6                               |
+| SPA Bridge    | Inertia.js                    | 3.7                               |
 | Build         | Vite                          | 8.x                               |
 | Language      | TypeScript                    | 6.x                               |
 | Styling       | Tailwind CSS                  | 4.x                               |
@@ -79,7 +79,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 | Database      | SQLite (local) / MySQL (prod) | —                                 |
 | Notifications | Laravel Notifications         | database channel                  |
 | Routing (JS)  | Ziggy                         | 2.6                               |
-| AI SDK        | Laravel AI                    | 0.9                               |
+| AI SDK        | Laravel AI                    | 0.10                              |
 | AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8                         |
 
 ## Code Style
@@ -478,7 +478,7 @@ php artisan permissions:list          # List all permissions
 php artisan app:create-admin           # Bootstrap/update admin user
 ```
 
-The pre-commit hook (lint-staged) is **scoped to mono-owned files only** — `resources/js/**`,
+The pre-commit hook (lint-staged) is **scoped to app-shell files only** - `resources/js/**`,
 `app/**` for TS/TSX eslint+prettier, and `{app,bootstrap,config,database,routes,tests,resources}/**`
 for Pint. `packages/**` and `apps/**` are excluded from the root lint-staged AND root ESLint
 (`eslint.config.js` `ignores`) — those trees are owned by their own repos/apps and run their own
