@@ -88,9 +88,8 @@ export default [
         ...globals.browser,
       },
     },
-    ...reactRecommended,
     plugins: {
-      ...reactRecommended.plugins,
+      "@eslint-react": eslintReact,
       "react-hooks": pluginReactHooks,
     },
     rules: {
