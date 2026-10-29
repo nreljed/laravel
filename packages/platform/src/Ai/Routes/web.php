@@ -20,5 +20,6 @@ Route::post('/ai-keys', [AiProviderController::class, 'store'])->name('store');
 Route::post('/ai-keys/test', [AiProviderController::class, 'test'])->name('test');
 Route::get('/ai-keys/usage', [AiProviderController::class, 'usage'])->name('usage');
 Route::put('/ai-keys/usage-cap', [AiProviderController::class, 'usageCap'])->name('usage-cap');
+Route::post('/ai-keys/{aiProvider}/test', [AiProviderController::class, 'testStored'])->name('test-stored');
 Route::put('/ai-keys/{aiProvider}', [AiProviderController::class, 'update'])->name('update');
 Route::delete('/ai-keys/{aiProvider}', [AiProviderController::class, 'destroy'])->name('destroy');

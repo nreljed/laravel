@@ -1,0 +1,787 @@
+import type { ReactNode, ComponentType } from "react";
+import type { CellData, ColumnDef, HeaderContext } from "@tanstack/react-table";
+import type { BulkAction } from "../Components/ui/data-table";
+import type { AppTableFeatures } from "./table-features";
+
+/**
+ * The context TanStack hands a column `header`. Its first type parameter is the
+ * feature set, so it has to be `AppTableFeatures` - spelling `HeaderContext`
+ * with only the row type yields a bare `Column_Core`, which is not assignable to
+ * the `Column` that `DataTableColumnHeader` wants.
+ */
+export type ResourceHeaderContext<TData extends ResourceRecord> = HeaderContext<AppTableFeatures, TData, CellData>;
+
+/**
+ * A declarative description of an admin CRUD resource.
+ *
+ * The point of this file is that an admin screen should be *data* - a list of
+ * columns, a list of fields, a list of relations - and not a component. Every
+ * admin page in the platform and in its consumers re-implements the same
+ * twenty lines: a row interface, a `columns` literal, a `useState` for the
+ * delete target, a `<DataTable>` with four props wired to the same names, and
+ * `router.delete()` with a toast. That is the boilerplate `ResourceIndex` and
+ * `ResourceForm` exist to delete, and this module is the shape they read.
+ *
+ * It is a schema, not an ORM. Nothing here talks to a database or infers
+ * anything: a resource is declared by hand, and the runtime renders exactly
+ * what was declared. Where a declaration is wrong the page is wrong in an
+ * obvious place, which is the failure mode we want - a framework that guesses
+ * wrong is worse than no framework.
+ *
+ * Scope boundary: this describes *rendering*. Persistence stays with Inertia
+ * `router` calls and the app's own controllers, exactly as it is for the
+ * hand-written pages today. There is no generic store, no autosave, and no
+ * attempt to become a query layer.
+ */
+
+/** The record shape a resource operates on. Indexes are read, forms are written. */
+export type ResourceRecord = Record<string, unknown>;
+
+/**
+ * Field types. Every one of these except `dynamic` has a built-in control
+ * registered in `Components/resources/fields`. `dynamic` defers to the field's
+ * own `render` and exists so a resource can carry a bespoke control without
+ * the consuming app having to register a type under its own name first.
+ */
+export type FieldType =
+    | "text"
+    | "textarea"
+    | "number"
+    | "money"
+    | "select"
+    | "boolean"
+    | "date"
+    | "datetime"
+    | "slug"
+    | "json"
+    | "media"
+    | "password"
+    | "hidden"
+    | "relation"
+    | "checkboxList"
+    | "nested"
+    | "dynamic";
+
+export interface FieldOption {
+    label: string;
+    value: string | number;
+}
+
+/** Everything a control needs to render itself, supplied by the runtime. */
+export interface FieldContext {
+    /** Current form value, typed as unknown because the schema is untyped data. */
+    value: unknown;
+    /** Assign a new value to this field. Called with whatever the control produced. */
+    setValue: (value: unknown) => void;
+    /**
+     * Write any key in the form, not just this field's. Needed by controls that
+     * own more than one value - `money` keeps a currency beside its amount.
+     */
+    setField: (path: string, value: unknown) => void;
+    /** Server validation message for this field, if any. */
+    error?: string;
+    /**
+     * The whole validation bag, for a control that resolves sub-field errors
+     * itself - a `nested` field's rows surface server messages keyed
+     * `field.0.sub_field` and need more than the single `error` above.
+     */
+    errors?: Record<string, string>;
+    disabled?: boolean;
+    /** The whole record, for `visibleWhen` and custom renderers. */
+    record: ResourceRecord;
+    field: FieldDefinition;
+}
+
+export interface FieldDefinition {
+    /** Form/column key. Dotted paths (`shipping.address.city`) are read, not written. */
+    name: string;
+    type: FieldType;
+    /** Human label. Falls back to a title-cased `name`. */
+    label?: string;
+    required?: boolean;
+    /** Helper text under the control. */
+    help?: string;
+    placeholder?: string;
+    options?: FieldOption[];
+    /**
+     * Static or lazy option source for `relation` fields (and the currency
+     * list on `money`). A serialized PHP descriptor always passes a route
+     * *name* here; `toResource()` resolves it against Ziggy, so the runtime
+     * definition holds a URL. A TS-side resource may set a URL directly. GET
+     * must return `{ value, label }[]`.
+     */
+    optionsUrl?: string;
+    /**
+     * Upload endpoint for the `media` control, as a route name (serialized
+     * descriptors) or a URL (TS-side resources). `toResource()` resolves names
+     * against Ziggy. POST the file as `file`; expect `{ url, path }`.
+     */
+    uploadUrl?: string;
+    /** Delete endpoint for the `media` control. DELETE `{ path }`; best-effort. */
+    deleteUrl?: string;
+    /** Media-library folder the picker's "From Library" dialog browses. */
+    subdirectory?: string;
+    /** Render a multi-image gallery (`GalleryUploader`) instead of a single picker. */
+    multiple?: boolean;
+    /** Maximum images a `multiple` media gallery accepts (defaults to the uploader's 20). */
+    maxImages?: number;
+    /**
+     * Companion field that mirrors the gallery's cover image, for a `multiple`
+     * media field. `GalleryUploader` treats the first image as the cover, so
+     * "set cover" writes that image's URL into the named sibling field while the
+     * reorder itself keeps carrying the position.
+     *
+     * This is what lets a record keep the cover as a URL of its own - a
+     * product's `thumbnail_url` beside its `gallery` - declaratively, rather than
+     * through a hand-built uploader that has to re-implement "set cover".
+     */
+    featuredField?: string;
+    /**
+     * Sub-field schema for a `nested` field: a reorderable row list where each
+     * row holds the same sub-fields, and every sub-field renders through the
+     * same registry this module feeds. The value is `Array<Record<string, unknown>>`
+     * (the rows, in display order); the owning controller diffs them against
+     * what it persisted (a child row keeps an `id` for that diff).
+     *
+     * A row's sub-fields accept any registered type, so a nested row can carry
+     * a `money` override, a `relation` picker or a `media` gallery exactly as
+     * a top-level field can - the shipping-zone `methods` pivot and an
+     * attribute's reorderable `terms` are the two shapes this was built for.
+     */
+    rows?: FieldDefinition[];
+    /** For `nested`: the sub-field whose value titles each row (accordeon header). */
+    rowTitleField?: string;
+    defaultValue?: unknown;
+    /** Grid span within a section. 1-4; defaults to 1. */
+    colSpan?: 1 | 2 | 3 | 4;
+    /** Hidden fields are rendered but not shown - used for ids and tokens. */
+    hidden?: boolean;
+    /** Conditional visibility, re-evaluated on every render. */
+    visibleWhen?: (record: ResourceRecord) => boolean;
+    /**
+     * Escape hatch for a type the registry does not cover. Preferred over
+     * registering a global field type, because it keeps the exception next to
+     * the field that needs it.
+     */
+    render?: (context: FieldContext) => ReactNode;
+    /**
+     * Outbound coercion, applied on submit. Use for values the control cannot
+     * express directly - trimming, blank-to-null, string-to-number.
+     */
+    serialize?: (value: unknown) => unknown;
+}
+
+export interface FieldControlProps extends FieldContext {
+    id: string;
+    name: string;
+    disabled: boolean;
+}
+
+/** A column in a resource's index. Thin wrapper over TanStack's `ColumnDef`. */
+export interface ResourceColumn<TData extends ResourceRecord = ResourceRecord> {
+    /** Accessor key, or a custom `cell` when the value is not directly on the row. */
+    name?: keyof TData & string;
+    /**
+     * Identity for a column that reads no single row field - a display-only
+     * column whose `cell` composes several of them, or whose `name` is not a
+     * path into the row at all. Mirrors TanStack's own `id`: giving it omits
+     * `accessorKey`, so the column has no resolved value and no sort state,
+     * which is what a display-only column wants.
+     */
+    id?: string;
+    header?: string;
+    /**
+     * Custom header renderer. Receives the same context TanStack hands a
+     * `header` function - `{ column, table, ... }` - so a sortable header is
+     * `({ column }) => <DataTableColumnHeader column={column} title="Name" />`.
+     * Omit it to get a plain label.
+     */
+    headerCell?: ReactNode | ((context: ResourceHeaderContext<TData>) => ReactNode);
+    /** Cell renderer. Receives the row; `value` is the column's resolved value. */
+    cell?: (row: TData, value: unknown) => ReactNode;
+    /** CSS class applied to both header and body cells (TanStack v9 has no `className`). */
+    className?: string;
+    sortable?: boolean;
+    /** Whether the column appears in the toolbar's view dropdown. */
+    hideable?: boolean;
+    /** Right-aligned, for money and counts. */
+    align?: "left" | "right" | "center";
+}
+
+export interface ResourceFilter {
+    key: string;
+    title?: string;
+    options: { label: string; value: string }[];
+}
+
+export interface ResourceRowAction<TData extends ResourceRecord = ResourceRecord> {
+    label: string;
+    /** Resolve the Inertia route for a row, e.g. (row) => `admin/products/${row.id}/edit`. */
+    route?: (row: TData) => string;
+    /** HTTP verb the route resolves to. Non-`get` actions submit, they do not navigate. */
+    method?: "get" | "post" | "put" | "patch" | "delete";
+    /** Destructive actions get a confirm dialog and destructive styling. */
+    destructive?: boolean;
+    /**
+     * Confirm-dialog message for non-destructive actions that deserve a second
+     * look (approve, publish, regenerate). Opens the same dialog `destructive`
+     * does, with the action's own copy instead of "This cannot be undone."
+     */
+    confirm?: string;
+    /** Serialized PHP descriptors declare this instead of `route`; `toResource()` resolves it. */
+    routeName?: string;
+    /** Show this action at all - lets a row gate its own menu. */
+    show?: (row: TData) => boolean;
+    icon?: ComponentType<{ className?: string }>;
+}
+
+/**
+ * A button rendered next to Create in the table header, for the actions a
+ * resource owns that are neither row-scoped nor bulk-scoped: export a CSV,
+ * import one, sync with a provider.
+ *
+ * `fileInput: true` turns the button into a hidden file picker that POSTs the
+ * chosen file as multipart FormData (the CSRF token rides along in the
+ * `X-CSRF-TOKEN` header), which is what a CSV import needs - a plain link
+ * cannot carry a file.
+ */
+export interface ResourceHeaderAction {
+    label: string;
+    /** Serialized PHP descriptors declare this instead of `route`; `toResource()` resolves it. */
+    routeName?: string;
+    /** TS-side resources resolve their own URL. */
+    route?: string;
+    method?: "get" | "post";
+    /** Render a hidden file input and POST the selection as multipart. */
+    fileInput?: boolean;
+    /** `accept` attribute for the file input, e.g. `.csv,text/csv`. */
+    accept?: string;
+    /** Ask before sending. */
+    confirm?: string;
+    /** Icon to render in the button, if desired. */
+    icon?: ComponentType<{ className?: string }>;
+}
+
+/**
+ * A bulk action plus the input it needs. A PHP descriptor serializes this
+ * whole shape: an action that only needs a value ("delete") declares no
+ * `fields`, while one that needs data ("assign categories") declares the same
+ * `FieldDefinition` list a form uses, and the kernel renders it in a dialog.
+ *
+ * `show` stays TS-only - it is a predicate over the current selection.
+ */
+export interface ResourceBulkAction extends Omit<BulkAction, "show"> {
+    /** Fields collected in a dialog before the action is POSTed. */
+    fields?: FieldDefinition[];
+    /**
+     * Heading for the input dialog. Defaults to `label` with a trailing ellipsis
+     * stripped, because a menu label that ends in `...` ("Add Categories...")
+     * is announcing that *something else* opens - reusing it verbatim as the
+     * dialog's own title reads as though the dialog is still pending.
+     */
+    dialogTitle?: string;
+    /** Gate the action on the current selection (TS-only; not serializable). */
+    show?: (selectedStatuses: string[]) => boolean;
+}
+
+export interface ResourceTable<TData extends ResourceRecord = ResourceRecord> {
+    columns: ResourceColumn<TData>[];
+    /** Column the toolbar search box filters on. */
+    searchKey?: string;
+    /**
+     * Multi-column toolbar search: rows matching *any* listed key are kept.
+     * Where `searchKey` is a single column filter, `searchKeys` ORs the terms
+     * across the listed columns, which a single column filter cannot do.
+     */
+    searchKeys?: string[];
+    searchPlaceholder?: string;
+    filters?: ResourceFilter[];
+    /** Route name bulk actions POST to as `{action, selected_ids, ...values}`. */
+    bulkEndpoint?: string;
+    bulkActions?: ResourceBulkAction[];
+    /** Header-level actions (export, import, sync) rendered beside Create. */
+    headerActions?: ResourceHeaderAction[];
+    /** Row dropdown, appended after edit/delete. */
+    rowActions?: ResourceRowAction<TData>[];
+    defaultPageSize?: number;
+    pageSizeOptions?: number[];
+    emptyState?: ReactNode;
+    loading?: boolean;
+}
+
+export interface ResourceSection {
+    title?: string;
+    description?: string;
+    fields: FieldDefinition[];
+}
+
+/**
+ * A child table belonging to a resource - the generalisation of the 1,491-line
+ * `VariationsManager`, reduced to a declaration.
+ *
+ * Deliberately excludes drag-reorder: that is a `@dnd-kit` concern specific to
+ * ordered children, and folding it in here would make every relation pay for
+ * it. A relation that is ordered declares its own reorder handler; the table
+ * below does the parts every relation shares.
+ */
+export interface ResourceRelation {
+    /** React component rendered inside the parent's form. */
+    component: ComponentType<RelationProps>;
+    /** Stable key, used for the section heading and for tests. */
+    key: string;
+    title?: string;
+    description?: string;
+}
+
+export interface RelationProps {
+    /** The parent record being edited. */
+    record: ResourceRecord;
+    /** Errors keyed the same way the parent's are. */
+    errors: Record<string, string>;
+    /**
+     * Write into the parent form - the same primitive `FieldContext` hands a
+     * field. A relation that owns its state still has to project the part of it
+     * the parent persists: a variations manager saves every variation through
+     * its own endpoint and writes only `default_attributes` here, and an
+     * attribute list is published back the same way.
+     *
+     * There is no "flush at submit" hook, so a relation calls this on each
+     * change instead - that is what keeps the parent's payload from serializing
+     * a stale value for a section the user already edited.
+     */
+    setField: (path: string, value: unknown) => void;
+}
+
+export interface ResourceDefinition<TData extends ResourceRecord = ResourceRecord> {
+    /** Unique key, e.g. "shop/products". Used for testids and registry lookups. */
+    key: string;
+    label: string;
+    /** Singular label, used in headings and toasts. */
+    singular?: string;
+    table?: ResourceTable<TData>;
+    /** Form sections, in render order. */
+    form?: ResourceSection[];
+    relations?: ResourceRelation[];
+    /** Inertia route helpers, kept on the definition so a page declares them once. */
+    routes?: {
+        index?: string;
+        create?: string;
+        store?: string;
+        edit?: (row: TData) => string;
+        update?: (row: TData) => string;
+        destroy?: (row: TData) => string;
+    };
+}
+
+/**
+ * Identity function whose real job is the generic parameterisation. Without an
+ * explicit annotation a literal's `cell` callbacks widen to `ResourceRecord`
+ * and every call site loses its row type, which is the whole reason a resource
+ * would declare one.
+ */
+export function defineResource<TData extends ResourceRecord = ResourceRecord>(
+    definition: ResourceDefinition<TData>,
+): ResourceDefinition<TData> {
+    return definition;
+}
+
+/** Declare a relation table. See `ResourceRelation` for the ordering caveat. */
+export function relation(definition: ResourceRelation): ResourceRelation {
+    return definition;
+}
+
+/**
+ * Translate a declarative column into the TanStack `ColumnDef` `DataTable`
+ * expects. Kept here rather than in the component so the translation is
+ * testable without rendering a table.
+ */
+export function toColumnDef<TData extends ResourceRecord>(column: ResourceColumn<TData>): ColumnDef<AppTableFeatures, TData, CellData> {
+    const alignment =
+        column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : "text-left";
+
+    // `declared` narrows to the function member in the first branch, so the
+    // context TanStack supplies is passed straight through - no cast, and the
+    // declaration's own signature is what a consumer is checked against. A
+    // non-function `headerCell` stays a function returning the node, because
+    // TanStack reads a non-function header as a plain string label.
+    const declared = column.headerCell;
+
+    const translated = {
+        id: column.id ?? column.name,
+        // Only an accessor-backed column gets `accessorKey`; a display-only
+        // `id` stays valueless so TanStack reports it as unsortable instead of
+        // sorting a field that does not exist.
+        accessorKey: column.name,
+        header: declared
+            ? typeof declared === "function"
+                ? (context: ResourceHeaderContext<TData>) => declared(context)
+                : () => declared
+            : column.header,
+        enableSorting: column.sortable ?? true,
+        enableHiding: column.hideable ?? true,
+        meta: {
+            className: [alignment, column.className].filter(Boolean).join(" "),
+        },
+    };
+
+    // Only write `cell` when the declaration supplies one. Assigning
+    // `cell: undefined` would overwrite TanStack's default cell renderer
+    // (`renderValue()`), leaving every column without a custom cell blank.
+    if (column.cell) {
+        (translated as Record<string, unknown>).cell = (context: { row: { original: TData } }) =>
+            column.cell!(context.row.original, (context.row.original as ResourceRecord)[column.name as string]);
+    }
+
+    return translated as ColumnDef<AppTableFeatures, TData, CellData>;
+}
+
+/** Flatten sections into the single field list a control lookup needs. */
+export function flattenFields(sections: ResourceSection[] | undefined): FieldDefinition[] {
+    return (sections ?? []).flatMap((section) => section.fields);
+}
+
+/** "created_at" -> "Created at", for fields that declare no label. */
+export function humanizeFieldName(name: string): string {
+    const tail = name.split(".").pop() ?? name;
+
+    return tail
+        .replace(/[_-]+/g, " ")
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .replace(/^./, (character) => character.toUpperCase());
+}
+
+/**
+ * Read a possibly-dotted path off a record. Dotted names are read-only: the
+ * runtime writes flat keys, because a form that can silently create
+ * `a.b.c` on submit is a form that can silently drop data.
+ */
+export function readPath(record: ResourceRecord, path: string): unknown {
+    return path.split(".").reduce<unknown>((value, segment) => {
+        if (value && typeof value === "object") {
+            return (value as ResourceRecord)[segment];
+        }
+
+        return undefined;
+    }, record);
+}
+
+/** Whether a field should render, honouring `visibleWhen` and `hidden`. */
+export function isFieldVisible(field: FieldDefinition, record: ResourceRecord): boolean {
+    if (field.hidden) {
+        return true;
+    }
+
+    return field.visibleWhen ? field.visibleWhen(record) : true;
+}
+
+/*
+ * ─── Serialized descriptor bridge (kernel §5.2) ───────────────────────────
+ *
+ * A PHP `ResourceDefinition` (`src/Support/ResourceDefinition.php`) serializes
+ * to `SerializedResource` and arrives as an Inertia page prop. `toResource()`
+ * rehydrates it into the runtime `ResourceDefinition` the generic
+ * `dashboard/admin/resources/{index,form}` pages render.
+ *
+ * The bridge is lossy on purpose:
+ *  - `relations` are dropped — a PHP descriptor can never carry a React
+ *    component, so a serialized "relation" is a stub, not a row of the
+ *    VariationsManager. Live side-car tables stay in the owning feature's own
+ *    page (or an `extra` prop its controller passes next to the descriptor).
+ *  - `edit`/`update`/`destroy` become URL builders bound to the record route
+ *    param the descriptor declares (`recordParam`, defaulting to `record` to
+ *    match `ResourceRenderer::RECORD_PARAM`), because the PHP side declares
+ *    only route *names*.
+ */
+
+/** The exact shape `ResourceDefinition::toArray()` (and `fromArray`) emits. */
+export interface SerializedResource {
+    key: string;
+    label: string;
+    singular?: string | null;
+    table?: Record<string, unknown>;
+    form?: Array<Record<string, unknown>>;
+    relations?: Array<Record<string, unknown>>;
+    routes?: Partial<Record<RouteSlot, string | null>>;
+    permissions?: Partial<Record<"view" | "create" | "edit" | "delete", string | null>>;
+    /**
+     * Route parameter record-scoped URLs bind. A feature whose own routes name
+     * it differently (products bind `{product}`) declares it; absent means
+     * `RESOURCE_RECORD_PARAM`.
+     */
+    recordParam?: string | null;
+}
+
+type RouteSlot = "index" | "create" | "store" | "edit" | "update" | "destroy";
+
+/** Default literal route parameter the generic pages bind for record-scoped URLs. */
+export const RESOURCE_RECORD_PARAM = "record";
+
+type RouteRef = (name: string, params?: Record<string, unknown>) => string;
+
+/**
+ * Resolve a route name a serialized descriptor passes for a URL surface
+ * (`optionsUrl`, `uploadUrl`, `deleteUrl`) into a fetchable URL. Values that
+ * already are URLs pass through untouched; an empty or absent value stays
+ * absent.
+ */
+function resolveSerializedUrl(
+    value: unknown,
+    routeRef: RouteRef,
+): string | undefined {
+    if (typeof value !== "string" || value === "") {
+        return undefined;
+    }
+
+    if (value.startsWith("/") || /^https?:\/\//i.test(value)) {
+        return value;
+    }
+
+    return resolveResourceRoute(value, undefined, routeRef) ?? value;
+}
+
+/**
+ * Whether a row matches a toolbar search across any of the listed keys.
+ *
+ * This backs `ResourceTable.searchKeys`: a single column filter would AND the
+ * term across columns, but a search box asking for a name *or* an email wants
+ * OR semantics. `readPath` is reused so dotted accessor keys work identically
+ * on index + toolbar here and on the form.
+ */
+export function rowMatchesSearchKeys(row: ResourceRecord, query: string, keys: string[]): boolean {
+    const needle = query.trim().toLowerCase();
+
+    if (needle === "" || keys.length === 0) {
+        return true;
+    }
+
+    return keys.some((key) => {
+        const value = readPath(row, key);
+
+        return value != null && String(value).toLowerCase().includes(needle);
+    });
+}
+
+/**
+ * Resolve every URL surface on a serialized field - `optionsUrl`, `uploadUrl`
+ * and `deleteUrl` arrive as route names from a PHP descriptor and need to
+ * become URLs - and, for a `nested` field, do the same for each row's
+ * sub-fields, which brings the exact same surfaces through.
+ */
+function resolveField(field: Record<string, unknown>, routeRef: RouteRef): FieldDefinition {
+    const resolved: Record<string, unknown> = { ...field };
+
+    for (const key of ["optionsUrl", "uploadUrl", "deleteUrl"] as const) {
+        const url = resolveSerializedUrl(field[key], routeRef);
+
+        if (url === undefined) {
+            delete resolved[key];
+        } else {
+            resolved[key] = url;
+        }
+    }
+
+    if (field["type"] === "nested" && Array.isArray(field["rows"])) {
+        resolved["rows"] = (field["rows"] as Array<Record<string, unknown>>).map((rowField) =>
+            resolveField(rowField, routeRef),
+        );
+    }
+
+    return resolved as unknown as FieldDefinition;
+}
+
+export function toResource(
+    serialized: SerializedResource,
+    routeRef: RouteRef = (name, params) => route(name, params),
+): ResourceDefinition {
+    const routes = serialized.routes ?? {};
+
+    // A descriptor whose own routes name the parameter (products bind
+    // `{product}`) declares it; everything else keeps the `record` default so
+    // the 14 resources already migrated need no change.
+    const recordParam = typeof serialized.recordParam === "string" && serialized.recordParam.trim() !== ""
+        ? serialized.recordParam.trim()
+        : RESOURCE_RECORD_PARAM;
+
+    const recordUrl = (name: string | null | undefined): ((row: ResourceRecord) => string) | undefined => {
+        return name && name !== "" ? (row) => routeRef(name, { [recordParam]: row.id }) : undefined;
+    };
+
+    const table = serialized.table ?? undefined;
+
+    return {
+        key: serialized.key,
+        label: serialized.label,
+        singular: serialized.singular ?? undefined,
+        table: table
+            ? ({
+                ...table,
+                rowActions: mapSerializedRowActions(table.rowActions, routeRef, recordParam),
+                headerActions: mapSerializedHeaderActions(table.headerActions, routeRef),
+                // A bulk action's `fields` are form fields, so their lazy option
+                // sources need the same route-name resolution the form gets -
+                // otherwise a serialized `optionsUrl` reaches the control as a
+                // route name and its fetch 404s.
+                bulkActions: mapSerializedBulkActions(table.bulkActions, routeRef),
+            } as ResourceTable<ResourceRecord>)
+            : undefined,
+        form: (serialized.form ?? undefined)?.map(
+            (section) =>
+                ({
+                    ...section,
+                    // Relation lazy option sources come through as route names; the
+                    // runtime reads `optionsUrl` as a fetchable URL. A value that
+                    // already is a URL is left alone - the bridge only resolves names.
+                    // Nested rows recurse through the same resolution.
+                    fields: ((section.fields ?? []) as Array<Record<string, unknown>>).map((field) =>
+                        resolveField(field, routeRef),
+                    ),
+                }) as ResourceSection,
+        ),
+        routes: {
+            index: routes.index ?? undefined,
+            create: routes.create ?? undefined,
+            store: routes.store ?? undefined,
+            edit: recordUrl(routes.edit),
+            update: recordUrl(routes.update),
+            destroy: recordUrl(routes.destroy),
+        },
+    };
+}
+
+/** Row-action shape a serialized PHP descriptor emits for `table.rowActions`. */
+interface SerializedRowAction {
+    label: string;
+    routeName?: string;
+    method?: "get" | "post" | "put" | "patch" | "delete";
+    destructive?: boolean;
+    confirm?: string;
+}
+
+/**
+ * Turn `routeName` row actions into runtime `route` builders bound to the
+ * record param. Actions that already carry a `route` (TS-declared) pass
+ * through untouched, so `toResource` is safe against both shapes.
+ */
+export function mapSerializedRowActions(
+    rowActions: unknown,
+    routeRef: RouteRef = (name, params) => route(name, params),
+    recordParam: string = RESOURCE_RECORD_PARAM,
+): ResourceRowAction[] | undefined {
+    if (!Array.isArray(rowActions)) {
+        return undefined;
+    }
+
+    return rowActions.map((declared) => {
+        const action = declared as Partial<SerializedRowAction>;
+
+        if (typeof action.routeName === "string" && action.routeName !== "") {
+            const name = action.routeName;
+            const routeBuilder: (row: ResourceRecord) => string = (row) =>
+                routeRef(name, { [recordParam]: row.id });
+
+            return {
+                label: action.label ?? "",
+                route: routeBuilder,
+                method: action.method ?? "get",
+                ...(action.destructive !== undefined ? { destructive: action.destructive } : {}),
+                ...(typeof action.confirm === "string" && action.confirm !== "" ? { confirm: action.confirm } : {}),
+            };
+        }
+
+        return action as ResourceRowAction;
+    });
+}
+
+/** Header-action shape a serialized PHP descriptor emits for `table.headerActions`. */
+interface SerializedHeaderAction {
+    label: string;
+    routeName?: string;
+    /** Already-resolved URL, for actions declared on the TS side. */
+    route?: string;
+    method?: "get" | "post";
+    fileInput?: boolean;
+    accept?: string;
+    confirm?: string;
+}
+
+/**
+ * Turn `routeName` header actions into resolved URLs. A header action has no
+ * row to bind, so this is a plain one-shot resolution rather than a builder.
+ */
+export function mapSerializedHeaderActions(
+    headerActions: unknown,
+    routeRef: RouteRef = (name, params) => route(name, params),
+): ResourceHeaderAction[] | undefined {
+    if (!Array.isArray(headerActions)) {
+        return undefined;
+    }
+
+    return headerActions.map((declared) => {
+        const action = declared as Partial<SerializedHeaderAction>;
+        // A header action has no row to bind, so a route that requires a
+        // parameter cannot resolve here. Resolve defensively: a descriptor that
+        // names such a route must hide its button, not throw during render and
+        // take the whole index page down with it.
+        const resolved =
+            typeof action.routeName === "string" && action.routeName !== ""
+                ? resolveResourceRoute(action.routeName, undefined, routeRef)
+                : action.route;
+
+        return {
+            label: action.label ?? "",
+            ...(resolved ? { route: resolved } : {}),
+            method: action.method ?? "get",
+            ...(action.fileInput !== undefined ? { fileInput: action.fileInput } : {}),
+            ...(typeof action.accept === "string" && action.accept !== "" ? { accept: action.accept } : {}),
+            ...(typeof action.confirm === "string" && action.confirm !== "" ? { confirm: action.confirm } : {}),
+        };
+    });
+}
+
+/**
+ * Resolve a bulk action's `fields` so a serialized descriptor's lazy option
+ * sources become fetchable URLs. A bulk action's fields are form fields in
+ * every other respect - the same `resolveField` the form path uses, so a
+ * `checkboxList` or `relation` over an `optionsUrl` route name behaves the same
+ * whether it was declared on a form section or a bulk action.
+ */
+export function mapSerializedBulkActions(
+    bulkActions: unknown,
+    routeRef: RouteRef = (name, params) => route(name, params),
+): ResourceBulkAction[] | undefined {
+    if (!Array.isArray(bulkActions)) {
+        return undefined;
+    }
+
+        return (bulkActions as Array<Record<string, unknown>>).map((declared) => {
+        const action = declared as Partial<ResourceBulkAction>;
+
+        return {
+            ...(action as ResourceBulkAction),
+            ...(Array.isArray(action.fields)
+                ? {
+                      fields: (action.fields as unknown as Array<Record<string, unknown>>).map((field) =>
+                          resolveField(field, routeRef),
+                      ),
+                  }
+                : {}),
+        };
+    });
+}
+
+/** Build an admin URL from a declared route name, or `undefined` when unknown. */
+export function resolveResourceRoute(
+    name: string | null | undefined,
+    params?: Record<string, unknown>,
+    routeRef: RouteRef = (planned, plannedParams) => route(planned, plannedParams),
+): string | undefined {
+    if (!name || name === "") {
+        return undefined;
+    }
+
+    try {
+        return routeRef(name, params);
+    } catch {
+        return undefined;
+    }
+}

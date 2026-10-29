@@ -110,13 +110,13 @@ class NotificationTypeRegistry
         return [
             'user.registered' => [
                 'label' => 'New User Registration',
-                'description' => 'When a new user registers on the site.',
+                'description' => 'When a new user registers, notify every admin.',
                 'group' => 'Account',
                 'severity' => 'info',
                 'default_channels' => ['in_app', 'email'],
                 'default_enabled' => true,
                 'required' => true,
-                'email_template' => 'new-user',
+                'email_template' => 'new-user-admin',
             ],
             'user.welcome' => [
                 'label' => 'Welcome Email',
@@ -167,6 +167,16 @@ class NotificationTypeRegistry
                 'default_enabled' => true,
                 'required' => true,
                 'email_template' => 'account-deleted',
+            ],
+            'contact.received' => [
+                'label' => 'Contact Form Message',
+                'description' => 'When a visitor submits the public contact form.',
+                'group' => 'Contact',
+                'severity' => 'info',
+                'default_channels' => ['in_app', 'email'],
+                'default_enabled' => true,
+                'required' => true,
+                'email_template' => 'contact-received',
             ],
             'database.maintenance' => [
                 'label' => 'Database maintenance',

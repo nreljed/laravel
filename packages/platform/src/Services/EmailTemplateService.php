@@ -82,6 +82,29 @@ class EmailTemplateService
         return 'core::email.templates.default';
     }
 
+    /**
+     * Public accessor for the resolved layout view name. Notifications use it
+     * to hand a fully-resolved layout to MailMessage::view() so a project can
+     * override email.layouts.email without forking the notification.
+     */
+    public function layoutView(string $kind = 'email'): string
+    {
+        return $this->resolveLayoutView($kind);
+    }
+
+    /**
+     * Public accessor for the global data merge (siteName/siteUrl/logoUrl/year/
+     * managePreferencesUrl). Notifications pass their layout payload through it
+     * so every email gets the same globals the template service injects.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function globalData(array $data = []): array
+    {
+        return $this->injectGlobalData($data);
+    }
+
     protected function resolveLayoutView(string $kind): string
     {
         // 'email' => shared layout; 'preview' => simulation layout. Prefer a

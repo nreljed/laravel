@@ -69,6 +69,8 @@ export interface ServerGalleryImage {
   alt?: string;
   caption?: string;
   order?: number;
+  size?: number;
+  type?: string;
   attachment_id?: number;
 }
 
@@ -77,6 +79,8 @@ export function toServerFormat(image: GalleryImageDone): ServerGalleryImage {
     url: image.url,
     alt: image.name,
     order: image.progress,
+    size: image.size,
+    type: image.type,
     attachment_id: image.attachment_id,
   };
 }
@@ -85,8 +89,8 @@ export function fromServerFormat(serverImage: ServerGalleryImage, index: number)
   return {
     id: crypto.randomUUID(),
     name: serverImage.alt || `Image ${index + 1}`,
-    size: 0,
-    type: "image/*",
+    size: serverImage.size ?? 0,
+    type: serverImage.type ?? "image/*",
     status: "done",
     url: serverImage.url,
     path: serverImage.url.replace(/^\/storage\//, ""),

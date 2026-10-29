@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Head, Link } from "@inertiajs/react";
 import AdminLayout from "../../../../Layouts/AdminLayout";
 import {
@@ -9,9 +10,12 @@ import {
 } from "../../../../Components/ui/breadcrumb";
 import { AdminSettingsNav } from "../../../../Components/settings/AdminSettingsNav";
 import { SmtpSection } from "../../../../Components/settings/sections/SmtpSection";
+import { TemplateCatalogSection } from "../../../../Components/settings/sections/TemplateCatalogSection";
 import { TemplateSimulationSection } from "../../../../Components/settings/sections/TemplateSimulationSection";
 
 export default function EmailSettings() {
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+
   return (
     <AdminLayout title="Settings">
       <Head title="Email Settings" />
@@ -36,7 +40,16 @@ export default function EmailSettings() {
           <AdminSettingsNav />
           <div className="flex-1 min-w-0 space-y-6">
             <SmtpSection asAccordion />
-            <TemplateSimulationSection asAccordion />
+            <TemplateCatalogSection
+              asAccordion
+              selectedTemplate={selectedTemplate}
+              onSelectTemplate={setSelectedTemplate}
+            />
+            <TemplateSimulationSection
+              asAccordion
+              selectedTemplate={selectedTemplate}
+              onSelectTemplate={setSelectedTemplate}
+            />
           </div>
         </div>
       </div>

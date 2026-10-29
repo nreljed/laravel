@@ -11,7 +11,7 @@ import { AccountSettingsNav } from "../../../Components/account/AccountSettingsN
 import AiKeysSection from "../../../Components/account/sections/AiKeysSection";
 
 interface AiUsageSnapshot {
-  cap: { requests: number; tokens: number };
+  cap: { requests: number; cost_cents: number };
   today: {
     date: string;
     providers: Record<
@@ -20,13 +20,14 @@ interface AiUsageSnapshot {
         requests: number;
         input_tokens: number;
         output_tokens: number;
+        cost_cents: number;
         last_model: string | null;
         last_run_at: string | null;
         last_latency_ms: number | null;
         last_error: string | null;
       }
     >;
-    totals: { requests: number; tokens: number };
+    totals: { requests: number; tokens: number; cost_cents: number };
   };
   all_time: {
     providers: Record<
@@ -35,14 +36,35 @@ interface AiUsageSnapshot {
         requests: number;
         input_tokens: number;
         output_tokens: number;
+        cost_cents: number;
         last_model: string | null;
         last_run_at: string | null;
         last_latency_ms: number | null;
         last_error: string | null;
       }
     >;
-    totals: { requests: number; tokens: number };
+    totals: { requests: number; tokens: number; cost_cents: number };
   };
+}
+
+interface AiProviderRow {
+  id: number;
+  provider: string;
+  provider_name: string;
+  masked_key: string;
+  preferred_model: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_tested_at: string | null;
+  last_test_ok: boolean | null;
+}
+
+interface ProviderConfig {
+  name: string;
+  models: string[];
+  default_model?: string | null;
+  testable?: boolean;
+  capabilities?: string[];
 }
 
 export default function Integrations() {
@@ -74,21 +96,9 @@ export default function Integrations() {
           <AccountSettingsNav />
           <div className="flex-1 min-w-0 space-y-6">
             <AiKeysSection
-              providers={
-                props.aiProviders as Array<{
-                  id: number;
-                  provider: string;
-                  provider_name: string;
-                  masked_key: string;
-                  preferred_model: string | null;
-                  is_active: boolean;
-                  created_at: string;
-                }>
-              }
+              providers={props.aiProviders as AiProviderRow[]}
               supportedProviders={
-                props.supportedProviders as
-                  | Record<string, { name: string; models: string[] }>
-                  | undefined
+                props.supportedProviders as Record<string, ProviderConfig> | undefined
               }
               usageSnapshot={props.aiUsageSnapshot as AiUsageSnapshot | undefined}
             />

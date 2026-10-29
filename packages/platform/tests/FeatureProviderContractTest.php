@@ -26,6 +26,7 @@ final class FeatureProviderContractTest extends TestCase
             'description',
             'enabled',
             'exportDataBackup',
+            'getAdminResources',
             'getAnalyticsSeries',
             'getComposerPackage',
             'getContentDescription',
@@ -87,6 +88,29 @@ final class FeatureProviderContractTest extends TestCase
         $missing = array_values(array_diff($optional, $traitMethods));
 
         $this->assertSame([], $missing, 'InteractsWithFeatures is missing implementations for interface methods: '.implode(', ', $missing));
+    }
+
+    public function test_get_admin_resources_defaults_to_empty_so_the_method_is_non_breaking(): void
+    {
+        // The plan calls this non-breaking, and the trait default is the whole
+        // mechanism: a provider compiled against the previous interface keeps
+        // working because this method exists without needing to be implemented.
+        $provider = new class implements FeatureProvider
+        {
+            use InteractsWithFeatures;
+
+            public function name(): string
+            {
+                return 'Contract probe';
+            }
+
+            public function slug(): string
+            {
+                return 'contract-probe';
+            }
+        };
+
+        $this->assertSame([], $provider->getAdminResources());
     }
 
     public function test_concrete_providers_implement_the_contract_and_use_the_trait(): void

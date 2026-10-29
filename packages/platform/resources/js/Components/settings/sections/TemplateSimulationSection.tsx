@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Section } from "../../shared/section";
 import { router, usePage } from "@inertiajs/react";
 import { toast } from "../../ui/toast";
@@ -49,12 +49,22 @@ interface MailDebug {
   error: string | null;
 }
 
-export function TemplateSimulationSection({ asAccordion = false }: { asAccordion?: boolean }) {
+export function TemplateSimulationSection({
+  asAccordion = false,
+  selectedTemplate: controlledTemplate,
+  onSelectTemplate,
+}: {
+  asAccordion?: boolean;
+  selectedTemplate?: string;
+  onSelectTemplate?: (templateKey: string) => void;
+}) {
   const flash = usePage().props.flash as Record<string, string | MailDebug> | undefined;
   const emailTemplates = (usePage().props as unknown as Record<string, unknown>).emailTemplates as
     Record<string, EmailTemplate> | undefined;
 
-  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [internalTemplate, setInternalTemplate] = useState("");
+  const selectedTemplate = controlledTemplate ?? internalTemplate;
+  const setSelectedTemplate = onSelectTemplate ?? setInternalTemplate;
   const [previewLoading, setPreviewLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogHtml, setDialogHtml] = useState<string | null>(null);
@@ -84,13 +94,13 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
   if (flash?.status && typeof flash.status === "string")
     toast.add({ title: flash.status, type: "success" });
 
-  const handlePreview = useCallback(async () => {
-    if (!selectedTemplate) return;
+  const loadPreview = useCallback(async (templateKey: string) => {
+    if (!templateKey) return;
     setPreviewLoading(true);
     setDialogHtml(null);
     try {
       const url = route("dashboard.admin.settings.email.template-preview", {
-        template: selectedTemplate,
+        template: templateKey,
         fragment: "1",
       } as Record<string, unknown>);
       const response = await fetch(url);
@@ -103,7 +113,26 @@ export function TemplateSimulationSection({ asAccordion = false }: { asAccordion
     } finally {
       setPreviewLoading(false);
     }
-  }, [selectedTemplate]);
+  }, []);
+
+  const handlePreview = useCallback(() => {
+    void loadPreview(selectedTemplate);
+  }, [loadPreview, selectedTemplate]);
+
+  const lastExternalSelection = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (controlledTemplate === undefined) return;
+
+    if (controlledTemplate === lastExternalSelection.current) return;
+
+    const isFirstSync = lastExternalSelection.current === null;
+    lastExternalSelection.current = controlledTemplate;
+
+    if (isFirstSync || !controlledTemplate) return;
+
+    void loadPreview(controlledTemplate);
+  }, [controlledTemplate, loadPreview]);
 
   const handleSendTest = useCallback(() => {
     if (sending || !testEmail || !selectedTemplate) return;

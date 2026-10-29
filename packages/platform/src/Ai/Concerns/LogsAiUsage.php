@@ -15,6 +15,9 @@ trait LogsAiUsage
 {
     /**
      * Log an AI usage event (best-effort).
+     *
+     * When `$costCents` is null the event is priced from the pinned provider
+     * rates — callers normally omit it.
      */
     public function logAiUsage(
         User $user,
@@ -22,7 +25,7 @@ trait LogsAiUsage
         string $model,
         int $inputTokens,
         int $outputTokens,
-        ?int $costCents = null,
+        ?float $costCents = null,
     ): void {
         try {
             app(AiService::class)->logUsage(

@@ -30,6 +30,7 @@ enum AuditAction: string
     case DatabaseReseed = 'database_reseed';
     case DataExported = 'data_exported';
     case DataRestored = 'data_restored';
+    case FormSubmissionDeleted = 'form_submission_deleted';
 
     public function severity(): string
     {
@@ -56,7 +57,8 @@ enum AuditAction: string
             self::SettingsChanged,
             self::ProfileUpdate,
             self::AccountCreated,
-            self::DataRestored => 'warning',
+            self::DataRestored,
+            self::FormSubmissionDeleted => 'warning',
 
             self::Login,
             self::Logout,

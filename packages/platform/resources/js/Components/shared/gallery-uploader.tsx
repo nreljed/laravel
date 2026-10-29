@@ -52,6 +52,13 @@ type GalleryUploaderBaseProps = {
   label?: string;
   description?: string;
   className?: string;
+  /**
+   * Called after the cover moves to the front. Declared on the base props, so
+   * both modes can observe it: URL mode reorders and emits the new order on its
+   * own, but a record that keeps the cover as a URL of its own still has to be
+   * told which image won. Returns a promise only so callback mode can persist.
+   */
+  onSetFeatured?: (image: GalleryImage) => void | Promise<void>;
 };
 
 export interface GalleryUploaderUrlProps extends GalleryUploaderBaseProps {
@@ -71,7 +78,6 @@ export interface GalleryUploaderCallbackProps extends GalleryUploaderBaseProps {
     pendingId: string,
   ) => Promise<UploadResult>;
   onDelete?: (image: GalleryImage) => Promise<void>;
-  onSetFeatured?: (image: GalleryImage) => Promise<void>;
   onReorder?: (images: GalleryImage[]) => Promise<void>;
 }
 
@@ -86,7 +92,7 @@ export function GalleryUploader(props: GalleryUploaderProps) {
   const deleteUrl = "value" in props ? undefined : props.deleteUrl;
   const onUpload = "value" in props ? props.onUpload : undefined;
   const onDelete = "value" in props ? props.onDelete : undefined;
-  const onSetFeatured = "value" in props ? props.onSetFeatured : undefined;
+  const onSetFeatured = props.onSetFeatured;
   const onReorder = "value" in props ? props.onReorder : undefined;
   const serverImages = "value" in props ? [] : props.images;
   const value = "value" in props ? props.value : undefined;

@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/platform",
-    "version": "0.1.57",
+  "version": "0.1.95",
   "description": "SaaS platform kernel — React frontend for Laravel dashboards, admin panels, auth, settings, media, deploy, and AI.",
   "license": "proprietary",
   "type": "module",
@@ -93,10 +93,16 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^26.1.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "shadcn": "^4.21.0"
+    "shadcn": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
   }
 }

@@ -99,6 +99,7 @@ class HandleInertiaRequests extends Middleware
                 }
             },
             'featureNavItems' => $this->getFeatureNavItems(...),
+            'adminResources' => $this->getFeatureAdminResources(...),
             'sharedData' => new AlwaysProp($this->getFeatureSharedData(...)),
             'repeaterConfigs' => $this->getFeatureRepeaterConfigs(...),
             'profileSections' => $this->getFeatureProfileSections(...),
@@ -152,6 +153,15 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return app(FeatureRegistry::class)->getAllNavItems();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    protected function getFeatureAdminResources(): array
+    {
+        try {
+            return app(FeatureRegistry::class)->getAllAdminResourcesArray();
         } catch (\Throwable) {
             return [];
         }

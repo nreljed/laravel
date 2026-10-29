@@ -51,6 +51,90 @@ class CoreVersionService
         return $sha !== null ? substr($sha, 0, 7) : null;
     }
 
+    /**
+     * Enumerate every installed nreljed/* package — the deploy SBOM.
+     *
+     * Sourced from vendor/composer/installed.json (the authoritative Composer
+     * install state, same source info() uses). Exposed through
+     * DeployService::result() so every /deploy/check response lists the bundled
+     * engine/feature versions actually installed on the host.
+     *
+     * @return array<int, array{name: string, version: string|null, sha: string|null, repo: string}>
+     */
+    public function bundled(): array
+    {
+        $path = base_path('vendor/composer/installed.json');
+
+        if (! is_file($path)) {
+            return [];
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+
+        return self::fromInstalledJson($data);
+    }
+
+    /**
+     * Framework-free interpretation of installed.json data.
+     *
+     * Kept static + pure so the package's contract tests can assert the SBOM
+     * mapping without booting the application.
+     *
+     * @param  mixed  $data  decoded installed.json
+     * @return array<int, array{name: string, version: string|null, sha: string|null, repo: string}>
+     */
+    public static function fromInstalledJson(mixed $data): array
+    {
+        $packages = is_array($data) && is_array($data['packages'] ?? null) ? $data['packages'] : [];
+        $bundled = [];
+
+        foreach ($packages as $package) {
+            if (! is_array($package)) {
+                continue;
+            }
+
+            $name = $package['name'] ?? null;
+            if (! is_string($name) || ! str_starts_with($name, 'nreljed/')) {
+                continue;
+            }
+
+            $bundled[] = [
+                'name' => $name,
+                'version' => self::scalarToNull($package['version'] ?? null),
+                'sha' => self::scalarToNull($package['source']['reference'] ?? $package['dist']['reference'] ?? null),
+                'repo' => self::repoFromUrl($package['source']['url'] ?? $package['dist']['url'] ?? null) ?? $name,
+            ];
+        }
+
+        usort($bundled, static fn (array $a, array $b): int => strcmp($a['name'], $b['name']));
+
+        return $bundled;
+    }
+
+    private static function scalarToNull(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private static function repoFromUrl(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+
+        if (preg_match('#github\.com[/:]([^/]+/[^/.]+?)(?:\.git)?$#', $url, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
     public function commitUrl(): ?string
     {
         $info = $this->info();

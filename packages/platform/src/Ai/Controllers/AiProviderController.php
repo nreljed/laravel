@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Laravel\Ai\Ai;
 use Laravel\Ai\Exceptions\AiException;
 use Nreljed\Platform\Ai\Models\AiProvider;
+use Nreljed\Platform\Ai\Models\AiUsageSetting;
 use Nreljed\Platform\Ai\Requests\StoreAiProviderRequest;
 use Nreljed\Platform\Ai\Requests\TestAiProviderRequest;
 use Nreljed\Platform\Ai\Services\AiService;
@@ -41,13 +42,13 @@ class AiProviderController extends Controller
     {
         $validated = $request->validate([
             'requests' => ['required', 'integer', 'min:1'],
-            'tokens' => ['required', 'integer', 'min:1000'],
+            'cost_cents' => ['required', 'integer', 'min:1', 'max:'.AiUsageSetting::CAP_COST_MAX],
         ]);
 
         $caps = $this->aiService->updateCaps(
             user: $request->user(),
             requests: $validated['requests'],
-            tokens: $validated['tokens'],
+            costCents: $validated['cost_cents'],
         );
 
         if ($request->inertia()) {
@@ -78,6 +79,8 @@ class AiProviderController extends Controller
                 'preferred_model' => $provider->preferred_model,
                 'is_active' => $provider->is_active,
                 'created_at' => $provider->created_at?->toDateString(),
+                'last_tested_at' => $provider->last_tested_at?->toDateTimeString(),
+                'last_test_ok' => $provider->last_test_ok,
             ]);
 
         return response()->json(['providers' => $providers]);
@@ -181,45 +184,95 @@ class AiProviderController extends Controller
 
     public function test(TestAiProviderRequest $request): JsonResponse
     {
-        $providerName = $request->validated('provider');
-        $apiKey = $request->validated('api_key');
+        $result = $this->runConnectionTest(
+            $request->validated('provider'),
+            $request->validated('api_key'),
+            $request->validated('preferred_model'),
+        );
 
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * Test a *stored* key for the authenticated user's provider entry.
+     *
+     * Decrypts the key server-side, exercises the same SDK driver stack the
+     * agents use, and persists the outcome (`last_tested_at` / `last_test_ok`)
+     * so the Integrations status pill reflects the latest run.
+     */
+    public function testStored(Request $request, AiProvider $aiProvider): JsonResponse
+    {
+        $this->authorize('update', $aiProvider);
+
+        $config = AiProvider::supportedProviders()[$aiProvider->provider] ?? null;
+
+        if (($config['testable'] ?? false) === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Connection testing is not available for this provider.',
+            ], 422);
+        }
+
+        $result = $this->runConnectionTest(
+            $aiProvider->provider,
+            $aiProvider->getDecryptedKey(),
+            $aiProvider->preferred_model ?? $config['default_model'] ?? null,
+        );
+
+        $aiProvider->update([
+            'last_tested_at' => now(),
+            'last_test_ok' => $result['success'],
+        ]);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * Spin up a throwaway SDK provider instance and exercise it with a
+     * one-word prompt. Shared by the pre-save `test()` and the stored-key
+     * `testStored()` so both paths validate against the same driver stack
+     * the agents actually use.
+     *
+     * @return array{success: bool, message: string, response?: string}
+     */
+    private function runConnectionTest(string $providerName, string $apiKey, ?string $model): array
+    {
         $tempInstance = 'test_'.Str::random(16);
         config(["ai.providers.{$tempInstance}" => array_filter([
             'driver' => $providerName,
             'key' => $apiKey,
-            'model' => $request->validated('preferred_model'),
+            'model' => $model,
         ])]);
 
         try {
             $response = agent('You are a test assistant. Respond with exactly one word: ok')
                 ->prompt('Respond with ok', provider: $tempInstance);
 
-            return response()->json([
+            return [
                 'success' => true,
                 'message' => 'Connection verified successfully.',
                 'response' => substr((string) $response, 0, 100),
-            ]);
+            ];
         } catch (AiException $e) {
             Log::warning('AI provider test failed', [
                 'provider' => $providerName,
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return [
                 'success' => false,
                 'message' => 'Connection failed: '.$e->getMessage(),
-            ], 422);
+            ];
         } catch (\Exception $e) {
             Log::warning('AI provider test failed', [
                 'provider' => $providerName,
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return [
                 'success' => false,
                 'message' => 'Connection failed. Please check your API key.',
-            ], 422);
+            ];
         } finally {
             config(["ai.providers.{$tempInstance}" => null]);
         }

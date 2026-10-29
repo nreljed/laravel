@@ -19,7 +19,7 @@ use Nreljed\Platform\Models\User;
  * @property string $model
  * @property int $input_tokens
  * @property int $output_tokens
- * @property int|null $cost_cents
+ * @property float|null $cost_cents Fractional cents; null when never priced (legacy rows).
  * @property int|null $latency_ms
  * @property string|null $error
  */
@@ -46,7 +46,7 @@ class AiUsageLog extends Model
         return [
             'input_tokens' => 'integer',
             'output_tokens' => 'integer',
-            'cost_cents' => 'integer',
+            'cost_cents' => 'float',
             'latency_ms' => 'integer',
             'created_at' => 'datetime',
         ];

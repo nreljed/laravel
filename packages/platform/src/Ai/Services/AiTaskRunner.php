@@ -44,13 +44,8 @@ class AiTaskRunner
         ?string $providerName = null,
         ?int $timeout = null,
     ): AgentResponse {
+        $this->assertWithinCaps($user);
         $resolved = $this->prepare($agent, $user, $providerName);
-        $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
-        if ($exceeded !== null) {
-            throw new \RuntimeException(
-                $this->capMessage($exceeded),
-            );
-        }
         $attempts = 0;
         while (true) {
             $attempts++;
@@ -69,6 +64,7 @@ class AiTaskRunner
                     throw $e;
                 }
                 usleep(($this->delaySeconds($attempts)) * 1_000_000);
+
                 continue;
             } catch (Throwable $e) {
                 $this->recordError($user, $resolved['provider'], $e);
@@ -84,6 +80,7 @@ class AiTaskRunner
             $response->usage->completionTokens,
             $this->elapsedMs($start),
         );
+
         return $response;
     }
 
@@ -96,13 +93,8 @@ class AiTaskRunner
         string $prompt,
         ?string $providerName = null,
     ): StreamableAgentResponse {
+        $this->assertWithinCaps($user);
         $resolved = $this->prepare($agent, $user, $providerName);
-        $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
-        if ($exceeded !== null) {
-            throw new \RuntimeException(
-                $this->capMessage($exceeded),
-            );
-        }
         $start = microtime(true);
         $stream = $agent->stream(
             $prompt,
@@ -120,6 +112,7 @@ class AiTaskRunner
                 $this->elapsedMs($start),
             );
         });
+
         return $stream;
     }
 
@@ -132,12 +125,8 @@ class AiTaskRunner
         string $prompt,
         ?string $providerName = null,
     ): QueuedAgentResponse {
-        $exceeded = $this->aiService->exceedsCaps($user, 0, 0);
-        if ($exceeded !== null) {
-            throw new \RuntimeException(
-                $this->capMessage($exceeded),
-            );
-        }
+        $this->assertWithinCaps($user);
+
         return new QueuedAgentResponse(dispatch(new InvokeAiTask(
             userId: $user->id,
             agentClass: $agent::class,
@@ -162,6 +151,7 @@ class AiTaskRunner
             "ai.providers.{$resolved['provider']}.key",
             $resolved['key'],
         );
+
         return [
             'provider' => $resolved['provider'],
             'model' => $resolved['model'],
@@ -194,24 +184,25 @@ class AiTaskRunner
         }
     }
 
-    /**
-     * @param  string  $provider
-     */
     private function recordError(User $user, string $provider, Throwable $e): void
     {
         $this->aiService->recordError($user, $provider, $e->getMessage());
     }
 
-    private function capMessage(array $exceeded): string
+    /**
+     * Throw when the user's soft daily caps (requests / USD spend) are spent.
+     * Checked before provider resolution so a capped user never decrypts or
+     * injects a key.
+     */
+    private function assertWithinCaps(User $user): void
     {
-        $parts = [];
-        if (! empty($exceeded['requests'])) {
-            $parts[] = 'daily request limit';
+        $exceeded = $this->aiService->exceedsCaps($user);
+
+        if ($exceeded !== null) {
+            throw new \RuntimeException(
+                $this->aiService->capMessage($user, $exceeded),
+            );
         }
-        if (! empty($exceeded['tokens'])) {
-            $parts[] = 'daily token limit';
-        }
-        return 'Your AI daily '.implode(' and ', $parts).' has been reached.';
     }
 
     private function delaySeconds(int $attempt): int

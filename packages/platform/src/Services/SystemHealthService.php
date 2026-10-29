@@ -459,7 +459,7 @@ class SystemHealthService
                 'severity' => $issue['severity'],
                 'title' => 'Feature configuration issue: '.$issue['provider'],
                 'message' => $issue['message'],
-                'fix' => 'Review the feature provider configuration in config/core.php.',
+                'fix' => 'Review the feature provider configuration in config/features.php.',
             ];
         }
 
@@ -1337,6 +1337,7 @@ class SystemHealthService
             $totalSize += $size;
 
             $results[] = [
+                'path' => $dir['path'],
                 'name' => $dir['name'],
                 'exists' => $exists,
                 'writable' => $writable,

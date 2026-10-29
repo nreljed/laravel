@@ -16,13 +16,32 @@ Route::get('register/check-availability', [RegisteredUserController::class, 'che
     ->middleware(['throttle:10,1', 'maintenance'])
     ->name('register.availability');
 
+// Signup is closed while the doors are closed: an account created during a
+// maintenance window could not be used anyway.
 Route::middleware(['guest', 'maintenance'])->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store'])
         ->middleware('throttle:register');
+});
 
+// Signing in is deliberately NOT behind `maintenance`.
+//
+// It used to be, which made maintenance mode a lockout trap: admins bypass the
+// middleware, but only while their session is alive (120 minutes by default).
+// Once it expired they could not reach `/login` at all, and the documented way
+// back - the emailed recovery link - depends on outbound mail, which on a
+// shared host is routinely log-only or queued to a worker nobody runs. The
+// result was a site owner locked out of their own admin by their own
+// maintenance flag, with the bypass token readable only from the admin UI they
+// could no longer open.
+//
+// The login form leaks nothing (no content, no catalog) and an authenticated
+// non-admin still gets the 503 on every dashboard and public page, so the
+// maintenance page keeps doing its job. Nothing else is exempt: `register`,
+// the dashboard, the storefront and the blog all stay gated.
+Route::middleware(['guest'])->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

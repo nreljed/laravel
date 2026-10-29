@@ -10,6 +10,8 @@ import {
   Shield,
   ShieldCheck,
   ScrollText,
+  Mail,
+  Inbox,
   Beaker,
   FlaskConical,
   Database,
@@ -96,6 +98,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Settings,
       permission: "manage-settings",
     },
+    {
+      title: "Form Submissions",
+      url: safeRoute("dashboard.admin.submissions.index"),
+      icon: Inbox,
+      permission: "manage-submissions",
+    },
+    // Narrow roles that were only ever granted the legacy contact permission keep a
+    // direct link to the pinned contact inbox; everyone with the universal inbox gets
+    // a single entry so the two views do not compete in the sidebar.
+    ...(hasPermission("manage-contact") && !hasPermission("manage-submissions")
+      ? [
+          {
+            title: "Contact Messages",
+            url: safeRoute("dashboard.admin.contact.index"),
+            icon: Mail,
+            permission: "manage-contact",
+          },
+        ]
+      : []),
     {
       title: "Audit Logs",
       url: safeRoute("dashboard.admin.audit-logs.index"),

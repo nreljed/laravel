@@ -8,12 +8,13 @@ use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 use Nreljed\Platform\Ai\Agents\Traits\ResolvesUserProvider;
+use Nreljed\Platform\Ai\Concerns\EnforcesAiCaps;
 use Nreljed\Platform\Ai\Concerns\LogsAiUsage;
 use Nreljed\Platform\Models\User;
 
 class ContentAgent implements Agent, HasStructuredOutput
 {
-    use LogsAiUsage, Promptable, ResolvesUserProvider;
+    use EnforcesAiCaps, LogsAiUsage, Promptable, ResolvesUserProvider;
 
     /**
      * System instructions for content generation.
@@ -56,6 +57,7 @@ INSTRUCTIONS;
     public function generate(User $user, string $prompt, ?string $context = null): array
     {
         $this->forUser($user);
+        $this->ensureWithinAiCaps($user);
 
         $fullPrompt = "Generate content based on this request:\n\n";
         $fullPrompt .= "Request: {$prompt}\n";
@@ -89,6 +91,7 @@ INSTRUCTIONS;
     public function improve(User $user, string $content, string $instructions): array
     {
         $this->forUser($user);
+        $this->ensureWithinAiCaps($user);
 
         $prompt = "Improve this content:\n\n";
         $prompt .= "Original content:\n{$content}\n\n";

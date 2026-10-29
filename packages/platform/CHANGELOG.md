@@ -4,6 +4,116 @@ All notable changes to `nreljed/platform` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.92] - 2026-10-26
+
+### Added
+
+- **A sidebar route into the universal inbox.** "Form Submissions" now sits in the Administration group (behind `manage-submissions`) instead of leaving the inbox reachable only by URL or notification. Roles that hold the legacy `manage-contact` permission without `manage-submissions` keep a direct "Contact Messages" entry, so the two views never compete for the same operator.
+
+### Changed
+
+- **Filter and status selects show labels, not raw values.** The inbox form/status filters read "All forms" and "All statuses" instead of `all`, and the detail-page status control reads "Read" instead of `read`.
+- **`manage-contact` is no longer granted to editor or author.** Both catch-all roles reach it through `'*'`, so the contact inbox was admin-adjacent content open to every editor and author. It is now excluded alongside `manage-submissions`.
+- **A catalog deny now reaches installs that already migrated.** Reconciliation moved into `RoleCatalogSynchroniser`, and an explicit `!slug` in `config/roles.php` detaches that permission from a role that still carries it (typically granted by `'*'` before the exclusion existed). Hand-granted permissions on roles outside the catalog are still never touched.
+
+### Fixed
+
+- **The `manage-contact` revocation was shipping as a no-op.** The first attempt changed the body of `2026_10_20_000001_provision_config_permissions_into_database`, but that migration shipped in 0.1.86 and has already run everywhere — a migration runs once, so its edited body could never execute in production and the over-grant to editor/author would have stayed live. The reconciliation is now reachable from a new `2026_10_26_000001_sync_catalog_role_permissions` migration, which depends on nothing but the catalog and is safe to re-run. Ship a new dated migration calling the synchroniser whenever the catalog's denials change.
+- **Accessibility of the inbox and detail pages.** The two filter comboboxes have accessible names, sortable column headers expose `aria-sort`, unread rows announce "Unread" rather than relying on a coloured dot, sender names are real links (so rows are keyboard-navigable), and decorative icons are hidden from assistive technology. The detail payload is now a description list, which pairs each label with its value for screen readers.
+- **Destructive actions use a dialog instead of `window.confirm`.** Both the bulk bar and the single-submission Delete open an `AlertDialog` that names the consequence and states that it cannot be undone.
+- **Disabled pagination no longer jumps to the top of the page.** A disabled Previous/Next rendered `href="#"`; it now renders as a non-focusable, visually muted control.
+
+## [0.1.91] - 2026-10-22
+
+### Fixed
+
+- **Hydrated gallery images keep their file size.** `ServerGalleryImage` now carries optional `size` and `type` values, and converting a stored image no longer hard-codes `size: 0`. The sortable tile hides the size line when it is unknown instead of showing a misleading `0 B`, and newly uploaded images include their size in the persisted gallery payload.
+
+## [0.1.90] - 2026-10-22
+
+### Added
+
+- **Media profiles can choose their output format.** `MediaService` now honours a profile's `outputExtension`: `jpg`/`jpeg` encode as JPEG and `png` as PNG, while WebP stays the default. Social platforms (Instagram, Pinterest, LinkedIn) reject WebP, so a feature that delivers uploads to them can store JPEG without bypassing the media pipeline. Responsive variants remain WebP-only and are skipped for non-WebP primaries.
+- **`maxImages` on declarative `media` fields.** A `multiple` media field can cap the gallery (`maxImages => 4`) instead of accepting the uploader's default 20; `featuredField` is now accepted in PHP descriptors too.
+
+## [0.1.88] - 2026-10-21
+
+### Added
+
+- **`FormSubmitted` event.** A stored public form submission is now announced through `Nreljed\Platform\Events\FormSubmitted` (form key, submission model, validated payload). It is the supported seam for a feature that wants a submission to become a contact, a lead or a segment member - no controller wrapping required. Only stored submissions are announced: a honeypot hit or a deduplicated replay never reaches a listener, so a bot cannot learn that its submission was rejected. A throwing listener is logged and never breaks the visitor's thank-you redirect.
+
+### Fixed
+
+- **`make:feature` registers the provider where the registry looks.** The generator wrote the scaffolded provider into a `features` array in `config/core.php`, which does not exist - the file holds engine gates. The provider was therefore never discovered, and the command reported a success that changed nothing. The generator now inserts the class into the `providers` array of `config/features.php` (the file the FeatureRegistry actually reads), expands an empty array, stays idempotent on a second run, and tells the developer which array to confirm. The system-health fix hint for feature configuration points at `config/features.php` too.
+
+## [0.1.87] - 2026-10-21
+
+### Fixed
+
+- **Feature origin detection survives a linked install.** `FeatureRegistry::resolveProviderOrigin()` compared the provider's file path against `base_path()`. When the platform is installed through a path repository, a symlink or a Windows junction, PHP resolves the real path, so the file no longer sits under the application and every platform-bundled feature was reported as `unknown` on the system-health page. The registry now compares against the real path of the installed `nreljed/platform` package (and the workspace mirror) before falling back to the path-relative checks.
+- **Every top-level nav item carries an icon.** A module without a collapsible group has its resource descriptors emitted flat, and those items had no icon - a blank row in the sidebar. The registry now falls back to the generic file icon for any nav item that arrives without one.
+
+## [0.1.86] - 2026-10-20
+
+### Added
+
+- **AI Integrations UI, rebuilt** (ported from the Project-WP fork). The Account → Integrations page now shows per-provider accordion cards with a live **status pill** (Connected / Active / Failed / Disabled), a stored-key **Test connection** button, a **Replace key** flow, capability badges, per-provider usage bars with an 80% warning threshold, an **Available providers** discovery list, and a separate **Usage & Limits** accordion with an inline daily-limits form (replacing the old caps dialog).
+- `POST /ai-keys/{id}/test` — tests a *saved* key through the same SDK driver stack the agents use and records `last_test_ok` + `last_tested_at` on the provider row (new migration `2026_10_20_000001_add_test_status_to_ai_providers_table`).
+- `AiProvider::supportedProviders()` now ships `default_model`, `testable` and `capabilities` metadata for the UI (Ollama is the only untestable provider).
+- `SettingsAccordionItem` gained an optional `trailing` slot rendered beside the title.
+- **Generic form submissions.** One engine, one storage table, one admin inbox. Every form on any consumer is now a config entry (`config/forms.php`) plus, optionally, a route — not a bespoke controller, table, model and admin screen.
+- `config/forms.php` — the form catalog. Each entry declares `label`, `description`, `permission`, `redirect`, `identity` (which fields map to `name` / `email` / `summary`), `fields`, `honeypot`, `rate_limit`, `dedupe_window`, `notify`, `retention_days` and `consent`.
+- `Support\FormRegistry` — loads the catalog, merges runtime contributions (`Forms::register()`) from feature providers, and builds Laravel validation rules, attributes and searchable/identity mappings from a field's declared `type`. Config wins on key collision. `violations()` returns catalog problems so a misdeclared form fails loudly instead of silently.
+- `Models\FormSubmission` — one `form_submissions` row per submission: a denormalised `form_key` / `name` / `email` / `summary` / `status` for querying, plus a JSON `payload` for the full declared field set, plus attribution (`ip`, `user_agent`, `referrer`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`).
+- `Services\FormSubmissionService` — the single collect path: honeypot → validate → dedupe → persist → queue notification. Used by both the generic and pinned endpoints, so a new form inherits every guard for free.
+- `Jobs\DispatchFormSubmissionNotification` — queued fan-out to the admins holding the form's `permission`; a failure is logged and never blocks the visitor.
+- `Support\CsvExporter` — reusable CSV streaming with spreadsheet formula-injection guarding (cells starting `=`, `+`, `-`, `@`, tab or CR are prefixed with `'`). Used by every export surface.
+- Public endpoints: `POST /forms/{form_key}` (404 on an unregistered key) and the existing `POST /contact`, which now runs on the generic engine.
+- Admin inbox at `/dashboard/admin/submissions` — cross-form list with form/status/search/date-range filters, sortable columns, per-page control, checkbox selection with bulk mark-read / archive / delete, a filter-aware CSV export, and a registry-driven detail view that renders the payload in declared field order. Behind a new `manage-submissions` permission (Administration group).
+- `AuditAction\FormSubmissionDeleted` (`form_submission_deleted`, severity `warning`) recorded on single and bulk deletes, and `DataExported` on every CSV download.
+- Migration `2026_10_19_000001_create_form_submissions_table` — creates the table, indexes it for the inbox's query patterns, and copies any existing `contact_submissions` rows across so no message is lost.
+
+### Changed
+
+- The pre-save `test()` and the new stored-key `testStored()` share one `runConnectionTest()` runner so both paths validate against identical driver wiring.
+- The AI caps dialog was replaced by an inline form in the Usage & Limits accordion, with UTC-reset and spend-estimate explanatory copy.
+- `POST /contact` and the three `dashboard.admin.contact.*` routes now run on `FormSubmissionController` with a pinned `form_key` of `contact`, keeping every URL, flash key (`contact-sent`) and existing test green while the storage underneath moves to `form_submissions`.
+- `config/roles.php` gained the `manage-submissions` base permission, excluded from the editor and author catch-all roles so the universal inbox stays admin-surface-only.
+- The frontend page-inventory contract gained the two new submissions pages.
+
+### Notes
+
+- `ContactSubmission` and the `contact_submissions` table are **retained for this release**. The model and table drop in the next release once the copy-forward has been observed in production; the notification type, routes and templates are unchanged.
+- `ContactRequest` is retained unchanged as the legacy FormRequest and is pinned by a contract test against the registry's rules, so the two cannot drift.
+
+## [0.1.85] - 2026-10-19
+
+### Added
+
+- AI spend cap: fractional cost tracking and cap enforcement applied across every AI path.
+
+## [0.1.84] - 2026-10-18
+
+### Added
+
+- Email settings: new `TemplateCatalogSection` on `/dashboard/admin/settings/email` listing every registered notification type grouped by area, with channel, required and severity badges, the template it renders, and explicit `Not wired` / `Missing template` flags for types that have no `email_template` or point at a Blade file that does not exist. A Preview button drives the existing simulation dialog.
+- Email settings: `TemplateSimulationSection` is now controllable via optional `selectedTemplate` / `onSelectTemplate` props, so selecting a catalog entry opens its preview.
+- Email templates: `EmailTemplateService` exposes public `layoutView()` and `globalData()`, so notifications render through the same template + layout pipeline the settings preview uses.
+- Public site: a real contact form. `POST /contact` (throttled 3/min, honeypot-guarded, silently discarded when trapped) stores a `ContactSubmission` and notifies every admin via the new required `contact.received` type.
+- Notifications: new core type `contact.received` (group Contact, required, in-app + email) bound to the new `contact-received` template.
+- Admin: contact message triage at `/dashboard/admin/contact` — list with status/search filters and pagination, a detail view that marks messages read, an inline status changer and destructive delete — behind a new `manage-contact` permission (Administration group).
+
+### Changed
+
+- Auth emails (`VerifyEmail`, `ResetPassword`, `WelcomeNewUser`) now render through `EmailTemplateService` instead of hand-rolled Blade partials.
+- `user.registered` now points at the `new-user-admin` template (was `new-user`, which is the user-facing login confirmation and never received that payload).
+- Registration dispatches the previously dead `user.welcome` email to the new user and `user.registered` (in-app + email) to every admin.
+
+### Fixed
+
+- The email settings preview was fiction for auth mail: `VerifyEmail` and `ResetPassword` rendered their own partials, so what admins previewed never matched what recipients received.
+- The `welcome` template now accepts a missing token and falls back to a log-in call to action, matching self-registration where no set-password token exists.
+
 ## [0.1.34] - 2026-09-10
 
 ### Changed
