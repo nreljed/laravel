@@ -1,0 +1,453 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-shop-production
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  build:
+    needs: ci
+    # Runner switch (self-hosted ⇄ GitHub-hosted): 7-Zip packaging is
+    # Windows-bound, reads RUNNER_PACKAGE (self-hosted | windows-latest).
+    runs-on: ${{ vars.RUNNER_PACKAGE || 'self-hosted' }}
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      skip: ${{ steps.version.outputs.skip }}
+    steps:
+      - name: Checkout (full history for git-cliff)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup PHP
+        # PHP 8.4 is preinstalled on the self-hosted Windows runner;
+        # setup-php only runs on GitHub-hosted (windows-latest).
+        if: vars.RUNNER_PACKAGE != 'self-hosted'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, fileinfo, sqlite3, pdo_sqlite, bcmath, zip, gd, intl
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+
+      - name: Create build .env
+        run: |
+          cat > .env << ENVEOF
+          APP_NAME="Shop App"
+          APP_ENV=local
+          APP_KEY=${{ secrets.APP_KEY }}
+          APP_DEBUG=true
+          APP_URL=http://localhost
+          DB_CONNECTION=sqlite
+          SESSION_DRIVER=file
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          ENVEOF
+          touch database/database.sqlite
+
+      - name: Install Composer dependencies (with dev, for validation)
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Generate application key + migrate
+        run: php artisan key:generate && php artisan migrate --force
+
+      - name: Install npm dependencies + build
+        run: |
+          npm ci --legacy-peer-deps
+          npm run build
+
+      - name: Check core dependency parity
+        run: npm run check:core-deps
+
+      # Shipped dependencies only -- dev-only advisories with no upstream patch
+      # (the unfixable `braces` DoS via the `shadcn` codegen CLI) must not block
+      # a deploy; see platform consumer-ci.yml for the full rationale.
+      - name: npm audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Composer audit
+        run: composer audit --no-interaction
+
+      - name: Foundation boundary check
+        run: php scripts/foundation-check.php
+
+      - name: Laravel Pint
+        run: php vendor/bin/pint --test
+
+      - name: PHP tests
+        run: php -d max_execution_time=0 -d memory_limit=512M artisan test --compact
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Prune dev dependencies (production install)
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
+
+      - name: Overwrite .env with production settings
+        run: |
+          cat > .env << 'ENVEOF'
+          APP_NAME="Shop App"
+          APP_ENV=production
+          APP_KEY=${{ secrets.APP_KEY }}
+          APP_DEBUG=false
+          APP_URL=${{ vars.APP_URL }}
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          BCRYPT_ROUNDS=12
+          LOG_CHANNEL=stack
+          LOG_LEVEL=error
+          DB_CONNECTION=mysql
+          DB_HOST=localhost
+          DB_PORT=3306
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SESSION_DRIVER=file
+          SESSION_LIFETIME=120
+          SESSION_DOMAIN=${{ vars.SESSION_DOMAIN }}
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=file
+          GITHUB_REPO=nreljed/laravel.shop
+          DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
+          GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+          DB_MAINTENANCE_ENABLED=${{ vars.DB_MAINTENANCE_ENABLED || 'false' }}
+          ENVEOF
+
+      - name: Copy deploy script
+        run: cp scripts/deploy-cron.php deploy.php
+
+      - name: Create deploy.zip
+        run: |
+          rm -f deploy.zip
+          rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+          "C:/Program Files/7-Zip/7z.exe" a -tzip deploy.zip \
+            artisan composer.json composer.lock package.json package-lock.json \
+            app bootstrap config database public resources routes \
+            storage vendor deploy.php .htaccess
+          SIZE=$(du -h deploy.zip | cut -f1)
+          echo "deploy.zip created: $SIZE"
+
+      - name: Verify deploy.zip carries the nreljed packages
+        # A `path` composer repo installs as a junction/symlink, and the archiver
+        # does not follow it: the archive then ships an EMPTY vendor/nreljed/*
+        # and the host boots without the platform classes ("Target class [view]
+        # does not exist", every route 500). Fail the build here instead of
+        # shipping that.
+        shell: bash
+        run: |
+          LISTING=$(mktemp)
+          # 7z prints archive paths with Windows separators - normalise them.
+          "C:/Program Files/7-Zip/7z.exe" l -slt deploy.zip | tr '\\' '/' > "$LISTING"
+          MISSING=""
+          for NEEDLE in \
+            "vendor/nreljed/platform/src/PlatformServiceProvider.php" \
+            "vendor/nreljed/blog/composer.json" \
+            "vendor/nreljed/marketing-module/composer.json" \
+            "vendor/nreljed/shop-module/composer.json"
+          do
+            if ! grep -Fq "Path = $NEEDLE" "$LISTING"; then
+              MISSING="$MISSING $NEEDLE"
+            fi
+          done
+          rm -f "$LISTING"
+          if [ -n "$MISSING" ]; then
+            echo "deploy.zip is missing package files:$MISSING"
+            exit 1
+          fi
+          echo "deploy.zip carries platform, blog, marketing-module and shop-module"
+
+      - name: Determine version
+        id: version
+        run: |
+          # Re-fetch tags so concurrent runs see releases created after checkout
+          git fetch origin --tags --force
+          VER="0.1.0"
+          LAST_TAG=$(git tag --merged HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          if [ -n "$LAST_TAG" ]; then
+            MAJOR=$(echo "$LAST_TAG" | sed 's/v//' | cut -d. -f1)
+            MINOR=$(echo "$LAST_TAG" | sed 's/v//' | cut -d. -f2)
+            PATCH=$(echo "$LAST_TAG" | sed 's/v//' | cut -d. -f3)
+            COMMITS=$(git log "$LAST_TAG..HEAD" --pretty=format:"%s%B")
+            BUMP="patch"
+            if echo "$COMMITS" | grep -qE 'BREAKING CHANGE|^[a-z]+(\([^)]*\))!:'; then
+              BUMP="major"
+            elif echo "$COMMITS" | grep -qE '^feat'; then
+              BUMP="minor"
+            fi
+            case "$BUMP" in
+              major) VER="$((MAJOR + 1)).0.0" ;;
+              minor) VER="$MAJOR.$((MINOR + 1)).0" ;;
+              patch) VER="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+            esac
+            echo "Bumping from $LAST_TAG (next: $VER)"
+          fi
+          SKIP="false"
+          if git ls-remote --exit-code origin "refs/tags/v$VER" >/dev/null 2>&1; then
+            echo "tag v$VER already exists — incrementing patch to find next free version"
+            MAJOR=$(echo "$VER" | cut -d. -f1)
+            MINOR=$(echo "$VER" | cut -d. -f2)
+            PATCH=$(echo "$VER" | cut -d. -f3)
+            while git ls-remote --exit-code origin "refs/tags/v$VER" >/dev/null 2>&1; do
+              PATCH=$((PATCH + 1))
+              VER="$MAJOR.$MINOR.$PATCH"
+            done
+            echo "Resolved to v$VER"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        run: |
+          npm install -g git-cliff
+          BASE_TAG=$(git tag --merged HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          BASE_TAG="${BASE_TAG:-v0.1.0}"
+          git-cliff "$BASE_TAG..HEAD" --strip header -o release-notes.md 2>/dev/null || true
+          [ -f release-notes.md ] || echo "No changes for v${{ steps.version.outputs.version }}" > release-notes.md
+          git-cliff -o CHANGELOG.md 2>/dev/null || true
+
+      - name: Create GitHub Release (release assets, not Actions artifacts)
+        if: steps.version.outputs.skip != 'true'
+        # Use the `gh` CLI instead of softprops/action-gh-release: GitHub's
+        # uploads.github.com began rejecting the action's streamed upload body
+        # ("Error building asset temp dir") on 2026-09-17, while gh's
+        # Content-Length upload succeeds. On a failed rerun, the tag/release
+        # may already exist with 0 or partial assets, so delete and recreate.
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          $VER = "v${{ steps.version.outputs.version }}"
+          if (-not (Test-Path deploy.zip)) {
+            throw "deploy.zip does not exist - create it before releasing"
+          }
+          gh release create $VER deploy.zip --title $VER --notes-file release-notes.md *> $null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "Release $VER already exists (prior failed run) - deleting and recreating"
+            gh release delete $VER --yes --cleanup-tag 2>$null
+            gh release create $VER deploy.zip --title $VER --notes-file release-notes.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed (exit $LASTEXITCODE)" }
+          Write-Output "Release ready: https://github.com/${{ github.repository }}/releases/tag/$VER"
+
+  push-deploy:
+    needs: build
+    if: needs.build.outputs.skip != 'true'
+    # Runner switch (self-hosted ⇄ GitHub-hosted): RUNNER_CI var on this repo.
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download deploy.zip from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER="v${{ needs.build.outputs.version }}"
+          echo "Downloading deploy.zip from release $VER"
+          gh release download "$VER" \
+            --repo "${{ github.repository }}" \
+            --pattern "deploy.zip" \
+            --clobber
+          ls -lh deploy.zip
+
+      - name: Push GITHUB_TOKEN to server .env
+        if: always()
+        continue-on-error: true
+        run: |
+          ENV_URL="${{ vars.APP_URL }}/deploy/env?token=${{ secrets.DEPLOY_TOKEN }}"
+          for i in 1 2 3; do
+            RESP=$(curl -s -X POST --max-time 60 -H "Content-Type: application/json" \
+              -d "{\"values\":{\"GITHUB_TOKEN\":\"${{ secrets.GH_TOKEN }}\"}}" \
+              "$ENV_URL" 2>&1)
+            FIRST="${RESP%%$'\n'*}"
+            echo "[env $i/3] $FIRST"
+            if echo "$FIRST" | grep -q '"success":true'; then
+              echo "GITHUB_TOKEN pushed to server .env"
+              exit 0
+            fi
+            [ "$i" -lt 3 ] && sleep 20
+          done
+          echo "GITHUB_TOKEN push did not confirm; manual: POST $ENV_URL"
+
+      - name: Upload deploy archive to server
+        run: |
+          VER="v${{ needs.build.outputs.version }}"
+          echo "Release: $VER"
+          CHECK_URL="${{ vars.APP_URL }}/deploy/check?token=${{ secrets.DEPLOY_TOKEN }}"
+          UPLOAD_URL="${{ vars.APP_URL }}/deploy/upload?token=${{ secrets.DEPLOY_TOKEN }}"
+
+          # Poll /deploy/check until the server confirms it is deployed on $VER
+          # (or "deployed" / "current"), fast-failing if the server stops
+          # responding. $1 is the log prefix (e.g. "poll" or "confirm").
+          RELEASE_LAYOUT=0
+          wait_until_deployed() {
+            local prefix="$1" msg
+            CONSECUTIVE_NON_JSON=0
+            for i in $(seq 1 8); do
+              RESP=$(curl -s -X POST --max-time 30 "$CHECK_URL" 2>&1)
+              FIRST=$(echo "$RESP" | head -1)
+              if echo "$FIRST" | grep -q '"status":"deployed"'; then
+                echo "Deployed via /deploy/check"
+                echo "$FIRST"
+                return 0
+              elif echo "$FIRST" | grep -q '"status":"current"'; then
+                CONSECUTIVE_NON_JSON=0
+                if echo "$FIRST" | grep -q "\"tag\":\"$VER\""; then
+                  echo "Confirmed on $VER via /deploy/check"
+                  echo "$FIRST"
+                  return 0
+                fi
+                echo "[$prefix $i/8] server waiting for $VER"
+              elif echo "$FIRST" | grep -q '"status":"locked"'; then
+                CONSECUTIVE_NON_JSON=0
+                echo "[$prefix $i/8] server still working (locked)"
+              elif echo "$FIRST" | grep -q '"status":"release-layout"'; then
+                RELEASE_LAYOUT=1
+                echo "RELEASE_LAYOUT=true" >> "$GITHUB_ENV"
+                echo "[$prefix $i/8] release-layout host — in-place deploy disabled, delegating to deploy-runner release-install"
+                echo "$FIRST"
+                return 2
+              else
+                CONSECUTIVE_NON_JSON=$((CONSECUTIVE_NON_JSON + 1))
+                echo "[$prefix $i/8] server not responding (non-JSON $CONSECUTIVE_NON_JSON/2)"
+                if [ "$CONSECUTIVE_NON_JSON" -ge 2 ]; then
+                  echo "Fast-fail: server is broken, skipping remaining polls"
+                  return 1
+                fi
+              fi
+              [ "$i" -lt 8 ] && sleep 15
+            done
+            return 1
+          }
+
+          if wait_until_deployed "poll"; then
+            echo "push-deploy OK (check path)"
+          elif [ "$RELEASE_LAYOUT" = "1" ]; then
+            echo "release-layout host — in-place deploy disabled; dispatching deploy-runner release-install"
+            gh workflow run restore.yml \
+              --repo "${{ github.repository }}" \
+              -f action=release-install \
+              -f version="$VER"
+            echo "restore.yml release-install dispatched for $VER (runs on the next free runner)"
+            echo "This job is done; restore.yml owns the atomic flip. Watch it with:"
+            echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
+            exit 0
+          else
+            echo "check path did not confirm $VER, uploading deploy.zip directly"
+            UPLOAD_RESP=$(curl -s -w "\n%{http_code}" --max-time 300 \
+              -F "file=@deploy.zip;filename=deploy.zip" \
+              "$UPLOAD_URL" 2>&1)
+            HTTP_CODE=$(echo "$UPLOAD_RESP" | tail -1)
+            BODY=$(echo "$UPLOAD_RESP" | sed '$d')
+            echo "Upload HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q '"status":"deployed"'; then
+              echo "Deployed via /deploy/upload"
+              echo "push-deploy OK (upload path)"
+            else
+              echo "Upload response not clean (HTTP $HTTP_CODE), confirming via /deploy/check..."
+              if wait_until_deployed "confirm"; then
+                echo "push-deploy OK (confirmed after upload)"
+              elif [ "$RELEASE_LAYOUT" = "1" ]; then
+                echo "release-layout host — in-place upload cannot confirm; dispatching deploy-runner release-install"
+                gh workflow run restore.yml \
+                  --repo "${{ github.repository }}" \
+                  -f action=release-install \
+                  -f version="$VER"
+                echo "restore.yml release-install dispatched for $VER (runs on the next free runner)"
+                echo "This job is done; restore.yml owns the atomic flip. Watch it with:"
+                echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"
+                exit 0
+              else
+                echo "Deploy not confirmed. Release at: https://github.com/${{ github.repository }}/releases/tag/$VER"
+                echo "Manual: download deploy.zip, upload to server, extract, then visit:"
+                echo "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+                exit 1
+              fi
+            fi
+          fi
+
+      - name: FTP Upload fallback (DirectAdmin)
+        if: failure() && env.RELEASE_LAYOUT != 'true'
+        continue-on-error: true
+        run: |
+          FTP_PORT="${{ secrets.FTP_PORT || '21' }}"
+          FTP_URL="ftp://${{ secrets.FTP_SERVER }}:$FTP_PORT/deploy.zip"
+          curl -s --max-time 300 \
+            -T deploy.zip \
+            --ftp-create-dirs \
+            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            "$FTP_URL" && {
+            echo "FTP upload OK"
+            echo "---"
+            echo "Extract via DirectAdmin File Manager, then visit:"
+            echo "${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          } || {
+            echo "FTP upload failed"
+            VER="v${{ needs.build.outputs.version }}"
+            echo "Manual steps:"
+            echo "1. Download from: https://github.com/${{ github.repository }}/releases/download/$VER/deploy.zip"
+            echo "2. Upload via DirectAdmin File Manager to public_html/"
+            echo "3. Extract, then visit:"
+            echo "   ${{ vars.APP_URL }}/deploy/cache-clear?token=${{ secrets.DEPLOY_TOKEN }}"
+          }
+
+      - name: Fallback to deploy-runner auto-repair
+        # When the check/upload path could not confirm the deploy (app wedged,
+        # vendor half-swapped, /deploy/* unreachable, non-release-layout
+        # upload failure), hand control to the standalone runner workflow. It
+        # stages runner.php via FTP (plus deploy.zip for release-install) and
+        # invokes recover (heal stranded backup) then release-install (atomic
+        # Capistrano-style flip of a deploy.zip it fetches via FTP/staged at
+        # the project root) — no File Manager needed. release-install resumes
+        # while extraction is partial.
+        #
+        # NOTE: dispatch is fire-and-forget. restore.yml runs on the same
+        # self-hosted runner; this job MUST end before those runs can start,
+        # so we never wait on them here (would deadlock on a queued run).
+        if: failure()
+        continue-on-error: false
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          VER="v${{ needs.build.outputs.version }}"
+          echo "push-deploy failed — dispatching restore.yml (recover, then release-install) for $VER"
+          gh workflow run restore.yml \
+            --repo "${{ github.repository }}" \
+            -f action=recover
+          gh workflow run restore.yml \
+            --repo "${{ github.repository }}" \
+            -f action=release-install \
+            -f version="$VER"
+          echo "restore.yml dispatched (recover + release-install) for $VER — runs on the next free runner."
+          echo "Watch it with:"
+          echo "  gh run list --workflow=restore.yml --repo ${{ github.repository }}"

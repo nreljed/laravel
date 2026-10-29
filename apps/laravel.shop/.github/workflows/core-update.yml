@@ -1,0 +1,171 @@
+name: Core Update (nreljed/platform + blog)
+
+on:
+  schedule:
+    # Weekly: Monday 09:00 UTC, matching the core repo's publish cadence.
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [core-updated, blog-updated]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: core-update
+  cancel-in-progress: true
+
+# Flow: bump composer.lock -> FULL validation (same suite as ci.yml)
+# -> open lock-only PR -> squash-merge immediately.
+#
+# Why validate here instead of relying on PR checks: bot-authored PRs land
+# in "action_required" limbo on these repos, and free private repos have no
+# branch protection (so `gh pr merge --auto` can never fire). Validating the
+# exact tree in this job makes an instant merge safe; the PR stays as the
+# audit trail. If validation fails, the job fails and NO merge happens.
+
+jobs:
+  core-update:
+    # Self-hosted runner (win-runner-laravel): free minutes, immune to hosted
+    # billing blocks. Runner is Windows - pin bash explicitly; the runner
+    # process must have "C:\Program Files\Git\bin" ahead of system32 in its
+    # PATH so `bash` resolves to Git Bash and not the WSL stub.
+    #
+    # Runner switch (self-hosted ⇄ GitHub-hosted): RUNNER_CI var on this repo.
+    runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      # PHP 8.4 + composer are preinstalled on the self-hosted runner;
+      # setup-php only runs on GitHub-hosted Linux (php.ini rename not
+      # concurrency-safe on the shared Windows runners).
+      - name: Setup PHP
+        if: runner.os == 'Linux'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+
+      # nreljed/platform + nreljed/blog are private vcs repos; the single
+      # GH_TOKEN authenticates the clone. --no-scripts avoids booting Laravel
+      # in a bare checkout (no .env needed for the lock update).
+      - name: Update nreljed/platform + nreljed/blog
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
+        run: composer update nreljed/platform nreljed/blog --with-dependencies --no-scripts --no-interaction
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --exit-code -- composer.lock > /dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Core is already up to date."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "New core version available."
+          fi
+
+      - name: Read resolved core version
+        if: steps.check.outputs.changed == 'true'
+        id: version
+        run: |
+          VER=$(php -r 'echo json_decode(file_get_contents("vendor/nreljed/platform/composer.json"), true)["version"] ?? "unknown";')
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      # Full validation against the UPDATED lock - mirrors ci.yml exactly.
+      # Step-per-command (mirrors ci.yml) - combined blocks die silently on
+      # this runner.
+      - name: Validate - composer install
+        if: steps.check.outputs.changed == 'true'
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Validate - composer audit
+        if: steps.check.outputs.changed == 'true'
+        run: composer audit --no-interaction
+
+      - name: Validate - foundation check
+        if: steps.check.outputs.changed == 'true'
+        run: php scripts/foundation-check.php
+
+      - name: Validate - key generate + migrate
+        if: steps.check.outputs.changed == 'true'
+        run: php artisan key:generate && php artisan migrate --force
+
+      - name: Validate - npm install + checks (typecheck, lint, format, deps)
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          npm ci --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+          npm run check:core-deps
+          npm run lint
+          npm run typecheck
+          npm run format:check
+
+      - name: Validate - build
+        if: steps.check.outputs.changed == 'true'
+        run: npm run build
+
+      # Assets must exist before PHP tests: view-rendering tests hit @vite()
+      # and 500 without public/build/manifest.json (same order as ci.yml).
+      - name: Validate - PHP tests
+        if: steps.check.outputs.changed == 'true'
+        run: php -d max_execution_time=0 -d memory_limit=512M artisan test --compact
+
+      - name: Validate - Pint
+        if: steps.check.outputs.changed == 'true'
+        run: php vendor/bin/pint --test
+
+      - name: Create pull request
+        if: steps.check.outputs.changed == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="core/update-v${{ steps.version.outputs.version }}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+          # Clean up a stale branch left behind by a previously failed run.
+          git push origin --delete "$BRANCH" 2>/dev/null || true
+
+          git checkout -b "$BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.lock
+          git commit -m "chore: update nreljed/platform to v${{ steps.version.outputs.version }}"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: update nreljed/platform to v${{ steps.version.outputs.version }}" \
+            --body "Automated update of \`nreljed/platform\` + \`nreljed/blog\` (\`core-update.yml\`).
+
+            - Resolved platform version: v${{ steps.version.outputs.version }}
+            - Only \`composer.lock\` changed; full validation (tests, typecheck, build) ran on this exact tree before merge.
+            "
+
+      # Free private repos have no branch protection rules, so the merge is
+      # instantaneous once issued. Validation already passed above; merging
+      # fires deploy.yml (build + release + deploy).
+      #
+      # Use the PAT (secrets.GH_TOKEN), NOT github.token: pushes made with
+      # GITHUB_TOKEN do NOT emit a `push` event (GitHub suppresses recursive
+      # workflow runs), so a github.token merge would silently skip deploy.yml.
+      - name: Merge pull request
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: gh pr merge --squash --delete-branch "${{ steps.pr.outputs.branch }}"

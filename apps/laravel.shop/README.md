@@ -50,9 +50,20 @@ php artisan key:generate
 #      DB_USERNAME=your_user
 #      DB_PASSWORD=your_password
 
-# 5. Run migrations and seeders (roles/permissions are config-catalog driven)
+# 5. Run migrations and seeders
+#    DatabaseSeeder chains everything in the right order: roles/permissions,
+#    demo users, settings, currencies, shop catalog (brands/categories/tags/
+#    attributes/products/prices/reviews), e-commerce demo data (orders,
+#    coupons, shipping, tax, webhooks, stock, blog posts) and marketing demo
+#    data (campaigns, contacts, segments, workflows, social posts).
 php artisan migrate
-php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan db:seed
+
+#    To seed only a subset, run the individual seeders:
+#      php artisan db:seed --class=RolesAndPermissionsSeeder
+#      php artisan db:seed --class=ShopProductSeeder
+#      php artisan demo:generate            # orders, coupons, shipping, tax, ...
+#      php artisan db:seed --class=MarketingDemoSeeder
 
 # 6. Create storage link
 php artisan storage:link
@@ -121,7 +132,9 @@ php artisan app:create-admin             # Bootstrap or update the admin user
 
 Other useful commands: `npm run check:ci` (full CI pipeline), `php artisan
 test --parallel --compact` (parallel PHPUnit via paratest), `php artisan
-demo:generate` (demo e-commerce data).
+demo:generate` (demo e-commerce data), `php artisan marketing:sync-customers`
+(sync shop customers into marketing audience), `php artisan
+marketing:process-orders` (trigger order-placed workflows).
 
 ## Deployment
 

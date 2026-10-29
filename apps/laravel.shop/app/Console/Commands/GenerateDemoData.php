@@ -120,6 +120,15 @@ class GenerateDemoData extends Command
             $this->newLine();
         }
 
+        // Reset accumulated state: Artisan::call may reuse a singleton instance,
+        // and a second `--fresh` run would otherwise reference deleted users.
+        $this->customerUsers = [];
+        $this->shippingMethods = [];
+        $this->taxRates = [];
+        $this->coupons = [];
+        $this->products = [];
+        $this->adminUser = null;
+
         $this->adminUser = config('admin.email')
             ? User::where('email', config('admin.email'))->first()
             : null;

@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Nreljed\Platform\Database\Seeders\SettingsSeeder;
 use Nreljed\Platform\Models\Role;
@@ -33,6 +35,33 @@ class DatabaseSeeder extends Seeder
 
         $this->call(SettingsSeeder::class);
         $this->call(CurrencySeeder::class);
+
+        // Shop demo catalog (brands, categories, tags, attributes, products,
+        // prices, reviews). Must run before GenerateDemoData, which assumes
+        // published products already exist.
+        $this->call(ShopProductSeeder::class);
+
+        // Comprehensive e-commerce demo data (orders, coupons, shipping, tax,
+        // webhooks, stock history, blog posts).
+        $this->call(DemoDataSeeder::class);
+
+        // Marketing demo data (campaigns, contacts, segments, workflows,
+        // social accounts/posts, plans, briefs, links).
+        $this->call(MarketingDemoSeeder::class);
+
+        // Sync shop customers into the marketing audience so campaigns can
+        // target real buyers (not just manually-entered contacts).
+        Artisan::call('marketing:sync-customers');
+
+        // Process shop orders so order-placed workflows fire and purchase data
+        // is recorded. Clear the cache first so orders handled by the real-time
+        // observer are re-evaluated against the workflows created above.
+        Cache::forget('marketing.last_processed_order_id');
+        Artisan::call('marketing:process-orders');
+
+        // Re-sync roles/permissions last: feature providers declare permissions
+        // that may not all be registered during the first sync (fresh install).
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 
     /**

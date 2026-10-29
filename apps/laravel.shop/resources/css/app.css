@@ -1,12 +1,12 @@
 @import "tailwindcss" source(none);
 @source "../";
-@source "../../../../packages/shop-module/src/Resources/js/";
-@source "../../../../packages/platform/resources/js/";
-@source "../../../../packages/platform/resources/themes/";
-@source "../../../../packages/blog/src/Resources/js/";
+@source "../../vendor/nreljed/shop-module/src/Resources/js/";
+@source "../../vendor/nreljed/platform/resources/js/";
+@source "../../vendor/nreljed/platform/resources/themes/";
+@source "../../vendor/nreljed/blog/src/Resources/js/";
 
 @import "tw-animate-css";
-@import "../../../../packages/platform/resources/css/core.css";
+@import "../../vendor/nreljed/platform/resources/css/core.css";
 
 /* Shop-specific tokens — everything else (colors, sidebar, link, cell fills,
    map markers, radii, font, prose/editor/code-block styling) lives in

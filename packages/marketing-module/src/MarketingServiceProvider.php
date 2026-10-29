@@ -468,48 +468,26 @@ class MarketingServiceProvider extends ServiceProvider implements FeatureProvide
         }
     }
 
-    public function getSharedData(): array
-    {
-        try {
-            return [
-                'marketing' => [
-                    'enabled' => $this->enabled(),
-                    'links' => [
-                        'prefix' => trim((string) config('marketing.links.prefix', 'm'), '/'),
-                    ],
-                ],
-            ];
-        } catch (Throwable) {
-            return [];
-        }
-    }
-
     public function getDashboardData(): array
     {
         if (! $this->tablesExist()) {
             return [];
         }
 
-        try {
-            return [
-                'label' => 'Marketing',
-                'icon' => 'Megaphone',
-                'total' => Contact::query()->count(),
-                'contacts' => Contact::query()->count(),
-                'segments' => Segment::query()->count(),
-                'posts' => SocialPost::query()->count(),
-                'scheduled' => SocialPost::query()->where('status', PostStatus::Scheduled->value)->count(),
-                'campaigns' => Campaign::query()->count(),
-                'workflows' => Workflow::query()->where('is_active', true)->count(),
-                'active_workflows' => Workflow::query()->where('is_active', true)->count(),
-                'plans' => MarketingPlan::query()->count(),
-                'briefs' => MarketingBrief::query()->count(),
-                'experiments' => MarketingExperiment::query()->count(),
-                'accounts' => SocialAccount::query()->count(),
-            ];
-        } catch (Throwable) {
-            return [];
-        }
+        return [
+            'label' => 'Marketing',
+            'icon' => 'Megaphone',
+            'total' => SocialAccount::query()->count(),
+            'contacts' => Contact::query()->count(),
+            'segments' => Segment::query()->count(),
+            'posts' => SocialPost::query()->count(),
+            'scheduled' => SocialPost::query()->where('status', PostStatus::Scheduled->value)->count(),
+            'campaigns' => Campaign::query()->count(),
+            'workflows' => Workflow::query()->where('is_active', true)->count(),
+            'plans' => MarketingPlan::query()->count(),
+            'briefs' => MarketingBrief::query()->count(),
+            'experiments' => MarketingExperiment::query()->count(),
+        ];
     }
 
     public function getAdminResources(): array
