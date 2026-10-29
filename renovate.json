@@ -7,12 +7,12 @@
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "platformAutomerge": true,
-  "postUpdateOptions": ["composerUpdate", "npmDedupe"],
+  "postUpdateOptions": ["composerWithAll", "npmDedupe"],
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"],
     "automerge": true,
-    "postUpdateOptions": ["composerUpdate", "npmDedupe"]
+    "postUpdateOptions": ["composerWithAll", "npmDedupe"]
   },
   "packageRules": [
     {
@@ -20,7 +20,7 @@
       "groupName": "php-deps",
       "groupSlug": "php-deps",
       "automerge": true,
-      "postUpdateOptions": ["composerUpdate"]
+      "postUpdateOptions": ["composerWithAll"]
     },
     {
       "matchManagers": ["npm"],
