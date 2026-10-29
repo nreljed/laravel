@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "groupName": "monorepo-sync",
+  "groupSlug": "monorepo-sync",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["composer"],
+      "groupName": "php-deps",
+      "groupSlug": "php-deps"
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "npm-deps",
+      "groupSlug": "npm-deps"
+    }
+  ]
+}

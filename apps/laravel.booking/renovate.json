@@ -1,6 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:recommended"],
+  "groupName": "monorepo-sync",
+  "groupSlug": "monorepo-sync",
+  "packageRules": [
+    {
+      "matchManagers": ["composer"],
+      "groupName": "php-deps",
+      "groupSlug": "php-deps"
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "npm-deps",
+      "groupSlug": "npm-deps"
+    }
   ]
 }
