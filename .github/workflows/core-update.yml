@@ -184,8 +184,9 @@ jobs:
 
           # Clean up a stale branch left behind by a previously failed run.
           git push origin --delete "$BRANCH" 2>/dev/null || true
+          git branch -D "$BRANCH" 2>/dev/null || true
 
-          git checkout -b "$BRANCH"
+          git checkout -B "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/
