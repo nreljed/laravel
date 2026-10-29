@@ -7,14 +7,14 @@
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "platformAutomerge": true,
-  "postUpdateOptions": ["composerUpdate", "npmDedupe"],
+  "postUpdateOptions": ["composerWithAll", "npmDedupe"],
   "packageRules": [
     {
       "matchManagers": ["composer"],
       "groupName": "php-deps",
       "groupSlug": "php-deps",
       "automerge": true,
-      "postUpdateOptions": ["composerUpdate"]
+      "postUpdateOptions": ["composerWithAll"]
     },
     {
       "matchManagers": ["npm"],
