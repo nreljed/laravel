@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 10 * * 1"
+  repository_dispatch:
+    types: [core-updated, blog-updated, marketing-updated, dependency-updated]
 
 permissions:
   contents: write

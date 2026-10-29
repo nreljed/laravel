@@ -65,7 +65,7 @@ jobs:
       - name: Update platform + blog + marketing
         env:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
-        run: composer update nreljed/platform nreljed/blog nreljed/marketing-module nreljed/shop-module nreljed/booking-module --with-dependencies --no-scripts --no-interaction
+        run: composer update nreljed/platform nreljed/blog nreljed/marketing-module nreljed/shop-module nreljed/booking-module --with-all-dependencies --no-scripts --no-interaction
 
       # The workspace app mirrors (apps/laravel.shop, apps/laravel.booking) each
       # carry their own composer.lock, and check:platform-consistency requires
