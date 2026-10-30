@@ -1,4 +1,6 @@
 # Cost Breaker 360
+> Nested agent context: resources/js/AGENTS.md, tests/AGENTS.md, scripts/AGENTS.md (read when working in those trees).
+
 
 A SaaS dashboard for cost management, built with Laravel 13 + Inertia.js 3 + React 19.
 
@@ -584,7 +586,7 @@ example of the **module contract**: a feature is not data-owning unless it says 
   log + notifies the admin on success/failure.
 - **Providers**: maps `provider` slug → module — `post` → Blog
   (add your feature there, not in the UI switch). Sidebar/nav/dashboard are unaffected.
-- **Tests**: `tests/Feature/Account/AccountDataBackupTest.php` (15 tests — page lists
+- **Tests**: `tests/Feature/Account` (15 tests — page lists
   modules, export restores own rows only, restore idempotent/own-rows-only + round-trips
   slug collisions; live in the **app**, consuming core's DataBackupCapability). Backend +
   frontend code both under core.
@@ -708,9 +710,9 @@ tests/
 | Model          | File                                         | States                                             |
 | -------------- | -------------------------------------------- | -------------------------------------------------- |
 | `User`         | `database/factories/UserFactory.php`         | `admin()`, default: unverified                     |
-| `Post`         | `database/factories/PostFactory.php`         | `published()`, `draft()`, `archived()`, `future()` |
-| `PostCategory` | `database/factories/PostCategoryFactory.php` | —                                                  |
-| `PostTag`      | `database/factories/PostTagFactory.php`      | —                                                  |
+| `Post`         | `database/factories/`         | `published()`, `draft()`, `archived()`, `future()` |
+| `PostCategory` | `database/factories/` | —                                                  |
+| `PostTag`      | `database/factories/`      | —                                                  |
 
 ### Key Patterns
 
