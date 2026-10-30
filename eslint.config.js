@@ -75,6 +75,7 @@ export default [
   },
   {
     files: ["**/*.{ts,tsx}"],
+    ...reactRecommended,
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -89,7 +90,7 @@ export default [
       },
     },
     plugins: {
-      "@eslint-react": eslintReact,
+      ...reactRecommended.plugins,
       "react-hooks": pluginReactHooks,
     },
     rules: {
