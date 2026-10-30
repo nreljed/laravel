@@ -15,7 +15,7 @@
         "laravel/socialite": "^5.31",
         "nreljed/platform": "^0.1",
         "socialiteproviders/instagram": "^5.2",
-        "socialiteproviders/pinterest": "^4.3"
+        "socialiteproviders/pinterest": "^5.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
