@@ -57,14 +57,14 @@ jobs:
     name: Harness config, skills, refs, docs
     runs-on: ${{ vars.RUNNER_CI || 'self-hosted' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # Node 26 matches ci.yml. check-agent-context.mjs imports the harness
       # plugins (session-context.ts, mirror-boundary.ts) directly to prove they
       # parse and their hooks are well-formed, which relies on native TypeScript
       # type stripping. On an older Node the import fails and the check cannot
       # run at all, so the version is pinned rather than inherited.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "26"
 
