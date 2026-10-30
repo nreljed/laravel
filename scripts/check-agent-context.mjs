@@ -35,8 +35,8 @@ const isInsideRepo = (abs) => {
     return rel === "" || (!rel.startsWith("..") && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }
 
-const AGENTS_MD_MAX_LINES = 400
-const AGENTS_MD_MAX_BYTES = 32 * 1024
+const AGENTS_MD_MAX_LINES = 1000
+const AGENTS_MD_MAX_BYTES = 128 * 1024
 const SKILL_NAME_MAX = 64
 const SKILL_DESCRIPTION_MAX = 1024
 const SESSION_CONTEXT_MAX_BYTES = 16 * 1024

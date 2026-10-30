@@ -1,5 +1,4 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "groupName": "monorepo-sync",
   "groupSlug": "monorepo-sync",
@@ -8,13 +7,40 @@
   "automergeStrategy": "squash",
   "platformAutomerge": true,
   "postUpdateOptions": ["composerWithAll", "npmDedupe"],
+  "ignoreDeps": [
+    "nreljed/platform",
+    "nreljed/blog",
+    "nreljed/shop-module",
+    "nreljed/booking-module",
+    "nreljed/marketing-module"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"],
+    "automerge": true,
+    "postUpdateOptions": ["composerWithAll", "npmDedupe"],
+    "ignoreDeps": [
+      "nreljed/platform",
+      "nreljed/blog",
+      "nreljed/shop-module",
+      "nreljed/booking-module",
+      "nreljed/marketing-module"
+    ]
+  },
   "packageRules": [
     {
       "matchManagers": ["composer"],
       "groupName": "php-deps",
       "groupSlug": "php-deps",
       "automerge": true,
-      "postUpdateOptions": ["composerWithAll"]
+      "postUpdateOptions": ["composerWithAll"],
+      "ignoreDeps": [
+        "nreljed/platform",
+        "nreljed/blog",
+        "nreljed/shop-module",
+        "nreljed/booking-module",
+        "nreljed/marketing-module"
+      ]
     },
     {
       "matchManagers": ["npm"],
