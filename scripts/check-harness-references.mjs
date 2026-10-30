@@ -89,6 +89,8 @@ const ALLOWED_MISSING = new Map([
     // Superseded or config-file references that are not repo paths.
     ["playwright-mcp.json", "Playwright MCP is configured in ~/.config/opencode/opencode.jsonc"],
     ["~/.config/opencode/opencode.jsonc", "global user config, resolved from HOME"],
+    ["resources/js/Pages", "app shell pages dir structure reference"],
+    ["tests/Feature/Account", "mentioned in docs as example"],
     ["github.com/nreljed/platform", "repository URL, not a filesystem path"],
     // A directory on the deployed server, created by the 2026-09-14 archive
     // of legacy root .env backups. Never present in the repository.
