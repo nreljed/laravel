@@ -35,7 +35,7 @@
     "nreljed/shop-module": "^0.1",
     "inertiajs/inertia-laravel": "^3.3.3",
     "intervention/image-laravel": "^4.0",
-    "laravel/ai": "^0.10",
+    "laravel/ai": "^0.11",
     "laravel/framework": "^13.8",
     "laravel/sanctum": "^4.3",
     "laravel/tinker": "^3.0",
@@ -53,7 +53,7 @@
     "laravel/telescope": "^5.20",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.6",
-    "phpunit/phpunit": "^13.2.5 <13.3.0"
+    "phpunit/phpunit": "<13.5.0"
   },
   "autoload": {
     "psr-4": {
