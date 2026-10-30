@@ -66,6 +66,74 @@ class WorkflowEngine
         }
     }
 
+    public function cartAbandoned(?Contact $contact, array $cartData = []): void
+    {
+        if ($contact === null) {
+            return;
+        }
+
+        $contact->loadMissing('tags');
+
+        $workflows = Workflow::query()
+            ->where('trigger', WorkflowTrigger::CartAbandoned->value)
+            ->where('is_active', true)
+            ->get();
+
+        foreach ($workflows as $workflow) {
+            if ($workflow->condition_tag_id !== null
+                && ! $contact->tags->contains('id', $workflow->condition_tag_id)) {
+                continue;
+            }
+
+            $payload = [
+                'event' => WorkflowTrigger::CartAbandoned->value,
+                'contact' => [
+                    'id' => $contact->id,
+                    'email' => $contact->email,
+                    'name' => $contact->displayName(),
+                    'status' => $contact->status?->value,
+                ],
+                'cart' => $cartData,
+            ];
+
+            $this->runWorkflow($workflow, $contact, $payload);
+        }
+    }
+
+    public function productReviewed(?Contact $contact, array $reviewData = []): void
+    {
+        if ($contact === null) {
+            return;
+        }
+
+        $contact->loadMissing('tags');
+
+        $workflows = Workflow::query()
+            ->where('trigger', WorkflowTrigger::ProductReviewed->value)
+            ->where('is_active', true)
+            ->get();
+
+        foreach ($workflows as $workflow) {
+            if ($workflow->condition_tag_id !== null
+                && ! $contact->tags->contains('id', $workflow->condition_tag_id)) {
+                continue;
+            }
+
+            $payload = [
+                'event' => WorkflowTrigger::ProductReviewed->value,
+                'contact' => [
+                    'id' => $contact->id,
+                    'email' => $contact->email,
+                    'name' => $contact->displayName(),
+                    'status' => $contact->status?->value,
+                ],
+                'review' => $reviewData,
+            ];
+
+            $this->runWorkflow($workflow, $contact, $payload);
+        }
+    }
+
     public function postPublished(SocialPost $post): void
     {
         $workflows = Workflow::query()
