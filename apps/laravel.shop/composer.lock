@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "937eb9b0b8d61f68bd716a562d51ea8a",
+    "content-hash": "c647b41145d81e2b12b2efd1b0173545",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3846,21 +3846,21 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.6",
+            "version": "0.1.7",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "8c862d8808f2995ab9346b1c9d21b150c1f99006"
+                "reference": "6384a2190a41e8bdbe71e214001e7fe42a01e5e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/8c862d8808f2995ab9346b1c9d21b150c1f99006",
-                "reference": "8c862d8808f2995ab9346b1c9d21b150c1f99006",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/6384a2190a41e8bdbe71e214001e7fe42a01e5e2",
+                "reference": "6384a2190a41e8bdbe71e214001e7fe42a01e5e2",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
-                "nreljed/platform": "^0.1",
+                "nreljed/platform": "^0.1|^0.2",
                 "php": "^8.4"
             },
             "require-dev": {
@@ -3895,11 +3895,7 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.6",
-                "issues": "https://github.com/nreljed/blog/issues"
-            },
-            "time": "2026-10-26T18:28:33+00:00"
+            "time": "2026-10-31T11:44:06+00:00"
         },
         {
             "name": "nreljed/marketing-module",
@@ -4021,10 +4017,6 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
-            "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.1.95",
-                "issues": "https://github.com/nreljed/platform/issues"
-            },
             "time": "2026-10-26T20:35:42+00:00"
         },
         {
