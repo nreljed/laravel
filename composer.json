@@ -38,8 +38,8 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "minishlink/web-push": "^11.0",
-        "nreljed/blog": "^0.1",
-        "nreljed/platform": "0.1.95",
+        "nreljed/blog": "^0.1.7",
+        "nreljed/platform": "^0.1",
         "sentry/sentry-laravel": "4.27",
         "tightenco/ziggy": "^2.6.4"
     },
