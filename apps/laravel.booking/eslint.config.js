@@ -73,7 +73,6 @@ export default [
   },
   {
     files: ["**/*.{ts,tsx}"],
-    ...reactRecommended,
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -87,6 +86,7 @@ export default [
         ...globals.browser,
       },
     },
+    ...reactRecommended,
     plugins: {
       ...reactRecommended.plugins,
       "react-hooks": pluginReactHooks,
