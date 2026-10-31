@@ -3,22 +3,25 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^3.3.3",
         "intervention/image-laravel": "^4.0",
+        "laravel/ai": "^0.10",
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "minishlink/web-push": "^11.0",
         "nreljed/booking-module": "^0.1",
-        "nreljed/platform": "^0.1",
+        "nreljed/platform": "0.1.95",
         "stripe/stripe-php": "^20.0",
-        "barryvdh/laravel-dompdf": "^3.1",
-        "tightenco/ziggy": "^2.6.4",
-        "laravel/ai": "^0.10"
+        "tightenco/ziggy": "^2.6.4"
     },
     "require-dev": {
         "brianium/paratest": "^7.0",

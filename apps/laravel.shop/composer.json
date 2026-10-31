@@ -1,123 +1,121 @@
 {
-  "$schema": "https://getcomposer.org/schema.json",
-  "name": "laravel/laravel",
-  "type": "project",
-  "description": "The skeleton application for the Laravel framework.",
-  "keywords": [
-    "laravel",
-    "framework"
-  ],
-  "license": "MIT",
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/nreljed/platform.git"
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
+    "license": "MIT",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/nreljed/platform.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/nreljed/blog.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/nreljed/shop-module.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/nreljed/marketing-module.git"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "fakerphp/faker": "^1.23",
+        "inertiajs/inertia-laravel": "^3.3.3",
+        "intervention/image-laravel": "^4.0",
+        "laravel/ai": "^0.10",
+        "laravel/framework": "^13.8",
+        "laravel/sanctum": "^4.3",
+        "laravel/tinker": "^3.0",
+        "minishlink/web-push": "^11.0",
+        "nreljed/blog": "^0.1",
+        "nreljed/marketing-module": "^0.14",
+        "nreljed/platform": "0.1.95",
+        "nreljed/shop-module": "^0.1",
+        "stripe/stripe-php": "^20.0",
+        "tightenco/ziggy": "^2.6.4"
     },
-    {
-      "type": "vcs",
-      "url": "https://github.com/nreljed/blog.git"
+    "require-dev": {
+        "brianium/paratest": "^7.0",
+        "laravel/breeze": "^2.4",
+        "laravel/pail": "^1.2.5",
+        "laravel/pao": "^1.0.6",
+        "laravel/pint": "^1.27",
+        "laravel/telescope": "^5.20",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^13.2.5 <13.3.0"
     },
-    {
-      "type": "vcs",
-      "url": "https://github.com/nreljed/shop-module.git"
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
     },
-    {
-      "type": "vcs",
-      "url": "https://github.com/nreljed/marketing-module.git"
-    }
-  ],
-  "require": {
-    "php": "^8.4",
-    "fakerphp/faker": "^1.23",
-    "nreljed/blog": "^0.1",
-    "nreljed/marketing-module": "^0.14",
-    "nreljed/platform": "^0.1",
-    "nreljed/shop-module": "^0.1",
-    "inertiajs/inertia-laravel": "^3.3.3",
-    "intervention/image-laravel": "^4.0",
-    "laravel/ai": "^0.10",
-    "laravel/framework": "^13.8",
-    "laravel/sanctum": "^4.3",
-    "laravel/tinker": "^3.0",
-    "minishlink/web-push": "^11.0",
-    "stripe/stripe-php": "^20.0",
-    "barryvdh/laravel-dompdf": "^3.1",
-    "tightenco/ziggy": "^2.6.4"
-  },
-  "require-dev": {
-    "brianium/paratest": "^7.0",
-    "laravel/breeze": "^2.4",
-    "laravel/pail": "^1.2.5",
-    "laravel/pao": "^1.0.6",
-    "laravel/pint": "^1.27",
-    "laravel/telescope": "^5.20",
-    "mockery/mockery": "^1.6",
-    "nunomaduro/collision": "^8.6",
-    "phpunit/phpunit": "^13.2.5 <13.3.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "App\\": "app/",
-      "Database\\Factories\\": "database/factories/",
-      "Database\\Seeders\\": "database/seeders/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Tests\\": "tests/"
-    }
-  },
-  "scripts": {
-    "setup": [
-      "composer install",
-      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-      "@php artisan key:generate",
-      "@php artisan migrate --force",
-      "npm install --ignore-scripts",
-      "npm run build"
-    ],
-    "dev": [
-      "Composer\\Config::disableProcessTimeout",
-      "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
-    ],
-    "test": [
-      "@php artisan config:clear --ansi @no_additional_args",
-      "@php artisan test"
-    ],
-    "post-autoload-dump": [
-      "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-      "@php artisan package:discover --ansi"
-    ],
-    "post-update-cmd": [
-      "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
-    ],
-    "post-root-package-install": [
-      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
-    ],
-    "post-create-project-cmd": [
-      "@php artisan key:generate --ansi",
-      "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-      "@php artisan migrate --graceful --ansi"
-    ],
-    "pre-package-uninstall": [
-      "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
-    ]
-  },
-  "extra": {
-    "laravel": {
-      "dont-discover": []
-    }
-  },
-  "config": {
-    "optimize-autoloader": true,
-    "preferred-install": "dist",
-    "sort-packages": true,
-    "allow-plugins": {
-      "php-http/discovery": true
-    }
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install --ignore-scripts",
+            "npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi @no_additional_args",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
-
-
