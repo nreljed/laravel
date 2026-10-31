@@ -1,27 +1,73 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "groupName": "monorepo-sync",
-  "groupSlug": "monorepo-sync",
-  "automerge": true,
-  "automergeType": "pr",
-  "automergeStrategy": "squash",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":preserveSemverRanges"
+  ],
+  "timezone": "UTC",
+  "schedule": ["before 6am on monday"],
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
   "platformAutomerge": true,
-  "postUpdateOptions": ["composerWithAll", "npmDedupe"],
+  "rebaseWhen": "conflicted",
+  "ignoreDeps": [
+    "nreljed/platform",
+    "nreljed/blog",
+    "nreljed/shop-module",
+    "nreljed/booking-module",
+    "nreljed/marketing-module"
+  ],
+  "postUpdateOptions": [
+    "composerWithAll",
+    "npmDedupe"
+  ],
+  "rangeStrategy": "bump",
   "packageRules": [
     {
       "matchManagers": ["composer"],
       "groupName": "php-deps",
-      "groupSlug": "php-deps",
       "automerge": true,
-      "postUpdateOptions": ["composerWithAll"]
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": ["npm", "pnpm"],
       "groupName": "npm-deps",
-      "groupSlug": "npm-deps",
       "automerge": true,
-      "postUpdateOptions": ["npmDedupe"]
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major"]
+    },
+    {
+      "matchPackagePatterns": ["^laravel/"],
+      "groupName": "laravel-ecosystem",
+      "automerge": false,
+      "labels": ["dependencies", "laravel"]
+    },
+    {
+      "matchPackageNames": ["laravel/ai", "lexical"],
+      "groupName": "ai-editor-blocked",
+      "automerge": false,
+      "labels": ["dependencies", "blocked-by-platform"]
+    },
+    {
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "react-core",
+      "automerge": false,
+      "labels": ["dependencies", "core-framework"]
+    },
+    {
+      "matchPackageNames": ["vite", "@vitejs/plugin-react"],
+      "groupName": "vite-tooling",
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
     }
   ]
 }
