@@ -2,8 +2,6 @@
 > Nested agent context: resources/js/AGENTS.md, tests/AGENTS.md, scripts/AGENTS.md (read when working in those trees).
 
 
-> Nested agent context: resources/js/AGENTS.md, tests/AGENTS.md, scripts/AGENTS.md (read when working in those trees).
-
 A SaaS dashboard for cost management, built with Laravel 13 + Inertia.js 3 + React 19.
 
 ## Goal
