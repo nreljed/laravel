@@ -22,9 +22,9 @@ allowBuilds:
 # upstream-owned mirrors. Forcing one resolved version here is the only lever the
 # mono root owns, and it also immunises future partial bumps.
 overrides:
-  "@inertiajs/core": 3.8.0
-  "@inertiajs/react": 3.8.0
-  "@inertiajs/vite": 3.8.0
+  "@inertiajs/core": 3.10.0
+  "@inertiajs/react": 3.10.0
+  "@inertiajs/vite": 3.10.0
   # GHSA-mrhx-c7xc-m3w5 (high): zod <4.6.6 exhausts memory on oversized
   # constrained collections. The package manifests are upstream-owned mirrors and
   # keep their own `^4.4.3` / `^4.5.4` ranges; this pins the resolved version for
