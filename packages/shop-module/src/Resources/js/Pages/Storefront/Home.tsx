@@ -6,6 +6,7 @@ import { Button } from "@nreljed/platform/Components/ui/button";
 import { Card, CardContent } from "@nreljed/platform/Components/ui/card";
 import { Badge } from "@nreljed/platform/Components/ui/badge";
 import { ProductCard, SectionHeader, type Product } from "../../components/storefront/ProductCard";
+import { cn } from "@nreljed/platform/lib/utils";
 
 interface HomepageCategory {
     id: number;
@@ -67,34 +68,41 @@ export default function StoreHome() {
                 </Head>
 
                 {/* Hero */}
-                <section className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-background to-background px-6 py-16 sm:px-12 sm:py-24">
-                    <div className="relative z-10 max-w-xl">
-                        <Badge variant="secondary" className="rounded-full mb-4">
-                            <Sparkles className="h-3 w-3 mr-1" /> New season
-                        </Badge>
-                        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{homepage.hero.title}</h1>
-                        <p className="mt-4 text-muted-foreground text-lg">{homepage.hero.subtitle}</p>
-                        <div className="mt-8 flex flex-wrap gap-3">
-                            <Button size="lg" className="rounded-full" onClick={() => router.get(route("store.products"))}>
-                                {homepage.hero.cta_label} <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                            {homepage.categories.length > 0 && (
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    className="rounded-full"
-                                    onClick={() => {
-                                        const el = document.getElementById("shop-categories");
-                                        el?.scrollIntoView({ behavior: "smooth" });
-                                    }}
-                                >
-                                    Browse categories
+                <section className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/8 via-background to-background px-6 py-16 sm:px-12 sm:py-24">
+                    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                        <div className="relative z-10">
+                            <Badge variant="secondary" className="rounded-full mb-4">
+                                <Sparkles className="h-3 w-3 mr-1" /> New season
+                            </Badge>
+                            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{homepage.hero.title}</h1>
+                            <p className="mt-4 text-muted-foreground text-lg max-w-xl">{homepage.hero.subtitle}</p>
+                            <div className="mt-8 flex flex-wrap gap-3">
+                                <Button size="lg" className="rounded-full" onClick={() => router.get(route("store.products"))}>
+                                    {homepage.hero.cta_label} <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
-                            )}
+                                {homepage.categories.length > 0 && (
+                                    <Button
+                                        size="lg"
+                                        variant="outline"
+                                        className="rounded-full"
+                                        onClick={() => {
+                                            const el = document.getElementById("shop-categories");
+                                            el?.scrollIntoView({ behavior: "smooth" });
+                                        }}
+                                    >
+                                        Browse categories
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="relative hidden lg:block">
+                            <div className="aspect-[4/3] overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-background to-muted/40" />
+                            <div className="absolute -bottom-4 -left-4 rounded-2xl border bg-background px-4 py-3 shadow-lg">
+                                <p className="text-xs text-muted-foreground">New arrivals</p>
+                                <p className="text-lg font-bold">{homepage.newArrivals.length} fresh picks</p>
+                            </div>
                         </div>
                     </div>
-                    <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-                    <div className="absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
                 </section>
 
                 {/* Featured */}
@@ -126,11 +134,16 @@ export default function StoreHome() {
                     <section id="shop-categories" className="mt-16 scroll-mt-24">
                         <SectionHeader title="Shop by category" href={route("store.products")} />
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {homepage.categories.map((cat) => (
+                            {homepage.categories.map((cat, i) => (
                                 <Link key={cat.id} href={route("store.category", cat.slug)} className="group">
-                                    <Card className="overflow-hidden transition-shadow hover:shadow-lg">
-                                        <div className="aspect-[3/2] bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center">
-                                            <Package className="h-8 w-8 text-primary/40 group-hover:scale-110 transition-transform" />
+                                    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:ring-foreground/15 h-full">
+                                        <div className={cn(
+                                            "aspect-[3/2] flex items-center justify-center",
+                                            i % 3 === 0 ? "bg-gradient-to-br from-primary/25 via-primary/8 to-muted" :
+                                            i % 3 === 1 ? "bg-gradient-to-br from-primary/15 via-muted to-muted" :
+                                            "bg-gradient-to-br from-muted via-primary/5 to-primary/10"
+                                        )}>
+                                            <Package className="h-8 w-8 text-primary/50 transition-colors group-hover:text-primary" />
                                         </div>
                                         <CardContent className="p-4 flex items-center justify-between">
                                             <span className="font-semibold text-sm">{cat.name}</span>
