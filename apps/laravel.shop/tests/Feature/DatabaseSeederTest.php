@@ -68,6 +68,10 @@ class DatabaseSeederTest extends TestCase
     {
         $this->app['env'] = 'production';
 
+        // Keep the bootstrapped admin out of the demo-email set so the
+        // production guard is asserted against the demo accounts only.
+        config(['admin.email' => 'admin@example.com', 'admin.password' => 'azerty123/*', 'admin.name' => 'admin', 'admin.username' => 'admin']);
+
         try {
             // `--force` mirrors how the deploy and the maintenance reset run
             // seeders in production; without it `db:seed` stops for a

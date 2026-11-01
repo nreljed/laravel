@@ -25,7 +25,7 @@ trait BootstrapsAdmin
         if (! $admin) {
             Artisan::call('app:create-admin', [
                 '--no-interaction' => true,
-                '--email' => config('admin.email') ?: 'nstudio.webdesign@gmail.com',
+                '--email' => config('admin.email') ?: 'admin@example.com',
                 '--password' => config('admin.password') ?: 'azerty123/*',
                 '--name' => config('admin.name') ?: 'nstudio',
                 '--username' => config('admin.username') ?: 'nstudio',
@@ -45,7 +45,7 @@ trait BootstrapsAdmin
                 'display_name' => $admin->display_name ?: ($admin->name ?: 'nstudio'),
                 'bio' => $admin->bio ?: 'Shop owner and platform administrator for the Nstudio store.',
                 'phone' => $admin->phone ?: '+1 555 010 0100',
-                'contact_email' => $admin->contact_email ?: ($admin->email ?: 'nstudio.webdesign@gmail.com'),
+                'contact_email' => $admin->contact_email ?: ($admin->email ?: 'admin@example.com'),
                 'social_links' => $admin->social_links ?: [
                     'twitter' => 'https://twitter.com/nstudioweb',
                     'facebook' => 'https://facebook.com/nstudiowebdesign',
