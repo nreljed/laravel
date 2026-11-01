@@ -19,20 +19,32 @@ const services = [
     title: "Latest smartphones",
     description:
       "The newest models straight from the brand — with official warranties and honest prices.",
-    items: ["Xiaomi & popular brands", "Available in-store and online", "Clear, upfront price tags"],
+    items: [
+      "Xiaomi & popular brands",
+      "Available in-store and online",
+      "Clear, upfront price tags",
+    ],
     featured: true,
   },
   {
     icon: Headphones,
     title: "Accessories & gadgets",
     description: "Chargers, power banks, audio, and smart devices to complete your setup.",
-    items: ["Verified compatible accessories", "Fast chargers & cables", "Gadgets for home and commute"],
+    items: [
+      "Verified compatible accessories",
+      "Fast chargers & cables",
+      "Gadgets for home and commute",
+    ],
   },
   {
     icon: CreditCard,
     title: "Easy checkout",
     description: "A smooth online checkout with secure payment and clear delivery costs.",
-    items: ["Guest checkout available", "Discounts applied automatically", "Order confirmation by email"],
+    items: [
+      "Guest checkout available",
+      "Discounts applied automatically",
+      "Order confirmation by email",
+    ],
   },
   {
     icon: Truck,
@@ -105,7 +117,9 @@ export default function Services() {
                   <s.icon className="h-6 w-6" />
                 </div>
                 <h2 className="mt-5 text-xl font-semibold">{s.title}</h2>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {s.description}
+                </p>
                 <ul className="mt-5 space-y-2.5">
                   {s.items.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-sm">
