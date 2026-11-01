@@ -2193,16 +2193,16 @@
         },
         {
             "name": "league/commonmark",
-            "version": "2.10.6",
+            "version": "2.10.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "cb3d6a523587751db4b8e1d0c3945d2d68535bd3"
+                "reference": "8eb53e906fd60c67038d22f1f1cab420ed58b8be"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/cb3d6a523587751db4b8e1d0c3945d2d68535bd3",
-                "reference": "cb3d6a523587751db4b8e1d0c3945d2d68535bd3",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/8eb53e906fd60c67038d22f1f1cab420ed58b8be",
+                "reference": "8eb53e906fd60c67038d22f1f1cab420ed58b8be",
                 "shasum": ""
             },
             "require": {
@@ -2296,7 +2296,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-30T12:21:38+00:00"
+            "time": "2026-10-31T13:35:37+00:00"
         },
         {
             "name": "league/config",
@@ -3373,6 +3373,10 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.7",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
             "time": "2026-10-31T11:44:06+00:00"
         },
         {
@@ -3380,7 +3384,7 @@
             "version": "0.1.95",
             "source": {
                 "type": "git",
-                "url": "git@github.com:nreljed/platform.git",
+                "url": "https://github.com/nreljed/platform.git",
                 "reference": "16b1410fba8c10fabe9779628f54e450b5961642"
             },
             "dist": {
@@ -3433,6 +3437,10 @@
                 }
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
+            "support": {
+                "source": "https://github.com/nreljed/platform/tree/v0.1.95",
+                "issues": "https://github.com/nreljed/platform/issues"
+            },
             "time": "2026-10-26T20:35:42+00:00"
         },
         {

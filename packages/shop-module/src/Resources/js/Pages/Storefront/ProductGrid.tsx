@@ -1,12 +1,13 @@
 import { Link, router, usePage, Head } from "@inertiajs/react";
 import { useState, type ReactNode } from "react";
 import type { PageProps } from "@inertiajs/core";
-import { Search, ShoppingCart, SlidersHorizontal, ChevronRight } from "lucide-react";
+import { Search, ShoppingCart, SlidersHorizontal, ChevronRight, Filter } from "lucide-react";
 import StoreLayout from "../../Layouts/StoreLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
 import { Input } from "@nreljed/platform/Components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@nreljed/platform/Components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@nreljed/platform/Components/ui/pagination";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@nreljed/platform/Components/ui/sheet";
 import { useCurrency } from "../../lib/currency";
 import { Slider } from "@nreljed/platform/Components/ui/slider";
 import { cn } from "@nreljed/platform/lib/utils";
@@ -107,13 +108,127 @@ function AttributeTermToggle({ term, displayType, active, onToggle }: {
     );
 }
 
+interface FiltersContentProps {
+    categories: Category[];
+    brands: Brand[];
+    attributeFilters: AttributeFilter[];
+    filters: Filters;
+    priceRange: [number, number];
+    priceValue: [number, number];
+    activeTermIds: number[];
+    activeCategory: StorePage["activeCategory"];
+    renderCategoryTree: (list: Category[], depth: number) => ReactNode;
+    applyFilter: (key: string, value: string | null) => void;
+    toggleAttributeTerm: (termId: number) => void;
+    setPriceValue: (v: [number, number]) => void;
+    applyPriceFilter: () => void;
+    money: (amount: number | string | null | undefined) => string;
+}
+
+function FiltersContent({
+    categories, brands, attributeFilters, filters, priceRange, priceValue,
+    activeTermIds, activeCategory, renderCategoryTree, applyFilter,
+    toggleAttributeTerm, setPriceValue, applyPriceFilter, money,
+}: FiltersContentProps) {
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4" /> Categories
+                </h3>
+                <div className="space-y-1">
+                    <Link href={route("store.products")}
+                        className={`block text-sm px-3 py-1.5 rounded-md ${!filters.category && !activeCategory ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+                        All Products
+                    </Link>
+                    {renderCategoryTree(categories, 0)}
+                </div>
+            </div>
+
+            {brands.length > 0 && (
+                <div>
+                    <h3 className="text-sm font-semibold mb-3">Brands</h3>
+                    <div className="space-y-1">
+                        <button type="button" onClick={() => applyFilter("brand", null)}
+                            className={`block w-full text-left text-sm px-3 py-1.5 rounded-md ${!filters.brand ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+                            All Brands
+                        </button>
+                        {brands.map((brand) => (
+                            <button key={brand.id} type="button" onClick={() => applyFilter("brand", brand.slug)}
+                                className={`block w-full text-left text-sm px-3 py-1.5 rounded-md ${filters.brand === brand.slug ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+                                {brand.name}
+                                <span className="text-xs text-muted-foreground ml-1">({brand.products_count})</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {attributeFilters.length > 0 && (
+                <div className="space-y-5">
+                    {attributeFilters.map((attr) => (
+                        <div key={attr.id}>
+                            <h3 className="text-sm font-semibold mb-3">{attr.name}</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {attr.terms.map((term) => (
+                                    <AttributeTermToggle
+                                        key={term.id}
+                                        term={term}
+                                        displayType={attr.display_type}
+                                        active={activeTermIds.includes(term.id)}
+                                        onToggle={toggleAttributeTerm}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {priceRange[0] < priceRange[1] && (
+                <div>
+                    <h3 className="text-sm font-semibold mb-3">Price Range</h3>
+                    <Slider
+                        min={priceRange[0]}
+                        max={priceRange[1]}
+                        step={1}
+                        value={priceValue}
+                        onValueChange={(v) => setPriceValue(v as [number, number])}
+                        onValueCommitted={() => applyPriceFilter()}
+                        className="mb-2"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{money(priceValue[0])}</span>
+                        <span>{money(priceValue[1])}</span>
+                    </div>
+                </div>
+            )}
+
+            <div>
+                <h3 className="text-sm font-semibold mb-3">Sort By</h3>
+                <Select value={filters.sort ?? "newest"}
+                    onValueChange={(v) => applyFilter("sort", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="newest">Newest</SelectItem>
+                        <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                        <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                        <SelectItem value="name">Name</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+    );
+}
+
 export default function StorefrontProducts() {
     const { props } = usePage<PageProps & StorePage & { wishlistIds: number[] }>()
     const { products, categories, brands, attributeFilters, filters, priceRange, activeCategory, wishlistIds, seo } = props
     const breadcrumbs = props.breadcrumbs ?? []
     const { money } = useCurrency();
     const [priceValue, setPriceValue] = useState<[number, number]>([priceRange[0], priceRange[1]])
-    
+    const [filtersOpen, setFiltersOpen] = useState(false)
+
     /* Both bounds have to land in the query together, so they are applied in a
      * single visit rather than one after the other - two visits would race and
      * the second could drop the first bound. */
@@ -187,6 +302,12 @@ export default function StorefrontProducts() {
         })),
     })
 
+    const filterProps = {
+        categories, brands, attributeFilters, filters, priceRange, priceValue,
+        activeTermIds, activeCategory, renderCategoryTree, applyFilter,
+        toggleAttributeTerm, setPriceValue, applyPriceFilter, money,
+    };
+
     return (
         <StoreLayout>
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -225,7 +346,7 @@ export default function StorefrontProducts() {
                     </nav>
                 )}
 
-                <div className="flex items-center justify-between mt-8 mb-8">
+                <div className="flex items-center justify-between mt-8 mb-8 gap-4 flex-wrap">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
                             {activeCategory ? activeCategory.name : "All Products"}
@@ -234,10 +355,25 @@ export default function StorefrontProducts() {
                             {products.data.length} product{products.data.length !== 1 ? "s" : ""}
                         </p>
                     </div>
-                    <form onSubmit={handleSearch} className="flex gap-2">
-                        <Input name="search" defaultValue={filters.search ?? ""} placeholder="Search products..." className="w-64" />
-                        <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
-                    </form>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <form onSubmit={handleSearch} className="flex gap-2 flex-1 sm:flex-initial">
+                            <Input name="search" defaultValue={filters.search ?? ""} placeholder="Search products..." className="w-full sm:w-64" />
+                            <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                        </form>
+                        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                            <SheetTrigger render={<Button variant="outline" size="icon" className="lg:hidden" aria-label="Open filters">
+                                <Filter className="h-4 w-4" />
+                            </Button>} />
+                            <SheetContent side="left" className="w-80 overflow-y-auto">
+                                <SheetHeader>
+                                    <SheetTitle>Filters</SheetTitle>
+                                </SheetHeader>
+                                <div className="px-4 pb-6">
+                                    <FiltersContent {...filterProps} />
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
                 </div>
 
                 {activeCategory && activeCategory.children.length > 0 && (
@@ -254,99 +390,10 @@ export default function StorefrontProducts() {
 
                 <div className="flex gap-8">
                     <aside className="hidden lg:block w-56 shrink-0 space-y-6">
-                        <div>
-                            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                <SlidersHorizontal className="h-4 w-4" /> Categories
-                            </h3>
-                            <div className="space-y-1">
-                                <Link href={route("store.products")}
-                                    className={`block text-sm px-3 py-1.5 rounded-md ${!filters.category && !activeCategory ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
-                                    All Products
-                                </Link>
-                                {renderCategoryTree(categories, 0)}
-                            </div>
-                        </div>
-
-                        {brands.length > 0 && (
-                            <div>
-                                <h3 className="text-sm font-semibold mb-3">Brands</h3>
-                                <div className="space-y-1">
-                                    <button type="button" onClick={() => applyFilter("brand", null)}
-                                        className={`block w-full text-left text-sm px-3 py-1.5 rounded-md ${!filters.brand ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
-                                        All Brands
-                                    </button>
-                                    {brands.map((brand) => (
-                                        <button key={brand.id} type="button" onClick={() => applyFilter("brand", brand.slug)}
-                                            className={`block w-full text-left text-sm px-3 py-1.5 rounded-md ${filters.brand === brand.slug ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
-                                            {brand.name}
-                                            <span className="text-xs text-muted-foreground ml-1">({brand.products_count})</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {attributeFilters.length > 0 && (
-                            <div className="space-y-5">
-                                {attributeFilters.map((attr) => (
-                                    <div key={attr.id}>
-                                        <h3 className="text-sm font-semibold mb-3">{attr.name}</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            {attr.terms.map((term) => (
-                                                <AttributeTermToggle
-                                                    key={term.id}
-                                                    term={term}
-                                                    displayType={attr.display_type}
-                                                    active={activeTermIds.includes(term.id)}
-                                                    onToggle={toggleAttributeTerm}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {priceRange[0] < priceRange[1] && (
-                            <div>
-                                <h3 className="text-sm font-semibold mb-3">Price Range</h3>
-                                <Slider
-                                    min={priceRange[0]}
-                                    max={priceRange[1]}
-                                    step={1}
-                                    value={priceValue}
-                                    onValueChange={(v) => setPriceValue(v as [number, number])}
-                                    /* Base UI names the commit callback
-                                     * `onValueCommitted`; the old
-                                     * `onValueCommit` was silently dropped, so
-                                     * releasing the slider never applied the
-                                     * range. */
-                                    onValueCommitted={() => applyPriceFilter()}
-                                    className="mb-2"
-                                />
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>{money(priceValue[0])}</span>
-                                    <span>{money(priceValue[1])}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        <div>
-                            <h3 className="text-sm font-semibold mb-3">Sort By</h3>
-                            <Select value={filters.sort ?? "newest"}
-                                onValueChange={(v) => applyFilter("sort", v)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="newest">Newest</SelectItem>
-                                    <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                                    <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                                    <SelectItem value="name">Name</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <FiltersContent {...filterProps} />
                     </aside>
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         {products.data.length === 0 ? (
                             <div className="text-center py-16">
                                 <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/40" />
@@ -369,11 +416,27 @@ export default function StorefrontProducts() {
                                             <PaginationPrevious href={products.prev_page_url} />
                                         </PaginationItem>
                                     )}
-                                    {Array.from({ length: products.last_page }, (_, i) => i + 1).map((page) => (
-                                        <PaginationItem key={page}>
-                                            <PaginationLink href={products.links?.[page]?.url ?? undefined} isActive={page === products.current_page} />
-                                        </PaginationItem>
-                                    ))}
+                                    {(() => {
+                                        const current = products.current_page;
+                                        const last = products.last_page;
+                                        const pages: number[] = [];
+                                        const push = (p: number) => { if (!pages.includes(p)) pages.push(p); };
+                                        push(1);
+                                        if (current > 3) push(-1); // ellipsis marker
+                                        for (let p = Math.max(2, current - 1); p <= Math.min(last - 1, current + 1); p++) push(p);
+                                        if (current < last - 2) push(-2); // ellipsis marker
+                                        if (last > 1) push(last);
+                                        return pages.map((page, idx) => {
+                                            if (page < 0) {
+                                                return <PaginationItem key={`ellipsis-${idx}`}><span className="px-2 text-muted-foreground">…</span></PaginationItem>;
+                                            }
+                                            return (
+                                                <PaginationItem key={page}>
+                                                    <PaginationLink href={products.links?.[page]?.url ?? undefined} isActive={page === current} />
+                                                </PaginationItem>
+                                            );
+                                        });
+                                    })()}
                                     {products.next_page_url && (
                                         <PaginationItem>
                                             <PaginationNext href={products.next_page_url} />
