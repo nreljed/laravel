@@ -30,20 +30,29 @@ export default function Contact() {
 
   const channels: ContactChannel[] = [
     { icon: Mail, label: "Email", value: email, href: email ? `mailto:${email}` : undefined },
-    { icon: Phone, label: "Phone", value: phone, href: phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : undefined },
+    {
+      icon: Phone,
+      label: "Phone",
+      value: phone,
+      href: phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : undefined,
+    },
     { icon: MapPin, label: "Address", value: address },
     { icon: Clock, label: "Hours", value: hours },
   ].filter((c) => c.value.length > 0);
 
   return (
-    <PublicLayout title="Contact" description="Get in touch with our team — we'd love to hear from you." ogType="website">
+    <PublicLayout
+      title="Contact"
+      description="Get in touch with our team — we'd love to hear from you."
+      ogType="website"
+    >
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Get in touch</h1>
           <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-            Questions about a product, an order, or delivery? Reach out through any channel below and
-            we'll get back to you promptly.
+            Questions about a product, an order, or delivery? Reach out through any channel below
+            and we'll get back to you promptly.
           </p>
         </div>
 
@@ -58,7 +67,9 @@ export default function Contact() {
                 <div className="mt-1 break-words text-sm text-muted-foreground">{c.value}</div>
               </CardHeader>
             );
-            const card = <Card className="h-full transition-colors hover:bg-muted/40">{content}</Card>;
+            const card = (
+              <Card className="h-full transition-colors hover:bg-muted/40">{content}</Card>
+            );
             return c.href ? (
               <a key={c.label} href={c.href} className="block h-full">
                 {card}
@@ -76,7 +87,8 @@ export default function Contact() {
             <Send className="h-8 w-8 text-primary" />
             <h2 className="text-2xl font-bold tracking-tight">Prefer to write to us?</h2>
             <p className="max-w-xl text-muted-foreground">
-              Email is the fastest way to reach the team and we typically reply within one business day.
+              Email is the fastest way to reach the team and we typically reply within one business
+              day.
             </p>
             <Button render={<a href={`mailto:${email}`} />} size="lg">
               <Mail className="mr-2 h-4 w-4" /> Email {email}

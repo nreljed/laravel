@@ -4,9 +4,21 @@ import PublicLayout from "@nreljed/platform/Layouts/PublicLayout";
 import { Button } from "@nreljed/platform/Components/ui/button";
 
 const highlights = [
-  { icon: Zap, title: "Latest tech", body: "The newest phones and gadgets, in stock and ready to ship." },
-  { icon: ShieldCheck, title: "Genuine & guaranteed", body: "100% authentic products with official warranties." },
-  { icon: Truck, title: "Delivered to your door", body: "Fast delivery across Tunisia, with tracking." },
+  {
+    icon: Zap,
+    title: "Latest tech",
+    body: "The newest phones and gadgets, in stock and ready to ship.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Genuine & guaranteed",
+    body: "100% authentic products with official warranties.",
+  },
+  {
+    icon: Truck,
+    title: "Delivered to your door",
+    body: "Fast delivery across Tunisia, with tracking.",
+  },
 ];
 
 export default function Welcome() {
@@ -17,7 +29,10 @@ export default function Welcome() {
   const registrationEnabled = registration.enabled !== false;
 
   return (
-    <PublicLayout title="Welcome" description={`${appName} — genuine tech, fair prices, delivered across Tunisia.`}>
+    <PublicLayout
+      title="Welcome"
+      description={`${appName} — genuine tech, fair prices, delivered across Tunisia.`}
+    >
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">

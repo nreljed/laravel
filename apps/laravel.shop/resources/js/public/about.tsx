@@ -13,20 +13,54 @@ import { Button } from "@nreljed/platform/Components/ui/button";
 import { Card, CardContent } from "@nreljed/platform/Components/ui/card";
 
 const values = [
-  { icon: Rocket, title: "Fast & modern", description: "We stock the latest phones and gadgets and ship every order the business day after you place it." },
-  { icon: ShieldCheck, title: "Genuine, guaranteed", description: "100% authentic products with official warranties — every device is verified before it leaves our store." },
-  { icon: HeartHandshake, title: "Support that helps", description: "Real people answer your questions before and after the sale — in Arabic and French." },
-  { icon: Target, title: "Fair pricing", description: "Competitive prices, honest discounts, and transparent delivery costs. No surprises at checkout." },
+  {
+    icon: Rocket,
+    title: "Fast & modern",
+    description:
+      "We stock the latest phones and gadgets and ship every order the business day after you place it.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Genuine, guaranteed",
+    description:
+      "100% authentic products with official warranties — every device is verified before it leaves our store.",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Support that helps",
+    description:
+      "Real people answer your questions before and after the sale — in Arabic and French.",
+  },
+  {
+    icon: Target,
+    title: "Fair pricing",
+    description:
+      "Competitive prices, honest discounts, and transparent delivery costs. No surprises at checkout.",
+  },
 ] as const;
 
 const milestones = [
-  { year: "Today", title: "Your local tech store", description: "Phones, accessories, and smart gadgets delivered across Tunisia, from our shop in Tunis." },
-  { year: "Soon", title: "A full online shop", description: "A modern storefront where browsing, ordering, and tracking your delivery is effortless." },
+  {
+    year: "Today",
+    title: "Your local tech store",
+    description:
+      "Phones, accessories, and smart gadgets delivered across Tunisia, from our shop in Tunis.",
+  },
+  {
+    year: "Soon",
+    title: "A full online shop",
+    description:
+      "A modern storefront where browsing, ordering, and tracking your delivery is effortless.",
+  },
 ] as const;
 
 export default function About() {
   return (
-    <PublicLayout title="About Us" description="Meet the store behind your favourite tech — genuine devices, fair prices, and support you can rely on across Tunisia." ogType="website">
+    <PublicLayout
+      title="About Us"
+      description="Meet the store behind your favourite tech — genuine devices, fair prices, and support you can rely on across Tunisia."
+      ogType="website"
+    >
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
@@ -37,9 +71,9 @@ export default function About() {
             </div>
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">About our store</h1>
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-              We're a Tunisian electronics retailer built around one promise: give people genuine gear
-              at a fair price, with service that doesn't disappear after the sale. From smartphones to
-              power banks, we stock what we'd buy ourselves.
+              We're a Tunisian electronics retailer built around one promise: give people genuine
+              gear at a fair price, with service that doesn't disappear after the sale. From
+              smartphones to power banks, we stock what we'd buy ourselves.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Button render={<Link href={route("services")} />} size="lg">
@@ -81,7 +115,9 @@ export default function About() {
                     <Lightbulb className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{m.year}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {m.year}
+                    </p>
                     <h3 className="font-semibold">{m.title}</h3>
                     <p className="mt-1 text-sm text-muted-foreground">{m.description}</p>
                   </div>
