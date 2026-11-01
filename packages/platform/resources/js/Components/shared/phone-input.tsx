@@ -185,7 +185,7 @@ interface FlagComponentProps {
 }
 
 const FlagComponent = ({ country, countryName }: FlagComponentProps) => {
-  const Flag = flags[country as CountryCode] as React.ComponentType<{ title?: string }> | undefined;
+  const Flag = country ? (flags as Record<string, React.ComponentType<{ title?: string }>>)[country] : undefined;
 
   return (
     <span className="flex h-4 w-6 items-center justify-center overflow-hidden rounded-sm bg-foreground/20">
