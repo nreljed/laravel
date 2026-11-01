@@ -6,7 +6,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\View;
 use Nreljed\Platform\Mail\RecoveryMail;
 use Nreljed\Platform\Models\RecoveryToken;
 use Nreljed\Platform\Models\User;
@@ -28,9 +27,11 @@ class RecoveryController extends Controller
      */
     private function requestView(): string
     {
-        return View::exists('recovery.request')
-            ? 'recovery.request'
-            : 'core::recovery.request';
+        if (file_exists(resource_path('views/recovery/request.blade.php'))) {
+            return 'recovery.request';
+        }
+
+        return 'core::recovery.request';
     }
 
     public function requestToken(Request $request): JsonResponse

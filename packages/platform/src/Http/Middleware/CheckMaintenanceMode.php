@@ -5,7 +5,6 @@ namespace Nreljed\Platform\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\View;
 use Nreljed\Platform\Services\SettingsService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,9 +55,15 @@ class CheckMaintenanceMode
      */
     private function maintenanceView(): string
     {
-        return View::exists('maintenance')
-            ? 'maintenance'
-            : 'core::maintenance';
+        // A host may publish `resources/views/maintenance.blade.php` to
+        // override the package view. Detect that on the filesystem rather than
+        // via View::exists(), which can resolve to the package's own namespaced
+        // view and wrongly report the bare name as available.
+        if (file_exists(resource_path('views/maintenance.blade.php'))) {
+            return 'maintenance';
+        }
+
+        return 'core::maintenance';
     }
 
     private function isValidBypassToken(Request $request, string $validToken): bool

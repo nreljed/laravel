@@ -12,7 +12,7 @@ async function getHighlighter(): Promise<import("shiki/core").HighlighterCore> {
         import("@shikijs/engine-javascript"),
         import("shiki/themes"),
       ]);
-    const theme = bundledThemesInfo.find((info) => info.id === THEME_ID);
+    const theme = bundledThemesInfo.find((info: any) => info.id === THEME_ID);
     return createHighlighterCore({
       engine: createJavaScriptRegexEngine(),
       langs: [],
@@ -32,7 +32,7 @@ async function loadLanguage(
   }
   const { bundledLanguagesInfo } = await import("shiki/langs");
   const info = bundledLanguagesInfo.find(
-    (lang) => lang.id === langId || (lang.aliases ?? []).includes(langId),
+    (lang: any) => lang.id === langId || (lang.aliases ?? []).includes(langId),
   );
   if (!info) {
     return false;

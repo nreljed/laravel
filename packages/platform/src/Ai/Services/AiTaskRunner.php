@@ -76,8 +76,8 @@ class AiTaskRunner
             $user,
             $agent,
             $resolved,
-            $response->usage->promptTokens,
-            $response->usage->completionTokens,
+            $response->usage->inputTokens,
+            $response->usage->outputTokens,
             $this->elapsedMs($start),
         );
 
@@ -107,8 +107,8 @@ class AiTaskRunner
                 $user,
                 $agent,
                 $resolved,
-                $usage->promptTokens ?? 0,
-                $usage->completionTokens ?? 0,
+                $usage->inputTokens ?? 0,
+                $usage->outputTokens ?? 0,
                 $this->elapsedMs($start),
             );
         });

@@ -13,6 +13,18 @@ export function SiteHeader() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // The Blog link is only available when the blog module is registered
+  // (and its `blog.index` route exists). Guard so consumers without the
+  // blog module (e.g. the booking app) don't crash on render.
+  const hasBlogRoute = (() => {
+    try {
+      route("blog.index");
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
   const siteLinks = (
     <>
       <Link
@@ -21,12 +33,14 @@ export function SiteHeader() {
       >
         Home
       </Link>
-      <Link
-        href={route("blog.index")}
-        className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-      >
-        Blog
-      </Link>
+      {hasBlogRoute && (
+        <Link
+          href={route("blog.index")}
+          className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+        >
+          Blog
+        </Link>
+      )}
       <Link
         href={route("about")}
         className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
@@ -90,13 +104,15 @@ export function SiteHeader() {
             >
               Home
             </Link>
-            <Link
-              href={route("blog.index")}
-              className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Blog
-            </Link>
+            {hasBlogRoute && (
+              <Link
+                href={route("blog.index")}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Blog
+              </Link>
+            )}
             <Link
               href={route("about")}
               className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"

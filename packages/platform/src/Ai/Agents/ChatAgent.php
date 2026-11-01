@@ -99,8 +99,8 @@ INSTRUCTIONS;
             user: $user,
             provider: $resolved['driver'],
             model: $resolved['model'] ?? 'unknown',
-            inputTokens: $response->usage->promptTokens,
-            outputTokens: $response->usage->completionTokens,
+            inputTokens: $response->usage->inputTokens,
+            outputTokens: $response->usage->outputTokens,
         );
     }
 }
