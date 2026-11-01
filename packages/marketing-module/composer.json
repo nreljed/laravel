@@ -1,7 +1,7 @@
 {
     "name": "nreljed/marketing-module",
     "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
-    "version": "0.14.5",
+    "version": "0.14.7",
     "type": "library",
     "license": "proprietary",
     "authors": [
@@ -13,7 +13,7 @@
         "php": "^8.4",
         "laravel/framework": "^13.0",
         "laravel/socialite": "^5.31",
-        "nreljed/platform": "^0.1",
+        "nreljed/platform": "^0.2",
         "socialiteproviders/instagram": "^5.2",
         "socialiteproviders/pinterest": "^4.3"
     },
