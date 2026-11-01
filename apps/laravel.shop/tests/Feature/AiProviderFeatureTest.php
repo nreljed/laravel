@@ -9,7 +9,7 @@ use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Exceptions\RateLimitedException;
 use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\Data\Meta;
-use Laravel\Ai\Responses\Data\Usage;
+use Laravel\Ai\Responses\Data\TextUsage;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Nreljed\Platform\Ai\Exceptions\MissingAiProviderException;
@@ -279,7 +279,7 @@ class AiProviderFeatureTest extends TestCase
         $user = $this->user();
         $this->createProvider($user, 'gemini');
 
-        $response = new AgentResponse('inv-1', 'ok', new Usage(promptTokens: 5, completionTokens: 3), new Meta);
+        $response = new AgentResponse('inv-1', 'ok', new TextUsage(inputTokens: 5, outputTokens: 3), new Meta);
         $agent = Mockery::mock(Agent::class);
         $agent->shouldReceive('prompt')->once()->andReturn($response);
 
@@ -300,7 +300,7 @@ class AiProviderFeatureTest extends TestCase
         $user = $this->user();
         $this->createProvider($user, 'gemini');
 
-        $response = new AgentResponse('inv-2', 'retried', new Usage(promptTokens: 1, completionTokens: 1), new Meta);
+        $response = new AgentResponse('inv-2', 'retried', new TextUsage(inputTokens: 1, outputTokens: 1), new Meta);
         $agent = Mockery::mock(Agent::class);
         $attempts = 0;
         $agent->shouldReceive('prompt')->andReturnUsing(function () use (&$attempts, $response) {
