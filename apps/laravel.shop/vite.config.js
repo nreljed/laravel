@@ -5,13 +5,13 @@ import tailwindcss from '@tailwindcss/vite';
 import inertia from '@inertiajs/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { platformRefreshGlobs } from './vendor/nreljed/platform/platform.aliases.js';
-import { blogRefreshGlobs } from './vendor/nreljed/blog/blog.aliases.js';
+import { platformRefreshGlobs } from '../../packages/platform/platform.aliases.js';
+import { blogRefreshGlobs } from '../../packages/blog/blog.aliases.js';
 import {
     marketingAliases,
     marketingRefreshGlobs,
-} from './vendor/nreljed/marketing-module/marketing.aliases.js';
-import { packageDedupes } from './vendor/nreljed/platform/vite.dedupe.js';
+} from '../../packages/marketing-module/marketing.aliases.js';
+import { packageDedupes } from '../../packages/platform/vite.dedupe.js';
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,7 +24,7 @@ export default defineConfig({
             refresh: [
                 'resources/js/**',
                 'app/**/Resources/js/**',
-                'vendor/nreljed/shop-module/src/Resources/js/**',
+                '../../packages/shop-module/src/Resources/js/**',
                 ...platformRefreshGlobs(),
                 ...blogRefreshGlobs(),
                 ...marketingRefreshGlobs(),
@@ -37,14 +37,14 @@ export default defineConfig({
     resolve: {
         dedupe: packageDedupes,
         alias: {
-            '@nreljed/platform': path.resolve(__dirname, './vendor/nreljed/platform/resources/js'),
-            '@nreljed/platform/*': path.resolve(__dirname, './vendor/nreljed/platform/resources/js'),
-            '@nreljed/blog': path.resolve(__dirname, './vendor/nreljed/blog/src/Resources/js'),
-            '@nreljed/blog/*': path.resolve(__dirname, './vendor/nreljed/blog/src/Resources/js'),
-            '@nreljed/shop-module': path.resolve(__dirname, './vendor/nreljed/shop-module/src/Resources/js'),
-            '@nreljed/shop-module/*': path.resolve(__dirname, './vendor/nreljed/shop-module/src/Resources/js'),
-            '@nreljed/marketing-module': path.resolve(__dirname, './vendor/nreljed/marketing-module/src/Resources/js'),
-            '@nreljed/marketing-module/*': path.resolve(__dirname, './vendor/nreljed/marketing-module/src/Resources/js'),
+            '@nreljed/platform': path.resolve(__dirname, '../../packages/platform/resources/js'),
+            '@nreljed/platform/*': path.resolve(__dirname, '../../packages/platform/resources/js'),
+            '@nreljed/blog': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
+            '@nreljed/blog/*': path.resolve(__dirname, '../../packages/blog/src/Resources/js'),
+            '@nreljed/shop-module': path.resolve(__dirname, '../../packages/shop-module/src/Resources/js'),
+            '@nreljed/shop-module/*': path.resolve(__dirname, '../../packages/shop-module/src/Resources/js'),
+            '@nreljed/marketing-module': path.resolve(__dirname, '../../packages/marketing-module/src/Resources/js'),
+            '@nreljed/marketing-module/*': path.resolve(__dirname, '../../packages/marketing-module/src/Resources/js'),
             ...marketingAliases(),
         },
     },

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1b87c8c051a993e143e889ffb1211c39",
+    "content-hash": "f1fe05154909cae294a8384b49e6e8ca",
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -3635,16 +3635,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.8",
+            "version": "0.1.9",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "46fbd2f13190c380e7a41e0fb3e2ede1e679f264"
+                "reference": "8250a72c8b57f459b489c515faf45f83ba8ac5b2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/46fbd2f13190c380e7a41e0fb3e2ede1e679f264",
-                "reference": "46fbd2f13190c380e7a41e0fb3e2ede1e679f264",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/8250a72c8b57f459b489c515faf45f83ba8ac5b2",
+                "reference": "8250a72c8b57f459b489c515faf45f83ba8ac5b2",
                 "shasum": ""
             },
             "require": {
@@ -3685,23 +3685,23 @@
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
             "support": {
-                "source": "https://github.com/nreljed/blog/tree/v0.1.8",
+                "source": "https://github.com/nreljed/blog/tree/v0.1.9",
                 "issues": "https://github.com/nreljed/blog/issues"
             },
-            "time": "2026-11-01T11:29:09+00:00"
+            "time": "2026-11-02T14:00:52+00:00"
         },
         {
             "name": "nreljed/marketing-module",
-            "version": "0.14.7",
+            "version": "0.14.8",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/marketing-module.git",
-                "reference": "04f4d585b14fecc44eee586a53b0c5d0c367a092"
+                "reference": "504fb6fd112218376d1e78359e853c9b6a612253"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/04f4d585b14fecc44eee586a53b0c5d0c367a092",
-                "reference": "04f4d585b14fecc44eee586a53b0c5d0c367a092",
+                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/504fb6fd112218376d1e78359e853c9b6a612253",
+                "reference": "504fb6fd112218376d1e78359e853c9b6a612253",
                 "shasum": ""
             },
             "require": {
@@ -3710,7 +3710,7 @@
                 "nreljed/platform": "^0.2",
                 "php": "^8.4",
                 "socialiteproviders/instagram": "^5.2",
-                "socialiteproviders/pinterest": "^4.3"
+                "socialiteproviders/pinterest": "^5.0"
             },
             "require-dev": {
                 "fakerphp/faker": "^1.23",
@@ -3747,10 +3747,10 @@
             ],
             "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
             "support": {
-                "source": "https://github.com/nreljed/marketing-module/tree/v0.14.7",
+                "source": "https://github.com/nreljed/marketing-module/tree/v0.14.8",
                 "issues": "https://github.com/nreljed/marketing-module/issues"
             },
-            "time": "2026-11-01T12:16:19+00:00"
+            "time": "2026-11-02T14:46:04+00:00"
         },
         {
             "name": "nreljed/platform",
@@ -4375,16 +4375,16 @@
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "4.0.2",
+            "version": "4.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
-                "reference": "1fe20b9acb08ce810cec24d8a9d02e7c13426e4c"
+                "reference": "6077cecfed9e371993d3aa339b0afeb23f7bf636"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/1fe20b9acb08ce810cec24d8a9d02e7c13426e4c",
-                "reference": "1fe20b9acb08ce810cec24d8a9d02e7c13426e4c",
+                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/6077cecfed9e371993d3aa339b0afeb23f7bf636",
+                "reference": "6077cecfed9e371993d3aa339b0afeb23f7bf636",
                 "shasum": ""
             },
             "require": {
@@ -4408,9 +4408,6 @@
             },
             "type": "library",
             "autoload": {
-                "files": [
-                    "phpseclib/bootstrap.php"
-                ],
                 "psr-4": {
                     "phpseclib4\\": "phpseclib/"
                 }
@@ -4447,8 +4444,7 @@
                 },
                 {
                     "name": "Jack Worman",
-                    "email": "jack.worman@gmail.com",
-                    "homepage": "https://jackworman.com",
+                    "email": "jack.worman@proton.me",
                     "role": "Developer"
                 }
             ],
@@ -4475,7 +4471,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phpseclib/phpseclib/issues",
-                "source": "https://github.com/phpseclib/phpseclib/tree/4.0.2"
+                "source": "https://github.com/phpseclib/phpseclib/tree/4.0.3"
             },
             "funding": [
                 {
@@ -4491,7 +4487,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-07T19:55:38+00:00"
+            "time": "2026-11-02T10:46:03+00:00"
         },
         {
             "name": "psr/clock",
@@ -5530,20 +5526,19 @@
         },
         {
             "name": "socialiteproviders/pinterest",
-            "version": "4.3.0",
+            "version": "5.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SocialiteProviders/Pinterest.git",
-                "reference": "7f7e04c78b9988ab350a6a53e8542ebddcd09527"
+                "reference": "7bf13c5d5cc067880b510c37f6ebb872eab55102"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SocialiteProviders/Pinterest/zipball/7f7e04c78b9988ab350a6a53e8542ebddcd09527",
-                "reference": "7f7e04c78b9988ab350a6a53e8542ebddcd09527",
+                "url": "https://api.github.com/repos/SocialiteProviders/Pinterest/zipball/7bf13c5d5cc067880b510c37f6ebb872eab55102",
+                "reference": "7bf13c5d5cc067880b510c37f6ebb872eab55102",
                 "shasum": ""
             },
             "require": {
-                "ext-json": "*",
                 "php": "^8.0",
                 "socialiteproviders/manager": "^4.4"
             },
@@ -5576,7 +5571,7 @@
                 "issues": "https://github.com/socialiteproviders/providers/issues",
                 "source": "https://github.com/socialiteproviders/providers"
             },
-            "time": "2023-08-31T07:33:03+00:00"
+            "time": "2026-10-23T04:25:22+00:00"
         },
         {
             "name": "spomky-labs/base64url",
