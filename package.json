@@ -100,7 +100,7 @@
     "@floating-ui/react": "^0.27.20",
     "@geoman-io/leaflet-geoman-free": "^2.20.0",
     "@gsap/react": "^2.1.2",
-    "@hookform/resolvers": "^5.9.1",
+    "@hookform/resolvers": "^6.0.2",
     "@lexical/code": "^0.53.0",
     "@lexical/code-shiki": "^0.53.0",
     "@lexical/dragon": "^0.53.0",
