@@ -68,6 +68,11 @@
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash"
+    },
+    {
+      "description": "apps/** and packages/** are byte-identical mirrors of the standalone repos (shop, booking, platform, blog, ...). The parity/drift guards fail if the mono bumps them here. Dependency updates must land upstream and be mirrored via the sync scripts.",
+      "matchFileNames": ["apps/**", "packages/**"],
+      "enabled": false
     }
   ]
 }
