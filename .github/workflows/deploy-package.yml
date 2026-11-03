@@ -242,8 +242,7 @@ jobs:
           }
           $required = @(
             "vendor/nreljed/platform/src/PlatformServiceProvider.php",
-            "vendor/nreljed/blog/composer.json",
-            "vendor/nreljed/marketing-module/src/MarketingServiceProvider.php"
+            "vendor/nreljed/blog/composer.json"
           )
           $missing = @()
           foreach ($needle in $required) {
