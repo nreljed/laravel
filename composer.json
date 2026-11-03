@@ -40,7 +40,7 @@
         "minishlink/web-push": "^11.0",
         "nreljed/blog": "^0.1.8",
         "nreljed/platform": "^0.2",
-        "sentry/sentry-laravel": "4.27",
+        "sentry/sentry-laravel": "4.29.0",
         "tightenco/ziggy": "^2.6.4"
     },
     "require-dev": {
