@@ -31,3 +31,10 @@ overrides:
   # the whole workspace so `pnpm audit --prod --audit-level=high` stays clean.
   # Drop it once every mirror manifest ships a range that resolves >=4.6.6.
   zod: 4.6.7
+  # One lucide-react instance across the workspace. The parity gate compares the
+  # RESOLVED version per importer, and `pnpm install` never upgrades a range that
+  # the lock already satisfies — so once booking (upstream `^1.65.0`) moved ahead of
+  # the root/mirrors (`^1.44`/`^1.46`/`^1.64`), the lock held 1.67.0 for booking and
+  # 1.64.0 for everyone else and the check failed. Pin the resolution instead of
+  # chasing caret ranges in upstream-owned manifests.
+  lucide-react: 1.67.0
