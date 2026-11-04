@@ -124,6 +124,113 @@ function readJson(file) {
   }
 }
 
+/**
+ * Composer accepts duplicate `repositories` entries silently, so a named and an
+ * unnamed entry pointing at the same URL can live side by side and make the
+ * manifest resolve the same package twice. That shipped once (the marketing
+ * revert left `blog`/`platform` declared both ways) and nothing caught it, so it
+ * is asserted here for every app this check can reach.
+ *
+ * Identity rules: URLs are case-insensitive and ignore a trailing slash and a
+ * `.git` suffix; `name` keys are case-insensitive.
+ */
+function normalizeRepositoryUrl(url) {
+    return String(url)
+        .trim()
+        .toLowerCase()
+        .replace(/\/+$/, '')
+        .replace(/\.git$/, '');
+}
+
+/**
+ * Manifest shape guard: duplicate repositories, missing repository fields, and
+ * a platform pin that is not platform-major bounded (see core-compat.json).
+ */
+function checkManifestShape() {
+    let checked = 0;
+
+    for (const app of reachable) {
+        const manifestPath = path.join(app.dir, 'composer.json');
+
+        if (!fs.existsSync(manifestPath)) {
+            continue;
+        }
+
+        checked++;
+
+        const manifest = readJson(manifestPath);
+
+        if (!manifest) {
+            errors.push(`${app.name}: composer.json is not valid JSON`);
+            continue;
+        }
+
+        const repositories = manifest.repositories ?? [];
+
+        if (!Array.isArray(repositories)) {
+            errors.push(`${app.name}: composer.json "repositories" must be an array`);
+            continue;
+        }
+
+        const byUrl = new Map();
+        const byName = new Map();
+
+        repositories.forEach((repository, index) => {
+            if (!repository || typeof repository !== 'object') {
+                errors.push(`${app.name}: repositories[${index}] must be an object`);
+                return;
+            }
+
+            const label = repository.name ?? `#${index}`;
+
+            if (repository.url) {
+                const url = normalizeRepositoryUrl(repository.url);
+
+                if (byUrl.has(url)) {
+                    errors.push(
+                        `${app.name}: composer.json declares repository ${url} twice ` +
+                            `(${byUrl.get(url)} and ${label}) — Composer resolves it twice ` +
+                            'and it reads as a merge artifact',
+                    );
+                }
+
+                byUrl.set(url, label);
+            } else {
+                errors.push(`${app.name}: repositories[${index}] is missing "url"`);
+            }
+
+            if (repository.name) {
+                const name = String(repository.name).toLowerCase();
+
+                if (byName.has(name)) {
+                    errors.push(`${app.name}: composer.json declares repository name "${name}" twice`);
+                }
+
+                byName.set(name, true);
+            }
+        });
+
+        // The platform pin is the fleet contract. Both the caret-zero shorthand
+        // and its explicit equivalent are accepted; anything else (a non-zero
+        // caret, a 2.0 ceiling, `*`) lets a platform minor become breaking.
+        const platformPin = manifest.require?.['nreljed/platform'];
+
+        if (!platformPin) {
+            errors.push(`${app.name}: composer.json must require nreljed/platform`);
+        } else if (
+            !/^\^0(?:\.\d+){0,2}$/.test(platformPin) &&
+            !/^>=\s*0\.\d+(?:\.\d+)?\s+<\s*1(?:\.0){0,2}$/.test(platformPin)
+        ) {
+            errors.push(
+                `${app.name}: nreljed/platform pin "${platformPin}" is not platform-major bounded ` +
+                    '(expected ^0.x or >=0.x <1.0)',
+            );
+        }
+    }
+
+    return { checked };
+}
+
 function composerLock(appDir) {
   return readJson(path.join(appDir, "composer.lock"));
 }
@@ -695,6 +802,7 @@ const npmStats = compareAcrossApps(
 
 const mirrorStats = checkMirrorDrift();
 const appStats = checkAppUpstreamDrift();
+const manifestStats = checkManifestShape();
 
 if (errors.length > 0) {
   for (const error of errors) {
@@ -715,5 +823,6 @@ console.log(
     `  npm      : ${npmStats.compared} resolved, ${npmStats.skipped} skipped ` +
     `of ${npmKeyPackages.length} keys\n` +
     `  mirrors  : ${mirrorStats.checked} compared against vendor, ${mirrorStats.skipped} skipped\n` +
-    `  apps     : ${appStats.compared} compared against upstream, ${appStats.skipped} skipped`,
+    `  apps     : ${appStats.compared} compared against upstream, ${appStats.skipped} skipped\n` +
+    `  manifests: ${manifestStats.checked} composer.json shape-checked (no duplicate repositories, platform pin bounded)`,
 );
