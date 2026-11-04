@@ -3635,16 +3635,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.10",
+            "version": "0.1.11",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "484cccb464895c1dbc548dabe8e871ce2a5ab031"
+                "reference": "ffd51d910226ad97a535869627dd87eded319b4b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/484cccb464895c1dbc548dabe8e871ce2a5ab031",
-                "reference": "484cccb464895c1dbc548dabe8e871ce2a5ab031",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/ffd51d910226ad97a535869627dd87eded319b4b",
+                "reference": "ffd51d910226ad97a535869627dd87eded319b4b",
                 "shasum": ""
             },
             "require": {
@@ -3684,7 +3684,7 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "time": "2026-11-04T11:06:42+00:00"
+            "time": "2026-11-04T13:00:19+00:00"
         },
         {
             "name": "nreljed/marketing-module",
@@ -3806,16 +3806,16 @@
         },
         {
             "name": "nreljed/shop-module",
-            "version": "0.1.89",
+            "version": "0.1.90",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/shop-module.git",
-                "reference": "d0fea8505427fcda97d1420d848a18f809141d9c"
+                "reference": "8d35dc4b44b3739cde4af875d4fc7bc0ee07346a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/d0fea8505427fcda97d1420d848a18f809141d9c",
-                "reference": "d0fea8505427fcda97d1420d848a18f809141d9c",
+                "url": "https://api.github.com/repos/nreljed/shop-module/zipball/8d35dc4b44b3739cde4af875d4fc7bc0ee07346a",
+                "reference": "8d35dc4b44b3739cde4af875d4fc7bc0ee07346a",
                 "shasum": ""
             },
             "require": {
@@ -3858,7 +3858,7 @@
                 }
             ],
             "description": "E-commerce shop feature for the Nreljed dashboard platform (products, orders, cart, checkout, coupons, reviews, shipping, taxes, webhooks, storefront).",
-            "time": "2026-11-04T11:14:46+00:00"
+            "time": "2026-11-04T13:12:57+00:00"
         },
         {
             "name": "nunomaduro/termwind",

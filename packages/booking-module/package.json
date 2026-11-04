@@ -1,6 +1,6 @@
 {
   "name": "@nreljed/booking-module",
-  "version": "0.1.44",
+  "version": "0.1.45",
   "description": "Booking & properties feature for the Nreljed dashboard platform — property listings, availability calendar, bookings pipeline, guest portal and iCal sync frontend kit.",
   "license": "proprietary",
   "type": "module",
@@ -8,6 +8,7 @@
     "./booking-aliases": "./booking.aliases.js"
   },
   "peerDependencies": {
+    "@hookform/resolvers": "^6.0.2",
     "@inertiajs/core": "^3.0.0",
     "@inertiajs/react": "^3.0.0",
     "@tanstack/react-table": "^9.2.3",
