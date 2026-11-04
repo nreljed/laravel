@@ -3335,16 +3335,16 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.10",
+            "version": "0.1.11",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "484cccb464895c1dbc548dabe8e871ce2a5ab031"
+                "reference": "ffd51d910226ad97a535869627dd87eded319b4b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/484cccb464895c1dbc548dabe8e871ce2a5ab031",
-                "reference": "484cccb464895c1dbc548dabe8e871ce2a5ab031",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/ffd51d910226ad97a535869627dd87eded319b4b",
+                "reference": "ffd51d910226ad97a535869627dd87eded319b4b",
                 "shasum": ""
             },
             "require": {
@@ -3384,7 +3384,7 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "time": "2026-11-04T11:06:42+00:00"
+            "time": "2026-11-04T13:00:19+00:00"
         },
         {
             "name": "nreljed/marketing-module",
