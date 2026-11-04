@@ -5,9 +5,27 @@ namespace Nreljed\Platform\Services;
 use Composer\InstalledVersions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Nreljed\Platform\Contracts\Capabilities\HasAdminResources;
+use Nreljed\Platform\Contracts\Capabilities\HasContentEditor;
+use Nreljed\Platform\Contracts\Capabilities\HasContentType;
+use Nreljed\Platform\Contracts\Capabilities\HasDashboardWidgets;
+use Nreljed\Platform\Contracts\Capabilities\HasDataBackup;
+use Nreljed\Platform\Contracts\Capabilities\HasDeactivation;
+use Nreljed\Platform\Contracts\Capabilities\HasHealthChecks;
+use Nreljed\Platform\Contracts\Capabilities\HasMedia;
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasNotifications;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Capabilities\HasProfileExtension;
+use Nreljed\Platform\Contracts\Capabilities\HasSettings;
+use Nreljed\Platform\Contracts\Capabilities\HasSharedData;
+use Nreljed\Platform\Contracts\Capabilities\HasSitemap;
+use Nreljed\Platform\Contracts\Feature;
 use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Support\ContentDescription;
 use Nreljed\Platform\Support\DataBackupCapability;
 use Nreljed\Platform\Support\ResourceDefinition;
+use Nreljed\Platform\Support\SettingsSection;
 
 class FeatureRegistry
 {
@@ -19,7 +37,7 @@ class FeatureRegistry
      */
     public const string DEFAULT_NAV_ICON = 'FileText';
 
-    /** @var array<string, FeatureProvider> */
+    /** @var array<string, Feature> */
     protected array $providers = [];
 
     /** @var array<string, mixed> */
@@ -33,6 +51,247 @@ class FeatureRegistry
         foreach ($this->configuredProviders() as $class) {
             $this->providers[$class] = $this->getProviderOrFail($class);
         }
+    }
+
+    /**
+     * Resolve one configured provider, or fail loudly.
+     *
+     * The registry only requires the minimal {@see Feature} contract. Anything
+     * beyond it is opt-in, and every aggregator below dispatches on the
+     * capability it actually needs — so a minimal feature contributes exactly
+     * what it declared and nothing else.
+     *
+     * @param  class-string<ServiceProvider>  $class
+     */
+    protected function getProviderOrFail(string $class): Feature
+    {
+        $provider = app()->getProvider($class);
+
+        if ($provider === null) {
+            throw new \RuntimeException("Service provider [{$class}] is not registered.");
+        }
+
+        if (! $provider instanceof Feature) {
+            throw new \RuntimeException(
+                "Service provider [{$class}] must implement ".Feature::class.' '
+                .'(or the deprecated '.FeatureProvider::class.' composite).'
+            );
+        }
+
+        return $provider;
+    }
+
+    /**
+     * Feature providers that are currently enabled.
+     *
+     * A disabled provider contributes nothing to the aggregators — no nav,
+     * dashboard data, analytics, shared data, settings, email templates,
+     * notification types or permissions.
+     *
+     * @return list<Feature>
+     */
+    protected function enabledProviders(): array
+    {
+        return array_values(array_filter(
+            $this->providers,
+            fn (Feature $provider) => $provider->enabled()
+        ));
+    }
+
+    // -----------------------------------------------------------------
+    // Capability dispatch
+    //
+    // A feature declares what it offers by implementing an interface from
+    // Nreljed\Platform\Contracts\Capabilities. Each accessor below is the
+    // single place the registry learns that capability's absence default,
+    // which keeps every aggregator free of instanceof branches.
+    // -----------------------------------------------------------------
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function navItems(Feature $feature): array
+    {
+        return $feature instanceof HasNavigation ? $feature->getNavItems() : [];
+    }
+
+    protected function navGroupLabel(Feature $feature): ?string
+    {
+        return $feature instanceof HasNavigation ? $feature->getNavGroupLabel() : null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>|string>
+     */
+    protected function permissionsOf(Feature $feature): array
+    {
+        return $feature instanceof HasPermissions ? $feature->permissions() : [];
+    }
+
+    protected function hasSettings(Feature $feature): bool
+    {
+        return $feature instanceof HasSettings && $feature->hasSettings();
+    }
+
+    protected function settingsRoute(Feature $feature): ?string
+    {
+        return $feature instanceof HasSettings ? $feature->getSettingsRoute() : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function settingsGroups(Feature $feature): array
+    {
+        return $feature instanceof HasSettings ? $feature->getSettingsGroups() : [];
+    }
+
+    protected function settingsSection(Feature $feature): ?SettingsSection
+    {
+        return $feature instanceof HasSettings ? $feature->getSettingsSection() : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function dashboardData(Feature $feature): array
+    {
+        return $feature instanceof HasDashboardWidgets ? $feature->getDashboardData() : [];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function analyticsSeries(Feature $feature): array
+    {
+        return $feature instanceof HasDashboardWidgets ? $feature->getAnalyticsSeries() : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function notificationTypes(Feature $feature): array
+    {
+        return $feature instanceof HasNotifications ? $feature->getNotificationTypes() : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function emailTemplates(Feature $feature): array
+    {
+        return $feature instanceof HasNotifications ? $feature->getEmailTemplates() : [];
+    }
+
+    protected function mediaSubdirectory(Feature $feature): ?string
+    {
+        return $feature instanceof HasMedia ? $feature->getMediaSubdirectory() : null;
+    }
+
+    /**
+     * @return array<string, class-string>
+     */
+    protected function orphanMediaTargets(Feature $feature): array
+    {
+        return $feature instanceof HasMedia ? $feature->getOrphanMediaTargets() : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function galleryConfig(Feature $feature): array
+    {
+        return $feature instanceof HasMedia ? $feature->getGalleryConfig() : [];
+    }
+
+    /**
+     * @return array<int, array{loc: string, changefreq: string, priority: string, lastmod?: string|null}>
+     */
+    protected function sitemapUrls(Feature $feature): array
+    {
+        return $feature instanceof HasSitemap ? $feature->getSitemapUrls() : [];
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    protected function healthChecks(Feature $feature): array
+    {
+        return $feature instanceof HasHealthChecks ? $feature->getHealthChecks() : [];
+    }
+
+    /**
+     * @return array<int, array{command: string, frequency: string, description?: string}>
+     */
+    protected function scheduledTasks(Feature $feature): array
+    {
+        return $feature instanceof HasHealthChecks ? $feature->getScheduledTasks() : [];
+    }
+
+    /**
+     * @return array<int, ResourceDefinition>
+     */
+    protected function adminResources(Feature $feature): array
+    {
+        return $feature instanceof HasAdminResources ? $feature->getAdminResources() : [];
+    }
+
+    protected function contentDescription(Feature $feature): ?ContentDescription
+    {
+        return $feature instanceof HasContentType ? $feature->getContentDescription() : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function metaFormattingConfig(Feature $feature): array
+    {
+        return $feature instanceof HasContentEditor ? $feature->getMetaFormattingConfig() : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function repeaterConfig(Feature $feature): array
+    {
+        return $feature instanceof HasContentEditor ? $feature->getRepeaterConfig() : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function profileFieldsConfig(Feature $feature): array
+    {
+        return $feature instanceof HasProfileExtension ? $feature->getProfileFieldsConfig() : [];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function profileSections(Feature $feature): array
+    {
+        return $feature instanceof HasProfileExtension ? $feature->getProfileSections() : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function sharedData(Feature $feature): array
+    {
+        return $feature instanceof HasSharedData ? $feature->getSharedData() : [];
+    }
+
+    /**
+     * @return array<int, DataBackupCapability>
+     */
+    protected function dataBackupCapabilities(Feature $feature): array
+    {
+        return $feature instanceof HasDataBackup ? $feature->getDataBackupCapabilities() : [];
+    }
+
+    protected function deactivationNotice(Feature $feature): ?string
+    {
+        return $feature instanceof HasDeactivation ? $feature->getDeactivationNotice() : null;
     }
 
     /**
@@ -56,43 +315,6 @@ class FeatureRegistry
     protected function configuredProviders(): array
     {
         return config('features.providers', []);
-    }
-
-    /**
-     * @param  class-string<ServiceProvider>  $class
-     */
-    protected function getProviderOrFail(string $class): FeatureProvider
-    {
-        $provider = app()->getProvider($class);
-
-        if ($provider === null) {
-            throw new \RuntimeException("Service provider [{$class}] is not registered.");
-        }
-
-        if (! $provider instanceof FeatureProvider) {
-            throw new \RuntimeException(
-                "Service provider [{$class}] must implement ".FeatureProvider::class.'.'
-            );
-        }
-
-        return $provider;
-    }
-
-    /**
-     * Feature providers that are currently enabled.
-     *
-     * A disabled provider contributes nothing to the aggregators — no nav,
-     * dashboard data, analytics, shared data, settings, email templates,
-     * notification types or permissions.
-     *
-     * @return list<FeatureProvider>
-     */
-    protected function enabledProviders(): array
-    {
-        return array_values(array_filter(
-            $this->providers,
-            fn (FeatureProvider $provider) => $provider->enabled()
-        ));
     }
 
     /**
@@ -152,10 +374,10 @@ class FeatureRegistry
             }
 
             foreach ($this->enabledProviders() as $provider) {
-                $groupLabel = $provider->getNavGroupLabel();
+                $groupLabel = $this->navGroupLabel($provider);
                 $providerItems = [];
 
-                foreach ($provider->getNavItems() as $item) {
+                foreach ($this->navItems($provider) as $item) {
                     // Normalize group labels so the sidebar renders consistent
                     // headings even when a provider only exposes getNavGroupLabel().
                     if ($groupLabel !== null && ! isset($item['groupLabel'])) {
@@ -351,7 +573,7 @@ class FeatureRegistry
     public function getAllSharedData(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getSharedData(), $this->enabledProviders())
+            ...array_map($this->sharedData(...), $this->enabledProviders())
         );
     }
 
@@ -360,7 +582,7 @@ class FeatureRegistry
         $data = [];
 
         foreach ($this->enabledProviders() as $provider) {
-            $featureData = $provider->getDashboardData();
+            $featureData = $this->dashboardData($provider);
 
             if (! empty($featureData)) {
                 $data[$provider->slug()] = $this->normalizeDashboardData($featureData, $provider->slug());
@@ -407,7 +629,7 @@ class FeatureRegistry
         $series = [];
 
         foreach ($this->enabledProviders() as $provider) {
-            $series = array_merge($series, $provider->getAnalyticsSeries());
+            $series = array_merge($series, $this->analyticsSeries($provider));
         }
 
         return $series;
@@ -416,7 +638,7 @@ class FeatureRegistry
     public function getAllNotificationTypes(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getNotificationTypes(), $this->enabledProviders())
+            ...array_map($this->notificationTypes(...), $this->enabledProviders())
         );
     }
 
@@ -431,7 +653,7 @@ class FeatureRegistry
         $urls = [];
 
         foreach ($this->enabledProviders() as $provider) {
-            foreach ($provider->getSitemapUrls() as $entry) {
+            foreach ($this->sitemapUrls($provider) as $entry) {
                 $urls[] = $entry;
             }
         }
@@ -442,21 +664,21 @@ class FeatureRegistry
     public function getAllEmailTemplates(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getEmailTemplates(), $this->enabledProviders())
+            ...array_map($this->emailTemplates(...), $this->enabledProviders())
         );
     }
 
     public function getAllOrphanMediaTargets(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getOrphanMediaTargets(), $this->enabledProviders())
+            ...array_map($this->orphanMediaTargets(...), $this->enabledProviders())
         );
     }
 
     public function getAllSettingsGroups(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getSettingsGroups(), $this->enabledProviders())
+            ...array_map($this->settingsGroups(...), $this->enabledProviders())
         );
     }
 
@@ -484,7 +706,7 @@ class FeatureRegistry
             $keys = [];
 
             foreach ($this->enabledProviders() as $provider) {
-                foreach ($provider->getAdminResources() as $descriptor) {
+                foreach ($this->adminResources($provider) as $descriptor) {
                     if (! $descriptor instanceof ResourceDefinition) {
                         throw new \RuntimeException(
                             "Feature [{$provider->slug()}] returned a non-ResourceDefinition from getAdminResources(); "
@@ -563,35 +785,35 @@ class FeatureRegistry
     public function getAllGalleryConfigs(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getGalleryConfig(), $this->enabledProviders())
+            ...array_map($this->galleryConfig(...), $this->enabledProviders())
         );
     }
 
     public function getAllMetaFormattingConfigs(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getMetaFormattingConfig(), $this->enabledProviders())
+            ...array_map($this->metaFormattingConfig(...), $this->enabledProviders())
         );
     }
 
     public function getAllRepeaterConfigs(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getRepeaterConfig(), $this->enabledProviders())
+            ...array_map($this->repeaterConfig(...), $this->enabledProviders())
         );
     }
 
     public function getAllProfileFieldConfigs(): array
     {
         return array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getProfileFieldsConfig(), $this->enabledProviders())
+            ...array_map($this->profileFieldsConfig(...), $this->enabledProviders())
         );
     }
 
     public function getAllProfileSections(): array
     {
         return $this->remember('profile_sections', fn () => array_values(array_unique(array_merge(
-            ...array_map(fn (FeatureProvider $provider) => $provider->getProfileSections(), $this->enabledProviders())
+            ...array_map($this->profileSections(...), $this->enabledProviders())
         ))));
     }
 
@@ -601,7 +823,7 @@ class FeatureRegistry
             $map = [];
 
             foreach ($this->enabledProviders() as $provider) {
-                $description = $provider->getContentDescription();
+                $description = $this->contentDescription($provider);
 
                 if ($description !== null && $description->getSlug() !== '') {
                     $map[$description->getSlug()] = $description;
@@ -618,7 +840,7 @@ class FeatureRegistry
             $map = [];
 
             foreach ($this->enabledProviders() as $provider) {
-                $subdir = $provider->getMediaSubdirectory();
+                $subdir = $this->mediaSubdirectory($provider);
 
                 if ($subdir !== null && $subdir !== '') {
                     $map[$provider->slug()] = $subdir;
@@ -634,7 +856,7 @@ class FeatureRegistry
         $checks = [];
 
         foreach ($this->enabledProviders() as $provider) {
-            foreach ($provider->getHealthChecks() as $name => $passed) {
+            foreach ($this->healthChecks($provider) as $name => $passed) {
                 $checks[$provider->slug().':'.$name] = [
                     'provider' => $provider->slug(),
                     'check' => $name,
@@ -651,7 +873,7 @@ class FeatureRegistry
         $tasks = [];
 
         foreach ($this->enabledProviders() as $provider) {
-            foreach ($provider->getScheduledTasks() as $task) {
+            foreach ($this->scheduledTasks($provider) as $task) {
                 $task['provider'] = $provider->slug();
                 $tasks[] = $task;
             }
@@ -666,7 +888,7 @@ class FeatureRegistry
             $sections = [];
 
             foreach ($this->enabledProviders() as $provider) {
-                $section = $provider->getSettingsSection();
+                $section = $this->settingsSection($provider);
 
                 if ($section !== null) {
                     $sections[$provider->slug()] = $section;
@@ -686,7 +908,7 @@ class FeatureRegistry
                 continue;
             }
 
-            $notice = $provider->getDeactivationNotice();
+            $notice = $this->deactivationNotice($provider);
 
             if ($notice !== null) {
                 $notices[$provider->slug()] = $notice;
@@ -704,7 +926,7 @@ class FeatureRegistry
      * Keys are expected to be globally unique across enabled providers; a
      * duplicate key fails loudly so the module list can never be ambiguous.
      *
-     * @return list<array{provider: FeatureProvider, capability: DataBackupCapability}>
+     * @return list<array{provider: Feature&HasDataBackup, capability: DataBackupCapability}>
      */
     public function getDataBackupModules(): array
     {
@@ -712,7 +934,7 @@ class FeatureRegistry
             $modules = [];
 
             foreach ($this->enabledProviders() as $provider) {
-                foreach ($provider->getDataBackupCapabilities() as $capability) {
+                foreach ($this->dataBackupCapabilities($provider) as $capability) {
                     $key = $capability->getKey();
 
                     if ($key === '') {
@@ -744,7 +966,7 @@ class FeatureRegistry
      * Resolve a data backup capability key to its provider + capability pair,
      * or null when no enabled provider declares it.
      *
-     * @return array{provider: FeatureProvider, capability: DataBackupCapability}|null
+     * @return array{provider: Feature&HasDataBackup, capability: DataBackupCapability}|null
      */
     public function resolveDataBackupModule(string $key): ?array
     {
@@ -760,7 +982,7 @@ class FeatureRegistry
     public function getAllSettingsRoutes(): array
     {
         return $this->remember('settings_routes', fn () => array_filter(array_map(
-            fn (FeatureProvider $provider) => $this->resolveSettingsUrl($provider->getSettingsRoute()),
+            fn (Feature $provider) => $this->resolveSettingsUrl($this->settingsRoute($provider)),
             $this->enabledProviders(),
         )));
     }
@@ -777,11 +999,11 @@ class FeatureRegistry
             $nav = [];
 
             foreach ($this->enabledProviders() as $provider) {
-                if (! $provider->hasSettings()) {
+                if (! $this->hasSettings($provider)) {
                     continue;
                 }
 
-                $route = $provider->getSettingsRoute();
+                $route = $this->settingsRoute($provider);
                 $url = $this->resolveSettingsUrl($route);
 
                 if ($route === null || $url === null) {
@@ -802,7 +1024,7 @@ class FeatureRegistry
     public function getAllHasSettings(): array
     {
         return $this->remember('has_settings', fn () => array_filter(array_map(
-            fn (FeatureProvider $provider) => $provider->hasSettings(),
+            $this->hasSettings(...),
             $this->enabledProviders(),
         )));
     }
@@ -815,7 +1037,7 @@ class FeatureRegistry
             foreach ($this->enabledProviders() as $provider) {
                 $group = $provider->name();
 
-                foreach ($provider->permissions() as $permission) {
+                foreach ($this->permissionsOf($provider) as $permission) {
                     if (is_array($permission) && ! isset($permission['group']) && $group !== null) {
                         $permission['group'] = $group;
                     }
@@ -829,7 +1051,7 @@ class FeatureRegistry
     }
 
     /**
-     * @return array<int, FeatureProvider>
+     * @return array<int, Feature>
      */
     public function allProviders(): array
     {
@@ -845,7 +1067,7 @@ class FeatureRegistry
     public function getModuleList(): array
     {
         return $this->remember('module_list', fn () => array_map(
-            fn (FeatureProvider $provider) => [
+            fn (Feature $provider) => [
                 'slug' => $provider->slug(),
                 'name' => $provider->name(),
                 'description' => $provider->description(),
@@ -854,8 +1076,8 @@ class FeatureRegistry
                 'origin' => $this->resolveProviderOrigin($provider),
                 'dependencies' => $provider->dependencies(),
                 'enabled' => $provider->enabled(),
-                'has_settings' => $provider->hasSettings(),
-                'settings_route' => $this->resolveSettingsUrl($provider->getSettingsRoute()),
+                'has_settings' => $this->hasSettings($provider),
+                'settings_route' => $this->resolveSettingsUrl($this->settingsRoute($provider)),
             ],
             array_values($this->providers),
         ));
@@ -868,7 +1090,7 @@ class FeatureRegistry
      * resolves from packages/platform is a workspace copy of the platform
      * itself and still counts as bundled.
      */
-    protected function resolveProviderOrigin(FeatureProvider $provider): string
+    protected function resolveProviderOrigin(Feature $provider): string
     {
         $package = $provider->getComposerPackage();
 
@@ -1028,8 +1250,8 @@ class FeatureRegistry
                 }
             }
 
-            $settingsRoute = $provider->getSettingsRoute();
-            if ($provider->hasSettings() && ($settingsRoute === null || $this->resolveSettingsUrl($settingsRoute) === null)) {
+            $settingsRoute = $this->settingsRoute($provider);
+            if ($this->hasSettings($provider) && ($settingsRoute === null || $this->resolveSettingsUrl($settingsRoute) === null)) {
                 $issues[] = [
                     'severity' => 'medium',
                     'provider' => $slug,
@@ -1037,7 +1259,7 @@ class FeatureRegistry
                 ];
             }
 
-            $dashboardData = $provider->getDashboardData();
+            $dashboardData = $this->dashboardData($provider);
             if ($dashboardData !== []) {
                 $normalized = $this->normalizeDashboardData($dashboardData, $slug);
 
@@ -1056,7 +1278,7 @@ class FeatureRegistry
             // aggregates them, but surface them here too so the system health
             // page reports the drift instead of leaving it to the next
             // dashboard render to 500 on.
-            foreach ($provider->getAdminResources() as $descriptor) {
+            foreach ($this->adminResources($provider) as $descriptor) {
                 if (! $descriptor instanceof ResourceDefinition) {
                     $issues[] = [
                         'severity' => 'critical',
@@ -1081,7 +1303,7 @@ class FeatureRegistry
         // registry lookup and the frontend inventory cannot be ambiguous.
         $descriptorKeys = [];
         foreach ($this->enabledProviders() as $provider) {
-            foreach ($provider->getAdminResources() as $descriptor) {
+            foreach ($this->adminResources($provider) as $descriptor) {
                 if (! $descriptor instanceof ResourceDefinition) {
                     continue;
                 }

@@ -20,12 +20,9 @@
             "url": "https://github.com/nreljed/platform.git"
         },
         {
+            "name": "marketing-module",
             "type": "vcs",
-            "url": "https://github.com/nreljed/platform.git"
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/nreljed/blog.git"
+            "url": "https://github.com/nreljed/marketing-module.git"
         }
     ],
     "require": {
@@ -39,7 +36,8 @@
         "laravel/tinker": "^3.0",
         "minishlink/web-push": "^11.0",
         "nreljed/blog": "^0.1.8",
-        "nreljed/platform": "^0.2",
+        "nreljed/marketing-module": "^0.14",
+        "nreljed/platform": "^0.3",
         "sentry/sentry-laravel": "4.29.0",
         "tightenco/ziggy": "^2.6.4"
     },

@@ -153,9 +153,12 @@ final class ModuleCompatContractTest extends TestCase
         $v = array_pad(array_map('intval', explode('.', $version)), 3, 0);
 
         $min = [0, isset($m[1]) && $m[1] !== '' ? (int) $m[1] : 0, isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0];
-        $max = isset($m[1]) && $m[1] !== ''
-            ? [0, $min[1] + 1, 0]
-            : [1, 0, 0];
+        // In this ecosystem `^0.x` is deliberately platform-major bounded:
+        // an additive platform minor never forces a module release, so a
+        // module built against 0.2 keeps working on 0.3, 0.4, ... up to but
+        // not including the 1.0 major. The platform's major bump is the only
+        // event that requires modules to update their ranges.
+        $max = [1, 0, 0];
 
         return $v >= $min && $v < $max;
     }

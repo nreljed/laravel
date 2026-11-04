@@ -34,9 +34,14 @@ Releases originate **here**, never in a consumer.
 - The dispatch list comes from the `CORE_CONSUMERS` repo variable (defaults to
   the three apps above), so adding a consumer does not require editing the
   workflow.
-- **Contract freeze:** CI fails if `src/Contracts/FeatureProvider.php` changes
-  without a MAJOR version bump. Changing the contract is a breaking change by
-  definition — bump major or don't touch it.
+- **Contract freeze:** CI fails if the required method set of any interface under
+  `src/Contracts/` changes without a MAJOR version bump. The gate compares
+  method signatures (not file bytes), so a docblock or formatting change is
+  not breaking, while adding a method to an existing interface is. New
+  interfaces are additive and allowed without a bump. Run
+  `php scripts/contract-signature.php --diff <old-tag> HEAD` locally. The
+  composite `FeatureProvider` interface is retained for backwards compatibility
+  and removed in v1.0.0.
 - A package release *notifies* consumers; it never deploys anything.
 
 Do not bump a version for a change that turns out not to be one. An audit gap

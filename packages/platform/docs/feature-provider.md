@@ -6,9 +6,28 @@ edits** — just register its service provider in `config/features.php` `provide
 
 ## Contract
 
-`Nreljed\Platform\Contracts\FeatureProvider` — every provider implements it and combines
-it with the `InteractsWithFeatures` trait (supplies safe no-op defaults for every capability
-method). Only `name()` and `slug()` are mandatory to implement yourself.
+Since platform 0.3.0 the contract is split into a minimal root interface plus
+opt-in capability interfaces:
+
+- `Nreljed\Platform\Contracts\Feature` — identity + lifecycle only (`name`,
+  `slug`, `description`, `version`, `getComposerPackage`, `dependencies`,
+  `enabled`, `onDisable`, `onUserDelete`). Mandatory for every feature.
+- `Nreljed\Platform\Contracts\Capabilities\Has*` — one interface per concern
+  (navigation, permissions, settings, dashboard widgets, notifications, media,
+  sitemap, health checks, admin resources, content type, content editor, data
+  backup, profile extension, shared data, deactivation). Implement only the ones
+  your feature actually supports — the registry adapts via `instanceof`.
+
+`Nreljed\Platform\Contracts\FeatureProvider` is the **backwards-compatible
+composite** of `Feature` + every capability. It is `@deprecated` since 0.3.0 and
+is removed in 1.0.0. Existing providers keep working unchanged because
+`InteractsWithFeatures` supplies a safe no-op default for every capability
+method. Only `name()` and `slug()` are mandatory to implement yourself.
+
+The contract is frozen at the **required-method-set** level (see
+`scripts/contract-signature.php --diff <old-tag> <new-tag>`): adding a method to
+an existing interface is a breaking change that needs a MAJOR bump, while adding
+a whole new interface is additive and allowed.
 
 | Method                             | Purpose                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------- |

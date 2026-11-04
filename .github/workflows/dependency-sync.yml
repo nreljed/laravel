@@ -43,7 +43,7 @@ jobs:
           done
 
       - name: Sync package mirrors
-        run: node scripts/sync-mirrors.mjs
+        run: node scripts/sync-mirrors.mjs --apply
 
       - name: Check for changes
         id: check
