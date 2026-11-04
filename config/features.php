@@ -1,6 +1,7 @@
 <?php
 
 use Nreljed\Blog\BlogServiceProvider;
+use Nreljed\MarketingModule\MarketingServiceProvider;
 use Nreljed\Platform\Ai\AiServiceProvider;
 use Nreljed\Platform\PublicSite\PublicSiteServiceProvider;
 
@@ -21,6 +22,7 @@ return [
         PublicSiteServiceProvider::class,
         BlogServiceProvider::class,
         AiServiceProvider::class,
+        MarketingServiceProvider::class,
     ],
 
     /*
@@ -38,6 +40,7 @@ return [
         'public-site' => true,
         'posts' => true,
         'ai' => true,
+        'marketing' => true,
     ],
 
 ];

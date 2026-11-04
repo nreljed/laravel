@@ -14,6 +14,14 @@
  *   1. C:/Users/nrelj/Local Sites/<pkg-name-without-module>  (dev machine)
  *   2. <repo-root>/../<pkg>  (CI runner with sibling clones)
  *
+ * Usage:
+ *   node scripts/sync-mirrors.mjs            # dry-run: print the plan, change nothing
+ *   node scripts/sync-mirrors.mjs --apply    # write the mirrors
+ *
+ * The dry run is the default on purpose: this tool deletes mirror files that are
+ * absent from the source, so an accidental run against a stale vendor/ would
+ * silently destroy committed package files. CI passes `--apply` explicitly.
+ *
  * The ignore sets are duplicated from scripts/check-platform-consistency.js.
  */
 
@@ -23,6 +31,15 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
+
+const argv = process.argv.slice(2);
+const unknown = argv.filter((arg) => arg !== "--apply" && arg !== "--dry-run");
+if (unknown.length > 0) {
+  console.error(`[sync-mirrors] unknown argument(s): ${unknown.join(", ")}`);
+  console.error("[sync-mirrors] usage: node scripts/sync-mirrors.mjs [--apply]");
+  process.exit(1);
+}
+const apply = argv.includes("--apply");
 
 const MIRROR_IGNORED = new Set([
   ".git",
@@ -137,35 +154,72 @@ function main() {
       continue;
     }
 
+    if (!sourceDir.replace(/\\/g, "/").includes("/vendor/nreljed/")) {
+      console.warn(
+        `[sync-mirrors] packages/${pkg}: WARNING using a git clone (${sourceDir}) — ` +
+          "export-ignored files and unreleased commits may be copied into the mirror. Prefer `composer update` first, " +
+          "or run scripts/sync-package-mirror.mjs, which uses the released tag.",
+      );
+    }
+
     const mirrorDir = path.join(packagesRoot, pkg);
     const sourceFiles = collectFiles(sourceDir);
     const mirrorFiles = collectFiles(mirrorDir);
 
-    let copied = 0;
-    let deleted = 0;
+    const writes = [];
+    const removals = [];
 
     for (const [rel, buf] of sourceFiles) {
       const dest = path.join(mirrorDir, rel);
       const current = fs.existsSync(dest) ? fs.readFileSync(dest) : null;
       if (current && normalizeForCompare(current).equals(normalizeForCompare(buf))) continue;
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, buf);
-      copied++;
+      writes.push({ rel, dest, buf });
     }
 
     for (const rel of mirrorFiles.keys()) {
       if (sourceFiles.has(rel)) continue;
-      fs.rmSync(path.join(mirrorDir, rel), { force: true });
-      deleted++;
+      removals.push(rel);
     }
 
-    console.log(`[sync-mirrors] packages/${pkg}: ${copied} updated, ${deleted} removed (from ${sourceDir})`);
+    if (apply) {
+      for (const { dest, buf } of writes) {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, buf);
+      }
+      for (const rel of removals) {
+        fs.rmSync(path.join(mirrorDir, rel), { force: true });
+      }
+    }
+
+    const verb = apply ? "synced" : "would sync";
+    console.log(
+      `[sync-mirrors] packages/${pkg}: ${verb} ${writes.length} updated, ${removals.length} removed (from ${sourceDir})`,
+    );
+    reportPaths(writes.map((w) => `+ ${w.rel}`), removals.map((rel) => `- ${rel}`));
+
     packagesSynced++;
-    copiedTotal += copied;
-    deletedTotal += deleted;
+    copiedTotal += writes.length;
+    deletedTotal += removals.length;
   }
 
-  console.log(`[sync-mirrors] done: ${packagesSynced} packages, ${copiedTotal} files updated, ${deletedTotal} removed.`);
+  const verb = apply ? "done" : "DRY-RUN (nothing written)";
+  console.log(
+    `[sync-mirrors] ${verb}: ${packagesSynced} packages, ${copiedTotal} files updated, ${deletedTotal} removed.`,
+  );
+
+  if (!apply && copiedTotal + deletedTotal > 0) {
+    console.log("[sync-mirrors] re-run with --apply to write these changes.");
+  }
+}
+
+/** Print at most 20 changed paths, then a count for the remainder. */
+function reportPaths(changes, limit = 20) {
+  for (const line of changes.slice(0, limit)) {
+    console.log(`    ${line}`);
+  }
+  if (changes.length > limit) {
+    console.log(`    ... and ${changes.length - limit} more`);
+  }
 }
 
 main();

@@ -113,8 +113,31 @@ final class ModuleCoreCompatibilityTest extends TestCase
 
     private function satisfiesCaretZero(string $constraint, string $version): bool
     {
+        // Accept both the legacy caret form (^0.x, any 0.x >= declared) and the
+        // platform-major-bounded range form (>=0.x <1.0) used since platform 0.3.0.
+        if (preg_match('/^>=\s*0\.(\d+)(?:\.(\d+))?\s*<\s*1\.0(?:\.0)?$/', $constraint, $m)) {
+            [$major, $minor, $patch] = array_pad(explode('.', $version), 3, '0');
+
+            if ($major !== '0') {
+                return false;
+            }
+
+            $declaredMinor = (int) $m[1];
+            $declaredPatch = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0;
+
+            if ((int) $minor < $declaredMinor) {
+                return false;
+            }
+
+            if ((int) $minor === $declaredMinor && (int) $patch < $declaredPatch) {
+                return false;
+            }
+
+            return true;
+        }
+
         if (! preg_match('/^\^0(?:\.(\d+)){0,2}$/', $constraint, $m)) {
-            $this->fail("unsupported constraint $constraint - expected a ^0.x caret range");
+            $this->fail("unsupported constraint $constraint - expected ^0.x or >=0.x <1.0");
         }
 
         [$major, $minor, $patch] = array_pad(explode('.', $version), 3, '0');

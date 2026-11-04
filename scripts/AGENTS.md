@@ -223,6 +223,12 @@ the **released tree** — the tree at the upstream's latest `v*` tag as `git arc
   `.github` / tool caches — so their result **agrees with the gate**. A CRLF checkout, an
   export-ignored file, or an unreleased commit no longer reads as drift.
 - `npm run check:platform-consistency` is the authoritative gate (mirror vs `vendor/nreljed/*`).
+- `scripts/sync-mirrors.mjs` refreshes every `packages/*` mirror from `vendor/nreljed/*` (falling
+  back to the other apps' vendor dirs). It is **dry-run by default** — run
+  `npm run sync:mirrors` to preview the plan, `npm run sync:mirrors:apply` to write. This matters
+  because the tool **deletes** mirror files that are absent from its source; a run against a stale
+  vendor/ would silently destroy committed package files. CI (`core-update.yml`,
+  `dependency-sync.yml`) passes `--apply` explicitly.
 
 Rule: to land a change in a mirror you must commit **and tag/release** it upstream, then re-sync
 and update the consumer lock. Never hand-edit a version string to silence a check, and never sync

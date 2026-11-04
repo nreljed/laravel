@@ -96,7 +96,7 @@ jobs:
       # release -- the job could never merge. Refresh it from vendor/ (the
       # released source of truth) so the gate sees one tree.
       - name: Refresh workspace package mirrors
-        run: node scripts/sync-mirrors.mjs
+        run: node scripts/sync-mirrors.mjs --apply
 
       - name: Check for changes
         id: check

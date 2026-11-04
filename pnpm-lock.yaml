@@ -93,6 +93,9 @@ importers:
       '@nreljed/blog':
         specifier: workspace:*
         version: link:packages/blog
+      '@nreljed/marketing-module':
+        specifier: workspace:*
+        version: link:packages/marketing-module
       '@nreljed/platform':
         specifier: workspace:*
         version: link:packages/platform
