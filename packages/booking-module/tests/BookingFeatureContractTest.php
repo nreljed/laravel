@@ -32,7 +32,7 @@ final class BookingFeatureContractTest extends TestCase
         $provider = new ReflectionClass(PropertiesServiceProvider::class);
 
         $this->assertTrue(
-            $provider->implementsInterface(\Nreljed\Platform\Contracts\FeatureProvider::class),
+            $provider->implementsInterface(\Nreljed\Platform\Contracts\Feature::class),
             'PropertiesServiceProvider must implement the FeatureProvider contract.'
         );
 
