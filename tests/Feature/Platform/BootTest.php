@@ -3,7 +3,7 @@
 namespace Tests\Feature\Platform;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Feature;
 use Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Tests\TestCase;
@@ -91,7 +91,7 @@ class BootTest extends TestCase
             $provider = app()->getProvider($class);
 
             $this->assertNotNull($provider, "Feature provider [{$class}] is not registered.");
-            $this->assertInstanceOf(FeatureProvider::class, $provider);
+            $this->assertInstanceOf(Feature::class, $provider);
             $this->assertNotSame('', $provider->slug(), "Feature provider [{$class}] must expose a slug.");
         }
     }
@@ -107,7 +107,7 @@ class BootTest extends TestCase
         $registry = app(FeatureRegistry::class);
 
         $registered = array_values(array_unique(array_map(
-            static fn (FeatureProvider $provider): string => $provider->slug(),
+            static fn (Feature $provider): string => $provider->slug(),
             $registry->allProviders(),
         )));
         sort($registered);
