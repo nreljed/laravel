@@ -21,7 +21,6 @@ use Nreljed\Platform\Contracts\Capabilities\HasSettings;
 use Nreljed\Platform\Contracts\Capabilities\HasSharedData;
 use Nreljed\Platform\Contracts\Capabilities\HasSitemap;
 use Nreljed\Platform\Contracts\Feature;
-use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Support\ContentDescription;
 use Nreljed\Platform\Support\DataBackupCapability;
 use Nreljed\Platform\Support\ResourceDefinition;
@@ -73,8 +72,7 @@ class FeatureRegistry
 
         if (! $provider instanceof Feature) {
             throw new \RuntimeException(
-                "Service provider [{$class}] must implement ".Feature::class.' '
-                .'(or the deprecated '.FeatureProvider::class.' composite).'
+                "Service provider [{$class}] must implement ".Feature::class.'.'
             );
         }
 

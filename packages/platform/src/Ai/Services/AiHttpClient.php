@@ -43,6 +43,19 @@ class AiHttpClient
      */
     public static function getDefaultModel(string $provider): ?string
     {
+        // Config-driven (WS-7): prefer the catalog's default_model so adding a
+        // provider to config/ai-providers.php needs no code change here.
+        try {
+            if (function_exists('config')) {
+                $catalog = config('ai-providers.catalog');
+                if (is_array($catalog) && isset($catalog[$provider]['default_model']) && is_string($catalog[$provider]['default_model'])) {
+                    return $catalog[$provider]['default_model'];
+                }
+            }
+        } catch (Throwable $e) {
+            // fall through to the hardcoded map
+        }
+
         return self::DEFAULT_MODELS[$provider] ?? null;
     }
 

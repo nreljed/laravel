@@ -7,7 +7,22 @@ use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Facade;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Capabilities\HasAdminResources;
+use Nreljed\Platform\Contracts\Capabilities\HasContentEditor;
+use Nreljed\Platform\Contracts\Capabilities\HasContentType;
+use Nreljed\Platform\Contracts\Capabilities\HasDashboardWidgets;
+use Nreljed\Platform\Contracts\Capabilities\HasDataBackup;
+use Nreljed\Platform\Contracts\Capabilities\HasDeactivation;
+use Nreljed\Platform\Contracts\Capabilities\HasHealthChecks;
+use Nreljed\Platform\Contracts\Capabilities\HasMedia;
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasNotifications;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Capabilities\HasProfileExtension;
+use Nreljed\Platform\Contracts\Capabilities\HasSettings;
+use Nreljed\Platform\Contracts\Capabilities\HasSharedData;
+use Nreljed\Platform\Contracts\Capabilities\HasSitemap;
+use Nreljed\Platform\Contracts\Feature;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Nreljed\Platform\Support\ResourceDefinition;
 use PHPUnit\Framework\TestCase;
@@ -165,7 +180,7 @@ final class ModuleResourceContractTest extends TestCase
     }
 }
 
-final class GoodModule implements FeatureProvider
+final class GoodModule implements Feature, HasAdminResources, HasContentEditor, HasContentType, HasDashboardWidgets, HasDataBackup, HasDeactivation, HasHealthChecks, HasMedia, HasNavigation, HasNotifications, HasPermissions, HasProfileExtension, HasSettings, HasSharedData, HasSitemap
 {
     use InteractsWithFeatures;
 
@@ -202,7 +217,7 @@ final class GoodModule implements FeatureProvider
     }
 }
 
-final class RawArrayModule implements FeatureProvider
+final class RawArrayModule implements Feature, HasAdminResources, HasContentEditor, HasContentType, HasDashboardWidgets, HasDataBackup, HasDeactivation, HasHealthChecks, HasMedia, HasNavigation, HasNotifications, HasPermissions, HasProfileExtension, HasSettings, HasSharedData, HasSitemap
 {
     use InteractsWithFeatures;
 
@@ -222,7 +237,7 @@ final class RawArrayModule implements FeatureProvider
     }
 }
 
-final class DriftModule implements FeatureProvider
+final class DriftModule implements Feature, HasAdminResources, HasContentEditor, HasContentType, HasDashboardWidgets, HasDataBackup, HasDeactivation, HasHealthChecks, HasMedia, HasNavigation, HasNotifications, HasPermissions, HasProfileExtension, HasSettings, HasSharedData, HasSitemap
 {
     use InteractsWithFeatures;
 
@@ -251,7 +266,7 @@ final class DriftModule implements FeatureProvider
     }
 }
 
-final class CollidingModule implements FeatureProvider
+final class CollidingModule implements Feature, HasAdminResources, HasContentEditor, HasContentType, HasDashboardWidgets, HasDataBackup, HasDeactivation, HasHealthChecks, HasMedia, HasNavigation, HasNotifications, HasPermissions, HasProfileExtension, HasSettings, HasSharedData, HasSitemap
 {
     use InteractsWithFeatures;
 

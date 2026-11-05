@@ -10,9 +10,12 @@ use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Facade;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
+use Nreljed\Platform\Contracts\Capabilities\HasDashboardWidgets;
 use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Capabilities\HasSettings;
+use Nreljed\Platform\Contracts\Capabilities\HasSitemap;
 use Nreljed\Platform\Contracts\Feature;
-use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Services\FeatureRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -309,7 +312,7 @@ final class DependentFeature extends NavigationOnlyFeature
  * The pre-0.3 shape: every capability, all at once. This must keep behaving
  * exactly as it did before the split.
  */
-final class FatFeatureProvider implements FeatureProvider
+final class FatFeatureProvider implements Feature, HasDashboardWidgets, HasNavigation, HasPermissions, HasSettings, HasSitemap
 {
     use InteractsWithFeatures;
 

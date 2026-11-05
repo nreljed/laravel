@@ -58,6 +58,7 @@ class PlatformServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/features.php', 'features');
         $this->mergeConfigFrom(__DIR__.'/../config/media.php', 'media');
         $this->mergeConfigFrom(__DIR__.'/../config/forms.php', 'forms');
+        $this->mergeConfigFrom(__DIR__.'/../config/ai-providers.php', 'ai-providers');
 
         $this->app->singleton(FormattingService::class);
         $this->app->singleton(FeatureRegistry::class);
@@ -120,6 +121,7 @@ class PlatformServiceProvider extends ServiceProvider
                 __DIR__.'/../config/deploy.php' => config_path('deploy.php'),
                 __DIR__.'/../config/features.php' => config_path('features.php'),
                 __DIR__.'/../config/media.php' => config_path('media.php'),
+                __DIR__.'/../config/ai-providers.php' => config_path('ai-providers.php'),
             ], 'core-config');
 
             $this->publishes([

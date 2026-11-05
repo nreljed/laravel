@@ -9,9 +9,24 @@ use Illuminate\Support\ServiceProvider;
 use Nreljed\BookingModule\Properties\Models\Property;
 use Nreljed\BookingModule\Properties\Policies\PropertyPolicy;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Capabilities\HasAdminResources;
+use Nreljed\Platform\Contracts\Capabilities\HasContentEditor;
+use Nreljed\Platform\Contracts\Capabilities\HasContentType;
+use Nreljed\Platform\Contracts\Capabilities\HasDashboardWidgets;
+use Nreljed\Platform\Contracts\Capabilities\HasDataBackup;
+use Nreljed\Platform\Contracts\Capabilities\HasDeactivation;
+use Nreljed\Platform\Contracts\Capabilities\HasHealthChecks;
+use Nreljed\Platform\Contracts\Capabilities\HasMedia;
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasNotifications;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Capabilities\HasProfileExtension;
+use Nreljed\Platform\Contracts\Capabilities\HasSettings;
+use Nreljed\Platform\Contracts\Capabilities\HasSharedData;
+use Nreljed\Platform\Contracts\Capabilities\HasSitemap;
+use Nreljed\Platform\Contracts\Feature;
 
-class PropertiesServiceProvider extends ServiceProvider implements FeatureProvider
+class PropertiesServiceProvider extends ServiceProvider implements Feature, HasAdminResources, HasContentEditor, HasContentType, HasDashboardWidgets, HasDataBackup, HasDeactivation, HasHealthChecks, HasMedia, HasNavigation, HasNotifications, HasPermissions, HasProfileExtension, HasSettings, HasSharedData, HasSitemap
 {
     use InteractsWithFeatures;
 

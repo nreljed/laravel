@@ -10,7 +10,9 @@ use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Facade;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Capabilities\HasAdminResources;
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Feature;
 use Nreljed\Platform\Services\FeatureRegistry;
 use Nreljed\Platform\Support\ResourceDefinition;
 use PHPUnit\Framework\TestCase;
@@ -319,7 +321,7 @@ final class NavItemsFeatureRegistryTest extends TestCase
  * The Shop shape: one collapsible group, a hand-written Products link that a
  * descriptor also declares, and two descriptors the module never wrote by hand.
  */
-final class CollapsibleModule implements FeatureProvider
+final class CollapsibleModule implements Feature, HasAdminResources, HasNavigation
 {
     use InteractsWithFeatures;
 
@@ -385,7 +387,7 @@ final class CollapsibleModule implements FeatureProvider
  * A provider with no collapsible entry: descriptors still need to render, so the
  * flat `Resources` fallback stays as the contract for that case.
  */
-final class FlatModule implements FeatureProvider
+final class FlatModule implements Feature, HasAdminResources, HasNavigation
 {
     use InteractsWithFeatures;
 
@@ -421,7 +423,7 @@ final class FlatModule implements FeatureProvider
  * Two collapsible groups is genuinely ambiguous, so the registry must not pick
  * one and hide the descriptors inside it.
  */
-final class AmbiguousModule implements FeatureProvider
+final class AmbiguousModule implements Feature, HasAdminResources, HasNavigation
 {
     use InteractsWithFeatures;
 
@@ -469,7 +471,7 @@ final class AmbiguousModule implements FeatureProvider
 /**
  * A descriptor awaiting its routes stays invisible until they exist.
  */
-final class RoutelessModule implements FeatureProvider
+final class RoutelessModule implements Feature, HasAdminResources, HasNavigation
 {
     use InteractsWithFeatures;
 
@@ -512,7 +514,7 @@ final class RoutelessModule implements FeatureProvider
 /**
  * Blog's shape: a curated group and no descriptors at all.
  */
-final class DescriptorlessModule implements FeatureProvider
+final class DescriptorlessModule implements Feature, HasAdminResources, HasNavigation
 {
     use InteractsWithFeatures;
 
@@ -543,7 +545,7 @@ final class DescriptorlessModule implements FeatureProvider
  * An item-level groupLabel is the more specific declaration and must survive the
  * provider default, as Blog relies on.
  */
-final class InlineLabelModule implements FeatureProvider
+final class InlineLabelModule implements Feature, HasAdminResources, HasNavigation
 {
     use InteractsWithFeatures;
 
