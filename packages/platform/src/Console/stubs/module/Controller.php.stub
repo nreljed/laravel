@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Http\Controllers;
+
+use Inertia\Inertia;
+use Inertia\Response;
+use Nreljed\Platform\Http\Controllers\Controller;
+
+/**
+ * The {{ name }} landing page.
+ *
+ * Rendered as the Inertia component `{{ pageName }}`, which the module's page
+ * kit (`{{ pagesFunction }}()` in src/Resources/js/pages.ts) maps to
+ * `src/Resources/js/Pages/Index.tsx`.
+ */
+class {{ controllerClass }} extends Controller
+{
+    public function index(): Response
+    {
+        return Inertia::render('{{ pageName }}', [
+            'items' => [],
+        ]);
+    }
+}

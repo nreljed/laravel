@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+use {{ namespace }}\Http\Controllers\{{ controllerClass }};
+
+/*
+|--------------------------------------------------------------------------
+| {{ name }} dashboard routes
+|--------------------------------------------------------------------------
+|
+| Loaded by {{ providerClass }} inside a `dashboard/{{ slug }}` prefix with the
+| `dashboard.{{ slug }}.` route-name prefix already applied, so `name('index')`
+| becomes `{{ routeNamePrefix }}index`.
+|
+| The permission middleware is what keeps the module off a user's sidebar: the
+| nav item declares `permission => '{{ slug }}.view'` and the route enforces the
+| same slug. Grant it to a role in config/roles.php (or the admin UI) and run
+| `php artisan db:seed --class=RolesAndPermissionsSeeder`.
+|
+*/
+
+Route::get('/', [{{ controllerClass }}::class, 'index'])
+    ->middleware('permission:{{ slug }}.view')
+    ->name('index');

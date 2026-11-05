@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Example migration shipped with `--with-migrations`.
+ *
+ * The provider already calls `loadMigrationsFrom(__DIR__.'/../database/migrations')`,
+ * so a new file here is picked up by `php artisan migrate` with no extra wiring.
+ * Rename the table and columns, or delete this file and start from scratch.
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('{{ table }}', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('{{ table }}');
+    }
+};

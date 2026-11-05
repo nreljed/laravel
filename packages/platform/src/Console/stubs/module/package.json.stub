@@ -1,0 +1,18 @@
+{
+  "name": "{{ npmPackage }}",
+  "version": "{{ version }}",
+  "description": "{{ name }} feature module frontend kit for the Nreljed dashboard platform.",
+  "license": "proprietary",
+  "type": "module",
+  "exports": {
+    "./pages": "./src/Resources/js/pages.ts",
+    "./*": "./src/Resources/js/*"
+  },
+  "peerDependencies": {
+    "@inertiajs/core": "^3.0.0",
+    "@inertiajs/react": "^3.0.0",
+    "lucide-react": "^1.44.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

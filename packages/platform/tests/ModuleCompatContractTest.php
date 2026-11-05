@@ -13,10 +13,11 @@ use PHPUnit\Framework\TestCase;
  * module's checkout (sibling of the core repo by default, overridable via the
  * CORE_MODULE_PATHS env — semicolon separated absolute paths) and asserts:
  *
- *   - the module declares nreljed/platform with a caret-zero (^0.x)
- *     constraint,
- *   - the CURRENT core release satisfies that constraint — a core minor bump
- *     therefore must ship together with the modules updating their ranges,
+ *   - the module declares nreljed/platform with a platform-major-bounded
+ *     range — either the caret-zero shorthand (`^0.2`) or its explicit
+ *     equivalent (`>=0.2 <1.0`), both of which mean "any 0.x at or above the
+ *     floor, but never 1.0",
+ *   - the CURRENT core release satisfies that constraint,
  *   - the module's own version field stays semver shaped.
  *
  * The reverse direction (the installed core must satisfy the module's
@@ -49,7 +50,7 @@ final class ModuleCompatContractTest extends TestCase
     /**
      * @depends test_core_compat_manifest_exists_and_is_valid
      */
-    public function test_registered_modules_resolve_and_satisfy_caret_zero(): void
+    public function test_registered_modules_declare_a_platform_major_bounded_range(): void
     {
         foreach ($this->manifest()['modules'] as $entry) {
             $package = (string) ($entry['package'] ?? '');
@@ -69,10 +70,12 @@ final class ModuleCompatContractTest extends TestCase
 
             $constraint = (string) $composer['require']['nreljed/platform'];
 
-            $this->assertMatchesRegularExpression(
-                '/^\^0(?:\.\d+){0,2}$/',
-                $constraint,
-                "[{$package}] must pin platform with a caret-zero ^0.x range, got [{$constraint}]"
+            $range = $this->platformRange($constraint);
+
+            $this->assertNotNull(
+                $range,
+                "[{$package}] must pin platform with a platform-major-bounded range "
+                ."(`^0.x` or `>=0.x <1.0`), got [{$constraint}]"
             );
 
             $coreVersion = (string) ($this->composer($this->coreRoot, 'nreljed/platform')['version'] ?? '');
@@ -80,8 +83,9 @@ final class ModuleCompatContractTest extends TestCase
             $this->assertMatchesRegularExpression('/^\d+\.\d+\.\d+$/', $coreVersion, 'core composer.json version must be semver shaped');
 
             $this->assertTrue(
-                $this->satisfiesCaretZero($constraint, $coreVersion),
-                "[{$package}] declares [{$constraint}] but current core is {$coreVersion} — bump the module range alongside the core minor"
+                $this->withinRange($range, $coreVersion),
+                "[{$package}] declares [{$constraint}] but current core is {$coreVersion} — "
+                .'bump the module range alongside the core minor'
             );
 
             $moduleVersion = (string) ($composer['version'] ?? '');
@@ -92,6 +96,29 @@ final class ModuleCompatContractTest extends TestCase
                 "[{$package}] composer.json version must be semver shaped (X.Y.Z)"
             );
         }
+    }
+
+    /**
+     * Guards the guard: the range parser must reject constraints that would
+     * let a platform minor become breaking.
+     */
+    public function test_the_range_parser_accepts_only_platform_major_bounded_constraints(): void
+    {
+        $accepted = ['^0', '^0.2', '^0.2.3', '>=0.2 <1.0', '>=0.2.0 <1.0.0'];
+
+        foreach ($accepted as $constraint) {
+            $this->assertNotNull($this->platformRange($constraint), "[{$constraint}] should be accepted");
+        }
+
+        $rejected = ['^1.0', '>=0.2 <2.0', '>=1.0 <2.0', '*', '0.2.0', '>=0.2'];
+
+        foreach ($rejected as $constraint) {
+            $this->assertNull($this->platformRange($constraint), "[{$constraint}] should be rejected");
+        }
+
+        $this->assertTrue($this->withinRange($this->platformRange('>=0.2 <1.0'), '0.3.0'));
+        $this->assertFalse($this->withinRange($this->platformRange('>=0.2 <1.0'), '0.1.9'));
+        $this->assertFalse($this->withinRange($this->platformRange('>=0.2 <1.0'), '1.0.0'));
     }
 
     /**
@@ -144,22 +171,55 @@ final class ModuleCompatContractTest extends TestCase
         return $composer;
     }
 
-    private function satisfiesCaretZero(string $constraint, string $version): bool
+    /**
+     * Parse a platform constraint into an inclusive floor and exclusive ceiling.
+     *
+     * In this ecosystem a module range is deliberately platform-major bounded:
+     * an additive platform minor never forces a module release, so a module
+     * built against 0.2 keeps working on 0.3, 0.4, ... up to but not including
+     * the 1.0 major. Only a platform MAJOR bump requires modules to update.
+     *
+     * Accepts the caret-zero shorthand (`^0`, `^0.2`, `^0.2.3`) and the
+     * explicit equivalent (`>=0.2 <1.0`, `>=0.2.0 <1.0.0`). Returns null for
+     * anything that is not platform-major bounded — including a caret range on
+     * a non-zero major, which would make a platform minor breaking.
+     *
+     * @return array{min: array{int, int, int}, max: array{int, int, int}}|null
+     */
+    private function platformRange(string $constraint): ?array
     {
-        if (! preg_match('/^\^0(?:\.(\d+))?(?:\.(\d+))?$/', $constraint, $m)) {
-            $this->fail("unsupported constraint [{$constraint}] — expected ^0.x caret-zero");
+        $constraint = trim($constraint);
+
+        if (preg_match('/^\^0(?:\.(\d+))?(?:\.(\d+))?$/', $constraint, $m) === 1) {
+            return [
+                'min' => [0, isset($m[1]) && $m[1] !== '' ? (int) $m[1] : 0, isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0],
+                'max' => [1, 0, 0],
+            ];
         }
 
+        if (preg_match('/^>=\s*(\d+)(?:\.(\d+))?(?:\.(\d+))?\s+<\s*(\d+)(?:\.(\d+))?(?:\.(\d+))?$/', $constraint, $m) === 1) {
+            $min = [(int) $m[1], (int) ($m[2] ?? 0), (int) ($m[3] ?? 0)];
+            $max = [(int) $m[4], (int) ($m[5] ?? 0), (int) ($m[6] ?? 0)];
+
+            // The floor must be inside 0.x and the ceiling must not exceed the
+            // 1.0 major, or the range stops being platform-major bounded.
+            if ($min[0] !== 0 || $max[0] > 1 || ($max[0] === 1 && ($max[1] !== 0 || $max[2] !== 0))) {
+                return null;
+            }
+
+            return ['min' => $min, 'max' => $max];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{min: array{int, int, int}, max: array{int, int, int}}  $range
+     */
+    private function withinRange(array $range, string $version): bool
+    {
         $v = array_pad(array_map('intval', explode('.', $version)), 3, 0);
 
-        $min = [0, isset($m[1]) && $m[1] !== '' ? (int) $m[1] : 0, isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0];
-        // In this ecosystem `^0.x` is deliberately platform-major bounded:
-        // an additive platform minor never forces a module release, so a
-        // module built against 0.2 keeps working on 0.3, 0.4, ... up to but
-        // not including the 1.0 major. The platform's major bump is the only
-        // event that requires modules to update their ranges.
-        $max = [1, 0, 0];
-
-        return $v >= $min && $v < $max;
+        return $v >= $range['min'] && $v < $range['max'];
     }
 }
