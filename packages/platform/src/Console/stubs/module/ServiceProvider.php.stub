@@ -1,0 +1,106 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+use Nreljed\Platform\Concerns\InteractsWithFeatures;
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Feature;
+
+/**
+ * {{ name }} feature module.
+ *
+ * Scaffolded by `php artisan make:module {{ name }}`.
+ *
+ * The provider owns three things: the module identity, its dashboard routes and
+ * its sidebar entry. Everything else is an OPT-IN capability - implement the
+ * interfaces from `Nreljed\Platform\Contracts\Capabilities` the module actually
+ * needs (HasSettings, HasDashboardWidgets, HasDataBackup, HasAdminResources,
+ * ...) and the registry picks them up with no core edits.
+ *
+ * `InteractsWithFeatures` supplies a safe default for every optional method, so
+ * only `name()` and `slug()` are mandatory to implement yourself.
+ */
+class {{ providerClass }} extends ServiceProvider implements Feature, HasNavigation, HasPermissions
+{
+    use InteractsWithFeatures;
+
+    public function boot(): void
+    {
+        // A disabled feature must contribute nothing: no routes, no migrations,
+        // no nav. `enabled()` reads the persisted override first and falls back
+        // to `features.enabled.{{ slug }}` in the app config.
+        if (! $this->enabled()) {
+            return;
+        }
+
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+        Route::middleware(['web', 'auth', 'verified', 'throttle:60,1'])
+            ->prefix('{{ routePrefix }}')
+            ->name('{{ routeNamePrefix }}')
+            ->group(__DIR__.'/Routes/web.php');
+    }
+
+    public function name(): string
+    {
+        return '{{ name }}';
+    }
+
+    public function slug(): string
+    {
+        return '{{ slug }}';
+    }
+
+    public function description(): ?string
+    {
+        return '{{ name }} feature module.';
+    }
+
+    /**
+     * The Composer package this module ships as. The platform resolves the
+     * *installed* version from it for the system-health page, so it must match
+     * the name in composer.json exactly.
+     */
+    public function getComposerPackage(): ?string
+    {
+        return '{{ package }}';
+    }
+
+    public function getNavGroupLabel(): ?string
+    {
+        return '{{ navGroup }}';
+    }
+
+    public function getNavItems(): array
+    {
+        return [
+            [
+                'title' => '{{ name }}',
+                'url' => route('{{ routeNamePrefix }}index', [], false),
+                'icon' => 'FileText',
+                'permission' => '{{ slug }}.view',
+            ],
+        ];
+    }
+
+    public function permissions(): array
+    {
+        return [
+            [
+                'slug' => '{{ slug }}.view',
+                'name' => 'View {{ name }}',
+                'description' => 'Open the {{ name }} module.',
+            ],
+            [
+                'slug' => '{{ slug }}.manage',
+                'name' => 'Manage {{ name }}',
+                'description' => 'Create, edit and delete {{ name }} records.',
+            ],
+        ];
+    }
+}

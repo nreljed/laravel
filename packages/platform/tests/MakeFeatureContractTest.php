@@ -136,6 +136,27 @@ final class MakeFeatureContractTest extends TestCase
         $this->assertStringNotContainsString("config_path('core.php')", $source);
     }
 
+    public function test_the_stub_targets_the_capability_contract_not_the_deprecated_composite(): void
+    {
+        $command = new MakeFeature;
+        $stub = (string) (new ReflectionMethod($command, 'buildStub'))
+            ->invoke($command, 'App\\FeatureProviders', 'ForumServiceProvider', 'Forum', 'forum');
+
+        $this->assertStringContainsString(
+            'implements Feature, HasNavigation, HasPermissions',
+            $stub,
+            'New features must implement the minimal contract plus the capabilities they need.',
+        );
+        $this->assertStringContainsString('use Nreljed\\Platform\\Contracts\\Feature;', $stub);
+        $this->assertStringNotContainsString(
+            'Contracts\\FeatureProvider;',
+            $stub,
+            'FeatureProvider is deprecated since 0.3.0 - the scaffold must not start new features on it.',
+        );
+        $this->assertStringContainsString("return 'forum';", $stub);
+        $this->assertStringContainsString('function getNavItems(): array', $stub);
+    }
+
     private function insert(string $fqcn): bool
     {
         $command = new MakeFeature;

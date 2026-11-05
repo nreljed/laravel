@@ -13,7 +13,9 @@ Registered by `PlatformServiceProvider::loadConsoleRoutes()`.
 | `roles:create`              | Create a role with permissions.                                                                                                                                                              |
 | `schedule:publish`          | Publish due scheduled content (Posts by `published_at`). Ships with the `nreljed/blog` package, which registers it every minute.                             |
 | `notifications:purge`       | Purge old notifications (`--days`).                                                                                                                                                          |
-| `feature:make`              | Scaffold a new feature provider (contract + trait + config registration).                                                                                                                    |
+| `make:feature`              | Scaffold a single `FeatureProvider` class inside an existing app (contract + trait, no package). Use `make:module` for a full module package.                                                 |
+| `make:module`               | Scaffold a complete feature module package (composer.json, package.json, provider, routes, page kit, optional migrations/tests) and, with `--activate`, patch the host app. See [Feature Provider](feature-provider.md#start-here-php-artisan-makemodule). |
+| `make:resource`             | Scaffold a `ResourceDefinition` descriptor for the shared CRUD/admin UI.                                                                                                                       |
 
 ## Hosts
 

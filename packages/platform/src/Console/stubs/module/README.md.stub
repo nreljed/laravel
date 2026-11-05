@@ -1,0 +1,93 @@
+# {{ name }} module
+
+A feature module for the [Nreljed platform](https://github.com/nreljed/platform), scaffolded by
+`php artisan make:module {{ name }}`.
+
+| Piece           | Value                                          |
+| --------------- | ---------------------------------------------- |
+| Composer        | `{{ package }}`                                |
+| npm             | `{{ npmPackage }}`                             |
+| Namespace       | `{{ namespace }}`                              |
+| Feature slug    | `{{ slug }}`                                   |
+| Routes          | `{{ routePrefix }}` (`{{ routeNamePrefix }}*`) |
+| Inertia page    | `{{ pageName }}`                               |
+| Permissions     | `{{ slug }}.view`, `{{ slug }}.manage`         |
+
+## Layout
+
+```
+src/{{ providerClass }}.php            # identity, routes, nav, permissions
+src/Http/Controllers/                  # dashboard controllers
+src/Routes/web.php                     # loaded under dashboard/{{ slug }}
+src/Resources/js/pages.ts              # {{ pagesFunction }}() page kit
+src/Resources/js/Pages/Index.tsx       # the landing page
+database/migrations/                   # auto-loaded by the provider
+tests/                                 # module test suite
+```
+
+## Activate it
+
+`make:module` already wired this module into the app when it was generated with `--activate`.
+Otherwise follow the three irreducible steps:
+
+1. **Composer** - register a path repository and require the package:
+
+   ```json
+   "repositories": [{ "name": "{{ slug }}-module", "type": "path", "url": "modules/{{ name }}" }],
+   "require": { "{{ package }}": "@dev" }
+   ```
+
+   ```bash
+   composer update {{ package }}
+   ```
+
+2. **Feature registry** - add the provider to `config/features.php` and enable it:
+
+   ```php
+   'providers' => [ /* ... */ {{ providerClass }}::class ],
+   'enabled'   => [ /* ... */ '{{ slug }}' => true ],
+   ```
+
+3. **Frontend** - add the npm dependency and spread the page kit into `resources/js/page-config.ts`:
+
+   ```json
+   "{{ npmPackage }}": "link:modules/{{ name }}"
+   ```
+
+   ```ts
+   import { {{ pagesFunction }} } from "{{ npmPackage }}/pages";
+   basePages: { ...registerCoreTemplates(), ...{{ pagesFunction }}() }
+   ```
+
+   Then `pnpm install` (or `npm install`).
+
+Finally, migrate and sync permissions:
+
+```bash
+php artisan migrate
+php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan route:list --path={{ routePrefix }}
+```
+
+## Growing the module
+
+- **More capabilities**: implement any interface from
+  `Nreljed\Platform\Contracts\Capabilities` on the provider - `HasSettings`, `HasDashboardWidgets`,
+  `HasAdminResources`, `HasDataBackup`, `HasNotifications`, `HasMedia`, `HasSitemap`,
+  `HasHealthChecks`, `HasSharedData`, `HasContentType`, `HasProfileExtension`, `HasDeactivation`.
+  No core edits are needed; `FeatureRegistry` dispatches on `instanceof`.
+- **Permissions**: declare them in `permissions()` and grant them to roles in `config/roles.php`
+  (roles using `'*'` receive new permissions automatically).
+- **Frontend**: every `Pages/**/*.tsx` file is picked up by `{{ pagesFunction }}()`; the Inertia
+  name is `{{ slug }}/<kebab-cased path>`.
+- **Tests**: `vendor/bin/phpunit` in this directory (uses the host app's autoloader).
+
+## Shipping it as a package
+
+This directory is already shaped like a standalone Composer package (`.gitattributes`,
+`composer.json`, `package.json`, tests). To publish it:
+
+1. `git init`, commit, and push to `github.com/{{ vendor }}/{{ slug }}-module`.
+2. Tag `v{{ version }}` and cut a GitHub Release.
+3. In every consuming app, swap the `path` repository for a `vcs` one and require
+   `{{ package }}: ^{{ version }}`.

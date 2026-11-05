@@ -1,0 +1,54 @@
+import type { ComponentType } from "react";
+
+export type PageImport = () => Promise<{ default: ComponentType<unknown> }>;
+
+/**
+ * Prefix every page in this kit is registered under. It must match the Inertia
+ * component name the module's controllers render (`{{ pageName }}`).
+ */
+export const {{ slug }}PagePrefix = "{{ slug }}";
+
+/**
+ * Convert a `Pages/**` component path to the Inertia page key the controllers
+ * render: every segment is kebab-cased and lowercased, so `Pages/Index.tsx`
+ * maps to `{{ pageName }}` and `Pages/ReportList.tsx` maps to
+ * `{{ slug }}/report-list`.
+ *
+ * Lowercasing alone is not enough - controllers render dashed names, so
+ * `ReportList.tsx` must map to `report-list`, never `reportlist`.
+ */
+function toPageKey(componentPath: string): string {
+    return componentPath
+        .split("/")
+        .map((segment) =>
+            segment
+                .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+                .replace(/[_\s]+/g, "-")
+                .toLowerCase(),
+        )
+        .join("/");
+}
+
+/**
+ * The {{ name }} page kit.
+ *
+ * Consuming apps spread the returned map into their pageConfig alongside
+ * `registerCoreTemplates()`:
+ *
+ *     import { {{ pagesFunction }} } from "{{ npmPackage }}/pages";
+ *     basePages: { ...registerCoreTemplates(), ...{{ pagesFunction }}() }
+ */
+export function {{ pagesFunction }}(): Record<string, PageImport> {
+    const pageMap: Record<string, PageImport> = {};
+    const pages = import.meta.glob("./Pages/**/*.tsx") as Record<string, PageImport>;
+
+    for (const [path, importFn] of Object.entries(pages)) {
+        const componentPath = path.match(/\/Pages\/(.+)\.tsx$/)?.[1];
+
+        if (componentPath) {
+            pageMap[`{{ pageKeyPrefix }}/${toPageKey(componentPath)}`] = importFn;
+        }
+    }
+
+    return pageMap;
+}

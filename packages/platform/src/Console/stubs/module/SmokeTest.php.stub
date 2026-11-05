@@ -1,0 +1,72 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Tests\Feature;
+
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Feature;
+use {{ namespace }}\{{ providerClass }};
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+
+/**
+ * Contract smoke test for the {{ name }} module.
+ *
+ * Deliberately does not boot an application, so it runs without a database and
+ * without the platform's service providers. It asserts the parts of the module
+ * contract that a refactor can silently break: the provider must stay a
+ * Feature, its slug must stay kebab-case (it is a route and page prefix) and
+ * its permissions must stay inside its own namespace.
+ */
+final class {{ name }}ModuleTest extends TestCase
+{
+    private function provider(): {{ providerClass }}
+    {
+        return new {{ providerClass }}(new \Illuminate\Container\Container);
+    }
+
+    public function test_the_provider_is_a_feature(): void
+    {
+        $reflection = new ReflectionClass({{ providerClass }}::class);
+
+        $this->assertTrue($reflection->implementsInterface(Feature::class));
+        $this->assertTrue($reflection->implementsInterface(HasNavigation::class));
+        $this->assertTrue($reflection->implementsInterface(HasPermissions::class));
+    }
+
+    public function test_the_slug_is_kebab_case(): void
+    {
+        $this->assertMatchesRegularExpression('/^[a-z0-9]+(-[a-z0-9]+)*$/', $this->provider()->slug());
+    }
+
+    public function test_permissions_are_scoped_to_the_module(): void
+    {
+        $slug = $this->provider()->slug();
+
+        foreach ($this->provider()->permissions() as $permission) {
+            $permissionSlug = is_array($permission) ? (string) ($permission['slug'] ?? '') : (string) $permission;
+
+            $this->assertStringStartsWith($slug.'.', $permissionSlug);
+        }
+    }
+
+    public function test_the_nav_group_label_is_set(): void
+    {
+        $this->assertNotEmpty($this->provider()->getNavGroupLabel());
+    }
+
+    /**
+     * The sidebar entry is built from the module's own named route, so the two
+     * cannot drift apart into a dead link.
+     */
+    public function test_the_nav_item_uses_the_module_route(): void
+    {
+        $source = (string) file_get_contents(
+            (new ReflectionClass({{ providerClass }}::class))->getFileName()
+        );
+
+        $this->assertStringContainsString("route('dashboard.{{ slug }}.index'", $source);
+    }
+}

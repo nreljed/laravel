@@ -1,0 +1,31 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Module test bootstrap
+|--------------------------------------------------------------------------
+|
+| The module is developed inside a consuming application (or installed into
+| its vendor/ directory), so it borrows that application's autoloader instead
+| of shipping a second vendor tree. Both layouts are covered: nested at
+| <app>/modules/<Name> and installed at <app>/vendor/<vendor>/<package>.
+|
+*/
+
+$candidates = [
+    __DIR__.'/../../../../vendor/autoload.php',  // <app>/modules/<Name>/tests
+    __DIR__.'/../../../vendor/autoload.php',     // <app>/vendor/<vendor>/<package>/tests
+    __DIR__.'/../vendor/autoload.php',           // standalone checkout with its own vendor/
+];
+
+foreach ($candidates as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+
+        return;
+    }
+}
+
+fwrite(STDERR, "Unable to locate a Composer autoloader for this module.\n");
+
+exit(1);

@@ -13,7 +13,7 @@ class MakeFeature extends Command
         {--path=app/FeatureProviders : Directory where the provider class is created}
         {--namespace=App\\FeatureProviders : Namespace of the provider class}';
 
-    protected $description = 'Scaffold a FeatureProvider class that is discoverable by the FeatureRegistry';
+    protected $description = 'Scaffold a single-class FeatureProvider inside this app (use make:module for a full module package)';
 
     public function handle(): int
     {
@@ -47,8 +47,9 @@ class MakeFeature extends Command
 
         $this->info('To complete setup:');
         $this->line('  1. Confirm config/features.php lists '.$namespace.'\\'.$className.'::class in its providers array');
-        $this->line('  2. Implement any optional capability methods your feature supports');
-        $this->line('  3. Run "php artisan permissions:list" and "php artisan permissions:sync" to sync permissions');
+        $this->line('  2. Implement any optional capability interfaces your feature supports');
+        $this->line('  3. Run "php artisan db:seed --class=RolesAndPermissionsSeeder" to sync permissions');
+        $this->line('  4. Growing into a package? Use "php artisan make:module" instead');
 
         return Command::SUCCESS;
     }
@@ -62,17 +63,31 @@ class MakeFeature extends Command
 
         namespace {$namespace};
 
-        use Nreljed\\Platform\\Contracts\\FeatureProvider;
         use Nreljed\\Platform\\Concerns\\InteractsWithFeatures;
+        use Nreljed\\Platform\\Contracts\\Capabilities\\HasNavigation;
+        use Nreljed\\Platform\\Contracts\\Capabilities\\HasPermissions;
+        use Nreljed\\Platform\\Contracts\\Feature;
 
-        class {$className} extends \Illuminate\Support\ServiceProvider implements FeatureProvider
+        /**
+         * {$nameEscaped} feature.
+         *
+         * A single-class feature that lives inside this application. If it grows
+         * into a package with its own routes, pages and migrations, scaffold one
+         * with "php artisan make:module {$nameEscaped}" instead.
+         *
+         * Implement only the capability interfaces this feature actually needs
+         * (HasSettings, HasDashboardWidgets, HasSharedData, HasSitemap, ...) -
+         * the FeatureRegistry dispatches on instanceof, so no core edit is
+         * involved. The deprecated FeatureProvider composite is not used here.
+         */
+        class {$className} extends \Illuminate\Support\ServiceProvider implements Feature, HasNavigation, HasPermissions
         {
             use InteractsWithFeatures;
 
             public function boot(): void
             {
                 // Register routes, migrations, policies, commands, etc.
-                // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+                // \$this->loadMigrationsFrom(__DIR__.'/../database/migrations');
             }
 
             public function name(): string
@@ -90,11 +105,6 @@ class MakeFeature extends Command
                 return '{$nameEscaped} feature module.';
             }
 
-            public function version(): string
-            {
-                return '1.0.0';
-            }
-
             public function getNavItems(): array
             {
                 return [
@@ -102,26 +112,9 @@ class MakeFeature extends Command
                     //     'title' => '{$name}',
                     //     'url' => route('dashboard.{$slug}.index'),
                     //     'icon' => 'FileText',
+                    //     'permission' => '{$slug}.view',
                     // ],
                 ];
-            }
-
-            public function getSharedData(): array
-            {
-                return [
-                    // Share props consumed by Inertia pages, e.g.:
-                    // 'categories' => [...],
-                ];
-            }
-
-            public function getSettingsRoute(): ?string
-            {
-                return null;
-            }
-
-            public function hasSettings(): bool
-            {
-                return false;
             }
 
             public function permissions(): array

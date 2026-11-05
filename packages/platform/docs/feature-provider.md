@@ -1,8 +1,53 @@
 # Feature Provider
 
-Self-contained features (Blog, Shop, Booking — each a separate package) are discovered through a
+Self-contained features (Blog, Shop, Booking - each a separate package) are discovered through a
 single contract aggregated by the `FeatureRegistry`. Adding a feature requires **no core
-edits** — just register its service provider in `config/features.php` `providers`.
+edits** - just register its service provider in `config/features.php` `providers`.
+
+## Start here: `php artisan make:module`
+
+Scaffolding a module by hand is five files of boilerplate plus five host-app edits. The generator
+does both:
+
+```bash
+php artisan make:module Events                       # scaffold only, prints the activation checklist
+php artisan make:module Events --activate            # scaffold + patch the host app in place
+php artisan make:module Events --with-migrations --with-tests
+php artisan make:module Events --path=packages/events --vendor=acme --slug=events
+```
+
+| Option              | Effect                                                                       |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `--slug=`           | Feature slug / route + page prefix (default: slugified name)                 |
+| `--namespace=`      | Root namespace (default: `<Vendor>\<Name>Module`)                            |
+| `--vendor=`         | Composer + npm vendor (default: `nreljed`)                                   |
+| `--path=`           | Target directory, relative to the app root or absolute (default: `modules`)  |
+| `--nav-group=`      | Sidebar heading (default: headline of the name)                              |
+| `--with-migrations` | Also write an example migration                                              |
+| `--with-tests`      | Also write `phpunit.xml`, a bootstrap and a contract smoke test              |
+| `--activate`        | Patch `composer.json`, `package.json`, `bootstrap/providers.php`, `config/features.php`, `page-config.ts` |
+| `--force`           | Overwrite generated files in a non-empty target directory                    |
+
+It emits a package shaped exactly like the shipped modules: `composer.json` + `package.json`, a
+`{Name}ServiceProvider` implementing the minimal `Feature` contract plus only `HasNavigation` and
+`HasPermissions`, dashboard routes under `dashboard/{slug}`, an Inertia page kit
+(`register{Name}Pages()`), an example page, `.gitignore`/`.gitattributes` and a README.
+
+`--activate` is text-patch based and idempotent: it preserves the host file's indentation and line
+endings, reports `already:` on a second run, and reports `skipped:` (with the manual instruction)
+rather than half-patching when a host file is missing or has an unexpected shape.
+
+After activation:
+
+```bash
+php artisan migrate
+php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan route:list --path=dashboard/events
+pnpm install && pnpm build
+```
+
+To grow it, implement the capability interfaces the module actually needs - the registry dispatches
+on `instanceof`, so no core edit is involved.
 
 ## Contract
 
@@ -72,7 +117,8 @@ Consumers: `HandleInertiaRequests`, `PermissionGateServiceProvider`, `DashboardS
 A provider must pass both conformance tests (`FeatureProviderContractTest` in the package and
 a mirror in the host):
 
-1. Implement `FeatureProvider` + use `InteractsWithFeatures`.
+1. Implement `Feature` (+ the capability interfaces you need) and use `InteractsWithFeatures`.
+   New modules should not implement the deprecated `FeatureProvider` composite.
 2. `getSharedData()` returns **lazy closures** — never call `Inertia::share()` from a provider
    (it bypasses registry aggregation and breaks partial reloads). Consumers read
    `props.sharedData.{key}`.
