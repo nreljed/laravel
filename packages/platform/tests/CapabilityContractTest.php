@@ -4,7 +4,6 @@ namespace Nreljed\Platform\Tests;
 
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
 use Nreljed\Platform\Contracts\Feature;
-use Nreljed\Platform\Contracts\FeatureProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -45,24 +44,6 @@ final class CapabilityContractTest extends TestCase
             $expected,
             $actual,
             'Feature is the minimal contract: adding a method here forces every module to implement it.'
-        );
-    }
-
-    public function test_every_capability_interface_is_implemented_by_the_composite(): void
-    {
-        $composite = new ReflectionClass(FeatureProvider::class);
-        $missing = [];
-
-        foreach ($this->capabilityInterfaces() as $interface) {
-            if (! $composite->implementsInterface($interface->getName())) {
-                $missing[] = $interface->getShortName();
-            }
-        }
-
-        $this->assertSame(
-            [],
-            $missing,
-            'FeatureProvider must stay a superset of every capability, or pre-0.3 modules break: '.implode(', ', $missing)
         );
     }
 

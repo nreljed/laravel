@@ -75,7 +75,22 @@ use Nreljed\MarketingModule\Services\TokenVault;
 use Nreljed\MarketingModule\Services\TrackedLinkService;
 use Nreljed\MarketingModule\Services\WorkflowEngine;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Capabilities\HasAdminResources;
+use Nreljed\Platform\Contracts\Capabilities\HasContentEditor;
+use Nreljed\Platform\Contracts\Capabilities\HasContentType;
+use Nreljed\Platform\Contracts\Capabilities\HasDashboardWidgets;
+use Nreljed\Platform\Contracts\Capabilities\HasDataBackup;
+use Nreljed\Platform\Contracts\Capabilities\HasDeactivation;
+use Nreljed\Platform\Contracts\Capabilities\HasHealthChecks;
+use Nreljed\Platform\Contracts\Capabilities\HasMedia;
+use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
+use Nreljed\Platform\Contracts\Capabilities\HasNotifications;
+use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
+use Nreljed\Platform\Contracts\Capabilities\HasProfileExtension;
+use Nreljed\Platform\Contracts\Capabilities\HasSettings;
+use Nreljed\Platform\Contracts\Capabilities\HasSharedData;
+use Nreljed\Platform\Contracts\Capabilities\HasSitemap;
+use Nreljed\Platform\Contracts\Feature;
 use Nreljed\Platform\Models\User;
 use SocialiteProviders\Instagram\InstagramExtendSocialite;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -91,7 +106,7 @@ use Throwable;
  * routes, the policies, the OAuth driver extensions, and the declarative
  * resources the kernel's admin pages render.
  */
-class MarketingServiceProvider extends ServiceProvider implements FeatureProvider
+class MarketingServiceProvider extends ServiceProvider implements Feature, HasAdminResources, HasContentEditor, HasContentType, HasDashboardWidgets, HasDataBackup, HasDeactivation, HasHealthChecks, HasMedia, HasNavigation, HasNotifications, HasPermissions, HasProfileExtension, HasSettings, HasSharedData, HasSitemap
 {
     use InteractsWithFeatures;
 

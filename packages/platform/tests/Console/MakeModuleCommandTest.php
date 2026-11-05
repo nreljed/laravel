@@ -9,7 +9,6 @@ use Nreljed\Platform\Console\Commands\MakeModule;
 use Nreljed\Platform\Contracts\Capabilities\HasNavigation;
 use Nreljed\Platform\Contracts\Capabilities\HasPermissions;
 use Nreljed\Platform\Contracts\Feature;
-use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\PlatformServiceProvider;
 use Nreljed\Platform\Support\ModuleActivator;
 use Nreljed\Platform\Support\ModuleDefinition;
@@ -198,10 +197,6 @@ final class MakeModuleCommandTest extends TestCase
         $this->assertTrue($reflection->implementsInterface(Feature::class));
         $this->assertTrue($reflection->implementsInterface(HasNavigation::class));
         $this->assertTrue($reflection->implementsInterface(HasPermissions::class));
-        $this->assertFalse(
-            $reflection->implementsInterface(FeatureProvider::class),
-            'New modules must implement the capability interfaces, not the deprecated composite.',
-        );
 
         $provider = new $class(new Container);
 

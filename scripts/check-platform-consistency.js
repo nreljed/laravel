@@ -217,14 +217,18 @@ function checkManifestShape() {
 
         if (!platformPin) {
             errors.push(`${app.name}: composer.json must require nreljed/platform`);
-        } else if (
-            !/^\^0(?:\.\d+){0,2}$/.test(platformPin) &&
-            !/^>=\s*0\.\d+(?:\.\d+)?\s+<\s*1(?:\.0){0,2}$/.test(platformPin)
-        ) {
-            errors.push(
-                `${app.name}: nreljed/platform pin "${platformPin}" is not platform-major bounded ` +
-                    '(expected ^0.x or >=0.x <1.0)',
-            );
+        } else {
+            let ok = false;
+            const caret = platformPin.match(/^\^(\d+)(?:\.\d+){0,2}$/);
+            if (caret) ok = true;
+            const range = platformPin.match(/^>=\s*(\d+)\.\d+(?:\.\d+)?\s+<\s*(\d+)(?:\.0){0,2}$/);
+            if (range && parseInt(range[2]) === parseInt(range[1]) + 1) ok = true;
+            if (!ok) {
+                errors.push(
+                    `${app.name}: nreljed/platform pin "${platformPin}" is not platform-major bounded ` +
+                        '(expected ^N.x or >=N.x <(N+1).0)'
+                );
+            }
         }
     }
 

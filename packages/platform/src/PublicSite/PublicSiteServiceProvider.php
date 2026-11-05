@@ -7,7 +7,7 @@ namespace Nreljed\Platform\PublicSite;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Feature;
 
 /**
  * PublicSite feature module — public marketing pages (/, about, services,
@@ -15,7 +15,7 @@ use Nreljed\Platform\Contracts\FeatureProvider;
  * the starter theme (`resources/themes/starter`) or the project; this module
  * only owns the routes and controller.
  */
-class PublicSiteServiceProvider extends ServiceProvider implements FeatureProvider
+class PublicSiteServiceProvider extends ServiceProvider implements Feature
 {
     use InteractsWithFeatures;
 

@@ -10,7 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use Nreljed\Platform\Ai\Models\AiProvider;
 use Nreljed\Platform\Ai\Policies\AiProviderPolicy;
 use Nreljed\Platform\Concerns\InteractsWithFeatures;
-use Nreljed\Platform\Contracts\FeatureProvider;
+use Nreljed\Platform\Contracts\Feature;
 
 /**
  * AI feature module — bring-your-own-key provider management (Account → AI Keys).
@@ -18,7 +18,7 @@ use Nreljed\Platform\Contracts\FeatureProvider;
  * Routes and the AI provider policy are self-contained here so the kernel
  * provider stays feature-agnostic.
  */
-class AiServiceProvider extends ServiceProvider implements FeatureProvider
+class AiServiceProvider extends ServiceProvider implements Feature
 {
     use InteractsWithFeatures;
 

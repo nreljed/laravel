@@ -75,7 +75,7 @@ final class ModuleCompatContractTest extends TestCase
             $this->assertNotNull(
                 $range,
                 "[{$package}] must pin platform with a platform-major-bounded range "
-                ."(`^0.x` or `>=0.x <1.0`), got [{$constraint}]"
+                ."(`^M.x` or `>=M.x <(M+1).0`), got [{$constraint}]"
             );
 
             $coreVersion = (string) ($this->composer($this->coreRoot, 'nreljed/platform')['version'] ?? '');
@@ -104,13 +104,13 @@ final class ModuleCompatContractTest extends TestCase
      */
     public function test_the_range_parser_accepts_only_platform_major_bounded_constraints(): void
     {
-        $accepted = ['^0', '^0.2', '^0.2.3', '>=0.2 <1.0', '>=0.2.0 <1.0.0'];
+        $accepted = ['^0', '^0.2', '^0.2.3', '^1', '^1.0', '>=0.2 <1.0', '>=0.2.0 <1.0.0', '>=1.0 <2.0'];
 
         foreach ($accepted as $constraint) {
             $this->assertNotNull($this->platformRange($constraint), "[{$constraint}] should be accepted");
         }
 
-        $rejected = ['^1.0', '>=0.2 <2.0', '>=1.0 <2.0', '*', '0.2.0', '>=0.2'];
+        $rejected = ['*', '0.2.0', '>=0.2', '>=0.2 <2.0', '>=1.0 <3.0'];
 
         foreach ($rejected as $constraint) {
             $this->assertNull($this->platformRange($constraint), "[{$constraint}] should be rejected");
@@ -190,10 +190,12 @@ final class ModuleCompatContractTest extends TestCase
     {
         $constraint = trim($constraint);
 
-        if (preg_match('/^\^0(?:\.(\d+))?(?:\.(\d+))?$/', $constraint, $m) === 1) {
+        if (preg_match('/^\^(\d+)(?:\.(\d+))?(?:\.(\d+))?$/', $constraint, $m) === 1) {
+            $major = (int) $m[1];
+
             return [
-                'min' => [0, isset($m[1]) && $m[1] !== '' ? (int) $m[1] : 0, isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0],
-                'max' => [1, 0, 0],
+                'min' => [$major, isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0, isset($m[3]) && $m[3] !== '' ? (int) $m[3] : 0],
+                'max' => [$major + 1, 0, 0],
             ];
         }
 
@@ -201,9 +203,9 @@ final class ModuleCompatContractTest extends TestCase
             $min = [(int) $m[1], (int) ($m[2] ?? 0), (int) ($m[3] ?? 0)];
             $max = [(int) $m[4], (int) ($m[5] ?? 0), (int) ($m[6] ?? 0)];
 
-            // The floor must be inside 0.x and the ceiling must not exceed the
-            // 1.0 major, or the range stops being platform-major bounded.
-            if ($min[0] !== 0 || $max[0] > 1 || ($max[0] === 1 && ($max[1] !== 0 || $max[2] !== 0))) {
+            // The range must be platform-major bounded: ceiling must be exactly
+            // one major above the floor's major, with no minor/patch on the ceiling.
+            if ($max[0] !== $min[0] + 1 || $max[1] !== 0 || $max[2] !== 0) {
                 return null;
             }
 

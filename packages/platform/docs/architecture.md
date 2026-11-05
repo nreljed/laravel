@@ -104,3 +104,45 @@ controllers. Highlights: `SettingsService` (DB-backed config), `MailService` +
 - [Feature Provider](feature-provider.md) — the extension layer.
 - [Deploy](deploy.md) — how the server-side pipeline is wired from core.
 - [Settings](settings.md), [Notifications](notifications.md).
+
+## Capability model
+
+Features declare optional **capabilities** (interfaces under `src/Contracts/Capabilities/`) in addition to the
+fat `FeatureProvider` composite. Core dispatches on capabilities, not on feature identity, so a feature
+that does not implement a capability is simply skipped for that surface.
+
+Notable capabilities:
+
+- `HasPages` / page kit (`register{Name}Pages()`) - a feature exposes Inertia page components.
+- `HasPermissions` - feature contributes permission slugs to the RBAC catalog.
+- `HasNavItems` - feature contributes sidebar/dashboard nav entries.
+- `HasSharedData` - feature contributes Inertia shared props.
+- `HasRoutes` - feature registers its own route file.
+- `HasMigrations` - feature ships database migrations.
+- `HasScheduledTasks` - feature registers cron entries.
+- `HasCommands` - feature registers artisan commands.
+- `HasMedia` - feature owns media collections.
+- `HasSettings` - feature contributes settings keys.
+- `HasNotifications` - feature contributes notification types.
+- `HasAuditEvents` - feature contributes audit-log event types.
+- `HasDataBackup` - feature participates in the account data export/restore flow.
+- `HasSearch` - feature contributes to global search.
+- `HasMarketing` (marketing-module) - feature supplies the site-builder page kit used by the
+  marketing surface. **PublicSite** (core) and **marketing-module** are two different things:
+  PublicSite is the minimal template shipped with core (welcome/about/services/contact/sitemap) and
+  is always available; marketing-module is an opt-in site builder that a consumer registers explicitly.
+  The mono app is the reference implementation of opting in - it registers `MarketingServiceProvider`,
+  lists it in `config/features.php`, calls `registerMarketingPages()` in `page-config.ts`, and calls
+  `registerMarketingFeatureIcons()` from `app.tsx`. All four wiring points must move together.
+
+## PublicSite vs marketing-module
+
+| Concern | PublicSite (core) | marketing-module (opt-in) |
+|---|---|---|
+| Availability | Always shipped with core | Opt-in via service provider + page kit |
+| Scope | Minimal template (welcome/about/services/contact/sitemap) | Full site builder (workflows, sync-health, ...) |
+| Page keys | `public/*` | `marketing/*` |
+| Registration | `registerCoreTemplates()` | `registerMarketingPages()` spread into `basePages` |
+
+A consumer that does **not** register marketing must not resolve any `marketing/*` page component -
+core never auto-registers module pages. See the mono's `resources/js/__tests__/page-config.test.ts`.

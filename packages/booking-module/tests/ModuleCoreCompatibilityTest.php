@@ -75,20 +75,25 @@ final class ModuleCoreCompatibilityTest extends TestCase
 
     private function satisfiesCaretZero(string $constraint, string $version): bool
     {
-        if (preg_match('/^>=\s*0\.(\d+)(?:\.(\d+))?\s*<\s*1\.0(?:\.0)?$/', $constraint, $m)) {
-            [$major, $minor, $patch] = array_pad(explode('.', $version), 3, '0');
+        return $this->satisfiesPlatformConstraint($constraint, $version);
+    }
 
-            if ($major !== '0') {
+    private function satisfiesPlatformConstraint(string $constraint, string $version): bool
+    {
+        $constraint = trim($constraint);
+
+        if (preg_match('/^\^(\d+)(?:\.(\d+))?(?:\.(\d+))?$/' , $constraint, $m)) {
+            [$major, $minor, $patch] = array_pad(explode('.', $version), 3, '0');
+            $declaredMajor = (int) $m[1];
+            $declaredMinor = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0;
+            $declaredPatch = isset($m[3]) && $m[3] !== '' ? (int) $m[3] : 0;
+
+            if ((int) $major !== $declaredMajor) {
                 return false;
             }
-
-            $declaredMinor = (int) $m[1];
-            $declaredPatch = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0;
-
             if ((int) $minor < $declaredMinor) {
                 return false;
             }
-
             if ((int) $minor === $declaredMinor && (int) $patch < $declaredPatch) {
                 return false;
             }
@@ -96,18 +101,8 @@ final class ModuleCoreCompatibilityTest extends TestCase
             return true;
         }
 
-        if (! preg_match('/^\^0(?:\.(\d+)){0,2}$/', $constraint, $m)) {
-            $this->fail("unsupported constraint $constraint - expected ^0.x or >=0.x <1.0");
-        }
+        $this->fail("unsupported constraint $constraint - expected ^M.x or >=M.x <(M+1).0");
 
-        [$major, $minor] = array_pad(explode('.', $version), 3, '0');
-
-        if ($major !== '0') {
-            return false;
-        }
-
-        $declaredMinor = count($m) > 1 && $m[1] !== '' ? (int) $m[1] : 0;
-
-        return (int) $minor >= $declaredMinor;
+        return false;
     }
 }

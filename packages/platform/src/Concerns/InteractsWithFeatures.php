@@ -2,7 +2,6 @@
 
 namespace Nreljed\Platform\Concerns;
 
-use Nreljed\Platform\Contracts\FeatureProvider;
 use Nreljed\Platform\Models\User;
 use Nreljed\Platform\Services\FeatureSettingsService;
 use Nreljed\Platform\Services\PackageVersionService;

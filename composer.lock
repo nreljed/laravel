@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2cf7a294bef51981dcc7fad8411fc9a7",
+    "content-hash": "7aa855a1b552149a2ec00674a972f3c3",
     "packages": [
         {
             "name": "brick/math",
@@ -1640,16 +1640,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v13.39.0",
+            "version": "v13.40.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "d52c3b3129e4c8e213c97cdc68f94b0b7d27f181"
+                "reference": "1449bf241017087fbd38c118ecaabef3f6797fdc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/d52c3b3129e4c8e213c97cdc68f94b0b7d27f181",
-                "reference": "d52c3b3129e4c8e213c97cdc68f94b0b7d27f181",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/1449bf241017087fbd38c118ecaabef3f6797fdc",
+                "reference": "1449bf241017087fbd38c118ecaabef3f6797fdc",
                 "shasum": ""
             },
             "require": {
@@ -1867,7 +1867,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-10-27T14:04:39+00:00"
+            "time": "2026-11-03T15:07:18+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -2647,21 +2647,21 @@
         },
         {
             "name": "league/uri",
-            "version": "7.9.1",
+            "version": "7.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/uri.git",
-                "reference": "40403f5c3141457a61f7f1aba6706e8fa4a0ece5"
+                "reference": "be89e2382e37acdef232259071ade5180821397b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/uri/zipball/40403f5c3141457a61f7f1aba6706e8fa4a0ece5",
-                "reference": "40403f5c3141457a61f7f1aba6706e8fa4a0ece5",
+                "url": "https://api.github.com/repos/thephpleague/uri/zipball/be89e2382e37acdef232259071ade5180821397b",
+                "reference": "be89e2382e37acdef232259071ade5180821397b",
                 "shasum": ""
             },
             "require": {
                 "ext-mbstring": "*",
-                "league/uri-interfaces": "^7.9.1",
+                "league/uri-interfaces": "^7.10.0",
                 "php": "^8.1",
                 "psr/http-factory": "^1"
             },
@@ -2734,7 +2734,7 @@
                 "docs": "https://uri.thephpleague.com",
                 "forum": "https://thephpleague.slack.com",
                 "issues": "https://github.com/thephpleague/uri-src/issues",
-                "source": "https://github.com/thephpleague/uri/tree/7.9.1"
+                "source": "https://github.com/thephpleague/uri/tree/7.10.0"
             },
             "funding": [
                 {
@@ -2742,20 +2742,20 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-27T07:14:23+00:00"
+            "time": "2026-11-04T12:45:07+00:00"
         },
         {
             "name": "league/uri-interfaces",
-            "version": "7.9.1",
+            "version": "7.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/uri-interfaces.git",
-                "reference": "994300a79e17f179112dc259f8df0c4de982f736"
+                "reference": "ea66240cff4ae9a56ce85d577a04d038b771e51c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/uri-interfaces/zipball/994300a79e17f179112dc259f8df0c4de982f736",
-                "reference": "994300a79e17f179112dc259f8df0c4de982f736",
+                "url": "https://api.github.com/repos/thephpleague/uri-interfaces/zipball/ea66240cff4ae9a56ce85d577a04d038b771e51c",
+                "reference": "ea66240cff4ae9a56ce85d577a04d038b771e51c",
                 "shasum": ""
             },
             "require": {
@@ -2818,7 +2818,7 @@
                 "docs": "https://uri.thephpleague.com",
                 "forum": "https://thephpleague.slack.com",
                 "issues": "https://github.com/thephpleague/uri-src/issues",
-                "source": "https://github.com/thephpleague/uri-interfaces/tree/7.9.1"
+                "source": "https://github.com/thephpleague/uri-interfaces/tree/7.10.0"
             },
             "funding": [
                 {
@@ -2826,7 +2826,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-27T07:14:23+00:00"
+            "time": "2026-11-04T12:45:07+00:00"
         },
         {
             "name": "minishlink/web-push",
@@ -3335,21 +3335,21 @@
         },
         {
             "name": "nreljed/blog",
-            "version": "0.1.11",
+            "version": "0.1.12",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/blog.git",
-                "reference": "ffd51d910226ad97a535869627dd87eded319b4b"
+                "reference": "1c215be7ce3957eb89b4d3a10b83504be9609e22"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/blog/zipball/ffd51d910226ad97a535869627dd87eded319b4b",
-                "reference": "ffd51d910226ad97a535869627dd87eded319b4b",
+                "url": "https://api.github.com/repos/nreljed/blog/zipball/1c215be7ce3957eb89b4d3a10b83504be9609e22",
+                "reference": "1c215be7ce3957eb89b4d3a10b83504be9609e22",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
-                "nreljed/platform": ">=0.1 <1.0",
+                "nreljed/platform": "^1.0",
                 "php": "^8.4"
             },
             "require-dev": {
@@ -3384,26 +3384,30 @@
                 }
             ],
             "description": "Blog feature for the Nreljed dashboard platform (posts, categories, tags, public blog, SEO generation).",
-            "time": "2026-11-04T13:00:19+00:00"
+            "support": {
+                "source": "https://github.com/nreljed/blog/tree/v0.1.12",
+                "issues": "https://github.com/nreljed/blog/issues"
+            },
+            "time": "2026-11-05T16:56:31+00:00"
         },
         {
             "name": "nreljed/marketing-module",
-            "version": "0.14.9",
+            "version": "0.14.10",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/marketing-module.git",
-                "reference": "a40832711f906bd9fcf4a418d7be3e363c1c4ac2"
+                "reference": "c23bc4eec14c1edc095c246fa9ba4560c178319d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/a40832711f906bd9fcf4a418d7be3e363c1c4ac2",
-                "reference": "a40832711f906bd9fcf4a418d7be3e363c1c4ac2",
+                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/c23bc4eec14c1edc095c246fa9ba4560c178319d",
+                "reference": "c23bc4eec14c1edc095c246fa9ba4560c178319d",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "laravel/socialite": "^5.31",
-                "nreljed/platform": ">=0.2 <1.0",
+                "nreljed/platform": "^1.0",
                 "php": "^8.4",
                 "socialiteproviders/instagram": "^5.2",
                 "socialiteproviders/pinterest": "^5.0"
@@ -3442,20 +3446,24 @@
                 }
             ],
             "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
-            "time": "2026-11-04T11:15:05+00:00"
+            "support": {
+                "source": "https://github.com/nreljed/marketing-module/tree/v0.14.10",
+                "issues": "https://github.com/nreljed/marketing-module/issues"
+            },
+            "time": "2026-11-05T17:06:34+00:00"
         },
         {
             "name": "nreljed/platform",
-            "version": "0.4.0",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nreljed/platform.git",
-                "reference": "91c461136e81cc4a802ab540baf6ecade337c403"
+                "reference": "3d0cb9d537e90a500d216e4d6087591d8489c57c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/platform/zipball/91c461136e81cc4a802ab540baf6ecade337c403",
-                "reference": "91c461136e81cc4a802ab540baf6ecade337c403",
+                "url": "https://api.github.com/repos/nreljed/platform/zipball/3d0cb9d537e90a500d216e4d6087591d8489c57c",
+                "reference": "3d0cb9d537e90a500d216e4d6087591d8489c57c",
                 "shasum": ""
             },
             "require": {
@@ -3503,10 +3511,10 @@
             ],
             "description": "SaaS platform kernel for Laravel apps (auth, RBAC, admin, settings, media, deploy, AI, notifications).",
             "support": {
-                "source": "https://github.com/nreljed/platform/tree/v0.4.0",
+                "source": "https://github.com/nreljed/platform/tree/v1.0.0",
                 "issues": "https://github.com/nreljed/platform/issues"
             },
-            "time": "2026-11-05T09:52:08+00:00"
+            "time": "2026-11-05T16:14:25+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -4768,16 +4776,16 @@
         },
         {
             "name": "sentry/sentry",
-            "version": "4.35.0",
+            "version": "4.36.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsentry/sentry-php.git",
-                "reference": "8247f5411fd98d98183366f001278ce3591eda20"
+                "reference": "7df5eefacff197c0aae0925a4848e3f91719d37c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsentry/sentry-php/zipball/8247f5411fd98d98183366f001278ce3591eda20",
-                "reference": "8247f5411fd98d98183366f001278ce3591eda20",
+                "url": "https://api.github.com/repos/getsentry/sentry-php/zipball/7df5eefacff197c0aae0925a4848e3f91719d37c",
+                "reference": "7df5eefacff197c0aae0925a4848e3f91719d37c",
                 "shasum": ""
             },
             "require": {
@@ -4849,7 +4857,7 @@
             ],
             "support": {
                 "issues": "https://github.com/getsentry/sentry-php/issues",
-                "source": "https://github.com/getsentry/sentry-php/tree/4.35.0"
+                "source": "https://github.com/getsentry/sentry-php/tree/4.36.0"
             },
             "funding": [
                 {
@@ -4861,7 +4869,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-10-29T16:02:44+00:00"
+            "time": "2026-11-05T16:26:18+00:00"
         },
         {
             "name": "sentry/sentry-laravel",
