@@ -227,3 +227,4 @@ class ErrorBoundary extends React.Component {
 - **Validation vs. exceptions**: Use FormRequest for validation, exceptions for unexpected errors.
 - **Production errors**: Never expose stack traces or sensitive data in production error responses.
 - **Logging sensitive data**: Never log passwords, tokens, or PII.
+

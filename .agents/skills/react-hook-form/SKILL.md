@@ -251,3 +251,4 @@ const onSubmit = async (data: FormData) => {
 - **Zod transforms**: Use `.transform()` for type coercion, not manual parsing.
 - **Re-renders**: Use `watch()` sparingly — it causes re-renders. Prefer `useWatch` for specific fields.
 - **Dark mode text**: Error messages must have `text-destructive` class (see base-ui-shadcn skill).
+

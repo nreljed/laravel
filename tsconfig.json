@@ -14,19 +14,28 @@
     "forceConsistentCasingInFileNames": false,
     "skipLibCheck": true,
     "noEmit": true,
+    "typeRoots": ["./node_modules/@types"],
     "paths": {
-      "@nreljed/blog/*": ["./packages/blog/src/Resources/js/*"],
-      "@nreljed/marketing-module/*": ["./packages/marketing-module/src/Resources/js/*"],
-      "@nreljed/platform/*": ["./packages/platform/resources/js/*"],
-      "@nreljed/platform/themes/*": ["./packages/platform/resources/themes/*"]
+      "@nreljed/platform/*": ["./vendor/nreljed/platform/resources/js/*"],
+      "@nreljed/blog/*": ["./vendor/nreljed/blog/src/Resources/js/*"],
+      "@nreljed/marketing-module/*": ["./vendor/nreljed/marketing-module/src/Resources/js/*"],
+      "ziggy-js": ["./vendor/tightenco/ziggy"],
+      "@inertiajs/core": ["./node_modules/@inertiajs/core"],
+      "@inertiajs/react": ["./node_modules/@inertiajs/react"],
+      "@inertiajs/vite": ["./node_modules/@inertiajs/vite"],
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
+      "react-dom/*": ["./node_modules/@types/react-dom/*"]
     }
   },
   "include": [
     "resources/js/**/*.ts",
     "resources/js/**/*.tsx",
     "resources/js/**/*.d.ts",
-    "packages/platform/resources/js/**/*.d.ts",
-    "packages/blog/src/Resources/js/**/*.d.ts",
-    "packages/marketing-module/src/Resources/js/**/*.d.ts"
+    "./vendor/nreljed/platform/resources/js/**/*.d.ts",
+    "./vendor/nreljed/platform/src/**/Resources/js/**/*.d.ts",
+    "./vendor/nreljed/blog/src/Resources/js/**/*.d.ts",
+    "./vendor/nreljed/marketing-module/src/Resources/js/**/*.d.ts"
   ]
 }

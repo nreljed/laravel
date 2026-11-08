@@ -103,3 +103,4 @@ public function store(StorePostRequest $request): RedirectResponse
     return redirect()->route('posts.index');
 }
 ```
+

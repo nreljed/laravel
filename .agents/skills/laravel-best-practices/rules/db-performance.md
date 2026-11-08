@@ -204,3 +204,4 @@ return view('users.index', compact('users'));
     {{ $user->profile->name }}
 @endforeach
 ```
+

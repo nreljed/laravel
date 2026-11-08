@@ -98,3 +98,4 @@ When adding a new FK column, add both the column **and** an index in the same mi
 - 5-minute TTL is the project standard for cached service reads
 - Explicit index for every FK column (SQLite does not auto-index)
 - Invalidate specific cache keys on write, not the whole store
+

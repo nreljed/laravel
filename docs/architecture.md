@@ -108,33 +108,26 @@ push main → deploy.yml → ci.yml + deploy-package (deploy.zip) + GitHub Relea
 Modules release independently: `vX.Y.Z` tag → GitHub Release →
 `{module}-updated` repository_dispatch → consumers open `composer update` PRs.
 
-## Two consumption models (recap)
+## Consumption model (Model A only)
 
-The **same** app can be consumed either way; the difference is _where the package tree comes
-from_ and _who owns the deploy_, not the app code.
+Every consumer app is a **standalone repo** that pulls platform and modules from VCS:
 
-|                | Model A — standalone           | Model B — workspace mono                                                            |
-| -------------- | ------------------------------ | ----------------------------------------------------------------------------------- |
-| PHP resolution | Composer VCS → `vendor/`       | Composer **VCS at rest**; flip to `path` repos for dev (`switch-composer-repos.js`) |
-| npm resolution | direct install (npm/pnpm root) | pnpm workspace symlinks                                                             |
-| App ownership  | own git repo + CI/CD           | tree owned by the mono                                                              |
-| Module iter.   | tag → update                   | edit package, migrate, HMR                                                          |
-| Use for        | self-contained release deploys | this dev monorepo, module dev loop                                                  |
+- PHP resolves from `vendor/nreljed/*` (Composer VCS, pinned by `composer.lock`).
+- Frontend resolves via Vite/TS aliases pointing at `vendor/nreljed/*`.
+- There is no workspace mono and no mirror; `packages/*` and `apps/*` do not exist in
+  consumer repos. Develop platform/modules in their own repos; use a temporary `path` repo
+  flip for fast local iteration (see `docs/packages.md`).
 
-- **All three apps sit at Composer `vcs` at rest** — `node scripts/switch-composer-repos.js`
-  prints the current mode. The `path` flip is opt-in dev convenience (`path` repos only resolve
-  while flipped); release/CI builds stay on `vcs` so `deploy.zip` is self-contained.
-- **Deploy ownership follows the tree, not the model.** The root app deploys from _this_ repo
-  (`deploy.yml`); `apps/laravel.shop` / `apps/laravel.booking` mirror **out** to the standalone
-  `nreljed/laravel.shop` / `nreljed/laravel.booking` repos, and those repos own their deploys.
-  The mono has **no per-app deploy workflows** (`docs/packages.md`, `scripts/AGENTS.md`).
+- **Deploy ownership follows the app's own repo.** Each app owns its `deploy.yml` and its
+  server. Platform/module releases propagate via `core-updated` / `{module}-updated`
+  repository dispatch, which opens `composer update` PRs in consumer repos.
 
-For a new project follow `docs/new-project.md` (Model A) and
+For a new project follow `docs/new-project.md` and
 `docs/module-development.md` (writing a new module).
 
 ## Where things live
 
-- Engine + kit + platform pages: `packages/platform/`
+- Engine + kit + platform pages: `vendor/nreljed/platform/` (Composer VCS)
 - Feature docs: `docs/core/*`, `docs/module-development.md`, `docs/new-project.md`
 - Archive of pre-module docs (the pre-2026-08 "dashboard-packaging" era):
   `docs/archive/`, `docs/core-dashboard-package*.md` — historical reference

@@ -41,3 +41,4 @@ Ticket::factory()
     ->recycle(Airline::factory()->create())
     ->create();
 ```
+

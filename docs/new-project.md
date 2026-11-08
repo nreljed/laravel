@@ -7,7 +7,7 @@ explicit — there is no installer command yet. Follow the checklist per module.
 ## Prerequisites
 
 - PHP 8.4+, Composer
-- Node 22+, pnpm (workspace model) or npm (standalone model)
+- Node 22+, npm
 - Access to the private package repos (configured via `COMPOSER_AUTH` or an
   SSH key that can clone `github.com/nreljed/*`)
 
@@ -20,9 +20,7 @@ explicit — there is no installer command yet. Follow the checklist per module.
 | shop-module          | `nreljed/shop-module`  | `@nreljed/shop-module`   | `registerShopPages()` (`@nreljed/shop-module/pages`)       | shop                                   |
 | booking-module       | `nreljed/booking-module`| `@nreljed/booking-module`| `registerBookingPages()` (`.../booking/pages`) + `registerPropertiesPages()` (`.../properties/pages`) | bookings, properties |
 
-## Two Consumption Models
-
-### Model A — Standalone repo (recommended for a real product)
+## Consumption model (standalone repo)
 
 Each package resolves from **VCS** into `vendor/`. The app is its own git repo
 with its own CI/CD.
@@ -33,14 +31,11 @@ vendor/nreljed/*     → Composer installs
 resources/js/        → app shell + page-config.ts
 ```
 
-### Model B — Workspace monorepo (current dev model)
+### (Removed) Workspace monorepo model
 
-Packages are workspace members (`packages/*`), parents to consumer apps
-(`apps/*`). PHP uses **path repos**, npm uses **pnpm workspace symlinks**.
-See `../../AGENTS.md` "Workspace" section.
-
-This guide covers Model A (standalone), since that is the new-project path.
-For Model B, follow the existing `apps/*` apps as templates.
+The workspace monorepo model (Model B) is no longer used. Every consumer app is a
+standalone repo (Model A). Fast local iteration over platform/modules uses a temporary
+`path` repo flip, not a workspace mirror.
 
 ---
 

@@ -93,3 +93,4 @@ Post content is sanitized server-side via `HtmlSanitizer` in `PostController`:
 - Preserve `isSafePath()` semantics when touching delete logic
 - Use `useImageUpload` + `gallery-utils` on the frontend (no axios)
 - Run `php artisan storage:link` after deployment before uploads work
+

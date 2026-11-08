@@ -1,9 +1,9 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
-// Model A post-workspace: platform/blog are workspace packages (packages/*) —
-// consumed via the pnpm symlink + their package.json exports. The app vitest
-// suite only covers the app shell; package tests live in packages/*.
+// Model A: platform/blog/marketing-module consumed via vendor/nreljed/* +
+// Vite/TS aliases (same as the app build). App vitest suite covers the app
+// shell only; package tests live in their own repos.
 export default defineConfig({
     test: {
         environment: "jsdom",
@@ -16,9 +16,9 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            "@nreljed/platform": path.resolve(__dirname, "packages/platform/resources/js"),
-            "@nreljed/blog": path.resolve(__dirname, "packages/blog/src/Resources/js"),
-            "@nreljed/marketing-module": path.resolve(__dirname, "packages/marketing-module/src/Resources/js"),
+            "@nreljed/platform": path.resolve(__dirname, "vendor/nreljed/platform/resources/js"),
+            "@nreljed/blog": path.resolve(__dirname, "vendor/nreljed/blog/src/Resources/js"),
+            "@nreljed/marketing-module": path.resolve(__dirname, "vendor/nreljed/marketing-module/src/Resources/js"),
         },
     },
 });

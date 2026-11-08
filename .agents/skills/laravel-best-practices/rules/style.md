@@ -132,3 +132,4 @@ Correct:
 ```php
 if ($this->hasJoins())
 ```
+

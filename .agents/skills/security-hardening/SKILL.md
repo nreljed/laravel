@@ -129,3 +129,4 @@ Narrow patterns only:
 - All auth routes are rate-limited
 - Session lifetime is DB-driven (not config)
 - Password policy is DB-driven (not config)
+

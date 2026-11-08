@@ -542,3 +542,4 @@ Server-side patterns (Inertia::render, props, middleware) are covered in inertia
 - Forgetting to check if `<Form>` component is available in your Inertia version
 - Using `router.cancel()` instead of `router.cancelAll()` (v3 breaking change)
 - Using `router.on('invalid', ...)` or `router.on('exception', ...)` instead of the renamed `httpException` and `networkError` events
+

@@ -57,3 +57,4 @@ Cross-cutting changes often need more than one rule file.
 - Prefer framework features and existing application abstractions over new helpers or dependencies.
 - Avoid speculative abstractions. Extract code when it creates a clear domain boundary, removes meaningful duplication, or makes behavior independently testable.
 - Keep database access out of Blade views and prevent hidden N+1 queries across controllers, resources, jobs, and serialization.
+

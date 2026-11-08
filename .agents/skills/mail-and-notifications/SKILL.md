@@ -214,3 +214,4 @@ Mail::assertQueued(DynamicMailable::class);
 - **Subject override**: The `subject` in `$data` overrides the constructor subject. Pass it in data.
 - **Testing**: Use `Mail::fake()` in tests. Never send real emails in tests.
 - **After commit**: Set `'after_commit' => true` in queue config to ensure emails dispatch only after DB transaction commits.
+

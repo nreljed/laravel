@@ -42,24 +42,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
   copy of core — package repo only.
 - `composer.lock` is the pin of record — commit it whenever core updates.
 
-> **Workspace (2026-09-14 — supersedes the frontend-vendor consumption)** — this repo's root is
-> now a **pnpm workspace**: `packages/*` (platform, blog, shop-module, booking-module) +
-> `apps/*` (laravel.shop, laravel.booking brought in; the mono app stays at root for now).
-> The frontend kit is consumed as **workspace packages** (`@nreljed/platform`, `@nreljed/blog`)
-> symlinked from `node_modules` → `packages/*` — NOT vendor. The single `pnpm-lock.yaml` at the
-> root is the npm pin of record. `tsconfig.json` `paths` map `@nreljed/platform/*` →
-> `packages/platform/resources/js/*` and `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`
-> (TS can't resolve the packages' `./*` wildcard `exports`); the packages' `.d.ts` globs are in
-> `include` because `packages/platform/.../types/global.d.ts` ships the ambient `route` global +
-> the `@inertiajs/core` PageProps augmentation the whole app relies on.
-> **`packages/*` are one-way mirrors of the standalone repos** (source of truth), not
-> independent copies — keep them in sync with `scripts/sync-package-mirror.mjs` (copies the
-> repo's git-tracked tree into `packages/<pkg>`) and `scripts/diff-package-dir.mjs` (reports
-> missing/differ/excess). The `packages/platform` mirror tracks the standalone platform clone
-> (`C:\Users\nrelj\Local Sites\platform`, vX.Y.Z tag) and the blog mirror tracks
-> `C:\Users\nrelj\Local Sites\blog`. NOTE: `sync-package-mirror.mjs` uses `git ls-files`, so new
-> files must be committed (or git-added) in the standalone repo first or they are treated as
-> "excess" and deleted from the mirror.
+> **Model A (standalone) — this repo is a thin consumer app.** Platform/modules consumed from `vendor/nreljed/*` (Composer VCS) for PHP and via Vite/TS aliases for the frontend. No `packages/*` mirrors, no `apps/*` copies. Standalone repos are the single source of truth.
 > **Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
 > into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0` and
 > `allowBuilds:` live **top-level in `pnpm-workspace.yaml`**; there is deliberately no `.npmrc`
@@ -97,7 +80,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 - `next-themes` `<ThemeProvider>` for dark mode
 - `toast.add()` from `@/Components/ui/toast` (Base UI) for flash messages — `toast.add({ title: "msg", type: "success" | "error" | "info" | "warning" })`
 - Component imports use `@/Components/...` alias (capital C — Windows FS workaround)
-- Aliases (workspace-mapped in `tsconfig.json`, NOT vite): `@nreljed/platform/*` → `packages/platform/resources/js/*`; `@nreljed/blog/*` → `packages/blog/src/Resources/js/*`. The legacy vendor aliases (`@`, `@dashboard`, `@blog`) are gone — package sources import each other via `@nreljed/*` and relative paths
+- Aliases (mapped in `tsconfig.json` + `vite.config.js`): `@nreljed/platform/*` → `vendor/nreljed/platform/resources/js/*`; `@nreljed/blog/*` → `vendor/nreljed/blog/src/Resources/js/*`; `@nreljed/marketing-module/*` → `vendor/nreljed/marketing-module/src/Resources/js/*`. Legacy vendor aliases (`@`, `@dashboard`, `@blog`) come from `platform.aliases.js`.
 - `asChild` / `Slot` pattern is standard for component composition
 
 ## Architecture
