@@ -1,40 +1,8 @@
-# No workspace members: this repo is a standalone consumer app (Model A).
-# Platform/modules are consumed via vendor/nreljed/* (Composer VCS) +
-# Vite/TS aliases, not pnpm workspace symlinks.
+# Standalone consumer app (Model A). No workspace members.
+# Platform/modules consumed via vendor/nreljed/* (Composer VCS) + Vite/TS aliases.
 
 minimumReleaseAge: 0
 
 allowBuilds:
   esbuild: true
   unrs-resolver: true
-# Single Inertia identity across the workspace.
-#
-# Why this is required, not cosmetic: `packages/platform/resources/js/types/global.d.ts`
-# augments the `"@inertiajs/core"` module, and TypeScript resolves that specifier
-# relative to the augmenting FILE. Welcome.tsx resolves `usePage` relative to itself.
-# If pnpm installs two physical copies of @inertiajs/core (one under
-# packages/platform/node_modules, one at the workspace root) the augmentation is
-# applied to a module identity the page never imports, and `usePage()`'s props
-# collapse to `{}` - TS2339 on every shared prop. That is exactly what happened
-# when Dependabot raised the root range to ^3.8.0 while the packages stayed on ^3.7.0.
-#
-# The package/app manifests keep their own caret ranges because those files are
-# upstream-owned mirrors. Forcing one resolved version here is the only lever the
-# mono root owns, and it also immunises future partial bumps.
-overrides:
-  "@inertiajs/core": 3.11.0
-  "@inertiajs/react": 3.11.0
-  "@inertiajs/vite": 3.11.0
-  # GHSA-mrhx-c7xc-m3w5 (high): zod <4.6.6 exhausts memory on oversized
-  # constrained collections. The package manifests are upstream-owned mirrors and
-  # keep their own `^4.4.3` / `^4.5.4` ranges; this pins the resolved version for
-  # the whole workspace so `pnpm audit --prod --audit-level=high` stays clean.
-  # Drop it once every mirror manifest ships a range that resolves >=4.6.6.
-  zod: 4.6.7
-  # One lucide-react instance across the workspace. The parity gate compares the
-  # RESOLVED version per importer, and `pnpm install` never upgrades a range that
-  # the lock already satisfies — so once booking (upstream `^1.65.0`) moved ahead of
-  # the root/mirrors (`^1.44`/`^1.46`/`^1.64`), the lock held 1.67.0 for booking and
-  # 1.64.0 for everyone else and the check failed. Pin the resolution instead of
-  # chasing caret ranges in upstream-owned manifests.
-  lucide-react: 1.67.0
