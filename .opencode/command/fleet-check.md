@@ -7,11 +7,9 @@ description: Run the full verification gate for this repo and report honestly
 Run the gates that actually prove this repo is coherent. Report failures as
 failures.
 
-Scope: the root `laravel` app **plus all six upstream mirrors** it consumes -
-`packages/platform`, `packages/blog`, `packages/shop-module`,
-`packages/booking-module`, `apps/laravel.shop`, `apps/laravel.booking`. Every one is
-owned by a standalone repo; see the "This repo's role" / ownership sections in
-`AGENTS.md`.
+Scope: the root `laravel` app only. Platform and modules are consumed from
+`vendor/nreljed/*` (Composer VCS) and verified via the upstream repos'
+own CI. See `AGENTS.md` "Package Model & Source of Truth".
 
 This command covers the **application**. For the agent harness
 (`.opencode/**`, `.ai/rules/**`, `AGENTS.md`), run `/verify-harness`.

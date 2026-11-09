@@ -694,10 +694,10 @@ tests/
 
 | Model          | File                                         | States                                             |
 | -------------- | -------------------------------------------- | -------------------------------------------------- |
-| `User`         | `database/factories/UserFactory.php`         | `admin()`, default: unverified                     |
-| `Post`         | `database/factories/`         | `published()`, `draft()`, `archived()`, `future()` |
-| `PostCategory` | `database/factories/` | —                                                  |
-| `PostTag`      | `database/factories/`      | —                                                  |
+| `User`         | `vendor/nreljed/platform/src/Database/Factories/UserFactory.php`         | `admin()`, default: unverified                     |
+| `Post`         | `vendor/nreljed/blog/src/Database/Factories/PostFactory.php`         | `published()`, `draft()`, `archived()`, `future()` |
+| `PostCategory` | `vendor/nreljed/blog/src/Database/Factories/PostCategoryFactory.php` | —                                                  |
+| `PostTag`      | `vendor/nreljed/blog/src/Database/Factories/PostTagFactory.php`      | —                                                  |
 
 ### Key Patterns
 
