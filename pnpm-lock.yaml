@@ -4,13 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@inertiajs/core': 3.11.0
-  '@inertiajs/react': 3.11.0
-  '@inertiajs/vite': 3.11.0
-  zod: 4.6.7
-  lucide-react: 1.67.0
-
 importers:
 
   .:
@@ -160,7 +153,7 @@ importers:
         specifier: ^1.13.12
         version: 1.13.15
       lucide-react:
-        specifier: 1.67.0
+        specifier: ^1.65.0
         version: 1.67.0(@types/react@19.3.0)(react@19.3.1)
       next-themes:
         specifier: ^0.4.6
@@ -211,7 +204,7 @@ importers:
         specifier: ^2.6.4
         version: 2.6.5
       zod:
-        specifier: 4.6.7
+        specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
       '@commitlint/cli':
@@ -230,13 +223,13 @@ importers:
         specifier: ^5.19.1
         version: 5.28.8(eslint@10.14.0(jiti@2.7.0))(typescript@6.0.3)
       '@inertiajs/core':
-        specifier: 3.11.0
+        specifier: ^3.9.1
         version: 3.11.0(axios@1.21.0(debug@4.4.3))
       '@inertiajs/react':
-        specifier: 3.11.0
+        specifier: ^3.9.1
         version: 3.11.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(axios@1.21.0(debug@4.4.3))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@inertiajs/vite':
-        specifier: 3.11.0
+        specifier: ^3.9.1
         version: 3.11.0(axios@1.21.0(debug@4.4.3))(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@playwright/test':
         specifier: ^1.63.0
@@ -962,7 +955,7 @@ packages:
       valibot: '>=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc'
       vest: '>=6.0.0'
       yup: ^1.0.0
-      zod: 4.6.7
+      zod: ^3.25.0 || ^4.0.0
     peerDependenciesMeta:
       '@sinclair/typebox':
         optional: true
@@ -4121,7 +4114,7 @@ packages:
     resolution: {integrity: sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      zod: 4.6.7
+      zod: ^3.25.0 || ^4.0.0
 
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}

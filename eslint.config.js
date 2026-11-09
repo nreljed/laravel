@@ -19,8 +19,6 @@ export default [
       "**/dist/**",
       "**/*.min.js",
       "**/scripts/**",
-      "apps/**",
-      "packages/**",
     ],
   },
   pluginImport.flatConfigs.recommended,

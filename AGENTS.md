@@ -46,9 +46,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 > **Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
 > into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0` and
 > `allowBuilds:` live **top-level in `pnpm-workspace.yaml`**; there is deliberately no `.npmrc`
-> and no `pnpm` field in `package.json` (pnpm 11 ignores both). The drift guard
-> (`scripts/check-platform-consistency.js`) now reads pnpm-lock importer versions for workspace
-> apps and `package-lock.json` for any remaining npm apps, plus each app's `composer.lock`.
+> and no `pnpm` field in `package.json` (pnpm 11 ignores both).
 
 ## Tech Stack
 
@@ -448,7 +446,7 @@ so choosing the runner is a variable flip, not a code change:
 ## Commands
 
 ```bash
-pnpm install             # workspace install (single root pnpm-lock.yaml — the npm pin of record)
+pnpm install             # install (single root pnpm-lock.yaml — the npm pin of record)
 npm run build            # tsc + vite build (production)
 npm run dev              # Vite dev server with HMR
 npm run typecheck        # tsc --noEmit
@@ -467,15 +465,10 @@ php artisan app:create-admin           # Bootstrap/update admin user
 
 The pre-commit hook (lint-staged) is **scoped to app-shell files only** - `resources/js/**`,
 `app/**` for TS/TSX eslint+prettier, and `{app,bootstrap,config,database,routes,tests,resources}/**`
-for Pint. `packages/**` and `apps/**` are excluded from the root lint-staged AND root ESLint
-(`eslint.config.js` `ignores`) — those trees are owned by their own repos/apps and run their own
-toolchains (shop/booking `check:ci`, package repo CIs). Never widen the catch-all back to `*.{ts,tsx}`
-/ `*.php` or the root hook will reformat foreign package sources.
+for Pint.
 
-Also useful: `pnpm -w update <pkg>` (roll a `^` range forward in the workspace lock),
-`pnpm workspace <name> add <pkg>` (per-package manifest change), `pnpm approve-builds`
-(add postinstall scripts to `allowBuilds` in `pnpm-workspace.yaml` — pnpm 11 blocks them
-by default and ignores the `package.json` `pnpm` field).
+Also useful: `npm install <pkg>` to add a runtime dependency; update `package.json` and run
+`npm run build` to verify.
 
 ## Deployment
 
