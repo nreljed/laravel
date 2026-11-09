@@ -46,9 +46,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 > **Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
 > into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0` and
 > `allowBuilds:` live **top-level in `pnpm-workspace.yaml`**; there is deliberately no `.npmrc`
-> and no `pnpm` field in `package.json` (pnpm 11 ignores both). The drift guard
-> (`scripts/check-platform-consistency.js`) now reads pnpm-lock importer versions for workspace
-> apps and `package-lock.json` for any remaining npm apps, plus each app's `composer.lock`.
+> and no `pnpm` field in `package.json` (pnpm 11 ignores both).
 
 ## Tech Stack
 
