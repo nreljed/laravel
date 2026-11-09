@@ -416,15 +416,15 @@ new Intl.NumberFormat("en-US", { notation: "compact" }).format(1234)
 
 | File | Purpose |
 |---|---|
-| `packages/platform/resources/js/Components/ui/chart.tsx` | ChartContainer, ChartTooltip, ChartLegend, ChartStyle |
-| `packages/platform/resources/js/Components/ui/card.tsx` | Card, CardHeader, CardTitle, CardDescription, CardContent |
-| `packages/platform/resources/js/Components/ui/table.tsx` | Table components |
-| `packages/platform/resources/js/Components/ui/badge.tsx` | Badge with variants |
-| `packages/platform/resources/js/Components/shared/date-range-picker.tsx` | DateRangePicker |
-| `packages/platform/resources/js/Components/ui/calendar.tsx` | Calendar (used by date picker) |
-| `packages/platform/resources/js/Pages/dashboard/stats.tsx` | Stats page example |
-| `packages/marketing-module/src/Resources/js/Pages/Analytics.tsx` | Analytics page example |
-| `packages/shop-module/src/Resources/js/Pages/Reports/Index.tsx` | Reports page example |
+| `vendor/nreljed/platform/resources/js/Components/ui/chart.tsx` | ChartContainer, ChartTooltip, ChartLegend, ChartStyle |
+| `vendor/nreljed/platform/resources/js/Components/ui/card.tsx` | Card, CardHeader, CardTitle, CardDescription, CardContent |
+| `vendor/nreljed/platform/resources/js/Components/ui/table.tsx` | Table components |
+| `vendor/nreljed/platform/resources/js/Components/ui/badge.tsx` | Badge with variants |
+| `vendor/nreljed/platform/resources/js/Components/shared/date-range-picker.tsx` | DateRangePicker |
+| `vendor/nreljed/platform/resources/js/Components/ui/calendar.tsx` | Calendar (used by date picker) |
+| `vendor/nreljed/platform/resources/js/Pages/dashboard/stats.tsx` | Stats page example |
+| `vendor/nreljed/marketing-module/src/Resources/js/Pages/Analytics.tsx` | Analytics page example |
+| `vendor/nreljed/shop-module/src/Resources/js/Pages/Reports/Index.tsx` | Reports page example |
 
 ## Common Pitfalls
 
@@ -445,3 +445,4 @@ new Intl.NumberFormat("en-US", { notation: "compact" }).format(1234)
 - **Card spacing**: Use `space-y-6` for vertical section spacing in dashboards.
 - **Tabular nums**: Always use `tabular-nums` for numeric values to prevent layout shift.
 - **Truncation**: Use `truncate` for long labels in tables. Add `max-w-*` constraints.
+

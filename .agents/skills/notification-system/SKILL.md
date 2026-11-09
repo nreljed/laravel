@@ -100,3 +100,4 @@ $notificationService->notifyViaPreferences(
 - Feature notification types must be registered in ServiceProvider
 - Email channel requires `email_template` in type config
 - Notifications are purged after 90 days by default
+

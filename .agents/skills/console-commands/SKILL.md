@@ -98,3 +98,4 @@ Patterns:
 - Prefer the attribute style for new commands (PHP 8.4 convention), but match existing files
 - `app:create-admin` must be runnable from CI after deploy (creates/updates idempotently)
 - Never rely on tinker for command-level behavior — write a `tests/Feature/Console/` test
+

@@ -1,6 +1,6 @@
-packages:
-  - "packages/*"
-  - "apps/*"
+# No workspace members: this repo is a standalone consumer app (Model A).
+# Platform/modules are consumed via vendor/nreljed/* (Composer VCS) +
+# Vite/TS aliases, not pnpm workspace symlinks.
 
 minimumReleaseAge: 0
 

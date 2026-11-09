@@ -151,3 +151,4 @@ Gate::define('viewTelescope', function ($user) {
 - **Sensitive data**: Telescope records request payloads and headers. Ensure sensitive data (passwords, tokens) is filtered.
 - **N+1 detection**: Use the Query watcher to spot N+1 patterns. Look for repeated identical queries.
 - **Memory**: Large response bodies are truncated by `size_limit`. Increase if needed for debugging.
+

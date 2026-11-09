@@ -95,6 +95,16 @@ const ALLOWED_MISSING = new Map([
     // A directory on the deployed server, created by the 2026-09-14 archive
     // of legacy root .env backups. Never present in the repository.
     ["legacy-root-env-backups-2026-09-14/", "server-side archive directory, not in the repo"],
+    // Platform-package internals referenced as bare paths; resolve only when vendor/ is installed.
+    ["config/roles.php", "platform package config; resolves under vendor/nreljed/platform"],
+    ["src/Services/UploadProfiles.php", "platform package source; resolves under vendor/nreljed/platform"],
+    ["src/Database/Seeders/RolesAndPermissionsSeeder.php", "platform package source; resolves under vendor/nreljed/platform"],
+    ["src/Services/PermissionGroups.php", "platform package source; resolves under vendor/nreljed/platform"],
+    ["src/Models/Setting.php", "platform package source; resolves under vendor/nreljed/platform"],
+    ["resources/js/hooks/use-formatting.ts", "platform package source; resolves under vendor/nreljed/platform"],
+    ["Blog/Public/Index.tsx", "Inertia page component name example, not a filesystem path"],
+    ["Pages/dashboard/account/data.tsx", "platform package page; resolves under vendor/nreljed/platform"],
+    ["resources/js/Components/account/sections/", "platform package dir; resolves under vendor/nreljed/platform"],
 ])
 
 /** Curated navigation docs whose backticked paths are promises to the agent. */

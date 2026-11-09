@@ -231,3 +231,4 @@ Bus::chain([
 - **Memory leaks**: Long-running workers accumulate memory. Use `--max-jobs=1000` or `--max-time=3600` flags.
 - **Stale code**: After deploy, run `php artisan queue:restart` to pick up new code.
 - **Testing**: Always use `Queue::fake()` in tests. Never run real queue workers in tests.
+

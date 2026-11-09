@@ -475,3 +475,4 @@ Lab::Gemini;
 Lab::OpenAiCompatible; // configurable OpenAI Chat Completions endpoint
 // ...
 ```
+

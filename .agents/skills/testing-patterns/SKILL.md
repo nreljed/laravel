@@ -158,3 +158,4 @@ $this->assertQueryCount(0, function () {
 - Verify user with `$user->forceFill(['email_verified_at' => now])->save()` for verified-only routes
 - Deploy tests: token via POST body `['token' => $this->token]`, unauthenticated returns 403 (not 401)
 - Notification tests: unauthenticated returns 401 JSON (not redirect) due to JSON exception handler
+

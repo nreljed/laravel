@@ -22,9 +22,9 @@
 - [ ] `npm run check:core-deps` (core peer coverage)
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
-- [ ] `npm run typecheck:packages` (compiles `packages/**`, which `typecheck` does not)
+- [ ] (removed) `typecheck:packages` — packages no longer live in this repo
 - [ ] `npm run format:check`
-- [ ] `npm test` (Vitest, workspace packages)
+- [ ] `npm test` (Vitest, app shell)
 - [ ] `npm run build`
 - [ ] `php artisan test` (PHPUnit)
 - [ ] `vendor/bin/pint --test`
@@ -35,10 +35,9 @@
 
 ## Boundary check
 
-- [ ] My change is **source-of-truth-correct**: anything under `packages/**` is a released-package mirror, so the real fix belongs in the owning repo (`nreljed/platform`, `nreljed/blog`, `nreljed/shop-module`, `nreljed/booking-module`). If this PR only refreshes a mirror to match a released tag, say so explicitly.
-- [ ] I did **not** hand-edit a `packages/**` mirror to make a gate pass. Mirror diffs must be explained as "upstream release X".
-- [ ] If I touched `apps/**`: these are **upstream mirrors too**, not workspace-only code — `apps/laravel.shop` -> `nreljed/laravel.shop`, `apps/laravel.booking` -> `nreljed/laravel.booking`, each of which deploys independently. CI's `parity` job clones both standalone repos and byte-compares them against `apps/**`, so a fix authored here is reported as **drift, not shipped**. If the fix is real, it belongs in the standalone repo; this PR may only carry the re-synced mirror. They remain covered by `vendor/bin/pint --test`, lint, typecheck and their own PHPUnit suites because they share the root pnpm workspace — that is toolchain coverage, not content ownership.
-- [ ] I ran the app-level suites for any `apps/**` change; mono CI's `apps` matrix typechecks/tests/builds both apps, but the standalone repos' own PHP suites still run in their own CI.
+- [ ] This repo is a **thin consumer app** (Model A). Platform and modules live in their own repos (`nreljed/platform`, `nreljed/blog`, `nreljed/shop-module`, `nreljed/booking-module`, `nreljed/marketing-module`) and are consumed via `vendor/nreljed/*`. If my change belongs in a package, it must be made in that package's repo, not here.
+- [ ] I did not edit anything under `vendor/` (it is overwritten by `composer update`).
+- [ ] Theme/identity changes live in `resources/js` + `resources/css`; platform UI kit is not forked here.
 
 ## Screenshots (if applicable)
 
