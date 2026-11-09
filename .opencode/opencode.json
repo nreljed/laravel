@@ -16,8 +16,7 @@
       "*.env.production.example": "allow"
     },
     "edit": {
-      "*": "allow",
-      "packages/*": "ask"
+      "*": "allow"
     },
     "task": "ask",
     "skill": {
@@ -50,10 +49,6 @@
     "laravel.booking": {
       "path": "../../../laravel.booking",
       "description": "SOURCE OF TRUTH for apps/laravel.booking, a full app mirror that deploys independently. A fix authored under apps/laravel.booking does NOT ship -- it belongs in this repo."
-    },
-    "scoped-packages": {
-      "path": "../packages",
-      "description": "Mirror boundary + upstream dev loop for packages/**. READ BEFORE editing anything under packages/** or apps/**."
     },
     "scoped-frontend": {
       "path": "../resources/js",

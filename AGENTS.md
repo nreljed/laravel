@@ -597,7 +597,7 @@ example of the **module contract**: a feature is not data-owning unless it says 
   `app:create-admin`; demo-tier seeders (`demo_users`, `blog`) only run when `demo: true`
   (`with_demo` on the endpoint, UI always resets baseline-only). `reseedDatabase()` re-runs
   only the selected seeder groups via `db:seed --class`. Seeder groups are a config catalog
-  (`config/database-maintenance.php` → `seeders`; baseline/destructive flags). Optional media
+  (`config/database_maintenance.php` → `seeders`; baseline/destructive flags). Optional media
   purge of `storage/app/public`, `.maintenance-lock` file (15 min TTL), toggles maintenance
   mode, writes a `critical` audit log, and notifies all admins.
 - `DB_MAINTENANCE_ENABLED` defaults to enabled everywhere **except** production. Keep it `false`
@@ -694,10 +694,10 @@ tests/
 
 | Model          | File                                         | States                                             |
 | -------------- | -------------------------------------------- | -------------------------------------------------- |
-| `User`         | `database/factories/UserFactory.php`         | `admin()`, default: unverified                     |
-| `Post`         | `database/factories/`         | `published()`, `draft()`, `archived()`, `future()` |
-| `PostCategory` | `database/factories/` | —                                                  |
-| `PostTag`      | `database/factories/`      | —                                                  |
+| `User`         | `vendor/nreljed/platform/src/Database/Factories/UserFactory.php`         | `admin()`, default: unverified                     |
+| `Post`         | `vendor/nreljed/blog/src/Database/Factories/PostFactory.php`         | `published()`, `draft()`, `archived()`, `future()` |
+| `PostCategory` | `vendor/nreljed/blog/src/Database/Factories/PostCategoryFactory.php` | —                                                  |
+| `PostTag`      | `vendor/nreljed/blog/src/Database/Factories/PostTagFactory.php`      | —                                                  |
 
 ### Key Patterns
 
