@@ -54,7 +54,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 | ------------- | ----------------------------- | --------------------------------- |
 | Backend       | Laravel                       | 13.x (PHP 8.4+)                   |
 | Frontend      | React                         | 19.2                              |
-| SPA Bridge    | Inertia.js                    | 3.7                               |
+| SPA Bridge    | Inertia.js                    | 3.9+                              |
 | Build         | Vite                          | 8.x                               |
 | Language      | TypeScript                    | 6.x                               |
 | Styling       | Tailwind CSS                  | 4.x                               |
@@ -64,7 +64,7 @@ source of truth.** This monorepo became a regular consumer on 2026-08-24:
 | Database      | SQLite (local) / MySQL (prod) | —                                 |
 | Notifications | Laravel Notifications         | database channel                  |
 | Routing (JS)  | Ziggy                         | 2.6                               |
-| AI SDK        | Laravel AI                    | 0.10                              |
+| AI SDK        | Laravel AI                    | 1.0                               |
 | AI Ecosystem  | Laravel Boost + MCP           | 2.4 / 0.8                         |
 
 ## Code Style
@@ -162,15 +162,11 @@ routes/                             # APP-only routes (most routing lives in the
 
 > **Frontend theming** — consuming apps can re-theme the shared UI without forking core. Import `core.css` in their `resources/css/app.css`, then override any subset of CSS variables under `@layer base` (tokens only, keep the utility classes). All core components + pages read from the design tokens, so overriding `--primary`/`--radius`/fonts restyles every page. If a theme needs new tokens or components, add them to core (vendor the shared parts); a project can also add its own component + page files alongside `registerCoreTemplates()`. Don't edit core's `core.css` for one-off project tweaks.
 
-> **Frontend dependency management (workspace era)** — each package's `package.json` declares
-> `peerDependencies` for every runtime npm package it imports (React, Inertia, Lexical, Base UI,
-> shadcn, etc.) and consumes apps declare them as direct dependencies. Resolution parity
-> between apps is guaranteed by the **single root `pnpm-lock.yaml`** (workspace members cannot
-> drift from siblings) — the old per-app `package-lock.json` + `vite.dedupe.js` setup is gone.
-> To add a runtime npm dependency to a package, update that package's `package.json` peers AND
-> list it as a direct dependency in every app that imports it; then `pnpm install` once at the
-> root and commit the lockfile. Run `pnpm workspace <name> add <pkg>` / `pnpm -w add <pkg>`
-> to modify the root/workspace manifests cleanly.
+> **Frontend dependency management (Model A)** — platform/modules declare runtime npm deps as
+> `peerDependencies` in their own `package.json`; this consumer app declares them as direct
+> deps in `package.json` and installs via `pnpm install` (single root `pnpm-lock.yaml`).
+> Vite/TS aliases point at `vendor/nreljed/*`. To add a dependency, update the package's
+> peers AND this app's `package.json`, then `pnpm install` + `npm run build`.
 
 > **Core development model (vcs install — do NOT hand-edit vendor)** — everything under
 > `vendor/nreljed/platform` is a Composer vcs install (dist zip pinned by
