@@ -40,16 +40,12 @@ with `scripts/diff-package-dir.mjs` (both report missing/differ/excess). The
 `packages/platform` mirror tracks the standalone platform clone
 (`C:\Users\nrelj\Local Sites\platform`, vX.Y.Z tag) and the blog mirror tracks
 `C:\Users\nrelj\Local Sites\blog`. Both tools reference the upstream's **released tree** —
-`git archive` of its latest `v*` tag, so `.gitattributes export-ignore` is honored and the
-result matches `vendor/nreljed/*` (and the `check-platform-consistency` gate). To land a change
-in a mirror, commit **and tag/release** it in the standalone repo, then re-sync.
+`git archive` of its latest `v*` tag.
 
-**Composer/PHP side is unchanged**: `nreljed/platform`/`nreljed/blog` still resolve from VCS
-into `vendor/` (dev `path` repos are a pending increment). pnpm 11: `minimumReleaseAge: 0`
-and `allowBuilds:` live **top-level in `pnpm-workspace.yaml`**; there is deliberately no
-`.npmrc` and no `pnpm` field in `package.json` (pnpm 11 ignores both). The drift guard
-(`scripts/check-platform-consistency.js`) reads pnpm-lock importer versions for workspace
-apps and `package-lock.json` for any remaining npm apps, plus each app's `composer.lock`.
+**Consumption (Model A)**: `nreljed/platform`/`nreljed/blog` resolve from VCS into
+`vendor/`. pnpm 11: `minimumReleaseAge: 0` and `allowBuilds:` live **top-level in
+`pnpm-workspace.yaml`**; there is deliberately no `.npmrc` and no `pnpm` field in
+`package.json` (pnpm 11 ignores both).
 
 ## Frontend dependency management (workspace era)
 

@@ -14,14 +14,10 @@ own CI. See `AGENTS.md` "Package Model & Source of Truth".
 This command covers the **application**. For the agent harness
 (`.opencode/**`, `.ai/rules/**`, `AGENTS.md`), run `/verify-harness`.
 
-## 1. Cross-app lock parity + mirror drift
+## 1. Verification
 
-```bash
-node scripts/check-platform-consistency.js
-```
-
-Compares Composer + pnpm pins across apps **and** diffs every
-`packages/*` mirror against `vendor/nreljed/*`. A non-zero exit is real drift.
+This repo is a standalone consumer app (Model A). Platform/modules are verified
+in their own repos. Run `npm run check:ci` for the full local gate.
 
 ## 2. Upstream package declares every peer the app imports
 

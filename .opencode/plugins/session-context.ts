@@ -84,9 +84,8 @@ and must be committed. A package release notifies consumers; it never deploys.
 A merged PR is not a successful sync -- check the actual run conclusions.
 
 ### Drift guards (know what they do and do not cover)
-- \`node scripts/check-platform-consistency.js\` compares Composer + npm pins
-  across apps AND diffs \`packages/**\` mirrors against \`vendor/nreljed/*\`. It is
-  in the pre-push hook and CI. \`npm run check:core-deps\` verifies the package
+- \`npm run check:core-deps\` verifies the platform package's peer deps and
+  composer/npm version parity against \`vendor/nreljed/platform\`.
   declares every runtime npm peer the app imports. Run both before pushing a
   package bump.
 
