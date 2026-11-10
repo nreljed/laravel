@@ -91,11 +91,10 @@ npm run lint
 npm run build
 ```
 
-Then confirm the boundaries still hold and mirrors are untouched:
+Then confirm the boundaries still hold:
 
 ```bash
 npm run check:foundation
-node scripts/check-platform-consistency.js
 ```
 
 ## Reporting rules
