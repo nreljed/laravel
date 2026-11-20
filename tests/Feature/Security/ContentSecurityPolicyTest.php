@@ -23,7 +23,7 @@ class ContentSecurityPolicyTest extends TestCase
         $this->assertStringContainsString("default-src 'self'", $csp);
         $this->assertStringContainsString("script-src 'self' 'nonce-", $csp);
         $this->assertStringContainsString("object-src 'none'", $csp);
-        $this->assertStringContainsString("frame-src 'none'", $csp);
+        $this->assertStringContainsString('frame-src https://js.stripe.com', $csp);
         $this->assertStringContainsString("base-uri 'self'", $csp);
         $this->assertStringContainsString('report-to csp-endpoint', $csp);
     }
