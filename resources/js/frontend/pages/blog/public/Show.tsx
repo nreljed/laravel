@@ -5,9 +5,9 @@ import PublicLayout from "../../../layouts/PublicLayout";
 import { SitePill } from "../../../components/site/SitePill";
 import { SiteAvatar } from "../../../components/site/SiteAvatar";
 import { formatSiteDate } from "../../../components/site/format-date";
-import ProseContent from "@nreljed/platform/Components/blog/ProseContent";
+import ProseContent from "../../../components/ProseContent";
 import { useAuth } from "@nreljed/platform/hooks/use-auth";
-import { highlightAllCodeBlocks } from "@nreljed/platform/lib/shiki-highlight";
+import { highlightAllCodeBlocks } from "../../../lib/shiki-highlight";
 import { demoteBodyHeadings } from "./demote-headings";
 
 interface Author {
