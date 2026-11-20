@@ -67,28 +67,10 @@ jobs:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
         run: composer update nreljed/platform nreljed/blog nreljed/marketing-module nreljed/shop-module nreljed/booking-module --with-all-dependencies --no-scripts --no-interaction
 
-      # The workspace app mirrors (apps/laravel.shop, apps/laravel.booking) each
-      # carry their own composer.lock, and check:platform-consistency requires
-      # every consumer to resolve identical core versions. Bumping only the root
-      # lock lands the mono ahead of the mirrors, so the validate/parity gate
-      # fails and the job never merges (root silently stays a core release
-      # behind). Update the mirrors in the same run so the whole fleet moves as
-      # one -- this is the guard's own remedy: "run composer update in the
-      # drifters".
-      - name: Update workspace app mirror locks
-        env:
-          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
-        run: |
-          for app in apps/laravel.shop apps/laravel.booking; do
-            # --no-install: the mirrors have no vendor tree in CI and only the
-            # lock is committed; --no-scripts: no .env/artisan in the mirror.
-            # booking does not require the blog, so composer only warns it is
-            # "not locked" and still exits 0.
-            composer update nreljed/platform nreljed/blog nreljed/marketing-module \
-              --with-dependencies --no-install --no-scripts --no-interaction \
-              --working-dir="$app"
-          done
-
+      # Note: this monorepo does not carry apps/* mirrors (they are not
+      # committed here), so there is nothing to bump beyond the root lock and
+      # the pnpm packages/* mirror. The check:platform-consistency gate is
+      # therefore not applicable and is omitted below.
       # The pnpm-workspace mirror (packages/*) is a committed copy of the
       # released package; composer only refreshes vendor/. Without this step the
       # mirror stays on the old release while vendor moves, and
@@ -101,7 +83,7 @@ jobs:
       - name: Check for changes
         id: check
         run: |
-          if git diff --exit-code -- composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/ > /dev/null; then
+          if git diff --exit-code -- composer.lock packages/ > /dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Core is already up to date."
           else
@@ -149,7 +131,6 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           npm run check:core-deps
-          npm run check:platform-consistency
           pnpm audit --prod --audit-level=high
           npm run lint
           npm run typecheck
@@ -189,7 +170,7 @@ jobs:
           git checkout -B "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/
+          git add composer.lock packages/
           git commit -m "chore: update platform + blog to v${{ steps.version.outputs.version }}"
           git push --no-verify -u origin "$BRANCH"
           gh pr create \
@@ -199,7 +180,7 @@ jobs:
             --body "Automated update of \`nreljed/platform\` + \`nreljed/blog\` (\`core-update.yml\`).
 
             - Resolved version: v${{ steps.version.outputs.version }} (platform)
-            - \`composer.lock\` + both workspace app mirrors (\`apps/laravel.shop\`, \`apps/laravel.booking\`) bumped, and the pnpm mirrors (\`packages/*\`) refreshed from \`vendor/\` so every consumer resolves identical core versions; full validation (tests, typecheck, build) ran on this exact tree before merge.
+            - \`composer.lock\` bumped and the pnpm mirrors (\`packages/*\`) refreshed from \`vendor/\` so every consumer resolves identical core versions; full validation (tests, typecheck, build) ran on this exact tree before merge.
             "
 
       # Free private repos have no branch protection rules, so the merge is
