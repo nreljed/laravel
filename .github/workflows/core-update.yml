@@ -71,19 +71,10 @@ jobs:
       # committed here), so there is nothing to bump beyond the root lock and
       # the pnpm packages/* mirror. The check:platform-consistency gate is
       # therefore not applicable and is omitted below.
-      # The pnpm-workspace mirror (packages/*) is a committed copy of the
-      # released package; composer only refreshes vendor/. Without this step the
-      # mirror stays on the old release while vendor moves, and
-      # check:platform-consistency (below) fails on every source-changing
-      # release -- the job could never merge. Refresh it from vendor/ (the
-      # released source of truth) so the gate sees one tree.
-      - name: Refresh workspace package mirrors
-        run: node scripts/sync-mirrors.mjs --apply
-
       - name: Check for changes
         id: check
         run: |
-          if git diff --exit-code -- composer.lock packages/ > /dev/null; then
+          if git diff --exit-code -- composer.lock > /dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Core is already up to date."
           else
@@ -170,7 +161,7 @@ jobs:
           git checkout -B "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock packages/
+          git add composer.lock
           git commit -m "chore: update platform + blog to v${{ steps.version.outputs.version }}"
           git push --no-verify -u origin "$BRANCH"
           gh pr create \
