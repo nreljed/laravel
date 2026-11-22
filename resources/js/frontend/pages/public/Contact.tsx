@@ -12,7 +12,12 @@ import {
 } from "lucide-react";
 import { toast } from "@nreljed/platform/Components/ui/toast";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton, SiteCardGrid, SiteFeatureCard, useReveal } from "@nreljed/platform/Components/site-kit";
+import {
+  PillButton,
+  SiteCardGrid,
+  SiteFeatureCard,
+  useReveal,
+} from "@nreljed/platform/Components/site-kit";
 
 const channels = [
   {
