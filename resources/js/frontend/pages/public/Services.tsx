@@ -9,7 +9,12 @@ import {
   Wallet,
 } from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton, SiteCardGrid, SiteFeatureCard, useReveal } from "../../components/site";
+import {
+  PillButton,
+  SiteCardGrid,
+  SiteFeatureCard,
+  useReveal,
+} from "@nreljed/platform/Components/site-kit";
 
 const services = [
   {

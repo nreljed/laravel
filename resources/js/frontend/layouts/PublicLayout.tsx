@@ -1,8 +1,8 @@
 import { type PropsWithChildren } from "react";
 import { SeoHead } from "@nreljed/platform/Components/seo/SeoHead";
-import { SiteRoot } from "../components/site/SiteRoot";
-import { SiteHeader } from "../components/site/SiteHeader";
-import { SiteFooter } from "../components/site/SiteFooter";
+import { SiteRoot } from "@nreljed/platform/Components/site-kit/SiteRoot";
+import { SiteHeader } from "@nreljed/platform/Components/site-kit/SiteHeader";
+import { SiteFooter } from "@nreljed/platform/Components/site-kit/SiteFooter";
 
 interface PublicLayoutProps {
   title?: string;
