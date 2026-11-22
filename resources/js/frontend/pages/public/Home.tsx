@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton, SiteCardGrid, SiteFeatureCard } from "../../components/site";
+import { PillButton, SiteCardGrid, SiteFeatureCard } from "@nreljed/platform/Components/site-kit";
 
 const spend = [
   { name: "Cloud infrastructure", amount: 182400, pct: 100, delta: "+12%", down: false },

@@ -2,28 +2,32 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "cn";
 import PublicLayout from "../../layouts/PublicLayout";
-import { PillButton } from "../../components/site/PillButton";
-import { SitePill } from "../../components/site/SitePill";
-import { SitePagination } from "../../components/site/SitePagination";
-import { SiteCardGrid, SiteFeatureCard } from "../../components/site/SiteCard";
-import { BlogCard } from "../../components/site/BlogCard";
+import { PillButton } from "@nreljed/platform/Components/site-kit/PillButton";
+import { SitePill } from "@nreljed/platform/Components/site-kit/SitePill";
+import { SitePagination } from "@nreljed/platform/Components/site-kit/SitePagination";
+import { SiteCardGrid, SiteFeatureCard } from "@nreljed/platform/Components/site-kit/SiteCard";
+import { BlogCard } from "@nreljed/platform/Components/site-kit/BlogCard";
 import {
   SiteInput,
   SiteTextarea,
   SiteCheckbox,
   SiteRadio,
   SiteSelect,
-} from "../../components/site/SiteForm";
+} from "@nreljed/platform/Components/site-kit/SiteForm";
 import {
   SiteBadge,
   SiteAlert,
   SiteEmptyState,
   SiteSkeleton,
   SiteProgress,
-} from "../../components/site/SiteFeedback";
-import { SitePopover, SiteDropdown, SiteTooltip } from "../../components/site/SiteOverlay";
-import { SiteBreadcrumb, SiteTabs } from "../../components/site/SiteNav";
-import { SiteContainer, SiteSection } from "../../components/site/SiteLayout";
+} from "@nreljed/platform/Components/site-kit/SiteFeedback";
+import {
+  SitePopover,
+  SiteDropdown,
+  SiteTooltip,
+} from "@nreljed/platform/Components/site-kit/SiteOverlay";
+import { SiteBreadcrumb, SiteTabs } from "@nreljed/platform/Components/site-kit/SiteNav";
+import { SiteContainer, SiteSection } from "@nreljed/platform/Components/site-kit/SiteLayout";
 import {
   SiteTable,
   SiteTableHeader,
@@ -31,7 +35,7 @@ import {
   SiteTableRow,
   SiteTableHead,
   SiteTableCell,
-} from "../../components/site/SiteTable";
+} from "@nreljed/platform/Components/site-kit/SiteTable";
 
 interface ColorSwatch {
   label: string;

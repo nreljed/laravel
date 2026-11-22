@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import PublicLayout from "../../../layouts/PublicLayout";
-import { SitePill } from "../../../components/site/SitePill";
-import { SitePagination } from "../../../components/site/SitePagination";
-import { BlogCard, SiteCardGrid, useReveal } from "../../../components/site";
+import { SitePill } from "@nreljed/platform/Components/site-kit/SitePill";
+import { SitePagination } from "@nreljed/platform/Components/site-kit/SitePagination";
+import { BlogCard, SiteCardGrid, useReveal } from "@nreljed/platform/Components/site-kit";
 
 interface Author {
   id: number;
