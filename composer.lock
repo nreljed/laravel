@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "052d5b2e22fe95319c17b6d1d1e2487a",
+    "content-hash": "37cdb5606f66b6fa906364f8bca19bc3",
     "packages": [
         {
             "name": "brick/math",
@@ -3397,16 +3397,16 @@
         },
         {
             "name": "nreljed/marketing-module",
-            "version": "0.15.4",
+            "version": "0.15.5",
             "source": {
                 "type": "git",
                 "url": "git@github.com:nreljed/marketing-module.git",
-                "reference": "ce35af887630e3b56e4b8da71c0874835491ae59"
+                "reference": "c6d026f1e706d572c4e54abd004164d8e847c9fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/ce35af887630e3b56e4b8da71c0874835491ae59",
-                "reference": "ce35af887630e3b56e4b8da71c0874835491ae59",
+                "url": "https://api.github.com/repos/nreljed/marketing-module/zipball/c6d026f1e706d572c4e54abd004164d8e847c9fc",
+                "reference": "c6d026f1e706d572c4e54abd004164d8e847c9fc",
                 "shasum": ""
             },
             "require": {
@@ -3452,10 +3452,10 @@
             ],
             "description": "Marketing automation and social publishing feature for the Nreljed dashboard platform (social accounts, scheduled posts, campaigns, audience segments, contact tagging, workflow automation and engagement analytics).",
             "support": {
-                "source": "https://github.com/nreljed/marketing-module/tree/v0.15.4",
+                "source": "https://github.com/nreljed/marketing-module/tree/v0.15.5",
                 "issues": "https://github.com/nreljed/marketing-module/issues"
             },
-            "time": "2026-11-26T21:01:42+00:00"
+            "time": "2026-11-26T21:17:03+00:00"
         },
         {
             "name": "nreljed/platform",
