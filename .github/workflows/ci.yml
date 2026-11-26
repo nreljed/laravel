@@ -1,5 +1,6 @@
 name: CI Validation
 
+
 on:
   workflow_call:
     inputs:
@@ -11,25 +12,424 @@ on:
         description: "Skip npm lint, typecheck, format, test, and build"
         type: boolean
         default: false
+      php-tests-parallel:
+        description: "Run PHP tests with --parallel (paratest)"
+        type: boolean
+        default: true
+      pass-with-no-tests:
+        description: "Pass when no frontend test files exist"
+        type: boolean
+        default: false
+      skip-core-versions:
+        description: "Skip the platform-core fleet version check (one core version for all apps)"
+        type: boolean
+        default: false
+      runner:
+        description: "Runner label for the validate job (the caller's RUNNER_CI variable)"
+        type: string
+        default: 'self-hosted'
+      hosted-runner:
+        description: "True when the job is on a GitHub-hosted runner: enables setup-php and the cache steps"
+        type: boolean
+        default: false
+      run-e2e:
+        description: "Run the Playwright login smoke against a locally served instance."
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 jobs:
   validate:
-    uses: nreljed/platform/.github/workflows/consumer-ci.yml@main
-    with:
-      skip-php-tests: ${{ inputs.skip-php-tests || false }}
-      skip-npm-tests: ${{ inputs.skip-npm-tests || false }}
-      php-tests-parallel: true
-      # consumer-ci.yml defaults this to false, and the mono HAS a real vitest
-      # suite (app shell + workspace packages). Passing true here overrode that
-      # default and made the frontend test gate green even with zero tests
-      # collected -- a silent false negative on every run. Omit it so the
-      # default applies.
-      # The called workflow cannot read this repo's `vars`, so the runner
-      # switch is handed over as inputs (see consumer-ci.yml's header).
-      runner: ${{ vars.RUNNER_CI || 'self-hosted' }}
-      hosted-runner: ${{ vars.RUNNER_CI != 'self-hosted' }}
-      run-e2e: true
-    secrets: inherit
+    runs-on: ${{ inputs.runner }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        # PHP 8.4 + composer are preinstalled on the self-hosted Windows
+        # runner, and setup-php is not safe there: it rewrites the shared
+        # C:\php\php.ini, which leaves every other PHP consumer on the box
+        # without openssl. Only GitHub-hosted runners need it.
+        if: inputs.hosted-runner
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          # Cache pnpm workspaces (pinned by the root pnpm-lock.yaml) and npm
+          # apps (package-lock.json) from the calling repo accordingly. pnpm is
+          # NOT installed here: setup-node@v7 has no pnpm-version input — the
+          # install step below bootstraps it when a pnpm workspace is detected.
+          cache: ${{ inputs.hosted-runner && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
+
+      - name: Cache Composer dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Cache npm dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json', 'pnpm-lock.yaml') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Create .env + SQLite database
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Composer audit
+        run: composer audit --no-interaction
+
+      - name: Enforce platform core version (fleet single-core)
+        if: ${{ !inputs.skip-core-versions }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PINNED=$(php -r '$l=json_decode(file_get_contents("composer.lock"),true);foreach(array_merge($l["packages"]??[],$l["packages-dev"]??[]) as $p){if(($p["name"]??"")==="nreljed/platform"){echo $p["version"];break;}}')
+          echo "pinned nreljed/platform: ${PINNED:-<not found>}"
+          if [ -z "${PINNED}" ]; then
+            echo "::error::nreljed/platform is not pinned in composer.lock"
+            exit 1
+          fi
+          case "${PINNED}" in
+            dev-*|9999999-*|'@dev') echo "dev build pinned — skipping fleet check"; exit 0 ;;
+          esac
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::no GH_TOKEN (e.g. Dependabot PR) — fleet single-core check was SKIPPED, not enforced. This run does not prove the lock matches the latest core release."
+            exit 0
+          fi
+          LATEST=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "User-Agent: fleet-check" \
+            "https://api.github.com/repos/nreljed/platform/releases/latest" 2>/dev/null \
+            | php -r '$d=json_decode(stream_get_contents(STDIN),true);echo $d["tag_name"]??"";')
+          echo "latest nreljed/platform release: ${LATEST:-<unknown>}"
+          if [ -z "${LATEST}" ]; then
+            echo "::warning::could not resolve the latest nreljed/platform release (rate limit, expired token, or API outage) — fleet single-core check was SKIPPED, not enforced. Verify the lock against the latest release manually."
+            exit 0
+          fi
+          NORM=${PINNED#v}; NORM=${NORM%% +@}
+          LATEST_NORM=${LATEST#v}
+          if [ "${NORM}" != "${LATEST_NORM}" ]; then
+            echo "::error::Platform core drift — composer.lock pins ${PINNED} but latest nreljed/platform release is ${LATEST}. All apps must run one core version; update via composer update nreljed/platform."
+            exit 1
+          fi
+          echo "core version OK (${NORM})"
+
+      - name: Foundation boundary check
+        run: php scripts/foundation-check.php
+
+      - name: Generate application key + migrate
+        run: php artisan key:generate && php artisan migrate --force
+
+      - name: Install npm dependencies
+        run: |
+          if [ -f pnpm-workspace.yaml ] || [ -f pnpm-lock.yaml ]; then
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+            pnpm install --frozen-lockfile
+          else
+            npm ci --legacy-peer-deps
+          fi
+
+      - name: Check core dependency parity
+        run: npm run check:core-deps
+
+      # Gate SHIPPED dependencies only. Dev-only advisories with no upstream
+      # patch (e.g. the unfixable `braces` stack-exhaustion DoS reached through
+      # the `shadcn` codegen CLI) must not block a deploy -- nothing in that
+      # subtree runs in production. Bump the toolchain on its own schedule.
+      - name: npm audit
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm audit --prod --audit-level=high
+          else
+            npm audit --omit=dev --audit-level=high
+          fi
+
+      - name: ESLint
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run lint
+
+      - name: TypeScript check
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run typecheck
+
+      - name: Prettier check
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run format:check
+
+      - name: Frontend tests
+        if: ${{ !inputs.skip-npm-tests }}
+        run: ${{ inputs.pass-with-no-tests && 'npm run test -- --passWithNoTests' || 'npm run test' }}
+
+      - name: Build frontend assets
+        if: ${{ !inputs.skip-npm-tests }}
+        run: npm run build
+
+      - name: PHP tests
+        if: ${{ !inputs.skip-php-tests }}
+        # Every test runs in one PHP process unless --parallel splits it, and the
+        # Windows self-hosted runner's PHP enforces a 60s max_execution_time that
+        # kills the suite mid-run ("Premature end of PHP process"). Force it to 0
+        # on the command line (wins over any ini/default) so a long-but-valid run
+        # is never truncated.
+        run: ${{ inputs.php-tests-parallel && 'php -d max_execution_time=0 -d memory_limit=512M artisan test --parallel --compact' || 'php -d max_execution_time=0 -d memory_limit=512M artisan test --compact' }}
+
+      - name: Laravel Pint
+        if: ${{ !inputs.skip-php-tests }}
+        run: vendor/bin/pint --test
+
+      # Static analysis is opt-in per consumer: only runs when the repo ships a
+      # phpstan.neon (i.e. larastan is in require-dev). Consumers without one
+      # skip it; see each app's docs/MODERNIZATION-PLAN.md for the rollout plan.
+      - name: PHPStan
+        if: ${{ !inputs.skip-php-tests && hashFiles('phpstan.neon') != '' }}
+        run: vendor/bin/phpstan analyse --no-progress
+
+  # Opt-in browser smoke (run-e2e). Standalone apps (laravel.shop, laravel.booking)
+  # enable it from their ci.yml; the workspace app leaves it off. Each consumer
+  # ships its own harness: playwright.config.ts, e2e/helpers/auth.ts,
+  # e2e/auth.spec.ts and a `test:e2e` script. Only the shared auth smoke runs
+  # here (dashboard redirect + login landing with zero console errors) — it needs
+  # no demo data and is identical on every app. Repo-specific specs
+  # (e.g. e2e/shop-admin-resources.spec.ts) run locally against a seated app.
+  e2e:
+    if: inputs.run-e2e
+    needs: validate
+    runs-on: ${{ inputs.runner }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_TOKEN }}"}}'
+      # APP_URL is deliberately NOT pinned here. Every repo in the fleet runs its
+      # own runner on ONE physical machine, so a shared fixed port lets one job's
+      # dev server answer another job's requests. The "Start Laravel dev server"
+      # step reserves a free loopback port per run and exports APP_URL.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        if: inputs.hosted-runner
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: fileinfo, gd, mbstring, pdo_mysql, pdo_sqlite, intl, bcmath, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: ${{ inputs.hosted-runner && (hashFiles('pnpm-workspace.yaml') != '' && 'pnpm' || 'npm') || '' }}
+
+      - name: Cache Composer dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: composer-e2e-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-e2e-${{ runner.os }}-
+
+      - name: Cache npm dependencies (GitHub-hosted only)
+        if: inputs.hosted-runner
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: npm-e2e-${{ runner.os }}-${{ hashFiles('package-lock.json', 'pnpm-lock.yaml') }}
+          restore-keys: npm-e2e-${{ runner.os }}-
+
+      - name: Create .env + SQLite database
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          # Ziggy/Inertia generate URLs from APP_URL, so it must match the
+          # playwright baseURL (the port php artisan serve binds below).
+          sed -i "s|^APP_URL=.*|APP_URL=${APP_URL}|" .env
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-scripts
+
+      - name: Generate application key + migrate + seed roles
+        run: |
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan db:seed --class='Nreljed\Platform\Database\Seeders\RolesAndPermissionsSeeder' --force
+
+      - name: Create admin user for the e2e login
+        run: php artisan app:create-admin --email=nstudio.webdesign@gmail.com --password='azerty123/*' --name="E2E Admin"
+
+      - name: Install npm dependencies
+        run: |
+          if [ -f pnpm-workspace.yaml ] || [ -f pnpm-lock.yaml ]; then
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@11
+            pnpm install --frozen-lockfile
+          else
+            npm ci --legacy-peer-deps
+          fi
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Install Playwright browser
+        if: ${{ inputs.hosted-runner }}
+        run: npx playwright install chromium --with-deps
+
+      - name: Start Laravel dev server
+        # Never hardcode the port. All three consumer runners live on ONE laptop,
+        # so a fixed 8010 means one job's server can answer another job's
+        # requests - which is exactly how mono #167 and booking #132 went red on
+        # 2026-11-05 while shop passed in the same window: their `php artisan
+        # serve` failed to bind, the readiness curl hit the *other* app's server,
+        # and login there used credentials that do not exist in that database.
+        # Reserve an ephemeral port, publish it to later steps, and retry if the
+        # OS hands us one that is already taken.
+        run: |
+          for attempt in $(seq 1 10); do
+            PORT=$(php -r '$s = @stream_socket_server("tcp://127.0.0.1:0", $errno, $errstr);
+              if (!$s) { exit(1); }
+              $name = stream_socket_get_name($s, false);
+              fclose($s);
+              echo substr(strrchr($name, ":"), 1);')
+            if [ -z "$PORT" ]; then
+              echo "::error::could not reserve a loopback port"
+              exit 1
+            fi
+
+            URL="http://127.0.0.1:${PORT}"
+            echo "attempt ${attempt}: starting server on ${URL}"
+            php artisan serve --host=127.0.0.1 --port="${PORT}" >storage/logs/e2e-server.log 2>&1 &
+            SERVER_PID=$!
+
+            ready=0
+            for i in $(seq 1 45); do
+              if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+                break
+              fi
+              if curl -fsS "${URL}/login" -o /dev/null 2>/dev/null; then
+                ready=1
+                break
+              fi
+              sleep 1
+            done
+
+            if [ "$ready" = "1" ]; then
+              echo "server ready on ${URL} after ~${i}s (bash pid ${SERVER_PID})"
+              echo "APP_URL=${URL}" >> "$GITHUB_ENV"
+              echo "E2E_PORT=${PORT}" >> "$GITHUB_ENV"
+              exit 0
+            fi
+
+            echo "::warning::server did not come up on ${URL} (pid ${SERVER_PID})"
+            tail -20 storage/logs/e2e-server.log || true
+            if grep -qi "Address already in use" storage/logs/e2e-server.log 2>/dev/null; then
+              echo "::warning::port ${PORT} was already in use; retrying on a new one"
+            fi
+            kill "$SERVER_PID" 2>/dev/null || true
+            wait "$SERVER_PID" 2>/dev/null || true
+          done
+          echo "::error::Laravel server did not start after 10 port attempts"
+          tail -50 storage/logs/e2e-server.log || true
+          exit 1
+
+      - name: Warm the app before the browser smoke
+        # Every repo in the fleet runs its own runner on ONE physical machine, so
+        # three consumer e2e jobs can land at the same time (that is exactly how
+        # this job went red: mono + booking overlapped and the smoke went from
+        # ~4m to ~8m). `php artisan serve` is single-threaded, and a cold first
+        # request pays Blade compilation + the settings cache + the dashboard's
+        # full query set before the login redirect can resolve. Paying that cost
+        # here, once, keeps the smoke measuring auth instead of cold-start
+        # latency on a contended host.
+        run: |
+          JAR="${RUNNER_TEMP}/e2e-warm-cookies.txt"
+          PAGE="${RUNNER_TEMP}/e2e-warm-login.html"
+          curl -fsS -c "$JAR" "${APP_URL}/login" -o "$PAGE"
+          TOKEN=$(sed -n 's/.*name="csrf-token" content="\([^"]*\)".*/\1/p' "$PAGE" | head -1)
+          if [ -z "$TOKEN" ]; then
+            echo "::error::no csrf token on the login page"
+            exit 1
+          fi
+          CODE=$(curl -sS -b "$JAR" -c "$JAR" -o /dev/null -w "%{http_code}" -X POST "${APP_URL}/login" \
+            --data-urlencode "_token=${TOKEN}" \
+            --data-urlencode "username=${E2E_EMAIL:-nstudio.webdesign@gmail.com}" \
+            --data-urlencode "password=${E2E_PASSWORD:-azerty123/*}")
+          echo "warm login -> ${CODE}"
+          if [ "$CODE" != "302" ]; then
+            echo "::error::warm login returned ${CODE} (expected 302)"
+            exit 1
+          fi
+          CODE=$(curl -sS -b "$JAR" -o /dev/null -w "%{http_code}" "${APP_URL}/dashboard")
+          echo "warm dashboard -> ${CODE}"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::warm dashboard returned ${CODE} (expected 200)"
+            exit 1
+          fi
+
+      - name: Playwright auth smoke
+        run: npm run test:e2e -- e2e/auth.spec.ts
+
+      - name: Upload e2e diagnostics
+        # A failing smoke used to leave nothing behind: no screenshot, no trace
+        # and no server log, so the only evidence was the timeout line. Keep the
+        # three things that actually explain a failure - what the page looked
+        # like, the trace of the click, and what the single-threaded dev server
+        # was doing while the browser waited.
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-diagnostics
+          path: |
+            storage/logs/e2e-server.log
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop Laravel dev server
+        # Always stop it. `php artisan serve ... &` outlives the step on Windows:
+        # a leaked `php -S 127.0.0.1:8010` from the shop workspace was still
+        # resident hours later and served another repo's e2e run. Kill by PORT,
+        # not by pid: `$!` in Git Bash is an MSYS pid that taskkill does not
+        # understand ("process not found"), while the port is unique per run so
+        # there is no risk of reaping a sibling job's server.
+        if: always()
+        run: |
+          if [ -z "${E2E_PORT:-}" ]; then
+            echo "no port recorded; nothing to stop"
+            exit 0
+          fi
+          echo "stopping whatever listens on port ${E2E_PORT}"
+          if command -v powershell >/dev/null 2>&1; then
+            powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${E2E_PORT} -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ('stopping pid ' + \$_.OwningProcess); Stop-Process -Id \$_.OwningProcess -Force -ErrorAction SilentlyContinue }" || true
+          elif command -v lsof >/dev/null 2>&1; then
+            lsof -ti "tcp:${E2E_PORT}" | xargs -r kill -9 || true
+          else
+            fuser -k "${E2E_PORT}/tcp" || true
+          fi
+          sleep 2
+          STILL=$(powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort ${E2E_PORT} -State Listen -ErrorAction SilentlyContinue | Measure-Object).Count" 2>/dev/null | tr -d '\r' || echo 0)
+          echo "listeners left on port ${E2E_PORT}: ${STILL:-0}"
+          if [ "${STILL:-0}" != "0" ]; then
+            echo "::warning::port ${E2E_PORT} is still bound after cleanup"
+          fi
+
