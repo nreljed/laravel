@@ -38,17 +38,26 @@ jobs:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_TOKEN }}"}}'
         run: |
           composer update --with-all-dependencies --no-scripts --no-interaction
+          # This monorepo does not commit apps/* mirrors (see core-update.yml).
+          # Only touch an app lock when that app is actually present.
           for app in apps/laravel.shop apps/laravel.booking; do
-            composer update --with-all-dependencies --no-install --no-scripts --no-interaction --working-dir="$app"
+            if [ -f "$app/composer.json" ]; then
+              composer update --with-all-dependencies --no-install --no-scripts --no-interaction --working-dir="$app"
+            else
+              echo "skipping $app (not present in this checkout)"
+            fi
           done
 
-      - name: Sync package mirrors
-        run: node scripts/sync-mirrors.mjs --apply
-
+      # The obsolete workspace mirrors (and sync-mirrors.mjs) were removed in
+      # #183; there is nothing left to sync beyond the root lockfile.
       - name: Check for changes
         id: check
         run: |
-          if git diff --exit-code -- composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/ > /dev/null; then
+          PATHS="composer.lock"
+          for app in apps/laravel.shop apps/laravel.booking; do
+            [ -f "$app/composer.lock" ] && PATHS="$PATHS $app/composer.lock"
+          done
+          if git diff --exit-code -- $PATHS > /dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -68,7 +77,10 @@ jobs:
           git checkout -B "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock apps/laravel.shop/composer.lock apps/laravel.booking/composer.lock packages/
+          git add composer.lock
+          for app in apps/laravel.shop apps/laravel.booking; do
+            [ -f "$app/composer.lock" ] && git add "$app/composer.lock"
+          done
           git commit -m "chore: sync dependencies across fleet"
           git push --no-verify -u origin "$BRANCH"
           gh pr create \
