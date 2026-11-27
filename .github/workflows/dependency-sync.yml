@@ -48,13 +48,12 @@ jobs:
             fi
           done
 
-      - name: Sync package mirrors
-        run: node scripts/sync-mirrors.mjs --apply
-
+      # The obsolete workspace mirrors (and sync-mirrors.mjs) were removed in
+      # #183; there is nothing left to sync beyond the root lockfile.
       - name: Check for changes
         id: check
         run: |
-          PATHS="composer.lock packages/"
+          PATHS="composer.lock"
           for app in apps/laravel.shop apps/laravel.booking; do
             [ -f "$app/composer.lock" ] && PATHS="$PATHS $app/composer.lock"
           done
@@ -78,7 +77,7 @@ jobs:
           git checkout -B "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock packages/
+          git add composer.lock
           for app in apps/laravel.shop apps/laravel.booking; do
             [ -f "$app/composer.lock" ] && git add "$app/composer.lock"
           done
