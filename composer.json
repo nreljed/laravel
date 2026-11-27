@@ -36,7 +36,7 @@
         "laravel/tinker": "^3.0",
         "minishlink/web-push": "^11.0",
         "nreljed/blog": "^0.1.8",
-        "nreljed/marketing-module": "^0.14",
+        "nreljed/marketing-module": "0.15.6",
         "nreljed/platform": "^1.0",
         "sentry/sentry-laravel": "4.29.0",
         "tightenco/ziggy": "^2.6.4"

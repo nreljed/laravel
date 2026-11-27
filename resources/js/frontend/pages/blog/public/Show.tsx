@@ -40,6 +40,8 @@ interface Post {
   meta_title: string | null;
   meta_description: string | null;
   og_image: string | null;
+  og_title: string | null;
+  og_description: string | null;
   user: Author;
   category: Category | null;
   tags: Tag[];
@@ -86,8 +88,8 @@ export default function BlogShow({ post }: BlogShowProps) {
 
   return (
     <PublicLayout
-      title={post.meta_title || post.title}
-      description={post.meta_description || post.excerpt || undefined}
+      title={post.og_title || post.meta_title || post.title}
+      description={post.og_description || post.meta_description || post.excerpt || undefined}
       ogImage={ogImageUrl}
       ogType="article"
       canonical={canonical}
