@@ -3461,7 +3461,7 @@
             "version": "1.2.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/nreljed/platform.git",
+                "url": "git@github.com:nreljed/platform.git",
                 "reference": "6247d3e767dd41566979508b1690eec1679789cf"
             },
             "dist": {
